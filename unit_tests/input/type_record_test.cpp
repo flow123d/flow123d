@@ -243,8 +243,8 @@ using namespace Input::Type;
 			.declare_key("int_array", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		// simulate order and is_finished parameter of calling finish methods in lazy_finish
-		generic_rec.finish(true);
+		// simulate order and is_finished parameter of calling finish methods of IST
+		generic_rec.finish(FinishStatus::generic_);
 		rec.finish();
 	}
 
@@ -260,7 +260,7 @@ using namespace Input::Type;
 			.declare_key("int_array2", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		generic_rec.finish(true);
+		generic_rec.finish(FinishStatus::generic_);
 		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
 				"do not match type: 'array_of_Integer';" );
 	}
@@ -277,7 +277,7 @@ using namespace Input::Type;
 			.declare_key("int_array3", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		generic_rec.finish(true);
+		generic_rec.finish(FinishStatus::generic_);
 		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
 				"do not match type: 'array_of_Integer'" );
 	}

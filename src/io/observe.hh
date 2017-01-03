@@ -200,7 +200,7 @@ protected:
     OutputDataFieldMap observe_field_values_;
 
 
-    /// Time of fields when the observe values were computed
+    /// Common evaluation time of the fields for single time frame.
     double observe_values_time_;
 
     // Name of the observation stream. Base for the output filename.
@@ -217,7 +217,7 @@ protected:
     unsigned int precision_;
     
     // Warn for no observe fields only once.
-    bool no_fields_warning=true;
+    bool no_fields_warning=false;
 
 };
 

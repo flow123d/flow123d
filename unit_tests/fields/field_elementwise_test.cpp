@@ -10,6 +10,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 
 #include "fields/field_elementwise.hh"
@@ -65,7 +66,7 @@ public:
         Profiler::initialize();
         
         FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
-        mesh= new Mesh;
+        mesh = mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
 
@@ -87,8 +88,8 @@ public:
 
     }
 
-    const FieldAlgoBaseInitData& init_data() {
-    	static const FieldAlgoBaseInitData init_data(0, UnitSI::dimensionless());
+    const FieldAlgoBaseInitData& init_data(std::string field_name) {
+    	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
     	return init_data;
     }
 
@@ -102,7 +103,7 @@ public:
 
 TEST_F(FieldElementwiseTest, scalar) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -118,7 +119,7 @@ TEST_F(FieldElementwiseTest, scalar) {
 TEST_F(FieldElementwiseTest, bc_scalar) {
     ScalarField field;
     field.set_mesh(mesh,true);
-    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
 
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
@@ -133,7 +134,7 @@ TEST_F(FieldElementwiseTest, bc_scalar) {
 
 TEST_F(FieldElementwiseTest, scalar_unit_conv) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -147,7 +148,7 @@ TEST_F(FieldElementwiseTest, scalar_unit_conv) {
 TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
     ScalarField field;
     field.set_mesh(mesh,true);
-    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
 
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
@@ -163,7 +164,7 @@ TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
 TEST_F(FieldElementwiseTest, vector_fixed) {
 	string expected_vals[2] = {"1 2 3", "2 3 4"};
     VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data());
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -180,7 +181,7 @@ TEST_F(FieldElementwiseTest, vector_fixed) {
 TEST_F(FieldElementwiseTest, bc_vector_fixed) {
 	string expected_vals[2] = {"4 5 6", "5 6 7"};
     VecFixField field;
-    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data());
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
     field.set_mesh(mesh,true);
 
     for (unsigned int j=0; j<2; j++) {
@@ -196,7 +197,7 @@ TEST_F(FieldElementwiseTest, bc_vector_fixed) {
 TEST_F(FieldElementwiseTest, tensor_fixed) {
 	string expected_vals[2] = {"1 4 7; 2 5 8; 3 6 9", "2 5 8; 3 6 9; 4 7 10"};
     TensorField field;
-    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data());
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
     field.set_mesh(mesh,false);
 
     for (unsigned int j=0; j<2; j++) {
@@ -215,7 +216,7 @@ TEST_F(FieldElementwiseTest, tensor_fixed) {
 TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
 	string expected_vals[2] = {"4 7 10; 5 8 11; 6 9 12", "5 8 11; 6 9 12; 7 10 13"};
     TensorField field;
-    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data());
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
     field.set_mesh(mesh, true);
 
     for (unsigned int j=0; j<2; j++) {

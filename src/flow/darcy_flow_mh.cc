@@ -188,7 +188,7 @@ DarcyMH::EqData::EqData()
     	cross_section.units( UnitSI().m(3).md() );
 
     ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
-    	conductivity.units( UnitSI().m().s(-1) );
+    	conductivity.units( UnitSI().m().s(-1) ).set_limits(0.0);
 
     ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
     	sigma.units( UnitSI::dimensionless() );
@@ -253,7 +253,8 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     solution(nullptr),
     schur0(nullptr),
-    data_changed_(false)
+    data_changed_(false),
+    output_object(nullptr)
 {
 
     is_linear_=true;
@@ -1273,8 +1274,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*mh_dh.rows_ds));
-                ls->set_from_input(in_rec);
-                ls->set_solution( NULL );
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -1291,11 +1290,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     // make schur2
                     schur2 = new LinSys_PETSC( ls1->make_complement_distribution() );
                     schur2->set_positive_definite();
-                    schur2->set_from_input(in_rec);
                     ls1->set_complement( schur2 );
                     schur1 = ls1;
                 }
                 ls->set_complement( schur1 );
+                ls->set_from_input(in_rec);
+                ls->set_solution( NULL );
                 schur0=ls;
             }
 
@@ -1309,10 +1309,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
         else {
             xprintf(Err, "Unknown solver type. Internal error.\n");
         }
+
+        END_TIMER("preallocation");
+        make_serial_scatter();
+
     }
 
-    END_TIMER("preallocation");
-    make_serial_scatter();
 }
 
 
@@ -1531,16 +1533,19 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-    if (schur0 != NULL) delete schur0;
+    if (schur0 != NULL) {
+        delete schur0;
+        VecScatterDestroy(&par_to_all);
+    }
 
 	if (solution != NULL) {
 	    chkerr(VecDestroy(&sol_vec));
 		delete [] solution;
 	}
 
-	delete output_object;
+	if (output_object)	delete output_object;
 
-	VecScatterDestroy(&par_to_all);
+
     
 }
 

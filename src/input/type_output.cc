@@ -45,9 +45,7 @@ OutputBase::~OutputBase() {}
 
 
 OutputBase::OutputBase()
-{
-    TypeBase::lazy_finish();
-}
+{}
 
 
 
@@ -458,6 +456,7 @@ OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num
 : OutputJSONMachine(rev_num_data)
 {
     root_type_ =  root_type;
+    root_type_.finish();
 }
 
 
