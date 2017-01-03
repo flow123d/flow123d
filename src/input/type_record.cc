@@ -300,8 +300,8 @@ Record &Record::close() const {
     Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
     for (auto &parent : data_->parent_vec_) {
     	parent->add_child(rec);
+    	rec.add_parent(*parent);
     }
-    data_->parent_vec_.clear();
 
     return rec;
 }

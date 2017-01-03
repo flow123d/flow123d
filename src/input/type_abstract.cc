@@ -140,7 +140,6 @@ FinishStatus Abstract::finish(FinishStatus finish_type) {
 	for (auto &child : child_data_->list_of_childs) {
 		if ((finish_type != FinishStatus::generic_) && child.is_root_of_generic_subtree())
 			THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
-		child.add_parent(*this);
 		child.finish(finish_type);
 		ASSERT(child.is_finished()).error();
 	}
