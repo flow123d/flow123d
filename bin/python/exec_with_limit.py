@@ -8,36 +8,53 @@ pathfix.init()
 # ----------------------------------------------
 import sys
 # ----------------------------------------------
-from utils.argparser import ArgParser
-from utils.duration import Duration
+import utils.parsers as parsers
+import utils.argparser as argparser
 # ----------------------------------------------
 
-parser = ArgParser("exec_with_limit.py [-t <time>] [-m <memory>] -- <executable> <arguments>")
-# ----------------------------------------------
-parser.add('-t', '--limit-time', type=Duration.parse, name='time_limit', placeholder='<time>', docs=[
-    'Obligatory wall clock time limit for execution in seconds or in HH:MM:SS format.',
-    'For precision use float value'
-])
-parser.add('-m', '--limit-memory', type=float, name='memory_limit', placeholder='<memory>', docs=[
-    'Optional memory limit per node in MB',
-    'For precision use float value'
-])
-parser.add('', '--batch', type=True, name='batch', docs=[
-    'Make output of this script more for an off-line reading',
-    'In batched mode, stdout and stderr from executed processes will be printed, not saved'
-])
-# ----------------------------------------------
+
+def create_parser():
+    parser = argparser.Parser.create("exec_with_limit")
+    argparser.Parser.add(parser, '--limit-time, -t', dest='time_limit', type=parsers.parse_float, help="""R|
+        Obligatory wall clock time limit for execution in seconds or in HH:MM:SS format
+        For precision use float value
+    """)
+    argparser.Parser.add(parser, '--limit-memory, -m', dest='memory_limit', type=float, help="""R|
+        Optional memory limit per node in MB
+        For precision use float value
+    """)
+    argparser.Parser.add(parser, '--batch', action=argparser.Parser.STORE_TRUE, help="""R|
+        Optional memory limit per node in MB
+        For precision use float value
+    """)
+
+    group = parser.add_argument_group('Special options', 'Options are debug features or machine specific options')
+    argparser.Parser.add(group, '--death', action=argparser.Parser.STORE_TRUE, help="""R|
+        Reverse evaluation behaviour. Program will exit with 0 (success)
+        if and only if command fails (ends with non-zero).
+    """)
+    return parser
 
 if __name__ == '__main__':
     from scripts.exec_with_limit_module import do_work
 
     # determine batched mode after parsing
     from scripts.core.base import Printer
-    parser.on_parse += Printer.setup_printer
+    argparser.Parser.on_parse += Printer.setup_printer
+    parser = create_parser()
+
+    arg_options = argparser.Parser.parse_exec_with_limit(parser)
 
     # run work
-    returncode = do_work(parser)
-    if type(returncode) is int:
-        sys.exit(returncode)
+    returncode = do_work(arg_options)
+    returncode = returncode.returncode if type(returncode) is not int else returncode
 
-    sys.exit(returncode.returncode)
+    if arg_options.death:
+        if returncode == 0:
+            Printer.all.err('Command did exit with 0 but should not (--death flag was set)!')
+            sys.exit(1)
+        else:
+            Printer.all.suc('Command did not with 0 (--death flag was set)')
+            sys.exit(0)
+    else:
+        sys.exit(returncode)

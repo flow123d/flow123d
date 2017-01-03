@@ -81,13 +81,13 @@ def parse_args(parser):
     (options, args) = parser.parse_args()
 
     if options.input is None:
-        Logger.instance().warning("Error: No input file specified!")
         parser.print_help()
+        Logger.instance().error("No input file specified!")
         sys.exit(1)
 
     if options.output is None:
-        Logger.instance().warning("Error: No output file specified!")
         parser.print_help()
+        Logger.instance().error("No output file specified!")
         sys.exit(1)
 
     return options, args

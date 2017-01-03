@@ -110,9 +110,52 @@ def join_iterable(iterable, prefix="", suffix="", separator=",", padding=None, e
 
 
 def replace_placeholders(template, **kwargs):
-        result = str(template)
-        _format_ = kwargs.get('_format_', '$${}$$')
+    """
+    Method will replace placeholders with actual values
+    :param template:
+    :param kwargs:
+    :return:
+    """
+    result = str(template)
+    _format_ = kwargs.get('_format_', '$${}$$')
 
-        for key, value in kwargs.items():
-            result = result.replace(_format_.format(key), value)
-        return result
+    for key, value in kwargs.items():
+        result = result.replace(_format_.format(key), value)
+    return result
+
+
+def format_dict(d, align_keys=True, indent=0, eq=' = ', sort=True):
+    """
+    :type sort: bool
+    :type eq: str
+    :type indent: int
+    :type align_keys: bool
+    :type d: dict
+    """
+    p = '    '
+    result = list()
+    max_width = max(len(k) for k in d.keys())
+    keys = sorted(d.keys()) if sort else d.keys()
+    for k in keys:
+        v = d.get(k)
+        i = indent * p
+        if align_keys:
+            pad = max_width - len(str(k))
+            start = i + str(k) + ' '*pad + eq
+        else:
+            start = i + str(k) + eq
+
+        if type(v) is list:
+            if not v:
+                result.append(start + '[]')
+            else:
+                if len(v) == 1 and len(str(v[0])) < 16:
+                    result.append(start + '[' + str(v[0]) + ']')
+                else:
+                    result.append(start)
+                    for lv in v:
+                        result.append(i + p + '- ' + str(lv))
+        else:
+            result.append(start + str(v))
+
+    return '\n'.join(result)

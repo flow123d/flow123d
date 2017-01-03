@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
+import json
 import math
 import time
 import threading
@@ -9,7 +10,7 @@ import threading
 # ----------------------------------------------
 from scripts.yamlc.yaml_config import ConfigCase
 from scripts.core import monitors
-from scripts.core.base import Printer, Paths, Command, DynamicSleep, IO
+from scripts.core.base import Printer, Paths, Command, DynamicSleep, IO, PathFilters
 from scripts.serialization import PyPyResult, ResultHolderResult, RuntestTripletResult, ResultParallelThreads
 from utils.counter import ProgressCounter
 from utils.events import Event
@@ -180,7 +181,7 @@ class MultiThreads(ExtendedThread):
 
     @property
     def returncode(self):
-        return max(self.returncodes.values()) if self.returncodes else None
+        return max(self.returncodes.values()) if self.returncodes else 0
 
     @property
     def total(self):
@@ -309,10 +310,13 @@ class PyPy(ExtendedThread):
         self.period = period
         self.case = None
         self._progress = None
+        self.status_file = None
 
         self.on_process_start = Event()
         self.on_process_complete = Event()
         self.on_process_update = Event()
+
+        self.on_process_complete += self.generate_status_file
 
         # register monitors
         self.limit_monitor = monitors.LimitMonitor(self)
@@ -355,8 +359,8 @@ class PyPy(ExtendedThread):
 
         if self.executor.broken:
             Printer.all.err('Could not start command "{}": {}',
-                        Command.to_string(self.executor.command),
-                        self.executor.exception)
+                            Command.to_string(self.executor.command),
+                            self.executor.exception)
             self.returncode = self.executor.returncode
 
         # if process is not broken, propagate start event
@@ -373,6 +377,21 @@ class PyPy(ExtendedThread):
         # propagate on_complete event
         self.on_process_complete(self)
 
+    def status(self):
+        import getpass
+        import platform
+        result = dict(
+            returncode=self.returncode,
+            duration=self.duration,
+            username=getpass.getuser(),
+            hostname=platform.node(),
+            nodename=platform.node().split('.')[0].strip('0123456789')
+        )
+
+        if self.case:
+            result.update(self.case.info)
+        return result
+
     def to_json(self):
         if self.case:
             return dict(
@@ -388,6 +407,26 @@ class PyPy(ExtendedThread):
 
     def dump(self):
         return PyPyResult(self)
+
+    @classmethod
+    def generate_status_file(cls, target):
+        """
+        Will generate status file if target has option turned on
+        :type target: PyPy
+        """
+        if target.status_file:
+            IO.write(
+                target.status_file,
+                json.dumps(target.status(), indent=4)
+            )
+            output_dir = Paths.dirname(target.status_file)
+            files = Paths.browse(
+                output_dir,
+                [PathFilters.filter_wildcards('*/profiler_info_*.log.json')]
+            )
+            # profiler json is missing?
+            if not files:
+                IO.write(Paths.join(output_dir, 'profiler_info_dummy.log.json'), '{}')
 
 
 class ComparisonMultiThread(SequentialThreads):

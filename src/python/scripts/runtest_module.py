@@ -79,7 +79,7 @@ class ModuleRuntest(ScriptModule):
     def create_process_from_case(self, case):
         """
         Method creates main thread where clean-up, pypy and comparison is stored
-        :type case: scripts.config.yaml_config.ConfigCase
+        :type case: scripts.yamlc.yaml_config.ConfigCase
         """
         local_run = LocalRun(case)
         local_run.mpi = case.proc > 1
@@ -91,7 +91,11 @@ class ModuleRuntest(ScriptModule):
 
         clean = local_run.create_dummy_clean_thread() if no_clean else local_run.create_clean_thread()
         compare = local_run.create_dummy_comparisons() if no_compare else local_run.create_comparisons()
-        pypy = local_run.create_pypy(self.rest)
+        pypy = local_run.create_pypy(self.arg_options.rest)
+
+        # turn on status file creation on demand
+        if self.arg_options.status_file:
+            pypy.status_file = case.fs.status_file
 
         seq = RuntestMultiThread(clean, pypy, compare)
 
@@ -117,7 +121,7 @@ class ModuleRuntest(ScriptModule):
             script=pkgutil.get_loader('runtest').filename,
             yaml=case.file,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
-            args="" if not self.rest else Command.to_string(self.rest),
+            args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
             dump_output=case.fs.dump_output,
             log_file=case.fs.job_output
         )
@@ -205,8 +209,8 @@ class ModuleRuntest(ScriptModule):
         GlobalResult.returncode = runner.returncode
         return runner
 
-    def __init__(self):
-        super(ModuleRuntest, self).__init__()
+    def __init__(self, arg_options):
+        super(ModuleRuntest, self).__init__(arg_options)
         self.all_yamls = None
         self.configs = None
 
@@ -221,13 +225,7 @@ class ModuleRuntest(ScriptModule):
 
         # we need flow123d, mpiexec and ndiff to exists in LOCAL mode
         if not self.arg_options.queue and not Paths.test_paths('flow123d', 'mpiexec', 'ndiff'):
-            Printer.all.err('Missing obligatory files! Exiting')
-            sys.exit(1)
-
-        # test yaml args
-        if not self.others:
-            self.parser.exit_usage('Error: No yaml files or folder given')
-            sys.exit(2)
+            Printer.all.wrn('Missing obligatory files!')
 
     def _run(self):
         """
@@ -236,13 +234,12 @@ class ModuleRuntest(ScriptModule):
 
         if self.arg_options.random_output_dir:
             import scripts.yamlc as yamlc
-            from core.base import System
-            yamlc.TEST_RESULTS = 'test_results-{}'.format(System.rnd8)
+            yamlc.TEST_RESULTS = 'test_results-{}'.format(self.arg_options.random_output_dir)
 
         self.all_yamls = list()
-        for path in self.others:
+        for path in self.arg_options.args:
             if not Paths.exists(path):
-                Printer.all.err('given path does not exists, ignoring path "{}"', path)
+                Printer.all.err('given path does not exists, path "{}"', path)
                 sys.exit(3)
 
             # append files to all_yamls
@@ -253,7 +250,7 @@ class ModuleRuntest(ScriptModule):
 
         Printer.all.out("Found {} yaml file/s", len(self.all_yamls))
         if not self.all_yamls:
-            Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.others))
+            Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.arg_options.args))
             sys.exit(0)
 
         self.configs = self.read_configs(self.all_yamls)
@@ -277,21 +274,20 @@ class ModuleRuntest(ScriptModule):
             return self.run_local_mode()
 
 
-def do_work(parser, args=None, debug=False):
+def do_work(arg_options=None, debug=False):
     """
     Main method which invokes ModuleRuntest
     :rtype: ParallelThreads
     :type debug: bool
-    :type args: list
-    :type parser: utils.argparser.ArgParser
+    :type arg_options: utils.argparser.RuntestArgs
     """
-    module = ModuleRuntest()
-    result = module.run(parser, args, debug)
+    module = ModuleRuntest(arg_options)
+    result = module.run(debug)
 
     # pickle out result on demand
-    if parser.simple_options.dump:
+    if arg_options.dump:
         try:
             import pickle
-            pickle.dump(result.dump(), open(parser.simple_options.dump, 'wb'))
+            pickle.dump(result.dump(), open(arg_options.dump, 'wb'))
         except: pass
     return result
