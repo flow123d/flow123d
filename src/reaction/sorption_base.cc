@@ -53,7 +53,7 @@ const Selection & SorptionBase::EqData::get_sorption_type_selection() {
 
 
 const Record & SorptionBase::get_input_type() {
-	return Record("Sorption", "AUXILIARY RECORD. Should not be directly part of the input tree.")
+	return Record("SorptionAux", "AUXILIARY RECORD. Should not be directly part of the input tree.")
 		.declare_key("substances", Array(String(),1), Default::obligatory(),
 					 "Names of the substances that take part in the sorption model.")
 		.declare_key("solvent_density", Double(0.0), Default("1.0"),
@@ -66,8 +66,8 @@ const Record & SorptionBase::get_input_type() {
 								"Specifies highest aqueous concentration in interpolation table.")
 		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
 						"Containes region specific data necessary to construct isotherms.")//;
-		.declare_key("reaction_liquid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the liquid.")
-		.declare_key("reaction_solid", ReactionTerm::get_input_type(), Default::optional(), "Reaction model following the sorption in the solid.")
+		.declare_key("reaction_liquid", ReactionTerm::it_abstract_reaction(), Default::optional(), "Reaction model following the sorption in the liquid.")
+		.declare_key("reaction_solid", ReactionTerm::it_abstract_reaction(), Default::optional(), "Reaction model following the sorption in the solid.")
 		.close();
 }
     
@@ -98,7 +98,8 @@ SorptionBase::EqData::EqData(const string &output_field_name)
     *this += porosity
             .name("porosity")
             .units( UnitSI::dimensionless() )
-            .flags(FieldFlag::input_copy);
+            .flags(FieldFlag::input_copy)
+			.set_limits(0.0);
     
     output_fields += *this;
     output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);

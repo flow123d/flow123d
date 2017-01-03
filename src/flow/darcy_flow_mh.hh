@@ -256,7 +256,7 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    ~DarcyMH();
+    virtual ~DarcyMH() override;
 
 
 protected:

@@ -8,6 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "mesh/mesh.h"
@@ -37,7 +38,7 @@ TEST(OutputMesh, create_identical)
 
     // read mesh - simplset cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
@@ -147,7 +148,7 @@ TEST(OutputMesh, write_on_output_mesh) {
 
     // read mesh - simplset cube from test1
     FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
@@ -173,7 +174,7 @@ TEST(OutputMesh, write_on_output_mesh) {
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData init_data(1, UnitSI::dimensionless());
+    FieldAlgoBaseInitData init_data("conc", 1, UnitSI::dimensionless());
     auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), init_data);
     
     // create field from FieldAlgorithmBase
@@ -217,7 +218,7 @@ const string input_om = R"INPUT(
 class TestOutputMesh : public testing::Test, public OutputMesh {
 public:
     TestOutputMesh()
-    : OutputMesh(mesh_, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+    : OutputMesh(*mesh_, Input::ReaderToStorage( input_om, const_cast<Input::Type::Record &>(OutputMeshBase::get_input_type()), Input::FileFormat::format_JSON )
                             .get_root_interface<Input::Record>())
     {
     }
@@ -226,13 +227,13 @@ public:
     {
     }
 
-    Mesh mesh_;
+    Mesh * mesh_;
 };
 
 
 TEST_F(TestOutputMesh, read_input) {
     EXPECT_EQ(this->max_level_, 2);
-    EXPECT_EQ(this->orig_mesh_, &(this->mesh_));
+    EXPECT_EQ(this->orig_mesh_, this->mesh_);
   
     Field<3,FieldValue<3>::Scalar> scalar_field;
     

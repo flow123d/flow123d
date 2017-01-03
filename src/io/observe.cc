@@ -306,6 +306,7 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
 {
     if (points_.size() == 0) return;
 
+    // check that all fields of one time frame are evaluated at the same time
     double field_time = field.time();
     if ( std::isnan(observe_values_time_) )
         observe_values_time_ = field_time;
@@ -361,8 +362,8 @@ void Observe::output_header() {
 void Observe::output_time_frame(double time) {
     if (points_.size() == 0) return;
     
-    if ( no_fields_warning ) {
-        no_fields_warning=false;    
+    if ( ! no_fields_warning ) {
+        no_fields_warning=true;
         // check that observe fields are set
         if (std::isnan(observe_values_time_)) {
             // first call and no fields
@@ -386,6 +387,6 @@ void Observe::output_time_frame(double time) {
         }
     }
 
-    observe_values_time_=numeric_limits<double>::signaling_NaN();
+    observe_values_time_ = numeric_limits<double>::signaling_NaN();
 
 }

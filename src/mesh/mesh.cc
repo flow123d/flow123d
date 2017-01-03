@@ -73,21 +73,6 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
-Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm),
- row_4_el(nullptr),
- el_4_loc(nullptr),
- el_ds(nullptr)
-{
-
-    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
-    in_record_ = reader.get_root_interface<Input::Record>();
-
-    reinit(in_record_);
-}
-
-
-
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
@@ -95,7 +80,17 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_4_loc(nullptr),
   el_ds(nullptr)
 {
-    reinit(in_record_);
+	// set in_record_, if input accessor is empty
+	if (in_record_.is_empty()) {
+		istringstream is("{mesh_file=\"\"}");
+	    Input::ReaderToStorage reader;
+	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+	    in_rec.finish();
+	    reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
+	    in_record_ = reader.get_root_interface<Input::Record>();
+	}
+
+	reinit(in_record_);
 }
 
 

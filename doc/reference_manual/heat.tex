@@ -101,6 +101,7 @@ $$ f(t) := \sum_{d=1}^3\int_{\partial\Omega^d}\left(-\varrho_l c_l T\vc q + \del
 is the energy [J], the volume source [J$\mathrm{s}^{-1}$] and the energy flux [J$\mathrm{s}^{-1}$] at time $t$, respectively.
 The energy, flux and source on every geometrical region is calculated at each output time step and the values together with the control sums are written to the \Alink{Balance::file}{file} \texttt{energy\_balance.\{dat\textbar txt\}}.
 If, in addition, \Alink{Balance::cumulative}{cumulative} is set to true then the time-integrated flux and source is written.
+The format of balance output is described in Section \ref{sec:balance_output}.
 
 
 
