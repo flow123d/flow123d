@@ -21,8 +21,6 @@
 
 \documentclass[12pt,a4paper]{report}
 
-% our own flow_doc.sty
-\usepackage{flow_doc}
 
 \usepackage{rotating}
 \usepackage{pdflscape}
@@ -48,6 +46,11 @@
 \usepackage{multicol}
 \usepackage{packages/multirow}
 \usepackage{imakeidx}
+
+% our own flow_doc.sty
+% use hyperref package that must come after the imakeidx
+\usepackage{flow_doc}
+
 
 \newcommand{\vari}[1]{{\it #1}}
 \newcommand{\ditem}[2]{\item[\vari{#1} {\tt #2}]}
@@ -110,7 +113,7 @@
 \addtolength{\textheight}{4cm}
 \addtolength{\voffset}{-2.5cm}
 
-\makeindex
+\makeindex[title=Alphabetical Index of Types]
 
 \begin{document}
 

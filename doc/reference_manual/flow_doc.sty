@@ -1,4 +1,5 @@
 % Various macros and environments for Flow123d manual
+\RequirePackage{xstring}
 \RequirePackage{textcomp}
 \RequirePackage{etoolbox}
 \RequirePackage[backref]{hyperref}   % hypertext capabilities, should by last package
@@ -50,6 +51,19 @@
     \hyperlink{#1::B}{#2}%
 }
 
+%monospace font, used for key to type links
+\def\TypeLink#1#2{%
+    %not setting the back target
+    \hyperlink{#1::B}{{\tt #2}}%
+}
+
+\def\IndexEntry#1#2{%
+    \StrSubstitute{#1}{:}{!}[\indexstr]%
+    %{\indexstr{} (#2)}
+    %\index{\indexstr{} (#2)}
+    \index{#1 (#2)}
+}
+\indexsetup{othercode=\ttfamily}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % macro for units 
@@ -89,7 +103,7 @@
 }
 
 \newcommand{\RecordTupleCommonBegin}[5]{%
-    {\bf\tt\hyperB{#1}{#2}}%
+    {{\bf\tt\hyperB{#1}{#2}}}%
     \nobreak
     \par%
     \nobreak
@@ -104,7 +118,7 @@
     %
   %}
 }
-\def\AddDoc#1{}
+%\def\AddDoc#1{}
 
 \gdef\RecKey#1#2#3#4#5{%
     \par
@@ -129,7 +143,7 @@
     \vskip 2ex
     \DoubleRule
     \noindent%
-    record: \index{#2\ (R)}\RecordTupleCommonBegin{#1}{#2}{#3}{#4}{#5}
+    record: \IndexEntry{#2}{R}\RecordTupleCommonBegin{#1}{#2}{#3}{#4}{#5}
 }{%
   \vskip 2ex  
   \endgroup%
@@ -165,7 +179,7 @@
     \vskip 2ex
     \DoubleRule
     \noindent%
-    tuple: \index{#2 (T)}\RecordTupleCommonBegin{#1}{#2}{#3}{#4}{#5}
+    tuple: \IndexEntry{#2}{T}\RecordTupleCommonBegin{#1}{#2}{#3}{#4}{#5}
 }{%
   \vskip 2ex  
   \endgroup%
@@ -197,7 +211,7 @@
  \vskip 2ex
  \DoubleRule
  \noindent%
- abstract: \index{#2 (A)}{\bf\tt \hyperB{#1}{#2}}%
+ abstract: \IndexEntry{#2}{A}{\bf\tt \hyperB{#1}{#2}}%
  \ifstrempty{#3}{}{\hfill default descendant:{\tt #3}}%
  \par%
  \vskip 0.5ex
@@ -242,7 +256,7 @@
  \vskip 2ex
  \DoubleRule
  \noindent%
- selection type: \index{#2 (S)}{\bf\tt \hyperB{#1}{#2}}%
+ selection type: \IndexEntry{#2}{S}{\bf\tt \hyperB{#1}{#2}}%
  \par%
  \vskip 0.5ex
  \DoubleRule

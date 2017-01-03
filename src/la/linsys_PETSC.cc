@@ -30,7 +30,9 @@ namespace it = Input::Type;
 
 const it::Record & LinSys_PETSC::get_input_type() {
 	return it::Record("Petsc", "Interface to PETSc solvers. Convergence criteria is:\n"
-	        " ```norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )```\n"
+	        " ```\n"
+	        "norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )\n"
+	        "```\n"
 	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual.\n"
 	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used,\n"
 	        "otherwise the norm of preconditioned RHS is used.\n"
