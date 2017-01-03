@@ -106,11 +106,12 @@ class TexList(list):
         :type item: ist.nodes.TypeSelection or ist.nodes.TypeRecord or ist.nodes.TypeAbstract or Unicode
         """
         self._function_call(
-            func='Alink',
+            func='TypeLink',
             args=[item.href_id, text or item.href_name],
             mode=[self.TYPE_NONE, self.TYPE_PLAIN]
         )
 
+    '''
     def macro_alink_(self, url, text):
         t = TexList()
         t._function_call(
@@ -119,6 +120,7 @@ class TexList(list):
             mode=[self.TYPE_NAME, self.TYPE_PLAIN]
         )
         self.append(str(t))
+    '''
 
     def macro_hyper_b(self, item, text=None):
         """

@@ -12,22 +12,29 @@ class LatexRecordDefault(object):
     """
 
     @staticmethod
-    def raw_format(tex, default):
+    def default_format(tex, default):
         """
         :type tex: TexList
         :type default: ist.extras.TypeRecordKeyDefault
         """
-        tex.append('"')
-        tex.add(default.value, tex.TYPE_PLAIN)
-        tex.append('"')
+
+        tex.append(tex._SPACE)
+        tex._function_call(
+            func=tex._IT,
+            args=str(default.value).capitalize(),
+            mode=tex.TYPE_PLAIN
+        )
+        tex.append(tex._SPACE)
 
     @staticmethod
-    def textlangle_format(tex, default):
+    def at_readtime_format(tex, default):
         """
         :type tex: TexList
         :type default: ist.extras.TypeRecordKeyDefault
         """
-        tex.macro_text_lr_angle(str(default.value).capitalize())
+        tex.append('implicit value: "')
+        tex.add(default.value, tex.TYPE_PLAIN)
+        tex.append('"')
 
     @staticmethod
     def format(tex, default):
@@ -38,11 +45,11 @@ class LatexRecordDefault(object):
         LatexRecordDefault.format_rules.get(default.type).__func__(tex, default)
 
     format_rules = {
-        'value at read time': raw_format,
-        'value at declaration': textlangle_format,
-        'optional': textlangle_format,
-        'obligatory': textlangle_format,
-        'default': textlangle_format
+        'value at read time': at_readtime_format,
+        'value at declaration': default_format,
+        'optional': default_format,
+        'obligatory': default_format,
+        'default': default_format
     }
 
 
@@ -55,6 +62,7 @@ class LatexRecord(TexList):
     def format(self, record):
         """
         % begin{RecordType}
+        %       {<href id>}
         %       {<record name>}                 % name of the record, used for header and for hypertarget in form IT::<record name>
         %       {<parent abstract record>}      % possible parent abstract record
         %       {<default conversion key>}      % possible auto conversion key
@@ -76,8 +84,12 @@ class LatexRecord(TexList):
         # name
         self._newline()
         self._tab()
-        with self:
-            self.macro_hyper_b(record)
+        #with self:
+        self.add(record.href_id)
+        self._newline()
+        self._tab()
+        self.add(record.href_name, self.TYPE_PLAIN)
+            #self.macro_hyper_b(record)
         # implements
         self._newline()
         self._tab()
@@ -94,11 +106,11 @@ class LatexRecord(TexList):
         self.comment("reducible to key")
         # hyperlink into hand written text TODO
         # LATER it can removed since is not used anymore
-        self._newline()
-        self._tab()
-        with self:
-            pass
-        self.comment("OBSOLETE - hyperlink into hand written text")
+        #self._newline()
+        #self._tab()
+        #with self:
+        #    pass
+        #self.comment("OBSOLETE - hyperlink into hand written text")
         # description
         self._newline()
         self._tab()
@@ -109,7 +121,7 @@ class LatexRecord(TexList):
         for key in (record.keys or []):
             self._newline()
             self._tab(2)
-            with self.item_open('KeyItem'):
+            with self.item_open('RecKey'):
                 self.macro_key(key)
 
         self.end(self.latex_name)
@@ -121,8 +133,13 @@ class LatexRecord(TexList):
         # name
         self._newline()
         self._tab(3)
-        with self:
-            self.macro_hyper_b(record_key)
+        #with self:
+        #   self.macro_hyper_b(record_key)
+        self.add(record_key.href_id)
+        self._newline()
+        self._tab(3)
+        self.add(record_key.href_name, self.TYPE_PLAIN)
+
         # type
         self._newline()
         self._tab(3)
@@ -136,20 +153,21 @@ class LatexRecord(TexList):
             LatexRecordDefault.format(self, record_key.default)
         # hyperlink into hand written text TODO
         # LATER it can removed since is not used anymore
-        self._newline()
-        self._tab(3)
-        with self:
-            pass
-        self.comment("OBSOLETE - hyperlink into hand written text")
+        #self._newline()
+        #self._tab(3)
+        #with self:
+        #    pass
+        #self.comment("OBSOLETE - hyperlink into hand written text")
         # description
         self._newline()
         self._tab(3)
         with self:
-            d = self.description(record_key.description)
-            self.append(d)
+            self.append(self.description(record_key.description))
 
     def get_key_type(self, ref):
         if ref.input_type == InputType.MAIN_TYPE:
+            # selection, record, abstract, tuple
+
             self.add(str(ref.input_type).capitalize())
             self.add(': ')
             self.macro_alink(ref)
@@ -196,8 +214,13 @@ class LatexSelection(TexList):
         # name
         self._newline()
         self._tab()
-        with self:
-            self.macro_hyper_b(selection)
+        #with self:
+        #    self.macro_hyper_b(selection)
+        self.add(selection.href_id)
+        self._newline()
+        self._tab()
+        self.add(selection.href_name, self.TYPE_PLAIN)
+
         # description
         self._newline()
         self._tab()
@@ -209,7 +232,7 @@ class LatexSelection(TexList):
         for key in (selection.values or []):
             self._newline()
             self._tab(2)
-            with self.item_open('KeyItem'):
+            with self.item_open('SelectionItem'):
                 self.macro_value(key)
 
         self.end('SelectionType')
@@ -221,8 +244,12 @@ class LatexSelection(TexList):
         # name
         self._newline()
         self._tab(3)
-        with self:
-            self.macro_hyper_b(selection_value)
+        #with self:
+        #    self.macro_hyper_b(selection_value)
+        self.add(selection_value.href_id)
+        self._newline()
+        self._tab(3)
+        self.add(selection_value.href_name, self.TYPE_PLAIN)
         # description
         self._newline()
         self._tab(3)
@@ -251,16 +278,21 @@ class LatexAbstractRecord(TexList):
         # name
         self._newline()
         self._tab()
-        with self:
-            self.macro_hyper_b(abstract_record)
+        #with self:
+        #    self.macro_hyper_b(selection)
+        self.add(abstract_record.href_id)
+        self._newline()
+        self._tab()
+        self.add(abstract_record.href_name, self.TYPE_PLAIN)
+
         # descendant
         self._newline()
         self._tab()
         with self:
             if abstract_record.default_descendant:
                 self.macro_alink(abstract_record.default_descendant.get_reference())
-        with self:
-            self.macro_add_doc(abstract_record)
+        #with self:
+        #    self.macro_add_doc(abstract_record)
         # description
         self._newline()
         self._tab()
