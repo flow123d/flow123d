@@ -512,7 +512,15 @@ message(STATUS "=======================================================")
 # otherwise
 # we create link to src so python_loader is able to use modules
 set(PYTHON_EXTRA_MODULES_PATH lib/python/flow123d)
-flow_define(PYTHON_EXTRA_MODULES_PATH ../${PYTHON_EXTRA_MODULES_PATH})
+# PYTHONPATH is relative to cwd
+# need to make changes in c++ to correctly alter PYTHONPATH relative to binary location
+# for now, we also add absolute location
+# now it contains:
+#       relative path
+#       absolute path
+#       /opt/flow123d - for production
+#       /opt/flow123d/flow123d - for packaging
+flow_define(PYTHON_EXTRA_MODULES_PATH ../${PYTHON_EXTRA_MODULES_PATH}:${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH}:/opt/flow123d/${PYTHON_EXTRA_MODULES_PATH}:/opt/flow123d/flow123d/${PYTHON_EXTRA_MODULES_PATH})
 execute_process(COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/lib/python)
 if (COPY_INSTEAD_OF_SYMLINK)
 	execute_process(COMMAND
