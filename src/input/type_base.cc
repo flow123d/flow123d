@@ -200,11 +200,13 @@ FinishStatus Array::finish(FinishStatus finish_type) {
 FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 {
 	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(finish_status != FinishStatus::in_perform_).error("Recursion in the IST element: array_of_" + type_of_values_->type_name());
 
 	if (finish_status != FinishStatus::none_) return finish_status;
 
 
-	finish_status = finish_type;
+	finish_status = FinishStatus::in_perform_;
 
 	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) {
 		type_of_values_->finish(FinishStatus::generic_); // finish Instance object
@@ -216,6 +218,7 @@ FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 	type_of_values_->finish(finish_type);
 	ASSERT(type_of_values_->is_finished()).error();
 	if (finish_type == FinishStatus::delete_) type_of_values_.reset();
+	finish_status = finish_type;
 	return (finish_status);
 }
 

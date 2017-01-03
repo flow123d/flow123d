@@ -250,15 +250,15 @@ The installation process imports docker image into your machine and personalize 
 instructions for the Linux and the Windows operating systems are provided in the next two sections.
 
 \subsection{Installing Flow123d on Linux}
-Download the Linux installation package archive \verb'Flow123d-2.1.0-linux.tar.gz' and extract it into any folder using
+Download the Linux installation package archive \verb'Flow123d-<version>-linux-install.tar.gz' and extract it to any folder.
 the command
 \begin{verbatim}
-  > tar -xzf Flow123d-2.1.0-linux.tar.gz 
+  > tar -xzf Flow123d-<version>-linux-install.tar.gz 
 \end{verbatim}
-This will create a directory \verb'Flow123d-2.1.0-linux'. In the next step, navigate to the \verb'Flow123d-2.1.0-linux' directory
+This will create a directory \verb'Flow123d-<version>-linux-install'. In next step, navigate to \verb'Flow123d-<version>-linux-install' directory
 and execute the \verb'install.sh' script:
 \begin{verbatim}
-  > cd Flow123d-2.1.0-linux
+  > cd Flow123d-<version>-linux-install
   > ./install.sh
   Importing docker image 'flow/v2.0.0'
   Modifying docker image 'flow/v2.0.0'
@@ -278,8 +278,8 @@ Make sure \verb'powershell' command is in the system PATH.
  is determined by Windows version, but generally it is \\\verb'%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe'. To add
  this location to system PATH variable follow instructions \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft tutorial}.
 
-To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows.zip' and extract it to any folder.
-This will create a directory \verb'Flow123d-2.1.0-windows' navigate to that directory and execute \verb'install.bat' file.
+To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows-install.zip' and extract it to any folder.
+Navigate to directory \verb'Flow123d-<version>-windows-install' and execute the \verb'install.bat' file.
 Executing \verb'install.bat' will start an installation process which will:
 \begin{enumerate}
 	\item Install \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} to your system.
@@ -295,22 +295,43 @@ is installed along with Docker Toolbox.
 
 \subsection{Running Flow123d on Linux}
 \label{subsec:running-flow123d-on-linux}
-All necessary scripts for Flow123d are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-linux'.
+All necessary scripts for Flow123d are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-linux-install'.
 Docker container by default cannot easily interact with host file system. But using scripts in \verb'bin' will make things easier.
 Directory \verb'bin' contains:
 \begin{itemize}
 	\item \verb'fterm.sh' \\
-	 Script will invoke shell inside docker container and mount current directory into \verb'/cwd' directory.
+	 Script will invoke shell inside docker container and mount your home directory.
 	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
 
 	\item \verb'flow123d.sh' \\
-	 Script will run Flow123d inside docker container and mount current directory into \verb'/cwd' directory.
+	 Script will run Flow123d inside docker container and mount your home  directory.
 	 All arguments passed to this script will be passed to \verb'flow123d' binary file inside docker.
+
+	\item \verb'runtest.sh' \\
+	 Script will run Flow123d tests inside docker container and mount your home  directory.
+	 All arguments passed to this script will be passed to \verb'runtest.py' binary file inside docker.
 	 
 	\item \verb'configure' \\
 	 Script is part of installation process and it modifies imported image for current active user. It will create user inside docker
 	 with same name, user id and group id as current user.	 	 
 \end{itemize}
+
+\textbf{Note:}
+\textit{Using above} \verb'.sh' \textit{scripts will mount your your home  directory to docker container under the same name.}
+\textit{Also your current working directory will be the same. Example below shows behaviour of the scripts:}
+\begin{verbatim}
+$> pwd
+/home/jan-hybs/install-folder
+
+$> ls
+bin  data  doc	install.sh  tests
+
+$> bin/fterm.sh
+Home directory mounted to '/home/jan-hybs'
+
+jan-hybs@v2.0.0:/home/jan-hybs/install-folder$ ls
+bin  data  doc	install.sh  tests
+\end{verbatim}
 
 
 \subsection{Running Flow123d on Windows}
@@ -333,6 +354,12 @@ Directory \verb'bin' contains two \verb'bat' files:
 		> fterm.bat
 		me@v2.0.0 $ flow123d --help
 	\end{verbatim}
+
+	\item \verb'runtest.sh' see section \ref{subsec:running-flow123d-on-linux}	
+	
+	\item \verb'runtest.bat' \\
+	File serves as wrapper for script \verb'runtest.sh'. Executing this file will open up docker container shell and execute 
+	runtest script with given arguments.
 \end{itemize}
 
 \textbf{Note:}
@@ -341,7 +368,7 @@ Directory \verb'bin' contains two \verb'bat' files:
 
 \subsection{Flow123d arguments}
 When you are inside docker container, you have access to entire file system. Flow123d is installed in 
-\verb'/opt/flow123d/flow123d' directory. Folder \verb'/bin' contains binary files and is automatically 
+\verb'/opt/flow123d' directory. Folder \verb'/bin' contains binary files and is automatically 
 added to \verb'PATH' variable, meaning every executable in this folder can be called from anywhere.
 
 Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arguments:
@@ -379,7 +406,7 @@ Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arg
 All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options 
 use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
 
-Alternatively, you can use python script \verb'exec_parallel.py' located in \verb'bin/python' to start parallel jobs or limit resources used by the program.
+Alternatively, you can use python script \verb'exec_parallel' located in \verb'bin/python' to start parallel jobs or limit resources used by the program.
 
 After double dash specify which \verb'mpiexec' binary will be used (\verb'MPI-EXECUTABLE') and then specify what should be run. 
 The script does not need to run solely \verb'flow123d'.
@@ -420,6 +447,36 @@ The script has following options:
   		on PBS systems otherwise default PBS queue is used. Default PBS queue automatically
   		choose valid queue based on resources.
 \end{description}
+
+
+Another script which runs Flow123d is \verb'runtest.sh'. This script will run tests specified as arguments. Script accepts both folders
+and yaml files. To see full details run \verb'runtest.sh --help'. The script will run yaml tests and then compare results with reference
+output. Example usage of the script:
+
+\begin{verbatim}
+$> bin/runtest.sh -n 1 tests/10_darcy/01_source.yaml 
+...
+Case 01 of 02
+Running: 1 x 10_darcy/01_source
+Done    | elapsed time 0:00:00:898                                              
+    Comparison: 01 of 03 | 10_darcy: 01_source/flow.pvd (0.22kB)
+    Comparison: 02 of 03 | 10_darcy: 01_source/flow/flow-000000.vtu (0.63MB)
+    Comparison: 03 of 03 | 10_darcy: 01_source/water_balance.txt (0.32kB)
+------------------------------------------------------------
+Case 02 of 02
+Running: 2 x 10_darcy/01_source
+Done    | elapsed time 0:00:00:900                                              
+    Comparison: 01 of 03 | 10_darcy: 01_source/flow.pvd (0.22kB)
+    Comparison: 02 of 03 | 10_darcy: 01_source/flow/flow-000000.vtu (0.63MB)
+    Comparison: 03 of 03 | 10_darcy: 01_source/water_balance.txt (0.32kB)
+------------------------------------------------------------
+Summary: 
+    [ PASSED ]  | 1 x 10_darcy/01_source                        [ 1.40 sec] 
+    [ PASSED ]  | 2 x 10_darcy/01_source                        [ 1.41 sec] 
+    ------------------------------------------------------------
+    [ PASSED ]  | passed=2, failed=0, skipped=0 in [ 2.81 sec]
+
+\end{verbatim}
 
 
 

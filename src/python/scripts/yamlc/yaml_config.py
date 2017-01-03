@@ -67,6 +67,21 @@ class ConfigCase(object):
             )
         return 'process'
 
+    @property
+    def info(self):
+        """
+        Will try to gen test name and case name
+        from yaml file
+        :return: dict
+        """
+        if self.file:
+            parts = str(self.file).split('/')
+            return {
+                'test-name': parts[-2],
+                'case-name': parts[-1].split('.')[0],
+            }
+        return {}
+
     def to_json(self):
         return dict(
             cpu=self.proc,

@@ -223,7 +223,7 @@ FinishStatus Record::finish_status() const {
 
 
 bool Record::is_finished() const {
-    return data_->finish_status_ != FinishStatus::none_;
+    return (data_->finish_status_ != FinishStatus::none_) && (data_->finish_status_ != FinishStatus::in_perform_);
 }
 
 
@@ -237,12 +237,14 @@ bool Record::is_closed() const {
 FinishStatus Record::finish(FinishStatus finish_type)
 {
 	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name())(this->type_name()).error("Recursion in the IST element of type Record.");
 
 	if (this->is_finished()) return data_->finish_status_;
 
 	ASSERT(data_->closed_)(this->type_name()).error();
 
-    data_->finish_status_ = finish_type;
+    data_->finish_status_ = FinishStatus::in_perform_;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
 
@@ -287,6 +289,7 @@ FinishStatus Record::finish(FinishStatus finish_type)
         }
     }
 
+    data_->finish_status_ = finish_type;
     return (data_->finish_status_);
 }
 
