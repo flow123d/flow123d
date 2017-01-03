@@ -1,6 +1,6 @@
 % Various macros and environments for Flow123d manual
 \RequirePackage{textcomp}
-\RequirePackage{packages/etoolbox}
+\RequirePackage{etoolbox}
 \RequirePackage[backref]{hyperref}   % hypertext capabilities, should by last package
 \hypersetup{colorlinks=true, raiselinks=true}  %setup hyperef package
 
@@ -60,15 +60,16 @@
 \def\unitss#1#2#3{\ifstrempty{#1#2#3}{$-$}{$ \UNIT{kg}{#1}\UNIT{m}{#2}\UNIT{s}{#3} $}}	%without brackets
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RecordType environment
 %
 % usage:
 % \begin{RecordType}
+%       {<href id>}                     % hyper link target 
 %       {<record name>}                 % name of the record, used for header and for hypertarget in form IT::<record name>
 %       {<parent abstract record>}      % possible parent abstract record
 %       {<default conversion key>}      % possible auto conversion key
-%       {<link>}                        % possible hyperlink into hand written text
 %       {< record description>}         % description of the record
 %
 %       \KeyItem{<name>}                % name of the key
@@ -79,45 +80,56 @@
 %       ...
 % \end{RecordType}
 
-\def\AddDoc#1{}
+\newcommand{\DoubleRule}{%
+    \hrule%
+    \nobreak
+    \vskip 0.3ex%
+    \hrule%
+    \nobreak
+}
 
-\newenvironment{RecordType}[5]
-{
- \ifstrequal{#4}{\relax}{%
-    % turn off
-    \begingroup
-    \gdef\KeyItem##1##2##3##4##5{}
- }{
-    \par
-    \vskip 2ex
-    \hrule%
-    \vskip 0.3ex
-    \hrule
-    \noindent%
-    record: {\bf #1}%
-    \ifstrempty{#2}{}{ implements abstract type: #2}%
-    \ifstrempty{#3}{}{ constructible from key: #3}%
+\newcommand{\RecordTupleCommonBegin}[5]{%
+    {\bf\tt\hyperB{#1}{#2}}%
+    \nobreak
     \par%
-    \vskip 0.5ex
-    \hrule%
-    \vskip 0.3ex
-    \hrule
-    {#5#4}
+    \nobreak
+    \vskip 1ex
+    \nobreak
+    \DoubleRule
+    {#5}
+    \ifstrempty{#3}{}{\noindent implements abstracts: {\tt #3}}%
+    \ifstrempty{#4}{}{\par\noindent conversion from key: {\tt #4}}%
     \begingroup%records of steady field type which we describe right now 
     \addtolength{\leftskip}{3em}%
     %
-    \gdef\KeyItem##1##2##3##4##5{%
-        \par
-        \vskip 0.3ex
-        %\hrule%
-        \noindent%
-        \hspace{-3em}{\bf\tt ##1} = {\textlangle {\it ##2 }\textrangle}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
-        \par
-        Default: {##3}
-        \par
-        {##5##4}
-    }%
-  }
+  %}
+}
+\def\AddDoc#1{}
+
+\gdef\RecKey#1#2#3#4#5{%
+    \par
+    \vskip 0.3ex
+    %\hrule%
+    \noindent%
+    \hspace{-3em}{\bf\tt \hyperB{#1}{#2}} = {\textlangle {\it #3 }\textrangle}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
+    \par
+    Default: {#4}
+    \par
+    {#5}
+}%
+
+\newenvironment{RecordType}[5]
+{
+ %\ifstrequal{#4}{\relax}{%
+    % turn off
+ %   \begingroup
+    %\gdef\KeyItem##1##2##3##4##5{}
+ %}{
+    \par
+    \vskip 2ex
+    \DoubleRule
+    \noindent%
+    record: \index{#2\ (R)}\RecordTupleCommonBegin{#1}{#2}{#3}{#4}{#5}
 }{%
   \vskip 2ex  
   \endgroup%
@@ -144,41 +156,16 @@
 
 \newenvironment{TupleType}[5]
 {
- \ifstrequal{#4}{\relax}{%
+% \ifstrequal{#4}{\relax}{%
     % turn off
-    \begingroup
-    \gdef\KeyItem##1##2##3##4##5{}
- }{
+%    \begingroup
+    %\gdef\KeyItem##1##2##3##4##5{}
+% }{
     \par
     \vskip 2ex
-    \hrule%
-    \vskip 0.3ex
-    \hrule
+    \DoubleRule
     \noindent%
-    tuple: {\bf #1}%
-    \ifstrempty{#2}{}{ implements abstract type: #2}%
-    \ifstrempty{#3}{}{ constructible from key: #3}%
-    \par%
-    \vskip 0.5ex
-    \hrule%
-    \vskip 0.3ex
-    \hrule
-    {#5#4}
-    \begingroup%records of steady field type which we describe right now 
-    \addtolength{\leftskip}{3em}%
-    %
-    \gdef\KeyItem##1##2##3##4##5{%
-        \par
-        \vskip 0.3ex
-        %\hrule%
-        \noindent%
-        \hspace{-3em}{\bf\tt ##1} = {\textlangle {\it ##2 }\textrangle}% \hfill \makebox[0.4\textwidth][l]{DEFAULT: {##3}\hfil}%
-        \par
-        Default: {##3}
-        \par
-        {##5##4}
-    }%
-  }
+    tuple: \index{#2 (T)}\RecordTupleCommonBegin{#1}{#2}{#3}{#4}{#5}
 }{%
   \vskip 2ex  
   \endgroup%
@@ -191,40 +178,37 @@
 % \begin{AbstractType}
 %       {<record name>}
 %       {<default descendant>}
-%       {<link>}
 %       {<description>}         % Description paragraph of the abstract type.
 %       \Descendant{<type name>}
 % \end{AbstractType}
 
-\newenvironment{AbstractType}[3]
-{\par
- \vskip 2ex
- \hrule%
- \vskip 0.3ex
- \hrule
- \noindent%
- abstract type: {\bf #1}%
- \ifstrempty{#2}{}{ default descendant: #2}%
- \par%
- \vskip 0.5ex
- \hrule%
- \vskip 0.3ex
- \hrule
- #3
- \par\noindent
- Descendants:
- \par
- \begingroup%records of steady field type which we describe right now 
-  \addtolength{\leftskip}{3em}%
-  %
-  \gdef\Descendant##1{%
+\gdef\Descendant#1{%
     \par
     \vskip 0.3ex
     %\hrule%
     \noindent%
-    \hspace{-3em}{\bf\tt ##1}%
+    \hspace{-3em}{\bf\tt #1}%
     \par
-  }%
+}%
+
+
+\newenvironment{AbstractType}[4]
+{\par
+ \vskip 2ex
+ \DoubleRule
+ \noindent%
+ abstract: \index{#2 (A)}{\bf\tt \hyperB{#1}{#2}}%
+ \ifstrempty{#3}{}{\hfill default descendant:{\tt #3}}%
+ \par%
+ \vskip 0.5ex
+ \DoubleRule
+ #4
+ \par\noindent
+ {\bf implementations:}
+ \par
+ \begingroup%records of steady field type which we describe right now 
+  \addtolength{\leftskip}{3em}%
+  %
 }{%
   \vskip 0.7ex  
   \endgroup%
@@ -234,39 +218,41 @@
 % SelectionType environment
 %
 % usage:
-% \begin{SelectionType}{<selection name>}{< selection description>}    
+% \begin{SelectionType}
+%        {<selection href id>}
+%        {<selection name>}
+%        {< selection description>}    
 %       \KeyItem{<value name>}{<value>}
 %       Key value description.
 % \end{SelectionType}
 
-\newenvironment{SelectionType}[2]
+
+\gdef\SelectionItem#1#2#3{%
+    \par
+    \vskip 0.3ex
+    %\hrule%
+    \noindent%
+    \hspace{-3em}{\bf\tt \hyperB{#1}{#2}} : { #3 }%%
+    \par
+}%
+
+
+\newenvironment{SelectionType}[3]
 {\par
  \vskip 2ex
- \hrule%
- \vskip 0.3ex
- \hrule
+ \DoubleRule
  \noindent%
- selection type: {\bf #1}%
+ selection type: \index{#2 (S)}{\bf\tt \hyperB{#1}{#2}}%
  \par%
  \vskip 0.5ex
- \hrule%
- \vskip 0.3ex
- \hrule
- {#2}
+ \DoubleRule
+ {#3}
  
  Possible values:
  \par
  \begingroup%records of steady field type which we describe right now 
   \addtolength{\leftskip}{3em}%
   %
-  \gdef\KeyItem##1##2{%
-    \par
-    \vskip 0.3ex
-    %\hrule%
-    \noindent%
-    \hspace{-3em}{\bf\tt ##1} : { ##2 }%%
-    \par
-  }%
 }{%
   \vskip 0.7ex  
   \endgroup%

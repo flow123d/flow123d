@@ -128,6 +128,7 @@ TUTORIALS_TEX=$(TUTORIALS_IN_DOC:.yaml=.tex)
 # It tries to update tutorials and input reference file.
 .PHONY: ref-doc
 ref-doc: update-input-ref update-tutorials
+	echo "This rule just build PDF. Use 'update-input-ref' to update 'input_refecence.tex'.
 	mkdir -p $(BUILD_DIR)/doc/reference_manual
 	cd $(BUILD_DIR)/doc/reference_manual && cmake -D TUTORIALS="$(TUTORIALS_TEX)" $(SOURCE_DIR)/doc/reference_manual
 	make -C $(BUILD_DIR)/doc/reference_manual pdf
