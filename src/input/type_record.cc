@@ -113,8 +113,10 @@ Record::Record(const Record & other)
 
 Record::Record(const string & type_name_in, const string & description)
 : data_( std::make_shared<RecordData>(type_name_in, description) )
-
-{}
+{
+	data_->declare_key("TYPE", std::make_shared<String>(), Default( "\""+type_name()+"\"" ),
+	        "Sub-record Selection.", TypeBase::attribute_map());
+}
 
 
 TypeBase::TypeHash Record::content_hash() const
@@ -192,16 +194,11 @@ void Record::make_copy_keys(Record &origin) {
 
 Record &Record::derive_from(Abstract &parent) {
 	ASSERT( parent.is_closed() )(parent.type_name()).error();
-	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name())
-			.error("Derived record can have defined only TYPE key!");
+	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
+			.error("Derived record must have defined TYPE key!");
 
 	// add Abstract to vector of parents
 	data_->parent_vec_.push_back( std::make_shared<Abstract>(parent) );
-
-	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", std::make_shared<String>(), Default( "\""+type_name()+"\"" ),
-    	        "Sub-record Selection.", TypeBase::attribute_map());
-    }
 
 	return *this;
 }
@@ -326,18 +323,18 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key() {
+/*Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0).error("Declaration of TYPE key must be carried as the first.");
 	data_->declare_key("TYPE", std::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.", TypeBase::attribute_map());
 	return *this;
-}
+}*/
 
-Record &Record::has_obligatory_type_key() {
+/*Record &Record::has_obligatory_type_key() {
 	ASSERT(! data_->parent_vec_.size()).error("Record with obligatory TYPE key can't be derived");
 	declare_type_key();
 	return *this;
-}
+}*/
 
 Record &Record::add_attribute(std::string key, TypeBase::json_string value) {
     this->add_attribute_(key, value);

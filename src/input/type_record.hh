@@ -391,7 +391,7 @@ public:
      *
      * This method can't be used for derived record.
      */
-    Record &has_obligatory_type_key();
+    //Record &has_obligatory_type_key();
 
     Record &add_attribute(std::string key, TypeBase::json_string value);
 
@@ -424,7 +424,7 @@ protected:
      *
      * TYPE key must be declared as first key of Record.
      */
-    Record &declare_type_key();
+    //Record &declare_type_key();
 
     /**
      * @brief Set parent Abstract of Record.
