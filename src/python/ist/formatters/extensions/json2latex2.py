@@ -170,11 +170,15 @@ class LatexRecord(TexList):
 
             self.add(str(ref.input_type).capitalize())
             self.add(': ')
-            self.macro_alink(ref)
+            # always point to generic root
+            # if no generic type exists point to this reference
+            self.macro_alink(ref.get_generic_root())
         elif ref.input_type == InputType.ARRAY:
             name = "Array {range} of ".format(range=ref.range)
             self.add(name)
-            self.get_key_type(ref.subtype.target)
+            # always point to generic root
+            # if no generic type exists point to this reference
+            self.get_key_type(ref.subtype.target.get_generic_root())
         else:
             ref_range = (' ' + str(ref.get('range') or '')).rstrip()
             name = str(ref.input_type).capitalize()
@@ -334,19 +338,15 @@ class LatexFormatter(object):
     @staticmethod
     def format(items):
         tex = TexList()
-
         Logger.instance().info('Processing items...')
         for item in items:
             # do no format certain objects
+            Logger.instance().info('processing: %s (%s)' % (item, item.href_id))
             if not item.include_in_format():
-                Logger.instance().info(' - item skipped: %s' % str(item))
+                Logger.instance().info('  - skipped')
                 continue
 
-            Logger.instance().info(' - formatting item: %s' % str(item))
-            # l = LatexRecord()
-            # l.format(item)
-            # print l
-            # exit()
+            Logger.instance().info('  +++ formatting +++')
             fmt = LatexFormatter.get_formatter_for(item)
             if fmt is not None:
                 fmt.format(item)
