@@ -120,7 +120,6 @@ protected:
 
 const IT::Record & AdHocDataTest::get_in_rec1() {
 	return IT::Record("Record 1","")
-		.declare_key("TYPE", IT::String(), IT::Default("\"Record 1\""), "")
 		.declare_key("val_1", IT::Integer(0), "value 1" )
 		.close();
 }
@@ -154,7 +153,6 @@ const IT::Abstract & AdHocDataTest::get_ancestor() {
 
 const IT::Record & AdHocDataTest::get_in_rec2() {
 	return IT::Record("Record 2","")
-		.declare_key("TYPE", IT::String(), IT::Default("\"Record 2\""), "")
 		.declare_key("val_2", IT::Integer(0), "value 2" )
 		.close();
 }
@@ -174,5 +172,5 @@ using namespace Input::Type;
 	EXPECT_EQ( 2, AdHocDataTest::get_in_rec2().size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_1().child_size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_2().child_size());
-	EXPECT_EQ( 2, AdHocDataTest::get_rec().size());
+	EXPECT_EQ( 3, AdHocDataTest::get_rec().size());
 }
