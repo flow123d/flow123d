@@ -129,16 +129,12 @@ class Html2Latex(object):
             self.extend_children()
             self.add_tail()
 
-        # so far, code tag will be monospaced only
         elif self.tag_is('code'):
-            # self.tex.open_element ('lstlisting')
-            # self.tex.newline ()
-            self.tex.slash('ttfamily ')
-            self.tex.append(self.text().replace('\$', '\$'))
-            # self.extend_children ()
-            # self.tex.newline ()
-            # self.tex.close_element ('lstlisting')
-            # self.add_tail ()
+            self.tex.append('\\begin{ttfamily}')
+            self.tex.append(self.text())
+            self.extend_children()
+            self.tex.append('\\end{ttfamily}')
+            self.add_tail()
 
         elif self.tag_is('span'):
             self.tex.append(self.text())
