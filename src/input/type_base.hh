@@ -73,10 +73,11 @@ DECLARE_EXCEPTION( ExcUnknownDescendant, << "Unknown descendant of TypeBase clas
  *  - type of executing finish
  */
 enum FinishStatus {
-	none_,      //< unfinished element / this type can't be used as type of finish
-	regular_,   //< finished element of IST / finish of IST executed recursively from root element
-	generic_,   //< finished element in generic subtree / finish of generic subtree (executed from Instance object)
-	delete_     //< finished element marked as deleted (that doesn't appear in IST) / finish of unused elements (that can be removed)
+	none_,        //< unfinished element / this type can't be used as type of finish
+	in_perform_,  //< finish of element performs (used in recursion check) / this type can't be used as type of finish
+	regular_,     //< finished element of IST / finish of IST executed recursively from root element
+	generic_,     //< finished element in generic subtree / finish of generic subtree (executed from Instance object)
+	delete_       //< finished element marked as deleted (that doesn't appear in IST) / finish of unused elements (that can be removed)
 };
 
 
@@ -198,7 +199,7 @@ public:
      */
     virtual FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_)
     {
-    	ASSERT(finish_type != FinishStatus::none_).error();
+    	ASSERT((finish_type != FinishStatus::none_) && (finish_type != FinishStatus::in_perform_)).error();
     	return finish_type;
     };
 
@@ -397,7 +398,7 @@ public:
 
     /// Override @p Type::TypeBase::is_finished.
     bool is_finished() const override {
-        return data_->finish_status != FinishStatus::none_; }
+        return (data_->finish_status != FinishStatus::none_) && (data_->finish_status != FinishStatus::in_perform_); }
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {

@@ -11,21 +11,28 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import test_scripts
 test_scripts.fix_paths()
 # ----------------------------------------------
+import utils.argparser as argparser
 from scripts.core.threads import ResultHolder
 from scripts.pbs.modules.local_pbs import Module
 # ----------------------------------------------
 
 
 def runtest_call(*args, **kwargs):
-    from runtest import parser as runtest_parser
+    import runtest
     from scripts.runtest_module import do_work as runtest_do_work
-    return runtest_do_work(runtest_parser, list(args), kwargs.get('debug', False))
+
+    parser = runtest.create_parser()
+    arg_options = argparser.Parser.parse_runtest(parser, list(args))
+    return runtest_do_work(arg_options, kwargs.get('debug', False))
 
 
 def exec_call(*args, **kwargs):
-    from exec_parallel import parser as exec_parser
+    import exec_parallel
     from scripts.exec_parallel_module import do_work as exec_do_work
-    return exec_do_work(exec_parser, list(args), kwargs.get('debug', False))
+
+    parser = exec_parallel.create_parser()
+    arg_options = argparser.Parser.parse_exec_parallel(parser, list(args))
+    return exec_do_work(arg_options, kwargs.get('debug', False))
 
 
 # grab current dir and set path to local mock

@@ -3,12 +3,13 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 import shutil
+import importlib
 # ----------------------------------------------
+import scripts.comparisons.modules as modules
 from scripts.core.base import Paths, Printer
 from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread, MultiThreads
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.prescriptions import AbstractRun
-from scripts.comparisons import file_comparison
 from scripts.yamlc import REF_OUTPUT_DIR
 # ----------------------------------------------
 
@@ -18,9 +19,21 @@ class LocalRun(AbstractRun):
     Class LocalRun creates PyPy object and creates comparison threads
     """
 
+    module_path = 'scripts.comparisons.modules'
+
     def __init__(self, case):
         super(LocalRun, self).__init__(case)
         self.progress = False
+
+    @classmethod
+    def get_module(cls, compare_method):
+        """
+        :rtype: scripts.comparisons.modules.ExecComparison | scripts.comparisons.modules.InPlaceComparison
+        """
+        try:
+            package = importlib.import_module('{}.{}'.format(cls.module_path, compare_method))
+            return getattr(package, compare_method)()
+        except: return None
 
     def create_pypy(self, arg_rest):
         executor = BinExecutor(self.get_command(arg_rest))
@@ -42,7 +55,7 @@ class LocalRun(AbstractRun):
 
         for check_rule in self.case.check_rules:
             method = str(check_rule.keys()[0])
-            module = getattr(file_comparison, 'Compare{}'.format(method.capitalize()), None)
+            module = self.get_module(method)
             comp_data = check_rule[method]
             if not module:
                 Printer.all.err('Warning! No module for check_rule method "{}"', method)
@@ -51,8 +64,19 @@ class LocalRun(AbstractRun):
             pairs = self._get_ref_output_files(comp_data)
             if pairs:
                 for pair in pairs:
-                    command = module.get_command(*pair, **comp_data)
-                    pm = PyPy(BinExecutor(command), progress=True)
+
+                    # load module and determine whether we are dealing with
+                    # exec comparison or inplace comparison
+                    if issubclass(module.__class__, modules.ExecComparison):
+                        command = module.get_command(*pair, **comp_data)
+                        pm = PyPy(BinExecutor(command), progress=True)
+                        pm.executor.output = OutputMode.variable_output()
+                    else:
+                        module = self.get_module(method)
+                        module.prepare(*pair, **comp_data)
+                        pm = PyPy(module, progress=True)
+                        pm.executor.output = OutputMode.dummy_output()
+                        pm.error_monitor.deactivate()
 
                     # if we fail, set error to 13
                     pm.custom_error = 13
@@ -64,9 +88,6 @@ class LocalRun(AbstractRun):
 
                     pm.error_monitor.message = 'Comparison using method {} failed!'.format(method)
                     pm.error_monitor.indent = 1
-
-                    # catch output
-                    pm.executor.output = OutputMode.variable_output()
                     pm.full_output = self.case.fs.ndiff_log
 
                     path = Paths.path_end_until(pair[0], REF_OUTPUT_DIR)

@@ -125,6 +125,8 @@ int Abstract::add_child(const Record &subrec)
 
 FinishStatus Abstract::finish(FinishStatus finish_type) {
 	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(child_data_->finish_status_ != FinishStatus::in_perform_)(this->type_name()).error("Recursion in the IST element of type Abstract.");
 
 	if (this->is_finished()) return child_data_->finish_status_;
 
@@ -133,7 +135,7 @@ FinishStatus Abstract::finish(FinishStatus finish_type) {
 	child_data_->selection_of_childs->close();
 	child_data_->selection_of_childs->finish();
 
-	child_data_->finish_status_ = finish_type;
+	child_data_->finish_status_ = FinishStatus::in_perform_;
 
 	for (auto &child : child_data_->list_of_childs) {
 		if ((finish_type != FinishStatus::generic_) && child.is_root_of_generic_subtree())
@@ -157,6 +159,8 @@ FinishStatus Abstract::finish(FinishStatus finish_type) {
 		}
     }
 
+    child_data_->finish_status_ = finish_type;
+
 	return (child_data_->finish_status_);
 }
 
@@ -173,7 +177,7 @@ FinishStatus Abstract::finish_status() const {
 
 
 bool Abstract::is_finished() const {
-    return child_data_->finish_status_ != FinishStatus::none_;
+    return (child_data_->finish_status_ != FinishStatus::none_) && (child_data_->finish_status_ != FinishStatus::in_perform_);
 }
 
 

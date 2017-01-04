@@ -144,7 +144,8 @@ people:
  \item Numbers starting with digit zero are interpreted as octal numbers. 
 \end{itemize}
 
-\subsection{Flow123d specific constructs}
+\subsection{Flow123d input types}
+\label{sec:input_types}
 Flow123d have a subsystem for definition of the structure of the input file including preliminary checks for the 
 correctness of the values. This subsystem works with elementary data types:
 \begin{itemize}
@@ -298,31 +299,35 @@ some special input constructions.
  \begin{center}
  \includegraphics[scale=0.4]{\fig/input_subsystem.pdf}
  % input_subsystem.pdf: 0x0 pixel, -2147483648dpi, 0.00x0.00 cm, bb=
- \caption{Sturucture of the input subsystem. Grey boxes are not implemented yet.}
+ \caption{Sturucture of the input subsystem. HDF5 format not yet supported.}
  \label{fig:input_subsystem}
  \end{center}
 \end{figure}
 
-
-\tbd{JAN BŘEZINA UPDATE}
 The input subsystem of Flow123d is designed with the aim to provide uniform initialization of 
 C++ classes and data structures. The scheme of the input is depicted on Figure \ref{fig:input_subsystem}.
-The structure of the input is described by the Input Structure Tree (IST) of (usually static) objects which follows the structure of the classes.
-The data from an input file are read by apropriate reader, their structure is checked against ITT and they are pushed into the Internal Storage Buffer (ISB).
-An accessor object to the root data record is the result of the file reading. The data can be retrieved through accessors which combine 
-raw data stored in in IBS with their meaning described in ITT. ITT can be printed out in various formats providing description of the input structure both for 
-humans and other software.
+The structure of the input file is described by the Input Structure Tree (IST) consisting of the input objects describing 
+the types discussed in the previous Section \ref{sec:input_types}. The structure of the tree mostly follows follows the structure of the computational classes.
 
-Currently, the JSON input file format is only implemented and in fact it is slight extension of the JSON file format. On the other hand
-the data for initialization of the C++ data structures are coded in particular way. Combination of this extension and restriction of the JSON file format produce 
-what we call CON (C++ object notation) file format.
+When reading the input file, the file is first parsed by the specific format parser. Using a common interface to the parsed data, the 
+structure of the data is checked against the IST and the data are pushed into the storage tree. If the input data and IST do not match
+the automatic conversions described above are applied, where appropriate.
+An accessor object to the root data record is the result of the file reading. The data can be retrieved through the 
+accessors which combine raw data of the storage with their meaning described in IST. The IST can be written out in the JSON format
+providing the description of the input file structure. This IST file is used both for generation of the input reference in HTML and \LaTeX
+formats and for the Model editor --- specialized editor for the input file that is part of the GeoMop tools currently in development.
+
+While the recommended format of the input file is YAML the JSON format can be used as well. This may be useful in particular if the input file
+should be machine generated. Although the JSON format is technically subset of the YAML format. We use separate parser and use special keys in order to
+mimic tags and references supported by the YAML. The type of an abstract is specified by the key \verb'TYPE'. A reference is given by a record with the only key 
+\verb'REF' which contains a string specifying the address of the value that should be substituted.
+
 
 
 \section{Important Record Types of Flow123d Input}
 Complete description of the input structure tree can be generated into HTML or LaTeX format. While the former one provides better interactivity 
 through the hyperlinks the later one is part of this user manual. The generated documentation provides whole details for all keys, but 
 it may be difficult to understand the concept of the input structures. This section is aimed to provide this higher level picture.
-
 
 \subsection{Mesh Record}
 \label{sec:Mesh}
