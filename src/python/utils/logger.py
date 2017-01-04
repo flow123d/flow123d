@@ -16,6 +16,7 @@ class Logger(object):
     """
 
     _global_logger = None
+    level = 'warning'
 
     @staticmethod
     def instance():
@@ -23,7 +24,7 @@ class Logger(object):
         :rtype : Logger
         """
         if Logger._global_logger is None:
-            log_level = 'warning'
+            log_level = Logger.level
             try:
                 for index in range(len(sys.argv)):
                     arg = str(sys.argv[index])
@@ -37,11 +38,24 @@ class Logger(object):
             log_level = getattr(logging, log_level.upper())
 
             # set global log level
-            fmt = logging.Formatter('%(asctime)s %(name)-15s %(levelname)s: %(message)s')
+            fmt = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
             logging.root.setLevel(log_level)
             Logger._global_logger = Logger('ROOT', log_level, fmt)
 
         return Logger._global_logger
+
+    @classmethod
+    def __loc(cls):
+        frame = sys._getframe(2)
+        loc = frame.f_code.co_filename
+        line = frame.f_lineno
+        # return 'File "%s", line %d ' % (loc, line)
+        loc = loc.split('/')
+        if 'python' in loc:
+            i = loc.index('python')
+            return '/'.join(loc[i-1:]) + ':' + str(frame.f_lineno)
+        return '/'.join(loc) + ':' + str(frame.f_lineno)
+
 
     def __init__(self, name, level=logging.INFO, fmt=None):
         self.logger = logging.getLogger(name)
@@ -69,6 +83,7 @@ class Logger(object):
         method('Traceback:\n' + '\n'.join(tb))
 
     def error(self, msg, *args, **kwargs):
+        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
         self.logger.error(msg, *args, **kwargs)
         self._log_traceback(self.logger.error)
 
@@ -76,10 +91,13 @@ class Logger(object):
         self.logger.exception(msg, exc_info=exception, *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
+        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
         self.logger.info(msg, *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
+        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
         self.logger.debug(msg, *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
+        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
         self.logger.warning(msg, *args, **kwargs)
