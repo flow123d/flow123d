@@ -7,6 +7,7 @@ from ist.globals import Globals, FormatMode
 from ist.base import Parsable, Field, List, Dict, InputType
 from ist.utils.htmltree import htmltree
 from ist.utils.texlist2 import TexList
+from utils.logger import Logger
 
 
 class TypeReference(Parsable):
@@ -118,7 +119,10 @@ class TypeRecordKey(Parsable):
         self.description = None
 
     def include_in_format(self):
-        return self.key != 'TYPE'
+        if self.key.find('TYPE') != -1:
+            Logger.instance().info('  - item starts with TYPE')
+            return False
+        return True
 
     @property
     def href_id(self):

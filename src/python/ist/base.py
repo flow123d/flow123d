@@ -31,6 +31,9 @@ class InputType(object):
     MAIN_TYPE = SELECTION | RECORD | ABSTRACT | TUPLE
 
     def __eq__(self, other):
+        if other is None:
+            return False
+
         if type(other) is int:
             return bool(self.value & other)
 
@@ -159,12 +162,26 @@ class Parsable(object):
 
     def include_in_format(self):
         input_type = getattr(self, 'input_type', None)
-        return input_type is not None and input_type == InputType.MAIN_TYPE and not self.has_generic_link()
+        name = getattr(self, 'name', '')
+
+        if not (input_type == InputType.MAIN_TYPE):
+            Logger.instance().info('  - item is not main type ')
+            return False
+
+        if self.has_generic_link():
+            Logger.instance().info('  - item contains generic link')
+            return False
+
+        return name != 'EmptyRecord'
 
     def has_generic_link(self):
         return getattr(self, 'generic_type', None) is not None
 
     def get_generic_root(self):
+        """
+        return generic root of this object
+        :rtype: Parsable
+        """
         root = self
         while True:
             try:
@@ -188,8 +205,8 @@ class Parsable(object):
         # if getattr(self, 'unique_name', None):
         #     return self.unique_name
 
-        if getattr(self, 'name', None):
-            return self.name
+        # return self.href_id
+        return getattr(self, 'name', None)
 
     @property
     def href_id(self):
