@@ -255,7 +255,7 @@ public:
 			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
 	 @endcode
      */
-    int add_child(const Record &subrec);
+    int add_child(Record &subrec);
 
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
@@ -316,7 +316,7 @@ public:
 	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Add inherited Record.
-    AdHocAbstract &add_child(const Record &subrec);
+    AdHocAbstract &add_child(Record &subrec);
 
 protected:
     /// Reference to ancestor Abstract

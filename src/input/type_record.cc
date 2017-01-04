@@ -197,6 +197,14 @@ Record &Record::derive_from(Abstract &parent) {
 	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
 			.error("Derived record must have defined TYPE key!");
 
+	// check if parent exists in parent_vec_ vector
+	TypeHash hash = parent.content_hash();
+	for (auto &parent : data_->parent_vec_) {
+		if ( parent->content_hash() == hash ) {
+			return *this;
+		}
+	}
+
 	// add Abstract to vector of parents
 	data_->parent_vec_.push_back( std::make_shared<Abstract>(parent) );
 
@@ -297,7 +305,6 @@ Record &Record::close() const {
     Record & rec = *( Input::TypeRepository<Record>::get_instance().add_type( *this ) );
     for (auto &parent : data_->parent_vec_) {
     	parent->add_child(rec);
-    	rec.add_parent(*parent);
     }
 
     return rec;
@@ -381,7 +388,7 @@ Record Record::deep_copy() const {
 }
 
 
-const Record &Record::add_parent(Abstract &parent) const {
+/*const Record &Record::add_parent(Abstract &parent) const {
 	ASSERT( parent.is_closed() )(parent.type_name()).error();
 
 	// check if parent exists in parent_vec_ vector
@@ -400,7 +407,7 @@ const Record &Record::add_parent(Abstract &parent) const {
 	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
 	return *this;
-}
+}*/
 
 
 Record &Record::root_of_generic_subtree() {

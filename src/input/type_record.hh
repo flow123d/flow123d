@@ -433,7 +433,7 @@ protected:
      * in Abstract::finish() and refill @p parent_vec_ vector of correct parents (for complete
      * mechanism of set parent and descendant see \p derive_from)
      */
-    const Record &add_parent(Abstract &parent) const;
+    //const Record &add_parent(Abstract &parent) const;
 
     /**
      * @brief Set data of Instance of generic type.

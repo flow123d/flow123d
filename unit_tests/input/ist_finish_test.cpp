@@ -114,7 +114,7 @@ class AbstractAddChildTest {
 public:
 	static IT::Record &get_root_rec();
 	static IT::Abstract &get_abstract();
-	static const IT::Record &get_desc();
+	static IT::Record &get_desc();
 };
 
 IT::Record &AbstractAddChildTest::get_root_rec() {
@@ -132,7 +132,7 @@ IT::Abstract &AbstractAddChildTest::get_abstract() {
 	return abstr;
 }
 
-const IT::Record &AbstractAddChildTest::get_desc() {
+IT::Record &AbstractAddChildTest::get_desc() {
     return IT::Record("Descendant","")
             .declare_key("int_val", IT::Integer(), IT::Default("0"), "")
             .declare_key("desc", IT::String(), IT::Default::obligatory(), "Description.")
