@@ -266,7 +266,8 @@ TEST_F(InputInterfaceTest, RecordFind) {
     Record record(addr, *main);
 
     Address addr_child_rec( *(addr.down(1)) );
-    const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( main->begin()->type_.get() );
+    Type::Record::KeyIter key_it = main->begin();
+    const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( (++key_it)->type_.get() );
     Record record_child_rec(addr_child_rec, *child_type_rec );
 
     EXPECT_EQ("/some_record", record_child_rec.address_string() );
