@@ -7,6 +7,8 @@
 #include <flow_gtest.hh>
 
 #include "input/input_type.hh"
+#include "input/reader_to_storage.hh"
+#include "input/accessors.hh"
 
 namespace IT = Input::Type;
 
@@ -105,5 +107,55 @@ TEST(ISTFinish, complex_default_val) {
 	EXPECT_EQ( 3, DefaultValuesTest::get_desc().size() ); // touch of record simulates registrar
 	IT::Record root = DefaultValuesTest::get_root_rec();
 	root.finish();
+}
+
+
+class AbstractAddChildTest {
+public:
+	static IT::Record &get_root_rec();
+	static IT::Abstract &get_abstract();
+	static const IT::Record &get_desc();
+};
+
+IT::Record &AbstractAddChildTest::get_root_rec() {
+    return IT::Record("RootRecord","")
+            .declare_key("problem", AbstractAddChildTest::get_abstract(), IT::Default::obligatory(), "")
+            .declare_key("int_value", IT::Integer(), "")
+			.close();
+}
+
+IT::Abstract &AbstractAddChildTest::get_abstract() {
+	static IT::Abstract abstr = IT::Abstract("Abstract2","")
+		.close();
+	abstr.add_child( AbstractAddChildTest::get_desc() );
+
+	return abstr;
+}
+
+const IT::Record &AbstractAddChildTest::get_desc() {
+    return IT::Record("Descendant","")
+            .declare_key("int_val", IT::Integer(), IT::Default("0"), "")
+            .declare_key("desc", IT::String(), IT::Default::obligatory(), "Description.")
+			.close();
+}
+
+const string read_input_yaml = R"YAML(
+problem: !Descendant
+  int_val: 1
+  desc: Test case
+int_value: 10
+)YAML";
+
+TEST(ISTFinish, abstract_add_child) {
+	EXPECT_EQ( 3, AbstractAddChildTest::get_desc().size() );
+
+	Input::ReaderToStorage json_reader( read_input_yaml, AbstractAddChildTest::get_root_rec(), Input::FileFormat::format_YAML);
+	Input::Record rec=json_reader.get_root_interface<Input::Record>();
+	EXPECT_EQ(10, *(rec.find<int>("int_value")) );
+	Input::AbstractRecord problem_arec = rec.val<Input::AbstractRecord>("problem");
+	Input::Record problem_rec = Input::Record(problem_arec);
+	EXPECT_EQ(1, *(Input::Record(problem_arec).find<int>("int_val")) );
+	EXPECT_EQ("Test case", *(problem_rec.find<std::string>("desc")) );
+	EXPECT_EQ("Descendant", *(problem_rec.find<std::string>("TYPE")) );
 }
 
