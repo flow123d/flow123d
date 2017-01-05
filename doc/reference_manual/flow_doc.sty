@@ -58,10 +58,11 @@
 }
 
 \def\IndexEntry#1#2{%
+    \noexpandarg
     \StrSubstitute{#1}{:}{!}[\indexstr]%
     %{\indexstr{} (#2)}
-    %\index{\indexstr{} (#2)}
-    \index{#1 (#2)}
+    \index{\indexstr{} [#2]}
+    %\index{#1 (#2)}
 }
 \indexsetup{othercode=\ttfamily}
 
