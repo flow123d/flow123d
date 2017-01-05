@@ -1,0 +1,44 @@
+#################
+# Goal: Test correct change of the extension and avoiding filename collisions.
+# Author: Jan Brezina
+# Reference: Just run
+
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Example 1 of real locality - column 1D model
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_40el.msh
+  # just trivial flow problem  
+  flow_equation: !Flow_Darcy_MH
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+            value: "x"
+    nonlinear_solver:
+        linear_solver: !Petsc
+    # this should create, "flow.pvd file and flow directory"
+    output_stream:
+      file: flow.msh
+      format: !vtk
+        variant: ascii
+    output:
+      fields:
+        - pressure_p0
+  # just trivial solute problem
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: .BOUNDARY
+          bc_conc: 1
+    # this should create, "flow.msh file"
+    output_stream: 
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+      times:
+        - step: 0.5
+    substances:
+      - A
+    time:
+      end_time: 1.0
