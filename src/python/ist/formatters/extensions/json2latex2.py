@@ -4,7 +4,8 @@
 from ist.base import InputType
 from ist.utils.texlist2 import TexList
 from utils.logger import Logger
-
+import json
+from ist.extras import TypeReference
 
 class LatexRecordDefault(object):
     """
@@ -24,7 +25,22 @@ class LatexRecordDefault(object):
             args=str(default.value).capitalize(),
             mode=tex.TYPE_PLAIN
         )
+        #tex.append(tex._SPACE)
+
+    @staticmethod
+    def value_format(tex, default):
+        """
+        :type tex: TexList
+        :type default: ist.extras.TypeRecordKeyDefault
+        """
+
         tex.append(tex._SPACE)
+        tex._function_call(
+            func="ValueDefault",
+            args=json.dumps(default.value),
+            mode=tex.TYPE_PLAIN
+        )
+        #tex.append(tex._SPACE)
 
     @staticmethod
     def at_readtime_format(tex, default):
@@ -46,7 +62,7 @@ class LatexRecordDefault(object):
 
     format_rules = {
         'value at read time': at_readtime_format,
-        'value at declaration': default_format,
+        'value at declaration': value_format,
         'optional': default_format,
         'obligatory': default_format,
         'default': default_format
@@ -94,8 +110,15 @@ class LatexRecord(TexList):
         self._newline()
         self._tab()
         with self:
-            for impl in (record.implements or []):
-                self.macro_alink(impl.get_reference())
+            if record.implements:
+                generic_roots=[abstract_ref.get_reference().get_generic_root().id for abstract_ref in record.implements]
+                print "BEFORE:", generic_roots
+                unique_roots=list(set(generic_roots))
+                print "AFTER:", unique_roots
+                for impl in unique_roots:
+                    self.macro_alink(TypeReference(impl).get_reference())
+                    self.add(", ")
+                self.pop()
         self.comment("implements")
         # conversion key
         self._newline()
@@ -119,6 +142,8 @@ class LatexRecord(TexList):
         # keys
         self._newline()
         for key in (record.keys or []):
+            if key.href_name == "TYPE":
+                continue
             self._newline()
             self._tab(2)
             with self.item_open('RecKey'):
@@ -140,12 +165,15 @@ class LatexRecord(TexList):
         self._tab(3)
         self.add(record_key.href_name, self.TYPE_PLAIN)
 
-        # type
+        # type and parameters
         self._newline()
         self._tab(3)
         with self:
             ref = record_key.type.get_reference()
-            self.get_key_type(ref)
+            parameters=self.get_key_type(ref)
+        with self:
+            self.format_parameters(parameters)
+
         # default
         self._newline()
         self._tab(3)
@@ -164,26 +192,46 @@ class LatexRecord(TexList):
         with self:
             self.append(self.description(record_key.description))
 
+    def format_parameters(self, params):
+        # params is SmartList
+        if params:
+            assert len(params) > 0
+            for item in params:
+                # item is TypeAttributeParameter
+                param_type = item.reference.get_reference()
+                self.add(item.name, self.TYPE_PLAIN)
+                self.add(" = ")
+                self.macro_alink(param_type)
+                self.add(", ")
+            self.pop()
+
     def get_key_type(self, ref):
         if ref.input_type == InputType.MAIN_TYPE:
             # selection, record, abstract, tuple
-
-            self.add(str(ref.input_type).capitalize())
-            self.add(': ')
-            # always point to generic root
-            # if no generic type exists point to this reference
-            self.macro_alink(ref.get_generic_root())
+            if ref.has_generic_link():
+                self.add("gen. " + str(ref.input_type).lower() + ": ")
+                self.macro_alink(ref.get_generic_root())
+                param_dict = ref.get_parameter_dict()
+                return param_dict
+            else:
+                self.add(str(ref.input_type).lower() + ": ")
+                # always point to generic root
+                # if no generic type exists point to this reference
+                self.macro_alink(ref.get_generic_root())
         elif ref.input_type == InputType.ARRAY:
-            name = "Array {range} of ".format(range=ref.range)
+            name = "array {range} of ".format(range=ref.range)
             self.add(name)
             # always point to generic root
             # if no generic type exists point to this reference
-            self.get_key_type(ref.subtype.target.get_generic_root())
+            self.get_key_type(ref.subtype.target)
+        elif ref.input_type == InputType.PARAMETER:
+            name = "parameter: "
+            self.add("parameter: "+ ref.name, self.TYPE_PLAIN)
         else:
             ref_range = (' ' + str(ref.get('range') or '')).rstrip()
             name = str(ref.input_type).capitalize()
             self.add(name + ref_range)
-
+        return None
 
 class LatexTuple(LatexRecord):
     """
@@ -311,7 +359,7 @@ class LatexAbstractRecord(TexList):
             with self.item_open('Descendant'):
                 with self:
                     self.macro_alink(impl.get_reference())
-
+            self.comment("") # end line comment to avoid spurious spaces
         self.end('AbstractType')
 
 
@@ -338,15 +386,15 @@ class LatexFormatter(object):
     @staticmethod
     def format(items):
         tex = TexList()
-        Logger.instance().info('Processing items...')
+        #Logger.instance().info('Processing items...')
         for item in items:
             # do no format certain objects
-            Logger.instance().info('processing: %s (%s)' % (item, item.href_id))
+            #Logger.instance().info('processing: %s (%s)' % (item, item.href_id))
             if not item.include_in_format():
-                Logger.instance().info('  - skipped')
+                #Logger.instance().info('  - skipped')
                 continue
 
-            Logger.instance().info('  +++ formatting +++')
+            #Logger.instance().info('  +++ formatting +++')
             fmt = LatexFormatter.get_formatter_for(item)
             if fmt is not None:
                 fmt.format(item)

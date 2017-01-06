@@ -146,6 +146,8 @@ class Parsable(object):
 
             if field.index:
                 if value:
+                    if (self.has_generic_link()):
+                        value="instance_"+value
                     unique_name = Globals.save(value, self)
                     if value != unique_name:
                         self.unique_name = unique_name
@@ -177,6 +179,9 @@ class Parsable(object):
     def has_generic_link(self):
         return getattr(self, 'generic_type', None) is not None
 
+    def get_parameter_dict(self):
+        return getattr(self, 'parameters', {})
+
     def get_generic_root(self):
         """
         return generic root of this object
@@ -191,6 +196,7 @@ class Parsable(object):
                     break
             except: break
         return root
+
 
     @property
     def href_name(self):

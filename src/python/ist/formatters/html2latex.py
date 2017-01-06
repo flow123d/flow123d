@@ -83,7 +83,8 @@ class Html2Latex(object):
                     self.tex.append(self.text())
                 self.extend_children()
                 self.add_tail()
-                # self.tex.newline ()
+                self.tex.comment("")
+                self.tex._newline()
 
         elif self.tag_is('br'):
             self.tex.append(self.text())

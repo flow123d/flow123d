@@ -48,6 +48,7 @@ class TexList(list):
         self.open_name = ''
         self.append('')
 
+
     def add(self, value, t=None):
         if t is None:
             self.append(self._OPEN + str(value) + self._CLOSE)
@@ -57,7 +58,7 @@ class TexList(list):
     def comment(self, value):
         if not self.PRETTY_FORMAT:
             return
-        self.append(" % " + str(value))
+        self.append("% " + str(value))
 
     def to_string(self, fix_newlines=True):
         if not fix_newlines:
@@ -133,6 +134,7 @@ class TexList(list):
             mode=[self.TYPE_NONE, self.TYPE_PLAIN]
         )
 
+    '''
     def macro_add_doc(self, item):
         """
         Adds \hyperB{item.href_id}{item.href_name}, will register href
@@ -143,6 +145,7 @@ class TexList(list):
             args=[item.href_name],
             mode=[self.TYPE_PLAIN]
         )
+    '''
 
     def macro_text_lr_angle(self, value, mode=None, italic=True):
         self.slash(self._TEXTLANGLE)
@@ -214,7 +217,12 @@ class TexList(list):
         html = TexList.m2h.parse2latex(str(value))
         latex = Html2Latex(html)
         result = latex.to_latex()
-        return ''.join(result)
+        str_repr = "".join(result)
+        # Fix sentences without space
+        str_repr=re.sub(r'([a-z])\.([A-Z])', r'\1. \2', str_repr)
+        # split sentences to more lines
+        str_repr=re.sub(r'([a-z])\. ([A-Z])', r'\1.\n\2', str_repr)
+        return str_repr
 
     @classmethod
     def equation_mode(cls, value):

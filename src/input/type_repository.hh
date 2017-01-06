@@ -64,6 +64,8 @@ public:
     /// Add @p type to TypeRepository if doesn't exist there or get existing type with same TypeHash
     std::shared_ptr<T> add_type(const T & type);
 
+    std::shared_ptr<T> find_hash(Type::TypeBase::TypeHash hash);
+
     /**
      * @brief Finish all stored types.
      *
@@ -107,14 +109,25 @@ template <class T>
 std::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
     Type::TypeBase::TypeHash hash = type.content_hash();
 
-	auto search = type_repository_map_.find(hash);
-	if (search != type_repository_map_.end()) {
-		return search->second;
+	auto search = find_hash(hash);
+	if (search) {
+		return search;
 	} else {
 		auto type_ptr = std::make_shared<T>( type );
 		type_repository_map_.insert( std::pair<Type::TypeBase::TypeHash, std::shared_ptr<T>>(hash,type_ptr) );
 		return type_ptr;
 	}
+}
+
+
+template <class T>
+std::shared_ptr<T> TypeRepository<T>::find_hash(Type::TypeBase::TypeHash hash) {
+    auto search = type_repository_map_.find(hash);
+    if (search != type_repository_map_.end()) {
+        return search->second;
+    } else {
+        return std::shared_ptr<T>();
+    }
 }
 
 template <class T>
