@@ -22,8 +22,8 @@ class TypeReference(Parsable):
         self.reference = json_data
         return self
 
-    def __init__(self):
-        self.reference = None
+    def __init__(self, hash=None):
+        self.reference = hash
 
     def get_reference(self):
         """

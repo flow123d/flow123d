@@ -112,9 +112,7 @@ class LatexRecord(TexList):
         with self:
             if record.implements:
                 generic_roots=[abstract_ref.get_reference().get_generic_root().id for abstract_ref in record.implements]
-                print "BEFORE:", generic_roots
                 unique_roots=list(set(generic_roots))
-                print "AFTER:", unique_roots
                 for impl in unique_roots:
                     self.macro_alink(TypeReference(impl).get_reference())
                     self.add(", ")
