@@ -192,7 +192,7 @@ public:
         unsigned int key_index;                ///< Position inside the record.
         string key_;                           ///< Key identifier.
         string description_;                   ///< Key description in context of particular Record type.
-        std::shared_ptr<TypeBase> type_;     ///< Type of the key.
+        std::shared_ptr<TypeBase> type_;       ///< Type of the key.
         Default default_;                      ///< Default, type and possibly value itself.
         /**
          * Is true if the key was created through copy_keys method, but not explicitly declared.
@@ -235,16 +235,15 @@ public:
     /**
      * @brief Method to derive new Record from an AbstractRecord @p parent.
      *
-     * This register the @p parent in the newly created Record. Method creates TYPE key of Record and must be
-     * call before declaration of keys.
+     * This register the @p parent to Record. Method checks if TYPE key of Record exists and ensures that Record
+     * has assigned one parent only once.
      *
-     * Mechanism of set parent to derived Record and child to parent Abstract is a bit more complicated. For
-     * correct finish it must be done in these steps:
+     * Usage of this method:
      *
-     * - in derive_from is set @p parent to derived Record
-     * - in \p close is set derived Record to parent (or to all parents for multiple inheritance) and registered
-     *   parents in derived Record are erased
-     * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
+     * - during creating Record before its closing (optional usage but recommended for better clarity)
+     * - in \p Abstract::add_child provides bilateral binding between parent and child
+     *
+     * See also \p close and \p Abstract::add_child methods
      */
     virtual Record &derive_from(Abstract &parent);
 
@@ -309,9 +308,13 @@ public:
     /**
      * @brief Close the Record for further declarations of keys.
      *
-     * Add Record to type repository (see @p TypeRepository::add_type) and set Record
-     * as descendant of parent if Record is derived (for mechanism of set parent and
-     * descendant see \p derive_from)
+     * Adds Record to type repository (see @p TypeRepository::add_type) and provides correct bindings
+     * between parent Abstract and child Record if Record is derived from one or more Abstracts.
+     *
+     * Mechanism of set parent to derived Record and child to parent Abstract is provided with
+     * \p Abstract::add_child method.
+     *
+     * See also \p derive_from and \p Abstract::add_child methods
      */
     Record &close() const;
 
@@ -382,7 +385,7 @@ public:
     /**
      * @brief Finish declaration of the Record type.
      *
-     * Calls close() and completes Record (check auto convertible key, parameters of generic types etc).
+     * Checks if Record is closed and completes Record (check auto convertible key, parameters of generic types etc).
      */
     FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
