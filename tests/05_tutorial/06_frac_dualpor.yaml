@@ -87,7 +87,7 @@ problem: !Coupling_Sequential
       r_tol: 1.0e-10
       a_tol: 1.0e-10
     output_stream:
-      file: flow.msh
+      file: flow
       format: !gmsh
         variant: ascii
   solute_equation: !Coupling_OperatorSplitting
@@ -129,7 +129,7 @@ problem: !Coupling_Sequential
     balance:
       cumulative: true
     output_stream:
-      file: transport.pvd
+      file: transport
       format: !gmsh
         variant: ascii
       times:
