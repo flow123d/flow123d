@@ -150,9 +150,7 @@ There are three region sets implicitly defined:}
 	{From{\_}Id}
 	{\TypeLink{IT::Region}{Region}}% implements
 	{}% reducible to key
-	{{{Region declared by id and name.}\\{
-Allows to create new region with given id and label}\\{
-or specify existing region by id which will be renamed.}% 
+	{{{Elementary region declared by ID.Allows to create new region with given id and labelor specify existing region by id which will be renamed.}% 
 }}
 		\RecKey
 			{From-Id::name}
@@ -183,7 +181,7 @@ Value is taken into account only if new region is created.}%
 	{From{\_}Label}
 	{\TypeLink{IT::Region}{Region}}% implements
 	{}% reducible to key
-	{{{Allows to rename existing region specified by mesh{\_}label.}% 
+	{{{Gives a new name to an elementary regionwith original name (in the mesh file) given by  }\begin{ttfamily}mesh{\_}label.\end{ttfamily}% 
 }}
 		\RecKey
 			{From-Label::name}
@@ -206,9 +204,8 @@ Has to be unique in one mesh.}%
 	{From{\_}Elements}
 	{\TypeLink{IT::Region}{Region}}% implements
 	{}% reducible to key
-	{{{Region declared by name, ID and enum of elements.}\\{
-Allows to create new region and assign elements to its.}\\{
-Elements are specified by ids.}% 
+	{{{Elementary region declared by a list of elements.
+The new region is assigned to the list of elements spefied by the key}\begin{ttfamily}element{\_}list\end{ttfamily}{.}% 
 }}
 		\RecKey
 			{From-Elements::name}
@@ -223,15 +220,15 @@ Has to be unique in one mesh.}%
 			{id}
 			{{Integer [0, INT]}}{}
 			{ \it{Optional}}
-			{{{The ID of the region to which you assign label.}\\{
-If new region is created and ID is not set, unique ID will be generated automatically.}% 
+			{{{The ID of the region.
+If unset a unique ID will be generated automatically.}% 
 }}
 		\RecKey
 			{From-Elements::element-list}
 			{element{\_}list}
 			{{array [1, UINT] of }{Integer [0, INT]}}{}
 			{ \it{Obligatory}}
-			{{{Specification of the region by the list of elements.}% 
+			{{{List of IDs of elements.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -239,7 +236,7 @@ If new region is created and ID is not set, unique ID will be generated automati
 	{Union}
 	{\TypeLink{IT::Region}{Region}}% implements
 	{}% reducible to key
-	{{{Defines region as a union of given two or more regions.}\\{
+	{{{Defines region (set) as a union of given two or more regions.
 Regions can be given by names or IDs or both ways together.}% 
 }}
 		\RecKey
@@ -270,7 +267,7 @@ Has to be unique in one mesh.}%
 	{Difference}
 	{\TypeLink{IT::Region}{Region}}% implements
 	{}% reducible to key
-	{{{Defines region as a difference of given pair of regions.}% 
+	{{{Defines region (set) as a difference of given pair of regions.}% 
 }}
 		\RecKey
 			{Difference::name}
@@ -285,7 +282,7 @@ Has to be unique in one mesh.}%
 			{regions}
 			{{array [2, 2] of }{String}}{}
 			{ \it{Obligatory}}
-			{{{Defines region as a difference of given pair of regions.}% 
+			{{{List of exactly two regions given by their names.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -293,7 +290,7 @@ Has to be unique in one mesh.}%
 	{Intersection}
 	{\TypeLink{IT::Region}{Region}}% implements
 	{}% reducible to key
-	{{{Defines region as an intersection of given two or more regions.}% 
+	{{{Defines region (set) as an intersection of given two or more regions.}% 
 }}
 		\RecKey
 			{Intersection::name}
@@ -308,7 +305,7 @@ Has to be unique in one mesh.}%
 			{regions}
 			{{array [2, UINT] of }{String}}{}
 			{ \it{Obligatory}}
-			{{{Defines region as an intersection of given pair of regions.}% 
+			{{{List of two or more regions given by their names.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -1148,27 +1145,28 @@ Zero flux}%
 			{Flow-Darcy-BC-Type::dirichlet}
 			{dirichlet}
 			{{{Dirichlet boundary condition.
-Specify the pressure head through the 'bc{\_}pressure' field or the piezometric head through the 'bc{\_}piezo{\_}head' field.}% 
+Specify the pressure head through the ''bc{\_}pressure'' field or the piezometric head through the ''bc{\_}piezo{\_}head'' field.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-BC-Type::total-flux}
 			{total{\_}flux}
-			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$q^N + \sigma (h^R - h)$}{. Specify the water inflow by the 'bc{\_}flux' field, the transition coefficient by 'bc{\_}robin{\_}sigma' and the reference pressure head or pieozmetric head through 'bc{\_}pressure' or 'bc{\_}piezo{\_}head' respectively.}% 
+			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$q^N + \sigma (h^R - h)$}{. Specify the water inflow by the 'bc{\_}flux' field, the transition coefficient by 'bc{\_}robin{\_}sigma' and the reference pressure head or pieozmetric head through ''bc{\_}pressure'' or ''bc{\_}piezo{\_}head'' respectively.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-BC-Type::seepage}
 			{seepage}
 			{{{Seepage face boundary condition.
 Pressure and inflow bounded from above.
-Boundary with potential seepage flow is described by the pair of inequalities:}{$h \le h_d^D$}{ and }{$ q \le q_d^N$}{, where the equality holds in at least one of them.
-Caution! Setting {\$}q{\_}d{\^{}}N{\$} strictly negativemay lead to an ill posed problem since a positive outflow is enforced.
+Boundary with potential seepage flow is described by the pair of inequalities: }{$h \le h_d^D$}{ and }{$ q \le q_d^N$}{, where the equality holds in at least one of them.
+Caution.
+Setting }{$q_d^N$}{ strictly negative may lead to an ill posed problem since a positive outflow is enforced.
 Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by fields }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ (or }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{) and }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-BC-Type::river}
 			{river}
 			{{{River boundary condition.
-For the water level above the bedrock, }{$H > H^S$}{, the Robin boundary condition is used with the inflow given by: }{ $q^N + \sigma(H^D - H)$}{. For the water level under the bedrock, constant infiltration is used }{ $q^N + \sigma(H^D - H^S)$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}sigma,\end{ttfamily}{bc{\_}flux``.}% 
+For the water level above the bedrock, }{$H > H^S$}{, the Robin boundary condition is used with the inflow given by: }{ $q^N + \sigma(H^D - H)$}{. For the water level under the bedrock, constant infiltration is used }{ $q^N + \sigma(H^D - H^S)$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma,\end{ttfamily}{bc{\_}flux``.}% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -1235,10 +1233,9 @@ Setting this flag to 'true', the solverends with convergence success on stagnati
 	{{{Interface to PETSc solvers.
 Convergence criteria is:}\\
 \begin{ttfamily}norm( res{\_}n )  {\textless} max( norm( res{\_}0 ) * r{\_}tol, a{\_}tol )\end{ttfamily}\\{
-where res{\_}i is the residuum vector after i-th iteration of the solver and res{\_}0 is an estimate of the norm of initial residual.}\\{
-If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used,}\\{
-otherwise the norm of preconditioned RHS is used.}\\{
-The default norm is L2 norm of preconditioned residual: }{$ P^{-1}(Ax-b)$}{, usage of other norm may be prescribed using the 'option' key.}\\{
+where res{\_}i is the residuum vector after i-th iteration of the solver and res{\_}0 is an estimate of the norm of initial residual.
+If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used, otherwise the norm of preconditioned RHS is used.
+The default norm is L2 norm of preconditioned residual: }{$ P^{-1}(Ax-b)$}{, usage of other norm may be prescribed using the 'option' key.
 See also PETSc documentation for KSPSetNormType.}% 
 }}
 		\RecKey
@@ -1399,13 +1396,6 @@ See also PETSc documentation for KSPSetNormType.}%
 			{{selection: }\TypeLink{IT::VTK-variant-ascii-or-binary-}{VTK variant (ascii or binary)}}{}
 			{ \ValueDefault{"ascii"}}
 			{{{Variant of output stream file format.}% 
-}}
-		\RecKey
-			{vtk::parallel}
-			{parallel}
-			{{Bool}}{}
-			{ \ValueDefault{false}}
-			{{{Parallel or serial version of file format.}% 
 }}
 \end{RecordType}
 \begin{SelectionType}
@@ -1630,82 +1620,82 @@ The field name, output times, output interpolation (future).}%
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::pressure-p0}
 			{pressure{\_}p0}
-			{{{Output of the field pressure{\_}p0 }{$[m]$}{.}% 
+			{{{}{$[m]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::pressure-p1}
 			{pressure{\_}p1}
-			{{{Output of the field pressure{\_}p1 }{$[m]$}{.}% 
+			{{{}{$[m]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::piezo-head-p0}
 			{piezo{\_}head{\_}p0}
-			{{{Output of the field piezo{\_}head{\_}p0 }{$[m]$}{.}% 
+			{{{}{$[m]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::velocity-p0}
 			{velocity{\_}p0}
-			{{{Output of the field velocity{\_}p0 }{$[ms^{-1}]$}{.}% 
+			{{{}{$[ms^{-1}]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::subdomain}
 			{subdomain}
-			{{{Output of the field subdomain }{$[-]$}{.}% 
+			{{{}{$[-]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::region-id}
 			{region{\_}id}
-			{{{Output of the field region{\_}id }{$[-]$}{.}% 
+			{{{}{$[-]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::anisotropy}
 			{anisotropy}
-			{{{Output of the field anisotropy }{$[-]$}{ (Anisotropy of the conductivity tensor.).}% 
+			{{{}{$[-]$}{ Input field: Anisotropy of the conductivity tensor.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::cross-section}
 			{cross{\_}section}
-			{{{Output of the field cross{\_}section }{$[m^{3-d}]$}{ (Complement dimension parameter (cross section for 1D, thickness for 2D).).}% 
+			{{{}{$[m^{3-d}]$}{ Input field: Complement dimension parameter (cross section for 1D, thickness for 2D).}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::conductivity}
 			{conductivity}
-			{{{Output of the field conductivity }{$[ms^{-1}]$}{ (Isotropic conductivity scalar.).}% 
+			{{{}{$[ms^{-1}]$}{ Input field: Isotropic conductivity scalar.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::sigma}
 			{sigma}
-			{{{Output of the field sigma }{$[-]$}{ (Transition coefficient between dimensions.).}% 
+			{{{}{$[-]$}{ Input field: Transition coefficient between dimensions.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::water-source-density}
 			{water{\_}source{\_}density}
-			{{{Output of the field water{\_}source{\_}density }{$[s^{-1}]$}{ (Water source density.).}% 
+			{{{}{$[s^{-1}]$}{ Input field: Water source density.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::init-pressure}
 			{init{\_}pressure}
-			{{{Output of the field init{\_}pressure }{$[m]$}{ (Initial condition as pressure).}% 
+			{{{}{$[m]$}{ Input field: Initial condition as pressure}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::storativity}
 			{storativity}
-			{{{Output of the field storativity }{$[m^{-1}]$}{ (Storativity.).}% 
+			{{{}{$[m^{-1}]$}{ Input field: Storativity.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::pressure-diff}
 			{pressure{\_}diff}
-			{{{Output of the field pressure{\_}diff }{$[m]$}{.}% 
+			{{{}{$[m]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::velocity-diff}
 			{velocity{\_}diff}
-			{{{Output of the field velocity{\_}diff }{$[ms^{-1}]$}{.}% 
+			{{{}{$[ms^{-1}]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::div-diff}
 			{div{\_}diff}
-			{{{Output of the field div{\_}diff }{$[s^{-1}]$}{.}% 
+			{{{}{$[s^{-1}]$}{ Input field: }% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -2272,35 +2262,35 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Solute-Advection-FV-Data::sources-density}
 			{sources{\_}density}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of concentration sources. }{$[m^{-3}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::sources-sigma}
 			{sources{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration flux. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::sources-conc}
 			{sources{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources threshold. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::bc-conc}
 			{bc{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary conditions for concentrations. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-Advection-FV-Data::init-conc}
 			{init{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial concentrations. }{$[m^{-3}kg]$}% 
 }}
@@ -2313,42 +2303,42 @@ These times have to form an increasing sequence.}%
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::porosity}
 			{porosity}
-			{{{Output of the field porosity }{$[-]$}{ (Mobile porosity).}% 
+			{{{}{$[-]$}{ Input field: Mobile porosity}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::water-content}
 			{water{\_}content}
-			{{{Output of the field water{\_}content }{$[-]$}{ (INTERNAL - water content passed from unsaturated Darcy).}% 
+			{{{}{$[-]$}{ Input field: INTERNAL - water content passed from unsaturated Darcy}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::sources-density}
 			{sources{\_}density}
-			{{{Output of the field sources{\_}density }{$[m^{-3}kgs^{-1}]$}{ (Density of concentration sources.).}% 
+			{{{}{$[m^{-3}kgs^{-1}]$}{ Input field: Density of concentration sources.}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::sources-sigma}
 			{sources{\_}sigma}
-			{{{Output of the field sources{\_}sigma }{$[s^{-1}]$}{ (Concentration flux.).}% 
+			{{{}{$[s^{-1}]$}{ Input field: Concentration flux.}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::sources-conc}
 			{sources{\_}conc}
-			{{{Output of the field sources{\_}conc }{$[m^{-3}kg]$}{ (Concentration sources threshold.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources threshold.}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::init-conc}
 			{init{\_}conc}
-			{{{Output of the field init{\_}conc }{$[m^{-3}kg]$}{ (Initial concentrations.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Initial concentrations.}% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::conc}
 			{conc}
-			{{{Output of the field conc }{$[m^{-3}kg]$}{.}% 
+			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 		\SelectionItem
 			{Solute-Advection-FV-OutputFields::region-id}
 			{region{\_}id}
-			{{{Output of the field region{\_}id }{$[-]$}{.}% 
+			{{{}{$[-]$}{ Input field: }% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -2443,77 +2433,77 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-density}
 			{sources{\_}density}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Density of concentration sources. }{$[m^{-3}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-sigma}
 			{sources{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration flux. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sources-conc}
 			{sources{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Concentration sources threshold. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-type}
 			{bc{\_}type}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Solute-AdvectionDiffusion-BC-Type}{Solute{\_}AdvectionDiffusion{\_}BC{\_}Type}}
 			{ \it{Optional}}
 			{{{Type of boundary condition. }{$[-]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-conc}
 			{bc{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Dirichlet boundary condition (for each substance). }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-flux}
 			{bc{\_}flux}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Flux in Neumann boundary condition. }{$[m^{1-d}kgs^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::bc-robin-sigma}
 			{bc{\_}robin{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Conductivity coefficient in Robin boundary condition. }{$[m^{4-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::init-conc}
 			{init{\_}conc}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial concentrations. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::disp-l}
 			{disp{\_}l}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Longitudal dispersivity (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::disp-t}
 			{disp{\_}t}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Transversal dispersivity (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::diff-m}
 			{diff{\_}m}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Molecular diffusivity (for each substance). }{$[m^{2}s^{-1}]$}% 
 }}
@@ -2527,21 +2517,21 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::sorption-mult}
 			{sorption{\_}mult}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of linear sorption. }{$[kg^{-1}mol]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}
 			{fracture{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::dg-penalty}
 			{dg{\_}penalty}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
 Higher value diminishes the inter-element jumps. }{$[-]$}% 
@@ -2606,78 +2596,78 @@ The prescribed incoming mass flux due to diffusion can have the general form }{$
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::porosity}
 			{porosity}
-			{{{Output of the field porosity }{$[-]$}{ (Mobile porosity).}% 
+			{{{}{$[-]$}{ Input field: Mobile porosity}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::water-content}
 			{water{\_}content}
-			{{{Output of the field water{\_}content }{$[-]$}{ (INTERNAL - water content passed from unsaturated Darcy).}% 
+			{{{}{$[-]$}{ Input field: INTERNAL - water content passed from unsaturated Darcy}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::sources-density}
 			{sources{\_}density}
-			{{{Output of the field sources{\_}density }{$[m^{-3}kgs^{-1}]$}{ (Density of concentration sources.).}% 
+			{{{}{$[m^{-3}kgs^{-1}]$}{ Input field: Density of concentration sources.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::sources-sigma}
 			{sources{\_}sigma}
-			{{{Output of the field sources{\_}sigma }{$[s^{-1}]$}{ (Concentration flux.).}% 
+			{{{}{$[s^{-1}]$}{ Input field: Concentration flux.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::sources-conc}
 			{sources{\_}conc}
-			{{{Output of the field sources{\_}conc }{$[m^{-3}kg]$}{ (Concentration sources threshold.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Concentration sources threshold.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::init-conc}
 			{init{\_}conc}
-			{{{Output of the field init{\_}conc }{$[m^{-3}kg]$}{ (Initial concentrations.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Initial concentrations.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
-			{{{Output of the field disp{\_}l }{$[m]$}{ (Longitudal dispersivity (for each substance).).}% 
+			{{{}{$[m]$}{ Input field: Longitudal dispersivity (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
-			{{{Output of the field disp{\_}t }{$[m]$}{ (Transversal dispersivity (for each substance).).}% 
+			{{{}{$[m]$}{ Input field: Transversal dispersivity (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::diff-m}
 			{diff{\_}m}
-			{{{Output of the field diff{\_}m }{$[m^{2}s^{-1}]$}{ (Molecular diffusivity (for each substance).).}% 
+			{{{}{$[m^{2}s^{-1}]$}{ Input field: Molecular diffusivity (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::rock-density}
 			{rock{\_}density}
-			{{{Output of the field rock{\_}density }{$[m^{-3}kg]$}{ (Rock matrix density.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::sorption-mult}
 			{sorption{\_}mult}
-			{{{Output of the field sorption{\_}mult }{$[kg^{-1}mol]$}{ (Coefficient of linear sorption.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Coefficient of linear sorption.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::conc}
 			{conc}
-			{{{Output of the field conc }{$[m^{-3}kg]$}{.}% 
+			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
-			{{{Output of the field fracture{\_}sigma }{$[-]$}{ (Coefficient of diffusive transfer through fractures (for each substance).).}% 
+			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::dg-penalty}
 			{dg{\_}penalty}
-			{{{Output of the field dg{\_}penalty }{$[-]$}{ (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
-Higher value diminishes the inter-element jumps.).}% 
+			{{{}{$[-]$}{ Input field: Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
+Higher value diminishes the inter-element jumps.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
-			{{{Output of the field region{\_}id }{$[-]$}{.}% 
+			{{{}{$[-]$}{ Input field: }% 
 }}
 \end{SelectionType}
 \begin{AbstractType}
@@ -3004,7 +2994,7 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Sorption-Data::sorption-type}
 			{sorption{\_}type}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::SorptionType}{SorptionType}}
 			{ \it{Optional}}
 			{{{Considered sorption is described by selected isotherm.
 If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically. }{$[-]$}% 
@@ -3012,21 +3002,21 @@ If porosity on an element is equal or even higher than 1.0 (meaning no sorbing s
 		\RecKey
 			{Sorption-Data::isotherm-mult}
 			{isotherm{\_}mult}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description. }{$[kg^{-1}mol]$}% 
 }}
 		\RecKey
 			{Sorption-Data::isotherm-other}
 			{isotherm{\_}other}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a). }{$[-]$}% 
 }}
 		\RecKey
 			{Sorption-Data::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial solid concentration of substances.
 Vector, one value for every substance. }{$[kg^{-1}mol]$}% 
@@ -3074,34 +3064,34 @@ Vector, one value for every substance. }{$[kg^{-1}mol]$}%
 		\SelectionItem
 			{Sorption-OutputFields::rock-density}
 			{rock{\_}density}
-			{{{Output of the field rock{\_}density }{$[m^{-3}kg]$}{ (Rock matrix density.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
 			{Sorption-OutputFields::sorption-type}
 			{sorption{\_}type}
-			{{{Output of the field sorption{\_}type }{$[-]$}{ (Considered sorption is described by selected isotherm.
-If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.).}% 
+			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.
+If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
 			{Sorption-OutputFields::isotherm-mult}
 			{isotherm{\_}mult}
-			{{{Output of the field isotherm{\_}mult }{$[kg^{-1}mol]$}{ (Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
 }}
 		\SelectionItem
 			{Sorption-OutputFields::isotherm-other}
 			{isotherm{\_}other}
-			{{{Output of the field isotherm{\_}other }{$[-]$}{ (Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).).}% 
+			{{{}{$[-]$}{ Input field: Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).}% 
 }}
 		\SelectionItem
 			{Sorption-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{{Output of the field init{\_}conc{\_}solid }{$[kg^{-1}mol]$}{ (Initial solid concentration of substances.
-Vector, one value for every substance.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Initial solid concentration of substances.
+Vector, one value for every substance.}% 
 }}
 		\SelectionItem
 			{Sorption-OutputFields::conc-solid}
 			{conc{\_}solid}
-			{{{Output of the field conc{\_}solid }{$[m^{-3}kg]$}{.}% 
+			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -3184,7 +3174,7 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{DualPorosity-Data::diffusion-rate-immobile}
 			{diffusion{\_}rate{\_}immobile}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone. }{$[s^{-1}]$}% 
 }}
@@ -3198,7 +3188,7 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{DualPorosity-Data::init-conc-immobile}
 			{init{\_}conc{\_}immobile}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Initial concentration of substances in the immobile zone. }{$[m^{-3}kg]$}% 
 }}
@@ -3292,34 +3282,34 @@ These times have to form an increasing sequence.}%
 		\SelectionItem
 			{SorptionMobile-OutputFields::rock-density}
 			{rock{\_}density}
-			{{{Output of the field rock{\_}density }{$[m^{-3}kg]$}{ (Rock matrix density.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
 			{SorptionMobile-OutputFields::sorption-type}
 			{sorption{\_}type}
-			{{{Output of the field sorption{\_}type }{$[-]$}{ (Considered sorption is described by selected isotherm.
-If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.).}% 
+			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.
+If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
 			{SorptionMobile-OutputFields::isotherm-mult}
 			{isotherm{\_}mult}
-			{{{Output of the field isotherm{\_}mult }{$[kg^{-1}mol]$}{ (Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
 }}
 		\SelectionItem
 			{SorptionMobile-OutputFields::isotherm-other}
 			{isotherm{\_}other}
-			{{{Output of the field isotherm{\_}other }{$[-]$}{ (Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).).}% 
+			{{{}{$[-]$}{ Input field: Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).}% 
 }}
 		\SelectionItem
 			{SorptionMobile-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{{Output of the field init{\_}conc{\_}solid }{$[kg^{-1}mol]$}{ (Initial solid concentration of substances.
-Vector, one value for every substance.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Initial solid concentration of substances.
+Vector, one value for every substance.}% 
 }}
 		\SelectionItem
 			{SorptionMobile-OutputFields::conc-solid}
 			{conc{\_}solid}
-			{{{Output of the field conc{\_}solid }{$[m^{-3}kg]$}{.}% 
+			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 \end{SelectionType}
 \begin{AbstractType}
@@ -3411,34 +3401,34 @@ Vector, one value for every substance.).}%
 		\SelectionItem
 			{SorptionImmobile-OutputFields::rock-density}
 			{rock{\_}density}
-			{{{Output of the field rock{\_}density }{$[m^{-3}kg]$}{ (Rock matrix density.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
 			{SorptionImmobile-OutputFields::sorption-type}
 			{sorption{\_}type}
-			{{{Output of the field sorption{\_}type }{$[-]$}{ (Considered sorption is described by selected isotherm.
-If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.).}% 
+			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.
+If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
 			{SorptionImmobile-OutputFields::isotherm-mult}
 			{isotherm{\_}mult}
-			{{{Output of the field isotherm{\_}mult }{$[kg^{-1}mol]$}{ (Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
 }}
 		\SelectionItem
 			{SorptionImmobile-OutputFields::isotherm-other}
 			{isotherm{\_}other}
-			{{{Output of the field isotherm{\_}other }{$[-]$}{ (Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).).}% 
+			{{{}{$[-]$}{ Input field: Second parameters (alpha, ...) defining isotherm  c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a).}% 
 }}
 		\SelectionItem
 			{SorptionImmobile-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{{Output of the field init{\_}conc{\_}solid }{$[kg^{-1}mol]$}{ (Initial solid concentration of substances.
-Vector, one value for every substance.).}% 
+			{{{}{$[kg^{-1}mol]$}{ Input field: Initial solid concentration of substances.
+Vector, one value for every substance.}% 
 }}
 		\SelectionItem
 			{SorptionImmobile-OutputFields::conc-immobile-solid}
 			{conc{\_}immobile{\_}solid}
-			{{{Output of the field conc{\_}immobile{\_}solid }{$[m^{-3}kg]$}{.}% 
+			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -3449,22 +3439,22 @@ Vector, one value for every substance.).}%
 		\SelectionItem
 			{DualPorosity-OutputFields::diffusion-rate-immobile}
 			{diffusion{\_}rate{\_}immobile}
-			{{{Output of the field diffusion{\_}rate{\_}immobile }{$[s^{-1}]$}{ (Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.).}% 
+			{{{}{$[s^{-1}]$}{ Input field: Diffusion coefficient of non-equilibrium linear exchange between mobile and immobile zone.}% 
 }}
 		\SelectionItem
 			{DualPorosity-OutputFields::porosity-immobile}
 			{porosity{\_}immobile}
-			{{{Output of the field porosity{\_}immobile }{$[-]$}{ (Porosity of the immobile zone.).}% 
+			{{{}{$[-]$}{ Input field: Porosity of the immobile zone.}% 
 }}
 		\SelectionItem
 			{DualPorosity-OutputFields::init-conc-immobile}
 			{init{\_}conc{\_}immobile}
-			{{{Output of the field init{\_}conc{\_}immobile }{$[m^{-3}kg]$}{ (Initial concentration of substances in the immobile zone.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Initial concentration of substances in the immobile zone.}% 
 }}
 		\SelectionItem
 			{DualPorosity-OutputFields::conc-immobile}
 			{conc{\_}immobile}
-			{{{Output of the field conc{\_}immobile }{$[m^{-3}kg]$}{.}% 
+			{{{}{$[m^{-3}kg]$}{ }% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -3573,7 +3563,7 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::bc-temperature}
 			{bc{\_}temperature}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Boundary value of temperature. }{$[K]$}% 
 }}
@@ -3706,14 +3696,14 @@ These times have to form an increasing sequence.}%
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fracture-sigma}
 			{fracture{\_}sigma}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Coefficient of diffusive transfer through fractures (for each substance). }{$[-]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::dg-penalty}
 			{dg{\_}penalty}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
 Higher value diminishes the inter-element jumps. }{$[-]$}% 
@@ -3757,107 +3747,107 @@ The prescribed incoming energy flux due to diffusion can have the general form }
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::init-temperature}
 			{init{\_}temperature}
-			{{{Output of the field init{\_}temperature }{$[K]$}{ (Initial temperature.).}% 
+			{{{}{$[K]$}{ Input field: Initial temperature.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::porosity}
 			{porosity}
-			{{{Output of the field porosity }{$[-]$}{ (Porosity.).}% 
+			{{{}{$[-]$}{ Input field: Porosity.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::water-content}
 			{water{\_}content}
-			{{{Output of the field water{\_}content }{$[-]$}{.}% 
+			{{{}{$[-]$}{ Input field: }% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-density}
 			{fluid{\_}density}
-			{{{Output of the field fluid{\_}density }{$[m^{-3}kg]$}{ (Density of fluid.).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Density of fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-capacity}
 			{fluid{\_}heat{\_}capacity}
-			{{{Output of the field fluid{\_}heat{\_}capacity }{$[m^{2}s^{-2}K^{-1}]$}{ (Heat capacity of fluid.).}% 
+			{{{}{$[m^{2}s^{-2}K^{-1}]$}{ Input field: Heat capacity of fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-conductivity}
 			{fluid{\_}heat{\_}conductivity}
-			{{{Output of the field fluid{\_}heat{\_}conductivity }{$[mkgs^{-3}K^{-1}]$}{ (Heat conductivity of fluid.).}% 
+			{{{}{$[mkgs^{-3}K^{-1}]$}{ Input field: Heat conductivity of fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-density}
 			{solid{\_}density}
-			{{{Output of the field solid{\_}density }{$[m^{-3}kg]$}{ (Density of solid (rock).).}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Density of solid (rock).}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-capacity}
 			{solid{\_}heat{\_}capacity}
-			{{{Output of the field solid{\_}heat{\_}capacity }{$[m^{2}s^{-2}K^{-1}]$}{ (Heat capacity of solid (rock).).}% 
+			{{{}{$[m^{2}s^{-2}K^{-1}]$}{ Input field: Heat capacity of solid (rock).}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-conductivity}
 			{solid{\_}heat{\_}conductivity}
-			{{{Output of the field solid{\_}heat{\_}conductivity }{$[mkgs^{-3}K^{-1}]$}{ (Heat conductivity of solid (rock).).}% 
+			{{{}{$[mkgs^{-3}K^{-1}]$}{ Input field: Heat conductivity of solid (rock).}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
-			{{{Output of the field disp{\_}l }{$[m]$}{ (Longitudal heat dispersivity in fluid.).}% 
+			{{{}{$[m]$}{ Input field: Longitudal heat dispersivity in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
-			{{{Output of the field disp{\_}t }{$[m]$}{ (Transversal heat dispersivity in fluid.).}% 
+			{{{}{$[m]$}{ Input field: Transversal heat dispersivity in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-thermal-source}
 			{fluid{\_}thermal{\_}source}
-			{{{Output of the field fluid{\_}thermal{\_}source }{$[m^{-1}kgs^{-3}]$}{ (Thermal source density in fluid.).}% 
+			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Thermal source density in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-thermal-source}
 			{solid{\_}thermal{\_}source}
-			{{{Output of the field solid{\_}thermal{\_}source }{$[m^{-1}kgs^{-3}]$}{ (Thermal source density in solid.).}% 
+			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Thermal source density in solid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-exchange-rate}
 			{fluid{\_}heat{\_}exchange{\_}rate}
-			{{{Output of the field fluid{\_}heat{\_}exchange{\_}rate }{$[s^{-1}]$}{ (Heat exchange rate in fluid.).}% 
+			{{{}{$[s^{-1}]$}{ Input field: Heat exchange rate in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-exchange-rate}
 			{solid{\_}heat{\_}exchange{\_}rate}
-			{{{Output of the field solid{\_}heat{\_}exchange{\_}rate }{$[s^{-1}]$}{ (Heat exchange rate of source in solid.).}% 
+			{{{}{$[s^{-1}]$}{ Input field: Heat exchange rate of source in solid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-ref-temperature}
 			{fluid{\_}ref{\_}temperature}
-			{{{Output of the field fluid{\_}ref{\_}temperature }{$[K]$}{ (Reference temperature of source in fluid.).}% 
+			{{{}{$[K]$}{ Input field: Reference temperature of source in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-ref-temperature}
 			{solid{\_}ref{\_}temperature}
-			{{{Output of the field solid{\_}ref{\_}temperature }{$[K]$}{ (Reference temperature in solid.).}% 
+			{{{}{$[K]$}{ Input field: Reference temperature in solid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::temperature}
 			{temperature}
-			{{{Output of the field temperature }{$[K]$}{.}% 
+			{{{}{$[K]$}{ }% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
-			{{{Output of the field fracture{\_}sigma }{$[-]$}{ (Coefficient of diffusive transfer through fractures (for each substance).).}% 
+			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::dg-penalty}
 			{dg{\_}penalty}
-			{{{Output of the field dg{\_}penalty }{$[-]$}{ (Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
-Higher value diminishes the inter-element jumps.).}% 
+			{{{}{$[-]$}{ Input field: Penalty parameter influencing the discontinuity of the solution (for each substance). Its default value 1 is sufficient in most cases.
+Higher value diminishes the inter-element jumps.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
-			{{{Output of the field region{\_}id }{$[-]$}{.}% 
+			{{{}{$[-]$}{ Input field: }% 
 }}
 \end{SelectionType}

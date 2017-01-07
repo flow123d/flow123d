@@ -90,23 +90,24 @@ const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
             "Homogeneous Neumann boundary condition. Zero flux")
         .add_value(dirichlet, "dirichlet",
             "Dirichlet boundary condition. "
-            "Specify the pressure head through the 'bc_pressure' field "
-            "or the piezometric head through the 'bc_piezo_head' field.")
+            "Specify the pressure head through the ''bc_pressure'' field "
+            "or the piezometric head through the ''bc_piezo_head'' field.")
         .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
             "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
             "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
-            "and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
+            "and the reference pressure head or pieozmetric head through ''bc_pressure'' or ''bc_piezo_head'' respectively.")
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
-            "is described by the pair of inequalities:"
-            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
-            "may lead to an ill posed problem since a positive outflow is enforced."
+            "is described by the pair of inequalities: "
+            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. "
+            "Caution. Setting (($q_d^N$)) strictly negative "
+            "may lead to an ill posed problem since a positive outflow is enforced. "
             "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
             )
         .add_value(river, "river",
             "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
             "(( $q^N + \\sigma(H^D - H)$)). For the water level under the bedrock, constant infiltration is used "
-            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
+            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
             " ``bc_sigma, ``bc_flux``."
             )
         .close();

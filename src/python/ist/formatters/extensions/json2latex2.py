@@ -221,7 +221,7 @@ class LatexRecord(TexList):
             self.add(name)
             # always point to generic root
             # if no generic type exists point to this reference
-            self.get_key_type(ref.subtype.target)
+            return self.get_key_type(ref.subtype.target)
         elif ref.input_type == InputType.PARAMETER:
             name = "parameter: "
             self.add("parameter: "+ ref.name, self.TYPE_PLAIN)

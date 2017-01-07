@@ -33,10 +33,10 @@ const it::Record & LinSys_PETSC::get_input_type() {
 	        "```\n"
 	        "norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )\n"
 	        "```\n"
-	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual.\n"
-	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used,\n"
-	        "otherwise the norm of preconditioned RHS is used.\n"
-	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key.\n"
+	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual. "
+	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used, "
+	        "otherwise the norm of preconditioned RHS is used. "
+	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key. "
 	        "See also PETSc documentation for KSPSetNormType.")
 		.derive_from(LinSys::get_input_type())
 		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
