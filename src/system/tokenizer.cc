@@ -146,6 +146,8 @@ void Tokenizer::set_position(const Tokenizer::Position pos)
 	in_->clear();
 	in_->seekg(pos.file_position_);
 	position_ = pos;
+	line_="";
+	set_tokenizer();
 }
 
 

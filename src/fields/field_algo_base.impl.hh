@@ -62,7 +62,7 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-	return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
+	return boost::str(boost::format("R%i_to_%s") % spacedim % Value::type_name() );
 }
 
 
@@ -71,7 +71,7 @@ template <int spacedim, class Value>
 Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
 	stringstream ss;
 	ss << "[" << Value::NRows_  << ", " << Value::NCols_  << "]";
-    return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
+    return it::Abstract("Field_"+template_name(), "Abstract for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
 			.add_attribute(FlowAttribute::field_value_shape(), ss.str() )
@@ -94,19 +94,24 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 
 template <int spacedim, class Value>
 const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys() {
-    auto unit_record = it::Record("Unit", "Specify unit of an input value. \n"
-                                   "Evaluation of the unit formula results into a coeficient and a "
-                                   "unit in terms of powers of base SI units. The unit must match "
-                                   "expected SI unit of the value, while the value provided on the input "
-                                   "is multiplied by the coefficient before further processing."
-                                   "The unit formula have form: <UnitExpr>;<Variable>=<Number>*<UnitExpr>;..., "
-                                   "where <Variable> is a variable name and <UnitExpr> is a units expression "
-                                   "which consists of products and divisions of terms, where a term has "
-                                   "form <Base>^<N>, where <N> is an integer exponent and <Base> "
-                                   "is either a base SI unit, a derived unit, or a variable defined in the same unit formula."
-                                   "Example, unit for the pressure head: "
-                                   "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2'"
-                                    )
+    auto unit_record = it::Record("Unit",
+           "Specify unit of an input value. "
+           "Evaluation of the unit formula results into a coeficient and a "
+           "unit in terms of powers of base SI units. The unit must match "
+           "expected SI unit of the value, while the value provided on the input "
+           "is multiplied by the coefficient before further processing. "
+           "The unit formula have a form:\n"
+           "```\n"
+           "<UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,\n"
+           "```\n"
+           "where ```<Variable>``` is a variable name and ```<UnitExpr>``` is a units expression "
+           "which consists of products and divisions of terms.\n\n"
+           "A term has a form: "
+           "```<Base>^<N>```, where ```<N>``` is an integer exponent and ```<Base>``` "
+           "is either a base SI unit, a derived unit, or a variable defined in the same unit formula. "
+           "Example, unit for the pressure head:\n\n"
+           "```MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2```"
+            )
         .allow_auto_conversion("unit_formula")
         .declare_key("unit_formula", it::String(), it::Default::obligatory(),
                                    "Definition of unit." )
@@ -114,7 +119,7 @@ const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_
 
     return it::Record("FieldAlgorithmBase_common_aux", "")
         .declare_key("unit", unit_record, it::Default::optional(),
-                                "Unit of the field values provided in the main input file, in the external file, or"
+                                "Unit of the field values provided in the main input file, in the external file, or "
                                 "by a function (FieldPython).")
         .close();
 }

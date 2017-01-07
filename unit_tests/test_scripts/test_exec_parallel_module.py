@@ -9,10 +9,19 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import test_scripts
 test_scripts.fix_paths()
 # ----------------------------------------------
-from exec_parallel import parser
+import exec_parallel as script
+import utils.argparser as argparser
 from scripts.exec_parallel_module import do_work
 # ----------------------------------------------
 consumer = test_scripts.get_consumer()
+
+
+def parse(command, debug=False):
+    arg_options = argparser.Parser.parse_exec_parallel(
+        script.create_parser(),
+        command.split()
+    )
+    return do_work(arg_options, debug)
 
 
 class TestDoWork(test_scripts.UnitTest):
@@ -27,61 +36,74 @@ class TestDoWork(test_scripts.UnitTest):
 
     def test_help(self):
         try:
-            do_work(parser, ['--help'])
+            command = '--help'
+            pypy = parse(command)
             self.fail()
         except SystemExit as e:
             self.assertEqual(e.code, 0)
 
     def test_empty(self):
         try:
-            do_work(parser, [])
+            command = ''
+            pypy = parse(command)
             self.fail()
             pass
         except SystemExit as e:
-            self.assertEqual(e.code, 1)
+            self.assertEqual(e.code, 2)
 
     def test_no_limits(self):
-        pypy = do_work(parser, ['--', 'mpirun', 'sleep', '0.1'])
+        command = '-- mpirun sleep 0.1'
+        pypy = parse(command)
         self.assertEqual(pypy.returncode, 0)
 
     def test_time_limit_ok(self):
-        pypy = do_work(parser, ['-t', '1', '--', 'mpirun', 'sleep', '0.1'])
+        command = '-t 1 -- mpirun sleep 0.1'
+        pypy = parse(command)
         self.assertEqual(pypy.returncode, 0)
 
         np = '2'
-        pypy = do_work(parser, ['-n', np, '-t', '1', '--', 'mpirun', 'sleep', '0.1'])
+        command = '-n ' + np + ' -t 1 -- mpirun sleep 0.1'
+        pypy = parse(command)
         self.assertEqual(pypy.returncode, 0)
         self.assertEqual(int(pypy.executor.command[2]), int(np))
 
     def test_time_limit_over(self):
-        pypy = do_work(parser, ['-t', '0.1', '--', 'mpirun', 'sleep', '2'])
+        command = '-t 0.1 -- mpirun sleep 2'
+        pypy = parse(command)
         self.assertNotEqual(pypy.returncode, 0)
 
         np = '2'
-        pypy = do_work(parser, ['-n', np, '-t', '0.1', '--', 'mpirun', 'sleep', '2'])
+        command = '-n ' + np + ' -t 0.1 -- mpirun sleep 2'
+        pypy = parse(command)
         self.assertNotEqual(pypy.returncode, 0)
         self.assertEqual(int(pypy.executor.command[2]), int(np))
 
     def test_memory_limit_ok(self):
-        pypy = do_work(parser, ['-n', '1', '-m', '100', '--', 'mpirun', consumer, '-m', '10', '-t', '1'])
+        command = '-n 1 -m 100 -- mpirun ' + consumer + ' -m 10 -t 1'
+        pypy = parse(command)
         self.assertEqual(pypy.returncode, 0)
 
-        pypy = do_work(parser, ['-n', '2', '-m', '200', '--', 'mpirun', consumer, '-m', '10', '-t', '1'])
+        command = '-n 2 -m 200 -- mpirun ' + consumer + ' -m 10 -t 1'
+        pypy = parse(command)
         self.assertEqual(pypy.returncode, 0)
 
         np = '2'
-        pypy = do_work(parser, ['-n', np, '-m', '200', '--', 'mpirun', consumer, '-m', '10', '-t', '1'])
+        command = '-n ' + np + ' -m 200 -- mpirun ' + consumer + ' -m 10 -t 1'
+        pypy = parse(command)
         self.assertEqual(int(pypy.returncode), 0)
         self.assertEqual(int(pypy.executor.command[2]), int(np))
 
     def test_memory_limit_over(self):
-        pypy = do_work(parser, ['-n', '1', '-m', '100', '--', 'mpirun', consumer, '-m', '200', '-t', '5'])
+        command = '-n 1 -m 100 -- mpirun ' + consumer + ' -m 200 -t 5'
+        pypy = parse(command)
         self.assertNotEqual(pypy.returncode, 0)
 
-        pypy = do_work(parser, ['-n', '2', '-m', '200', '--', 'mpirun', consumer, '-m', '200', '-t', '1'])
+        command = '-n 2 -m 200 -- mpirun ' + consumer + ' -m 200 -t 1'
+        pypy = parse(command)
         self.assertNotEqual(pypy.returncode, 0)
 
         np = '2'
-        pypy = do_work(parser, ['-n', np, '-m', '200', '--', 'mpirun', consumer, '-m', '200', '-t', '1'])
+        command = '-n ' + np + ' -m 200 -- mpirun ' + consumer + ' -m 200 -t 1'
+        pypy = parse(command)
         self.assertNotEqual(int(pypy.returncode), 0)
         self.assertEqual(int(pypy.executor.command[2]), int(np))

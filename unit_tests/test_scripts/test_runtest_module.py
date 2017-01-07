@@ -11,7 +11,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '..'))
 import test_scripts
 test_scripts.fix_paths()
 # ----------------------------------------------
-from runtest import parser
+import runtest as script
+import utils.argparser as argparser
 from scripts.runtest_module import do_work
 # ----------------------------------------------
 __dir__ = test_scripts.current_dir()
@@ -23,6 +24,17 @@ EXIT_OK = 0
 EXIT_ERROR = 1
 EXIT_COMPARE_ERROR = 13
 
+
+def parse(command, debug=False):
+    """
+
+    :type command: list or str
+    """
+    arg_options = argparser.Parser.parse_runtest(
+        script.create_parser(),
+        command.split() if type(command) is str else command
+    )
+    return do_work(arg_options, debug)
 
 
 class TestDoWork(test_scripts.UnitTest):
@@ -63,65 +75,67 @@ class TestDoWork(test_scripts.UnitTest):
 
     def test_help(self):
         try:
-            do_work(parser, ['--help'])
+            command = '--help'
+            result = parse(command)
             self.fail()
         except SystemExit as e:
-            self.assertEqual(e.code, EXIT_OK)
+            self.assertEqual(e.code, 0)
 
     def test_empty(self):
         try:
-            do_work(parser, [])
+            command = ''
+            result = parse(command)
             self.fail()
             pass
         except SystemExit as e:
-            self.assertEqual(e.code, 1)
+            self.assertEqual(e.code, 2)
 
     def test_compare_correct_output(self):
         # all test must pass since we are copying reference outputs
         try:
-            do_work(parser, [
+            command = [
                 '--root', root,
                 os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
                 '--',
                 '-t', '0.1', '--copy', '--clean'
-            ])
+            ]
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_OK)
 
     def test_compare_no_output(self):
         # all test must fail since test_outputs are empty
         try:
-            do_work(parser, [
+            command = [
                 '--root', root,
                 os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
                 '--',
                 '-t', '0.1', '--clean'
-            ])
+            ]
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_COMPARE_ERROR)
 
     def test_compare_wrong_output_error(self):
         # all test must fail since test_outputs are empty
         try:
-            do_work(parser, [
+            command = [
                 '--root', root,
                 os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
                 '--',
                 '-t', '0.1', '--clean', '--random'
-            ])
+            ]
         except SystemExit as se:
             self.assertEqual(se.code, EXIT_COMPARE_ERROR)
 
     def test_missing_yaml(self):
         # test fail if we pass non_existent yaml file
         try:
-            do_work(parser, [
+            command = [
                 '--root', root,
                 os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit_non_existent.yaml'),
                 os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
                 '--',
                 '-t', '0.01', '--copy', '--clean'
-            ])
+            ]
         except SystemExit as se:
             self.assertNotEqual(se.code, EXIT_OK)
 
@@ -131,12 +145,13 @@ class TestDoWork(test_scripts.UnitTest):
         start_time = time.time()
         sleep_time = 2
         try:
-            do_work(parser, [
+            command = [
                 '--root', root,
-                os.path.join(root, 'tests', '03_transport_small_12d', 'flow_implicit.yaml'),
+                'extras',
                 '--',
                 '-t', str(sleep_time), '-e'
-            ])
+            ]
+            result = parse(command)
         except SystemExit as se:
             self.assertNotEqual(se.code, EXIT_OK)
 
@@ -161,17 +176,21 @@ test_cases:
         with open('extras/foo/bar/config.yaml', 'w') as fp:
             fp.write(config.format(**locals()))
 
-        # result = do_work(parser, ['extras/foo'])
+        # command = 'extras/foo'
         # self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
         #
-        # result = do_work(parser, ['-p', '7', 'extras'])
+        # command = '-p', '7', 'extras'
         # self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
 
-        result = do_work(parser, ['extras/foo/bar/test-01.yaml'])
+        command = 'extras/foo/bar/test-01.yaml'
+        result = parse(command)
         self.assertEqual(len(result.threads), len(common_proc))
+        self.assertEqual(result.returncode, 0)
 
-        result = do_work(parser, ['extras/foo/bar/test-02.yaml'])
+        command = 'extras/foo/bar/test-02.yaml'
+        result = parse(command)
         self.assertEqual(len(result.threads), len(test02_proc))
+        self.assertEqual(result.returncode, 0)
 
         # ------------------------------------------------------------------------
         common_proc = [1]
@@ -179,14 +198,22 @@ test_cases:
         with open('extras/foo/bar/config.yaml', 'w') as fp:
             fp.write(config.format(**locals()))
 
-        result = do_work(parser, ['extras/foo'])
+        command = 'extras/foo'
+        result = parse(command)
         self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
+        self.assertEqual(result.returncode, 0)
 
-        result = do_work(parser, ['-p', '2', 'extras/foo/bar'])
+        command = '-p 2 extras/foo/bar'
+        result = parse(command)
         self.assertEqual(len(common_proc)+len(test02_proc), len(result.threads))
+        self.assertEqual(result.returncode, 0)
 
-        result = do_work(parser, ['extras/foo/bar/test-01.yaml'])
+        command = 'extras/foo/bar/test-01.yaml'
+        result = parse(command)
         self.assertEqual(len(result.threads), len(common_proc))
+        self.assertEqual(result.returncode, 0)
 
-        result = do_work(parser, ['extras/foo/bar/test-02.yaml'])
+        command = 'extras/foo/bar/test-02.yaml'
+        result = parse(command)
         self.assertEqual(len(result.threads), len(test02_proc))
+        self.assertEqual(result.returncode, 0)

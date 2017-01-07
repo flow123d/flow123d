@@ -328,7 +328,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
     this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.msh.pvd", string(this->_base_filename));
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
     this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".msh");
@@ -340,7 +340,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
     this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.pvd.msh", string(this->_base_filename));
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
 }
 
