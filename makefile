@@ -146,7 +146,7 @@ update-input-ref:
 	@if [ -x $(BUILD_DIR)/bin/flow123d ]; \
 	then \
 		$(BUILD_DIR)/bin/flow123d --input_format "$(DOC_DIR)/input_reference.json"; \
-		python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(DOC_DIR)/input_reference.tex --format=tex --debug; \
+		python $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(DOC_DIR)/input_reference.tex --format=tex --debug --log info; \
 	else \
 		if [ -z $(FORCE_DOC_UPDATE) ];\
 		then \

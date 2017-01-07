@@ -9,6 +9,8 @@ from ist.base import Field, Parsable, InputType, List, Unicode, SmartList
 
 
 # used in all node types
+from utils.logger import Logger
+
 base_fields = [
     Field("id", index=True),
     Field("attributes", t=TypeAttributes, default=TypeAttributes()),
@@ -53,7 +55,10 @@ class TypeSelection(Parsable):
         self.generic_type = None
 
     def include_in_format(self):
-        return self.name.find('TYPE') == -1
+        if self.name.find('TYPE') != -1:
+            Logger.instance().info('  - item starts with TYPE')
+            return False
+        return True
 
     def get_fields(self, *args):
         for arg in args:
