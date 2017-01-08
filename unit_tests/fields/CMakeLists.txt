@@ -44,6 +44,7 @@ define_mpi_test(field_fe 1)
 define_test(unit_si)
 define_mpi_test(field_speed 1)
 define_test(multi_field)
+define_test(field_time_function)
 
 define_mpi_test(generic_field 1)
 define_mpi_test(vec_seq_double 1)

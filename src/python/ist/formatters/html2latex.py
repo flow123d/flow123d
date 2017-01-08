@@ -8,8 +8,9 @@ import xml.etree.ElementTree as ET
 
 class Html2Latex(object):
     """
-    Class which based on given element (html/string) can produce latex format
+    Class Html2Latex which based on given element (html/string) can produce latex format
     """
+
     list_types = {
         'ul': 'itemize',
         'ol': 'enumerate'
@@ -82,7 +83,8 @@ class Html2Latex(object):
                     self.tex.append(self.text())
                 self.extend_children()
                 self.add_tail()
-                # self.tex.newline ()
+                self.tex.comment("")
+                self.tex._newline()
 
         elif self.tag_is('br'):
             self.tex.append(self.text())
@@ -116,7 +118,7 @@ class Html2Latex(object):
 
         elif self.tag_is('ul', 'ol'):
             self.tex.begin(self.get_list_type())
-            self.tex.append(self.text())
+            self.tex.append(self.text().strip())
             self.extend_children()
             self.tex.end(self.get_list_type())
             self.add_tail()
@@ -128,16 +130,12 @@ class Html2Latex(object):
             self.extend_children()
             self.add_tail()
 
-        # so far, code tag will be monospaced only
         elif self.tag_is('code'):
-            # self.tex.open_element ('lstlisting')
-            # self.tex.newline ()
-            self.tex.slash('ttfamily ')
-            self.tex.append(self.text().replace('\$', '\$'))
-            # self.extend_children ()
-            # self.tex.newline ()
-            # self.tex.close_element ('lstlisting')
-            # self.add_tail ()
+            self.tex.append('\\begin{ttfamily}')
+            self.tex.append(self.text())
+            self.extend_children()
+            self.tex.append('\\end{ttfamily}')
+            self.add_tail()
 
         elif self.tag_is('span'):
             self.tex.append(self.text())

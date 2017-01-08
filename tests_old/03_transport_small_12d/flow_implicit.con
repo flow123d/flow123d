@@ -1,0 +1,105 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test3 - Transport implicit 1D-2D, (convection, dispersion)", 
+    mesh = {
+      mesh_file = "./input/test3.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      input_fields= [
+        { rid = 17,
+          anisotropy = 10,
+          cross_section = 1,
+          sigma = 0.05
+        },
+        { rid = 18,
+          anisotropy = 1,
+          cross_section = 1
+        },
+        { region = "IMPLICIT BOUNDARY",
+          flow_old_bcd_file = "./input/test3.fbc"
+        }
+      ],
+
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      }
+    }, 
+
+    secondary_equation = {
+      TYPE = "SoluteTransport_DG", 
+
+      input_fields= [
+        { rid = 17,
+          init_conc = 0,
+          porosity= 0.25
+        },
+        { rid = 18,
+          init_conc = 0,
+          porosity= 0.25
+        },
+        { region = "IMPLICIT BOUNDARY",
+          bc_conc = 1
+        }
+      ],
+
+      substances = [
+        "age"
+      ], 
+
+      output_stream = {
+        REF = "/system/output_streams/1"
+      }, 
+
+      
+      time = {
+        end_time = 1.0, 
+        init_dt = 0.1
+      },
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      },
+      balance = {
+        cumulative = true
+      }
+    }
+  }, 
+
+  system = {
+    output_streams = [
+      {
+        file = "flow.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "transport.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.1,
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

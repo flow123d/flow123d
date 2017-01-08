@@ -1,0 +1,67 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition", 
+    mesh = {
+      mesh_file = "${INPUT}/square_xy.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields= [
+        { region = "plane",
+          anisotropy = 1
+        },
+        { region = ".bc_south",
+          bc_type = "dirichlet",
+          bc_pressure = 0
+        },
+        { region = ".bc_east",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "y"
+          }
+        },
+        { region = ".bc_north",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x"
+          }
+        },
+        { region = ".bc_west",
+          bc_type = "dirichlet",
+          bc_pressure = 0
+        }
+      ],
+
+      output = {
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+      
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      } 
+    }
+  }, 
+
+  system = {
+    output_stream = {
+        file = "./test05.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+  }
+}

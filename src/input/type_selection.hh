@@ -80,6 +80,7 @@ public:
         string key_;
         string description_;
         int value;
+        TypeBase::attribute_map attributes_;
     };
 
     /// Public typedef of constant iterator into array of keys
@@ -100,7 +101,8 @@ public:
      *
      * The @p description of meaning of the value could be provided.
      */
-    Selection &add_value(const int value, const std::string &key, const std::string &description = "");
+    Selection &add_value(const int value, const std::string &key,
+            const std::string &description = "", TypeBase::attribute_map attributes = TypeBase::attribute_map() );
 
     Selection &add_attribute(std::string key, TypeBase::json_string value);
 
@@ -115,6 +117,9 @@ public:
      */
     TypeHash content_hash() const   override;
 
+
+    /// Implements @p TypeBase::finish_status.
+    FinishStatus finish_status() const override;
 
     /// Implements \p TypeBase::is_finished
     bool is_finished() const override;
@@ -175,8 +180,7 @@ public:
     inline unsigned int size() const;
 
     /// Finish declaration of the Selection type.
-    bool finish(bool is_generic = false) override
-        { ASSERT(data_->closed_)(this->type_name()).error(); return true; }
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
 
     /// Implements \p TypeBase::is_closed
@@ -207,11 +211,12 @@ private:
 
     	/// Constructor.
         SelectionData(const string &name)
-        : type_name_(name), closed_(false)
+        : type_name_(name), closed_(false), finish_status_(FinishStatus::none_)
         {}
 
         /// Inster new value to the Selection
-        void add_value(const int value, const std::string &key, const std::string &description);
+        void add_value(const int value, const std::string &key,
+                const std::string &description, TypeBase::attribute_map attributes);
 
 
         /// Name of the Selection.
@@ -235,6 +240,9 @@ private:
 
         /// Indicator of closed Selection.
         mutable bool closed_;
+
+        /// Indicator of finished Selection.
+        FinishStatus finish_status_;
     };
 
     /// Handle to actual Selection data.

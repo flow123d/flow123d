@@ -1,0 +1,122 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test15 - 2D unsteady flow LM", 
+
+    mesh = {
+      mesh_file = "./input/channel_structured.msh" 
+    }, 
+    
+    
+
+    primary_equation = {
+      TYPE = "Unsteady_LMH", 
+
+      input_fields= [
+        { region = "domain",
+          anisotropy = 1,         // default
+          cross_section = 1,            // default
+          water_source_density = {
+            TYPE = "FieldFormula",
+            value = "-x"
+          },
+          init_piezo_head = 0
+        },
+        {
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_pressure = 0
+        }
+      ],
+
+      n_schurs = 2, 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = {
+        cumulative = true
+      },
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07,
+        r_tol = 1e-07
+      }, 
+
+      time = {
+        end_time = 2.0, 
+        max_dt = 0.1
+      }
+    }, 
+
+    secondary_equation = {
+      TYPE = "SoluteTransport_DG", 
+      
+      input_fields= [
+        { region = "domain",
+          init_conc = 0
+        },
+        {
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = 10,
+          time = 0.0
+        },
+        {
+          region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = 0,
+          time = 0.1
+        }
+      ],
+      
+      output_stream = {
+        REF = "/system/output_streams/1"
+      }, 
+
+      substances = [
+        "conc"
+      ], 
+      time = {
+        end_time = 2.0, 
+        max_dt = 0.1
+      },
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07,
+        r_tol = 1e-07
+      }, 
+      
+      balance = {
+        cumulative = true
+      }
+    }
+  },
+ 
+  system = {
+    output_streams = [
+      {
+        file = "./test15.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.1,
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport-implicit.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.1,
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

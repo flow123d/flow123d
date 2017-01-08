@@ -1,0 +1,103 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Adsorption all",
+    mesh = {
+      mesh_file = "input/test_20.msh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH",
+      
+      input_fields= [
+        { region = "rectangle", 
+          conductivity = 0.125
+        },
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x"}
+        }
+      ],
+       
+      output = {
+        output_stream = {
+          REF = "/output_streams/0"
+        }, 
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = { 
+        TYPE = "Petsc",
+        a_tol = 1e-7 
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting",
+   
+      substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
+      
+      input_fields= [
+        { r_set = "ALL",
+          init_conc = 0,
+          porosity= 0.25 
+        },
+        { r_set = "BOUNDARY",
+          bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
+        }
+      ],
+      
+      output_stream = {
+        REF = "/output_streams/1"
+      }, 
+      time = {
+        end_time = 15.0
+      },
+      
+      reaction_term = {
+        TYPE = "Sorption",
+        solvent_density= 1.0,
+        substances = ["A", "As-lin", "Bs-lang", "Cs-freund"],
+        solubility = [1.0, 1.0, 1.0, 1.0],
+        input_fields= [
+          {
+            r_set="ALL",
+            rock_density = 1.0,
+            sorption_type= "langmuir",
+            isotherm_mult= 0.4, 
+            //isotherm_mult= { TYPE="FieldFormula", value="0.4"},
+            isotherm_other= 0.6
+          }
+        ],
+        output_fields = []
+      },
+      balance = {
+        cumulative = true
+      }
+    } 
+  }, 
+  
+    output_streams = [
+      {
+        file = "test_20.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "transport_test_20.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5,
+        name = "transport_output_stream"
+      }
+    ]
+ 
+
+}

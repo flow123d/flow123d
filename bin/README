@@ -5,10 +5,6 @@ bin/ folder description
 If you add new script or binary to this directory, then
 please add short description about it to this file.
 
-benchmark/
- - support for benchmarks (in developement)
- - SOURCE PACKAGE ONLY
- 
 config/
  - configuration files for flow123d.sh script
  
@@ -18,22 +14,11 @@ ndiff/
 paraview/
  - some useful scripts for Paraview 
  
-py/
+python/
  - Folder with some Python scripts
 
-stub/
- - Folder with obsolete scripts
- - SOURCE PACKAGE ONLY
-
-tests/
- - Folder with test scripts
- 
-flow123d.sh 
+runtest
  - script to help starting parallel computations, namely on PBS systems
- 
-ini2json.sh
- - conversion form old INI files (used by versions up to 1.6.7) to the CON files 
-   (of version 1.7.0) not fully automatic, manual modifications may be necessary
  
 time_limit.sh
  - script to run other process with with execution time limit (in portable way)
@@ -53,6 +38,4 @@ mpiexec
 git_post_checkout_hook
  - git hook to manage links from then source directory to the build directory
  - SOURCE PACKAGE ONLY
-
-
 

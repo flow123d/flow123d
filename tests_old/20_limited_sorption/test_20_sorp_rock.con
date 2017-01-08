@@ -1,0 +1,106 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "TestXXX-pork",
+    mesh = {
+      mesh_file = "${INPUT}/test_20.msh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH",
+      
+      input_fields= [
+        { region = "rectangle", 
+          conductivity = 0.125
+        },
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value = "x"}
+        }
+      ],
+       
+      output = {
+        output_stream = {
+          REF = "/output_streams/0"
+        }, 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        velocity_p0 = "flow_output_stream"
+      }, 
+
+      balance = true,
+
+      solver = { 
+        TYPE = "Petsc",
+        a_tol = 1e-7 
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting",
+   
+      substances = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
+      
+      input_fields= [
+        { r_set = "ALL",
+          init_conc = 0,
+          porosity= {TYPE="FieldFormula", value = "0.25"}
+        },
+        { r_set = "BOUNDARY",
+          bc_conc = {TYPE="FieldFormula", value = "0.05*t"}
+        }
+      ],
+      
+      output = {
+        conc_mobile_p0 = "transport_output_stream", 
+        output_stream = {
+          REF = "/output_streams/1"
+        }, 
+        save_step = 0.5
+      }, 
+      time = {
+        end_time = 15.0
+      },
+      
+      adsorptions = {
+        solvent_density= 1.0,
+        species = ["A", "As-lin", "B", "Bs-lang", "C", "Cs-freund"],
+        solubility = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0],
+        input_fields= [
+          {
+            region = "rectangle",
+            rock_density = {TYPE="FieldFormula", value = "1.0"},
+            sorption_type= [ "none", "linear", "none", "langmuir", "none", "freundlich"],
+            isotherm_mult= [0, 0.6, 0, 0.4, 0, 0.6],
+	    isotherm_other= [0, 0, 0, 0.6, 0, 0.4]
+          }
+        ]
+      },
+
+      balance = {
+        cumulative = true
+      }
+    } 
+  }, 
+  
+    output_streams = [
+      {
+        file = "test_20.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "transport_test_20_sorp_rock.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "transport_output_stream"
+      }
+    ]
+ 
+
+}

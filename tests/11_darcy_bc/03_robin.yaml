@@ -1,0 +1,43 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_942el_4bc.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    n_schurs: 2
+    input_fields:
+      - region: plane
+        anisotropy: 1
+      - region: .bc_south
+        bc_type: total_flux
+        bc_pressure: !FieldFormula
+          value: -2*x
+        bc_robin_sigma: 0.5
+      - region: .bc_east
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: y
+      - region: .bc_north
+        bc_type: total_flux
+        bc_pressure: !FieldFormula
+          value: 3*x
+        bc_robin_sigma: 0.5
+      - region: .bc_west
+        bc_type: dirichlet
+        bc_pressure: 0
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: {}
+    output_stream: 
+      file: ./test05.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream

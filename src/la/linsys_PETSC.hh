@@ -54,79 +54,79 @@ public:
         return rows_ds_; 
     }
 
-    const Mat *get_matrix()
+    const Mat *get_matrix() override
     { 
         return &matrix_;
     }
 
-    const Vec *get_rhs()
+    const Vec *get_rhs() override
     { 
         return &rhs_;
     }
 
-    PetscErrorCode set_matrix(Mat &matrix, MatStructure str)
+    PetscErrorCode set_matrix(Mat &matrix, MatStructure str) override
     {
         matrix_changed_ = true;
     	return MatCopy(matrix, matrix_, str);
     }
 
-    PetscErrorCode set_rhs(Vec &rhs)
+    PetscErrorCode set_rhs(Vec &rhs) override
     {
         rhs_changed_ = true;
     	return VecCopy(rhs, rhs_);
     }
 
-    PetscErrorCode mat_zero_entries()
+    PetscErrorCode mat_zero_entries() override
     {
         matrix_changed_ = true;
     	return MatZeroEntries(matrix_);
     }
 
-    PetscErrorCode rhs_zero_entries()
+    PetscErrorCode rhs_zero_entries() override
     {
         rhs_changed_ = true;
     	return VecSet(rhs_, 0);
     }
 
-    void start_allocation();
+    void start_allocation() override;
 
-    void start_add_assembly();
+    void start_add_assembly() override;
 
-    void start_insert_assembly();
+    void start_insert_assembly() override;
 
-    void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals );
+    void mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals ) override;
 
-    void rhs_set_values( int nrow, int *rows, double *vals );
+    void rhs_set_values( int nrow, int *rows, double *vals ) override;
 
     void preallocate_values(int nrow,int *rows,int ncol,int *cols);
 
     void preallocate_matrix();
 
-    void finish_assembly();
+    void finish_assembly() override;
 
     void finish_assembly( MatAssemblyType assembly_type );
 
-    void apply_constrains( double scalar = 1. );
+    void apply_constrains( double scalar = 1. ) override;
 
     void set_initial_guess_nonzero(bool set_nonzero = true);
 
-    int solve();
+    int solve() override;
 
     /**
      * Returns information on absolute solver accuracy
      */
-    inline double get_absolute_accuracy(){
+    inline double get_absolute_accuracy() override {
        return a_tol_;
     };
 
-    void view( );
+    void view( ) override;
 
     /**
      * Sets specific parameters of LinSys_PETSC defined by user in input file and used to calculate
      */
-    void set_from_input(const Input::Record in_rec);
+    void set_from_input(const Input::Record in_rec) override;
 
-    double get_solution_precision();
+    double get_solution_precision() override;
 
     double compute_residual() override;
 

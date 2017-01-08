@@ -1,0 +1,63 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test6 - Coupling between dimension 2D-3D - influence of sigma and cross section parameters.", 
+    mesh = {
+      mesh_file = "${INPUT}/test6_32d.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields= [
+        { region = "2d_fraction",
+          conductivity = 16,            // K_2d
+          sigma = 0.3125,               // sigma
+          cross_section = 10,           // delta_2d
+          water_source_density = {      // f_2d
+            TYPE = "FieldFormula",
+            value = "-2/10"             // f_2d = - q / delta_2d
+          }
+        },
+        { region = "3d_cube",
+          conductivity = 2              // K_3d
+        },
+        { region = ".2d_fraction",
+          bc_type = "neumann",
+          bc_flux = {
+            TYPE = "FieldFormula",
+            value = "0"
+          }
+        },
+        { region = ".3d_cube",
+          bc_type = "dirichlet",
+          bc_piezo_head = {
+            TYPE = "FieldFormula",
+            value = "z"                 // p_3d
+          }
+        }
+      ],
+
+      output = {
+        output_stream = {
+          file = "test6_32d.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          }, 
+          name = "flow_output_stream"
+        },
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      } 
+    }
+  } 
+
+}

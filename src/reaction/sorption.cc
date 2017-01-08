@@ -34,7 +34,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(sorption)
 
 const IT::Record & SorptionSimple::get_input_type() {
 	return IT::Record("Sorption", "Sorption model in the reaction term of transport.")
-        .derive_from( ReactionTerm::get_input_type() )
+        .derive_from( ReactionTerm::it_abstract_term() )
         .copy_keys(SorptionBase::get_input_type())
         //.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
         //             IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
@@ -71,7 +71,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 
 	// List of types of isotherms in particular regions
 	arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
-	arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
+	arma::Col<double> mult_coef_vec = data_->distribution_coefficient.value(elem.centre(),elem);
 	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
 	for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
@@ -82,7 +82,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 
 		//scales are different for the case of sorption in mobile and immobile pores
 		double scale_aqua = por_m,
-               scale_sorbed = (1 - por_m) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
+               scale_sorbed = (1 - por_m) * rock_density;
 
 		bool limited_solubility_on = false;
 		double table_limit;
@@ -124,7 +124,8 @@ SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
     data_ = new EqData(output_conc_name);
     *data_+=immob_porosity_
         .flags_add(FieldFlag::input_copy)
-        .name("porosity_immobile");
+        .name("porosity_immobile")
+		.set_limits(0.0);
     this->eq_data_ = data_;
     //output_selection = make_output_selection(output_conc_name, output_selection_name);
 }
@@ -138,7 +139,7 @@ SorptionDual::~SorptionDual(void)
 
 const IT::Record & SorptionMob::get_input_type() {
 	return IT::Record("SorptionMobile", "Sorption model in the mobile zone, following the dual porosity model.")
-        .derive_from( ReactionTerm::get_input_type() )
+        .derive_from( ReactionTerm::it_abstract_mobile_term() )
         .copy_keys(SorptionBase::get_input_type())
         //.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
         //    IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
@@ -183,7 +184,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 
     // List of types of isotherms in particular regions
     arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
-    arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
+    arma::Col<double> mult_coef_vec = data_->distribution_coefficient.value(elem.centre(),elem);
     arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
     for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
@@ -194,7 +195,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 
         //scales are different for the case of sorption in mobile and immobile pores
         double scale_aqua = por_m,
-               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
+               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density;
 
         bool limited_solubility_on;
         double table_limit;
@@ -231,7 +232,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
 
 const IT::Record & SorptionImmob::get_input_type() {
 	return IT::Record("SorptionImmobile", "Sorption model in the immobile zone, following the dual porosity model.")
-        .derive_from( ReactionTerm::get_input_type() )
+        .derive_from( ReactionTerm::it_abstract_immobile_term() )
         .copy_keys(SorptionBase::get_input_type())
         //.declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
         //    IT::Default("\"conc_immobile_solid\""), "List of fields to write to output stream.")
@@ -273,7 +274,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
         
     // List of types of isotherms in particular regions
     arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
-    arma::Col<double> mult_coef_vec = data_->isotherm_mult.value(elem.centre(),elem);
+    arma::Col<double> mult_coef_vec = data_->distribution_coefficient.value(elem.centre(),elem);
     arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
 
     for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
@@ -284,7 +285,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
 
         //scales are different for the case of sorption in mobile and immobile pores
         double scale_aqua = por_imm,
-               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density * substances_[substance_global_idx_[i_subst]].molar_mass();
+               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density;
 
         bool limited_solubility_on;
         double table_limit;

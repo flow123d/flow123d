@@ -59,9 +59,10 @@ FieldSet FieldSet::subset( FieldFlag::Flags::Mask mask) const {
 
 
 Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equation_name) const {
-    Input::Type::Record rec = Input::Type::Record(equation_name + "_Data",
-    		FieldCommon::field_descriptor_record_description(equation_name + "_Data"))
-    	.copy_keys(FieldCommon::field_descriptor_record(equation_name + "_Data_aux"));
+    string rec_name = equation_name + ":Data";
+    string desc = FieldCommon::field_descriptor_record_description(rec_name);
+    Input::Type::Record rec = Input::Type::Record(rec_name, desc)
+    	.copy_keys(FieldCommon::field_descriptor_record(rec_name));
 
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
@@ -83,7 +84,8 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
             }
             OLD_ASSERT( field->units().is_def() , "units not def.");
             rec.declare_key(field->input_name(), field_type_ptr, Input::Type::Default::optional(), description,
-                    {{FlowAttribute::field_unit(), field->units().json() }});
+                    { {FlowAttribute::field_unit(), field->units().json() },
+                      {FlowAttribute::field_value_shape(), field->get_value_attribute()} });
         }
 
     }
@@ -91,7 +93,7 @@ Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equa
 }
 
 
-
+/*
 Input::Type::Selection FieldSet::make_output_field_selection(const string &name, const string &desc)
 {
     namespace IT=Input::Type;
@@ -107,14 +109,16 @@ Input::Type::Selection FieldSet::make_output_field_selection(const string &name,
                 desc += " (" + field->description() + ").";
             else
                 desc += ".";
-            sel.add_value(i, field->name(), desc);
+            DebugOut() << field->get_value_attribute();
+
+            sel.add_value(i, field->name(), desc, { {FlowAttribute::field_value_shape(), field->get_value_attribute()} } );
             i++;
         }
     }
 
     return sel;
 }
-
+*/
 
 
 void FieldSet::set_field(const std::string &dest_field_name, FieldCommon &source)
@@ -139,6 +143,13 @@ FieldCommon &FieldSet::operator[](const std::string &field_name) const {
 
     THROW(ExcUnknownField() << FieldCommon::EI_Field(field_name));
     return *field_list[0]; // formal to prevent compiler warning
+}
+
+
+bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side) {
+    bool changed_all=false;
+    for(auto field : field_list) changed_all = field->set_time(time, limit_side) || changed_all;
+    return changed_all;
 }
 
 

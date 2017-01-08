@@ -22,10 +22,10 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include <vector>
 #include <boost/foreach.hpp>
-#include <boost/make_shared.hpp>
 
 #include "system/sys_profiler.hh"
 
@@ -146,7 +146,7 @@ public:
     };
 
 protected:
-    static const Input::Type::Record & get_input_type();
+    static Input::Type::Record & get_input_type();
     static MultiField<3, FieldValue<3>::Scalar> empty_mf;
     EqData data;
     std::vector<string> component_names;
@@ -157,7 +157,7 @@ protected:
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
         FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh= new Mesh;
+        mesh = mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
         component_names = { "comp_0", "comp_1", "comp_2" };
@@ -209,7 +209,7 @@ protected:
 
 MultiField<3, FieldValue<3>::Scalar> SomeEquation::empty_mf = MultiField<3, FieldValue<3>::Scalar>();
 
-const IT::Record & SomeEquation::get_input_type() {
+IT::Record & SomeEquation::get_input_type() {
 	return IT::Record("SomeEquation","")
 	        .declare_key("data", IT::Array(
 	        		IT::Record("SomeEquation_Data", FieldCommon::field_descriptor_record_description("SomeEquation_Data") )

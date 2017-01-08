@@ -1,0 +1,68 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid", 
+    mesh = {
+      mesh_file = "${INPUT}/test10.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Unsteady_LMH", 
+
+      input_fields= [
+        {
+            region = "plane",
+            anisotropy = 0.02,
+            init_pressure = 0,          // default
+            storativity = 1             // default
+        },
+        { region = ".bc_inflow",
+          bc_type = "dirichlet",
+          bc_pressure = 100  
+        },
+        { region = ".bc_outflow",
+          bc_type = "dirichlet",
+          bc_pressure = 0  
+        }
+      ],
+
+      n_schurs = 2, 
+      output = {
+        output_stream = {
+          REF = "/system/output_streams"
+        }, 
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = {
+        cumulative = true
+      },
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      }, 
+      time = {
+        REF = "../../time"
+      }
+    }, 
+  
+    time = {
+      end_time = 0.5, 
+      max_dt = 0.01,
+      min_dt = 0.01
+    }
+  },
+ 
+  system = {
+    output_streams = {
+        file = "./test10.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.1, 
+        name = "flow_output_stream"
+    }
+  }
+}

@@ -1,5 +1,7 @@
 #!/bin/bash
 # Simple script which will use correct python version and execute runtest.py
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 # populated by configure_file call
-@PYTHON_EXECUTABLE@ @PYTHON_RUNTEST@ $@
+@PYTHON_EXECUTABLE@ ${SCRIPT_DIR}/@PYTHON_RUNTEST@ "$@"

@@ -177,7 +177,7 @@ public:
     inline void set_velocity_field(const MH_DofHandler &dh) override
     { mh_dh=&dh; }
 
-    void set_output_stream(std::shared_ptr<OutputTime> stream)
+    void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
 
 

@@ -55,7 +55,7 @@ public:
     /**
      * This method initialize actual value of the field given from the given Input::Record @p rec.
      */
-    virtual void init_from_input(const Input::Record &rec);
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
 
 
@@ -72,6 +72,10 @@ public:
 
 
     virtual ~FieldConstant();
+
+protected:
+    /// Compare field value with given minimal and maximal limits.
+    void check_field_limits(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
 private:
     /// Registrar of class to factory

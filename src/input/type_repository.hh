@@ -20,6 +20,7 @@
 
 
 #include <map>
+#include <memory>
 #include "type_base.hh"
 
 
@@ -49,7 +50,7 @@ public:
 	    );
 
 	/// Type stored objects of input types.
-    typedef std::map< Type::TypeBase::TypeHash, boost::shared_ptr<T> > TypeRepositoryMap;
+    typedef std::map< Type::TypeBase::TypeHash, std::shared_ptr<T> > TypeRepositoryMap;
 
     /// Public typedef of constant iterator into map of stored type.
     typedef typename TypeRepositoryMap::const_iterator TypeRepositoryMapIter;
@@ -61,22 +62,30 @@ public:
     };
 
     /// Add @p type to TypeRepository if doesn't exist there or get existing type with same TypeHash
-    boost::shared_ptr<T> add_type(const T & type);
+    std::shared_ptr<T> add_type(const T & type);
+
+    std::shared_ptr<T> find_hash(Type::TypeBase::TypeHash hash);
 
     /**
      * @brief Finish all stored types.
      *
      * Iterate through all types stored in TypeRepository
-     * and call finish if flag @p root_of_generic_subtree_
-     * has same value as @param is_root_of_generic_subtree.
+     * and call finish with given status.
      *
-     * We need call finish in two steps for correct
-     * functionality of generic types. In first step all
-     * types marked as "root_of_generic_subtree" are
-     * finished and then in second step can be finished
-     * other types.
+     * Note: This method is meant to be used only with
+     * FinishType::delete.
      */
-    void finish(bool is_root_of_generic_subtree = false);
+    void finish(Type::FinishStatus finish_type);
+
+    /**
+     * @brief Reset and remove types marked as deleted during finish.
+     *
+     * Iterate through all types stored in TypeRepository and -
+     *  - check count of usage of shared pointer to type (must be one)
+     *  - reset this shared pointer
+     *  - remove type from repository
+     */
+    void reset_deleted_types();
 
     /// Container-like access to the data stored in TypeRepository. Returns iterator to the first data.
     TypeRepositoryMapIter begin() const {
@@ -97,31 +106,50 @@ private:
 
 
 template <class T>
-boost::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
+std::shared_ptr<T> TypeRepository<T>::add_type(const T & type) {
     Type::TypeBase::TypeHash hash = type.content_hash();
 
-	auto search = type_repository_map_.find(hash);
-	if (search != type_repository_map_.end()) {
-		return search->second;
+	auto search = find_hash(hash);
+	if (search) {
+		return search;
 	} else {
-		auto type_ptr = boost::make_shared<T>( type );
-		type_repository_map_.insert( std::pair<Type::TypeBase::TypeHash, boost::shared_ptr<T>>(hash,type_ptr) );
+		auto type_ptr = std::make_shared<T>( type );
+		type_repository_map_.insert( std::pair<Type::TypeBase::TypeHash, std::shared_ptr<T>>(hash,type_ptr) );
 		return type_ptr;
 	}
 }
 
+
 template <class T>
-void TypeRepository<T>::finish(bool is_root_of_generic_subtree) {
-	// We need reverse iterating for correct finish of generic types.
-	for (typename TypeRepositoryMap::reverse_iterator it = type_repository_map_.rbegin(); it != type_repository_map_.rend(); ++it) {
-		if (is_root_of_generic_subtree == it->second->is_root_of_generic_subtree()) {
-			if (is_root_of_generic_subtree) {
-				//ASSERT(it->second->is_finished())(it->second->type_name()).warning("Unused root of generic subtree.");
-				it->second->finish(true);
-			} else {
-				it->second->finish();
-			}
+std::shared_ptr<T> TypeRepository<T>::find_hash(Type::TypeBase::TypeHash hash) {
+    auto search = type_repository_map_.find(hash);
+    if (search != type_repository_map_.end()) {
+        return search->second;
+    } else {
+        return std::shared_ptr<T>();
+    }
+}
+
+template <class T>
+void TypeRepository<T>::finish(Type::FinishStatus finish_type) {
+	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
+		it->second->finish(finish_type);
+	}
+}
+
+template <class T>
+void TypeRepository<T>::reset_deleted_types() {
+	std::vector< Type::TypeBase::TypeHash > deleted_hashes;
+	for (typename TypeRepositoryMap::iterator it = type_repository_map_.begin(); it != type_repository_map_.end(); ++it) {
+		if (it->second->finish_status() == Type::FinishStatus::delete_) {
+			ASSERT(it->second.use_count() == 1)(it->second.use_count()).error();
+			it->second.reset();
+			deleted_hashes.push_back(it->first);
 		}
+	}
+
+	for (auto deleted_hash : deleted_hashes) {
+		type_repository_map_.erase(deleted_hash);
 	}
 }
 

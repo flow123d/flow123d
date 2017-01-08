@@ -1,0 +1,66 @@
+*                                                                MAIN.IN
+* HEADING
+*
+ 'Izo2009'
+*
+*
+* PROCESSES
+*
+* WaterF  SolutF  HeatF   RootF   DualF
+* ------------------------------------------
+    1       0       0       0       0
+*
+*
+* GEOMETRY INFORMATION
+*
+* LUnit (Length units)
+ 'm'
+* CosAlf (Use 1.0 for vertical flow)
+  3.
+* Ndx (Number of dx-increments)
+* 78
+    200
+* dx-increments (Starting from the top)
+  200*0.005
+*  5*.2 68*1. 5*.2
+*   5*.2 73*1. 5*.2
+* -----------------------------------------
+*       xUp     xLow    MatNum  RegNum
+* -----------------------------------------
+          1.    0      1       1
+*         -2.   -7.      2       2
+*        -7.   -9.      3       3
+*        -9.   -10.      4       4
+* -----------------------------------------
+* (x-coordinate is positive upwards)
+*
+* NObs (Number of observation points: 0-5)
+  8
+* xObs (x-coord. of observation points, if NObs=0, no record expected)
+   0.0 0.1 0.2 0.5 0.7 0.8 0.9 1.0
+*
+*
+* TIME INFORMATION
+*
+* TUnit   tInit   tEnd    dtInit  dtMin   dtMax
+* ---------------------------------------------
+  's'    0         3000      0.1    0.1     20
+*
+*
+* PRINT INFORMATION
+*
+* NPrint [dtFlsh Flush] [Moisture] [Pressure] [Concentration] [Flux] 
+* ------------------------------------------------------------
+  5      1e6      flush: pressure moisture conc flux
+*
+* Print times
+0.1e3
+0.2e3
+0.5e3
+0.7e3
+1.0e3
+* ShortF(reduced output print: 1/0)
+  0
+* ScrnF (Screen output: 1/0)
+  1
+* END

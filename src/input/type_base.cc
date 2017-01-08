@@ -26,8 +26,6 @@
 
 #include <boost/type_traits.hpp>
 #include <boost/tokenizer.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/pointer_cast.hpp>
@@ -82,16 +80,22 @@ string TypeBase::desc() const {
 
 
 
-void TypeBase::lazy_finish() {
-	Input::TypeRepository<Instance>::get_instance().finish();
-	Input::TypeRepository<Abstract>::get_instance().finish(true);
-	Input::TypeRepository<Record>::get_instance().finish(true);
-	Input::TypeRepository<Tuple>::get_instance().finish(true);
-	Input::TypeRepository<Abstract>::get_instance().finish();
-	Input::TypeRepository<Record>::get_instance().finish();
-	Input::TypeRepository<Tuple>::get_instance().finish();
-	Input::TypeRepository<Selection>::get_instance().finish();
+void TypeBase::delete_unfinished_types() {
+	// mark unfinished types as deleted
+	Input::TypeRepository<Instance>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Abstract>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Record>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Tuple>::get_instance().finish(FinishStatus::delete_);
+	Input::TypeRepository<Selection>::get_instance().finish(FinishStatus::delete_);
+
+	// check and remove deleted types
+	Input::TypeRepository<Instance>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Abstract>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Record>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Tuple>::get_instance().reset_deleted_types();
+	Input::TypeRepository<Selection>::get_instance().reset_deleted_types();
 }
+
 
 
  std::string TypeBase::hash_str(TypeHash hash) {
@@ -187,20 +191,35 @@ TypeBase::TypeHash Array::content_hash() const
 }
 
 
-bool Array::finish(bool is_generic) {
-	return data_->finish(is_generic);
+FinishStatus Array::finish(FinishStatus finish_type) {
+	return data_->finish(finish_type);
 }
 
 
 
-bool Array::ArrayData::finish(bool is_generic)
+FinishStatus Array::ArrayData::finish(FinishStatus finish_type)
 {
-	if (finished) return true;
+	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(finish_status != FinishStatus::in_perform_).error("Recursion in the IST element: array_of_" + type_of_values_->type_name());
 
-	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) type_of_values_ = type_of_values_->make_instance().first;
-	if (!is_generic && type_of_values_->is_root_of_generic_subtree()) THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
+	if (finish_status != FinishStatus::none_) return finish_status;
 
-	return (finished = type_of_values_->finish(is_generic) );
+
+	finish_status = FinishStatus::in_perform_;
+
+	if (typeid( *(type_of_values_.get()) ) == typeid(Instance)) {
+		type_of_values_->finish(FinishStatus::generic_); // finish Instance object
+		type_of_values_ = type_of_values_->make_instance().first;
+	}
+	if ((finish_type != FinishStatus::generic_) && type_of_values_->is_root_of_generic_subtree())
+		THROW( ExcGenericWithoutInstance() << EI_Object(type_of_values_->type_name()) );
+
+	type_of_values_->finish(finish_type);
+	ASSERT(type_of_values_->is_finished()).error();
+	if (finish_type == FinishStatus::delete_) type_of_values_.reset();
+	finish_status = finish_type;
+	return (finish_status);
 }
 
 
@@ -241,7 +260,7 @@ TypeBase::MakeInstanceReturnType Array::make_instance(std::vector<ParameterPair>
 Array Array::deep_copy() const {
 	Array arr = Array(Integer()); // Type integer will be overwritten
 	arr.data_ = std::make_shared<Array::ArrayData>(*this->data_);
-	arr.data_->finished = false;
+	arr.data_->finish_status = FinishStatus::none_;
 	return arr;
 }
 
@@ -281,6 +300,7 @@ ARRAY_CONSTRUCT(FileName);
 ARRAY_CONSTRUCT(Selection);
 ARRAY_CONSTRUCT(Array);
 ARRAY_CONSTRUCT(Record);
+ARRAY_CONSTRUCT(Tuple);
 ARRAY_CONSTRUCT(Abstract);
 ARRAY_CONSTRUCT(Parameter);
 ARRAY_CONSTRUCT(Instance);
@@ -402,6 +422,10 @@ string FileName::type_name() const {
     }
 }
 
+bool FileName::operator==(const TypeBase &other) const
+{ return  typeid(*this) == typeid(other) &&
+                 (type_== static_cast<const FileName *>(&other)->get_file_type() );
+}
 
 
 bool FileName::match(const string &str) const {

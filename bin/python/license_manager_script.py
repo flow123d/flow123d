@@ -271,10 +271,13 @@ def parse_args(parser):
 
 
 def main():
+    """
+    Main function for license scriptdsvsd
+    """
     parser = create_parser()
     (options, args) = parse_args(parser)
 
-    variables = { }
+    variables = {}
     for name_value in options.variables:
         name, value = name_value.split(':', 1)
         variables[name] = value

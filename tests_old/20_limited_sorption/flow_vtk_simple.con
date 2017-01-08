@@ -1,0 +1,87 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Simple sorption test - no flow, no transport, known values of sorbed substances.",
+    mesh = {
+      mesh_file = "input/mesh_simple.msh",
+      sets = [ 
+        { name = ".boundary", 
+          region_labels = [ ".back", ".front", ".left", ".up", ".down"]
+        }
+      ]
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH",
+      
+      input_fields = [
+        { region = "volume", conductivity = 1e-10
+        },
+        { r_set = ".boundary",
+          bc_type = "dirichlet",
+          bc_piezo_head = 0
+        }
+      ],
+       
+      output = {
+        output_stream = {
+          file = "test_20.pvd", 
+          format = { TYPE = "vtk", variant = "ascii"}
+        }, 
+        output_fields = ["pressure_p0", "pressure_p1", "velocity_p0"]
+      }, 
+
+      balance = true,
+      solver = { 
+        TYPE = "Petsc",
+        a_tol = 1e-7 
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting",
+   
+      substances = ["A", "As-lin", "As-lang", "As-freund"],
+      
+      input_fields = [
+        { region = "volume",
+          init_conc = 1,
+          porosity= 0.25
+        },
+        { r_set = ".boundary",
+          bc_conc = 1.0
+        }
+      ],      
+      
+      reaction_term = {
+        TYPE = "Sorption",
+        solvent_density= 1.0,
+        substances = ["A", "As-lin", "As-lang", "As-freund"],
+        solubility = [1.0, 1.0, 1.0, 1.0],
+        input_fields = [
+          {
+            region = "volume",
+            init_conc_solid = 0.0,
+            rock_density = 1.0,             // mass balance sorption equation: por * rhol * cl + (1-por) * rhos * Ms * cs = total
+            sorption_type=  ["none",        // compute total from init conc : 0.25*1*1 + 0 = 0.25
+                             "linear",      // derive cl with cs=f(cl): cl = 0.25/(0.25 + 0.75*0.6) = 0.357142857
+                             "langmuir",    // compute cl from quadratic eqn. with cs=f(cl): cl = 0.25*cl + 0.6*0.75*0.4*cl/(1+0.4*cl) = 0.25, cl = 0.635278976
+                             "freundlich"], // compute cl with newton with cs=f(cl): cl = 0.25*cl + 0.6*0.75*cl^0.4 = 0.25, cl = 0.152233290
+            isotherm_mult= 0.6, 
+            isotherm_other= 0.4
+          }
+        ]
+      },
+      
+      time = { end_time = 1.0 },
+      balance = { cumulative = true },
+      
+      output_stream = {
+        file = "transport_test_20.pvd", 
+        format = {TYPE = "vtk", variant = "ascii"},
+        time_step = 0.2
+      }        
+          
+    } //secondary_equation
+  } // problem
+} // root

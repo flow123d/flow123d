@@ -3,12 +3,19 @@
 # author:   Jan Hybs
 
 from __future__ import absolute_import
-import os, re, datetime
+import os
+import re
+import datetime
 from subprocess import CalledProcessError
 from utils.logger import Logger
 
 
 class DoxySection(object):
+    """
+    Class DoxySection registers section which will be parsed in different
+    manner
+    """
+
     def __init__(self, lines=[], formatted=True, section='', obligatory=False):
         self.lines = lines[:]
         self.formatted = formatted
@@ -194,7 +201,6 @@ class LicenseManager(object):
 
         # add them to variable reference
         variables.update(new_vars)
-
 
     def process_file(self, file_path):
         """

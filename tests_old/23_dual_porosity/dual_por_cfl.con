@@ -1,0 +1,156 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient", 
+    mesh = {
+      //mesh_file = "./input/narrow_2d_chanel.msh"
+      mesh_file = "./input/dual_por.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      input_fields = [
+        { r_set = "BULK",
+          conductivity = 1.0
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = 0
+        }
+      ],
+
+      output = {
+        output_stream ={
+          file = "./dual_por_flow.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          } 
+      }, 
+
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+
+      substances = ["A"],
+      time = {
+        end_time = 10
+        // init_dt = 1.0
+      },
+      
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-7,
+        r_tol = 1e-7
+        //options="-ksp_type gmres -ksp_monitor"
+      },
+      
+      input_fields=[
+        {
+          r_set="BULK",
+          init_conc=[1.0],
+          porosity= 0.5
+        }
+      ],
+    
+      reaction_term = {
+        
+        COMMENT = {
+              TYPE = "RadioactiveDecay",
+              decays = [
+                {
+                  radionuclide = "A",
+                  half_life = 1.0,
+                  products = "B"
+                }        
+              ],
+              
+              TYPE = "Sorption",
+              solvent_density= 1.0,
+              substances = ["A"],
+              solubility = [1.0],
+              input_fields= [
+                {
+                  time=0.0,
+                  r_set="ALL",
+                  rock_density = 1.0,
+                  sorption_type=  "none",
+                  isotherm_mult= 0.6
+                },
+                {
+                  time=4.0,
+                  r_set="ALL",
+                  rock_density = 1.0,
+                  sorption_type=  "linear",
+                  isotherm_mult= 0.6
+                }
+              ]       
+        },
+          
+          
+        TYPE = "DualPorosity",
+        
+        input_fields= [
+          {
+            time=0.0,
+            r_set="ALL",
+            diffusion_rate_immobile= [0.00],
+            porosity_immobile= 0.1,
+            init_conc_immobile = [0.01]
+          },
+          {
+            time=3.0,
+            r_set="BULK",
+            porosity_immobile= 0.2
+          },
+          {
+            time=4.0,
+            r_set="BULK",
+            diffusion_rate_immobile= [0.001]
+          },
+          {
+            time=6.0,
+            r_set="BULK",
+            diffusion_rate_immobile= {
+              TYPE="FieldFormula", 
+              value = "if(t>=7.0,0.01,0.001)"
+              },
+            porosity_immobile = {
+              TYPE = "FieldFormula",
+              value = "if(t>8.0,0.5,0.2)"
+            } //change porosity                            
+          }
+        ],
+        output_fields = ["conc_immobile", "porosity_immobile"]
+      },  
+
+      balance = {
+        cumulative = true
+      },
+      
+      output_stream =       {
+        file = "dual_por_transport.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 1.0
+      }
+
+    }
+       
+  } // problem
+} 
+    

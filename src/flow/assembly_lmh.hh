@@ -66,14 +66,14 @@ public:
             soil_data.Qr = this->ad_->water_content_residual.value(ele.centre(), ele.element_accessor());
             soil_data.Qs = this->ad_->water_content_saturated.value(ele.centre(), ele.element_accessor());
             soil_data.Ks = this->ad_->conductivity.value(ele.centre(), ele.element_accessor());
-            soil_data.cut_fraction = 0.999;
+            //soil_data.cut_fraction = 0.99; // set by model
 
             soil_model->reset(soil_data);
         }
 
     }
 
-    void update_water_content(LocalElementAccessorBase<3> ele) {
+    void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
         FOR_ELEMENT_SIDES(ele.full_iter(), i) {
@@ -83,7 +83,7 @@ public:
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
-                  fadbad::B<double> evaluated( soil_model->water_content(x_phead) );
+                  fadbad::B<double> evaluated( soil_model->water_content_diff(x_phead) );
                   evaluated.diff(0,1);
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
@@ -148,15 +148,16 @@ public:
                 double mass_diagonal = diagonal_coef * capacity;
 
                 /*
-                cout << "w diff: " << water_content_diff
-                     << " mass: " << mass_diagonal * ad_->phead_edge_[local_edge]
-                     << " w prev: " << -ad_->water_content_previous_it[local_side]
-                     << " w time: " << ad_->water_content_previous_time[local_side]
-                     << " c: " << capacity
-                     << " p: " << ad_->phead_edge_[local_edge]
-                     << " z:" << ele.centre()[2] << endl;
-
+                DebugOut().fmt("w diff: {:g}  mass: {:g} w prev: {:g} w time: {:g} c: {:g} p: {:g} z: {:g}",
+                      water_content_diff,
+                      mass_diagonal * ad_->phead_edge_[local_edge],
+                     -ad_->water_content_previous_it[local_side],
+                      ad_->water_content_previous_time[local_side],
+                      capacity,
+                      ad_->phead_edge_[local_edge],
+                      ele.centre()[0] );
                 */
+
 
                 double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
                                   + diagonal_coef * water_content_diff / this->ad_->time_step_;

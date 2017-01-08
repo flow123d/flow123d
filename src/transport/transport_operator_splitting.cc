@@ -44,6 +44,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/factory.hh"
+#include "input/flow_attribute_lib.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
 
@@ -72,6 +73,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
             "coupled with reaction and adsorption model (ODE per element)\n"
             " via operator splitting.")
 		.derive_from(AdvectionProcessBase::get_input_type())
+		.add_attribute( FlowAttribute::subfields_address(), "\"/problem/solute_equation/substances/*/name\"")
 		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
 				"Time governor setting for the secondary equation.")
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
@@ -83,7 +85,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				// input data
 		.declare_key("transport", ConcentrationTransportBase::get_input_type(), Default::obligatory(),
 				"Type of numerical method for solute transport.")
-		.declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
+		.declare_key("reaction_term", ReactionTerm::it_abstract_term(), Default::optional(),
 					"Reaction model involved in transport.")
 /*
 		.declare_key("output_fields", Array(ConvectionTransport::get_output_selection()),
@@ -256,8 +258,7 @@ void TransportOperatorSplitting::zero_time_step()
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
-    convection->output_stream()->write_time_frame();
-    if (balance_ != nullptr) balance_->output(time_->t());
+    output_data();
 
 }
 

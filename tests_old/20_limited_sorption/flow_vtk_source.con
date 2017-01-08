@@ -1,0 +1,91 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Sorption with sources - no flow, no transport, only source term and sorptions. \nQualitative and mass balance check.\n- A - check sorption none (with source, init_conc_solid)",
+    mesh = {
+      mesh_file = "input/mesh_simple.msh",
+      sets = [ 
+        { name = ".boundary", 
+          region_labels = [ ".back", ".front", ".left", ".up", ".down"]
+        }
+      ]
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH",
+      
+      input_fields = [
+        { region = "volume", conductivity = 1e-10
+        },
+        { r_set = ".boundary",
+          bc_type = "dirichlet",
+          bc_piezo_head = 0
+        }
+      ],
+       
+      output = {
+        output_stream = {
+          file = "test_20.pvd", 
+          format = { TYPE = "vtk", variant = "ascii"}
+        }, 
+        output_fields = ["pressure_p0", "pressure_p1", "velocity_p0"]
+      }, 
+
+      balance = true,
+      solver = { 
+        TYPE = "Petsc",
+        a_tol = 1e-7 
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting",
+   
+      substances = ["A", "As-lin-limit", "As-lin", "As-lang", "As-freund"],
+      
+      input_fields = [
+        { region = "volume",
+          init_conc = 0.0,
+          porosity= 0.25,
+          sources_density = [0, 0.8, 0.2, 0.3, 0.5],
+          sources_conc = [0.5, 0, 0, 0, 0],
+          sources_sigma = [1.5, 0, 0, 0, 0]
+        },
+        { r_set = ".boundary",
+          bc_conc = 0
+        }
+      ],      
+      
+      reaction_term = {
+        TYPE = "Sorption",
+        solvent_density= 1.0,
+        substances = ["As-lin-limit", "As-lin", "A", "As-lang", "As-freund"],
+        solubility = [1.0, 1.0, 0.1, 1.0, 1.0],
+        input_fields = [
+          {
+            region = "volume",
+            init_conc_solid = [0, 0, 0.5, 0, 0],
+            rock_density = 1.0,             
+            sorption_type=  ["linear",      // reach solubility limit
+                             "linear",      
+                             "none",        // no sorption - trying to switch off
+                             "langmuir",    
+                             "freundlich"], 
+            isotherm_mult= 0.6, 
+            isotherm_other= 0.4
+          }
+        ]
+      },
+      
+      time = { end_time = 1.0 },
+      balance = { cumulative = true },
+      
+      output_stream = {
+        file = "transport_test_20.pvd", 
+        format = {TYPE = "vtk", variant = "ascii"},
+        time_step = 0.2
+      }        
+          
+    } //secondary_equation
+  } // problem
+} // root

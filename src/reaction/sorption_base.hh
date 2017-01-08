@@ -77,7 +77,7 @@ public:
     
     /// Multiplication coefficients (k, omega) for all types of isotherms. 
     /** Langmuir: c_s = omega * (alpha*c_a)/(1- alpha*c_a), Linear: c_s = k*c_a */
-    MultiField<3, FieldValue<3>::Scalar > isotherm_mult;  
+    MultiField<3, FieldValue<3>::Scalar > distribution_coefficient;  
     /// Langmuir sorption coeficients alpha (in fraction c_s = omega * (alpha*c_a)/(1- alpha*c_a)).
     MultiField<3, FieldValue<3>::Scalar > isotherm_other; 
     
@@ -160,7 +160,7 @@ protected:
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
-  double **compute_reaction(double **concentrations, int loc_el);
+  double **compute_reaction(double **concentrations, int loc_el) override;
   
   /// Reinitializes the isotherm.
   /**

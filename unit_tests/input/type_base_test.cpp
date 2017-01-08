@@ -116,10 +116,9 @@ using namespace Input::Type;
 
     // construction
     std::shared_ptr<Array> arr_int = std::make_shared<Array>(Integer(), 1, 8);
-    Array arr_arr_dbl( Array( Double() ));
 
-    Record rec_2("record_type_2", "desc");
-    rec_2.close();
+    Record rec_2 = Record("record_type_2", "desc")
+        .close();
 
     Array arr_rec_shared_ptr( rec_2 );
 
@@ -128,7 +127,14 @@ using namespace Input::Type;
 
     Array arr_of_sel( sel );
 
-    Input::Type::TypeBase::lazy_finish();
+	Record helper_rec = Record("helper_record", "Helper record simplifies finish")
+			.declare_key("val_0", *(arr_int.get()), "desc.")
+			.declare_key("val_1", Array( Double() ), "desc.")
+			.declare_key("val_2", arr_rec_shared_ptr, "desc.")
+			.declare_key("val_3", arr_of_sel, "desc.")
+			.close();
+
+    helper_rec.finish();
 
     // get_sub_type
     EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // std::smart_ptr assert fails
@@ -193,12 +199,12 @@ using namespace Input::Type;
 
     sel2.add_value(green,"green");
     sel2.close();
-    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, feal::Exc_assert, "in finished Selection.");
+    EXPECT_THROW_WHAT( {sel2.add_value(yellow,"y");}, feal::Exc_assert, "in closed Selection.");
 
     Selection sel3;
     EXPECT_TRUE( sel3.is_finished());
     EXPECT_EQ("EmptySelection", sel3.type_name());
-    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, feal::Exc_assert, "in finished Selection.");
+    EXPECT_THROW_WHAT( {sel3.add_value(1,"one");}, feal::Exc_assert, "in closed Selection.");
     // getter methods
     EXPECT_TRUE( sel2.has_name("blue") );
     EXPECT_FALSE( sel2.has_name("xblue") );
@@ -391,7 +397,7 @@ TEST_F(InputTypeAttributesTest, base_test) {
 		.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
 		.close();
 
-	TypeBase::lazy_finish();
+	main_rec.finish();
 
 	{
 		std::stringstream ss;

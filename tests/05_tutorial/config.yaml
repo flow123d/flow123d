@@ -1,0 +1,10 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1100
+
+test_cases:
+- files: 05_frac_sorption.yaml
+  time_limit: 60
+- files: 07_heat.yaml
+  proc: [ 1 ]
+  time_limit: 60

@@ -1,0 +1,148 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test2 - Transport 1D-2D (convection, dual porosity, sorption)", 
+    mesh = {
+      mesh_file = "./input/compatible.msh",
+      sets = [
+          {
+            name = "subset",
+            region_labels = [
+                "2d",
+                "1d"
+            ]
+          },
+          {              
+            name = ".sides",
+            region_labels = [
+              ".2d",
+              ".1d"
+            ]            
+          }
+        ]
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      input_fields= [
+        { region = "1d",
+          anisotropy = 10,
+          cross_section = 1,
+          sigma = 0.05
+        },
+        { region = "2d",
+          anisotropy = 1,
+          cross_section = 1
+        },
+        {
+          r_set = ".sides",
+          bc_type="dirichlet",
+          bc_pressure={
+            TYPE="FieldFormula",
+            value="x"            
+          }
+        }
+      ],
+      
+      balance = {
+        format = "gnuplot"
+      },
+
+      output = {
+        output_stream = {
+          file = "./test2.msh", 
+          format = {
+            TYPE = "gmsh", 
+            variant = "ascii"
+          }, 
+          name = "flow_output_stream"
+        },
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      }
+    },
+
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+      output_stream = {
+        file = "./transport.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5,
+        name = "transport_output_stream"
+      },
+	
+      substances = [
+        "A", 
+        "B"
+      ], 
+      input_fields = [
+        {
+          r_set=".sides",
+          bc_conc = { 
+              TYPE="FieldFormula",
+              value="x/12.75"
+          }           
+        },
+        {
+          r_set = "subset",
+          init_conc = 0,
+          porosity= 0.25
+        }
+      ],
+      time = {
+        end_time = 5.0
+      },
+      balance = {
+        cumulative = true,
+        format = "gnuplot"
+      },
+      
+      reaction_term = {
+        TYPE = "DualPorosity",
+        
+        input_fields = [
+          {
+            r_set="subset",
+            diffusion_rate_immobile= [0.01,0.01],
+            porosity_immobile= 0.25,
+            init_conc_immobile = [0.0, 0.0]
+          }
+        ],
+        output_fields = [],
+        
+        reaction_mobile = {
+          TYPE = "SorptionMobile",
+          solvent_density= 1.0,
+          substances = ["A", "B"],
+          solubility = [1.0, 1.0],
+          input_fields = [
+            {
+              r_set="subset",
+              rock_density = 1.0,
+              sorption_type=  ["linear", "freundlich"],
+              isotherm_mult= 0.02, 
+              isotherm_other= [0, 0.5]
+            }
+          ],
+          output_fields = []
+        },
+        reaction_immobile = {
+          TYPE = "SorptionImmobile",
+          solvent_density= 1.0,
+          substances = ["A", "B"],
+          solubility = [1.0, 1.0],
+          input_fields= { REF = "/problem/secondary_equation/reaction_term/reaction_mobile/input_fields" },
+          output_fields = []
+        }
+      }
+    }
+  }
+}

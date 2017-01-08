@@ -1,0 +1,64 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test6 - Coupling between dimension 1D-2D - influence of sigma and cross section parameters.", 
+    mesh = {
+      mesh_file = "${INPUT}/test6_21d.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields= [
+        { region = "plane",
+          conductivity = 5,            // K_2d
+          cross_section = 10           // delta_2d
+        },
+        { region = "channel",
+          conductivity = 50,           // K1
+          cross_section = 20,          // delta_1d
+          sigma = 0.04,                // sigma
+          water_source_density = {     // f_1d
+            TYPE = "FieldFormula",
+            value = "-1/20*(10*5)"     // f_1d = - 1 / delta_1d (delta_2d * K_2d)
+          }
+        },
+        { region = ".plane",
+          bc_type = "dirichlet",
+          bc_piezo_head = {
+            TYPE = "FieldFormula",
+            value = "x"                 // p_2d
+          }
+        },
+        { region = ".channel",
+          bc_type = "neumann",
+          bc_flux = {
+            TYPE = "FieldFormula",
+            value = "0"
+          }
+        }
+      ],
+
+      output = {
+        output_stream = {
+          file = "test6_21d.pvd", 
+          format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+        },
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      } 
+    }
+  } 
+
+}

@@ -47,7 +47,7 @@
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "flow/darcy_flow_interface.hh"
-
+#include "input/input_exception.hh"
 
 /// external types:
 class LinSys;
@@ -144,6 +144,8 @@ public:
     DECLARE_EXCEPTION(ExcSolverDiverge,
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
+    DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
+            << "Missing the key 'time', obligatory for the transient problems.");
 
     typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembler;
 
@@ -198,6 +200,8 @@ public:
 
         RichardsSystem system_;
         uint water_balance_idx_;
+
+
         //FieldSet  time_term_fields;
         //FieldSet  main_matrix_fields;
         //FieldSet  rhs_fields;
@@ -221,7 +225,7 @@ public:
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();
 
-    const MH_DofHandler &get_mh_dofhandler() {
+    const MH_DofHandler &get_mh_dofhandler()  override {
         double *array;
         unsigned int size;
         get_solution_vector(array, size);
@@ -252,13 +256,17 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    ~DarcyMH();
+    virtual ~DarcyMH() override;
 
 
 protected:
-
-    virtual bool zero_time_term();
-
+    /**
+     * Returns true is the fields involved in the time term have values that makes the time term zero.
+     * For time_global==true, it returns true if there are no field descriptors in the input list, so the
+     * fields )of the time ter) have their default values for whole simulation.
+     * If time_global==false (default), only the actual values are considered.
+     */
+    virtual bool zero_time_term(bool time_global=false);
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
@@ -344,9 +352,11 @@ protected:
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
 	bool use_steady_assembly_;
+	bool data_changed_;
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
 	double tolerance_;
+	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 

@@ -1,0 +1,99 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "2D2D test - Steady flow in 2D block with fracture, fracture as 2D porous subdomain", 
+    mesh = {
+      mesh_file = "./input/2D2D.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      data= [
+        { region = "2d_porous_block_left",
+          anisotropy = 0.1
+        },
+        { region = "2d_porous_block_right",
+          anisotropy = 0.1
+        },
+        { region = "2d_fracture_ends",
+          anisotropy = 10
+        },
+        { region = "2d_fracture",
+          anisotropy = 10
+        },
+        { region = ".2d_bottom_left",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "1.1"
+          }
+        },
+        { region = ".2d_bottom_fracture",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "1.1"
+          }
+        },
+        { region = ".2d_bottom_right",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "1.1"
+          }
+        },
+        { region = ".2d_top_left",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "1.0"
+          }
+        },
+        { region = ".2d_top_fracture",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "1.0"
+          }
+        },
+        { region = ".2d_top_right",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "1.0"
+          }
+        }
+      ],
+
+      output = {
+        balance_output = "balance.out", 
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        piezo_head_p0 = "flow_output_stream", 
+        pressure_p0 = "flow_output_stream", 
+        pressure_p1 = "flow_output_stream", 
+        raw_flow_output = "./raw_output.txt",
+        velocity_p0 = "flow_output_stream"
+      },
+       
+      solver = {
+        TYPE = "Petsc", 
+        accuracy = 1e-7
+      } 
+    }
+  }, 
+
+  system = {
+    output_stream = {
+        file = "./2D2D_flow.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+  }
+}

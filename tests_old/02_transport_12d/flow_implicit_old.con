@@ -1,0 +1,126 @@
+
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test2 - Transport implicit 1D-2D (convection, dispersion)", 
+    mesh = {
+      mesh_file = "./input/compatible.msh",
+      sets = [
+          {
+            name = "subset",
+            region_labels = [
+                "2d",
+                "1d"
+            ]
+          },
+          {              
+            name = ".sides",
+            region_labels = [
+              ".2d",
+              ".1d"
+            ]            
+          }
+        ]
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      input_fields= [
+        { region = "1d",
+          anisotropy = 10,
+          cross_section = 1,
+          sigma = 0.05
+        },
+        { region = "2d",
+          anisotropy = 1,
+          cross_section = 1
+        },
+        {
+          r_set = ".sides",
+          bc_type="dirichlet",
+          bc_pressure={
+            TYPE="FieldFormula",
+            value="x"            
+          }
+        }
+      ],
+      balance = true,
+      output = {
+        output_stream = {
+          file = "./test2.pvd", 
+          format = {
+            TYPE = "vtk", 
+            variant = "ascii"
+          }, 
+          name = "flow_output_stream"
+        },
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      }
+    },
+
+    secondary_equation = {
+      TYPE = "SoluteTransport_DG", 
+      output_stream = {
+        file = "./transport-implicit.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5,
+        name = "transport_output_stream"
+      },
+
+      substances = [ "A" ], 
+      time = {
+        end_time = 5.0,
+	init_dt = 0.5
+      },
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      },
+      input_fields=[
+        { 
+          r_set=".sides",
+          bc_conc = 1
+        },
+        {
+          r_set="subset",
+          init_conc = 0,
+          porosity= 0.25
+        }
+      ],
+      balance = {
+        cumulative = true
+      }
+    }
+  }, 
+
+  system = {
+    output_streams = [
+      {
+        file = "./test2.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport-implicit.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5,
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

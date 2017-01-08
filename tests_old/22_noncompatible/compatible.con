@@ -1,0 +1,59 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Flow in 2d-1d domain, compatible mesh", 
+    mesh = {
+      mesh_file = "./input/compatible.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      n_schurs = 2, 
+
+      input_fields= [
+        { region = "1d",
+          conductivity = 1,
+          sigma = 25    // compatible case has one flux for every side of fracture
+        },
+        { region = "2d",
+          conductivity = 5
+        },
+        { region = ".1d",
+          bc_type = "dirichlet",
+          bc_pressure = 5
+        },
+        { region = ".2d_bottom_top",
+          bc_type = "dirichlet",
+          bc_pressure = 10
+        }
+      ],
+
+      output = {
+        compute_errors = true,
+        output_stream = {
+          REF = "/system/output_stream"
+        }, 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0", "velocity_diff", "pressure_diff", "div_diff" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        r_tol = 1.0e-10,
+        a_tol = 1.0e-10
+      } 
+    }
+  }, 
+
+  system = {
+    output_stream = {
+        file = "./test1.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+  }
+}

@@ -1,0 +1,102 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test of boundary conditions for transport", 
+    mesh = {
+      mesh_file = "./input/mesh.msh"
+    }, 
+
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      input_fields= [
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = { TYPE="FieldFormula", value="(1-x)/10" }
+        }
+      ],
+
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        },
+        output_fields = [ "pressure_p0", "velocity_p0" ]
+      },
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      }
+    },
+
+    secondary_equation = {
+      TYPE = "SoluteTransport_DG", 
+    
+      input_fields= [
+        { region = "domain",
+          diff_m = 1e-2,
+          sources_density = 0
+        },
+        { region = ".left",
+          bc_type = "dirichlet",
+          bc_conc = { TYPE="FieldFormula", value="2-((y-0.5)*2)^8" }
+        },
+        { region = ".right",
+          bc_type = "dirichlet",
+          bc_conc = { TYPE="FieldFormula", value="((y-0.5)*2)^8" }
+        },
+        { region = ".top",
+          bc_type = "dirichlet",
+          bc_conc = 1
+        },
+        { region = ".bottom",
+          bc_type = "dirichlet",
+          bc_conc = 1
+        }
+      ],
+
+      output_stream = {
+        REF = "/system/output_streams/1"
+      }, 
+ 
+      substances = [
+        "tracer"
+      ], 
+      time = {
+        end_time = 10
+      },
+      balance = {
+        cumulative = true
+      },
+      solver = { 
+        REF="../../primary_equation/solver"
+      }
+    }
+  }, 
+
+
+  system = {
+    output_streams = [
+      {
+        file = "./flow.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 1,
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

@@ -2,3 +2,6 @@
 	path = src/dealii
 	url = https://github.com/flow123d/dealii.git
 	branch = fork_v8.2.1
+[submodule "bin/docker"]
+	path = bin/docker
+	url = https://github.com/flow123d/docker-config.git

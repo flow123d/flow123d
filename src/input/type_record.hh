@@ -316,6 +316,9 @@ public:
     Record &close() const;
 
 
+    /// Implements @p TypeBase::finish_status.
+    FinishStatus finish_status() const override;
+
     /// Implements @p TypeBase::is_finished.
     bool is_finished() const override;
 
@@ -332,7 +335,7 @@ public:
     virtual string class_name() const override { return "Record"; }
 
     /// Class comparison and Record type name comparision.
-    bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      * @brief Interface to mapping key -> index in record.
@@ -381,7 +384,7 @@ public:
      *
      * Calls close() and completes Record (check auto convertible key, parameters of generic types etc).
      */
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /**
      * @brief Add TYPE key as obligatory.
@@ -486,7 +489,7 @@ protected:
         std::vector< std::shared_ptr<Abstract> > parent_vec_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
-        bool finished;
+        FinishStatus finish_status_;
 
         /// If record is closed, we do not allow any further declare_key calls.
         bool closed_;

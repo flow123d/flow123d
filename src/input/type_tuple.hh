@@ -83,7 +83,7 @@ public:
 	Tuple &allow_auto_conversion(const string &from_key) override;
 
     /// Class comparison and Tuple type name comparison.
-    bool operator==(const TypeBase &other) const;
+    bool operator==(const TypeBase &other) const override;
 
     /**
      * @brief Close the Tuple for further declarations of keys.
@@ -97,14 +97,14 @@ public:
      *
      * Completes Tuple (check auto convertible key, parameters of generic types etc).
      */
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /**
      * @brief Override Record::derive_from
      *
      * Deriving of Tuple type is forbidden. Type is determined for small simple data.
      */
-    Tuple &derive_from(Abstract &parent);
+    Tuple &derive_from(Abstract &parent) override;
 
     /**
      * @brief Return count of obligatory keys.

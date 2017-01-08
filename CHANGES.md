@@ -12,8 +12,8 @@ List of all changes in user interface and major internal changes.
 * A tool is provided for conversion from the CON with the structure of the 1.8.2 version to the YAML 
   format with the new structure. The tool can also convert YAML files of the version 2.0.0_rc.
 
-  Usage:    ```python3 bin/input_convert.py path/to/old_file.con```
-            ```python3 bin/input_convert.py path/to/old_file.yaml```  
+  Usage:    ```bin/input_convert.sh path/to/old_file.con```
+            ```bin/input_convert.sh path/to/old_file.yaml```  
 
 * Vector valued fields are replaced by "multifields". This allows independent setting for individual components.
   E.g. ``` init_conc = [ 0, 1, {TYPE=FieldFormula, value="x*y"} ]```

@@ -1,0 +1,118 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient", 
+    mesh = {
+      mesh_file = "./input/sit_decay.msh"
+    }, 
+    
+    primary_equation = {
+      TYPE = "Steady_MH", 
+
+      input_fields= [
+        { rid = 1,
+          anisotropy = 0.01
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_piezo_head = 0
+        }
+      ],
+
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      }
+    }, 
+    
+    secondary_equation = {
+      TYPE = "TransportOperatorSplitting", 
+
+      input_fields= [
+        { rid = 1,
+          init_conc = 
+            [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.06000000]
+        },
+        {
+          r_set = "BOUNDARY",
+          bc_conc = [0.01000000, 0.02000000, 0.03000000, 0.04000000, 0.05000000, 0.06000000]
+        }
+      ],
+
+      output_stream = {
+        REF = "/system/output_streams/1"
+      }, 
+      
+      substances = [
+        "A", 
+        "B", 
+        "C", 
+        "D", 
+        "E", 
+        "F"
+      ], 
+      time = {
+        end_time = 10.0
+      },
+      
+      reaction_term = {
+        TYPE="RadioactiveDecay",
+
+        decays = [
+          {
+            radionuclide = "D",
+            half_life = 2.5,
+            products = [
+              "F"
+            ]
+          },
+          {
+            radionuclide = "F",
+            half_life = 2.5,
+            products = [
+              "B"
+            ]
+          }
+        ]
+      },
+
+      balance = {
+        cumulative = true
+      }
+
+    } 
+  }, 
+  
+  
+  system = {
+    output_streams = [
+      {
+        file = "./decay.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport_decay.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 0.5,
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

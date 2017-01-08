@@ -52,7 +52,7 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    virtual void init_from_input(const Input::Record &rec);
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
     /**
      * For time dependent formulas returns always true. For time independent formulas returns true only for the first time.

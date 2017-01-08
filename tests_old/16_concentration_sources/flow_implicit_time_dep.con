@@ -1,0 +1,123 @@
+{
+  COMMENT_Stop_time = "1275", 
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Steady flow + transport with time dependent source", 
+    mesh = {
+      mesh_file = "./input/test16.msh",
+      regions = [
+        { name = "left_source",
+          id = 100,
+          element_list = [ 124 ]
+        },
+        { name = "right_source",
+          id = 200,
+          element_list = [ 721 ]
+        }
+      ]
+    }, 
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      
+      n_schurs = 2,
+      
+      input_fields= [
+        { r_set = "BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = {TYPE="FieldFormula", value="0.2*y"}
+        },
+        { rid = 7,
+          cross_section = 1,
+          conductivity = 1
+        }
+      ],
+      
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
+      }, 
+
+      balance = true,
+
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      } 
+    }, 
+    secondary_equation = {
+      TYPE = "SoluteTransport_DG", 
+      dual_porosity = false, 
+      
+      input_fields= [
+        { region = "IMPLICIT BOUNDARY",
+          bc_conc = 0
+        },
+        { rid = 7,
+          init_conc = 0,
+          porosity = 1
+        },
+        { rid = 100,
+          sources_density = { TYPE="FieldFormula", value="max(4-t,0)" }
+        },
+        { rid = 200,
+          time = 2,
+          sources_sigma = 1,
+          sources_conc = 1
+        },
+        { rid = 200,
+          time = 4,
+          sources_sigma = 0
+        },
+        { rid = 7,
+          time = 4,
+          porosity = {TYPE="FieldFormula", value="4/t"}
+        }
+      ],
+      
+      output_stream = {
+        REF = "/system/output_streams/1"
+      }, 
+      substances = [
+        "conc"
+      ], 
+      time = {
+        end_time = 10,
+        max_dt = 1e0,
+        min_dt = 1e0
+      },
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-12,
+        r_tol = 1e-12
+      },
+      balance = {
+        cumulative = true
+      }
+    }
+
+  }, 
+  system = {
+    output_streams = [
+      {
+        file = "./flow_test16.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }, 
+      {
+        file = "./transport_test16.pvd", 
+        format = {
+          TYPE = "vtk", 
+          variant = "ascii"
+        }, 
+        time_step = 1,
+        name = "transport_output_stream"
+      }
+    ]
+  }
+}

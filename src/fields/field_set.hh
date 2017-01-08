@@ -135,7 +135,7 @@ public:
     /**
      * Make Selection with strings for all field names in the FieldSet.
      */
-    Input::Type::Selection make_output_field_selection(const string &name, const string &desc);
+    //Input::Type::Selection make_output_field_selection(const string &name, const string &desc);
 
     /**
      * Use @p FieldCommonBase::copy_from() to set field of the field set given by the first parameter
@@ -192,9 +192,7 @@ public:
     /**
      * Collective interface to @p FieldCommonBase::set_mesh().
      */
-    void set_time(const TimeStep &time, LimitSide limit_side) {
-        for(FieldCommon *field : field_list) field->set_time(time, limit_side);
-    }
+    bool set_time(const TimeStep &time, LimitSide limit_side);
 
     /**
      * Collective interface to @p FieldCommonBase::output_type().

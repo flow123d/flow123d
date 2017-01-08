@@ -57,8 +57,8 @@ Substance::Substance(const Input::Record &in_rec)
 
 void SubstanceList::initialize(const Input::Array &in_array)
 {
-	substances_ = boost::make_shared<std::vector<Substance> >();
-	names_ = boost::make_shared<std::vector<std::string> >();
+	substances_ = std::make_shared<std::vector<Substance> >();
+	names_ = std::make_shared<std::vector<std::string> >();
 
 	for (auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it)
 	{
@@ -77,8 +77,8 @@ void SubstanceList::initialize(SubstanceList &list)
 
 void SubstanceList::initialize(const std::vector<std::string> &names)
 {
-	substances_ = boost::make_shared<std::vector<Substance> >();
-	names_ = boost::make_shared<std::vector<std::string> >(names);
+	substances_ = std::make_shared<std::vector<Substance> >();
+	names_ = std::make_shared<std::vector<std::string> >(names);
 
 	// copy names to internal vectors
 	(*substances_).resize(names.size());

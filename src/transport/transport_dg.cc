@@ -85,19 +85,6 @@ const Record & TransportDG<Model>::get_input_type() {
 				"Variant of interior penalty discontinuous Galerkin method.")
 		.declare_key("dg_order", Integer(0,3), Default("1"),
 				"Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
-/*
-		.declare_key("output_fields",
-		        Array(
-		            // Get selection name and description from the model
-                    Model::ModelEqData::get_output_selection()
-	                // EqData contains both TransportDG and model specific fields.
-                    .copy_values(
-                            EqData().make_output_field_selection("DG_output_fields","Auxiliary Selection")
-                            .close())
-                    .close()),
-				Default(Model::ModelEqData::default_output_field()),
-				"List of fields to write to output file.")
-*/
         .declare_key("output",
                 EqData().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),

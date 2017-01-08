@@ -45,10 +45,11 @@ typedef unsigned int FieldEnum;
 namespace internal {
 
 // Helper functions to get scalar type name
+/*
 std::string type_name_(double);
 std::string type_name_(int);
 std::string type_name_(FieldEnum);
-
+*/
 
 /**
  * InputType dispatch from elementary type @p ET of FieldValues_ to elementary Input::Type, i.e. descendant of Input::Type::Scalar.
@@ -248,6 +249,9 @@ public:
 		}
 
     }
+    static constexpr bool is_scalable() {
+        return std::is_floating_point<element_type>::value;
+    }
 
 
     inline FieldValue_(return_type &val) : value_(val) {}
@@ -286,6 +290,13 @@ public:
     bool equal_to(const  return_type &other) {
         return arma::max(arma::max(arma::abs(value_ - other))) < 4*std::numeric_limits<ET>::epsilon();
     }
+    // Multiplied value_ by double coefficient
+    void scale(double scale_coef) {
+        if (is_scalable())
+            for( unsigned int row=0; row<n_rows(); row++)
+                for( unsigned int col=0; col<n_cols(); col++)
+                    value_.at(row,col) = scale_coef * value_.at(row,col);
+    }
 
 private:
     return_type &value_;
@@ -311,6 +322,9 @@ public:
     static IT::Parameter get_input_type()
     {
         return IT::Parameter("element_input_type");
+    }
+    static constexpr bool is_scalable() {
+        return std::is_floating_point<element_type>::value;
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
@@ -351,6 +365,11 @@ public:
     bool equal_to(const  return_type &other) {
         return std::abs(value_ - other) < 4*std::numeric_limits<ET>::epsilon();
     }
+    // Multiplied value_ by double coefficient
+    void scale(double scale_coef) {
+        if (is_scalable())
+            value_ = scale_coef * value_;
+    }
 
 private:
     return_type &value_;
@@ -375,6 +394,9 @@ public:
     static std::string type_name() { return "R[n]"; }
     static IT::Array get_input_type() {
         return IT::Array( IT::Parameter("element_input_type"), 1);
+    }
+    static constexpr bool is_scalable() {
+        return std::is_floating_point<element_type>::value;
     }
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
     const ET * mem_ptr() { return value_.memptr(); }
@@ -415,6 +437,13 @@ public:
     bool equal_to(const  return_type &other) {
         return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
     }
+    // Multiplied value_ by double coefficient
+    void scale(double scale_coef) {
+        if (is_scalable())
+            for(unsigned int i=0; i< n_rows(); i++) {
+                value_.at(i) = scale_coef * value_.at(i);
+            }
+    }
 
 
 private:
@@ -437,6 +466,9 @@ public:
     static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }
     static IT::Array get_input_type() {
         return IT::Array( IT::Parameter("element_input_type"), 1, NRows);
+    }
+    static constexpr bool is_scalable() {
+        return std::is_floating_point<element_type>::value;
     }
 
     inline FieldValue_(return_type &val) : value_(val) {}
@@ -475,6 +507,13 @@ public:
     // Elementwise equivalence.
     bool equal_to(const  return_type &other) {
         return arma::max(arma::abs(value_ - other)) < 4*std::numeric_limits<ET>::epsilon();
+    }
+    // Multiplied value_ by double coefficient
+    void scale(double scale_coef) {
+        if (is_scalable())
+	        for(unsigned int i=0; i< n_rows(); i++) {
+	            value_.at(i) = scale_coef * value_.at(i);
+	        }
     }
 
 private:

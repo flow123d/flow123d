@@ -1,0 +1,52 @@
+{
+  problem = {
+    TYPE = "SequentialCoupling", 
+    description = "Interpolated boundary condition - big cube",     
+    mesh = {
+      mesh_file = "input/large_mesh.msh"
+    }, 
+    primary_equation = {
+      TYPE = "Steady_MH", 
+      input_fields=[
+        {
+          region = "IMPLICIT BOUNDARY",
+          bc_type = "dirichlet",
+          bc_pressure = {
+            TYPE = "FieldFormula",
+            value = "x-z"
+          }
+        },
+        {
+          r_set = "BULK",
+          anisotropy = 1
+        }
+      ],
+      output = {
+        output_stream = {
+          REF = "/system/output_streams/0"
+        }, 
+        output_fields = [ "piezo_head_p0", "pressure_p0", "pressure_p1", "velocity_p0" ]
+        //raw_flow_output = "./raw_output_large.txt", 
+      }, 
+      balance = true,
+      solver = {
+        TYPE = "Petsc", 
+        a_tol = 1e-07
+      }
+    }
+  },
+  
+  system = {
+    output_streams = [
+      {
+        file = "./large_cube.msh", 
+        format = {
+          TYPE = "gmsh", 
+          variant = "ascii"
+        }, 
+        name = "flow_output_stream"
+      }
+    ], 
+    pause_after_run = false
+  } 
+}
