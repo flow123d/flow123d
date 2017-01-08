@@ -2515,11 +2515,11 @@ These times have to form an increasing sequence.}%
 			{{{Rock matrix density. }{$[m^{-3}kg]$}% 
 }}
 		\RecKey
-			{Solute-AdvectionDiffusion-DG-Data::sorption-mult}
-			{sorption{\_}mult}
+			{Solute-AdvectionDiffusion-DG-Data::sorption-coefficient}
+			{sorption{\_}coefficient}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Coefficient of linear sorption. }{$[kg^{-1}mol]$}% 
+			{{{Coefficient of linear sorption. }{$[m^{3}kg^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}
@@ -2644,9 +2644,9 @@ The prescribed incoming mass flux due to diffusion can have the general form }{$
 			{{{}{$[m^{-3}kg]$}{ Input field: Rock matrix density.}% 
 }}
 		\SelectionItem
-			{Solute-AdvectionDiffusion-DG-OutputFields::sorption-mult}
-			{sorption{\_}mult}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Coefficient of linear sorption.}% 
+			{Solute-AdvectionDiffusion-DG-OutputFields::sorption-coefficient}
+			{sorption{\_}coefficient}
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Coefficient of linear sorption.}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::conc}
@@ -3000,11 +3000,11 @@ These times have to form an increasing sequence.}%
 If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically. }{$[-]$}% 
 }}
 		\RecKey
-			{Sorption-Data::isotherm-mult}
-			{isotherm{\_}mult}
+			{Sorption-Data::distribution-coefficient}
+			{distribution{\_}coefficient}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description. }{$[kg^{-1}mol]$}% 
+			{{{Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description. }{$[m^{3}kg^{-1}]$}% 
 }}
 		\RecKey
 			{Sorption-Data::isotherm-other}
@@ -3073,9 +3073,9 @@ Vector, one value for every substance. }{$[kg^{-1}mol]$}%
 If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
-			{Sorption-OutputFields::isotherm-mult}
-			{isotherm{\_}mult}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
+			{Sorption-OutputFields::distribution-coefficient}
+			{distribution{\_}coefficient}
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
 }}
 		\SelectionItem
 			{Sorption-OutputFields::isotherm-other}
@@ -3091,7 +3091,7 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{Sorption-OutputFields::conc-solid}
 			{conc{\_}solid}
-			{{{}{$[m^{-3}kg]$}{ }% 
+			{{{}{$[-]$}{ }% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -3291,9 +3291,9 @@ These times have to form an increasing sequence.}%
 If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
-			{SorptionMobile-OutputFields::isotherm-mult}
-			{isotherm{\_}mult}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
+			{SorptionMobile-OutputFields::distribution-coefficient}
+			{distribution{\_}coefficient}
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
 }}
 		\SelectionItem
 			{SorptionMobile-OutputFields::isotherm-other}
@@ -3309,7 +3309,7 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{SorptionMobile-OutputFields::conc-solid}
 			{conc{\_}solid}
-			{{{}{$[m^{-3}kg]$}{ }% 
+			{{{}{$[-]$}{ }% 
 }}
 \end{SelectionType}
 \begin{AbstractType}
@@ -3410,9 +3410,9 @@ Vector, one value for every substance.}%
 If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
-			{SorptionImmobile-OutputFields::isotherm-mult}
-			{isotherm{\_}mult}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
+			{SorptionImmobile-OutputFields::distribution-coefficient}
+			{distribution{\_}coefficient}
+			{{{}{$[m^{3}kg^{-1}]$}{ Input field: Multiplication parameters (k, omega) in either Langmuir c{\_}s = omega * (alpha}\textit{c{\_}a)/(1- alpha}{c{\_}a) or in linear c{\_}s = k * c{\_}a isothermal description.}% 
 }}
 		\SelectionItem
 			{SorptionImmobile-OutputFields::isotherm-other}
@@ -3428,7 +3428,7 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{SorptionImmobile-OutputFields::conc-immobile-solid}
 			{conc{\_}immobile{\_}solid}
-			{{{}{$[m^{-3}kg]$}{ }% 
+			{{{}{$[-]$}{ }% 
 }}
 \end{SelectionType}
 \begin{SelectionType}

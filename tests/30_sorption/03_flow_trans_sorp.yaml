@@ -83,7 +83,7 @@ problem: !Coupling_Sequential
             - linear
             - langmuir
             - freundlich
-          isotherm_mult:
+          distribution_coefficient:
             - 0
             - 0.6
             - 0.4
