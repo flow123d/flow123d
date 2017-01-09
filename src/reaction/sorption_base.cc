@@ -81,8 +81,8 @@ SorptionBase::EqData::EqData(const string &output_field_name)
         sorption_type.input_selection(get_sorption_type_selection());
         sorption_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(isotherm_mult,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
-    	isotherm_mult.units( UnitSI().mol().kg(-1) );
+    ADD_FIELD(distribution_coefficient,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
+    	distribution_coefficient.units( UnitSI().m(3).kg(-1) );
 
     ADD_FIELD(isotherm_other,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
     	isotherm_other.units( UnitSI::dimensionless() );
@@ -102,7 +102,7 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 			.set_limits(0.0);
     
     output_fields += *this;
-    output_fields += conc_solid.name(output_field_name).units( UnitSI().kg().m(-3) ).flags(FieldFlag::equation_result);
+    output_fields += conc_solid.name(output_field_name).units( UnitSI().dimensionless() ).flags(FieldFlag::equation_result);
 }
 
 

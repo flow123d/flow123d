@@ -340,7 +340,7 @@ inline void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_sol
 	scale_aqua_ = scale_aqua;
     scale_sorbed_ = scale_sorbed;
     limited_solubility_on_ = limited_solubility_on;
-    mult_coef_ = mult_coef;
+    mult_coef_ = mult_coef*rho_aqua;
     second_coef_ = second_coef;
     
     table_limit_ = c_aqua_limit;

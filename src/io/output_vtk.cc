@@ -37,8 +37,8 @@ const Record & OutputVTK::get_input_type() {
 		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("\"ascii\""),
 			"Variant of output stream file format.")
 		// The parallel or serial variant
-		.declare_key("parallel", Bool(), Default("false"),
-			"Parallel or serial version of file format.")
+		//.declare_key("parallel", Bool(), Default("false"),
+		//	"Parallel or serial version of file format.")
 		.close();
 }
 

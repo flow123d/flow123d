@@ -35,9 +35,9 @@ const Input::Type::Record & FieldConstant<spacedim, Value>::get_input_type()
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("value", Value::get_input_type(), it::Default::obligatory(),
-                                    "Value of the constant field.\n"
-                                    "For vector values, you can use scalar value to enter constant vector.\n"
-                                    "For square (($N\\times N$))-matrix values, you can use:\n"
+                                    "Value of the constant field. "
+                                    "For vector values, you can use scalar value to enter constant vector. "
+                                    "For square (($N\\times N$))-matrix values, you can use: "
                                     " - vector of size (($N$)) to enter diagonal matrix\n\n"
                                     " - vector of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                     " - scalar to enter multiple of the unit matrix." )
