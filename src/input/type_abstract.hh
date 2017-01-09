@@ -225,8 +225,10 @@ public:
     /**
      * @brief Add inherited Record.
      *
-     * This method is used primarily for registration of Record during its closing. For set Record
-     * as descendant should be used \p Record::derive_from method in generating function of Record.
+     * Do not use this method for set Record as descendant! For this case should be used \p Record::derive_from
+     * method in generating function of Record.
+     *
+     * This method is used primarily for registration of Record during its closing.
      */
     int add_child(Record &subrec);
 
