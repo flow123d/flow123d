@@ -64,6 +64,7 @@ void GmshMeshReader::read_mesh(Mesh* mesh) {
     START_TIMER("GMSHReader - read mesh");
     
     OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
+    tok_.set_position( Tokenizer::Position() );
     read_nodes(mesh);
     read_elements(mesh);
 }
