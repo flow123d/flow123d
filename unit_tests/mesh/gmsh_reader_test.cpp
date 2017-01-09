@@ -230,3 +230,17 @@ TEST(ReaderInstances, get_reader) {
 		delete mesh;
 	}
 }
+
+
+TEST(ReaderInstances, repeat_call) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
+    for (unsigned int i=0; i<2; ++i) {
+        std::shared_ptr<GmshMeshReader> reader = ReaderInstances::instance()->get_reader(mesh_file);
+        Mesh * mesh = mesh_constructor();
+        reader->read_physical_names(mesh);
+        reader->read_mesh(mesh);
+        delete mesh;
+    }
+}
