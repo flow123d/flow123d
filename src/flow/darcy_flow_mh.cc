@@ -954,8 +954,11 @@ void DarcyMH::allocate_mh_matrix()
         ASSERT_DBG(ndofs_vel < max_dofs);
         ASSERT_DBG(ndofs_press < max_dofs);
         
+        ndofs_vel = ndofs_vel-1;
+        
         // sides-sides
         ls->mat_set_values(ndofs_vel, dofs_vel, ndofs_vel, dofs_vel, zeros);
+        
         // ele-sides
         ls->mat_set_values(ndofs_press, dofs_press, ndofs_vel, dofs_vel, zeros);
         // sides-ele
@@ -1126,6 +1129,18 @@ void DarcyMH::allocate_mh_matrix()
 // //         DBGVAR(w_row);
 //         ls->mat_set_value(w_row, w_row, 0.0);
 //     }
+    
+//     // singularity
+    const int n=mh_dh.total_size();
+    int temp[n];
+    for(int i=0; i<n; i++) temp[i] = i;
+    for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
+        int w_row = mh_dh.row_4_vel_sing[w];
+        DBGVAR(w_row);
+        ls->mat_set_values(1, &w_row, n-1, temp, zeros);
+        ls->mat_set_values(n, temp, 1, &w_row, zeros);
+//         ls->mat_set_value(w_row, w_row, 0.0);
+    }
     
     // alloc edge diagonal entries
     if(rank == 0)
