@@ -60,7 +60,7 @@
           cd bin/docker
           git pull origin master
           cd bin
-          ./configure --yes-to-all --do-not-override
+          ./configure --yes-to-all --do-not-override --remove-all
           echo ${{_GIT_BRANCH}}
 
 
@@ -347,9 +347,10 @@
           make -C flow123d/bin/docker/package \
                 CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
-                DOCKER_TOOLBOX_PATH=~/jenkins/static/DockerToolbox-1.12.2.exe \
+                DOCKER_TOOLBOX_PATH=/home/builder/jenkins/static/DockerToolbox-1.12.2.exe \
                 create-packages
           make -C flow123d/bin/docker/package \
+                CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
                 remove-unwanted
           # copy out docs

@@ -48,6 +48,16 @@ if(CCACHE_CXX_COMPILER)
 endif(CCACHE_CXX_COMPILER)
 
 
+# try to use ccache for compiling and linking if flag is set
+if(USE_CCACHE)
+    find_program(CCACHE_FOUND ccache)
+    if(CCACHE_FOUND)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+    endif(CCACHE_FOUND)
+endif(USE_CCACHE)
+
+
 # Project name and language(s)
 project(Flow123d CXX C Fortran)
 

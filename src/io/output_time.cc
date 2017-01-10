@@ -158,8 +158,9 @@ void OutputTime::fix_main_file_extension(std::string extension)
 {
     if(extension.compare( this->_base_filename.extension() ) != 0) {
         string old_name = (string)this->_base_filename;
+        std::vector<string> path = {this->_base_filename.parent_path(), this->_base_filename.stem() + extension};
         this->_base_filename = FilePath(
-                {this->_base_filename.parent_path(), this->_base_filename.stem() + extension},
+                path,
                 FilePath::output_file);
         WarningOut() << "Renaming output file: " << old_name << " to " << this->_base_filename;
 
