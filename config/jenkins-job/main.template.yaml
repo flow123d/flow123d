@@ -344,6 +344,7 @@
       - shell: |
           rm -rf publish
           mkdir -p publish
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} clean-tests
           make -C flow123d/bin/docker/package \
                 CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
