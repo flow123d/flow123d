@@ -194,8 +194,14 @@ public:
      * phase. Therefore, the remaining part of initialization can be done later, in finalization phase, typically
      * from main(), by calling the method finish().
      *
-     * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
-     * to true.
+     * Method allows finish in different cases that is managed by @p finish_type:
+     *
+     * - base finish of IST requires FinishStatus::regular_ and typically finish of root type is called in this case
+     * - finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p finish_type
+     *   to FinishStatus::generic_
+     * - input types unused in IST can be finished with parameter FinishStatus::delete_. These types can be then safely
+     *   deleted from \p Input::TypeRepository (see also \p delete_unfinished_types)
+     *
      */
     virtual FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_)
     {

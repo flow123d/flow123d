@@ -110,7 +110,7 @@ unsigned int Abstract::child_size() const {
 }
 
 
-int Abstract::add_child(const Record &subrec)
+int Abstract::add_child(Record &subrec)
 {
 	ASSERT(child_data_->closed_).error();
 
@@ -118,6 +118,8 @@ int Abstract::add_child(const Record &subrec)
         child_data_->selection_of_childs->add_value(child_data_->list_of_childs.size(), subrec.type_name());
         child_data_->list_of_childs.push_back(subrec);
     }
+
+    subrec.derive_from(*this);
 
     return 1;
 }
@@ -140,7 +142,6 @@ FinishStatus Abstract::finish(FinishStatus finish_type) {
 	for (auto &child : child_data_->list_of_childs) {
 		if ((finish_type != FinishStatus::generic_) && child.is_root_of_generic_subtree())
 			THROW( ExcGenericWithoutInstance() << EI_Object(child.type_name()) );
-		child.add_parent(*this);
 		child.finish(finish_type);
 		ASSERT(child.is_finished()).error();
 	}
@@ -295,7 +296,7 @@ AdHocAbstract::AdHocAbstract(const Abstract &ancestor)
 }
 
 
-AdHocAbstract &AdHocAbstract::add_child(const Record &subrec)
+AdHocAbstract &AdHocAbstract::add_child(Record &subrec)
 {
 	Abstract::add_child(subrec);
 

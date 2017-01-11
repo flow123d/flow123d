@@ -52,7 +52,7 @@ define_test(type_repository)
 define_test(factory)
 define_test(type_dispatch)
 
-define_test(ist_recursion)
+define_test(ist_finish)
 
 define_test(yaml_lib)
 define_test(json_spirit)
