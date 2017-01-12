@@ -185,6 +185,8 @@ private:
     /// Value of the permeability coefficient between dimensions.
     double sigma_;
     double pressure_;
+    
+    double radius_rounding_low_bound_;
 };
 
 
@@ -193,6 +195,7 @@ inline Singularity0D<2>::Singularity0D(const Point& center, double radius)
 :   center_(center), radius_(radius),
     geom_({center[0],center[1],0},radius, {0,0,1}, {0,0,1})
 {
+    radius_rounding_low_bound_ = radius - 1e-8*radius;
 }
 
 template<>
@@ -200,7 +203,9 @@ inline Singularity0D<3>::Singularity0D(const Point& center, double radius,
                                        const Point& direction_vector, const Point& normal_vector)
 :   center_(center), radius_(radius),
     geom_(center,radius, direction_vector, normal_vector)
-{}
+{
+    radius_rounding_low_bound_ = radius - 1e-8*radius;
+}
 
 template<unsigned int spacedim>
 inline typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::center() const
@@ -232,7 +237,7 @@ template<unsigned int spacedim>
 double Singularity0D<spacedim>::value(const Point& x) const
 {
     double distance = arma::norm(center_-x,2);
-    if (distance >= radius_)
+    if (distance >= radius_rounding_low_bound_)
         return std::log(distance);
   
     return std::log(radius_);
@@ -245,7 +250,7 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
     grad.zeros();
     
     double distance = arma::norm(center_-x,2);
-    if (distance >= radius_)
+    if (distance >= radius_rounding_low_bound_)
     {   
         distance = distance * distance;
         grad = (x - center_) / distance;
