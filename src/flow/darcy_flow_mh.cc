@@ -1130,7 +1130,7 @@ void DarcyMH::allocate_mh_matrix()
 //         ls->mat_set_value(w_row, w_row, 0.0);
 //     }
     
-//     // singularity
+    // singularity
     const int n=mh_dh.total_size();
     int temp[n];
     for(int i=0; i<n; i++) temp[i] = i;

@@ -53,7 +53,8 @@ public:
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
-        loc_system_(size(), size())
+        loc_system_(size(), size()),
+        qfactory_(12)
     {
     }
 
@@ -698,39 +699,41 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
 
             fv_rt_sing_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
-            temp = 1.0 / sing->sigma();
+//             temp = 1.0 / sing->sigma();
             
 //             vector<double> sum(nvals,0);
-            arma::mat matt(nvals, nvals+1);
+//             arma::mat matt(nvals, nvals+1);
             for(unsigned int q=0; q < quad.size();q++){
                 arma::vec n = sing->center() - quad.real_point(q);
                 n = n / arma::norm(n,2);
                 for (int i=0; i < nvals; i++){
                     // int B_w 1/sigma * (u.n)*(v.n)
-                    for (int j=0; j < nvals; j++){
-                        val = temp 
-                            * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
-                            * arma::dot(fv_rt_sing_->shape_vector(j,q),n)
-                            * quad.weight(q);
-                        loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
-//                         loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
-                        matt(i,j) += val;
-                        
-                    }
-                    
-//                     DBGVAR(val);
+//                     for (int j=0; j < nvals; j++){
+//                         val = temp 
+//                             * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+//                             * arma::dot(fv_rt_sing_->shape_vector(j,q),n)
+//                             * quad.weight(q);
+//                         loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
+// //                         loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
+//                         matt(i,j) += val;
+//                         
+//                     }
+                    //dirichlet on the RHS
                     val = - sing->pressure() * arma::dot(fv_rt_sing_->shape_vector(i,q),n) * quad.weight(q);
+//                     if(i==3) DBGVAR(val);
+//                     sum[i] += val;
                     loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[i], 0.0, val);
-                    matt(i,nvals) = val;
+//                     matt(i,nvals) = val;
 //                     sum[i] += val;
 //                     ad_->lin_sys->mat_set_value(loc_system_.row_dofs[loc_vel_dofs[i]], ele1d_row, val);
 //                     ad_->lin_sys->mat_set_value(ele1d_row, loc_system_.row_dofs[loc_vel_dofs[i]], val);
                 }
             }
-            DBGCOUT(<< "\n" << matt);
+//             DBGCOUT(<< "\n" << matt);
 //             DBGVAR(sum[0]);
 //             DBGVAR(sum[1]);
 //             DBGVAR(sum[2]);
+//             DBGVAR(sum[3]);
         }
     }
 }

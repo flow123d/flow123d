@@ -555,9 +555,9 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     Space<3>::Point center ({3.3, 3.3, 0}); //triangle
 //     Space<3>::Point center ({-0.1, 0, 0}); //circle
 //     Space<3>::Point center ({0.3, 0.3, 0}); //circle
-    double radius = 0.03,
+    double radius = 0.001643168,
            sigma_const = 1,
-           pressure = 100;
+           pressure = 150;//165.62;//100 + 28.5 * std::log(10);
     Space<3>::Point direction_vector ({0,0,1});
     Space<3>::Point n;
     
