@@ -485,8 +485,8 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
     		region_list+=" "+reg.label();
         }
-        WarningOut().fmt("Using default value '{}' for part of the input field '{}' ('{}').\n"
-                "regions: {}\n",
+        WarningOut().fmt("Default value '{}' for field '{}' ('{}').\n"
+                "    on regions: {}\n",
                 input_default(), input_name(), name(), region_list);
 
     }
