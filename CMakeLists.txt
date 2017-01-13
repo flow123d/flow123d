@@ -586,6 +586,22 @@ message(STATUS "PYTHONLIBS_VERSION_STRING = ${PYTHONLIBS_VERSION_STRING}")
 message(STATUS "=======================================================\n\n")
 
 
+#################################################################################
+#  PUGI_XML_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== PUGI-XML =======================================")
+message(STATUS "=======================================================")
+message(STATUS "PugiXml_ROOT_HINT = ${PugiXml_ROOT_HINT}")
+
+find_package(PugiXml REQUIRED)
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "PugiXml_FOUND = ${PugiXml_FOUND}")
+message(STATUS "PugiXml_LIBRARY = ${PugiXml_LIBRARY}")
+message(STATUS "PugiXml_INCLUDE_DIR = ${PugiXml_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
+
+
 message(STATUS "Installing HTML documentation")
 include(InstallHTMLDOC)
 
@@ -612,6 +628,7 @@ include_directories(
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
     ${YamlCpp_INCLUDE_DIR}
+    ${PugiXml_INCLUDE_DIR}
     ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
     ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
@@ -831,6 +848,7 @@ message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
+message(STATUS "PugiXml:    ${PugiXml_LIBRARY}")
 message(STATUS "===========================================")
 
 

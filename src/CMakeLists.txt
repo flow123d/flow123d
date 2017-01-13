@@ -208,7 +208,8 @@ add_library(mesh_lib
 target_link_libraries(mesh_lib
     input_lib system_lib la_lib 
     armadillo 
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${PugiXml_LIBRARY})
 
 
 
