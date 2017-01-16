@@ -45,6 +45,11 @@ public:
     FieldFE(unsigned int n_comp=0);
 
     /**
+     * Return Record for initialization of FieldFE that is derived from Abstract
+     */
+    static const Input::Type::Record & get_input_type();
+
+    /**
      * Setter for the finite element data. The mappings are required for computation of local coordinates.
      * @param dh   Dof handler.
      * @param map1 1D mapping.

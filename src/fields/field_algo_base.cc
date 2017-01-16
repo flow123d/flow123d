@@ -31,6 +31,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
 FLOW123D_FORCE_LINK_IN_PARENT(field_python)
 FLOW123D_FORCE_LINK_IN_PARENT(field_time_function)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 
 INSTANCE_ALL(FieldAlgorithmBase)

@@ -33,9 +33,28 @@ namespace it = Input::Type;
 
 
 
+FLOW123D_FORCE_LINK_IN_CHILD(field_fe)
+
+
+template <int spacedim, class Value>
+const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
+{
+    return it::Record("FieldFE", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by finite element approximation.")
+        .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
+        .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
+        .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
+                "Input file with ASCII GMSH file format.")
+        .declare_key("field_name", IT::String(), IT::Default::obligatory(),
+                "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
+		//		"Definition of unit.")
+        .close();
+}
+
 template <int spacedim, class Value>
 const int FieldFE<spacedim, Value>::registrar =
-		Input::register_class< FieldFE<spacedim, Value>, unsigned int >("FieldFE");
+		Input::register_class< FieldFE<spacedim, Value>, unsigned int >("FieldFE") +
+		FieldFE<spacedim, Value>::get_input_type().size();
 
 
 
