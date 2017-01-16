@@ -11,14 +11,13 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    field_fe.impl.hh
+ * @file    field_fe.cc
  * @brief   
  */
 
-#ifndef FIELD_FE_IMPL_HH_
-#define FIELD_FE_IMPL_HH_
 
 #include "fields/field_fe.hh"
+#include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
 #include "quadrature/quadrature.hh"
 #include "fem/fe_values.hh"
@@ -296,5 +295,5 @@ FieldFE<spacedim, Value>::~FieldFE()
 }
 
 
-
-#endif /* FIELD_FE_IMPL_HH_ */
+// Instantiations of FieldFE
+INSTANCE_ALL(FieldFE)

@@ -264,6 +264,7 @@ add_library(coupling_lib
     fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
+    fields/field_fe.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
