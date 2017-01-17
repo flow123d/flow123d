@@ -165,7 +165,11 @@ void OutputVTK::write_vtk_vtu_head(void)
     file << "<?xml version=\"1.0\"?>" << endl;
     // TODO: test endianess of platform (this would be important, when raw
     // data will be saved to the VTK file)
-    file << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
+    file << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\"";
+    if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
+    	file << " header_type=\"UInt64\"";
+    }
+    file << ">" << endl;
     file << "<UnstructuredGrid>" << endl;
 }
 
