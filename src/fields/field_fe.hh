@@ -21,7 +21,9 @@
 #include "petscmat.h"
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
+#include "mesh/mesh.h"
 #include "mesh/point.hh"
+#include "mesh/bih_tree.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
 #include "input/factory.hh"
@@ -74,10 +76,25 @@ public:
     virtual void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type>  &value_list);
 
+	/**
+	 * Initialization from the input interface.
+	 */
+	virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data);
 
-    virtual ~FieldFE();
+
+    /**
+     * Update time and possibly update data from GMSH file.
+     */
+    bool set_time(const TimeStep &time) override;
+
+
+    /// Destructor.
+	virtual ~FieldFE();
 
 private:
+
+    /// Multiply @p data_ with @p unit_conversion_coefficient_
+    void scale_data();
 
     const DOFHandlerMultiDim *dh_;
     double *data_;
@@ -87,6 +104,21 @@ private:
     Mapping<1,3> *map1_;
     Mapping<2,3> *map2_;
     Mapping<3,3> *map3_;
+
+    /// mesh, which is interpolated
+	Mesh* source_mesh_;
+
+	/// mesh reader file
+	FilePath reader_file_;
+
+	/// field name read from input
+	std::string field_name_;
+
+	/// tree of mesh elements
+	BIHTree* bih_tree_;
+
+	/// stored index to last computed element
+	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
     /// Registrar of class to factory
     static const int registrar;

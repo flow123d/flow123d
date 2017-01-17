@@ -22,6 +22,7 @@
 #include "quadrature/quadrature.hh"
 #include "fem/fe_values.hh"
 #include "fem/finite_element.hh"
+#include "mesh/reader_instances.hh"
 
 
 
@@ -302,6 +303,79 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 					envelope(i,0) = value(i);
 			}
 		}
+	}
+}
+
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
+	this->init_unit_conversion_coefficient(rec, init_data);
+
+
+	// read mesh, create tree
+    {
+       source_mesh_ = new Mesh( Input::Record() );
+       reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
+       ReaderInstances::instance()->get_reader(reader_file_)->read_mesh( source_mesh_ );
+	   // no call to mesh->setup_topology, we need only elements, no connectivity
+    }
+	bih_tree_ = new BIHTree( source_mesh_ );
+
+    // allocate data_
+	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
+	Vec v;
+    std::vector<double> data_vec;
+	data_vec.resize(data_size);
+	VecCreateSeqWithArray(PETSC_COMM_SELF, 1, data_size, &(data_vec[0]), &v);
+    data_vec_ = &v;
+    VecGetArray(*data_vec_, &data_);
+
+	field_name_ = rec.val<std::string>("field_name");
+}
+
+
+
+template <int spacedim, class Value>
+bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
+	if (!source_mesh_) {
+        WarningOut() << "Null mesh pointer of elementwise field\n";
+		return false;
+	}
+    if ( reader_file_ == FilePath() ) return false;
+
+    //walkaround for the steady time governor - there is no data to be read in time==infinity
+    //TODO: is it possible to check this before calling set_time?
+    //if (time == numeric_limits< double >::infinity()) return false;
+
+    // value of last computed element must be recalculated if time is changed
+    computed_elm_idx_ = numeric_limits<unsigned int>::max();
+
+    GMSH_DataHeader search_header;
+    search_header.actual = false;
+    search_header.field_name = field_name_;
+    search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
+    search_header.n_entities = source_mesh_->element.size();
+    search_header.time = time.end();
+
+    bool boundary_domain_ = false;
+    auto data_vec = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
+    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    data_ = &(*data_vec)[0];
+    //this->scale_data();
+
+    return search_header.actual;
+}
+
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::scale_data()
+{
+	if (Value::is_scalable()) {
+		unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
+		for(unsigned int i=0; i<data_size; ++i)
+			data_[i] *= this->unit_conversion_coefficient_;
 	}
 }
 
