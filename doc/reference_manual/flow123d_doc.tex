@@ -239,6 +239,7 @@ generated. It mirrors directly the code and describes whole structure of the mai
 of input records, their structure and default values are supplied there and bidirectional links to the user 
 guide are provided.
 
+The document is interactive. The blue text marks the links in the document. The magenta text marks the web links.
 
 \section{Installing Flow123d}
 Software Flow123d requires tool \href{https://www.docker.com}{Docker}. 
@@ -265,31 +266,60 @@ and execute the \verb'install.sh' script:
   ...
 \end{verbatim}
 Install script will first import image into your system and then personalise this image for the current user. The script will also print
-additional information during personalisation process. Whole process may take several minutes (depending on your machine performance).
+additional information during personalization process. Whole process may take several minutes (depending on your machine performance).
 
 
 \subsection{Installing Flow123d on Windows}
 On the Windows systems we require Powershell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
-It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions in 
-\href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft tutorial}.
+It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions at
+\href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft pages}.
 
 Make sure \verb'powershell' command is in the system PATH. 
 \href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{Powershell executable location}
- is determined by Windows version, but generally it is \\\verb'%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe'. To add
- this location to system PATH variable follow instructions \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft tutorial}.
+ is specific to the particular Windows version, but usual location is:
+ \begin{verbatim}
+    %SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe  
+ \end{verbatim}
+ To add this location to the system PATH variable follow the instructions at
+ \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft pages}.
 
 To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows-install.zip' and extract it to any folder.
-Navigate to directory \verb'Flow123d-<version>-windows-install' and execute the \verb'install.bat' file.
-Executing \verb'install.bat' will start an installation process which will:
+The directory \verb'Flow123d-2.1.0-windows-install' will be created. You can rename it or move it elsewhere before you start installation, but not later. 
+This directory will become the root directory of the Flow123d installation. 
+
+Navigate to the Flow123d root directory and execute \verb'install.bat'. Depending on your system settings you may be asked to allow 
+execution of the installation script by pressing \verb'R'. This starts the instalation consisting of following two steps:
 \begin{enumerate}
-	\item Install \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} to your system.
-	If your system did not contain Docker Toolbox before, you need to run installation again (since system path variable was modified new shell is required).
-	\item Import downloaded Flow123d image into your docker environment.
-	\item Modify the imported image to provide better integration with your system.
+	\item Installation of the \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} is performed unless it is installed already. 
+	First you have to agree with execution of the setup 'DockerToolbox-1.12.2.exe' and then
+	confirm installation of the Docker with the 'next' button. You can confirm or modify destination location of the Docker Toolbox in the next dialog.
+        Then you are asked about Docker components to install. Docker Toolbox system uses virtual environment software 
+        \href{https://www.virtualbox.org/}{VirtualBox} which is installed along with Docker Toolbox as well as other necessary components.
+        Default configuration of components is acceptable, however you can uncheck 
+        \emph{'Docker Compose for Windows'} and \emph{'Kinematic for Windows'}, while keeping \emph{'VirtualBox'} and \emph{'Git for Windows'} that are essential,
+        see the dialog in Figure \ref{fig:DockerComponents}. Next dialog selects additional tasks, you can uncheck \emph{'Create a desktop shortcut'} as 
+        depicted in Figure \ref{fig:DockerTasks}
+        \begin{figure}
+          \center  
+          \includegraphics[width=0.45\textwidth]{\fig/DockerComponents.png}%
+          \hspace{2ex}
+          \includegraphics[width=0.45\textwidth]{\fig/DockerTasks.png}
+          \caption{{\bf Left:} The minimal set of Docker components to select during the install.\\
+                   {\bf Right:} Possible choice of additional Docker tasks.} 
+          \label{fig:DockerComponents}
+        \end{figure}
+	After installation of the Docker Toolbox you need to run \verb'install.bat' (since system path variable was modified new shell is required). 
+	\item Second step is customization of the Docker environment. The downloaded Flow123d image is imported into your docker environment 
+	and further modified to provide better integration with your system. You will be asked twice to allow changes to the \emph{'VirtualBox Interface'}.
+	Since flow123d run in the Docker container we must set a mapping of the Windows directories to the directories in the Docker container. 
+	By default we setup such mapping for the home directory \verb'C:/Users/<user>' which is mapped to \verb'/c/Users/<user>'. 
+	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other directory for mapping 
+	(recursively). The question is repeated allowing to add more custom mappings one by one. 
 \end{enumerate}
 
-Docker Toolbox system uses virtual environment software \href{https://www.virtualbox.org/}{VirtualBox} which 
-is installed along with Docker Toolbox.
+In order to uninstall Flow123d you can run the \verb'uninstall.bat' script. This script removes Flow123d 
+and uninstall Docker Toolbox (after confirmation), but keep Git and VirtualBox installed. These can be uninstalled manually. 
+Moreover the configuration directories \verb'.docker' and \verb'VirtualBox' in your home directory are preserved. These can be deleted manually as well. 
 
 \section{Running Flow123d}
 
