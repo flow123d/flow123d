@@ -354,10 +354,10 @@
                 CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
                 remove-unwanted
-          # copy out docs
-          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
-          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
-          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          # copy out docs, now done in makefile script in docker-config repo
+          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
+          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
+          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
     publishers:
       - cifs: 
           site: 'flow123d@intec'
