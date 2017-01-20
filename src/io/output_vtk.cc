@@ -25,6 +25,8 @@
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
 
+#include <zlib.h>
+
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
 
@@ -169,6 +171,9 @@ void OutputVTK::write_vtk_vtu_head(void)
     if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
     	file << " header_type=\"UInt64\"";
     }
+    if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB ) {
+    	file << " compressor=\"vtkZLibDataCompressor\"";
+    }
     file << ">" << endl;
     file << "<UnstructuredGrid>" << endl;
 }
@@ -249,9 +254,82 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     	output_data->get_min_max_range(range_min, range_max);
     	file    << " offset=\"" << appended_data_.tellp() << "\" ";
     	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
-    	output_data->print_binary_all( appended_data_ );
+    	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_UNCOMPRESSED ) {
+    		output_data->print_binary_all( appended_data_ );
+    	} else { // ZLib compression
+    		stringstream uncompressed_data, compressed_data;
+    		output_data->print_binary_all( uncompressed_data, false );
+    		this->compress_data(uncompressed_data, compressed_data);
+    		appended_data_ << compressed_data.str();
+    	}
     }
 
+}
+
+
+void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &compressed_stream) {
+    // size of block of compressed data.
+	static const size_t BUF_SIZE = 32 * 1024;
+
+	string uncompressed_string = uncompressed_stream.str();  // full uncompressed string
+	uLong uncompressed_size = uncompressed_string.size();    // size of uncompressed string
+	stringstream compressed_data;                            // helper stream stores blocks of compress data
+
+	uLong count_of_blocks = (uncompressed_size + BUF_SIZE - 1) / BUF_SIZE;
+	uLong last_block_size = (uncompressed_size % BUF_SIZE);
+	compressed_stream.write(reinterpret_cast<const char*>(&count_of_blocks), sizeof(unsigned long long int));
+	compressed_stream.write(reinterpret_cast<const char*>(&BUF_SIZE), sizeof(unsigned long long int));
+	compressed_stream.write(reinterpret_cast<const char*>(&last_block_size), sizeof(unsigned long long int));
+
+	for (uLong i=0; i<count_of_blocks; ++i) {
+		// get block of data for compression
+		std::string data_block = uncompressed_string.substr(i*BUF_SIZE, BUF_SIZE);
+		uLong data_block_size = data_block.size();
+
+		std::vector<uint8_t> buffer;
+		uint8_t temp_buffer[BUF_SIZE];
+
+		// set zlib object
+		z_stream strm;
+		strm.zalloc = 0;
+		strm.zfree = 0;
+		strm.next_in = reinterpret_cast<uint8_t *>(&data_block[0]);
+		strm.avail_in = data_block_size;
+		strm.next_out = temp_buffer;
+		strm.avail_out = BUF_SIZE;
+
+		// compression of data
+		deflateInit(&strm, Z_BEST_COMPRESSION);
+		while (strm.avail_in != 0) {
+			int res = deflate(&strm, Z_NO_FLUSH);
+			ASSERT_EQ(res, Z_OK).error();
+			if (strm.avail_out == 0) {
+				buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE);
+				strm.next_out = temp_buffer;
+				strm.avail_out = BUF_SIZE;
+			}
+		}
+		int deflate_res = Z_OK;
+		while (deflate_res == Z_OK) {
+			if (strm.avail_out == 0) {
+				buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE);
+				strm.next_out = temp_buffer;
+				strm.avail_out = BUF_SIZE;
+			}
+			deflate_res = deflate(&strm, Z_FINISH);
+		}
+		ASSERT_EQ(deflate_res, Z_STREAM_END).error();
+		buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE - strm.avail_out);
+		deflateEnd(&strm);
+
+		// store compress data and its size to streams
+		std::string str(buffer.begin(), buffer.end());
+		uLong compressed_data_size = str.size();
+		compressed_stream.write(reinterpret_cast<const char*>(&compressed_data_size), sizeof(unsigned long long int));
+		compressed_data << str;
+	}
+	// push compress data to returned stream
+	compressed_stream << compressed_data.str();
 }
 
 
@@ -340,8 +418,6 @@ void OutputVTK::write_vtk_vtu_tail(void)
     file << "</UnstructuredGrid>" << endl;
     if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
     	// appended data of binary compressed output
-    	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB )
-    			WarningOut() << "Zlib library is not supported yet. Appended output is not compressed." << endl;
     	file << "<AppendedData encoding=\"raw\">" << endl;
     	// appended data starts with '_' character
     	file << "_" << appended_data_.str() << endl;

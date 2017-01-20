@@ -172,6 +172,13 @@ protected:
     */
    void make_subdirectory();
 
+   /**
+    * Compress data stored in @p uncompressed_stream to @p compressed_stream.
+    *
+    * Use ZLib compression.
+    */
+   void compress_data(stringstream &uncompressed_stream, stringstream &compressed_stream);
+
 
    /**
     * Data output stream (could be same as base_file)
