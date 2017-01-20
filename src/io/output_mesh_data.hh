@@ -33,7 +33,7 @@ public:
     /**
      * Prints the whole data vector into stream in appended binary format.
      */
-    void print_binary_all(ostream &out_stream) override;
+    void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
     void print_all_yaml(std::ostream& out_stream, unsigned int precision) override;

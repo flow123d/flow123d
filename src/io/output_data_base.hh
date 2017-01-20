@@ -70,7 +70,7 @@ public:
     /**
      * Print all data in binary format at once stored in database
      */
-    virtual void print_binary_all(ostream &out_stream) = 0;
+    virtual void print_binary_all(ostream &out_stream, bool print_data_size = true) = 0;
 
     /**
      * Print stored values in the YAML format (using JSON like arrays).
