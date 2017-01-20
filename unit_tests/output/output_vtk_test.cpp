@@ -33,6 +33,12 @@ format: !vtk
   variant: binary
 )YAML";
 
+const string test_output_time_compressed = R"YAML(
+file: ./test1.pvd
+format: !vtk
+  variant: binary_zlib
+)YAML";
+
 
 class TestOutputVTK : public testing::Test, public OutputVTK {
 public:
@@ -135,5 +141,17 @@ TEST_F(TestOutputVTK, write_data_binary) {
     this->write_data();
 
     check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
+}
+
+
+TEST_F(TestOutputVTK, write_data_compressed) {
+	this->init_mesh(test_output_time_compressed);
+    this->current_step=0;
+    set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+    set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+    set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+    this->write_data();
+
+    check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");
 }
 
