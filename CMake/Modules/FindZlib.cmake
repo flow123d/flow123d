@@ -15,12 +15,12 @@
 # currently force static library
 
 #if(Zlib_STATIC_LIBRARY)
-    set(Zlib_STATIC libzlcore.so)
+    set(Zlib_STATIC libz.a)
 #endif()
 
 # find the zlib include directory
-find_path(Zlib_INCLUDE_DIR ZLibrary.h
-          PATH_SUFFIXES zlibrary
+find_path(Zlib_INCLUDE_DIR zlib.h
+#          PATH_SUFFIXES zlibrary
 #          HINTS 
 #              ${Zlib_ROOT_HINT}/include/
 #          PATHS
