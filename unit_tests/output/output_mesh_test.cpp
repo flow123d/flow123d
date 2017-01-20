@@ -117,7 +117,8 @@ const string input = R"INPUT(
 {   
    conc={ // formula on 3d 
        TYPE="FieldFormula",
-       value="log((x^2+y^2+z^2)^0.5)"
+       value="1/((x^2+y^2+z^2)^0.5)"
+       //value="log((x^2+y^2+z^2)^0.5)"
        //value="x+y+z"
    },
    output_stream = {

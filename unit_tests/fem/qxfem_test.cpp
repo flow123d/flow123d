@@ -324,7 +324,7 @@ TEST(qxfem, qxfem_factory) {
 
     QXFEMFactory<2,3> qfactory(12);
     
-    // read mesh - simplset cube from test1
+    // read mesh
     Mesh* mesh = new Mesh();
     stringstream in(ref_element_mesh.c_str());
     mesh->read_gmsh_from_stream(in);
@@ -353,8 +353,11 @@ TEST(qxfem, qxfem_factory) {
     
     double sum=0;
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
+//     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
+//     MessageOut() << setprecision(15) << "Tmeasure: " << ele->measure() << "\n";
     
-    double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / ele->measure();
+    double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / (2*ele->measure());
+//     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
     EXPECT_NEAR(sum,exact_sum,1e-7);
     

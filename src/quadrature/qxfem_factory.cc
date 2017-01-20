@@ -422,7 +422,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
             Point p;
             Point s0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
                   s1 = s.nodes[2] - s.nodes[0];   // 1. edge of triangle
-            double area = arma::norm(arma::cross(s0,s1),2);
+            double area = 0.5*arma::norm(arma::cross(s0,s1),2);
             
             bool check_qpoint_inside_sing = s.refine && (s.sing_id >=0) && (i>level_offset_);
             
@@ -444,8 +444,8 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 // We want to have: sum JxW_q = |T|-|S_w|
                 // which means for an affine mapping: sum w_q * |J| = |T| - |S_w|
                 // therefore for T without singularity, it holds: sum w_q = |T| / |J|
-                // which is for 2D equal 0.5
-                double weight = gauss.weight(q) * area / (2*ele_measure);
+                // which is for triangle equal 0.5
+                double weight = gauss.weight(q) * area / (ele_measure);
                 weights.push_back(weight);
             }
         }
