@@ -555,9 +555,9 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     Space<3>::Point center ({3.3, 3.3, 0}); //triangle
 //     Space<3>::Point center ({-0.1, 0, 0}); //circle
 //     Space<3>::Point center ({0.3, 0.3, 0}); //circle
-    double radius = 0.001643168,
+    double radius = 0.03,//0.001643168,
            sigma_const = 1,
-           pressure = 150;//165.62;//100 + 28.5 * std::log(10);
+           pressure = 100;//165.62;//100 + 28.5 * std::log(10);
     Space<3>::Point direction_vector ({0,0,1});
     Space<3>::Point n;
     
@@ -585,7 +585,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     singularities.push_back(sing);
 
     //TODO: suggest proper enrichment radius
-    double enr_radius = 0.8*std::sqrt(ele2d->measure());
+    double enr_radius = 1.3*std::sqrt(ele2d->measure());
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
 
@@ -697,15 +697,15 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
     //flag the element
     mesh_flags_[ele->index()] = true;
        
-    bool enrich = true;
-//     bool enrich = false;
-//     for(unsigned int i=0; i < ele->n_nodes(); i++){
-//         double d = arma::norm(sing->center() - ele->node[i]->point(),2);
-// //         DBGCOUT(<< d << "\n");
-//         if(d < radius){
-//             enrich = true;
-//         }
-//     }
+//     bool enrich = true;
+    bool enrich = false;
+    for(unsigned int i=0; i < ele->n_nodes(); i++){
+        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+//         DBGCOUT(<< d << "\n");
+        if(d < radius){
+            enrich = true;
+        }
+    }
     
 //     if(ele->index() == 37) enrich = true;
 //     if(ele->index() == 0) enrich = true;
