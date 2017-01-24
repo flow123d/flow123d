@@ -256,7 +256,7 @@ the command
 \begin{verbatim}
   > tar -xzf flow123d_<version>_linux_install.tar.gz 
 \end{verbatim}
-This will create a directory \verb'Flow123d-<version>-linux-install'. In next step, navigate to \verb'Flow123d-<version>-linux-install' directory
+This will create a directory \verb'Flow123d-<version>'. In next step, navigate to \verb'Flow123d-<version>' directory
 and execute the \verb'install.sh' script:
 \begin{verbatim}
   > cd flow123d_2.1.0
@@ -315,8 +315,8 @@ execution of the installation script by pressing \verb'R'. This starts the insta
 	After installation of the Docker Toolbox you need to run \verb'install.bat' (since system path variable was modified new shell is required). 
 	\item Second step is customization of the Docker environment. The downloaded Flow123d image is imported into your docker environment 
 	and further modified to provide better integration with your system.
-	You will be asked twice to allow changes to the \emph{'VirtualBox Interface'} (on some systems you may be asked for other Oracle related changes).
-	
+	You will be asked several times to allow changes to the \emph{'VirtualBox Interface'}, do not hesitate to confirm any dialog containing 'Oracle'.
+		
 	Since flow123d run in the Docker container we must set a mapping of the Windows directories to the directories in the Docker container. 
 	By default we setup such mapping for the home directory \verb'C:/Users' which is mapped to \verb'/c/Users'. 
 	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other directory for mapping 
