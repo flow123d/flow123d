@@ -82,7 +82,7 @@ problem: !Coupling_Sequential
           - region: ALL
             rock_density: 1.0
             sorption_type: linear
-            isotherm_mult: 0.6
+            distribution_coefficient: 0.6
             isotherm_other: 0.4
         reaction_liquid: !FirstOrderReaction &anchor6
           reactions:

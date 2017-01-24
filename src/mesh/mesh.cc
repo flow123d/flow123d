@@ -61,9 +61,11 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
 		.declare_key("regions", IT::Array( RegionSetBase::get_input_type() ), IT::Default::optional(),
-				"List of additional region and region set definitions not contained in the mesh.\n"
+				"List of additional region and region set definitions not contained in the mesh. "
 				"There are three region sets implicitly defined:\n\n"
-				" - ALL (all regions of the mesh)\n - .BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
+				"- ALL (all regions of the mesh)\n"
+				"- .BOUNDARY (all boundary regions)\n"
+				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
 		.close();

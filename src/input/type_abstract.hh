@@ -154,7 +154,7 @@ public:
      */
     Abstract &allow_auto_conversion(const string &type_default);
 
-    /// Can be used to close the Abstract for further declarations of keys.
+    /// Close the Abstract and add its to type repository (see @p TypeRepository::add_type).
     Abstract &close();
 
     /**
@@ -170,8 +170,7 @@ public:
     /**
      *  @brief Finish declaration of the Abstract type.
      *
-     *  Set Abstract as parent of derived Records (for mechanism of
-     *  set parent and descendant see \p Record::derive_from)
+     *  Checks if Abstract is closed and completes Abstract (check default descendant, parameters of generic types etc).
      */
     FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
@@ -226,36 +225,12 @@ public:
     /**
      * @brief Add inherited Record.
      *
-     * This method is used primarily in combination with registration variable. @see Input::Factory
+     * Do not use this method for set Record as descendant! For this case should be used \p Record::derive_from
+     * method in generating function of Record.
      *
-     * Example of usage:
-	 @code
-		 class SomeBase
-		 {
-		 public:
-    		/// the specification of input abstract record
-    		static const Input::Type::Abstract & get_input_type();
-			...
-		 }
-
-		 class SomeDescendant : public SomeBase
-		 {
-		 public:
-    		/// the specification of input record
-    		static const Input::Type::Record & get_input_type();
-			...
-		 private:
-			/// registers class to factory
-			static const int reg;
-		 }
-
-		 /// implementation of registration variable
-		 const int SomeDescendant::reg =
-			 Input::register_class< SomeDescendant >("SomeDescendant") +
-			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
-	 @endcode
+     * This method is used primarily for registration of Record during its closing.
      */
-    int add_child(const Record &subrec);
+    int add_child(Record &subrec);
 
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
@@ -316,7 +291,7 @@ public:
 	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Add inherited Record.
-    AdHocAbstract &add_child(const Record &subrec);
+    AdHocAbstract &add_child(Record &subrec);
 
 protected:
     /// Reference to ancestor Abstract

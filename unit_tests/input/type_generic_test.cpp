@@ -145,9 +145,11 @@ TEST(GenericType, generic_record) {
 	problem.finish();
 
 	Record::KeyIter key_it = problem.begin();
+	++key_it; // skip TYPE key
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 	const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
-	EXPECT_EQ( typeid( *(in_rec->begin()->type_.get()) ), typeid(Selection) );
+	Record::KeyIter in_rec_it = in_rec->begin();
+	EXPECT_EQ( typeid( *((++in_rec_it)->type_.get()) ), typeid(Selection) );
 
 	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
@@ -166,6 +168,7 @@ TEST(GenericType, generic_tuple) {
 
 	Record::KeyIter key_it = tpl_problem.begin();
 	{
+		++key_it;
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Tuple) );
 		const Tuple *in_tpl = static_cast<const Tuple *>(key_it->type_.get());
 		Record::KeyIter in_it = in_tpl->begin();
@@ -200,6 +203,7 @@ TEST(GenericType, generic_array) {
 	arr_rec.finish();
 
 	Record::KeyIter key_it = arr_rec.begin();
+	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Array) );
 	const Array *array = static_cast<const Array *>(key_it->type_.get());
 	EXPECT_EQ( typeid( array->get_sub_type() ), typeid(Selection) );
@@ -232,6 +236,8 @@ TEST(GenericType, generic_abstract) {
 	rec_with_abstracts.finish();
 
 	Record::KeyIter key_it = rec_with_abstracts.begin();
+
+	++key_it;
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Abstract) );
 		const Abstract *abstract = static_cast<const Abstract *>(key_it->type_.get());
@@ -268,22 +274,25 @@ TEST(GenericType, record_with_record) {
 	problem.finish();
 
 	Record::KeyIter key_it = problem.begin();
+	++key_it;
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
 		Record::KeyIter in_rec_it = in_rec->begin();
-		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
+		EXPECT_EQ( typeid( *( (++in_rec_it)->type_.get() ) ), typeid(Record) );
 		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
-		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Integer) );
+		Record::KeyIter in_in_rec_it = in_in_rec->begin();
+		EXPECT_EQ( typeid( *( (++in_in_rec_it)->type_.get() ) ), typeid(Integer) );
 	}
 	++key_it;
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
 		Record::KeyIter in_rec_it = in_rec->begin();
-		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
+		EXPECT_EQ( typeid( *( (++in_rec_it)->type_.get() ) ), typeid(Record) );
 		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
-		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Double) );
+		Record::KeyIter in_in_rec_it = in_in_rec->begin();
+		EXPECT_EQ( typeid( *( (++in_in_rec_it)->type_.get() ) ), typeid(Double) );
 	}
 }
 
@@ -355,10 +364,12 @@ TEST(GenericType, instance_in_instance) {
 	root_rec.finish();
 
 	Record::KeyIter key_it = root_rec.begin();
+	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 	const Record *inner_rec = static_cast<const Record *>(key_it->type_.get());
-	EXPECT_EQ(inner_rec->size(), 2);
+	EXPECT_EQ(inner_rec->size(), 3);
 	Record::KeyIter key_it_in = inner_rec->begin();
+	++key_it_in;
 	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(String) );
 	++key_it_in;
 	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(Double) );

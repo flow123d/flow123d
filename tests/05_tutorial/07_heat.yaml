@@ -188,7 +188,7 @@ problem: !Coupling_Sequential
         bc_pressure: 0
     balance: {}
     output_stream:
-      file: flow.msh
+      file: flow
       format: !gmsh
         variant: ascii
     output:
@@ -236,7 +236,7 @@ problem: !Coupling_Sequential
         bc_temperature: !FieldFormula
           value: 10-z/5000*150+273.15
     output_stream:
-      file: heat.msh
+      file: heat
       format: !gmsh
         variant: ascii
       times:

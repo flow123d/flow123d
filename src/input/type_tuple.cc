@@ -35,7 +35,9 @@ Tuple::Tuple(const Tuple & other)
 
 
 Tuple::Tuple(const string & type_name_in, const string & description)
-: Record(type_name_in, description) {}
+{
+	this->data_ = std::make_shared<RecordData>(type_name_in, description);
+}
 
 
 TypeBase::TypeHash Tuple::content_hash() const

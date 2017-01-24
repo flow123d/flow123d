@@ -98,7 +98,7 @@ problem: !Coupling_Sequential
             # no sorption - trying to switch off
             - langmuir
             - freundlich
-          isotherm_mult: 0.6
+          distribution_coefficient: 0.6
           isotherm_other: 0.4
     time:
       end_time: 1.0

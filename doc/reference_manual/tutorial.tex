@@ -143,14 +143,16 @@ effects which prevent the liquid transition from/to a fracture, like a thin resi
     balance: {}
 \end{Verbatim}
 On line \ref{vrb:tutorial_floweq}, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
-solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end}, we set both mathematical fields that live on the computational domain 
-and those defining the boundary conditions. We set only the conductivity field since other \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields} have appropriate default values.
+solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end}, 
+we set both mathematical fields that live on the computational domain 
+and those defining the boundary conditions. We set only the conductivity field since other \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields}
+have appropriate default values.
 We use implicitly defined region ``.BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
 pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt !FieldFormula}.
 See Section \ref{sec:Fields} for other field types. 
 On lines \ref{vrb:tutorial_output_start} -- \ref{vrb:tutorial_output_end}, we specify which output fields should be written to the output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
-See Section \ref{section_output} for the list of available \Alink{IT::Flow-Darcy-MH-output-fields}{output \tt fields}.
+See Section \ref{section_output} for the list of available \Alink{IT::Flow-Darcy-MH-OutputFields}{output \tt fields}.
 Finally, we specify type of the linear solver and its tolerances.
 
 

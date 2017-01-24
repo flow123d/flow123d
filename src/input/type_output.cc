@@ -123,13 +123,26 @@ Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a
 	return a_rec->ancestor_.child_data_->list_of_childs.begin();
 }
 
-
-
-
+template <class T>
+void OutputBase::print_generic(ostream& stream, const TypeBase *type) {
+    // print possible generic
+    if (type->generic_type_hash_) {
+        const T *gen_type = Input::TypeRepository<T>::get_instance().find_hash(type->generic_type_hash_).get();
+        ASSERT(gen_type)(type->hash_str())(type->type_name());
+        print_base(stream, gen_type);
+    }
+}
 void OutputBase::print_base(ostream& stream, const TypeBase *type) {
 
-	if (typeid(*type) == typeid(Type::Record) || typeid(*type) == typeid(Type::Tuple)) {
+    ASSERT(type);
+
+	if (typeid(*type) == typeid(Type::Tuple)) {
+	    print_generic<Tuple>(stream, type);
 		print_impl(stream, static_cast<const Type::Record *>(type) );
+	} else
+	if (typeid(*type) == typeid(Type::Record)) {
+	    print_generic<Record>(stream, type);
+	    print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
 		print_impl(stream, static_cast<const Type::Array *>(type) );
@@ -492,7 +505,8 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 	stream << format_inner;
 
     print_base( stream, &root_type_);
-	for (Input::TypeRepository<Selection>::TypeRepositoryMapIter it = Input::TypeRepository<Selection>::get_instance().begin();
+	/*
+    for (Input::TypeRepository<Selection>::TypeRepositoryMapIter it = Input::TypeRepository<Selection>::get_instance().begin();
 			it != Input::TypeRepository<Selection>::get_instance().end(); ++it) {
 		print_base( stream, it->second.get() );
 	}
@@ -504,7 +518,7 @@ ostream& OutputJSONMachine::print(ostream& stream) {
 			it != Input::TypeRepository<Record>::get_instance().end(); ++it) {
 		print_base( stream, it->second.get() );
 	}
-
+*/
 	stream << format_full_hash;
 	print_full_hash(stream);
 	stream << format_tail;
@@ -641,6 +655,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Array *type) {
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Abstract *type) {
+    print_generic<Abstract>(stream, type);
+
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
@@ -661,6 +677,8 @@ void OutputJSONMachine::print_impl(ostream& stream, const Abstract *type) {
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const AdHocAbstract *type) {
+    print_generic<AdHocAbstract>(stream, type);
+
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
@@ -704,7 +722,9 @@ void OutputJSONMachine::print_abstract_record_keys(ostream& stream, const Abstra
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Selection *type) {
-	TypeBase::TypeHash hash=type->content_hash();
+    print_generic<Selection>(stream, type);
+
+    TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;
 
     print_type_header(stream, type);

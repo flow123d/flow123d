@@ -138,6 +138,8 @@
 # More info and download at: http://ccache.samba.org/
 #
 # set (CCACHE_CXX_COMPILER "ccache /usr/bin/c++")
+# or to automatically detect compiler and linker use
+# set (USE_CCACHE true)
 
 
 ### Compiler flags  ####

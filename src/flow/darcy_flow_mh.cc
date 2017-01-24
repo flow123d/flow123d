@@ -90,23 +90,24 @@ const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
             "Homogeneous Neumann boundary condition. Zero flux")
         .add_value(dirichlet, "dirichlet",
             "Dirichlet boundary condition. "
-            "Specify the pressure head through the 'bc_pressure' field "
-            "or the piezometric head through the 'bc_piezo_head' field.")
+            "Specify the pressure head through the ''bc_pressure'' field "
+            "or the piezometric head through the ''bc_piezo_head'' field.")
         .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
             "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
             "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
-            "and the reference pressure head or pieozmetric head through 'bc_pressure' or 'bc_piezo_head' respectively.")
+            "and the reference pressure head or pieozmetric head through ''bc_pressure'' or ''bc_piezo_head'' respectively.")
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
-            "is described by the pair of inequalities:"
-            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. Caution! Setting $q_d^N$ strictly negative"
-            "may lead to an ill posed problem since a positive outflow is enforced."
+            "is described by the pair of inequalities: "
+            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. "
+            "Caution. Setting (($q_d^N$)) strictly negative "
+            "may lead to an ill posed problem since a positive outflow is enforced. "
             "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
             )
         .add_value(river, "river",
             "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
             "(( $q^N + \\sigma(H^D - H)$)). For the water level under the bedrock, constant infiltration is used "
-            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``,"
+            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
             " ``bc_sigma, ``bc_flux``."
             )
         .close();
@@ -149,7 +150,7 @@ const it::Record & DarcyMH::get_input_type() {
     return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
-                "Vector of the gravitational acceleration (divided by the acceleration). Dimensionless, magnitude one for the Earth conditions.")
+                "Vector of the gravity force. Dimensionless.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
         .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
@@ -312,6 +313,9 @@ void DarcyMH::init_eq_data()
     data_->bc_switch_pressure.add_factory(
             std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
             (data_->gravity_, "bc_switch_piezo_head") );
+    data_->init_pressure.add_factory(
+            std::make_shared<FieldAddPotential<3, FieldValue<3>::Scalar>::FieldFactory>
+            (data_->gravity_, "init_piezo_head") );
 
 
     data_->set_input_list( this->input_record_.val<Input::Array>("input_fields") );
