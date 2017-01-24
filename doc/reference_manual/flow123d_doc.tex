@@ -254,15 +254,15 @@ instructions for the Linux and the Windows operating systems are provided in the
 Download the Linux installation package archive \verb'Flow123d-<version>-linux-install.tar.gz' and extract it to any folder.
 the command
 \begin{verbatim}
-  > tar -xzf Flow123d-<version>-linux-install.tar.gz 
+  > tar -xzf flow123d_<version>_linux_install.tar.gz 
 \end{verbatim}
 This will create a directory \verb'Flow123d-<version>-linux-install'. In next step, navigate to \verb'Flow123d-<version>-linux-install' directory
 and execute the \verb'install.sh' script:
 \begin{verbatim}
-  > cd Flow123d-<version>-linux-install
+  > cd flow123d_2.1.0
   > ./install.sh
-  Importing docker image 'flow/v2.0.0'
-  Modifying docker image 'flow/v2.0.0'
+  Importing docker image 'flow123d/v2.1.0'
+  Modifying docker image 'flow123d/v2.1.0'
   ...
 \end{verbatim}
 Install script will first import image into your system and then personalise this image for the current user. The script will also print
@@ -283,8 +283,12 @@ Make sure \verb'powershell' command is in the system PATH.
  To add this location to the system PATH variable follow the instructions at
  \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft pages}.
 
-To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows-install.zip' and extract it to any folder.
-The directory \verb'Flow123d-2.1.0-windows-install' will be created. You can rename it or move it elsewhere before you start installation, but not later. 
+Other requirement is to have virtualization enabled. Typically, virtualization is enabled by default but in some
+cases you need to enable virtualization in BIOS or UEFI. For more detail see 
+\href{https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled}{Virtualization must be enabled} in Docker manual.
+
+To install Flow123d on Windows, first download the Windows installation package archive \verb'flow123d_2.1.0_windows_install.zip' and extract it to any folder.
+The directory \verb'flow123d_2.1.0' will be created. You can rename it or move it elsewhere before you start installation, but not later. 
 This directory will become the root directory of the Flow123d installation. 
 
 Navigate to the Flow123d root directory and execute \verb'install.bat'. Depending on your system settings you may be asked to allow 
@@ -310,16 +314,45 @@ execution of the installation script by pressing \verb'R'. This starts the insta
         \end{figure}
 	After installation of the Docker Toolbox you need to run \verb'install.bat' (since system path variable was modified new shell is required). 
 	\item Second step is customization of the Docker environment. The downloaded Flow123d image is imported into your docker environment 
-	and further modified to provide better integration with your system. You will be asked twice to allow changes to the \emph{'VirtualBox Interface'}.
+	and further modified to provide better integration with your system.
+	You will be asked twice to allow changes to the \emph{'VirtualBox Interface'} (on some systems you may be asked for other Oracle related changes).
+	
 	Since flow123d run in the Docker container we must set a mapping of the Windows directories to the directories in the Docker container. 
-	By default we setup such mapping for the home directory \verb'C:/Users/<user>' which is mapped to \verb'/c/Users/<user>'. 
+	By default we setup such mapping for the home directory \verb'C:/Users' which is mapped to \verb'/c/Users'. 
 	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other directory for mapping 
-	(recursively). The question is repeated allowing to add more custom mappings one by one. 
+	(recursively). The question is repeated allowing to add more custom mappings one by one. Custom mounts must be in following format:
+	\begin{verbatim}
+		letter:\path\to\your\folder
+	\end{verbatim}
+	Where \verb'letter' is small letter in range \verb'a-z'. If you agree to mount directory, virtual machine will be stopped 
+	(this may take several seconds). Example of adding two folders can be following:
+	\begin{verbatim}
+		Do you wish to add other mounts? [y/N] y
+		
+		Stopping default to perform changes in virtual machine
+		Enter directory location(e.g. d:\Data): f:\PRACE
+		Mounting path "f:\PRACE" -> "/f/PRACE"
+		Do you wish to add other mounts? [y/N] y
+		
+		Enter directory location(e.g. d:\Data): g:\
+		Mounting path "g:\" -> "/g/"
+		Do you wish to add other mounts? [y/N] n
+	\end{verbatim}
+	
+	\textbf{Note:}
+	\textit{In some cases it may be useful to mount entire disk. Mounting process does not copy or alter mounted directories so
+	time to mount single directory is the same as time to mount entire disk.}
 \end{enumerate}
 
 In order to uninstall Flow123d you can run the \verb'uninstall.bat' script. This script removes Flow123d 
 and uninstall Docker Toolbox (after confirmation), but keep Git and VirtualBox installed. These can be uninstalled manually. 
 Moreover the configuration directories \verb'.docker' and \verb'VirtualBox' in your home directory are preserved. These can be deleted manually as well. 
+
+\subsection{Reinstalling Flow123d}
+\label{duplicit-image}
+If you are installing same version of Flow123d again, you will be prompted whether to remove previous version or not. 
+It is recommended to confirm deletion for both images \verb'flow123d/v<version>' and \verb'flow123d/v<version>:user'.
+
 
 \section{Running Flow123d}
 
@@ -332,6 +365,15 @@ Directory \verb'bin' contains:
 	\item \verb'fterm.sh' \\
 	 Script will invoke shell inside docker container and mount your home directory.
 	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
+	 
+	\textbf{Note:} On some systems, shell's font is extremely small, you can change this behaviour by right-clicking on window bar and selecting 
+	\verb'default' or (\verb'vychozi' in Czech) see \autoref{fig:TerminalFont}.
+	 \begin{figure}
+		 \center
+		 \includegraphics[width=1\textwidth]{\fig/TerminalFont.png}
+		 \caption{Changing default font family and font size}
+		 \label{fig:TerminalFont}
+	 \end{figure}
 
 	\item \verb'flow123d.sh' \\
 	 Script will run Flow123d inside docker container and mount your home  directory.
