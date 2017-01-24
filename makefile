@@ -96,6 +96,8 @@ test-all: build-flow123d
 clean-tests:
 	find tests -maxdepth 2 -type d -name "test_results*" -exec echo " - {}" \;
 	find tests -maxdepth 2 -type d -name "test_results*" -exec rm -rf {} \;
+	find tests -maxdepth 2 -type d -name "output*" -exec echo " - {}" \;
+	find tests -maxdepth 2 -type d -name "output*" -exec rm -rf {} \;
 
 
 # Create html documentation
