@@ -68,7 +68,8 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
   dof_indices(nullptr),
   map1_(nullptr),
   map2_(nullptr),
-  map3_(nullptr)
+  map3_(nullptr),
+  field_name_("")
 {}
 
 
@@ -330,6 +331,8 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
+	// Mesh can't be set for field which is not initialized.
+	if (field_name_ == "") return;
 
 	dh_ = new DOFHandlerMultiDim( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(fe1, fe2, fe3);
@@ -349,6 +352,9 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 
 template <int spacedim, class Value>
 bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
+	// Time can't be set for field which is not initialized.
+	if (field_name_ == "") return false;
+
 	ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of elementwise field, did you call set_mesh()?\n");
     if ( reader_file_ == FilePath() ) return false;
 
