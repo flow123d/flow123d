@@ -385,7 +385,8 @@ class PyPy(ExtendedThread):
             duration=self.duration,
             username=getpass.getuser(),
             hostname=platform.node(),
-            nodename=platform.node().split('.')[0].strip('0123456789')
+            nodename=platform.node().split('.')[0].strip('0123456789'),
+            commit=self.get_commit(),
         )
 
         if self.case:
@@ -407,6 +408,25 @@ class PyPy(ExtendedThread):
 
     def dump(self):
         return PyPyResult(self)
+
+    @classmethod
+    def get_commit(cls):
+        """
+        Calls git show on git root to determine unix timestamp of the current commit (HEAD)
+        :return:
+        """
+        import subprocess
+        try:
+            root = Paths.flow123d_root()
+            # get current hash(%H) and date(%ct) from git repo
+            result = subprocess.check_output('git show -s --format=%H,%ct HEAD'.split(), cwd=root).decode()
+            sha, date = str(result).strip().split(',')
+            return dict(
+                hash=sha,
+                date=int(date)
+            )
+        except:
+            return None
 
     @classmethod
     def generate_status_file(cls, target):
