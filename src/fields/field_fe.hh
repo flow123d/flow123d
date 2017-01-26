@@ -24,8 +24,10 @@
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
+#include "mesh/ngh/include/ngh_interface.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
+#include "fem/fe_p.hh"
 #include "input/factory.hh"
 
 
@@ -59,7 +61,7 @@ public:
      * @param map3 3D mapping.
      * @param data Vector of dof values.
      */
-    void set_fe_data(const DOFHandlerMultiDim *dh,
+    void set_fe_data(DOFHandlerMultiDim *dh,
     		Mapping<1,3> *map1,
     		Mapping<2,3> *map2,
     		Mapping<3,3> *map3,
@@ -88,15 +90,18 @@ public:
     bool set_time(const TimeStep &time) override;
 
 
+    /**
+     * Set target mesh.
+     */
+    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
+
+
     /// Destructor.
 	virtual ~FieldFE();
 
 private:
 
-    /// Multiply @p data_ with @p unit_conversion_coefficient_
-    void scale_data();
-
-    const DOFHandlerMultiDim *dh_;
+    DOFHandlerMultiDim *dh_;
     double *data_;
     const Vec *data_vec_;
     unsigned int *dof_indices;
@@ -105,7 +110,11 @@ private:
     Mapping<2,3> *map2_;
     Mapping<3,3> *map3_;
 
-    /// mesh, which is interpolated
+	FE_P_disc<1,1,3> fe1;
+	FE_P_disc<1,2,3> fe2;
+	FE_P_disc<1,3,3> fe3;
+
+	/// mesh, which is interpolated
 	Mesh* source_mesh_;
 
 	/// mesh reader file
@@ -119,6 +128,21 @@ private:
 
 	/// stored index to last computed element
 	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
+
+	/// vector stored suspect elements in calculating the intersection
+	std::vector<unsigned int> searched_elements_;
+
+	/// 3D (tetrahedron) element, used for computing intersection
+	TTetrahedron tetrahedron_;
+
+	/// 2D (triangle) element, used for computing intersection
+	TTriangle triangle_;
+
+	/// 1D (abscissa) element, used for computing intersection
+	TAbscissa abscissa_;
+
+	/// 0D (point) element, used for computing intersection
+	TPoint point_, found_point_;
 
     /// Registrar of class to factory
     static const int registrar;
