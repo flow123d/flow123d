@@ -28,6 +28,7 @@
 
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh/reader_instances.hh"
 
 
 
@@ -43,17 +44,28 @@ public:
 
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
-        
-        FilePath mesh_file( "fields/one_element_2d.msh", FilePath::input_file);
+    }
+
+    virtual void TearDown() {
+    	if (dh) delete dh;
+    	if (mesh) delete mesh;
+    }
+
+    void create_mesh(std::string mesh_file_str) {
+        FilePath mesh_file( mesh_file_str, FilePath::input_file);
         mesh= mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh->read_gmsh_from_stream(in);
+    }
+
+    void create_dof_handler() {
         dh = new DOFHandlerMultiDim(*mesh);
         VecCreateSeqWithArray(PETSC_COMM_SELF, 1, 3, dof_values, &v);
     }
-    virtual void TearDown() {
-    	delete dh;
-    	delete mesh;
+
+    const FieldAlgoBaseInitData& init_data(std::string field_name) {
+    	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
+    	return init_data;
     }
 
     Mesh *mesh;
@@ -69,6 +81,9 @@ public:
 
 
 TEST_F(FieldFETest, scalar) {
+    create_mesh("fields/one_element_2d.msh");
+    create_dof_handler();
+
 	FE_P_disc<1,1,3> fe1;
 	FE_P_disc<1,2,3> fe2;
 	FE_P_disc<1,3,3> fe3;
@@ -96,7 +111,10 @@ TEST_F(FieldFETest, scalar) {
 
 
 TEST_F(FieldFETest, vector) {
-	FE_RT0<1,3> fe1;
+    create_mesh("fields/one_element_2d.msh");
+    create_dof_handler();
+
+    FE_RT0<1,3> fe1;
 	FE_RT0<2,3> fe2;
 	FE_RT0<3,3> fe3;
     VecField field;
@@ -116,6 +134,41 @@ TEST_F(FieldFETest, vector) {
     EXPECT_NEAR( 0, arma::norm(result - field.value({ 3, 1.5, 5 }, mesh->element_accessor(0)), 2), 1e-15 );
 }
 
+
+string input = R"INPUT(
+{   
+   scalar={
+       TYPE="FieldFE",
+       gmsh_file="fields/simplest_cube_data.msh",
+       field_name="scalar"
+   }
+}
+)INPUT";
+
+
+
+TEST_F(FieldFETest, scalar_from_input) {
+    create_mesh("fields/simplest_cube_data.msh");
+
+    Input::Type::Record rec_type = Input::Type::Record("Test","")
+        .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+        .close();
+
+    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::Record rec=reader.get_root_interface<Input::Record>();
+
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+    field.set_mesh(mesh,false);
+    field.set_time(0.0);
+
+    /*Space<3>::Point point;
+    std::cout << "Test results:" << std::endl;
+    for(unsigned int i=0; i < mesh->element.size(); i++) {
+    	std::cout << field.value(point, mesh->element_accessor(i)) << std::endl;
+        //EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
+    }// */
+}
 
 
 
