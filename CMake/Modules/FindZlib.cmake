@@ -15,7 +15,7 @@
 # currently force static library
 
 #if(Zlib_STATIC_LIBRARY)
-    set(Zlib_STATIC libz.a)
+    set(Zlib_STATIC libz.so.1)
 #endif()
 
 # find the zlib include directory
