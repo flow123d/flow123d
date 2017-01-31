@@ -64,12 +64,12 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    virtual void init_from_input(const Input::Record &rec) override;
+    virtual void init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) override;
 
     /**
      * Set row of boundary data. Used to implement old BC input.
      */
-    void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
+    //void set_data_row(unsigned int boundary_idx, typename Value::return_type &value);
 
     /**
      * Update time and possibly update data from GMSH file.
@@ -100,6 +100,8 @@ public:
     virtual ~FieldElementwise();
 
 private:
+    /// Multiply @p data_ with @p unit_conversion_coefficient_ and check limits of field
+    void scale_and_check_limits();
     /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
     /// and do not delete data pointer in destructor.
     bool internal_raw_data;
@@ -118,6 +120,18 @@ private:
     FilePath reader_file_;
     const Mesh *mesh_;
     std::string field_name_;
+
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
+
+    /**
+     * Initialization data of field. Necessary for check limits.
+     *
+     * TODO: Temporary solution will be replaced with shared_ptr to field data in FieldAlgoBase
+     */
+	UnitSI &unit_si_;
+	std::pair<double, double> limits_;
+
     /// Registrar of class to factory
     static const int registrar;
 };

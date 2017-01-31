@@ -55,7 +55,7 @@ IT::Record &EquationOutput::get_input_type() {
 
 const IT::Instance &EquationOutput::make_output_type(const string &equation_name, const string &additional_description)
 {
-    string selection_name = equation_name + "_output_fields";
+    string selection_name = equation_name + ":OutputFields";
     string description = "Selection of output fields for the " + equation_name + " model.\n" + additional_description;
     IT::Selection sel(selection_name, description );
     int i=0;
@@ -65,11 +65,11 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
         //DebugOut().fmt("type for field: {}\n", field->name());
         if ( !field->is_bc() && field->flags().match( FieldFlag::allow_output) )
         {
-            string desc = "Output of the field " + field->name() + " (($[" + field->units().format_latex()+"]$))";
+            string desc = "(($[" + field->units().format_latex()+"]$)) "; + "Output of: the field " + field->name() + " ";
+            if (field->flags().match(FieldFlag::equation_input))
+                desc += "Input field: ";
             if (field->description().length() > 0)
-                desc += " (" + field->description() + ").";
-            else
-                desc += ".";
+                desc += field->description();
             sel.add_value(i, field->name(), desc, { {FlowAttribute::field_value_shape(), field->get_value_attribute()} });
             i++;
         }

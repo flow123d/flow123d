@@ -1,0 +1,4 @@
+test_cases:
+- files: 04_interpolated.yaml
+  proc: [1, 2, 3]
+  memory_limit: 2000

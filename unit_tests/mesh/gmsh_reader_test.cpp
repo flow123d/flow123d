@@ -11,6 +11,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <mesh_constructor.hh>
 
 #include "system/sys_profiler.hh"
 
@@ -29,14 +30,15 @@ TEST(GMSHReader, read_mesh_from_stream) {
     stringstream ss;
     ss << ifs.rdbuf();
 
-    Mesh mesh;
+    Mesh * mesh = mesh_constructor();
     GmshMeshReader reader(ss);
 
-    reader.read_physical_names(&mesh);
-    reader.read_mesh(&mesh);
+    reader.read_physical_names(mesh);
+    reader.read_mesh(mesh);
 
-    EXPECT_EQ(9, mesh.n_elements());
+    EXPECT_EQ(9, mesh->n_elements());
 
+    delete mesh;
 }
 
 
@@ -48,14 +50,15 @@ TEST(GMSHReader, read_mesh_from_file) {
     FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 
 
-    Mesh mesh;
+    Mesh * mesh = mesh_constructor();
     GmshMeshReader reader(mesh_file);
 
-    reader.read_physical_names(&mesh);
-    reader.read_mesh(&mesh);
+    reader.read_physical_names(mesh);
+    reader.read_mesh(mesh);
 
-    EXPECT_EQ(216, mesh.n_elements());
+    EXPECT_EQ(216, mesh->n_elements());
 
+    delete mesh;
 }
 
 
@@ -67,9 +70,9 @@ TEST(GMSHReader, get_element_data) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("fields/simplest_cube_data.msh", FilePath::input_file);
 
-    Mesh mesh;
-    ReaderInstances::instance()->get_reader(mesh_file)->read_physical_names(&mesh);
-    ReaderInstances::instance()->get_reader(mesh_file)->read_mesh(&mesh);
+    Mesh * mesh = mesh_constructor();
+    ReaderInstances::instance()->get_reader(mesh_file)->read_physical_names(mesh);
+    ReaderInstances::instance()->get_reader(mesh_file)->read_mesh(mesh);
 
     std::vector<int> el_ids;
     for (i=1; i<14; ++i) el_ids.push_back(i);
@@ -88,7 +91,7 @@ TEST(GMSHReader, get_element_data) {
         		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids, i);
     	std::vector<int> &vec = *( multifield_data.get() );
     	EXPECT_EQ(13, vec.size());
-    	for (j=0; j<mesh.element.size(); j++) EXPECT_EQ( i+1, vec[j] ); // bulk elements
+    	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] ); // bulk elements
     	for ( ; j<vec.size(); j++) EXPECT_EQ( i+4, vec[j] ); // boundary elements
     }
 
@@ -103,9 +106,11 @@ TEST(GMSHReader, get_element_data) {
         		ReaderInstances::instance()->get_reader(mesh_file)->get_element_data<int>(search_header, el_ids, 0);
     	std::vector<int> &vec = *( field_data.get() );
     	EXPECT_EQ(39, vec.size());
-    	for (j=0; j<3*mesh.element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] ); // bulk elements
+    	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] ); // bulk elements
     	for ( ; j<vec.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] ); // boundary elements
     }
+
+    delete mesh;
 }
 
 
@@ -202,22 +207,40 @@ TEST(ReaderInstances, get_reader) {
 	}
 
 	{
-	    Mesh mesh;
+	    Mesh * mesh = mesh_constructor();
 		FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 		std::shared_ptr<GmshMeshReader> mesh_reader = ReaderInstances::instance()->get_reader(mesh_file);
 
-		mesh_reader->read_physical_names(&mesh);
-		mesh_reader->read_mesh(&mesh);
-		EXPECT_EQ(118, mesh.n_nodes());
+		mesh_reader->read_physical_names(mesh);
+		mesh_reader->read_mesh(mesh);
+		EXPECT_EQ(118, mesh->n_nodes());
+
+		delete mesh;
 	}
 
 	{
-	    Mesh mesh;
+	    Mesh * mesh = mesh_constructor();
 		FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
 		std::shared_ptr<GmshMeshReader> mesh_reader = ReaderInstances::instance()->get_reader(mesh_file);
 
-		mesh_reader->read_physical_names(&mesh);
-		mesh_reader->read_mesh(&mesh);
-		EXPECT_EQ(8, mesh.n_nodes());
+		mesh_reader->read_physical_names(mesh);
+		mesh_reader->read_mesh(mesh);
+		EXPECT_EQ(8, mesh->n_nodes());
+
+		delete mesh;
 	}
+}
+
+
+TEST(ReaderInstances, repeat_call) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
+    for (unsigned int i=0; i<2; ++i) {
+        std::shared_ptr<GmshMeshReader> reader = ReaderInstances::instance()->get_reader(mesh_file);
+        Mesh * mesh = mesh_constructor();
+        reader->read_physical_names(mesh);
+        reader->read_mesh(mesh);
+        delete mesh;
+    }
 }

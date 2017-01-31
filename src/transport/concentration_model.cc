@@ -123,10 +123,10 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 			.units(UnitSI().kg().m(-3))
 			.input_default("0.0")
 			.flags_add( in_time_term );
-    *this+=sorption_mult
-    		.name("sorption_mult")
+    *this+=sorption_coefficient
+    		.name("sorption_coefficient")
 			.description("Coefficient of linear sorption.")
-			.units(UnitSI().mol().kg(-1))
+			.units(UnitSI().m(3).kg(-1))
 			.input_default("0.0")
 			.flags_add( in_time_term );
 
@@ -200,14 +200,14 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const std::vec
 	data().cross_section.value_list(point_list, ele_acc, elem_csec);
 	data().porosity.value_list(point_list, ele_acc, por_m);
 	data().rock_density.value_list(point_list, ele_acc, rho_s);
-	data().sorption_mult.value_list(point_list, ele_acc, sorp_mult);
+	data().sorption_coefficient.value_list(point_list, ele_acc, sorp_mult);
 
 	// Note: Noe effective water content here, since sorption happen only in the rock (1-porosity).
 	for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
 	{
 		for (unsigned int i=0; i<point_list.size(); i++)
 		{
-			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]/solvent_density_*sorp_mult[i][sbi]*substances_[sbi].molar_mass()*elem_csec[i];
+			ret_coef[sbi][i] = (1.-por_m[i])*rho_s[i]*sorp_mult[i][sbi]*elem_csec[i];
 		}
 	}
 }

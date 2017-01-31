@@ -4,26 +4,53 @@
 from ist.base import InputType
 from ist.utils.texlist2 import TexList
 from utils.logger import Logger
-
+import json
+from ist.extras import TypeReference
 
 class LatexRecordDefault(object):
-    @staticmethod
-    def raw_format(tex, default):
-        """
-        :type tex: TexList
-        :type default: ist.extras.TypeRecordKeyDefault
-        """
-        tex.append('"')
-        tex.add(default.value, tex.TYPE_PLAIN)
-        tex.append('"')
+    """
+    Class LatexRecordDefault is default formatter if no other formattor macthes
+    """
 
     @staticmethod
-    def textlangle_format(tex, default):
+    def default_format(tex, default):
         """
         :type tex: TexList
         :type default: ist.extras.TypeRecordKeyDefault
         """
-        tex.macro_text_lr_angle(str(default.value).capitalize())
+
+        tex.append(tex._SPACE)
+        tex._function_call(
+            func=tex._IT,
+            args=str(default.value).capitalize(),
+            mode=tex.TYPE_PLAIN
+        )
+        #tex.append(tex._SPACE)
+
+    @staticmethod
+    def value_format(tex, default):
+        """
+        :type tex: TexList
+        :type default: ist.extras.TypeRecordKeyDefault
+        """
+
+        tex.append(tex._SPACE)
+        tex._function_call(
+            func="ValueDefault",
+            args=json.dumps(default.value),
+            mode=tex.TYPE_PLAIN
+        )
+        #tex.append(tex._SPACE)
+
+    @staticmethod
+    def at_readtime_format(tex, default):
+        """
+        :type tex: TexList
+        :type default: ist.extras.TypeRecordKeyDefault
+        """
+        tex.append('implicit value: "')
+        tex.add(default.value, tex.TYPE_PLAIN)
+        tex.append('"')
 
     @staticmethod
     def format(tex, default):
@@ -34,18 +61,24 @@ class LatexRecordDefault(object):
         LatexRecordDefault.format_rules.get(default.type).__func__(tex, default)
 
     format_rules = {
-        'value at read time': raw_format,
-        'value at declaration': textlangle_format,
-        'optional': textlangle_format,
-        'obligatory': textlangle_format,
-        'default': textlangle_format
+        'value at read time': at_readtime_format,
+        'value at declaration': value_format,
+        'optional': default_format,
+        'obligatory': default_format,
+        'default': default_format
     }
 
 
 class LatexRecord(TexList):
+    """
+    Class LatexRecord is formatter class for type record
+    """
+    latex_name = 'RecordType'
+
     def format(self, record):
         """
         % begin{RecordType}
+        %       {<href id>}
         %       {<record name>}                 % name of the record, used for header and for hypertarget in form IT::<record name>
         %       {<parent abstract record>}      % possible parent abstract record
         %       {<default conversion key>}      % possible auto conversion key
@@ -62,19 +95,28 @@ class LatexRecord(TexList):
 
         :type record: ist.nodes.TypeRecord
         """
-        self.begin('RecordType')
+        self.begin(self.latex_name)
 
         # name
         self._newline()
         self._tab()
-        with self:
-            self.macro_hyper_b(record)
+        #with self:
+        self.add(record.href_id)
+        self._newline()
+        self._tab()
+        self.add(record.href_name, self.TYPE_PLAIN)
+            #self.macro_hyper_b(record)
         # implements
         self._newline()
         self._tab()
         with self:
-            for impl in (record.implements or []):
-                self.macro_alink(impl.get_reference())
+            if record.implements:
+                generic_roots=[abstract_ref.get_reference().get_generic_root().id for abstract_ref in record.implements]
+                unique_roots=list(set(generic_roots))
+                for impl in unique_roots:
+                    self.macro_alink(TypeReference(impl).get_reference())
+                    self.add(", ")
+                self.pop()
         self.comment("implements")
         # conversion key
         self._newline()
@@ -85,11 +127,11 @@ class LatexRecord(TexList):
         self.comment("reducible to key")
         # hyperlink into hand written text TODO
         # LATER it can removed since is not used anymore
-        self._newline()
-        self._tab()
-        with self:
-            pass
-        self.comment("OBSOLETE - hyperlink into hand written text")
+        #self._newline()
+        #self._tab()
+        #with self:
+        #    pass
+        #self.comment("OBSOLETE - hyperlink into hand written text")
         # description
         self._newline()
         self._tab()
@@ -98,12 +140,14 @@ class LatexRecord(TexList):
         # keys
         self._newline()
         for key in (record.keys or []):
+            if key.href_name == "TYPE":
+                continue
             self._newline()
             self._tab(2)
-            with self.item_open('KeyItem'):
+            with self.item_open('RecKey'):
                 self.macro_key(key)
 
-        self.end('RecordType')
+        self.end(self.latex_name)
 
     def macro_key(self, record_key):
         """
@@ -112,14 +156,22 @@ class LatexRecord(TexList):
         # name
         self._newline()
         self._tab(3)
-        with self:
-            self.macro_hyper_b(record_key)
-        # type
+        #with self:
+        #   self.macro_hyper_b(record_key)
+        self.add(record_key.href_id)
+        self._newline()
+        self._tab(3)
+        self.add(record_key.href_name, self.TYPE_PLAIN)
+
+        # type and parameters
         self._newline()
         self._tab(3)
         with self:
             ref = record_key.type.get_reference()
-            self.get_key_type(ref)
+            parameters=self.get_key_type(ref)
+        with self:
+            self.format_parameters(parameters)
+
         # default
         self._newline()
         self._tab(3)
@@ -127,33 +179,73 @@ class LatexRecord(TexList):
             LatexRecordDefault.format(self, record_key.default)
         # hyperlink into hand written text TODO
         # LATER it can removed since is not used anymore
-        self._newline()
-        self._tab(3)
-        with self:
-            pass
-        self.comment("OBSOLETE - hyperlink into hand written text")
+        #self._newline()
+        #self._tab(3)
+        #with self:
+        #    pass
+        #self.comment("OBSOLETE - hyperlink into hand written text")
         # description
         self._newline()
         self._tab(3)
         with self:
-            d = self.description(record_key.description)
-            self.append(d)
+            self.append(self.description(record_key.description))
+
+    def format_parameters(self, params):
+        # params is SmartList
+        if params:
+            assert len(params) > 0
+            for item in params:
+                # item is TypeAttributeParameter
+                param_type = item.reference.get_reference()
+                self.add(item.name, self.TYPE_PLAIN)
+                self.add(" = ")
+                self.macro_alink(param_type)
+                self.add(", ")
+            self.pop()
 
     def get_key_type(self, ref):
         if ref.input_type == InputType.MAIN_TYPE:
-            self.add(str(ref.input_type).capitalize())
-            self.add(': ')
-            self.macro_alink(ref)
+            # selection, record, abstract, tuple
+            if ref.has_generic_link():
+                self.add("gen. " + str(ref.input_type).lower() + ": ")
+                self.macro_alink(ref.get_generic_root())
+                param_dict = ref.get_parameter_dict()
+                return param_dict
+            else:
+                self.add(str(ref.input_type).lower() + ": ")
+                # always point to generic root
+                # if no generic type exists point to this reference
+                self.macro_alink(ref.get_generic_root())
         elif ref.input_type == InputType.ARRAY:
-            name = "Array {range} of ".format(range=ref.range)
+            name = "array {range} of ".format(range=ref.range)
             self.add(name)
-            self.get_key_type(ref.subtype.target)
+            # always point to generic root
+            # if no generic type exists point to this reference
+            return self.get_key_type(ref.subtype.target)
+        elif ref.input_type == InputType.PARAMETER:
+            name = "parameter: "
+            self.add("parameter: "+ ref.name, self.TYPE_PLAIN)
         else:
             ref_range = (' ' + str(ref.get('range') or '')).rstrip()
             name = str(ref.input_type).capitalize()
             self.add(name + ref_range)
+        return None
+
+class LatexTuple(LatexRecord):
+    """
+    Class LatexTuple is formatter for type tuple
+    """
+    latex_name = 'TupleType'
+
+    def __init__(self):
+        super(LatexRecord, self).__init__()
+
 
 class LatexSelection(TexList):
+    """
+    Class LatexSelection is formatter for type selection
+    """
+
     def format(self, selection):
         """
         % begin{SelectionType}
@@ -172,8 +264,13 @@ class LatexSelection(TexList):
         # name
         self._newline()
         self._tab()
-        with self:
-            self.macro_hyper_b(selection)
+        #with self:
+        #    self.macro_hyper_b(selection)
+        self.add(selection.href_id)
+        self._newline()
+        self._tab()
+        self.add(selection.href_name, self.TYPE_PLAIN)
+
         # description
         self._newline()
         self._tab()
@@ -185,7 +282,7 @@ class LatexSelection(TexList):
         for key in (selection.values or []):
             self._newline()
             self._tab(2)
-            with self.item_open('KeyItem'):
+            with self.item_open('SelectionItem'):
                 self.macro_value(key)
 
         self.end('SelectionType')
@@ -197,8 +294,12 @@ class LatexSelection(TexList):
         # name
         self._newline()
         self._tab(3)
-        with self:
-            self.macro_hyper_b(selection_value)
+        #with self:
+        #    self.macro_hyper_b(selection_value)
+        self.add(selection_value.href_id)
+        self._newline()
+        self._tab(3)
+        self.add(selection_value.href_name, self.TYPE_PLAIN)
         # description
         self._newline()
         self._tab(3)
@@ -207,6 +308,10 @@ class LatexSelection(TexList):
 
 
 class LatexAbstractRecord(TexList):
+    """
+    Class LatexAbstractRecord is formatter for type abstract
+    """
+
     def format(self, abstract_record):
         """
         % begin{AbstractType}
@@ -223,16 +328,21 @@ class LatexAbstractRecord(TexList):
         # name
         self._newline()
         self._tab()
-        with self:
-            self.macro_hyper_b(abstract_record)
+        #with self:
+        #    self.macro_hyper_b(selection)
+        self.add(abstract_record.href_id)
+        self._newline()
+        self._tab()
+        self.add(abstract_record.href_name, self.TYPE_PLAIN)
+
         # descendant
         self._newline()
         self._tab()
         with self:
             if abstract_record.default_descendant:
                 self.macro_alink(abstract_record.default_descendant.get_reference())
-        with self:
-                self.macro_add_doc(abstract_record)
+        #with self:
+        #    self.macro_add_doc(abstract_record)
         # description
         self._newline()
         self._tab()
@@ -247,11 +357,15 @@ class LatexAbstractRecord(TexList):
             with self.item_open('Descendant'):
                 with self:
                     self.macro_alink(impl.get_reference())
-
+            self.comment("") # end line comment to avoid spurious spaces
         self.end('AbstractType')
 
 
 class LatexFormatter(object):
+    """
+    Class LatexFormatter is main formatter for entire document
+    """
+
     formatters = {
         'TypeRecord': LatexRecord,
         # 'TypeRecordKey': LatexRecordKey,
@@ -259,6 +373,7 @@ class LatexFormatter(object):
         'TypeAbstractRecord': LatexAbstractRecord,
         # 'TypeString': LatexString,
         'TypeSelection': LatexSelection,
+        'TypeTuple': LatexTuple,
         # 'TypeArray': LatexArray,
         # 'TypeInteger': LatexInteger,
         # 'TypeDouble': LatexDouble,
@@ -269,19 +384,15 @@ class LatexFormatter(object):
     @staticmethod
     def format(items):
         tex = TexList()
-
-        Logger.instance().info('Processing items...')
+        #Logger.instance().info('Processing items...')
         for item in items:
             # do no format certain objects
+            #Logger.instance().info('processing: %s (%s)' % (item, item.href_id))
             if not item.include_in_format():
-                Logger.instance().info(' - item skipped: %s' % str(item))
+                #Logger.instance().info('  - skipped')
                 continue
 
-            Logger.instance().info(' - formatting item: %s' % str(item))
-            # l = LatexRecord()
-            # l.format(item)
-            # print l
-            # exit()
+            #Logger.instance().info('  +++ formatting +++')
             fmt = LatexFormatter.get_formatter_for(item)
             if fmt is not None:
                 fmt.format(item)

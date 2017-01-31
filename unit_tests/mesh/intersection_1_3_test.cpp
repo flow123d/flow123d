@@ -8,6 +8,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest.hh>
+#include <mesh_constructor.hh>
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
@@ -29,21 +30,21 @@ TEST(intersections, 1d_3d){
 	unsigned int elementLimit = 20;
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
 	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
-	Mesh mesh_krychle;
+	Mesh *mesh_krychle = mesh_constructor();
 	GmshMeshReader reader(mesh_file);
 	BoundingBox bb;
 	std::vector<unsigned int> searchedElements;
 
-	reader.read_physical_names(&mesh_krychle);
-	reader.read_mesh(&mesh_krychle);
+	reader.read_physical_names(mesh_krychle);
+	reader.read_mesh(mesh_krychle);
 
-	BIHTree bt(&mesh_krychle, elementLimit);
+	BIHTree bt(mesh_krychle, elementLimit);
 
 	//Profiler::initialize();
 	{
 	    START_TIMER("Inter");
 
-	    FOR_ELEMENTS(&mesh_krychle, elm) {
+	    FOR_ELEMENTS(mesh_krychle, elm) {
 	         if (elm->dim() == 1) {
 	        	TAbscissa ta;
 	        	FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_abscissa(elm, ta);
@@ -56,7 +57,7 @@ TEST(intersections, 1d_3d){
 	        	for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
 	        		{
 	        			int idx = *it;
-	        			ElementFullIter ele = mesh_krychle.element( idx );
+	        			ElementFullIter ele = mesh_krychle->element( idx );
 	        			if (ele->dim() == 3) {
 	        				FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_tetrahedron(ele, tt);
 	        				GetIntersection(ta, tt, iType, measure);
@@ -74,6 +75,7 @@ TEST(intersections, 1d_3d){
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
         
 	Profiler::uninitialize();
+	delete mesh_krychle;
 
 	MessageOut() << "Test is complete\n";
 

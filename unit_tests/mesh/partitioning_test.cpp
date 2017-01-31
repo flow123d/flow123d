@@ -8,6 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "mesh/partitioning.hh"
 #include "la/distribution.hh"
@@ -33,23 +34,21 @@ TEST(Partitioning, all) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Input::ReaderToStorage reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_JSON );
-    auto rec = reader.get_root_interface<Input::Record>();
-    Mesh mesh( rec );
-    mesh.init_from_input();
-    const Distribution * init_ds = mesh.get_part()->get_init_distr();
+    Mesh * mesh = mesh_constructor(mesh_input);
+    mesh->init_from_input();
+    const Distribution * init_ds = mesh->get_part()->get_init_distr();
 
     cout << *init_ds;
-    const int * part = mesh.get_part()->get_loc_part();
+    const int * part = mesh->get_part()->get_loc_part();
     // print partitioning
     for(unsigned int i=0; i < init_ds->lsize(); i++) cout << "proc: " << init_ds->myp() << " i: " << i << " part: " << part[i] << endl;
 
-    vector<int> old_ids(mesh.n_elements());
-    for(unsigned int i=0; i < mesh.n_elements(); i++) old_ids[i] = 2*i;
+    vector<int> old_ids(mesh->n_elements());
+    for(unsigned int i=0; i < mesh->n_elements(); i++) old_ids[i] = 2*i;
 
     Distribution * new_ds;
     int * id_4_loc, * new_4_id;
-    mesh.get_part()->id_maps( 2*old_ids.size(), &(old_ids[0]), new_ds, id_4_loc, new_4_id);
+    mesh->get_part()->id_maps( 2*old_ids.size(), &(old_ids[0]), new_ds, id_4_loc, new_4_id);
 
     cout << *new_ds;
     for(unsigned int i=0; i < new_ds->lsize(); i++) {
@@ -59,10 +58,12 @@ TEST(Partitioning, all) {
 
     /*
     for(unsigned int i=0; i < old_ids.size(); i++) cout << "proc: " << new_ds->myp() << " id: " << old_ids[i] << " new: " << new_4_id[old_ids[i]] << endl;
-    vector<int> &global_part = mesh.get_part()->subdomain_id_field_data().get();
+    vector<int> &global_part = mesh->get_part()->subdomain_id_field_data().get();
     if (global_part.size() > 1) {
         for(unsigned int i=0; i< old_ids.size(); i++) {
             EXPECT_EQ( new_ds->get_proc( new_4_id[ old_ids[i] ]),  global_part[i] );
         }
     }*/
+
+    delete mesh;
 }

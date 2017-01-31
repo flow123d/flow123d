@@ -28,6 +28,7 @@ namespace it = Input::Type;
 
 it::Abstract & LinSys::get_input_type() {
 	return it::Abstract("LinSys", "Linear solver setting.")
+	        .allow_auto_conversion("Petsc")
 			.close();
 }
 
@@ -369,7 +370,7 @@ LinSys_MPIAIJ:: ~LinSys_MPIAIJ()
 
 //**********************************************************************************************
 
-LinSys_MATIS::LinSys_MATIS(boost::shared_ptr<LocalToGlobalMap> global_row_4_sub_row, double *sol_array)
+LinSys_MATIS::LinSys_MATIS(std::shared_ptr<LocalToGlobalMap> global_row_4_sub_row, double *sol_array)
 : LinSys(global_row_4_sub_row->get_distr()->lsize(), sol_array), lg_map(global_row_4_sub_row)
 {
     PetscErrorCode err;

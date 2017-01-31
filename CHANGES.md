@@ -2,6 +2,46 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version 2.1.0
+(2016-12-16)
+
+## User interface
+
+* introduction of tutorials (tests/05_tutorials)
+* Docker is used for running Flow123d in platform independent environment.
+* Change meaning (and names) of parameters of Sorptions. Closer to common usage.
+* Updated documentation.
+* Improved format of generated input reference fro both Latex and HTML.
+
+
+
+### New features
+* FiledTimeFunction - field constant in space and interpolated in time from a table of values.
+* Unit conversion for fields.
+* Support for binary VTK output.
+* Checks for field limits.
+
+### Bug fixes
+* Fix unsteady water flow without prescribed timestep.
+* Fix configuration of the linear solver as part of the nonlinear solver.
+* Fix problem with YAML tag in autoconversion of Abstract.
+* Fix search of observe points.
+* Fix curious bug in selection of output times specific to individual equations.
+* Fix unsteady MH solver.
+* Fix observe output for no observation fields.
+* Fix some destructors.
+* Fix solute balance in zero time.
+* Fix init_piezo_head
+
+### Internals:
+
+* reorganization of the integration tests
+* use Docker to build and test Flow123d
+* replace boost::shared_ptr by std::shared_ptr
+* Simplified finishing of input types.
+
+***********************************************
+
 #Flow123d version 2.0.0
 (2016-08-31)
 
@@ -12,8 +52,8 @@ List of all changes in user interface and major internal changes.
 * A tool is provided for conversion from the CON with the structure of the 1.8.2 version to the YAML 
   format with the new structure. The tool can also convert YAML files of the version 2.0.0_rc.
 
-  Usage:    ```python3 bin/input_convert.py path/to/old_file.con```
-            ```python3 bin/input_convert.py path/to/old_file.yaml```  
+  Usage:    ```bin/input_convert.sh path/to/old_file.con```
+            ```bin/input_convert.sh path/to/old_file.yaml```  
 
 * Vector valued fields are replaced by "multifields". This allows independent setting for individual components.
   E.g. ``` init_conc = [ 0, 1, {TYPE=FieldFormula, value="x*y"} ]```

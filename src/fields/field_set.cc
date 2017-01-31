@@ -59,9 +59,10 @@ FieldSet FieldSet::subset( FieldFlag::Flags::Mask mask) const {
 
 
 Input::Type::Record FieldSet::make_field_descriptor_type(const std::string &equation_name) const {
-    Input::Type::Record rec = Input::Type::Record(equation_name + "_Data",
-    		FieldCommon::field_descriptor_record_description(equation_name + "_Data"))
-    	.copy_keys(FieldCommon::field_descriptor_record(equation_name + "_Data_aux"));
+    string rec_name = equation_name + ":Data";
+    string desc = FieldCommon::field_descriptor_record_description(rec_name);
+    Input::Type::Record rec = Input::Type::Record(rec_name, desc)
+    	.copy_keys(FieldCommon::field_descriptor_record(rec_name));
 
     for(auto field : field_list) {
         if ( field->flags().match(FieldFlag::declare_input) ) {
@@ -142,6 +143,13 @@ FieldCommon &FieldSet::operator[](const std::string &field_name) const {
 
     THROW(ExcUnknownField() << FieldCommon::EI_Field(field_name));
     return *field_list[0]; // formal to prevent compiler warning
+}
+
+
+bool FieldSet::set_time(const TimeStep &time, LimitSide limit_side) {
+    bool changed_all=false;
+    for(auto field : field_list) changed_all = field->set_time(time, limit_side) || changed_all;
+    return changed_all;
 }
 
 

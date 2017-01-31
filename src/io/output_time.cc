@@ -36,7 +36,7 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 namespace IT = Input::Type;
 
 const IT::Record & OutputTime::get_input_type() {
-    return IT::Record("OutputStream", "Parameters of output.")
+    return IT::Record("OutputStream", "Configuration of the spatial output of a single balance equation.")
 		// The stream
 		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
 				"File path to the connected output file.")
@@ -157,9 +157,13 @@ void OutputTime::compute_discontinuous_output_mesh()
 void OutputTime::fix_main_file_extension(std::string extension)
 {
     if(extension.compare( this->_base_filename.extension() ) != 0) {
-        string new_name = (string)this->_base_filename + extension;
-        WarningOut() << "Renaming output file: " << this->_base_filename << " to " << new_name;
-        this->_base_filename = new_name;
+        string old_name = (string)this->_base_filename;
+        std::vector<string> path = {this->_base_filename.parent_path(), this->_base_filename.stem() + extension};
+        this->_base_filename = FilePath(
+                path,
+                FilePath::output_file);
+        WarningOut() << "Renaming output file: " << old_name << " to " << this->_base_filename;
+
     }
 }
 

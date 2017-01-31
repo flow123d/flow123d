@@ -1,4 +1,4 @@
-/*
+    /*
  * observe.hh
  *
  *  Created on: Jun 28, 2016
@@ -172,7 +172,7 @@ public:
     /**
      * Output file header.
      */
-    void output_header(string observe_name);
+    void output_header();
 
     /**
      * Write field values to the output file. Using the YAML format.
@@ -200,9 +200,12 @@ protected:
     OutputDataFieldMap observe_field_values_;
 
 
-    /// Time of fields when the observe values were computed
+    /// Common evaluation time of the fields for single time frame.
     double observe_values_time_;
 
+    // Name of the observation stream. Base for the output filename.
+    std::string observe_name_;
+    
     /// Output file stream.
     std::ofstream observe_file_;
 
@@ -212,6 +215,9 @@ protected:
     double time_unit_seconds_;
     /// Precision of float output
     unsigned int precision_;
+    
+    // Warn for no observe fields only once.
+    bool no_fields_warning=false;
 
 };
 

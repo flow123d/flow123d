@@ -21,14 +21,15 @@
 
 
 #include "system/system.hh"
+#include "system/exceptions.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
-#include <boost/make_shared.hpp>
 
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
@@ -60,9 +61,11 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
 		.declare_key("regions", IT::Array( RegionSetBase::get_input_type() ), IT::Default::optional(),
-				"List of additional region and region set definitions not contained in the mesh.\n"
+				"List of additional region and region set definitions not contained in the mesh. "
 				"There are three region sets implicitly defined:\n\n"
-				" - ALL (all regions of the mesh)\n - .BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
+				"- ALL (all regions of the mesh)\n"
+				"- .BOUNDARY (all boundary regions)\n"
+				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
 		.close();
@@ -72,21 +75,6 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
-Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm),
- row_4_el(nullptr),
- el_4_loc(nullptr),
- el_ds(nullptr)
-{
-
-    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
-    in_record_ = reader.get_root_interface<Input::Record>();
-
-    reinit(in_record_);
-}
-
-
-
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
@@ -94,7 +82,17 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_4_loc(nullptr),
   el_ds(nullptr)
 {
-    reinit(in_record_);
+	// set in_record_, if input accessor is empty
+	if (in_record_.is_empty()) {
+		istringstream is("{mesh_file=\"\"}");
+	    Input::ReaderToStorage reader;
+	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+	    in_rec.finish();
+	    reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
+	    in_record_ = reader.get_root_interface<Input::Record>();
+	}
+
+	reinit(in_record_);
 }
 
 
@@ -230,15 +228,20 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     START_TIMER("Reading mesh - init_from_input");
     
-    Input::Array region_list;
-    // read raw mesh, add regions from GMSH file
-    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_physical_names(this);
-    // create regions from input
-    if (in_record_.opt_val("regions", region_list)) {
-        this->read_regions_from_input(region_list);
-    }
-    reader.read_mesh(this);
+	try {
+	    Input::Array region_list;
+	    // read raw mesh, add regions from GMSH file
+	    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+	    reader.read_physical_names(this);
+	    // create regions from input
+	    if (in_record_.opt_val("regions", region_list)) {
+	        this->read_regions_from_input(region_list);
+	    }
+	    reader.read_mesh(this);
+	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
+	catch (ExceptionBase const &e) {
+		throw;
+	}
     // possibly add implicit_boundary region.
     setup_topology();
     // finish mesh initialization

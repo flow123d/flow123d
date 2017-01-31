@@ -11,6 +11,7 @@
  * in gtest library.
  */
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
 #include "io/output_data_base.hh"
@@ -212,9 +213,9 @@ public:
 	: OutputTime()
 
 	{
-	    my_mesh = new Mesh();
+	    my_mesh = mesh_constructor();
 	    auto in_rec =
-	            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
+	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
 	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
 	    Profiler::initialize();
@@ -224,6 +225,7 @@ public:
 	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
+
 	}
 	virtual ~TestOutputTime() {
 	    delete my_mesh;
@@ -239,13 +241,13 @@ public:
 
 		// make field init it form the init string
 	    FieldType field("test_field", false); // bulk field
+		field.units(UnitSI::one());
 		field.input_default(init);
 		field.set_components(component_names);
 		field.input_selection( get_test_selection() );
 
 		field.set_mesh(*my_mesh);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
-		field.units(UnitSI::one());
         
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(*my_mesh);
@@ -261,7 +263,7 @@ public:
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -273,7 +275,7 @@ public:
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -285,7 +287,7 @@ public:
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
 			for(unsigned int i=0;  i < data->n_values; i++) {
 				std::stringstream ss;
-				data->print(ss, i);
+				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
 			}
 		}
@@ -326,7 +328,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
     this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.msh.pvd", string(this->_base_filename));
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
     this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".msh");
@@ -338,7 +340,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
     this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.pvd.msh", string(this->_base_filename));
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
 }
 

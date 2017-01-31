@@ -30,11 +30,13 @@ namespace it = Input::Type;
 
 const it::Record & LinSys_PETSC::get_input_type() {
 	return it::Record("Petsc", "Interface to PETSc solvers. Convergence criteria is:\n"
-	        " ```norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )```\n"
-	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual.\n"
-	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used,\n"
-	        "otherwise the norm of preconditioned RHS is used.\n"
-	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key.\n"
+	        "```\n"
+	        "norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )\n"
+	        "```\n"
+	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual. "
+	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used, "
+	        "otherwise the norm of preconditioned RHS is used. "
+	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key. "
 	        "See also PETSc documentation for KSPSetNormType.")
 		.derive_from(LinSys::get_input_type())
 		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
@@ -87,6 +89,11 @@ void LinSys_PETSC::set_tolerances(double  r_tol, double a_tol, unsigned int max_
         r_tol_ = in_rec_.val<double>("r_tol", r_tol);
         a_tol_ = in_rec_.val<double>("a_tol", a_tol);
         max_it_ = in_rec_.val<unsigned int>("max_it", max_it);
+    } else {
+        r_tol_ = r_tol;
+        a_tol_ = a_tol;
+        max_it_ = max_it;
+
     }
 }
 
@@ -350,6 +357,7 @@ int LinSys_PETSC::solve()
 
     // TODO take care of tolerances - shall we support both input file and command line petsc setting
     chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,PETSC_DEFAULT));
+    chkerr(KSPSetTolerances(system, r_tol_, a_tol_, PETSC_DEFAULT,  max_it_));
     KSPSetFromOptions(system);
     // We set the KSP flag set_initial_guess_nonzero
     // unless KSP type is preonly.

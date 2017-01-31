@@ -295,17 +295,19 @@ PathJSON * PathJSON::clone() const {
 
 
 
-std::string PathJSON::get_descendant_name() const {
+std::string PathJSON::get_record_name() const {
 	std::string desc_name = "";
-	PathJSON type_path(*this);
-	if ( type_path.down("TYPE") ) {
-	    //check if TYPE key is reference
-		PathBase * ref_path = type_path.find_ref_node();
-	    if (ref_path) {
-	        desc_name = ref_path->get_string_value();
-	    	delete ref_path;
-	    } else {
-	    	desc_name = type_path.get_string_value();
+	if ( this->is_record_type() ) {
+		PathJSON type_path(*this);
+		if ( type_path.down("TYPE") ) {
+		    //check if TYPE key is reference
+			PathBase * ref_path = type_path.find_ref_node();
+		    if (ref_path) {
+		        desc_name = ref_path->get_string_value();
+		    	delete ref_path;
+		    } else {
+		    	desc_name = type_path.get_string_value();
+			}
 		}
 	}
 

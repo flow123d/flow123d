@@ -119,6 +119,16 @@ public:
     { shared_->units_ = units; return *this;}
 
     /**
+     * Set limits of value of the field.
+     */
+    FieldCommon & set_limits(double min, double max = std::numeric_limits<double>::max())
+    {
+    	ASSERT(min < max)(min)(max).error("Invalid field limits!");
+    	shared_->limits_ = std::make_pair(min, max);
+    	return *this;
+    }
+
+    /**
      * For the fields returning "Enum", we have to pass the Input::Type::Selection object to
      * the field implementations.
      *
@@ -211,6 +221,11 @@ public:
         return shared_->units_;
     }
 
+    std::pair<double, double> limits() const
+    {
+        return shared_->limits_;
+    }
+
     OutputTime::DiscreteSpace output_type() const
     { return type_of_output_data_; }
 
@@ -239,6 +254,13 @@ public:
      */
     bool is_jump_time() {
         return is_jump_time_;
+    }
+
+    /**
+     * Returns number of field descriptors containing the field.
+     */
+    unsigned int input_list_size() const {
+        return shared_->input_list_.size();
     }
 
     /**
@@ -432,7 +454,8 @@ protected:
     	/**
     	 * Empty constructor.
     	 */
-    	SharedData() : list_idx_(0) {};
+    	SharedData()
+    	: list_idx_(0), limits_(std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max())) {};
 
         /**
          * True for boundary fields.
@@ -495,6 +518,11 @@ protected:
          * on such regions.
          */
         std::vector<FieldEnum> no_check_values_;
+
+        /**
+         * Allow set minimal and maximal limit value of Field.
+         */
+        std::pair<double, double> limits_;
 
 
     };

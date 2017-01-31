@@ -23,8 +23,6 @@
 #include "input/reader_to_storage.hh"
 
 #include <boost/typeof/typeof.hpp>
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>
 
@@ -115,8 +113,10 @@ Record::Record(const Record & other)
 
 Record::Record(const string & type_name_in, const string & description)
 : data_( std::make_shared<RecordData>(type_name_in, description) )
-
-{}
+{
+	data_->declare_key("TYPE", std::make_shared<String>(), Default( "\""+type_name()+"\"" ),
+	        "Sub-record Selection.", TypeBase::attribute_map());
+}
 
 
 TypeBase::TypeHash Record::content_hash() const
@@ -194,16 +194,19 @@ void Record::make_copy_keys(Record &origin) {
 
 Record &Record::derive_from(Abstract &parent) {
 	ASSERT( parent.is_closed() )(parent.type_name()).error();
-	ASSERT( data_->keys.size() == 0 || (data_->keys.size() == 1 && data_->keys[0].key_ == "TYPE") )(this->type_name())
-			.error("Derived record can have defined only TYPE key!");
+	ASSERT( data_->keys.size() > 0 && data_->keys[0].key_ == "TYPE" )(this->type_name())
+			.error("Derived record must have defined TYPE key!");
+
+	// check if parent exists in parent_vec_ vector
+	TypeHash hash = parent.content_hash();
+	for (auto &parent : data_->parent_vec_) {
+		if ( parent->content_hash() == hash ) {
+			return *this;
+		}
+	}
 
 	// add Abstract to vector of parents
 	data_->parent_vec_.push_back( std::make_shared<Abstract>(parent) );
-
-	if (data_->keys.size() == 0) {
-    	data_->declare_key("TYPE", std::make_shared<String>(), Default( "\""+type_name()+"\"" ),
-    	        "Sub-record Selection.", TypeBase::attribute_map());
-    }
 
 	return *this;
 }
@@ -219,8 +222,13 @@ Record &Record::copy_keys(const Record &other) {
 }
 
 
+FinishStatus Record::finish_status() const {
+    return data_->finish_status_;
+}
+
+
 bool Record::is_finished() const {
-    return data_->finished;
+    return (data_->finish_status_ != FinishStatus::none_) && (data_->finish_status_ != FinishStatus::in_perform_);
 }
 
 
@@ -231,27 +239,35 @@ bool Record::is_closed() const {
 
 
 
-bool Record::finish(bool is_generic)
+FinishStatus Record::finish(FinishStatus finish_type)
 {
+	ASSERT(finish_type != FinishStatus::none_).error();
+	ASSERT(finish_type != FinishStatus::in_perform_).error();
+	ASSERT(data_->finish_status_ != FinishStatus::in_perform_)(this->type_name())(this->type_name()).error("Recursion in the IST element of type Record.");
 
-	if (data_->finished) return true;
+	if (this->is_finished()) return data_->finish_status_;
 
 	ASSERT(data_->closed_)(this->type_name()).error();
 
-    data_->finished = true;
+    data_->finish_status_ = FinishStatus::in_perform_;
     for (vector<Key>::iterator it=data_->keys.begin(); it!=data_->keys.end(); it++)
     {
 
       	if (it->key_ != "TYPE") {
-			if (typeid( *(it->type_.get()) ) == typeid(Instance)) it->type_ = it->type_->make_instance().first;
-			if (!is_generic && it->type_->is_root_of_generic_subtree())
+			if (typeid( *(it->type_.get()) ) == typeid(Instance)) {
+				it->type_->finish(FinishStatus::generic_); // finish Instance object
+				it->type_ = it->type_->make_instance().first;
+			}
+			if ((finish_type != FinishStatus::generic_) && it->type_->is_root_of_generic_subtree())
 			    THROW( ExcGenericWithoutInstance()
 			            << EI_Object(it->type_->type_name())
 			            << EI_TypeName(this->type_name()));
-           	data_->finished = data_->finished && it->type_->finish(is_generic);
+			it->type_->finish(finish_type);
+			ASSERT(it->type_->is_finished()).error();
+			if (finish_type == FinishStatus::delete_) it->type_.reset();
         }
 
-        if (!is_generic) {
+        if (finish_type == FinishStatus::regular_) {
             try {
                 it->default_.check_validity(it->type_);
             } catch (ExcWrongDefaultJSON & e) {
@@ -278,7 +294,8 @@ bool Record::finish(bool is_generic)
         }
     }
 
-    return (data_->finished);
+    data_->finish_status_ = finish_type;
+    return (data_->finish_status_);
 }
 
 
@@ -289,7 +306,6 @@ Record &Record::close() const {
     for (auto &parent : data_->parent_vec_) {
     	parent->add_child(rec);
     }
-    data_->parent_vec_.clear();
 
     return rec;
 }
@@ -314,18 +330,18 @@ Record::KeyIter Record::auto_conversion_key_iter() const {
 }
 
 
-Record &Record::declare_type_key() {
+/*Record &Record::declare_type_key() {
 	ASSERT(data_->keys.size() == 0).error("Declaration of TYPE key must be carried as the first.");
 	data_->declare_key("TYPE", std::make_shared<String>(), Default::obligatory(),
 			"Sub-record selection.", TypeBase::attribute_map());
 	return *this;
-}
+}*/
 
-Record &Record::has_obligatory_type_key() {
+/*Record &Record::has_obligatory_type_key() {
 	ASSERT(! data_->parent_vec_.size()).error("Record with obligatory TYPE key can't be derived");
 	declare_type_key();
 	return *this;
-}
+}*/
 
 Record &Record::add_attribute(std::string key, TypeBase::json_string value) {
     this->add_attribute_(key, value);
@@ -364,7 +380,7 @@ Record Record::deep_copy() const {
 	Record rec = Record();
 	rec.data_ =  std::make_shared<Record::RecordData>(*this->data_);
 	rec.data_->closed_ = false;
-	rec.data_->finished = false;
+	rec.data_->finish_status_ = FinishStatus::none_;
 	rec.copy_attributes(*attributes_);
 	rec.generic_type_hash_ = this->generic_type_hash_;
 	rec.parameter_map_ = this->parameter_map_;
@@ -372,7 +388,7 @@ Record Record::deep_copy() const {
 }
 
 
-const Record &Record::add_parent(Abstract &parent) const {
+/*const Record &Record::add_parent(Abstract &parent) const {
 	ASSERT( parent.is_closed() )(parent.type_name()).error();
 
 	// check if parent exists in parent_vec_ vector
@@ -391,7 +407,7 @@ const Record &Record::add_parent(Abstract &parent) const {
 	data_->keys[0].default_ = Default( "\""+type_name()+"\"" );
 
 	return *this;
-}
+}*/
 
 
 Record &Record::root_of_generic_subtree() {
@@ -408,7 +424,7 @@ Record &Record::root_of_generic_subtree() {
 Record::RecordData::RecordData(const string & type_name_in, const string & description)
 :description_(description),
  type_name_(type_name_in),
- finished(false),
+ finish_status_(FinishStatus::none_),
  closed_(false),
  derived_(false),
  auto_conversion_key_idx(-1)    // auto conversion turned off
@@ -433,7 +449,7 @@ void Record::RecordData::declare_key(const string &key,
 	ASSERT(!closed_)(key)(this->type_name_).error();
     // validity test of default value
 
-    ASSERT( !finished )(key)(type_name_).error("Declaration of key in finished Record");
+    ASSERT( finish_status_ == FinishStatus::none_ )(key)(type_name_).error("Declaration of key in finished Record");
     ASSERT( key=="TYPE" || TypeBase::is_valid_identifier(key) )(key)(type_name_).error("Invalid key identifier in declaration of Record");
 
     KeyHash key_h = key_hash(key);
