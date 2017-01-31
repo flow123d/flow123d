@@ -50,8 +50,9 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
  * 1. constructor with parameters given by Arguments
  * 2. declaration of parent class as typedef with name FactoryBaseType
  * 3. private static integer variable what is only for registration class to factory, this variable only allow
- *    to register class to factory and its implementation must call Factory::register_class what adds constructor
- *    of class to factory
+ *    to register class to factory and its implementation must call:
+ *    (a) Factory::register_class that adds constructor of class to factory
+ *    (b) generating function of Input::Type::Record (usually get_input_type() method)
  *
  * Simple example of usage:
  @code
@@ -60,6 +61,9 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
      public:
         /// typedef of parent class
         typedef SomeBase FactoryBaseType;
+
+        /// Return initialization Record
+        static const Input::Type::Record & get_input_type();
 
 		/// constructor
 	    SomeDescendant() {}
@@ -71,7 +75,8 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
 
      /// implementation of registration variable
      const int SomeDescendant::reg =
-		 Input::register_class< SomeDescendant >("SomeDescendant");
+		 Input::register_class< SomeDescendant >("SomeDescendant") +
+		 SomeDescendant::get_input_type().size();
  @endcode
  *
  * Factory allow to accept constructor with one or more parameters. In this case Factory is
@@ -93,7 +98,8 @@ DECLARE_EXCEPTION( ExcNotRegistredClass, << "Key " << EI_KeyName::val
 
      /// implementation of registration variable
      const int SomeDescendant::reg =
-		 Input::register_class< SomeDescendant<dimension>, double >("SomeDescendant");
+		 Input::register_class< SomeDescendant<dimension>, double >("SomeDescendant") +
+		 SomeDescendant<dimension>::get_input_type().size();
  @endcode
  *
  * Factory can be used in two ways:

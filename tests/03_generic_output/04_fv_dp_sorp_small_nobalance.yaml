@@ -92,9 +92,9 @@ problem: !Coupling_Sequential
             sorption_type:
               - none
               - freundlich
-            isotherm_mult:
+            distribution_coefficient:
               - 0
-              - 0.68
+              - 1.598e-4
             isotherm_other:
               - 0
               - 1.0

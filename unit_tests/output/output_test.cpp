@@ -11,6 +11,7 @@
  * in gtest library.
  */
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
 #include "io/output_data_base.hh"
@@ -212,9 +213,9 @@ public:
 	: OutputTime()
 
 	{
-	    my_mesh = new Mesh();
+	    my_mesh = mesh_constructor();
 	    auto in_rec =
-	            Input::ReaderToStorage(test_output_time_input, OutputTime::get_input_type(), Input::FileFormat::format_JSON)
+	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
 	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
 	    Profiler::initialize();
@@ -224,6 +225,7 @@ public:
 	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
+
 	}
 	virtual ~TestOutputTime() {
 	    delete my_mesh;
@@ -326,7 +328,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
     this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.msh.pvd", string(this->_base_filename));
+    EXPECT_EQ("test.pvd", string(this->_base_filename));
 
     this->_base_filename=FilePath("test.msh", FilePath::output_file);
     this->fix_main_file_extension(".msh");
@@ -338,7 +340,7 @@ TEST_F(TestOutputTime, fix_main_file_extension)
 
     this->_base_filename=FilePath("test.pvd", FilePath::output_file);
     this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.pvd.msh", string(this->_base_filename));
+    EXPECT_EQ("test.msh", string(this->_base_filename));
 
 }
 

@@ -10,11 +10,15 @@ class ScriptModule(object):
     """
     ScriptModule is abstract class for all script modules.
     Children must implement or override method such as _check_arguments and _run
+
+    :type arg_options : utils.argparser.RuntestArgs or utils.argparser.ExecWithLimitArgs or utils.argparser.ExecParallelArgs
     """
 
-    def __init__(self):
-        self.parser = None
-        self.arg_options, self.others, self.rest = None, None, None
+    def __init__(self, arg_options):
+        """
+        :type arg_options: utils.argparser.RuntestArgs or utils.argparser.ExecWithLimitArgs or utils.argparser.ExecParallelArgs
+        """
+        self.arg_options = arg_options
         self.debug = False
         self.progress, self.batch = None, None
 
@@ -37,13 +41,11 @@ class ScriptModule(object):
     def _run(self):
         pass
 
-    def run(self, parser, args=None, debug=False):
+    def run(self, debug=False):
         """
-        :type parser: utils.argparser.ArgParser
+        :type parser: utils.argparser.RuntestArgs
         """
-        self.parser = parser
         self.debug = debug
-        self.arg_options, self.others, self.rest = self.parser.parse(args)
 
         self._prepare()
         self._check_arguments()

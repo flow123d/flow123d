@@ -102,6 +102,12 @@ public:
      * Check if python function is callable, if not throws exception.
      */
     static PyObject * get_callable(PyObject *module, const std::string &func_name);
+    /**
+     * all paths which are set in every python call (sys.path) value. Values are
+     * separated by path separator(colon on unix, semicolono on windows). This 
+     * value is generated 
+     */
+    static std::string sys_path;
 };
 
 

@@ -81,13 +81,13 @@ def parse_args(parser):
     (options, args) = parser.parse_args()
 
     if options.input is None:
-        Logger.instance().warning("Error: No input file specified!")
         parser.print_help()
+        Logger.instance().error("No input file specified!")
         sys.exit(1)
 
     if options.output is None:
-        Logger.instance().warning("Error: No output file specified!")
         parser.print_help()
+        Logger.instance().error("No output file specified!")
         sys.exit(1)
 
     return options, args
@@ -116,13 +116,13 @@ def main():
         items = list()
         for json_item in json_data:
             input_type = json_item['input_type'] if 'input_type' in json_item else None
-            if input_type in registered_nodes:
 
+            if input_type in registered_nodes:
                 item = registered_nodes[input_type]()
                 item.parse(json_item)
                 items.append(item)
             else:
-                Logger.instance().info(' - item type not supported: %s' % str(item))
+                Logger.instance().info(' - item type not supported: %s' % str(json_item))
 
     # if we have all items parsed we create references
     for item in items:
@@ -138,11 +138,12 @@ def main():
                 for imp in getattr(item, 'implementations', []):
                     imp.get_reference().add_link(item)
 
-    # sort items by type and name
-    items = sorted(items, key=lambda x: '{}{}'.format(x.input_type.value, x.name))
+    # disable sort for now (type and name) keep items order unchanged
+    # items = sorted(items, key=lambda x: '{}{}'.format(x.input_type.value, x.name))
 
     # convert to tex format
     if options.format.lower() in ('tex', 'latex'):
+        Logger.instance().info('-' * 80)
         Logger.instance().info('Formatting ist to tex format')
         from ist.utils.texlist2 import TexList
         TexList.PRETTY_FORMAT = options.debug
@@ -156,6 +157,7 @@ def main():
 
     # convert to HTML format
     if options.format.lower() in ('html', 'html5', 'www', 'htm'):
+        Logger.instance().info('-' * 80)
         Logger.instance().info('Formatting ist to html format')
         formatter.json2html(items, options.output, info=ist_info)
         if os.path.isfile(options.output):

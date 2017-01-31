@@ -142,12 +142,14 @@ TEST(GenericType, generic_record) {
 			.declare_key("bool", Bool(), "Some bool key.")
 			.close();
 
-	TypeBase::lazy_finish();
+	problem.finish();
 
 	Record::KeyIter key_it = problem.begin();
+	++key_it; // skip TYPE key
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 	const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
-	EXPECT_EQ( typeid( *(in_rec->begin()->type_.get()) ), typeid(Selection) );
+	Record::KeyIter in_rec_it = in_rec->begin();
+	EXPECT_EQ( typeid( *((++in_rec_it)->type_.get()) ), typeid(Selection) );
 
 	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
@@ -162,10 +164,11 @@ TEST(GenericType, generic_tuple) {
 			.declare_key("description", String(), "desc.")
 			.close();
 
-	TypeBase::lazy_finish();
+	tpl_problem.finish();
 
 	Record::KeyIter key_it = tpl_problem.begin();
 	{
+		++key_it;
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Tuple) );
 		const Tuple *in_tpl = static_cast<const Tuple *>(key_it->type_.get());
 		Record::KeyIter in_it = in_tpl->begin();
@@ -197,9 +200,10 @@ TEST(GenericType, generic_array) {
 			.declare_key("array2", get_generic_array(&get_shapes_selection()), "Secondary problem.")
 			.close();
 
-	TypeBase::lazy_finish();
+	arr_rec.finish();
 
 	Record::KeyIter key_it = arr_rec.begin();
+	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Array) );
 	const Array *array = static_cast<const Array *>(key_it->type_.get());
 	EXPECT_EQ( typeid( array->get_sub_type() ), typeid(Selection) );
@@ -229,9 +233,11 @@ TEST(GenericType, generic_abstract) {
 			.declare_key("bool", Bool(), "Some bool key.")
 			.close();
 
-	TypeBase::lazy_finish();
+	rec_with_abstracts.finish();
 
 	Record::KeyIter key_it = rec_with_abstracts.begin();
+
+	++key_it;
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Abstract) );
 		const Abstract *abstract = static_cast<const Abstract *>(key_it->type_.get());
@@ -265,25 +271,28 @@ TEST(GenericType, record_with_record) {
 			.declare_key("bool", Bool(), "Some bool key.")
 			.close();
 
-	TypeBase::lazy_finish();
+	problem.finish();
 
 	Record::KeyIter key_it = problem.begin();
+	++key_it;
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
 		Record::KeyIter in_rec_it = in_rec->begin();
-		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
+		EXPECT_EQ( typeid( *( (++in_rec_it)->type_.get() ) ), typeid(Record) );
 		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
-		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Integer) );
+		Record::KeyIter in_in_rec_it = in_in_rec->begin();
+		EXPECT_EQ( typeid( *( (++in_in_rec_it)->type_.get() ) ), typeid(Integer) );
 	}
 	++key_it;
 	{
 		EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 		const Record *in_rec = static_cast<const Record *>(key_it->type_.get());
 		Record::KeyIter in_rec_it = in_rec->begin();
-		EXPECT_EQ( typeid( *(in_rec_it->type_.get()) ), typeid(Record) );
+		EXPECT_EQ( typeid( *( (++in_rec_it)->type_.get() ) ), typeid(Record) );
 		const Record *in_in_rec = static_cast<const Record *>(in_rec_it->type_.get());
-		EXPECT_EQ( typeid( *(in_in_rec->begin()->type_.get()) ), typeid(Double) );
+		Record::KeyIter in_in_rec_it = in_in_rec->begin();
+		EXPECT_EQ( typeid( *( (++in_in_rec_it)->type_.get() ) ), typeid(Double) );
 	}
 }
 
@@ -307,7 +316,7 @@ TEST(GenericType, parameter_in_deep) {
 			.declare_key("some_int", Integer(), "Int key")
 			.close();
 
-	TypeBase::lazy_finish();
+	record.finish();
 }
 
 
@@ -324,7 +333,6 @@ TEST(GenericType, array_of_instances) {
 	static Array array = Array( inst );
 
 	array.finish();
-	TypeBase::lazy_finish();
 
 	EXPECT_EQ( typeid( array.get_sub_type() ), typeid(Double) );
 }
@@ -353,13 +361,15 @@ TEST(GenericType, instance_in_instance) {
 			.declare_key("some_int", Integer(), "Int key")
 			.close();
 
-	TypeBase::lazy_finish();
+	root_rec.finish();
 
 	Record::KeyIter key_it = root_rec.begin();
+	++key_it;
 	EXPECT_EQ( typeid( *(key_it->type_.get()) ), typeid(Record) );
 	const Record *inner_rec = static_cast<const Record *>(key_it->type_.get());
-	EXPECT_EQ(inner_rec->size(), 2);
+	EXPECT_EQ(inner_rec->size(), 3);
 	Record::KeyIter key_it_in = inner_rec->begin();
+	++key_it_in;
 	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(String) );
 	++key_it_in;
 	EXPECT_EQ( typeid( *(key_it_in->type_.get()) ), typeid(Double) );
@@ -385,11 +395,11 @@ TEST(GenericType, parameter_not_replaced) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcParamaterNotSubsituted, "for input type parameter 'param'" );
+	EXPECT_THROW_WHAT( { record.finish(); }, ExcParamaterNotSubsituted, "for input type parameter 'param'" );
 }
 
 
-TEST(GenericType, parameter_during_lazy_finish) {
+TEST(GenericType, parameter_during_regular_finish) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 
 	static Record param_record = Record("record_with_param", "")
@@ -397,7 +407,7 @@ TEST(GenericType, parameter_during_lazy_finish) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcParamaterInIst, "Parameter 'param' appears in the IST");
+	EXPECT_THROW_WHAT( { param_record.finish(); }, ExcParamaterInIst, "Parameter 'param' appears in the IST");
 }
 
 
@@ -414,7 +424,7 @@ TEST(GenericType, root_without_instance) {
 			.declare_key("bool", Bool(), "Some bool key.")
 			.close();
 
-	EXPECT_THROW_WHAT( { TypeBase::lazy_finish(); }, ExcGenericWithoutInstance, "'in_rec' used without Instance");
+	EXPECT_THROW_WHAT( { root_rec.finish(); }, ExcGenericWithoutInstance, "'in_rec' used without Instance");
 }
 
 
@@ -460,7 +470,7 @@ TEST(GenericType, unused_record) {
 			.declare_key("some_int", Integer(), "Integer key")
 			.close();
 
-	TypeBase::lazy_finish();
+	root_templated_record.finish();
 }
 
 
@@ -485,5 +495,25 @@ TEST(GenericType, parameter_not_used) {
 			.declare_key("some_double", Double(), "Double key")
 			.close();
 
-	EXPECT_ASSERT_DEATH( { TypeBase::lazy_finish(); }, "must be used");
+	EXPECT_ASSERT_DEATH( { record.finish(); }, "must be used");
+}
+
+
+#include "instance_test.hh"
+
+#define INSTANCE_TEST_CONSTRUCT(TYPE) \
+		template class InstanceTest< TYPE >;
+
+INSTANCE_TEST_CONSTRUCT(Integer);
+INSTANCE_TEST_CONSTRUCT(Double);
+INSTANCE_TEST_CONSTRUCT(String);
+
+
+TEST(Instances, unused_subtree) {
+	static Record rec_of_instances = Record("root_of_instances", "")
+			.declare_key("int_rec", InstanceTest<Integer>::get_input_type_instance("Integer"), "desc.")
+			.declare_key("double_rec", InstanceTest<Integer>::get_input_type_instance("Double"), "Double key")
+			.close();
+
+	rec_of_instances.finish();
 }

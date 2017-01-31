@@ -48,6 +48,16 @@ if(CCACHE_CXX_COMPILER)
 endif(CCACHE_CXX_COMPILER)
 
 
+# try to use ccache for compiling and linking if flag is set
+if(USE_CCACHE)
+    find_program(CCACHE_FOUND ccache)
+    if(CCACHE_FOUND)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
+        set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
+    endif(CCACHE_FOUND)
+endif(USE_CCACHE)
+
+
 # Project name and language(s)
 project(Flow123d CXX C Fortran)
 
@@ -333,7 +343,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
 set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
  
-set(Boost_DEBUG TRUE)
+# set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
 # first find_package.
@@ -512,7 +522,15 @@ message(STATUS "=======================================================")
 # otherwise
 # we create link to src so python_loader is able to use modules
 set(PYTHON_EXTRA_MODULES_PATH lib/python/flow123d)
-flow_define(PYTHON_EXTRA_MODULES_PATH ${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH})
+# PYTHONPATH is relative to cwd
+# need to make changes in c++ to correctly alter PYTHONPATH relative to binary location
+# for now, we also add absolute location
+# now it contains:
+#       relative path
+#       absolute path
+#       /opt/flow123d - for production
+#       /opt/flow123d/flow123d - for packaging
+flow_define(PYTHON_EXTRA_MODULES_PATH ../${PYTHON_EXTRA_MODULES_PATH}:${CMAKE_SOURCE_DIR}/${PYTHON_EXTRA_MODULES_PATH}:/opt/flow123d/${PYTHON_EXTRA_MODULES_PATH}:/opt/flow123d/flow123d/${PYTHON_EXTRA_MODULES_PATH})
 execute_process(COMMAND mkdir -p ${CMAKE_SOURCE_DIR}/lib/python)
 if (COPY_INSTEAD_OF_SYMLINK)
 	execute_process(COMMAND
@@ -858,14 +876,11 @@ install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DEST
 # install tests dir
 find_program (MAKE_EXECUTABLE               NAMES make gmake)
 install(CODE "execute_process(COMMAND \"${MAKE_EXECUTABLE}\" clean-tests WORKING_DIRECTORY \"${CMAKE_SOURCE_DIR}\")")
-install(DIRECTORY tests                     DESTINATION .)
-install(PROGRAMS  tests/runtest             DESTINATION tests)
 
 
 # python libs, sources and config files
 install(DIRECTORY src/python/               DESTINATION lib/python/flow123d)
 install(FILES     config/host_table.yaml    DESTINATION config/)
-# install(FILES     config/artifacts.yaml           DESTINATION config/)
 
 
 # To install MSVC runtime libraries ... ?

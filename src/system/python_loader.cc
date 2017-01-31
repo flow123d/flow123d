@@ -30,6 +30,18 @@
 
 using namespace std;
 
+string python_sys_path = R"CODE(
+
+def get_paths():
+    import sys
+    import os
+    return os.pathsep.join(sys.path)
+
+)CODE";
+
+// default value
+string PythonLoader::sys_path = "";
+
 void PythonLoader::initialize(const std::string &python_home)
 {
     static internal::PythonRunning _running(python_home);
@@ -141,11 +153,16 @@ void PythonLoader::check_error() {
                 }
             }
         }
-
+        
+        // get value of python's "sys.path"
+        string python_path = PythonLoader::sys_path;
+        replace(python_path.begin(), python_path.end(), ':', '\n');
+        
  		string py_message =
 		             "\nType: " + string(PyString_AsString(PyObject_Str(ptype))) + "\n"
 		           + "Message: " + string(PyString_AsString(PyObject_Str(pvalue))) + "\n"
-		           + "Traceback: " + str_traceback;
+		           + "Traceback: " + str_traceback + "\n"
+                   + "Paths: " + "\n" + python_path + "\n";
 
 		THROW(ExcPythonError() << EI_PythonMessage( py_message ));
     }
@@ -299,7 +316,21 @@ PythonRunning::PythonRunning(const std::string& program_name)
     // conversion to non const char
     char * path_char = const_cast<char *>(path.c_str());
     PySys_SetPath (path_char);
+    
+    
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
+
+    // call python and get paths available
+    PyObject *moduleMainString = PyString_FromString("__main__");
+    PyObject *moduleMain = PyImport_Import(moduleMainString);
+    PyRun_SimpleString(python_sys_path.c_str());
+    PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
+    PyObject *args = PyTuple_New (0);
+    PyObject *result = PyObject_CallObject(func, args);
+    PythonLoader::check_error();
+    
+    // save value so we dont have to call python again
+    PythonLoader::sys_path = string(PyString_AsString(result));
 }
 
 

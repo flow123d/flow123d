@@ -127,11 +127,6 @@ public:
     enum {x_coord=0, y_coord=1, z_coord=2};
 
     /**
-     * Constructor with input record given by string. Aimed for testing purpose.
-     * Do not process input record. That is done in init_from_input.
-     */
-    Mesh(const std::string &input_str="{mesh_file=\"\"}", MPI_Comm com = MPI_COMM_WORLD);
-    /**
      * Constructor from an input record.
      * Do not process input record. That is done in init_from_input.
      */

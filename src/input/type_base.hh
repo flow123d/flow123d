@@ -66,6 +66,22 @@ DECLARE_EXCEPTION( ExcUnknownDescendant, << "Unknown descendant of TypeBase clas
 
 
 /**
+ * FinishStatus manages finish of elements in IST.
+ *
+ * Specifies:
+ *  - finish status of IST elements
+ *  - type of executing finish
+ */
+enum FinishStatus {
+	none_,        //< unfinished element / this type can't be used as type of finish
+	in_perform_,  //< finish of element performs (used in recursion check) / this type can't be used as type of finish
+	regular_,     //< finished element of IST / finish of IST executed recursively from root element
+	generic_,     //< finished element in generic subtree / finish of generic subtree (executed from Instance object)
+	delete_       //< finished element marked as deleted (that doesn't appear in IST) / finish of unused elements (that can be removed)
+};
+
+
+/**
  * @brief Base of classes for declaring structure of the input data.
  *
  *  Provides methods and class members common to all types. Namely, the type name, finished status (nontrivial only
@@ -101,6 +117,9 @@ public:
      * For Record and Array types this say nothing about child types referenced in particular type object.
      * In particular for Record and Selection, it returns true after @p finish() method is called.
      */
+    virtual FinishStatus finish_status() const
+    {return FinishStatus::regular_;}
+
     virtual bool is_finished() const
     {return true;}
 
@@ -155,14 +174,15 @@ public:
 
 
     /**
-     * @brief Finishes all types registered in type repositories.
+     * @brief Finishes and marks all types registered in type repositories and unused in IST.
      *
-     * Finish must be executed in suitable order
-     *  1) finish of Instance types, generic Abstract and generic Record types
-     *  2) finish of non-generic Abstract and non-generic Record types
-     *  3) finish of the other types
+     * Steps of this method:
+     *  1) finishes all types unused in IST, marks them as deleted (FinishStatus::deleted_)
+     *  2) iterates these deleted types once more, checks shared pointers link to Record keys, descendants of Abstract etc.
+     *     - if count == 1, it's OK, method resets shared pointer
+     *     - in other cases throws error
      */
-    static void lazy_finish();
+    static void delete_unfinished_types();
 
 
     /**
@@ -174,11 +194,20 @@ public:
      * phase. Therefore, the remaining part of initialization can be done later, in finalization phase, typically
      * from main(), by calling the method finish().
      *
-     * Finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p is_generic
-     * to true.
+     * Method allows finish in different cases that is managed by @p finish_type:
+     *
+     * - base finish of IST requires FinishStatus::regular_ and typically finish of root type is called in this case
+     * - finish of generic types can be different of other Input::Types (e. g. for Record) and needs set @p finish_type
+     *   to FinishStatus::generic_
+     * - input types unused in IST can be finished with parameter FinishStatus::delete_. These types can be then safely
+     *   deleted from \p Input::TypeRepository (see also \p delete_unfinished_types)
+     *
      */
-    virtual bool finish(bool is_generic = false)
-    { return true; };
+    virtual FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_)
+    {
+    	ASSERT((finish_type != FinishStatus::none_) && (finish_type != FinishStatus::in_perform_)).error();
+    	return finish_type;
+    };
 
     /**
      * @brief Hash of the type specification.
@@ -329,10 +358,10 @@ protected:
 
     	/// Constructor
     	ArrayData(unsigned int min_size, unsigned int max_size)
-    	: lower_bound_(min_size), upper_bound_(max_size), finished(false)
+    	: lower_bound_(min_size), upper_bound_(max_size), finish_status(FinishStatus::none_)
     	{}
     	/// Finishes initialization of the ArrayData.
-    	bool finish(bool is_generic = false);
+    	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_);
     	/// Type of Array
     	std::shared_ptr<TypeBase> type_of_values_;
     	/// Minimal size of Array
@@ -340,7 +369,7 @@ protected:
     	/// Maximal size of Array
     	unsigned int upper_bound_;
     	/// Flag specified if Array is finished
-    	bool finished;
+    	FinishStatus finish_status;
 
     };
 
@@ -367,11 +396,15 @@ public:
     TypeHash content_hash() const override;
 
     /// Finishes initialization of the Array type because of lazy evaluation of type_of_values.
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
+
+    /// Override @p Type::TypeBase::finish_status.
+    FinishStatus finish_status() const override {
+        return data_->finish_status; }
 
     /// Override @p Type::TypeBase::is_finished.
     bool is_finished() const override {
-        return data_->finished; }
+        return (data_->finish_status != FinishStatus::none_) && (data_->finish_status != FinishStatus::in_perform_); }
 
     /// Getter for the type of array items.
     inline const TypeBase &get_sub_type() const {

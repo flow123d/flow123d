@@ -8,6 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "fields/field_set.hh"
 #include "fields/unit_si.hh"
@@ -94,7 +95,7 @@ public:
 	    Profiler::initialize();
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = new Mesh();
+        mesh_ = mesh_constructor();
         ifstream in(string(mesh_file).c_str());
         mesh_->read_gmsh_from_stream(in);
 	}
@@ -176,7 +177,7 @@ TEST_F(SomeEquation, field_descriptor) {
 	Input::Type::Record descriptor = EqData().make_field_descriptor_type("SomeEquation");
 
 	descriptor.finish();
-	EXPECT_EQ(6, descriptor.size());
+	EXPECT_EQ(7, descriptor.size());
 	EXPECT_TRUE( descriptor.has_key("time"));
 	EXPECT_TRUE( descriptor.has_key("rid"));
 	EXPECT_TRUE( descriptor.has_key("region"));

@@ -19,7 +19,7 @@ class OutputMode(object):
     Class OutputMode helper class for redirecting output from a command
     """
 
-    WRITE, APPEND, SHOW, HIDE, VARIABLE = range(5)
+    WRITE, APPEND, SHOW, HIDE, VARIABLE, DUMMY = range(6)
 
     def __init__(self, mode, filename=None, fp=None):
         self.mode = mode
@@ -28,6 +28,9 @@ class OutputMode(object):
         self.content = None
 
     def open(self):
+        if self.mode is self.DUMMY:
+            return subprocess.PIPE
+
         if self.mode in {self.SHOW, self.HIDE}:
             return {self.SHOW: None, self.HIDE: subprocess.PIPE}.get(self.mode)
 
@@ -44,6 +47,9 @@ class OutputMode(object):
             return self.fp
 
     def close(self):
+        if self.mode is self.DUMMY:
+            return
+
         if self.mode in {self.WRITE, self.APPEND, self.VARIABLE}:
             if self.fp is not None:
                 if type(self.fp) is int:
@@ -58,10 +64,16 @@ class OutputMode(object):
             os.unlink(self.filename)
 
     def read(self):
+        if self.mode is self.DUMMY:
+            return self.content
+
         if self.filename:
             if self.content is None:
                 self.content = IO.read(self.filename)
             return self.content
+
+    def write(self, o):
+        self.content += str(o) + "\n"
 
     @classmethod
     def file_write(cls, filename):
@@ -82,6 +94,12 @@ class OutputMode(object):
     @classmethod
     def variable_output(cls):
         return OutputMode(cls.VARIABLE)
+
+    @classmethod
+    def dummy_output(cls):
+        o = OutputMode(cls.DUMMY)
+        o.content = ""
+        return o
 
 
 class BinExecutor(ExtendedThread):

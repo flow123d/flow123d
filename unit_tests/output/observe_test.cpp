@@ -13,6 +13,7 @@
 
 
 #include "flow_gtest_mpi.hh"
+#include <mesh_constructor.hh>
 #include "io/observe.hh"
 #include "mesh/mesh.h"
 #include "input/reader_to_storage.hh"
@@ -23,6 +24,8 @@
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
 #include <fstream>
+
+
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
@@ -212,7 +215,7 @@ TEST(ObservePoint, find_observe_point) {
     armadillo_setup();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = new Mesh();
+    Mesh *mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
 
@@ -238,7 +241,7 @@ TEST(Observe, all) {
         .get_root_interface<Input::Record>();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = new Mesh();
+    Mesh *mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
 

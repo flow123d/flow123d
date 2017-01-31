@@ -127,7 +127,6 @@
 "input_type" : "FileName",
 "name" : "FileName_input",
 "attributes" : {},
-"input_type" : "FileName",
 "file_mode" : "input"
 },{
 "id" : "9f518532a6818b25",
@@ -1271,7 +1270,6 @@
 "input_type" : "FileName",
 "name" : "FileName_output",
 "attributes" : {},
-"input_type" : "FileName",
 "file_mode" : "output"
 },{
 "id" : "29a074436156cdc1",
