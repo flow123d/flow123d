@@ -47,7 +47,6 @@ class AssemblyLMH : public AssemblyMH<dim> {
 public:
 
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
-    using AssemblyMH<dim>::loc_system_;
 
     AssemblyLMH(AssemblyDataPtr data)
     : AssemblyMH<dim>(data),

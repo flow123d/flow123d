@@ -49,7 +49,7 @@ public:
 
     }
 
-    virtual LocalSystem & get_local_system() = 0;
+//     virtual LocalSystem & get_local_system() = 0;
     
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
@@ -112,8 +112,8 @@ public:
     ~AssemblyMH<dim>() override
     {}
 
-    LocalSystem& get_local_system() override
-        { return loc_system_;}
+//     LocalSystem& get_local_system() override
+//         { return loc_system_;}
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
@@ -126,6 +126,8 @@ public:
         assemble_source_term(ele_ac);
         
         loc_system_.fix_diagonal();
+        
+        ad_->lin_sys->set_local_system(loc_system_);
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
@@ -169,32 +171,9 @@ public:
 protected:
     static const unsigned int size()
     {
-        // sides, 1 for element, edges
+        // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
-
-//     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
-//         
-//         ASSERT_DBG(ele_ac.dim() == dim);
-//         
-//         //set global dof for element (pressure)
-//         loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
-//         
-//         //shortcuts
-//         const unsigned int nsides = ele_ac.n_sides();
-// //         LinSys *ls = ad_->lin_sys;
-//         
-//         Boundary *bcd;
-//         unsigned int side_row, edge_row;
-//         
-//         for (unsigned int i = 0; i < nsides; i++) {
-// 
-//             side_row = loc_side_dofs[i];    //local
-//             edge_row = loc_edge_dofs[i];    //local
-//             loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = ele_ac.side_row(i);    //global
-//             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
-//         }
-//     }
     
     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
         
