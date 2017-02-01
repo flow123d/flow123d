@@ -39,6 +39,8 @@ public:
     typedef FieldFE<3, FieldValue<3>::VectorFixed > VecField;
 
     virtual void SetUp() {
+    	this->dh = nullptr;
+    	this->mesh = nullptr;
         // setup FilePath directories
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -47,8 +49,8 @@ public:
     }
 
     virtual void TearDown() {
-    	if (dh) delete dh;
-    	if (mesh) delete mesh;
+    	if (dh != nullptr) delete dh;
+    	if (mesh != nullptr) delete mesh;
     }
 
     void create_mesh(std::string mesh_file_str) {

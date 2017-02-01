@@ -110,9 +110,9 @@ private:
     Mapping<2,3> *map2_;
     Mapping<3,3> *map3_;
 
-	FE_P_disc<1,1,3> fe1;
-	FE_P_disc<1,2,3> fe2;
-	FE_P_disc<1,3,3> fe3;
+	FE_P_disc<0,1,3> fe1;
+	FE_P_disc<0,2,3> fe2;
+	FE_P_disc<0,3,3> fe3;
 
 	/// mesh, which is interpolated
 	Mesh* source_mesh_;
