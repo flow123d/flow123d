@@ -36,7 +36,7 @@ template<unsigned int N, unsigned int M> class IntersectionAux;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 class IntersectionLocalBase;
 
-class InspectElements;
+class MixedMeshIntersections;
 class InspectElementsAlgorithm22;
 
 /// First = element index, Second = pointer to intersection object.
@@ -176,7 +176,7 @@ private:
                                      unsigned int component_ele_idx,
                                      std::queue<Prolongation>& queue);
     
-    friend class InspectElements;
+    friend class MixedMeshIntersections;
     friend class InspectElementsAlgorithm22;
 };
 
@@ -206,7 +206,7 @@ private:
     /// Computes fundamental intersection of two 2D elements.
     void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
     
-    friend InspectElements;
+    friend MixedMeshIntersections;
 };
 
 
@@ -218,7 +218,7 @@ private:
  *  2D mesh is a plane and 1D mesh is the same plane; then we can solve the intersection only in 2D,
  *  probably not using Plucker; we can apply some prolongation algorithm like in 1D-3D..
  * 
- * 2) 1D-2D intersection on 3D space
+ * 2) 1D-2D intersection in 3D space
  *  1D and 2D meshes are arbitrarily placed in 3D space; then we need to compute intersections using Plucker
  *  coordinates and we cannot rely on prolongation algorithm (only if there are 2 IPs
  *  -> both lie in the same plane)
@@ -262,7 +262,7 @@ private:
     /// Computes fundamental 1D-2D intersection of candidate pair.
 //     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
     
-    friend InspectElements;
+    friend MixedMeshIntersections;
 };
 
 } // END namespace

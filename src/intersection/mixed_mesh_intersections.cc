@@ -1,11 +1,10 @@
 /*
- * inspectelements.cpp
+ * MixedMeshIntersections.cpp
  *
  *  Created on: 13.4.2014
  *      Author: viktor, pe, jb
  */
 
-#include "inspect_elements.hh"
 #include "inspect_elements_algorithm.hh"
 #include "intersection_point_aux.hh"
 #include "intersection_aux.hh"
@@ -15,18 +14,19 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mixed_mesh_intersections.hh"
 
 namespace computeintersection {
 
-InspectElements::InspectElements(Mesh* mesh)
+MixedMeshIntersections::MixedMeshIntersections(Mesh* mesh)
 : mesh(mesh), algorithm13_(mesh), algorithm23_(mesh), algorithm22_(mesh), algorithm12_(mesh)
 {}
 
-InspectElements::~InspectElements()
+MixedMeshIntersections::~MixedMeshIntersections()
 {}
 
 
-unsigned int InspectElements::number_of_components(unsigned int dim)
+unsigned int MixedMeshIntersections::number_of_components(unsigned int dim)
 {
     ASSERT(dim < 3);
     if(dim == 1) return algorithm13_.component_counter_;
@@ -35,7 +35,7 @@ unsigned int InspectElements::number_of_components(unsigned int dim)
 }
 
  
-double InspectElements::measure_13() 
+double MixedMeshIntersections::measure_13()
 {
     double subtotal = 0.0;
 
@@ -59,7 +59,7 @@ double InspectElements::measure_13()
 }
 
 
-double InspectElements::measure_23() 
+double MixedMeshIntersections::measure_23()
 {
     double subtotal = 0.0;
 
@@ -73,7 +73,7 @@ double InspectElements::measure_23()
  
 
 template<unsigned int dim>
-void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea,
+void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim >& iea,
                                             std::vector< IntersectionLocal<dim,3>>& storage)
 {
     START_TIMER("Intersection algorithm");
@@ -98,7 +98,7 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
         if(elm->dim() == dim)
         {
 //                 intersection_map_[idx].resize(iea.intersection_list_[idx].size());
-                intersection_map_[idx].reserve(iea.intersection_list_[idx].size());
+                element_intersections_[idx].reserve(iea.intersection_list_[idx].size());
                 for(unsigned int j = 0; j < iea.intersection_list_[idx].size(); j++){
                     
                     // skip zero intersections (are made in iea.prolongate())
@@ -108,7 +108,7 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
                     storage.push_back(IntersectionLocal<dim,3>(iea.intersection_list_[idx][j]));
                     
                     // create map for component element
-                    intersection_map_[idx].push_back(std::make_pair(
+                    element_intersections_[idx].push_back(std::make_pair(
                                                         bulk_idx,
                                                         &(storage.back()))
                                                     );
@@ -121,7 +121,7 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
 //                         ip.coords(mesh->element(idx)).print(DebugOut());
 
                     // create map for bulk element
-                    intersection_map_[bulk_idx].push_back(
+                    element_intersections_[bulk_idx].push_back(
                                                 std::make_pair(
                                                     idx, 
                                                     &(storage.back())
@@ -136,10 +136,10 @@ void InspectElements::compute_intersections(InspectElementsAlgorithm< dim >& iea
 //     }
 }
 
-void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 > >& storage)
+void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal< 2, 2 > >& storage)
 {
     START_TIMER("Intersection algorithm");
-    algorithm22_.compute_intersections(intersection_map_);
+    algorithm22_.compute_intersections(element_intersections_);
     END_TIMER("Intersection algorithm");
     
     START_TIMER("Intersection into storage");
@@ -151,18 +151,18 @@ void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 >
 
         //HACK: 'skip flag' move this check into algorithm12_.compute_intersections()
         bool skip = false;
-        for(unsigned int i=0; i<intersection_map_[triaA_idx].size(); i++)
+        for(unsigned int i=0; i<element_intersections_[triaA_idx].size(); i++)
         {
-            if(intersection_map_[triaA_idx][i].first == triaB_idx)
+            if(element_intersections_[triaA_idx][i].first == triaB_idx)
                 skip = true;
         }
         if(! skip) {
             storage.push_back(IntersectionLocal<2,2>(is));
-            intersection_map_[triaA_idx].push_back(std::make_pair(
+            element_intersections_[triaA_idx].push_back(std::make_pair(
                                                         triaB_idx,
                                                         &(storage.back())
                                                     ));
-            intersection_map_[triaB_idx].push_back(std::make_pair(
+            element_intersections_[triaB_idx].push_back(std::make_pair(
                                                         triaA_idx,
                                                         &(storage.back())
                                                     ));
@@ -178,11 +178,11 @@ void InspectElements::compute_intersections_22(vector< IntersectionLocal< 2, 2 >
     END_TIMER("Intersection into storage");
 }
 
-void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 > >& storage)
+void MixedMeshIntersections::compute_intersections_12(vector< IntersectionLocal< 1, 2 > >& storage)
 {
     START_TIMER("Intersection algorithm");
     storage.reserve(intersection_storage13_.size());
-    algorithm12_.compute_intersections(intersection_map_, storage);
+    algorithm12_.compute_intersections(element_intersections_, storage);
     storage.shrink_to_fit();
     END_TIMER("Intersection algorithm");
     
@@ -221,7 +221,7 @@ void InspectElements::compute_intersections_12(vector< IntersectionLocal< 1, 2 >
 //     END_TIMER("Intersection into storage");
 }
 
-void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
+void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
 {
     START_TIMER("Intersection algorithm");
     algorithm12_.compute_intersections_2(mesh->get_bih_tree());
@@ -235,11 +235,11 @@ void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2
         unsigned int triangle_idx = is.bulk_ele_idx();
 
         storage.push_back(IntersectionLocal<1,2>(is));
-        intersection_map_[abscissa_idx].push_back(std::make_pair(
+        element_intersections_[abscissa_idx].push_back(std::make_pair(
                                                     triangle_idx,
                                                     &(storage.back())
                                                 ));
-        intersection_map_[triangle_idx].push_back(std::make_pair(
+        element_intersections_[triangle_idx].push_back(std::make_pair(
                                                     abscissa_idx,
                                                     &(storage.back())
                                                 ));
@@ -254,9 +254,9 @@ void InspectElements::compute_intersections_12_2(vector< IntersectionLocal< 1, 2
 }
 
 
-void InspectElements::compute_intersections(computeintersection::IntersectionType d)
+void MixedMeshIntersections::compute_intersections(computeintersection::IntersectionType d)
 {
-    intersection_map_.resize(mesh->n_elements());
+    element_intersections_.resize(mesh->n_elements());
     
     if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
         ASSERT(0).error("NOT IMPLEMENTED.");
@@ -294,7 +294,7 @@ void InspectElements::compute_intersections(computeintersection::IntersectionTyp
 }
 
  
-void InspectElements::print_mesh_to_file_13(string name)
+void MixedMeshIntersections::print_mesh_to_file_13(string name)
 {
         string t_name = name;
 
@@ -389,7 +389,7 @@ void InspectElements::print_mesh_to_file_13(string name)
         fclose(file);
 }
 
-void InspectElements::print_mesh_to_file_23(string name)
+void MixedMeshIntersections::print_mesh_to_file_23(string name)
 {
     //for(unsigned int i = 0; i < 2;i++){
         string t_name = name;

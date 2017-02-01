@@ -1,3 +1,4 @@
+
 /*
  * intersection_area_test.cpp
  *
@@ -14,7 +15,7 @@
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-#include "intersection/inspect_elements.hh"
+#include "../../src/intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"

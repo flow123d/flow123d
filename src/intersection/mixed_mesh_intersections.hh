@@ -12,7 +12,7 @@
  *
  * 
  * @file    inspect_elements.hh
- * @brief   Main class InspectElements for governing intersection algorithm on meshes of combined dimensions.
+ * @brief   Main class MixedMeshIntersections for governing intersection algorithm on meshes of combined dimensions.
  * @author  Pavel Exner
  *
  * TODO: in 2d-2d and 1d-2d check that the intersection candidate has been already computed
@@ -31,7 +31,7 @@ class Mesh; // forward declare
 
 namespace computeintersection {
 
-class InspectElements;
+class MixedMeshIntersections;
 class InspectElementsAlgorithm22;
 class IntersectionLocalBase;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
@@ -60,19 +60,12 @@ enum IntersectionType
  * After computation, it transforms the internal intersection objects into proper output structure
  * for further usage.
  * The objects of different intersection types are stored in different vectors:
- * @p intersection_storage13_
- * @p intersection_storage23_
- * @p intersection_storage22_
- * When we are on an element, we use @p intersection_map_ to get to all intersections.
- * @p intersection_map_ has number of rows same as number of all elements.
- * On every row there is vector of @p ILpair types which consists of index of the other element and pointer
- * to the intersection object (to the storage). E.g. let us be on element with index 'element_index'
- * and go through (index 'i') all the intersections which this elements is part of:
+ * @p intersection_storageXY_ ..
+ *
+ * When we are on an element, we use @p element_intersections_ to get to all its intersections.
  * 
- * intersection_map_[element_index][i].first ... other element index
- * intersection_map_[element_index][i].second ... pointer to intersection object in storage
  */
-class InspectElements
+class MixedMeshIntersections
 {   
 public:
     /// Stores 1D-3D intersections.
@@ -84,21 +77,23 @@ public:
     /// Stores 1D-2D intersections.
     std::vector<IntersectionLocal<1,2>> intersection_storage12_;
     
-    /// Maps between elements and their intersections.
-    /// i.e.: 
-    /// intersection_map_[element index][i].first = other element index
-    /// intersection_map_[element index][i].second = pointer to the intersection object
-    std::vector<std::vector<ILpair>> intersection_map_;
+    /**
+     * For every element, stores list of intersections with this element.
+     *
+     * intersection_map_[element index][i].first = other element index
+     * intersection_map_[element index][i].second = pointer to the intersection object
+     */
+    std::vector<std::vector<ILpair>> element_intersections_;
     
-    InspectElements(Mesh *mesh);
-    ~InspectElements();
+    MixedMeshIntersections(Mesh *mesh);
+    ~MixedMeshIntersections();
     
     /// Calls @p InspectElementsAlgorithm<dim>, computes intersections, 
     /// move them to storage, create the map and throw away the rest.
     void compute_intersections(IntersectionType d = IntersectionType::all);
     
-    //temporary functions:
-    
+    // TODO: move following functions into common intersection test code.
+    // Functions for tests.
     unsigned int number_of_components(unsigned int dim);
     
     /// Computes the size of the intersection in @p dim dimenstions.
