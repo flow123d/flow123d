@@ -321,29 +321,27 @@ execution of the installation script by pressing \verb'R'. This starts the insta
 		
 	Since flow123d run in the Docker container we must set a mapping of the Windows directories to the directories in the Docker container. 
 	By default we setup such mapping for the home directory \verb'C:/Users' which is mapped to \verb'/c/Users'. 
-	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other directory for mapping 
-	(recursively). The question is repeated allowing to add more custom mappings one by one. Custom mounts must be in following format:
-	\begin{verbatim}
-		letter:\path\to\your\folder
-	\end{verbatim}
-	Where \verb'letter' is small letter in range \verb'a-z'. If you agree to mount directory, virtual machine will be stopped 
-	(this may take several seconds). Example of adding two folders can be following:
+	
+	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other disk for mapping 
+	(recursively). The question is repeated allowing to add more custom mappings one by one. To mount other disks please enter only letter 
+	of a disk you want to mount such as \verb'd'.
+	If you agree to mount disk, virtual machine will be stopped 
+	(this may take several seconds). Example of adding two disks can be following:
 	\begin{verbatim}
 		Do you wish to add other mounts? [y/N] y
 		
 		Stopping default to perform changes in virtual machine
-		Enter directory location(e.g. d:\Data): f:\PRACE
-		Mounting path "f:\PRACE" -> "/f/PRACE"
+		Enter letter of disk you want to mount (e.g. d): f
+		Mounting path "f:" -> "/f/"
 		Do you wish to add other mounts? [y/N] y
 		
-		Enter directory location(e.g. d:\Data): g:\
+		Enter letter of disk you want to mount (e.g. d): g
 		Mounting path "g:\" -> "/g/"
 		Do you wish to add other mounts? [y/N] n
 	\end{verbatim}
 	
 	\textbf{Note:}
-	\textit{In some cases it may be useful to mount entire disk. Mounting process does not copy or alter mounted directories so
-	time to mount single directory is the same as time to mount entire disk.}
+	\textit{Mounting process does not copy or move any files. This process only grants permission to the virtual machine to work with files under mounted location.}
 \end{enumerate}
 
 In order to uninstall Flow123d you can run the \verb'uninstall.bat' script. This script removes Flow123d 
