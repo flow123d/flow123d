@@ -28,6 +28,10 @@ protected:
     std::vector<unsigned int> loc_solution_rows;
     /// vector of solution values at @p loc_solution_rows indices (dirichlet BC)
     std::vector<double> loc_solution;
+    /// diagonal values for dirichlet BC rows (set in set_value)
+    std::vector<double> diag_values;
+    /// diagonal values for dirichlet BC rows (set in set_solution)
+    std::vector<double> preferred_diag_values;
     
 public:
     
@@ -52,7 +56,7 @@ public:
      * @p loc_row is local row index in solution vector
      * @p solution is the values of the solutioin
      */
-    void set_solution(unsigned int loc_row, double solution);
+    void set_solution(unsigned int loc_row, double solution, double diag_val = 0.0);
     
     /** When the local system is assembled,
      * the diagonal entries on rows, where the solution is set, might be zero.
@@ -141,9 +145,9 @@ public:
      *   for passing local matrices into LinSys.
      *
      */
-    void set_values(std::vector<int> &rows, std::vector<int> &cols,
-                    const arma::mat &loc_matrix, const arma::vec &loc_rhs,
-                    const arma::vec &row_solution, const arma::vec &col_solution);
+//     void set_values(std::vector<int> &rows, std::vector<int> &cols,
+//                     const arma::mat &loc_matrix, const arma::vec &loc_rhs,
+//                     const arma::vec &row_solution, const arma::vec &col_solution);
 };
     
 #endif // LOCAL_SYSTEM_HH_
