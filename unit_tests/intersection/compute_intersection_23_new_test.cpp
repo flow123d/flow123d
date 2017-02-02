@@ -12,6 +12,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
@@ -244,7 +245,7 @@ void compare_with_ngh(Mesh *mesh)
     
     // compute intersection
     MessageOut() << "Computing polygon area by NEW algorithm\n";
-    InspectElements ie(mesh);
+    MixedMeshIntersections ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d23);
     area1 = ie.measure_23();
 
@@ -287,23 +288,23 @@ TEST(area_intersections, all) {
 //                 if (pt>0) break; //FIXME dont forget to remove later
                 MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## permutation:  triangle #{}, tetrahedron #{}\n", i_file,  file_name, p, pt);
                 
-                Mesh mesh;
+                Mesh *mesh = mesh_constructor();
                 // read mesh with gmshreader
                 GmshMeshReader reader(mesh_file);
-                reader.read_mesh(&mesh);
+                reader.read_mesh(mesh);
                 
                 // permute nodes:
-                FOR_ELEMENTS(&mesh,ele)
+                FOR_ELEMENTS(mesh,ele)
                 {
                     if(ele->dim() == 2)
                         permute_triangle(ele,p);
                     if(ele->dim() == 3)
                         permute_tetrahedron(ele,pt);
                 }
-                mesh.setup_topology();
+                mesh->setup_topology();
                 
-                compare_with_ngh(&mesh);
-                compute_intersection_23d(&mesh, case_ips);
+                compare_with_ngh(mesh);
+                compute_intersection_23d(mesh, case_ips);
             }
         }
         i_file++;

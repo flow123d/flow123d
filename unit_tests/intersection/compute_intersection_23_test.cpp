@@ -61,7 +61,7 @@ void compute_intersection_area_23d(Mesh *mesh)
     
     // compute intersection
     MessageOut() << "Computing polygon area by NEW algorithm\n";
-    InspectElements ie(mesh);
+    MixedMeshIntersections ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d23);
     area1 = ie.measure_23();
 

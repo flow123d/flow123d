@@ -12,6 +12,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_local.hh"
@@ -139,20 +140,20 @@ TEST(intersections_22d, all) {
             MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
-            Mesh mesh;
+            Mesh *mesh = mesh_constructor();
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
-            reader.read_mesh(&mesh);
+            reader.read_mesh(mesh);
         
             // permute nodes of one triangle:
-            permute_triangle(mesh.element(0),p);
+            permute_triangle(mesh->element(0),p);
             
-            mesh.setup_topology();
+            mesh->setup_topology();
             
 //             auto il = solution[s];
             auto il = permute_coords(solution[s], permutations_triangle[p]);
             std::sort(il.points().begin(), il.points().end(),compare_ip22);
-            compute_intersection_22d(&mesh, il);
+            compute_intersection_22d(mesh, il);
         }
     }
 }

@@ -57,7 +57,7 @@ void compute_intersection(Mesh *mesh)
 {
     // compute intersection
     
-    InspectElements ie(mesh);
+    MixedMeshIntersections ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d23);
 //     ie.compute_intersections((computeintersection::IntersectionType)(computeintersection::IntersectionType::d23 | computeintersection::IntersectionType::d22));
 //     ie.print_mesh_to_file_13("output_intersection_speed_13");

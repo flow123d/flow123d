@@ -39,6 +39,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 
+
 #include "mesh/bih_tree.hh"
 
 
@@ -778,6 +779,27 @@ void Mesh::check_and_finish()
 	}
 }
 
+
+void Mesh::compute_element_boxes() {
+    START_TIMER("Mesh::compute_element_boxes");
+    if (element_box_.size() > 0) return;
+
+    // make element boxes
+    element_box_.resize(this->element.size());
+    unsigned int i=0;
+    FOR_ELEMENTS(this, element) {
+         element_box_[i] = element->bounding_box();
+         i++;
+    }
+
+    // make mesh box
+    Node* node = this->node_vector.begin();
+    mesh_box_ = BoundingBox(node->point(), node->point());
+    FOR_NODES(this, node ) {
+        mesh_box_.expand( node->point() );
+    }
+
+}
 
 const BIHTree &Mesh::get_bih_tree() {
     if (! this->bih_tree_)

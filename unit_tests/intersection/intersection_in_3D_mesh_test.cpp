@@ -10,6 +10,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "../../src/intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_point_aux.hh"
@@ -63,7 +64,7 @@ void compute_intersection(Mesh *mesh)
 {
 
     // compute intersection
-    InspectElements ie(mesh);
+    MixedMeshIntersections ie(mesh);
     ie.compute_intersections(IntersectionType(IntersectionType::d12_3
                                             | IntersectionType::d22));
     
@@ -136,14 +137,12 @@ TEST(intersection_prolongation_23d, all) {
     MessageOut() << "Computing intersection on mesh: " << filename << "\n";
     FilePath mesh_file(filename, FilePath::input_file);
     
-    Mesh mesh;
+    Mesh *mesh = mesh_constructor();
     // read mesh with gmshreader
     GmshMeshReader reader(mesh_file);
-    reader.read_mesh(&mesh);
-    
-    mesh.setup_topology();
-    
-    compute_intersection(&mesh);
+    reader.read_mesh(mesh);
+    mesh->setup_topology();
+    compute_intersection(mesh);
 }
 
 //*/

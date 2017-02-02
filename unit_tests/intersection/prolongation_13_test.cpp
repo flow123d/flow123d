@@ -14,6 +14,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "../../src/intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_point_aux.hh"
@@ -146,7 +147,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 {
     double computed_length = 0;
     
-    InspectElements ie(mesh);
+    MixedMeshIntersections ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d13);
     ie.print_mesh_to_file_13("output_intersection_13");
     
@@ -227,13 +228,13 @@ TEST(intersection_prolongation_13d, all) {
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
-        Mesh mesh;
+        Mesh *mesh = mesh_constructor();
         // read mesh with gmshreader
         GmshMeshReader reader(mesh_file);
-        reader.read_mesh(&mesh);
+        reader.read_mesh(mesh);
         
-        mesh.setup_topology();
+        mesh->setup_topology();
         
-        compute_intersection_13d(&mesh, solution[s], lengths[s], n_components[s]);
+        compute_intersection_13d(mesh, solution[s], lengths[s], n_components[s]);
     }
 }

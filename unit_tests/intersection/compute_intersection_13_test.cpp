@@ -13,6 +13,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "intersection/compute_intersection.hh"
 #include "intersection/intersection_aux.hh"
@@ -136,21 +137,21 @@ TEST(intersections_13d, all) {
             MessageOut().fmt("Computing intersection on mesh #{} permutation #{} :  {}\n", s, p,  filenames[s]);
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
-            Mesh mesh;
+            Mesh *mesh = mesh_constructor();
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
-            reader.read_mesh(&mesh);
+            reader.read_mesh(mesh);
         
             // permute nodes:
-            FOR_ELEMENTS(&mesh,ele)
+            FOR_ELEMENTS(mesh,ele)
             {
                 if(ele->dim() == 3)
                     permute_tetrahedron(ele,p);
             }
             
-            mesh.setup_topology();
+            mesh->setup_topology();
             
-            compute_intersection_13d(&mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
+            compute_intersection_13d(mesh, permute_coords(solution[s], permutations_tetrahedron[p]));
         }
     }
 }

@@ -32,7 +32,7 @@
 #include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/region_set.hh"
-
+#include "mesh/bounding_box.hh"
 
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
@@ -87,6 +87,8 @@ class BoundarySegment {
 public:
     static Input::Type::Record input_type;
 };
+
+
 
 //=============================================================================
 // STRUCTURE OF THE MESH
@@ -288,8 +290,17 @@ public:
      */
     void check_and_finish();
     
+    /// Precompute element bounding boxes if it is not done yet.
+    void compute_element_boxes();
+
+    /// Return the mesh bounding box. Is set after call compute_element_boxes().
+    const BoundingBox &get_mesh_boungin_box() {
+        return mesh_box_;
+    }
+
     /// Getter for BIH. Creates and compute BIH at first call.
-    const BIHTree &get_bih_tree();
+    const BIHTree &get_bih_tree();\
+
     /// Getter for input type selection for intersection search algorithm.
     IntersectionSearch get_intersection_search();
 
@@ -380,10 +391,18 @@ protected:
      */
     std::shared_ptr<Partitioning> part_;
 
+    /// Auxiliary vector of mesh elements bounding boxes.
+    std::vector<BoundingBox> element_box_;
+
+    /// Bounding box of whole mesh.
+    BoundingBox mesh_box_;
+
     /**
      * BIH Tree for intersection and observe points lookup.
      */
     std::shared_ptr<BIHTree> bih_tree_;
+
+
     /**
      * Accessor to the input record for the mesh.
      */
@@ -396,6 +415,9 @@ protected:
 
     friend class GmshMeshReader;
     friend class RegionSetBase;
+    friend class Element;
+    friend class BIHTree;
+
 
 
 private:

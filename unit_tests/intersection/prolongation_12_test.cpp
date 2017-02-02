@@ -14,6 +14,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "../../src/intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_point_aux.hh"
@@ -57,7 +58,7 @@ bool compare_is12(const computeintersection::IntersectionLocal<1,2>& a,
 void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 {
     // compute intersection
-    InspectElements ie(mesh);
+    MixedMeshIntersections ie(mesh);
     ie.compute_intersections(computeintersection::IntersectionType::d12_2);
     //ie.print_mesh_to_file_13("output_intersection_13");
     
@@ -123,13 +124,13 @@ TEST(intersection_prolongation_12d, all) {
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
-        Mesh mesh;
+        Mesh *mesh = mesh_constructor();
         // read mesh with gmshreader
         GmshMeshReader reader(mesh_file);
-        reader.read_mesh(&mesh);
+        reader.read_mesh(mesh);
         
-        mesh.setup_topology();
+        mesh->setup_topology();
         
-        compute_intersection_12d(&mesh, solution[s]);
+        compute_intersection_12d(mesh, solution[s]);
     }
 }

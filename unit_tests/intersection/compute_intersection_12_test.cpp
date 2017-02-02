@@ -12,6 +12,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
 #include "intersection/compute_intersection.hh"
 #include "intersection/intersection_point_aux.hh"
@@ -119,21 +120,21 @@ TEST(intersections_12d, all) {
             MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
-            Mesh mesh;
+            Mesh *mesh = mesh_constructor();
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
-            reader.read_mesh(&mesh);
+            reader.read_mesh(mesh);
         
             // permute nodes:
-            FOR_ELEMENTS(&mesh,ele)
+            FOR_ELEMENTS(mesh,ele)
             {
                 if(ele->dim() == 2)
                     permute_triangle(ele, p);
             }
             
-            mesh.setup_topology();
+            mesh->setup_topology();
             
-            compute_intersection_12d(&mesh, permute_coords(solution[s].points(), permutations_triangle[p]));
+            compute_intersection_12d(mesh, permute_coords(solution[s].points(), permutations_triangle[p]));
         }
     }
 }

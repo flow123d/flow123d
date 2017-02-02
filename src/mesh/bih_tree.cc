@@ -29,27 +29,23 @@ const double BIHTree::size_reduce_factor = 0.8;
 
 
 BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
-: mesh_(mesh), leaf_size_limit(soft_leaf_size_limit), r_gen(123)
+: mesh_(mesh),
+  elements_(mesh_->element_box_),
+  main_box_(mesh_->mesh_box_),
+  leaf_size_limit(soft_leaf_size_limit), r_gen(123)
 {
 	OLD_ASSERT(mesh != nullptr, " ");
-	max_n_levels = 2*log(mesh->n_elements())/log(2);
 
+	mesh_->compute_element_boxes();
+
+    max_n_levels = 2*log(mesh->n_elements())/log(2);
 	nodes_.reserve(2*mesh_->n_elements() / leaf_size_limit);
-	element_boxes();
-
 	in_leaves_.resize(elements_.size());
 	for(unsigned int i=0; i<in_leaves_.size(); i++) in_leaves_[i] = i;
 
 	// make root node
 	nodes_.push_back(BIHNode());
 	nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
-	// make root box
-	Node* node = mesh_->node_vector.begin();
-	main_box_ = BoundingBox(node->point(), node->point());
-	FOR_NODES(mesh_, node ) {
-		main_box_.expand( node->point() );
-	}
-
 	make_node(main_box_, 0);
 }
 
@@ -272,12 +268,4 @@ void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int>
 }
 
 
-void BIHTree::element_boxes() {
-	elements_.resize(mesh_->element.size());
-	unsigned int i=0;
-	FOR_ELEMENTS(mesh_, element) {
-		elements_[i] = element->bounding_box();
 
-		i++;
-	}
-}
