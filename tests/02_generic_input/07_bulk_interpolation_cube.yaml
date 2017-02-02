@@ -1,0 +1,30 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Interpolated bulk - big cube
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+      - region: BULK
+        conductivity: !FieldFormula
+          value: x^2
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - conductivity
+    balance: {}
+    output_stream: 
+      file: ./large_cube.msh
+      format: !gmsh
+        variant: ascii
