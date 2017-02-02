@@ -22,6 +22,7 @@
 #include "quadrature/quadrature.hh"
 #include "fem/fe_values.hh"
 #include "fem/finite_element.hh"
+#include "fem/mapping_p1.hh"
 #include "mesh/reader_instances.hh"
 
 
@@ -325,6 +326,10 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	bih_tree_ = new BIHTree( source_mesh_ );
 
 	field_name_ = rec.val<std::string>("field_name");
+
+	map1_ = new MappingP1<1,3>();
+	map2_ = new MappingP1<2,3>();
+	map3_ = new MappingP1<3,3>();
 }
 
 
@@ -373,8 +378,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
     search_header.time = time.end();
 
     bool boundary_domain_ = false;
-    auto data_vec = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
-    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    std::vector<double> data_vec = *(ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
+    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_));
+    std::cout << std::endl;
     std::vector<double> sum_val(4);
     std::vector<unsigned int> elem_count(4);
 
@@ -390,7 +396,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				case 0: {
 					ngh::set_point_from_element(point_, elm);
 					if (point_ == found_point_) {
-						sum_val[0] += (*data_vec)[*it];
+						sum_val[0] += data_vec[*it];
 						++elem_count[0];
 					}
 					break;
@@ -398,7 +404,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				case 1: {
 					ngh::set_abscissa_from_element(abscissa_, elm);
 					if ( abscissa_.IsInner(found_point_) ) {
-						sum_val[1] += (*data_vec)[*it];
+						sum_val[1] += data_vec[*it];
 						++elem_count[1];
 					}
 					break;
@@ -406,7 +412,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				case 2: {
 					ngh::set_triangle_from_element(triangle_, elm);
 					if ( triangle_.IsInner(found_point_) ) {
-						sum_val[2] += (*data_vec)[*it];
+						sum_val[2] += data_vec[*it];
 						++elem_count[2];
 					}
 					break;
@@ -414,7 +420,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 				case 3: {
 					ngh::set_tetrahedron_from_element(tetrahedron_, elm);
 					if ( tetrahedron_.IsInner(found_point_) ) {
-						sum_val[3] += (*data_vec)[*it];
+						sum_val[3] += data_vec[*it];
 						++elem_count[3];
 					}
 					break;

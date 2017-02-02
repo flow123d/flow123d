@@ -114,6 +114,9 @@ private:
 	FE_P_disc<0,2,3> fe2;
 	FE_P_disc<0,3,3> fe3;
 
+    /// Raw buffer of n_entities rows each containing Value::size() doubles.
+	std::shared_ptr< std::vector<typename Value::element_type> > raw_data_;
+
 	/// mesh, which is interpolated
 	Mesh* source_mesh_;
 
