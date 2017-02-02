@@ -21,7 +21,7 @@ using namespace std;
  * Test uses add_value(row,col,mat,rhs) function.
  * LocalSystem is used twice - once with preferred diagonal entries.
  * One dirichletBC condition has diagonal entry inside.
- * The other condition has diagonal entry outside the LS (makes zero row at the end).
+ * The second condition has diagonal entry outside the LS (makes zero row at the end).
  * 
  * local system in global:
  *    7  8  9  10  11
@@ -50,7 +50,7 @@ void fill_ls(LocalSystem& ls){
     }
 }
 
-TEST(la, add_values) {
+TEST(la, simple_local_system_solution) {
 
     const unsigned int m = 4,
                        n = 5,
@@ -105,6 +105,30 @@ TEST(la, add_values) {
 
 
 
+
+TEST(la, simple_local_system_no_solution) {
+
+    const unsigned int m = 2,
+                       n = 3;
+    arma::mat res_mat(m,n);
+    res_mat.row(0) = arma::rowvec({1.0, 2, 3});
+    res_mat.row(1) = arma::rowvec({4.0, 5, 6});
+    arma::vec res_rhs = {10, 11};
+    
+    LocalSystem ls(m, n);
+    
+    ls.add_value(0, 0, 1, 10);
+    ls.add_value(0, 1, 2, 0);
+    ls.add_value(0, 2, 3, 0);
+    ls.add_value(1, 0, 4, 11);
+    ls.add_value(1, 1, 5, 0);
+    ls.add_value(1, 2, 6, 0);
+    
+    ls.fix_diagonal();
+    
+    EXPECT_ARMA_EQ(res_mat, ls.get_matrix());
+    EXPECT_ARMA_EQ(res_rhs, ls.get_rhs());
+}
 
 
 

@@ -23,6 +23,8 @@ void LocalSystem::reset()
     loc_solution_rows.clear();
     loc_solution.clear();
     preferred_diag_values.clear();
+    solution_not_set = true;
+    
     // reset diag values
     std::fill(diag_values.begin(), diag_values.end(), 0);
     // reset global degrees of freedom vectors
@@ -37,12 +39,17 @@ void LocalSystem::set_solution(unsigned int loc_row, double solution, double dia
     loc_solution_rows.push_back(loc_row);
     loc_solution.push_back(solution);
     preferred_diag_values.push_back(diag_val);
+    solution_not_set = false;
 }
 
 
 void LocalSystem::fix_diagonal()
 {
 //     DBGCOUT("fix_diagonal\n");
+    
+    // skip diagonal fix
+    if(solution_not_set) return;
+        
     // correction of dirichlet diagonal entry
     for(unsigned int i=0; i < loc_solution_rows.size(); i++){
         unsigned int sol_row = loc_solution_rows[i];
@@ -203,31 +210,35 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, 
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
     
-    bool eliminate_row = false;
-    
-    double tmp_mat = mat_val;
-    double tmp_rhs = rhs_val;
-    
-    for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-        // check whether the column is supposed to be eliminated by the known solution
-        if(row_dofs[loc_solution_rows[i]] == col_dofs[col]){
-            tmp_mat = 0.0;
-            tmp_rhs -= mat_val * loc_solution[i];
-            if(loc_solution_rows[i] == row){    // we are at the global diagonal entry
-//             if (row_dofs[row] == col_dofs[col]){ // we are at the diagonal entry
-//                 DBGVAR(mat_val);
-//                 DBGVAR(diag_values[row]);
-                diag_values[row] += mat_val;    // add to diagonal value
-                eliminate_row = true;           // set flag
-                return;                         // we can now return
-            }
-        }
-        if(loc_solution_rows[i] == row) eliminate_row = true;
+    if(solution_not_set){
+        matrix(row, col) += mat_val;
+        rhs(row) += rhs_val;
     }
+    else{
+        bool eliminate_row = false;
+        double tmp_mat = mat_val;
+        double tmp_rhs = rhs_val;
     
-    if(! eliminate_row){
-        matrix(row, col) += tmp_mat;
-        rhs(row) += tmp_rhs;
+        for(unsigned int i=0; i < loc_solution_rows.size(); i++){
+            // check whether the column is supposed to be eliminated by the known solution
+            if(row_dofs[loc_solution_rows[i]] == col_dofs[col]){
+                tmp_mat = 0.0;
+                tmp_rhs -= mat_val * loc_solution[i];
+                if(loc_solution_rows[i] == row){    // we are at the global diagonal entry
+    //             if (row_dofs[row] == col_dofs[col]){ // we are at the diagonal entry
+    //                 DBGVAR(mat_val);
+    //                 DBGVAR(diag_values[row]);
+                    diag_values[row] += mat_val;    // add to diagonal value
+                    eliminate_row = true;           // set flag
+                    return;                         // we can now return
+                }
+            }
+            if(loc_solution_rows[i] == row) eliminate_row = true;
+        }
+        if(! eliminate_row){
+            matrix(row, col) += tmp_mat;
+            rhs(row) += tmp_rhs;
+        }
     }
 }
 

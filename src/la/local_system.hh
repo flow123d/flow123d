@@ -33,6 +33,11 @@ protected:
     /// diagonal values for dirichlet BC rows (set in set_solution)
     std::vector<double> preferred_diag_values;
     
+    /**
+     * Optimization. Is false if solution (at least one entry) is known.
+     */
+    int solution_not_set;
+    
 public:
     
     std::vector<int> row_dofs;  ///< global row indices
