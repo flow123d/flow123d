@@ -164,12 +164,10 @@ TEST_F(FieldFETest, scalar_from_input) {
     field.set_mesh(mesh,false);
     field.set_time(0.0);
 
-    /*Space<3>::Point point;
-    std::cout << "Test results:" << std::endl;
+    Space<3>::Point point;
     for(unsigned int i=0; i < mesh->element.size(); i++) {
-    	std::cout << field.value(point, mesh->element_accessor(i)) << std::endl;
-        //EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
-    }// */
+        EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
+    }
 }
 
 
