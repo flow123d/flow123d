@@ -24,19 +24,19 @@ protected:
     arma::mat matrix;   ///< local system matrix
     arma::vec rhs;      ///< local system RHS
     
-    /// vector of row indices where the solution is set (dirichlet BC)
-    std::vector<unsigned int> loc_solution_rows;
-    /// vector of solution values at @p loc_solution_rows indices (dirichlet BC)
-    std::vector<double> loc_solution;
+    /// vector of global row indices where the solution is set (dirichlet BC)
+    std::vector<unsigned int> global_solution_dofs;
+    /// vector of solution values at @p global_solution_rows indices (dirichlet BC)
+    std::vector<double> solution;
     /// diagonal values for dirichlet BC rows (set in set_value)
-    std::vector<double> diag_values;
+//     std::vector<double> diag_values;
     /// diagonal values for dirichlet BC rows (set in set_solution)
     std::vector<double> preferred_diag_values;
     
     /**
      * Optimization. Is false if solution (at least one entry) is known.
      */
-    int solution_not_set;
+    bool solution_not_set;
     
 public:
     
@@ -61,7 +61,7 @@ public:
      * @p loc_row is local row index in solution vector
      * @p solution is the values of the solutioin
      */
-    void set_solution(unsigned int loc_row, double solution, double diag_val = 0.0);
+    void set_solution(unsigned int global_row, double solution_val, double diag_val = 0.0);
     
     /** When the local system is assembled,
      * the diagonal entries on rows, where the solution is set, might be zero.

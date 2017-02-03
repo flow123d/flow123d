@@ -73,10 +73,13 @@ TEST(la, simple_local_system_solution) {
     
     LocalSystem ls(m, n);
     // set solution with preferred diagonal entries
-    ls.set_solution(1, s1, d1);
-    ls.set_solution(3, s2, d2);
+    ls.set_solution(11, s1, d1);
+    ls.set_solution(13, s2, d2);
     
     fill_ls(ls);
+//     cout << "matrix:\n" << ls.get_matrix();
+//     cout << "rhs:\n" << ls.get_rhs();
+    
     ls.fix_diagonal();
     
 //     cout << "matrix:\n" << ls.get_matrix();
@@ -84,18 +87,36 @@ TEST(la, simple_local_system_solution) {
 //     cout << "rhs:\n" << ls.get_rhs();
 //     cout << "res_rhs:\n" << res_rhs;
     
-    EXPECT_ARMA_EQ(ls.get_matrix(), res_mat);
-    EXPECT_ARMA_EQ(ls.get_rhs(), res_rhs);
+    EXPECT_ARMA_EQ(res_mat, ls.get_matrix());
+    EXPECT_ARMA_EQ(res_rhs, ls.get_rhs());
     
     //change and do not set the preferred diagonal value
     ls.reset();
-    ls.set_solution(1, s1);
-    ls.set_solution(3, s2);
+    ls.set_solution(11, s1);
+    ls.set_solution(13, s2);
     fill_ls(ls);
     ls.fix_diagonal();
     
     res_mat(1,4) = 60;
     res_rhs(1) = 60*s1;
+//     cout << "matrix:\n" << ls.get_matrix();
+//     cout << "res_mat:\n" << res_mat;
+    
+    EXPECT_ARMA_EQ(res_mat, ls.get_matrix());
+    EXPECT_ARMA_EQ(res_rhs, ls.get_rhs());
+    
+    
+    //same as before, but add solution, that corresponds only with column 8 (should be eliminated)
+    ls.reset();
+    ls.set_solution(11, s1);
+    ls.set_solution(13, s2);
+    ls.set_solution(8, s2);
+    fill_ls(ls);
+    ls.fix_diagonal();
+    
+    res_mat.col(1).zeros();
+    res_rhs(0) -= 10*s2;
+    res_rhs(2) -= 50*s2;
 //     cout << "matrix:\n" << ls.get_matrix();
 //     cout << "res_mat:\n" << res_mat;
     
@@ -253,16 +274,17 @@ public:
         else {  //if not, then diag values are summed or is equal 1.0
             arma::vec d_rhs = rhs.elem(dirichlet_rows_);
             for(unsigned int i=0; i < d_rhs.size(); i++){
-                if(diag_values[dirichlet_rows_(i)] == 0){
-//                     cout << "DIAG VALUES 1.0\n";
-                    EXPECT_EQ(dirich_submat(i,i), 1.0);
-                    EXPECT_EQ(d_rhs(i), dirichlet_values_[dirichlet_rows_(i)]);
-                }
-                else {
+                EXPECT_EQ(d_rhs(i), dirich_submat(i,i) * dirichlet_values_(dirichlet_rows_(i)));
+//                 if(diag_values[dirichlet_rows_(i)] == 0){
+// //                     cout << "DIAG VALUES 1.0\n";
+//                     EXPECT_EQ(dirich_submat(i,i), 1.0);
+//                     EXPECT_EQ(d_rhs(i), dirichlet_values_[dirichlet_rows_(i)]);
+//                 }
+//                 else {
 //                     cout << "DIAG VALUES\n";
-                    EXPECT_EQ(dirich_submat(i,i), diag_values[dirichlet_rows_(i)]);
-                    EXPECT_EQ(d_rhs(i), diag_values[dirichlet_rows_(i)] * dirichlet_values_(dirichlet_rows_(i)));
-                }
+//                     EXPECT_EQ(dirich_submat(i,i), diag_values[dirichlet_rows_(i)]);
+//                     EXPECT_EQ(d_rhs(i), diag_values[dirichlet_rows_(i)] * dirichlet_values_(dirichlet_rows_(i)));
+//                 }
             }
         }
         
@@ -291,6 +313,26 @@ public:
             reduced_mat.submat(vec_span, dirichlet_rows_).zeros();
             reduced_mat.submat(dirichlet_rows_, dirichlet_rows_) = dirich_submat;
             EXPECT_LT( arma::norm(matrix - reduced_mat, "inf"), eps );
+        }
+    }
+    
+    
+    /**
+     * Adds a random local matrix and rhs spanning over given rows and columns.
+     * Add value one by one.
+     */
+    void add_value_single(arma::uvec rows, arma::uvec cols) {
+        
+        arma::mat loc_mat;
+        arma::vec loc_rhs;
+        edit_full_matrix(rows,cols, loc_mat, loc_rhs, true);
+        
+        // set entries
+        for(unsigned int i=0; i < rows.n_elem; i++){
+            this->add_value(rows(i), 0, 0.0, loc_rhs(i));
+            for(unsigned int j=0; j < cols.n_elem; j++){
+                this->add_value(rows(i), cols(j), loc_mat(i,j), 0.0);
+            }
         }
     }
     
@@ -325,71 +367,49 @@ public:
      * Sets a random local matrix and rhs spanning over given rows and columns.
      * Sets values one by one.
      */
-    void set_value_single(arma::uvec rows, arma::uvec cols) {
-        
-        arma::mat loc_mat;
-        arma::vec loc_rhs;
-        edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
-        
-        // set entries
-        for(unsigned int i=0; i < rows.n_elem; i++){
-            this->set_value(rows(i), 0, 0.0, loc_rhs(i));
-            for(unsigned int j=0; j < cols.n_elem; j++)
-                this->set_value(rows(i), cols(j), loc_mat(i,j), 0.0);
-        }
-        
-        this->fix_diagonal();
-        check_result(true);
-    }
-    
-    
-    /**
-     * Adds a random local matrix and rhs spanning over given rows and columns.
-     * Sets the dirichlet BC at first.
-     * Then it set_value one by one.
-     */
-    void add_value_single(arma::uvec rows, arma::uvec cols) {
-        
-        arma::mat loc_mat;
-        arma::vec loc_rhs;
-        edit_full_matrix(rows,cols, loc_mat, loc_rhs, true);
-        
-        // set entries
-        for(unsigned int i=0; i < rows.n_elem; i++){
-            this->add_value(rows(i), 0, 0.0, loc_rhs(i));
-            for(unsigned int j=0; j < cols.n_elem; j++){
-                this->add_value(rows(i), cols(j), loc_mat(i,j), 0.0);
-            }
-        }
-    }
-    
+//     void set_value_single(arma::uvec rows, arma::uvec cols) {
+//         
+//         arma::mat loc_mat;
+//         arma::vec loc_rhs;
+//         edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
+//         
+//         // set entries
+//         for(unsigned int i=0; i < rows.n_elem; i++){
+//             this->set_value(rows(i), 0, 0.0, loc_rhs(i));
+//             for(unsigned int j=0; j < cols.n_elem; j++)
+//                 this->set_value(rows(i), cols(j), loc_mat(i,j), 0.0);
+//         }
+//         
+//         this->fix_diagonal();
+//         check_result(true);
+//     }  
     
         /**
          * Add a random local matrix and rhs spanning over given rows and columns.
          * Sets the dirichlet BC at first.
          */
-    void add_subsystem(arma::uvec rows, arma::uvec cols) {
-        
-        arma::mat loc_mat;
-        arma::vec loc_rhs;
-        edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
-        
-//         auto i_rows=arma::conv_to<std::vector<int> >::from(
-//                         arma::conv_to<arma::ivec>::from(rows)%dirichlet_.elem(rows));
-//         auto i_cols=arma::conv_to<std::vector<int> >::from(
-//                         arma::conv_to<arma::ivec>::from(cols)%dirichlet_.elem(cols));
-        
-        auto i_rows = arma::conv_to<std::vector<unsigned int>>::from(rows);
-        auto i_cols = arma::conv_to<std::vector<unsigned int>>::from(cols);
-//         cout << "i_rows\n" << arma::ivec(i_rows);
-//         cout << "i_cols\n" << arma::ivec(i_cols);
-        
-        this->set_values(i_rows, i_cols, loc_mat, loc_rhs); 
-        
-        this->fix_diagonal();
-        
-        check_result();
-    }
+//     void add_subsystem(arma::uvec rows, arma::uvec cols) {
+//         
+//         arma::mat loc_mat;
+//         arma::vec loc_rhs;
+//         edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
+//         
+// //         auto i_rows=arma::conv_to<std::vector<int> >::from(
+// //                         arma::conv_to<arma::ivec>::from(rows)%dirichlet_.elem(rows));
+// //         auto i_cols=arma::conv_to<std::vector<int> >::from(
+// //                         arma::conv_to<arma::ivec>::from(cols)%dirichlet_.elem(cols));
+//         
+//         auto i_rows = arma::conv_to<std::vector<unsigned int>>::from(rows);
+//         auto i_cols = arma::conv_to<std::vector<unsigned int>>::from(cols);
+// //         cout << "i_rows\n" << arma::ivec(i_rows);
+// //         cout << "i_cols\n" << arma::ivec(i_cols);
+//         
+//         this->set_values(i_rows, i_cols, loc_mat, loc_rhs); 
+//         
+//         this->fix_diagonal();
+//         
+//         check_result();
+//     }
 
     void set_preferred()
     { preferred_flag_ = true; }
