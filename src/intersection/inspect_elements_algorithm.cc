@@ -202,7 +202,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                     
                     if(found){
                         component_counter_++;
-                        //DebugOut().fmt("comp: {}\n", component_counter_);
+                        DebugOut().fmt("comp: {}\n", component_counter_);
                         
                         //DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
                         
@@ -729,7 +729,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 //                 }
 //                 if(is_not_neighbor) continue;
                 
-                //DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
+                DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
                 compute_single_intersection(eleA,
                                             eleB);
             }

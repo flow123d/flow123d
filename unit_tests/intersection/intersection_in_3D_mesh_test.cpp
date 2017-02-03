@@ -99,8 +99,9 @@ TEST(intersection_prolongation_23d, all) {
     
 //     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
-    string dir_name = "intersection/";
-    string filename = dir_name + "test1_incomp_coherence.msh";
+    string dir_name = "intersection/2d-2d/";
+//     string filename = dir_name + "test1_incomp_coherence.msh";
+    string filename = dir_name + "test1_comp.msh";
 //     std::vector<string> filenames;
 //     
 //     // read mesh file names
