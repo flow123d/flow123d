@@ -8,7 +8,6 @@
 #ifndef SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
-#include <memory>
 #include "mesh/mesh.h"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
@@ -17,14 +16,11 @@
 #include "quadrature/quadrature_lib.hh"
 #include "flow/mh_dofhandler.hh"
 
-
-
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 
-#include "la/local_to_global_map.hh"
 #include "la/local_system.hh"
 
 
@@ -211,18 +207,13 @@ protected:
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
                     loc_system_.set_solution(loc_system_.row_dofs[edge_row],bc_pressure,-1);
                     dirichlet_edge[i] = 1;
-                    DBGCOUT(<<"DIRICHLET\n");
                     
                 } else if ( type == DarcyMH::EqData::total_flux) {
                     // internally we work with outward flux
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-            
-//                     DBGCOUT(<< "[" << loc_system_.row_dofs[edge_row] << ", " << loc_system_.row_dofs[edge_row]
-//                             << "] mat: " << -bcd->element()->measure() * bc_sigma * cross_section
-//                             << " rhs: " << (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section
-//                             << "\n");
+                    
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
                                             -bcd->element()->measure() * bc_sigma * cross_section,
@@ -280,7 +271,6 @@ protected:
                             dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-//                             loc_system_.add_value(edge_row, side_row, 1.0, side_flux);
                             loc_system_.add_value(edge_row, side_flux);
                         }
 
@@ -307,9 +297,6 @@ protected:
                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         
-//                         loc_system_.add_value(edge_row, side_row,
-//                                                 1.0,
-//                                                 bc_total_flux * bcd->element()->measure() * cross_section);
                         loc_system_.add_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
                     }
                 } 
@@ -390,8 +377,6 @@ protected:
     
     void assemble_element(LocalElementAccessorBase<3> ele_ac){
         // set block B, B': element-side, side-element
-        
-//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
             loc_system_.add_value(loc_ele_dof, loc_side_dofs[side], -1.0);

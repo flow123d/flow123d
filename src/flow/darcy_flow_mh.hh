@@ -40,8 +40,6 @@
 #include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "flow/mh_dofhandler.hh"
-#include "la/linsys_BDDC.hh"
-#include "la/linsys_PETSC.hh"
 
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
@@ -51,23 +49,11 @@
 
 /// external types:
 class LinSys;
+class LinSys_BDDC;
 class Mesh;
-class SchurComplement;
-class Distribution;
-class SparseGraph;
-class LocalToGlobalMap;
 class DarcyFlowMHOutput;
 class Balance;
-class VectorSeqDouble;
-//class AssemblyBase;
 class AssemblerBase;
-
-template<unsigned int dim, unsigned int spacedim> class FE_RT0;
-template<unsigned int degree, unsigned int dim, unsigned int spacedim> class FE_P_disc;
-template<unsigned int dim, unsigned int spacedim> class MappingP1;
-template<unsigned int dim, unsigned int spacedim> class FEValues;
-template<unsigned int dim, unsigned int spacedim> class FESideValues;
-template<unsigned int dim> class QGauss;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -190,10 +176,6 @@ public:
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
-        
-        //FieldSet  time_term_fields;
-        //FieldSet  main_matrix_fields;
-        //FieldSet  rhs_fields;
     };
 
     /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
@@ -292,20 +274,24 @@ protected:
      * - no time term, managed by diagonal extraction etc.
      */
     //virtual void local_assembly_specific(AssemblyData &local_data);
-
+   
     /**
-     * Abstract assembly method used for both assembly and preallocation.
-     * Assembly only steady part of the equation.
+     * Allocates linear system matrix for MH.
      * TODO:
      * - use general preallocation methods in DofHandler
+     */
+    void allocate_mh_matrix();
+
+    /**
+     * Assembles linear system matrix for MH.
+     * Element by element assembly is done using dim-template assembly class.
+     * Assembles only steady part of the equation.
+     * TODO:
      * - include time term
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
     void assembly_mh_matrix(AssemblerBase& assembler);
-    
-    void allocate_mh_matrix();
-    
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();

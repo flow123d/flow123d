@@ -45,16 +45,8 @@
 #include "la/local_to_global_map.hh"
 
 #include "flow/darcy_flow_mh.hh"
-
 #include "flow/darcy_flow_mh_output.hh"
-
-/*
-#include "fem/mapping_p1.hh"
-#include "fem/fe_p.hh"
-#include "fem/fe_values.hh"
-#include "fem/fe_rt.hh"
-#include "quadrature/quadrature_lib.hh"
-*/
+#include "flow/darcy_flow_assembler.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -65,8 +57,6 @@
 #include "coupling/balance.hh"
 
 #include "fields/vec_seq_double.hh"
-#include "darcy_flow_assembly.hh"
-#include "darcy_flow_assembler.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
@@ -348,12 +338,6 @@ void DarcyMH::initialize() {
             .val<Input::AbstractRecord>("linear_solver");
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
-// <<<<<<< HEAD
-//     data_->set_time(time_->step(), LimitSide::right);
-// =======
-//     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
-//     data_->system_.local_matrix = std::make_shared<arma::mat>();
-// >>>>>>> master
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
     create_linear_system(rec);
 
@@ -414,7 +398,7 @@ void DarcyMH::zero_time_step()
         VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
-        print_matlab_matrix("matrix_zero");
+//         print_matlab_matrix("matrix_zero");
         // TODO: reconstruction of solution in zero time.
     }
     //solution_output(T,right_limit); // data for time T in any case
@@ -693,201 +677,6 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
 }
 
 
-// void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
-// {
-//     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
-// 
-//     // set auxiliary flag for switchting Dirichlet like BC
-//     data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
-//     data_->n_schur_compls = n_schur_compls;
-//     LinSys *ls = schur0;
-// 
-//     class Boundary *bcd;
-//     class Neighbour *ngh;
-// 
-//     int side_row, edge_row;
-//     int tmp_rows[100];
-//     double local_vb[4]; // 2x2 matrix
-//     int side_rows[4], edge_rows[4];
-// 
-//     // to make space for second schur complement, max. 10 neighbour edges of one el.
-//     double zeros[1000];
-//     for(int i=0; i<1000; i++) zeros[i]=0.0;
-// 
-//     double minus_ones[4] = { -1.0, -1.0, -1.0, -1.0 };
-// //     double * loc_side_rhs = data_->system_.loc_side_rhs;
-// 
-// //     arma::mat &local_matrix = *(data_->system_.local_matrix);
-// 
-// 
-//     if (balance_ != nullptr)
-//         balance_->start_flux_assembly(water_balance_idx_);
-// 
-//     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-//         auto ele_ac = mh_dh.accessor(i_loc);
-//         unsigned int nsides = ele_ac.n_sides();
-// //         data_->system_.dirichlet_edge.resize(nsides);
-// 
-//         
-// 
-//         for (unsigned int i = 0; i < nsides; i++) {
-// 
-// /*            if (! side_ds->is_local(idx_side)) {
-//                 cout << el_ds->myp() << " : iside: " << ele.index() << " [" << el_ds->begin() << ", " << el_ds->end() << "]" << endl;
-//                 cout << el_ds->myp() << " : iside: " << idx_side << " [" << side_ds->begin() << ", " << side_ds->end() << "]" << endl;
-// 
-//             }*/
-// 
-//             side_rows[i] = side_row = ele_ac.side_row(i);
-//             edge_rows[i] = edge_row = ele_ac.edge_row(i);
-//             bcd=ele_ac.side(i)->cond();
-// 
-//             // gravity term on RHS
-//             //
-// //             loc_side_rhs[i] = 0;
-// 
-// //             // set block C and C': side-edge, edge-side
-// //             double c_val = 1.0;
-// //             data_->system_.dirichlet_edge[i] = 0;
-// // 
-// //             if (bcd) {
-// //                 ElementAccessor<3> b_ele = bcd->element_accessor();
-// //                 EqData::BC_Type type = (EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
-// // 
-// //                 double cross_section = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
-// // 
-// //                 if ( type == EqData::none) {
-// //                     // homogeneous neumann
-// //                 } else if ( type == EqData::dirichlet ) {
-// //                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-// //                     c_val = 0.0;
-// //                     loc_side_rhs[i] -= bc_pressure;
-// //                     ls->rhs_set_value(edge_row, -bc_pressure);
-// //                     ls->mat_set_value(edge_row, edge_row, -1.0);
-// //                     data_->system_.dirichlet_edge[i] = 1;
-// // 
-// //                 } else if ( type == EqData::total_flux) {
-// //                     // internally we work with outward flux
-// //                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
-// //                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-// //                             double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-// //                             ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-// //                             ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
-// // 
-// //                 } else if (type==EqData::seepage) {
-// //                     data_->is_linear=false;
-// //                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
-// //                     unsigned int loc_edge_idx = bcd->bc_ele_idx_;
-// //                     char & switch_dirichlet = data_->bc_switch_dirichlet[loc_edge_idx];
-// //                     double bc_pressure = data_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-// //                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
-// //                     double side_flux=bc_flux * bcd->element()->measure() * cross_section;
-// // 
-// //                     // ** Update BC type. **
-// //                     if (switch_dirichlet) {
-// //                         // check and possibly switch to flux BC
-// //                         // The switch raise error on the corresponding edge row.
-// //                         // Magnitude of the error is abs(solution_flux - side_flux).
-// //                         ASSERT_DBG(mh_dh.rows_ds->is_local(side_row))(side_row);
-// //                         unsigned int loc_side_row = ele_ac.side_local_row(i);
-// //                         double & solution_flux = ls->get_solution_array()[loc_side_row];
-// // 
-// //                         if ( solution_flux < side_flux) {
-// //                             //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
-// //                             solution_flux = side_flux;
-// //                             switch_dirichlet=0;
-// // 
-// //                         }
-// //                     } else {
-// //                         // check and possibly switch to  pressure BC
-// //                         // TODO: What is the appropriate DOF in not local?
-// //                         // The switch raise error on the corresponding side row.
-// //                         // Magnitude of the error is abs(solution_head - bc_pressure)
-// //                         // Since usually K is very large, this error would be much
-// //                         // higher then error caused by the inverse switch, this
-// //                         // cause that a solution  with the flux violating the
-// //                         // flux inequality leading may be accepted, while the error
-// //                         // in pressure inequality is always satisfied.
-// //                         ASSERT_DBG(mh_dh.rows_ds->is_local(edge_row))(edge_row);
-// //                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-// //                         double & solution_head = ls->get_solution_array()[loc_edge_row];
-// // 
-// //                         if ( solution_head > bc_pressure) {
-// //                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
-// //                             solution_head = bc_pressure;
-// //                             switch_dirichlet=1;
-// //                         }
-// //                     }
-// // 
-// //                     // ** Apply BCUpdate BC type. **
-// //                     // Force Dirichlet type during the first iteration of the unsteady case.
-// //                     if (switch_dirichlet || data_->force_bc_switch ) {
-// //                         //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-// //                         c_val = 0.0;
-// //                         loc_side_rhs[i] -= bc_pressure;
-// //                         ls->rhs_set_value(edge_row, -bc_pressure);
-// //                         ls->mat_set_value(edge_row, edge_row, -1.0);
-// //                         data_->system_.dirichlet_edge[i] = 1;
-// //                     } else {
-// //                         //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-// //                         ls->rhs_set_value(edge_row, side_flux);
-// //                     }
-// // 
-// //                 } else if (type==EqData::river) {
-// //                     data_->is_linear=false;
-// //                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
-// //                     //unsigned int loc_edge_idx = bcd->bc_ele_idx_;
-// //                     //char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
-// // 
-// //                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-// //                     double bc_switch_pressure = data_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-// //                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
-// //                     double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-// //                     ASSERT_DBG(mh_dh.rows_ds->is_local(edge_row))(edge_row);
-// //                     unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-// //                     double & solution_head = ls->get_solution_array()[loc_edge_row];
-// // 
-// // 
-// //                     // Force Robin type during the first iteration of the unsteady case.
-// //                     if (solution_head > bc_switch_pressure  || data_->force_bc_switch) {
-// //                         // Robin BC
-// //                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-// //                         ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
-// //                         ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-// //                     } else {
-// //                         // Neumann BC
-// //                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
-// //                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
-// //                         ls->rhs_set_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
-// //                     }
-// //                 } else {
-// //                     xprintf(UsrErr, "BC type not supported.\n");
-// //                 }
-// //             }
-// //             ls->mat_set_value(side_row, edge_row, c_val);
-// //             ls->mat_set_value(edge_row, side_row, c_val);
-//             
-//             
-//             
-//         }
-// 
-//         assembler.assemble(ele_ac, true);
-// 
-// //         ls->rhs_set_values(nsides, side_rows, loc_side_rhs);
-//     }    
-//     
-//     if (balance_ != nullptr)
-//         balance_->finish_flux_assembly(water_balance_idx_);
-// 
-// 
-// 
-//     if (mortar_method_ == MortarP0) {
-//         P0_CouplingAssembler(*this).assembly(*ls);
-//     } else if (mortar_method_ == MortarP1) {
-//         P1_CouplingAssembler(*this).assembly(*ls);
-//     }  
-// }
-
 void DarcyMH::allocate_mh_matrix()
 {
     START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
@@ -897,10 +686,8 @@ void DarcyMH::allocate_mh_matrix()
     LinSys *ls = schur0;
 
     int rank;
-    int my_rank = 1;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
    
-//     class Boundary *bcd;
     class Neighbour *ngh;
 
     int side_row, edge_row = 0;
@@ -917,6 +704,7 @@ void DarcyMH::allocate_mh_matrix()
         unsigned int nsides = ele_ac.n_sides();
         int ele_row = ele_ac.ele_row();
         
+        //allocate at once matrix [sides,ele]x[sides,ele]
         unsigned int loc_size = 1 + nsides;
 //         unsigned int loc_size = 1 + 2*nsides;
         std::vector<int> dofs(loc_size);
@@ -926,191 +714,9 @@ void DarcyMH::allocate_mh_matrix()
 
             side_rows[i] = side_row = ele_ac.side_row(i);
             edge_rows[i] = edge_row = ele_ac.edge_row(i);
-// <<<<<<< HEAD
             dofs[i] = side_row;
 //             dofs[nsides+1 + i] = edge_row;
-            
-//             bcd=ele_ac.side(i)->cond();
-//             
-//             if (bcd) {
-//                 ls->mat_set_value(edge_row, edge_row, 0.0);
-//             }
-//             ls->mat_set_value(side_row, edge_row, 0.0);
-//             ls->mat_set_value(edge_row, side_row, 0.0);
-// =======
-//             bcd=ele_ac.side(i)->cond();
-// 
-//             // gravity term on RHS
-//             //
-//             loc_side_rhs[i] = 0;
-// 
-//             // set block C and C': side-edge, edge-side
-//             double c_val = 1.0;
-//             data_->system_.dirichlet_edge[i] = 0;
-// 
-//             if (bcd) {
-//                 ElementAccessor<3> b_ele = bcd->element_accessor();
-//                 EqData::BC_Type type = (EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
-// 
-//                 double cross_section = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
-// 
-//                 if ( type == EqData::none) {
-//                     // homogeneous neumann
-//                 } else if ( type == EqData::dirichlet ) {
-//                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-//                     c_val = 0.0;
-//                     loc_side_rhs[i] -= bc_pressure;
-//                     ls->rhs_set_value(edge_row, -bc_pressure);
-//                     ls->mat_set_value(edge_row, edge_row, -1.0);
-//                     data_->system_.dirichlet_edge[i] = 1;
-// 
-//                 } else if ( type == EqData::total_flux) {
-// 
-//                     // internally we work with outward flux
-//                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
-//                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-//                     double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-//                     DebugOut().fmt("erow: {} flux: {} mesure: {} cs: {}", edge_row, bc_flux, bcd->element()->measure(), cross_section);
-//                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-//                     ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
-// 
-//                 } else if (type==EqData::seepage) {
-//                     is_linear_=false;
-//                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
-//                     unsigned int loc_edge_idx = bcd->bc_ele_idx_;
-//                     char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
-//                     double bc_pressure = data_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-//                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
-//                     double side_flux=bc_flux * bcd->element()->measure() * cross_section;
-// 
-//                     // ** Update BC type. **
-//                     if (switch_dirichlet) {
-//                         // check and possibly switch to flux BC
-//                         // The switch raise error on the corresponding edge row.
-//                         // Magnitude of the error is abs(solution_flux - side_flux).
-//                         ASSERT_DBG(mh_dh.rows_ds->is_local(side_row))(side_row);
-//                         unsigned int loc_side_row = ele_ac.side_local_row(i);
-//                         double & solution_flux = ls->get_solution_array()[loc_side_row];
-// 
-//                         if ( solution_flux < side_flux) {
-//                             //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
-//                             solution_flux = side_flux;
-//                             switch_dirichlet=0;
-// 
-//                         }
-//                     } else {
-//                         // check and possibly switch to  pressure BC
-//                         // TODO: What is the appropriate DOF in not local?
-//                         // The switch raise error on the corresponding side row.
-//                         // Magnitude of the error is abs(solution_head - bc_pressure)
-//                         // Since usually K is very large, this error would be much
-//                         // higher then error caused by the inverse switch, this
-//                         // cause that a solution  with the flux violating the
-//                         // flux inequality leading may be accepted, while the error
-//                         // in pressure inequality is always satisfied.
-//                         ASSERT_DBG(mh_dh.rows_ds->is_local(edge_row))(edge_row);
-//                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-//                         double & solution_head = ls->get_solution_array()[loc_edge_row];
-// 
-//                         if ( solution_head > bc_pressure) {
-//                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
-//                             solution_head = bc_pressure;
-//                             switch_dirichlet=1;
-//                         }
-//                     }
-// 
-//                     // ** Apply BCUpdate BC type. **
-//                     // Force Dirichlet type during the first iteration of the unsteady case.
-//                     if (switch_dirichlet || (use_steady_assembly_ && nonlinear_iteration_ == 0) ) {
-//                         //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-//                         c_val = 0.0;
-//                         loc_side_rhs[i] -= bc_pressure;
-//                         ls->rhs_set_value(edge_row, -bc_pressure);
-//                         ls->mat_set_value(edge_row, edge_row, -1.0);
-//                         data_->system_.dirichlet_edge[i] = 1;
-//                     } else {
-//                         //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-//                         ls->rhs_set_value(edge_row, side_flux);
-//                     }
-// 
-//                 } else if (type==EqData::river) {
-//                     is_linear_=false;
-//                     //unsigned int loc_edge_idx = edge_row - rows_ds->begin() - side_ds->lsize() - el_ds->lsize();
-//                     //unsigned int loc_edge_idx = bcd->bc_ele_idx_;
-//                     //char & switch_dirichlet = bc_switch_dirichlet[loc_edge_idx];
-// 
-//                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-//                     double bc_switch_pressure = data_->bc_switch_pressure.value(b_ele.centre(), b_ele);
-//                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
-//                     double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-//                     ASSERT_DBG(mh_dh.rows_ds->is_local(edge_row))(edge_row);
-//                     unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-//                     double & solution_head = ls->get_solution_array()[loc_edge_row];
-// 
-// 
-//                     // Force Robin type during the first iteration of the unsteady case.
-//                     if (solution_head > bc_switch_pressure  || (use_steady_assembly_ && nonlinear_iteration_ ==0)) {
-//                         // Robin BC
-//                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-//                         ls->rhs_set_value(edge_row, bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
-//                         ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
-//                     } else {
-//                         // Neumann BC
-//                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
-//                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
-//                         ls->rhs_set_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
-//                     }
-//                 } else {
-//                     xprintf(UsrErr, "BC type not supported.\n");
-//                 }
-// 
-//                 if (balance_ != nullptr && fill_matrix)
-//                 {
-//                    /*
-//                     DebugOut()("add_flux: {} {} {} {}\n",
-//                             mh_dh.el_ds->myp(),
-//                             ele_ac.ele_global_idx(),
-//                             loc_b,
-//                             side_row);*/
-//                     balance_->add_flux_matrix_values(water_balance_idx_, loc_b, {side_row}, {1});
-//                 }
-//                 ++loc_b;
-//             }
-//             ls->mat_set_value(side_row, edge_row, c_val);
-//             ls->mat_set_value(edge_row, side_row, c_val);
-// 
-//         }
-// 
-//         if (fill_matrix) {
-//             assembler[ele_ac.dim()-1]->assembly_local_matrix(ele_ac);
-// 
-//             // assemble matrix for weights in BDDCML
-//             // approximation to diagonal of 
-//             // S = -C - B*inv(A)*B'
-//             // as 
-//             // diag(S) ~ - diag(C) - 1./diag(A)
-//             // the weights form a partition of unity to average a discontinuous solution from neighbouring subdomains
-//             // to a continuous one
-//             // it is important to scale the effect - if conductivity is low for one subdomain and high for the other,
-//             // trust more the one with low conductivity - it will be closer to the truth than an arithmetic average
-//             if ( typeid(*ls) == typeid(LinSys_BDDC) ) {
-//                for(unsigned int i=0; i < nsides; i++) {
-//                    double val_side =  local_matrix(i,i);
-//                    double val_edge =  -1./local_matrix(i,i);
-// 
-//                    static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( side_rows[i], val_side );
-//                    static_cast<LinSys_BDDC*>(ls)->diagonal_weights_set_value( edge_rows[i], val_edge );
-//                }
-//             }
-// >>>>>>> master
         }
-        
-//         if(rank == my_rank){
-//             for (unsigned int i = 0; i < loc_size; i++) {
-//                 std::cout <<  dofs[i] << " ";
-//             }
-//             std::cout << endl;
-//         }
         
         // sides-sides, sides-ele, ele-sides, ele-ele
         ls->mat_set_values(loc_size, dofs.data(), loc_size, dofs.data(), zeros);
@@ -1129,16 +735,6 @@ void DarcyMH::allocate_mh_matrix()
                     ls->mat_set_value(edge_rows[i], edge_rows[j], 0.0);
             }
             
-//         // set block A: side-side on one element - block diagonal matrix
-//         ls->mat_set_values(nsides, side_rows, nsides, side_rows, zeros);
-//         // set block B, B': element-side, side-element
-//         ls->mat_set_values(1, &ele_row, nsides, side_rows, zeros);
-//         ls->mat_set_values(nsides, side_rows, 1, &ele_row, zeros);
-// 
-// 
-//         // D block:  diagonal: element-element
-//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
-
         // D, E',E block: compatible connections: element-edge
         
         for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
@@ -1150,7 +746,7 @@ void DarcyMH::allocate_mh_matrix()
             tmp_rows[0] = ele_row;
             tmp_rows[1] = neigh_edge_row;
             
-//             // be carefull with ele-ele entry
+            // be carefull with ele-ele entry
             ls->mat_set_value(ele_row, neigh_edge_row, 0.0);
             ls->mat_set_value(neigh_edge_row, ele_row, 0.0);
             
@@ -1158,7 +754,7 @@ void DarcyMH::allocate_mh_matrix()
                 // for 2. Schur: N dim edge is conected with N dim element =>
                 // there are nz between N dim edge and N-1 dim edges of the element
                 
-//                 // be carefull with edge-edge entry
+                // be carefull with edge-edge entry
                 ls->mat_set_values(nsides, edge_rows, 1, &neigh_edge_row, zeros);
                 ls->mat_set_values(1, &neigh_edge_row, nsides, edge_rows, zeros);
 
@@ -1594,7 +1190,7 @@ void DarcyMH::assembly_linear_system() {
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
-        print_matlab_matrix("matrix");
+//         print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
@@ -1630,11 +1226,11 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     std::string output_file;
     
     if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
-        WarningOut() << "Can output matrix only on a single processor.";
-        output_file = FilePath(matlab_file + "_bddc.m", FilePath::output_file);
-        ofstream os( output_file );
-        auto bddc = static_cast<LinSys_BDDC*>(schur0);
-        bddc->print_matrix(os);
+//         WarningOut() << "Can output matrix only on a single processor.";
+//         output_file = FilePath(matlab_file + "_bddc.m", FilePath::output_file);
+//         ofstream os( output_file );
+//         auto bddc = static_cast<LinSys_BDDC*>(schur0);
+//         bddc->print_matrix(os);
     }
     else {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
         output_file = FilePath(matlab_file + ".m", FilePath::output_file);

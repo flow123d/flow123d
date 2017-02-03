@@ -10,6 +10,7 @@
 
 #include "flow/darcy_flow_assembly.hh"
 #include "soil_models.hh"
+#include "coupling/balance.hh"
 
 #include "badiff.h"
 
