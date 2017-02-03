@@ -164,7 +164,7 @@ public:
 //                             << "] mat: " << -mass_diagonal/this->ad_->time_step_
 //                             << " rhs: " << -source_diagonal - mass_rhs
 //                             << "\n");
-                this->loc_system_.set_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
+                this->loc_system_.add_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
                                             -mass_diagonal/this->ad_->time_step_,
                                             -source_diagonal - mass_rhs);
             }

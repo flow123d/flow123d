@@ -125,7 +125,7 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        loc_system_.fix_diagonal();
+        loc_system_.eliminate_solution();
         
         ad_->lin_sys->set_local_system(loc_system_);
     }
@@ -209,8 +209,9 @@ protected:
                     // homogeneous neumann
                 } else if ( type == DarcyMH::EqData::dirichlet ) {
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    loc_system_.set_solution(edge_row,bc_pressure);
+                    loc_system_.set_solution(loc_system_.row_dofs[edge_row],bc_pressure,-1);
                     dirichlet_edge[i] = 1;
+                    DBGCOUT(<<"DIRICHLET\n");
                     
                 } else if ( type == DarcyMH::EqData::total_flux) {
                     // internally we work with outward flux
@@ -223,7 +224,7 @@ protected:
 //                             << " rhs: " << (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section
 //                             << "\n");
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
-                    loc_system_.set_value(edge_row, edge_row,
+                    loc_system_.add_value(edge_row, edge_row,
                                             -bcd->element()->measure() * bc_sigma * cross_section,
                                             (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
                 }
@@ -275,11 +276,12 @@ protected:
                         // Force Dirichlet type during the first iteration of the unsteady case.
                         if (switch_dirichlet || ad_->force_bc_switch ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                            loc_system_.set_solution(edge_row,bc_pressure);
+                            loc_system_.set_solution(loc_system_.row_dofs[edge_row],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-                            loc_system_.set_value(edge_row, side_row, 1.0, side_flux);
+//                             loc_system_.add_value(edge_row, side_row, 1.0, side_flux);
+                            loc_system_.add_value(edge_row, side_flux);
                         }
 
                 } else if (type==DarcyMH::EqData::river) {
@@ -297,7 +299,7 @@ protected:
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                        loc_system_.set_value(edge_row, edge_row,
+                        loc_system_.add_value(edge_row, edge_row,
                                                 -bcd->element()->measure() * bc_sigma * cross_section,
                                                 bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                     } else {
@@ -305,18 +307,25 @@ protected:
                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         
-                        loc_system_.set_value(edge_row, side_row,
-                                                1.0,
-                                                bc_total_flux * bcd->element()->measure() * cross_section);
+//                         loc_system_.add_value(edge_row, side_row,
+//                                                 1.0,
+//                                                 bc_total_flux * bcd->element()->measure() * cross_section);
+                        loc_system_.add_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
                     }
                 } 
                 else {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
             }
-            loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
-            loc_system_.set_mat_values({edge_row}, {side_row}, {1.0});
+            loc_system_.add_value(side_row, edge_row, 1.0);
+            loc_system_.add_value(edge_row, side_row, 1.0);
         }
+        
+//         DBGCOUT(<< "ele " << ele_ac.ele_global_idx() << ":  ");
+//         for (unsigned int i = 0; i < nsides; i++) cout << loc_system_.row_dofs[loc_side_dofs[i]] << "  ";
+//         cout << loc_system_.row_dofs[loc_ele_dof] << "  ";
+//         for (unsigned int i = 0; i < nsides; i++) cout << loc_system_.row_dofs[loc_edge_dofs[i]] << "  ";
+//         cout << "\n";
     }
         
      void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
@@ -342,7 +351,7 @@ protected:
                 double rhs_val =
                         arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
                         * fe_values_.JxW(k);
-                loc_system_.add_value(i,i , 0.0, rhs_val);
+                loc_system_.add_value(i, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
@@ -351,7 +360,7 @@ protected:
                                         * fe_values_.shape_vector(j,k))
                         * scale * fe_values_.JxW(k);
                     
-                    loc_system_.add_value(i,j , mat_val, 0.0);
+                    loc_system_.add_value(i, j, mat_val);
                 }
             }
         
@@ -385,8 +394,8 @@ protected:
 //         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
         
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
-            loc_system_.set_mat_values({loc_ele_dof}, {loc_side_dofs[side]}, {-1.0});
-            loc_system_.set_mat_values({loc_side_dofs[side]}, {loc_ele_dof}, {-1.0});
+            loc_system_.add_value(loc_ele_dof, loc_side_dofs[side], -1.0);
+            loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
         }
         
         if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
