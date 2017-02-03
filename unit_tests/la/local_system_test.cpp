@@ -46,7 +46,8 @@ void fill_ls(LocalSystem& ls){
         ls.add_value(0, i, 10*i, 50);
         ls.add_value(1, i, 10*(i+2), 60);
         ls.add_value(2, i, 10*(i+4), 70);
-        ls.add_value(3, i, 10*(i+5), 80);
+        ls.add_value(3, i, 10*(i+5));
+        ls.add_value(3, 80);
     }
 }
 
@@ -80,7 +81,7 @@ TEST(la, simple_local_system_solution) {
 //     cout << "matrix:\n" << ls.get_matrix();
 //     cout << "rhs:\n" << ls.get_rhs();
     
-    ls.fix_diagonal();
+    ls.eliminate_solution();
     
 //     cout << "matrix:\n" << ls.get_matrix();
 //     cout << "res_mat:\n" << res_mat;
@@ -95,7 +96,7 @@ TEST(la, simple_local_system_solution) {
     ls.set_solution(11, s1);
     ls.set_solution(13, s2);
     fill_ls(ls);
-    ls.fix_diagonal();
+    ls.eliminate_solution();
     
     res_mat(1,4) = 60;
     res_rhs(1) = 60*s1;
@@ -112,7 +113,7 @@ TEST(la, simple_local_system_solution) {
     ls.set_solution(13, s2);
     ls.set_solution(8, s2);
     fill_ls(ls);
-    ls.fix_diagonal();
+    ls.eliminate_solution();
     
     res_mat.col(1).zeros();
     res_rhs(0) -= 10*s2;
@@ -145,7 +146,7 @@ TEST(la, simple_local_system_no_solution) {
     ls.add_value(1, 1, 5, 0);
     ls.add_value(1, 2, 6, 0);
     
-    ls.fix_diagonal();
+    ls.eliminate_solution();
     
     EXPECT_ARMA_EQ(res_mat, ls.get_matrix());
     EXPECT_ARMA_EQ(res_rhs, ls.get_rhs());
@@ -335,81 +336,6 @@ public:
             }
         }
     }
-    
-    /**
-     * Add a random local matrix and rhs spanning over given rows and columns.
-     * Applies dirichlet BC directly during set_values.
-     */
-//     void add(arma::uvec rows, arma::uvec cols) {
-//         
-//         arma::mat loc_mat;
-//         arma::vec loc_rhs;
-//         edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
-//         
-//         // apply to fixture system
-//         arma::vec row_sol=dirichlet_values_.elem(rows);
-//         arma::vec col_sol=dirichlet_values_.elem(cols);
-//         
-//         
-//         auto i_rows=arma::conv_to<std::vector<int> >::from(
-//                         arma::conv_to<arma::ivec>::from(rows)%dirichlet_.elem(rows));
-//         auto i_cols=arma::conv_to<std::vector<int> >::from(
-//                         arma::conv_to<arma::ivec>::from(cols)%dirichlet_.elem(cols));
-//         
-//         cout << "i_rows\n" << arma::ivec(i_rows);
-//         cout << "i_cols\n" << arma::ivec(i_cols);
-//         this->set_values(i_rows, i_cols, loc_mat, loc_rhs, row_sol, col_sol);            
-//         
-//         check_result(true);
-//     }
-    
-    /**
-     * Sets a random local matrix and rhs spanning over given rows and columns.
-     * Sets values one by one.
-     */
-//     void set_value_single(arma::uvec rows, arma::uvec cols) {
-//         
-//         arma::mat loc_mat;
-//         arma::vec loc_rhs;
-//         edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
-//         
-//         // set entries
-//         for(unsigned int i=0; i < rows.n_elem; i++){
-//             this->set_value(rows(i), 0, 0.0, loc_rhs(i));
-//             for(unsigned int j=0; j < cols.n_elem; j++)
-//                 this->set_value(rows(i), cols(j), loc_mat(i,j), 0.0);
-//         }
-//         
-//         this->fix_diagonal();
-//         check_result(true);
-//     }  
-    
-        /**
-         * Add a random local matrix and rhs spanning over given rows and columns.
-         * Sets the dirichlet BC at first.
-         */
-//     void add_subsystem(arma::uvec rows, arma::uvec cols) {
-//         
-//         arma::mat loc_mat;
-//         arma::vec loc_rhs;
-//         edit_full_matrix(rows,cols, loc_mat, loc_rhs, false);
-//         
-// //         auto i_rows=arma::conv_to<std::vector<int> >::from(
-// //                         arma::conv_to<arma::ivec>::from(rows)%dirichlet_.elem(rows));
-// //         auto i_cols=arma::conv_to<std::vector<int> >::from(
-// //                         arma::conv_to<arma::ivec>::from(cols)%dirichlet_.elem(cols));
-//         
-//         auto i_rows = arma::conv_to<std::vector<unsigned int>>::from(rows);
-//         auto i_cols = arma::conv_to<std::vector<unsigned int>>::from(cols);
-// //         cout << "i_rows\n" << arma::ivec(i_rows);
-// //         cout << "i_cols\n" << arma::ivec(i_cols);
-//         
-//         this->set_values(i_rows, i_cols, loc_mat, loc_rhs); 
-//         
-//         this->fix_diagonal();
-//         
-//         check_result();
-//     }
 
     void set_preferred()
     { preferred_flag_ = true; }
@@ -429,27 +355,6 @@ public:
 };
 
 
-
-
-
-// TEST_F(SetValues, dirichlet_values) {
-//     
-//     unsigned int n = 100;
-//     for(unsigned int i=0; i<n; i++) 
-//     {
-//         cout << "############################################################   " << i << endl;
-//         restart();
-//         add( {0,1,2}, {0,1,2} );
-//         add( {0,1}, {3,4,5} );
-//         add( {4,5}, {0,1} );
-//         add( {0,2,3}, {0,2,3} );
-//         add( {3,4}, {3,4,5} );
-//         add( {5}, {0,2,4,5} );
-//         add( {1,3,4}, {4,5} );
-//         add( {0,3}, {4,5} );
-//     }     
-// };
-
 TEST_F(SetValues, add_value_single) {
     
     unset_preferred();
@@ -467,7 +372,7 @@ TEST_F(SetValues, add_value_single) {
         add_value_single( {1,3,4}, {4,5} );
         add_value_single( {0,3}, {4,5} );
         
-        this->fix_diagonal();
+        this->eliminate_solution();
         check_result(true);
     }
     
@@ -485,43 +390,7 @@ TEST_F(SetValues, add_value_single) {
         add_value_single( {1,3,4}, {4,5} );
         add_value_single( {0,3}, {4,5} );
         
-        this->fix_diagonal();
+        this->eliminate_solution();
         check_result(true);
     }  
 };
-
-// TEST_F(SetValues, set_value_single) {
-//     
-//     unset_preferred();
-//     unsigned int n = 100;
-//     for(unsigned int i=0; i<n; i++) 
-//     {
-//         cout << "############################################################   " << i << endl;
-//         restart();
-//         set_value_single( {0,1,2}, {0,1,2} );
-//         set_value_single( {0,1}, {3,4,5} );
-//         set_value_single( {4,5}, {0,1} );
-//         set_value_single( {0,2,3}, {0,2,3} );
-//         set_value_single( {3,4}, {3,4,5} );
-//         set_value_single( {5}, {0,2,4,5} );
-//         set_value_single( {1,3,4}, {4,5} );
-//         set_value_single( {0,3}, {4,5} );
-//     }     
-// }; 
-
-// TEST_F(SetValues, set_values) {
-//     
-//     unsigned int n = 100;
-//     for(unsigned int i=0; i<n; i++) {
-// //         cout << "############################################################   " << i << endl;
-//         restart();
-//         add_subsystem( {0,1,2}, {0,1,2} );
-//         add_subsystem( {0,1}, {3,4,5} );
-//         add_subsystem( {4,5}, {0,1} );
-//         add_subsystem( {0,2,3}, {0,2,3} );
-//         add_subsystem( {3,4}, {3,4,5} );
-//         add_subsystem( {5}, {0,2,4,5} );
-//         add_subsystem( {1,3,4}, {4,5} );
-//         add_subsystem( {0,3}, {4,5} );
-//     }     
-// };
