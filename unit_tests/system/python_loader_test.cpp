@@ -38,14 +38,14 @@ import math
 def func_xyz(x,y,z):
     return ( x*y*z+a , )     # one value tuple
 
-print func_xyz(1, 2, 3)
+print (func_xyz(1, 2, 3))
 
 )CODE";
 
 TEST(PythonLoader, print_error) {
 	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", python_print); },
 	    PythonLoader::ExcPythonError,
-        "Message: global name 'a' is not defined\nTraceback");
+        "Message: name 'a' is not defined\nTraceback");
 }
 
 

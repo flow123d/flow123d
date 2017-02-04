@@ -35,12 +35,22 @@ string python_sys_path = R"CODE(
 def get_paths():
     import sys
     import os
+    # print('\n'.join(sys.path))
     return os.pathsep.join(sys.path)
 
 )CODE";
 
 // default value
 string PythonLoader::sys_path = "";
+
+wchar_t *nstrws_convert(char *raw);
+
+wchar_t *nstrws_convert(char *raw) {
+  wchar_t *rtn = (wchar_t *) calloc(1, (sizeof(wchar_t) * (strlen(raw) + 1)));
+  // setlocale(LC_ALL,"en_US.UTF-8"); // Seriously, eat a bag of dicks python developers. Unless you do this python 3 crashes.
+  mbstowcs(rtn, raw, strlen(raw));
+  return rtn;
+}
 
 void PythonLoader::initialize(const std::string &python_home)
 {
@@ -77,46 +87,54 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
 
 PyObject * PythonLoader::load_module_from_string(const std::string& module_name, const std::string& source_string) {
     initialize();
-
-    // for unknown reason module name is non-const, so we have to make char * copy
-    char * tmp_name = new char[ module_name.size() + 2 ];
-    strcpy( tmp_name, module_name.c_str() );
-
-    PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
-    if (PyErr_Occurred()) {
-    	PyObject *ptype, *pvalue, *ptraceback, *pystr;
-		PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-
-		if ( !PyString_Check(pvalue) ) { // syntax error
-			stringstream ss;
-			PyObject* err_type = PySequence_GetItem(pvalue, 0);
-			pystr = PyObject_Str(err_type);
-			ss << PyBytes_AsString(pystr) << endl;
-			PyObject* descr = PySequence_GetItem(pvalue, 1);
-			PyObject* file = PySequence_GetItem(descr, 0);
-			pystr = PyObject_Str(file);
-			ss << "  File \"" << PyBytes_AsString(pystr) << "\"";
-			PyObject* row = PySequence_GetItem(descr, 1);
-			pystr = PyObject_Str(row);
-			ss << ", line " << PyBytes_AsString(pystr) << endl;
-			PyObject* line = PySequence_GetItem(descr, 3);
-			pystr = PyObject_Str(line);
-			ss << PyBytes_AsString(pystr);
-			PyObject* col = PySequence_GetItem(descr, 2);
-			pystr = PyObject_Str(col);
-			int pos = atoi( PyBytes_AsString(pystr) );
-			ss << setw(pos) << "^" << endl;
-			THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
-    	} else {
-    		THROW(ExcPythonError() << EI_PythonMessage( PyBytes_AsString(pvalue) ));
-    	}
-    }
-
-    PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
+    // char * tmp_name = new char[ module_name.size() + 2 ];
+    // strcpy( tmp_name, module_name.c_str() );
+    // 
+    PyObject * compiled_string = Py_CompileString(source_string.c_str(), module_name.c_str(), Py_file_input);
+    PyObject * result = PyImport_ExecCodeModule(module_name.c_str(), compiled_string);
     PythonLoader::check_error();
-
-    delete[] tmp_name;
     return result;
+    // 
+    // 
+    // // for unknown reason module name is non-const, so we have to make char * copy
+    // char * tmp_name = new char[ module_name.size() + 2 ];
+    // strcpy( tmp_name, module_name.c_str() );
+    // 
+    // PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
+    // if (PyErr_Occurred()) {
+    // 	PyObject *ptype, *pvalue, *ptraceback, *pystr;
+		// PyErr_Fetch(&ptype, &pvalue, &ptraceback);
+    // 
+		// // if ( !PyString_Check(pvalue) ) { // syntax error
+		// // 	stringstream ss;
+		// // 	PyObject* err_type = PySequence_GetItem(pvalue, 0);
+		// // 	pystr = PyObject_Str(err_type);
+		// // 	ss << PyBytes_AsString(pystr) << endl;
+		// // 	PyObject* descr = PySequence_GetItem(pvalue, 1);
+		// // 	PyObject* file = PySequence_GetItem(descr, 0);
+		// // 	pystr = PyObject_Str(file);
+		// // 	ss << "  File \"" << PyBytes_AsString(pystr) << "\"";
+		// // 	PyObject* row = PySequence_GetItem(descr, 1);
+		// // 	pystr = PyObject_Str(row);
+		// // 	ss << ", line " << PyBytes_AsString(pystr) << endl;
+		// // 	PyObject* line = PySequence_GetItem(descr, 3);
+		// // 	pystr = PyObject_Str(line);
+		// // 	ss << PyBytes_AsString(pystr);
+		// // 	PyObject* col = PySequence_GetItem(descr, 2);
+		// // 	pystr = PyObject_Str(col);
+		// // 	int pos = atoi( PyBytes_AsString(pystr) );
+		// // 	ss << setw(pos) << "^" << endl;
+		// // 	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
+    // // 	} else {
+    // // 		THROW(ExcPythonError() << EI_PythonMessage( PyBytes_AsString(pvalue) ));
+    // // 	}
+    // }
+    // 
+    // PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
+    // PythonLoader::check_error();
+    // 
+    // delete[] tmp_name;
+    // return result;
 }
 
 PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
@@ -133,22 +151,22 @@ PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
 void PythonLoader::check_error() {
     if (PyErr_Occurred()) {
         PyObject *ptype, *pvalue, *ptraceback;
-
         PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-        string error_description = string(PyBytes_AsString(PyObject_Str(pvalue)));
-
+        string error_description = string(PyUnicode_AsUTF8(PyObject_Str(pvalue)));
+        
+        // clear error indicator
+         PyErr_Clear();
+    
         /* See if we can get a full traceback */
-        PyObject *module_name = PyBytes_FromString("traceback");
-        PyObject *pyth_module = PyImport_Import(module_name);
-        Py_DECREF(module_name);
-
+        PyObject *pyth_module = PyImport_ImportModule("traceback");
+    
         string str_traceback;
         if (pyth_module) {
             PyObject *pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
             if (pyth_func && PyCallable_Check(pyth_func)) {
                 PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, ptype, pvalue, ptraceback, NULL);
                 if (pyth_val) {
-                    str_traceback = string(PyBytes_AsString(PyObject_Str(pyth_val)));
+                    str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(pyth_val)));
                     Py_DECREF(pyth_val);
                 }
             }
@@ -158,13 +176,14 @@ void PythonLoader::check_error() {
         string python_path = PythonLoader::sys_path;
         replace(python_path.begin(), python_path.end(), ':', '\n');
         
- 		string py_message =
-		             "\nType: " + string(PyBytes_AsString(PyObject_Str(ptype))) + "\n"
-		           + "Message: " + string(PyBytes_AsString(PyObject_Str(pvalue))) + "\n"
-		           + "Traceback: " + str_traceback + "\n"
-                   + "Paths: " + "\n" + python_path + "\n";
-
-		THROW(ExcPythonError() << EI_PythonMessage( py_message ));
+        // construct error message
+        string py_message =
+                   "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str(ptype))) + "\n"
+                 + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str(pvalue))) + "\n"
+                 + "Traceback: " + str_traceback + "\n"
+                 + "Paths: " + "\n" + python_path + "\n";
+    
+        THROW(ExcPythonError() << EI_PythonMessage( py_message ));
     }
 }
 
@@ -207,7 +226,7 @@ namespace internal {
 PythonRunning::PythonRunning(const std::string& program_name)
 {
 #ifdef FLOW123D_PYTHON_PREFIX
-        static wstring _python_program_name = to_py_string(program_name);
+        static wstring _python_program_name = nstrws_convert(program_name);
         Py_SetProgramName( &(_python_program_name[0]) );
         wstring full_program_name = Py_GetProgramFullPath();
         // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
@@ -309,8 +328,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
 #endif //FLOW123D_PYTHON_EXTRA_MODULES_PATH
 
     // call python and get paths available
-    PyObject *moduleMainString = PyBytes_FromString("__main__");
-    PyObject *moduleMain = PyImport_Import(moduleMainString);
+    PyObject *moduleMain = PyImport_ImportModule("__main__");
     PyRun_SimpleString(python_sys_path.c_str());
     PyObject *func = PyObject_GetAttrString(moduleMain, "get_paths");
     PyObject *args = PyTuple_New (0);
@@ -318,7 +336,7 @@ PythonRunning::PythonRunning(const std::string& program_name)
     PythonLoader::check_error();
     
     // save value so we dont have to call python again
-    PythonLoader::sys_path = string(PyBytes_AsString(result));
+    PythonLoader::sys_path = string(PyUnicode_AsUTF8(result));
 }
 
 

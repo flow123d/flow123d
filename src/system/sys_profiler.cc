@@ -830,15 +830,15 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyObject * arguments = PyTuple_New (3);
 
     // set json path location as first argument
-    PyObject * tmp = PyString_FromString (json_filepath.c_str());
+    PyObject * tmp = PyBytes_FromString (json_filepath.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // set output path location as second argument
-    tmp = PyString_FromString ((json_filepath + output_file_suffix).c_str());
+    tmp = PyBytes_FromString ((json_filepath + output_file_suffix).c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // set Formatter class as third value
-    tmp = PyString_FromString (formatter.c_str());
+    tmp = PyBytes_FromString (formatter.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments
@@ -850,11 +850,11 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
 
     // print information about windows-cygwin issue and offer manual solution
     MessageOut() << "# Note: converting json profiler reports is not"
-    		<< " supported under Windows or Cygwin environment for now.\n"
-			<< "# You can use python script located in bin/python folder"
-			<< " in order to convert json report to txt or csv format.\n"
-			<< "python profiler_formatter_script.py --input \"" << json_filepath
-			<< "\" --output \"profiler.txt\"" << std::endl;
+                 << " supported under Windows or Cygwin environment for now.\n"
+                 << "# You can use python script located in bin/python folder"
+                 << " in order to convert json report to txt or csv format.\n"
+                 << "python profiler_formatter_script.py --input \"" << json_filepath
+                 << "\" --output \"profiler.txt\"" << std::endl;
     #endif // FLOW123D_HAVE_CYGWIN
 }
 #else
