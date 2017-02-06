@@ -12,7 +12,7 @@ import os
 import datetime
 import shutil
 import time
-import commands
+import subprocess
 import re
 import fcntl
 import signal

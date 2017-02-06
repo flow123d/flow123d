@@ -654,10 +654,10 @@ class DynamicSleep(object):
         self.total = len(self.steps)
 
     def sleep(self):
-        sleep_duration = self.next()
+        sleep_duration = next(self)
         time.sleep(sleep_duration)
 
-    def next(self):
+    def __next__(self):
         self.current += 1
 
         if self.current >= self.total:
