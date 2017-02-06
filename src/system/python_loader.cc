@@ -43,14 +43,6 @@ def get_paths():
 // default value
 string PythonLoader::sys_path = "";
 
-wchar_t *nstrws_convert(char *raw);
-
-wchar_t *nstrws_convert(char *raw) {
-  wchar_t *rtn = (wchar_t *) calloc(1, (sizeof(wchar_t) * (strlen(raw) + 1)));
-  // setlocale(LC_ALL,"en_US.UTF-8"); // Seriously, eat a bag of dicks python developers. Unless you do this python 3 crashes.
-  mbstowcs(rtn, raw, strlen(raw));
-  return rtn;
-}
 
 void PythonLoader::initialize(const std::string &python_home)
 {
@@ -91,47 +83,6 @@ PyObject * PythonLoader::load_module_from_string(const std::string& module_name,
     PyObject * result = PyImport_ExecCodeModule(module_name.c_str(), compiled_string);
     PythonLoader::check_error();
     return result;
-    // 
-    // 
-    // // for unknown reason module name is non-const, so we have to make char * copy
-    // char * tmp_name = new char[ module_name.size() + 2 ];
-    // strcpy( tmp_name, module_name.c_str() );
-    // 
-    // PyObject * compiled_string = Py_CompileString( source_string.c_str(), module_name.c_str(), Py_file_input );
-    // if (PyErr_Occurred()) {
-    // 	PyObject *ptype, *pvalue, *ptraceback, *pystr;
-		// PyErr_Fetch(&ptype, &pvalue, &ptraceback);
-    // 
-		// // if ( !PyString_Check(pvalue) ) { // syntax error
-		// // 	stringstream ss;
-		// // 	PyObject* err_type = PySequence_GetItem(pvalue, 0);
-		// // 	pystr = PyObject_Str(err_type);
-		// // 	ss << PyBytes_AsString(pystr) << endl;
-		// // 	PyObject* descr = PySequence_GetItem(pvalue, 1);
-		// // 	PyObject* file = PySequence_GetItem(descr, 0);
-		// // 	pystr = PyObject_Str(file);
-		// // 	ss << "  File \"" << PyBytes_AsString(pystr) << "\"";
-		// // 	PyObject* row = PySequence_GetItem(descr, 1);
-		// // 	pystr = PyObject_Str(row);
-		// // 	ss << ", line " << PyBytes_AsString(pystr) << endl;
-		// // 	PyObject* line = PySequence_GetItem(descr, 3);
-		// // 	pystr = PyObject_Str(line);
-		// // 	ss << PyBytes_AsString(pystr);
-		// // 	PyObject* col = PySequence_GetItem(descr, 2);
-		// // 	pystr = PyObject_Str(col);
-		// // 	int pos = atoi( PyBytes_AsString(pystr) );
-		// // 	ss << setw(pos) << "^" << endl;
-		// // 	THROW(ExcPythonError() << EI_PythonMessage( ss.str() ));
-    // // 	} else {
-    // // 		THROW(ExcPythonError() << EI_PythonMessage( PyBytes_AsString(pvalue) ));
-    // // 	}
-    // }
-    // 
-    // PyObject * result = PyImport_ExecCodeModule(tmp_name, compiled_string);
-    // PythonLoader::check_error();
-    // 
-    // delete[] tmp_name;
-    // return result;
 }
 
 PyObject * PythonLoader::load_module_by_name(const std::string& module_name) {
@@ -223,7 +174,7 @@ namespace internal {
 PythonRunning::PythonRunning(const std::string& program_name)
 {
 #ifdef FLOW123D_PYTHON_PREFIX
-        static wstring _python_program_name = nstrws_convert(program_name);
+        static wstring _python_program_name = to_py_string(program_name);
         Py_SetProgramName( &(_python_program_name[0]) );
         wstring full_program_name = Py_GetProgramFullPath();
         // cout << "full program name: " << from_py_string(full_program_name) << std::endl;
@@ -243,72 +194,6 @@ PythonRunning::PythonRunning(const std::string& program_name)
         static wstring our_py_home(full_flow_prefix + ":" +default_py_prefix);
         Py_SetPythonHome( &(our_py_home[0]) );
 
-        /*
-        Py_GetPath();
-
-        static wstring our_py_path;
-        string python_subdir("/lib/python" + STR(FLOW123D_PYTHONLIBS_VERSION_MAJOR) + "." + STR(FLOW123D_PYTHONLIBS_VERSION_MINOR));
-        our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/:");
-        our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/plat-cygwin:");
-        our_py_path+=full_flow_prefix + to_py_string( python_subdir + "/lib-dynload:");
-        our_py_path+=default_py_prefix + to_py_string( python_subdir + "/lib-dynload:");
-        our_py_path+=default_py_prefix + to_py_string( python_subdir + "/lib-dynload:");
-        our_py_path+=default_py_prefix + to_py_string( python_subdir + "/lib-dynload:");
-
-        Py_SetPath(our_py_path);
-        //our_py_path+=full_flow_prefix + to_py_string( python_subdir);
-
-//        string prefix = ;
-        */
-        // cout << "Python path: " << from_py_string( Py_GetPath() ) << std::endl;
-        // cout << "Python home: " << from_py_string( Py_GetPythonHome() ) << std::endl;
-        // cout << "Python prefix: " << from_py_string( Py_GetPrefix() ) << std::endl;
-        // cout << "Python exec prefix: " << from_py_string( Py_GetExecPrefix() ) << std::endl;
-
-        // 1. set program name
-        // 2. get prefix
-        // 3. get python full path
-        // 4. extract prefix from the full path
-        // 5. substitute the prefix in python path
-        // 6. set python path (suppress its computation during Py_Initialize)
-        /*
-        wchar_t wbuf[ python_home.size() ];
-        size_t num_chars = mbstowcs( wbuf, python_home.c_str(), python_home.size() );
-	static wstring _python_home_storage( wbuf, num_chars ); // permanent non-const storage required
-
-        std::wcout << "new python home: " << _python_home_storage << std::endl;
-
-	Py_SetProgramName( &(_python_home_storage[0]) );
-
-        char buff[ 1024 ];
-        num_chars = wcstombs(buff, Py_GetPath(), 256);
-        buff[1024]=0;
-        string str(buff, num_chars);
-        std::cout << "Python path: " << str << std::endl;
-
-
-
-                wchar_t wbuf[ python_home.size() ];
-        size_t num_chars = mbstowcs( wbuf, python_home.c_str(), python_home.size() );
-        static wstring _python_home_storage( wbuf, num_chars ); // permanent non-const storage required
-
-        std::wcout << "new python home: " << _python_home_storage << std::endl;
-
-        Py_SetProgramName( &(_python_home_storage[0]) );
-
-        char buff[ 1024 ];
-        num_chars = wcstombs(buff, Py_GetPath(), 1024);
-        //std::cout << "num chars: " << num_chars << std::endl;
-        std::cout << "Python path: " << buff << std::endl;
-        //num_chars = wcstombs(buff, Py_GetPythonHome(), 1024);
-        //std::cout << "Python home: " << buff << std::endl;
-        num_chars = wcstombs(buff, Py_GetProgramName(), 1024);
-        std::cout << "Python prog. name: " << buff << std::endl;
-        num_chars = wcstombs(buff, Py_GetPrefix(), 1024);
-        std::cout << "Python prefix: " << buff << std::endl;
-        num_chars = wcstombs(buff, Py_GetProgramFullPath(), 1024);
-        std::cout << "Python full: " << buff << std::endl;
-*/
 #endif //FLOW123D_PYTHON_PREFIX
 
     // initialize the Python interpreter.
