@@ -54,7 +54,7 @@ class LocalRun(AbstractRun):
         comparisons.thread_name_property = True
 
         for check_rule in self.case.check_rules:
-            method = str(check_rule.keys()[0])
+            method = str(list(check_rule.keys())[0])
             module = self.get_module(method)
             comp_data = check_rule[method]
             if not module:

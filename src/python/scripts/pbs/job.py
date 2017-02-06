@@ -143,7 +143,7 @@ class Job(object):
             for line in output.splitlines():
                 if line.find(o.id) != -1:
                     info = line.split()
-                    for name, i in kwargs.items():
+                    for name, i in list(kwargs.items()):
                         setattr(o, name, info[i])
                     return info[index]
             return default
@@ -167,7 +167,7 @@ class MultiJob(object):
         self.iter_index = 0
         return self
 
-    def next(self):
+    def __next__(self):
         """
         :rtype : scripts.pbs.job.Job
         """
@@ -222,7 +222,7 @@ class MultiJob(object):
         return [item for item in self.items if item.status in status]
 
     def get_status_line(self):
-        status = self.status().values()
+        status = list(self.status().values())
         result = dict()
 
         for s in set(status):
@@ -230,7 +230,7 @@ class MultiJob(object):
 
         return 'Time elapsed: {delta} | {status}'.format(
             delta=datetime.timedelta(seconds=int(time.time() - self.start_time)),
-            status=', '.join(['{}: {:d}'.format(k, v) for k, v in result.items()])
+            status=', '.join(['{}: {:d}'.format(k, v) for k, v in list(result.items())])
         )
 
 

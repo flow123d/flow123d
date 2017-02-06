@@ -23,7 +23,7 @@ Options:
 
 """
 
-from __future__ import absolute_import
+
 
 import pathfix
 pathfix.append_to_path()

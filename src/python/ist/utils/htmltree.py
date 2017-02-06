@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
+
 import re
 import cgi
 import xml.etree.ElementTree as ET

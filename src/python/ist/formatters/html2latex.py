@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
+
 import xml.etree.ElementTree as ET
 
 
@@ -17,7 +17,7 @@ class Html2Latex(object):
     }
 
     def __init__(self, element):
-        if type(element) in (str, unicode):
+        if type(element) in (str, str):
             tree = ET.fromstring('<html_example>' + element + "</html_example>")
             self.el = tree
         else:

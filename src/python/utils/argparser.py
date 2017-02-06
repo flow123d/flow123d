@@ -263,7 +263,7 @@ class Parser(object):
         :type action: str
         :type name: str
         """
-        items = {k:v for k, v in locals().items() if v != cls.NONE and k not in cls.IGNORED}
+        items = {k:v for k, v in list(locals().items()) if v != cls.NONE and k not in cls.IGNORED}
         names = [x.strip() for x in name.split(',')]
         names.reverse()
         parser.add_argument(*names, **items)

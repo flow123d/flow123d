@@ -87,9 +87,6 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
 
 PyObject * PythonLoader::load_module_from_string(const std::string& module_name, const std::string& source_string) {
     initialize();
-    // char * tmp_name = new char[ module_name.size() + 2 ];
-    // strcpy( tmp_name, module_name.c_str() );
-    // 
     PyObject * compiled_string = Py_CompileString(source_string.c_str(), module_name.c_str(), Py_file_input);
     PyObject * result = PyImport_ExecCodeModule(module_name.c_str(), compiled_string);
     PythonLoader::check_error();

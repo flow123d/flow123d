@@ -66,7 +66,7 @@ class AbstractRun(object):
         # filter files and make them absolute again
         files = Paths.match(files, filters)
         files = [Paths.join(self.case.fs.ref_output, f) for f in files]
-        return zip(files, self._get_mirror_files(files))
+        return list(zip(files, self._get_mirror_files(files)))
 
     def _get_mirror_files(self, paths):
         return [

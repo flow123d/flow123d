@@ -35,7 +35,7 @@ If no files are specified all xml files in current directory will be selected.
 Useful when there is not known precise file name only location
 """
 
-from __future__ import absolute_import
+
 
 import pathfix
 pathfix.append_to_path()

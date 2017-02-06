@@ -13,12 +13,13 @@ Package contains:
 @url https://github.com/flow123d/flow123d
 """
 
-from __future__ import absolute_import
+
 import os
 import json
 import datetime
 import importlib
 from utils.logger import Logger
+import collections
 
 
 class ProfilerJSONDecoder(json.JSONDecoder):
@@ -101,7 +102,7 @@ class ProfilerFormatter(object):
             try:
                 module = importlib.import_module("formatters." + name)
                 class_ = getattr(module, name)
-                if getattr(class_, 'format') is not None and callable(getattr(class_, 'format')):
+                if getattr(class_, 'format') is not None and isinstance(getattr(class_, 'format'), collections.Callable):
                     result.append(name)
             except:
                 pass
@@ -160,7 +161,7 @@ class ProfilerFormatter(object):
                 Logger.instance().info('File "%s" generated', output_file)
             # otherwise just print result to stdout
             else:
-                print output
+                print(output)
         except Exception as ex:
             # return string with message on error
             Logger.instance().exception('Cannot save file ' + output_file, ex)

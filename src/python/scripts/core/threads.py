@@ -96,7 +96,7 @@ class ExtendedThread(threading.Thread):
             name=self.name
         )
 
-    def __nonzero__(self):
+    def __bool__(self):
         return not self.with_error()
 
     def was_successful(self):

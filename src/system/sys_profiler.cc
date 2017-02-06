@@ -830,15 +830,15 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     PyObject * arguments = PyTuple_New (3);
 
     // set json path location as first argument
-    PyObject * tmp = PyBytes_FromString (json_filepath.c_str());
+    PyObject * tmp = PyUnicode_FromString (json_filepath.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // set output path location as second argument
-    tmp = PyBytes_FromString ((json_filepath + output_file_suffix).c_str());
+    tmp = PyUnicode_FromString ((json_filepath + output_file_suffix).c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // set Formatter class as third value
-    tmp = PyBytes_FromString (formatter.c_str());
+    tmp = PyUnicode_FromString (formatter.c_str());
     PyTuple_SetItem (arguments, argument_index++, tmp);
 
     // execute method with arguments

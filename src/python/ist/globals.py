@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
+
 from utils.logger import Logger
 
 
@@ -30,13 +30,13 @@ class Globals(object):
         :rtype : list[ist.base.Parsable]
         """
         if not type:
-            return Globals.items.values()
+            return list(Globals.items.values())
         elif type.lower() in ('r', 'record'):
-            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.RECORD]
+            return [x for x in Globals.items.values() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.RECORD]
         elif type.lower() in ('s', 'selection'):
-            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.SELECTION]
+            return [x for x in Globals.items.values() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.SELECTION]
         elif type.lower() in ('a', 'ar', 'abstract'):
-            return [x for x in Globals.items.itervalues() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.ABSTRACT_RECORD]
+            return [x for x in Globals.items.values() if getattr(x, 'input_type', InputType.UNKNOWN) == InputType.ABSTRACT_RECORD]
 
     @staticmethod
     def get_url_by_name(label, item_type=''):
