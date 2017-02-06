@@ -44,8 +44,8 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
     return it::Record("FieldFE", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field given by finite element approximation.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-        .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
-                "Input file with ASCII GMSH file format.")
+        .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
+                "GMSH mesh with data. Can be different from actual computational mesh.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
@@ -318,7 +318,7 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	// read mesh, create tree
     {
        source_mesh_ = new Mesh( Input::Record() );
-       reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
+       reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
        ReaderInstances::instance()->get_reader(reader_file_)->read_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
@@ -363,10 +363,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of elementwise field, did you call set_mesh()?\n");
     if ( reader_file_ == FilePath() ) return false;
 
-    //walkaround for the steady time governor - there is no data to be read in time==infinity
-    //TODO: is it possible to check this before calling set_time?
-    //if (time == numeric_limits< double >::infinity()) return false;
-
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
@@ -380,7 +376,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
     bool boundary_domain_ = false;
     std::vector<double> data_vec = *(ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_));
-    std::cout << std::endl;
     std::vector<double> sum_val(4);
     std::vector<unsigned int> elem_count(4);
 
@@ -438,6 +433,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
     	} while (dim<4);
 
     	dh_->get_loc_dof_indices( ele, dof_indices);
+    	ASSERT_LT_DBG( dof_indices[0], dh_->n_global_dofs()); // TODO: size of VectorSeqDouble will be used as second parameter
     	data_[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
     }
 

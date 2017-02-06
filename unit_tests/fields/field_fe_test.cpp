@@ -141,7 +141,7 @@ string input = R"INPUT(
 {   
    scalar={
        TYPE="FieldFE",
-       gmsh_file="fields/simplest_cube_data.msh",
+       mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar"
    }
 }
