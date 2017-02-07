@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-
 import re
 import cgi
 import xml.etree.ElementTree as ET

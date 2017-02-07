@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-
 from utils.logger import Logger
 
 

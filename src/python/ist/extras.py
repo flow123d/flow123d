@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-
 from ist.globals import Globals, FormatMode
 from ist.base import Parsable, Field, List, Dict, InputType
 from ist.utils.htmltree import htmltree

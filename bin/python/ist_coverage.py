@@ -80,7 +80,7 @@ class IST:
         def is_none(self, yaml):
             if (yaml == None):
                 return False
-            if (isinstance(yaml, str) and yaml.strip()==""  ):
+            if (isinstance(yaml, str) and yaml.strip() == ""  ):
                 return False
             self.yaml=yaml
             return True
@@ -306,7 +306,7 @@ class IST:
             self.append_file(filename)
                        
             if self.tag:
-                assert self.tag in list(self.childs.keys()), "Error: Wrong tag {} for abstract {} at address {}.".format(self.tag, self.ist['name'], self.ist['input_address'])
+                assert self.tag in self.childs.keys(), "Error: Wrong tag {} for abstract {} at address {}.".format(self.tag, self.ist['name'], self.ist['input_address'])
                 self.childs[self.tag].add_file(self.yaml, filename)
             else:
                 # autoconversion
@@ -320,7 +320,7 @@ class IST:
 
         def dfs_report_files(self, of):
             self.dfs_report_files_base(of)
-            for child in list(self.childs.values()):
+            for child in self.childs.values():
                 child.dfs_report_files(of)
         
         def transpose(self, yaml):
@@ -332,7 +332,7 @@ class IST:
                 except:
                     assert False, "Missing tag for Abstract: {} at address {}.".format(self.ist['name'], self.ist['input_address'])
             
-            assert self.tag in list(self.childs.keys()), "Error: Wrong tag {} for abstract {} at address {}.".format(self.tag, self.ist['name'], self.ist['input_address'])
+            assert self.tag in self.childs.keys(), "Error: Wrong tag {} for abstract {} at address {}.".format(self.tag, self.ist['name'], self.ist['input_address'])
             self.yaml = self.childs[self.tag].transpose(self.yaml)
             return [ Instance(self.tag, item) for item in self.yaml ]
 

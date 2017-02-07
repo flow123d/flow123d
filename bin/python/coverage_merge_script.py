@@ -36,7 +36,6 @@ Useful when there is not known precise file name only location
 """
 
 
-
 import pathfix
 pathfix.append_to_path()
 

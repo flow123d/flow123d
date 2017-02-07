@@ -167,7 +167,7 @@ class MultiJob(object):
         self.iter_index = 0
         return self
 
-    def __next__(self):
+    def next(self):
         """
         :rtype : scripts.pbs.job.Job
         """

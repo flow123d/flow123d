@@ -9,8 +9,6 @@ MDStrike Extension for Python-Markdown
 Converts ~~expression~~ to line-through text <del /> tag is used
 """
 
-
-
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
 from markdown.util import etree

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-
 import cgi
 from ist.utils.htmltree import htmltree
 from ist.base import InputType, NotImplementedException

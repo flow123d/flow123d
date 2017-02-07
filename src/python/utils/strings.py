@@ -6,7 +6,6 @@
 Simple module which provides string/list utilities
 """
 
-
 from scripts.core.base import Printer
 
 format_n_lines_successful = dict(

@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-
-
 import cgi
 import re
 

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-
 import xml.etree.ElementTree as ET
 
 
@@ -17,7 +16,7 @@ class Html2Latex(object):
     }
 
     def __init__(self, element):
-        if type(element) in (str, str):
+        if type(element) is str:
             tree = ET.fromstring('<html_example>' + element + "</html_example>")
             self.el = tree
         else:

@@ -10,8 +10,6 @@ MDLinks Extension for Python-Markdown
 Converts [[type_value]] to relative links.
 """
 
-
-
 import re
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
