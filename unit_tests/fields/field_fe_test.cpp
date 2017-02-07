@@ -60,9 +60,15 @@ public:
         mesh->read_gmsh_from_stream(in);
     }
 
-    void create_dof_handler() {
+    void create_dof_handler(double val1, double val2, double val3) {
         dh = new DOFHandlerMultiDim(*mesh);
-        VecCreateSeqWithArray(PETSC_COMM_SELF, 1, 3, dof_values, &v);
+        v.resize(3);
+        v[0] = val1;
+        v[1] = val2;
+        v[2] = val3;
+        dof_values[0] = val1;
+        dof_values[1] = val2;
+        dof_values[2] = val3;
     }
 
     const FieldAlgoBaseInitData& init_data(std::string field_name) {
@@ -73,7 +79,7 @@ public:
     Mesh *mesh;
     DOFHandlerMultiDim *dh;
     double dof_values[3];
-    Vec v;
+    VectorSeqDouble v;
 
 	MappingP1<1,3> map1;
 	MappingP1<2,3> map2;
@@ -84,7 +90,7 @@ public:
 
 TEST_F(FieldFETest, scalar) {
     create_mesh("fields/one_element_2d.msh");
-    create_dof_handler();
+    create_dof_handler(1, 2, 3);
 
 	FE_P_disc<1,1,3> fe1;
 	FE_P_disc<1,2,3> fe2;
@@ -94,10 +100,6 @@ TEST_F(FieldFETest, scalar) {
     dh->distribute_dofs(fe1, fe2, fe3);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
-
-    dof_values[0] = 1;
-    dof_values[1] = 2;
-    dof_values[2] = 3;
 
     vector<double> values(3);
 
@@ -114,7 +116,7 @@ TEST_F(FieldFETest, scalar) {
 
 TEST_F(FieldFETest, vector) {
     create_mesh("fields/one_element_2d.msh");
-    create_dof_handler();
+    create_dof_handler(0, 0, 1);
 
     FE_RT0<1,3> fe1;
 	FE_RT0<2,3> fe2;
@@ -127,9 +129,6 @@ TEST_F(FieldFETest, vector) {
 
     // The Raviart-Thomas function given by the following dofs
     // is 3/7*(x-7/3, y-4/3, 0).
-    dof_values[0] = 0;
-    dof_values[1] = 0;
-    dof_values[2] = 1;
 
     arma::vec3 result = { 2./7, 1./14, 0 };
 

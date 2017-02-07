@@ -112,10 +112,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	dh = new DOFHandlerMultiDim(*mesh_);
 	dh->distribute_dofs(fe1, fe2, fe3);
 	corner_pressure.resize(dh->n_global_dofs());
-	VecCreateSeqWithArray(PETSC_COMM_SELF, 1, dh->n_global_dofs(), &(corner_pressure[0]), &vec_corner_pressure);
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh, &map1, &map2, &map3, &vec_corner_pressure);
+	corner_ptr->set_fe_data(dh, &map1, &map2, &map3, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
@@ -161,7 +160,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {
     if (dh) {
-        chkerr(VecDestroy(&vec_corner_pressure));
         delete dh;
     }
 };

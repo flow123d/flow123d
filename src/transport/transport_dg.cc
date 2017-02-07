@@ -312,7 +312,7 @@ void TransportDG<Model>::initialize()
 	{
 		// for each substance we allocate output array and vector
 		//output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-		VecCreateSeq(PETSC_COMM_SELF, output_vector_size, &output_vec[sbi]);
+		output_vec[sbi].resize(output_vector_size);
 	}
 	data_.output_field.set_components(Model::substances_.names());
 	data_.output_field.set_mesh(*Model::mesh_);
@@ -367,8 +367,6 @@ TransportDG<Model>::~TransportDG()
     if (gamma.size() > 0) {
         // initialize called
 
-        for (auto &vec : output_vec) VecDestroy(&vec);
-
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             delete ls[i];
@@ -401,8 +399,8 @@ void TransportDG<Model>::output_vector_gather()
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// gather solution to output_vec[sbi]
-	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
 	}
     VecScatterDestroy(&(output_scatter));
 

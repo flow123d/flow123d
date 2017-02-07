@@ -21,6 +21,7 @@
 #include "petscmat.h"
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
+#include "fields/vec_seq_double.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
@@ -65,7 +66,7 @@ public:
     		Mapping<1,3> *map1,
     		Mapping<2,3> *map2,
     		Mapping<3,3> *map3,
-    		const Vec *data);
+			VectorSeqDouble *data);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -102,8 +103,7 @@ public:
 private:
 
     DOFHandlerMultiDim *dh_;
-    double *data_;
-    const Vec *data_vec_;
+    VectorSeqDouble *data_vec_;
     unsigned int *dof_indices;
 
     Mapping<1,3> *map1_;

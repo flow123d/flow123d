@@ -64,7 +64,6 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   dh_(nullptr),
-  data_(nullptr),
   data_vec_(nullptr),
   dof_indices(nullptr),
   map1_(nullptr),
@@ -79,14 +78,13 @@ void FieldFE<spacedim, Value>::set_fe_data(DOFHandlerMultiDim *dh,
 		Mapping<1,3> *map1,
 		Mapping<2,3> *map2,
 		Mapping<3,3> *map3,
-		const Vec *data)
+		VectorSeqDouble *data)
 {
     dh_ = dh;
     map1_ = map1;
     map2_ = map2;
     map3_ = map3;
     data_vec_ = data;
-    VecGetArray(*data_vec_, &data_);
 
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
     dof_indices = new unsigned int[ndofs];
@@ -118,14 +116,14 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		if (dh_->fe<1>()->is_scalar()) {
 			double value = 0;
 			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-				value += data_[dof_indices[i]]*fe_values1.shape_value(i, 0);
+				value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
 			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-				value += data_[dof_indices[i]]*fe_values1.shape_vector(i, 0);
+				value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_vector(i, 0);
 			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
 		}
@@ -147,14 +145,14 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		if (dh_->fe<2>()->is_scalar()) {
 			double value = 0;
 			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-				value += data_[dof_indices[i]]*fe_values2.shape_value(i, 0);
+				value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
 			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-				value += data_[dof_indices[i]]*fe_values2.shape_vector(i, 0);
+				value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_vector(i, 0);
 			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
 		}	}
@@ -176,14 +174,14 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		if (dh_->fe<3>()->is_scalar()) {
 			double value = 0;
 			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-				value += data_[dof_indices[i]]*fe_values3.shape_value(i, 0);
+				value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
 			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-				value += data_[dof_indices[i]]*fe_values3.shape_vector(i, 0);
+				value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_vector(i, 0);
 			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
 		}
@@ -224,14 +222,14 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 			if (dh_->fe<1>()->is_scalar()) {
 				double value = 0;
 				for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-					value += data_[dof_indices[i]]*fe_values1.shape_value(i, 0);
+					value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_value(i, 0);
 				envelope(0,0) = value;
 			}
 			else {
 				arma::vec3 value;
 				value.zeros();
 				for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-					value += data_[dof_indices[i]]*fe_values1.shape_vector(i, 0);
+					value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_vector(i, 0);
 				for (int i=0; i<3; i++)
 					envelope(i,0) = value(i);
 			}
@@ -258,14 +256,14 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 			if (dh_->fe<2>()->is_scalar()) {
 				double value = 0;
 				for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-					value += data_[dof_indices[i]]*fe_values2.shape_value(i, 0);
+					value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_value(i, 0);
 				envelope(0,0) = value;
 			}
 			else {
 				arma::vec3 value;
 				value.zeros();
 				for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-					value += data_[dof_indices[i]]*fe_values2.shape_vector(i, 0);
+					value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_vector(i, 0);
 				for (int i=0; i<3; i++)
 					envelope(i,0) = value(i);
 			}
@@ -293,14 +291,14 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 			if (dh_->fe<3>()->is_scalar()) {
 				double value = 0;
 				for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-					value += data_[dof_indices[i]]*fe_values3.shape_value(i, 0);
+					value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_value(i, 0);
 				envelope(0,0) = value;
 			}
 			else {
 				arma::vec3 value;
 				value.zeros();
 				for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-					value += data_[dof_indices[i]]*fe_values3.shape_vector(i, 0);
+					value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_vector(i, 0);
 				for (int i=0; i<3; i++)
 					envelope(i,0) = value(i);
 			}
@@ -345,12 +343,8 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
     dof_indices = new unsigned int[ndofs];
     // allocate data_
 	unsigned int data_size = dh_->n_global_dofs();
-	Vec v;
-    std::vector<double> data_vec;
-	data_vec.resize(data_size);
-	VecCreateSeqWithArray(PETSC_COMM_SELF, 1, data_size, &(data_vec[0]), &v);
-    data_vec_ = &v;
-    VecGetArray(*data_vec_, &data_);
+	data_vec_ = new VectorSeqDouble();
+	data_vec_->resize(data_size);
 }
 
 
@@ -433,8 +427,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
     	} while (dim<4);
 
     	dh_->get_loc_dof_indices( ele, dof_indices);
-    	ASSERT_LT_DBG( dof_indices[0], dh_->n_global_dofs()); // TODO: size of VectorSeqDouble will be used as second parameter
-    	data_[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
+    	ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
+    	(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
     }
 
 
