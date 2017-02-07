@@ -39,7 +39,7 @@ bool compare_ip22(const computeintersection::IntersectionPoint<2,2>& a,
 void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> &ils)
 {
     ils.clear();
-    ils.resize(9);
+    ils.resize(10);
     
     ils[0].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.5,0.5})));
     
@@ -63,6 +63,9 @@ void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> 
     
     ils[8].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.4,0.4})));
     ils[8].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0.25,0.5}),arma::vec2({0.5,0.5})));
+    
+    ils[9].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0,0})));
+    ils[9].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({2/3.0,1/3.0}),arma::vec2({2.0/30,2.0/30})));
 }
 
 // Permutes tetrahedron coordinates of IP<2,2> according to given permutation.
@@ -102,7 +105,7 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
 //     DebugOut() << is;
 //     for(IntersectionPointAux<2,2> &ip: is.points())
 //     {
-//         ip.coords(mesh->element(0)).print();
+//         ip.coords(mesh->element(0)).print("ip");
 //     }
 
     computeintersection::IntersectionLocal<2,2> ilc(is);

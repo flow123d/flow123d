@@ -305,9 +305,9 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
     unsigned int n_positive = 0;
     unsigned int n_negative = 0;
     unsigned int zero_idx_sum =0;
-    DebugOut().VarFmt(std::fabs(w_sum));
-    DebugOut().VarFmt(scale_line_);
-    DebugOut().VarFmt(scale_triangle_);
+//     DebugOut().VarFmt(std::fabs(w_sum));
+//     DebugOut().VarFmt(scale_line_);
+//     DebugOut().VarFmt(scale_triangle_);
     if(std::fabs(w_sum) > rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_) {
         w = w / w_sum;
 
@@ -555,21 +555,35 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
     // temporary vector for lower dimensional IPs
     std::vector<IntersectionPointAux<1,2>> IP12s;
     IP12s.reserve(2);
-    unsigned int local_ip_counter, ip_coutner = 0;
+    unsigned int ip_coutner = 0;
 
     // loop over CIs (side vs triangle): [A0_B, A1_B, A2_B, B0_A, B1_A, B2_A].
     for(unsigned int i = 0; i < 2*RefElement<2>::n_sides && ip_coutner < 2; i++){
         if(!CI12[i].is_computed()) // if not computed yet
         {
-            local_ip_counter = CI12[i].compute_final(IP12s);    // compute; if intersection exists then continue
-            if(local_ip_counter == 0) continue;
+//             DBGVAR(i);
+            IntersectionResult result = CI12[i].compute(IP12s);
+            
+            // skip empty cases
+            if(result == IntersectionResult::none ||
+               result == IntersectionResult::degenerate)
+               continue; 
             
             unsigned int triangle_side = i%3; //i goes from 0 to 5 -> i%3 = 0,1,2,0,1,2
-//             DBGMSG("found %d\n", i);
-            ip_coutner += local_ip_counter;
             
             for(IntersectionPointAux<1,2> &IP : IP12s)
             {
+                // possibly cut the line
+                arma::vec2 theta;
+                double t = IP.local_bcoords_A()[1];
+                if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
+                        // possibly set abscissa vertex {0,1}
+                        if( fabs(t) <= geometry_epsilon)       { theta = {1,0}; IP.set_topology_A(0,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
+                        else if(fabs(1-t) <= geometry_epsilon) { theta = {0,1}; IP.set_topology_A(1,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
+                        // IP found
+                }
+                else continue; // IP outside
+        
                 IntersectionPointAux<2,1> IP21 = IP.switch_objects();   // swicth dim 12 -> 21
                 IntersectionPointAux<2,2> IP22(IP21, triangle_side);    // interpolate dim 21 -> 22
                 
@@ -579,7 +593,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
             
                     if( IP.dim_A() == 0 ) // if IP is vertex of triangle
                     {
-                        // DBGMSG("set_node A\n");
+//                         DBGCOUT("set_node A\n");
                         // we are on line of the triangle A, and IP.idx_A contains local node of the line
                         // we know vertex index
                         unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
@@ -591,14 +605,14 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     }
                     if( IP.dim_B() == 0 ) // if IP is vertex of triangle
                     {
-                        // DBGMSG("set_node B\n");
+//                         DBGCOUT("set_node B\n");
                         // set flag on both sides of triangle connected by the node
                         for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
                             CI12[3 + RefElement<2>::interact(Interaction<1,0>(IP.idx_B()))[s]].set_computed();
                     }
                     else if( IP.dim_B() == 1 ) // if IP is vertex of triangle
                     {
-                        // DBGMSG("set line B\n");
+//                         DBGCOUT("set line B\n");
                         // set flag on both sides of triangle connected by the node
                         CI12[3 + IP.idx_B()].set_computed();
                     }
@@ -606,7 +620,7 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                 else if( IP.dim_A() == 0 ) // if IP is vertex of triangle B (triangles switched!!!  A <-> B)
                 {
                     //we do not need to look back to triangle A, because if IP was at vertex, we would know already
-                    // DBGMSG("set_node B\n");
+//                     DBGCOUT("set_node B\n");
                     // we are on line of the triangle, and IP.idx_A contains local node of the line
                     // we know vertex index
                     unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
@@ -616,7 +630,8 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
                         CI12[3 + RefElement<2>::interact(Interaction<1,0>(node))[s]].set_computed();
                 }
-//                 cout << IP22;
+//                 DBGCOUT( << IP22);
+                ip_coutner++;
                 IP22s.push_back(IP22);
             }
             IP12s.clear();
