@@ -79,6 +79,25 @@ OutputVTK::~OutputVTK()
 
 
 
+void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+{
+	OutputTime::init_from_input(equation_name, mesh, in_rec);
+
+    auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
+    variant_type_ = format_rec.val<VTKVariant>("variant");
+
+    this->fix_main_file_extension(".pvd");
+    try {
+        this->_base_filename.open_stream( this->_base_file );
+    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
+
+    LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
+
+    this->make_subdirectory();
+    this->write_head();
+}
+
+
 
 int OutputVTK::write_data(void)
 {
@@ -90,20 +109,7 @@ int OutputVTK::write_data(void)
         return 0;
     }
 
-    if (! this->_base_file.is_open()) {
-        auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
-        variant_type_ = format_rec.val<VTKVariant>("variant");
-
-        this->fix_main_file_extension(".pvd");
-        try {
-            this->_base_filename.open_stream( this->_base_file );
-        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
-
-        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
-
-        this->make_subdirectory();
-        this->write_head();
-    }
+    ASSERT(this->_base_file.is_open())(this->_base_filename).error();
 
     ostringstream ss;
     ss << main_output_basename_ << "-"
