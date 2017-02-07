@@ -160,7 +160,7 @@ class ProfilerFormatter(object):
                 Logger.instance().info('File "%s" generated', output_file)
             # otherwise just print result to stdout
             else:
-                print(output)
+                print output
         except Exception as ex:
             # return string with message on error
             Logger.instance().exception('Cannot save file ' + output_file, ex)
