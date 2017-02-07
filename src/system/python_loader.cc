@@ -79,7 +79,11 @@ PyObject * PythonLoader::load_module_from_file(const std::string& fname) {
 
 PyObject * PythonLoader::load_module_from_string(const std::string& module_name, const std::string& source_string) {
     initialize();
+    // compile string and check for errors
     PyObject * compiled_string = Py_CompileString(source_string.c_str(), module_name.c_str(), Py_file_input);
+    PythonLoader::check_error();
+    
+    // import modle and check for error
     PyObject * result = PyImport_ExecCodeModule(module_name.c_str(), compiled_string);
     PythonLoader::check_error();
     return result;
