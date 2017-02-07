@@ -25,6 +25,7 @@
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
 
+#include "config.h"
 #include <zlib.h>
 
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
@@ -51,8 +52,10 @@ const Selection & OutputVTK::get_input_type_variant() {
 			"ASCII variant of VTK file format")
 		.add_value(OutputVTK::VARIANT_BINARY_UNCOMPRESSED, "binary",
 			"Uncompressed appended binary XML VTK format without usage of base64 encoding of appended data.")
+#ifdef FLOW123D_HAVE_ZLIB
 		.add_value(OutputVTK::VARIANT_BINARY_ZLIB, "binary_zlib",
-			"Appended binary XML VTK format without usage of base64 encoding of appended data. Compressed with ZLib. (Not supported yet)")
+			"Appended binary XML VTK format without usage of base64 encoding of appended data. Compressed with ZLib.")
+#endif // FLOW123D_HAVE_ZLIB
 		.close();
 }
 

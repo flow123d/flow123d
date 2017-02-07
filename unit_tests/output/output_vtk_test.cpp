@@ -11,6 +11,8 @@
 #include <mesh_constructor.hh>
 #include <fstream>
 
+#include "config.h"
+
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
@@ -31,12 +33,6 @@ const string test_output_time_binary = R"YAML(
 file: ./test1.pvd
 format: !vtk
   variant: binary
-)YAML";
-
-const string test_output_time_compressed = R"YAML(
-file: ./test1.pvd
-format: !vtk
-  variant: binary_zlib
 )YAML";
 
 
@@ -143,6 +139,13 @@ TEST_F(TestOutputVTK, write_data_binary) {
     check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
 }
 
+#ifdef FLOW123D_HAVE_ZLIB
+
+const string test_output_time_compressed = R"YAML(
+file: ./test1.pvd
+format: !vtk
+  variant: binary_zlib
+)YAML";
 
 TEST_F(TestOutputVTK, write_data_compressed) {
 	this->init_mesh(test_output_time_compressed);
@@ -154,4 +157,6 @@ TEST_F(TestOutputVTK, write_data_compressed) {
 
     check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");
 }
+
+#endif // FLOW123D_HAVE_ZLIB
 

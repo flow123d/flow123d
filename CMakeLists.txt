@@ -517,7 +517,12 @@ message(STATUS "====== ZLIB-CORE ======================================")
 message(STATUS "=======================================================")
 message(STATUS "Zlib_ROOT_HINT = ${Zlib_ROOT_HINT}")
 
-find_package(Zlib REQUIRED)
+find_package(Zlib)
+
+# use zlib compression of VTK files
+if(Zlib_FOUND)
+    flow_define(HAVE_ZLIB)
+endif()
 
 message(STATUS "-------------------------------------------------------")
 message(STATUS "Zlib_FOUND = ${Zlib_FOUND}")
