@@ -119,6 +119,20 @@ TEST(PythonLoader, traceback_error) {
     );
 }
 
+/**
+ * We are testing that compilation here will fail, since code itself is invalid
+ * after Py_CompileString call check_error will react and raise Error
+ */
+TEST(PythonLoader, compilation_error) {
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", invalid_code); },
+	    PythonLoader::ExcPythonError,
+        "invalid syntax");
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", invalid_code2); },
+	    PythonLoader::ExcPythonError,
+        "invalid syntax");
+}
+
+
 
 // only test embedded python if we actually copied out Python
 // this tests only checks if embedded python is loading modules from correct
