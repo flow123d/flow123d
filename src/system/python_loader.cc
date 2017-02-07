@@ -107,19 +107,27 @@ void PythonLoader::check_error() {
         string error_description = string(PyUnicode_AsUTF8(PyObject_Str(pvalue)));
         
         // clear error indicator
-         PyErr_Clear();
+        PyErr_Clear();
     
         /* See if we can get a full traceback */
-        PyObject *pyth_module = PyImport_ImportModule("traceback");
+        PyObject *traceback_module = PyImport_ImportModule("traceback");
     
         string str_traceback;
-        if (pyth_module) {
-            PyObject *pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
-            if (pyth_func && PyCallable_Check(pyth_func)) {
-                PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, ptype, pvalue, ptraceback, NULL);
-                if (pyth_val) {
-                    str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(pyth_val)));
-                    Py_DECREF(pyth_val);
+        if (traceback_module && ptraceback) {
+            PyObject *format_tb_method = PyObject_GetAttrString(traceback_module, "format_tb");
+            if (format_tb_method) {
+                PyObject * traceback_lines = PyObject_CallFunctionObjArgs(format_tb_method, ptraceback, NULL);
+                if (traceback_lines) {
+                    PyObject * join_str = PyUnicode_FromString("");
+                    PyObject * join = PyObject_GetAttrString(join_str, "join");
+                    PyObject * message = PyObject_CallFunctionObjArgs(join, traceback_lines, NULL);
+                    if (message) {
+                        str_traceback = string(PyUnicode_AsUTF8(PyObject_Str(message)));
+                    }
+                    Py_DECREF(traceback_lines);
+                    Py_DECREF(join_str);
+                    Py_DECREF(join);
+                    Py_DECREF(message);
                 }
             }
         }
@@ -132,7 +140,7 @@ void PythonLoader::check_error() {
         string py_message =
                    "\nType: " + string(PyUnicode_AsUTF8(PyObject_Str(ptype))) + "\n"
                  + "Message: " + string(PyUnicode_AsUTF8(PyObject_Str(pvalue))) + "\n"
-                 + "Traceback: " + str_traceback + "\n"
+                 + "Traceback: \n" + str_traceback + "\n"
                  + "Paths: " + "\n" + python_path + "\n";
     
         THROW(ExcPythonError() << EI_PythonMessage( py_message ));
