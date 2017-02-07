@@ -28,6 +28,9 @@ def create_parser():
         Run tests under valgrind, with python suppression with optional argument
         <valgrind args> passed to the valgrind. (In PBS mode this arguments is ignored.)?
     """)
+    argparser.Parser.add(group, '--massif', action='store_true', default=False, help="""R|
+        If set will print valgrind massif memory allocation stats.
+    """)
     argparser.Parser.add(group, '--parallel, -p', default=1, type=int, help="""R|
         Run at most N jobs in parallel.
         In PBS mode this arguments is ignored.

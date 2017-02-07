@@ -84,6 +84,7 @@ class ModuleRuntest(ScriptModule):
         local_run = LocalRun(case)
         local_run.mpi = case.proc > 1
         local_run.progress = self.progress
+        local_run.massif = self.arg_options.massif
 
         # on demand we do not clean dirs or run comparisons
         no_clean = self.arg_options.no_clean

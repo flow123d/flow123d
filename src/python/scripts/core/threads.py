@@ -181,7 +181,16 @@ class MultiThreads(ExtendedThread):
 
     @property
     def returncode(self):
-        return max(self.returncodes.values()) if self.returncodes else 0
+        # SKIPPED
+        if not self.returncodes or set(self.returncodes.values()) == {None}:
+            return None
+
+        # OK returncode
+        if (set(self.returncodes.values()) - {None}) == {0}:
+            return 0
+
+        # ERROR returncode
+        return max(set(self.returncodes.values()) - {None, 0})
 
     @property
     def total(self):
