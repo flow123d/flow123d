@@ -42,11 +42,46 @@ print (func_xyz(1, 2, 3))
 
 )CODE";
 
+
+string invalid_code = R"CODE(
+import math
+
+def func_xyz(x,y,z):
+    return ( x*y*z+a , )     # one value tuple
+
+print func_xyz(1, 2, 3)
+
+)CODE";
+
+string invalid_code2 = R"CODE(
+this is invalid python code
+)CODE";
+
+
+
+/**
+ * We are testing that load_module_from_string call will fail because
+ * variable is not defined in the code
+ */
 TEST(PythonLoader, print_error) {
 	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", python_print); },
 	    PythonLoader::ExcPythonError,
         "Message: name 'a' is not defined\nTraceback");
 }
+
+/**
+ * We are testing that compilation here will fail, since code itself is invalid
+ * after Py_CompileString call check_error will react and raise Error
+ */
+TEST(PythonLoader, compilation_error) {
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", invalid_code); },
+	    PythonLoader::ExcPythonError,
+        "invalid syntax");
+	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", invalid_code2); },
+	    PythonLoader::ExcPythonError,
+        "invalid syntax");
+}
+
 
 
 // only test embedded python if we actually copied out Python
