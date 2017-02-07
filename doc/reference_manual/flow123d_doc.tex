@@ -303,8 +303,8 @@ execution of the installation script by pressing \verb'R'. This starts the insta
         \href{https://www.virtualbox.org/}{VirtualBox} which is installed along with Docker Toolbox as well as other necessary components.
         Default configuration of components is acceptable, however you can uncheck 
         \emph{'Docker Compose for Windows'} and \emph{'Kinematic for Windows'}, while keeping \emph{'VirtualBox'} and \emph{'Git for Windows'} that are essential,
-        see the dialog in Figure \ref{fig:DockerComponents}. Next dialog selects additional tasks, you can uncheck \emph{'Create a desktop shortcut'} as 
-        depicted in Figure \ref{fig:DockerTasks}
+        see the dialog in Figure \ref{fig:DockerComponents} (left). Next dialog selects additional tasks, you can uncheck \emph{'Create a desktop shortcut'} as 
+        depicted in Figure \ref{fig:DockerComponents} (right)
         \begin{figure}
           \center  
           \includegraphics[width=0.45\textwidth]{\fig/DockerComponents.png}%
@@ -347,6 +347,9 @@ execution of the installation script by pressing \verb'R'. This starts the insta
 In order to uninstall Flow123d you can run the \verb'uninstall.bat' script. This script removes Flow123d 
 and uninstall Docker Toolbox (after confirmation), but keep Git and VirtualBox installed. These can be uninstalled manually. 
 Moreover the configuration directories \verb'.docker' and \verb'VirtualBox' in your home directory are preserved. These can be deleted manually as well. 
+
+
+
 
 \subsection{Reinstalling Flow123d}
 \label{duplicit-image}
@@ -437,6 +440,41 @@ Directory \verb'bin' contains two \verb'bat' files:
 \textbf{Note:}
 \textit{Docker Engine daemon has only limited access to your Windows file system. Docker Machine tries to auto-share your}
 \verb'C:\Users' \textit{directory. Directories outside this directory will not be automatically mounted.} 
+
+\subsection{Setting memory of virtual machine}
+The virtual machine (VM) used for running the Docker with Flow123d inside claims predefined portion of the RAM 
+of the host system to be used as the RAM of the guest Docker system. Unfortunately the default size of this memory is
+quite small, e.g. 1GB on a 4GB machine. About 500MB is taken by the Docker kernel leaving just 500MB for Flow123d.
+This is may be enough just for the small problems with thousands of elements. In order to treat realistic problems one have to 
+enlarge the RAM size of the guest system. This can be easily done as follows:
+
+
+ 
+\begin{enumerate}
+ \item Start \verb'Oracle VM VirtualBox' either by a shortcut on your desktop or through the start menu. 
+ A medium size window appears with the list of existing virtual machines 
+ on the left. The docker VM is named 'default'.
+ \item Next step is to power off the VM \verb'default' if it is running. 
+ Following the left Figure \ref{fig:vm_ram_setup}, use the right-click on the VM and select \verb'Close' (Zav\v r\' it) and 
+ \verb'Power Off' (Vypnout). Confirm the turn off of the VM machine. 
+ \item Final step is setting the size of RAM of the VM. Follow the right Figure \ref{fig}. 
+ Select the VM \verb'default', click on \verb'Settings' (Nastave\' i) and select \verb'System' in the left column.
+ On the tab \verb'Motherboard' (Z\' akladn\' i deska) you find a slide to select the size of the RAM. You can select sizes  
+ in the orange or even red range since the memory is only reserved not actually used, however setting it to close to the 
+ whole RAM size of the host allows the applications, i.e. Flow123d, running on the VM to compete for RAM with applications on the host system.
+ \item The VM is restarted automatically at the next start of the Flow123d or the fterm.
+\end{enumerate}
+
+
+\begin{figure}
+    \center  
+    \includegraphics[width=0.45\textwidth]{\fig/VBMachineTurnOff.png}
+    \hspace{2ex}
+    \includegraphics[width=0.45\textwidth]{\fig/VBMachineSetMem.png}
+    \caption{{\bf Left:} Power off the virtual machine.
+             {\bf Right:} Setting RAM size of the virtual machine.} 
+    \label{fig:vm_ram_setup}
+\end{figure}
 
 \subsection{Flow123d arguments}
 When you are inside docker container, you have access to entire file system. Flow123d is installed in 
