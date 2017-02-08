@@ -696,6 +696,8 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 {
     //DebugOut() << "Intersections 2d-2d\n";
     
+    create_component_numbering();
+    
     FOR_ELEMENTS(mesh, ele) {
     if (ele->dim() == 3)
     {
@@ -775,6 +777,53 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
 
 }
 
+void InspectElementsAlgorithm22::create_component_numbering()
+{
+    component_idx_.resize(mesh->n_elements(),-1);
+    unsigned int counter = 0;
+    
+    FOR_ELEMENTS(mesh, ele) {
+        if (ele->dim() == 2 &&
+            component_idx_[ele->index()] == (unsigned int)-1
+        ){
+            // start component
+            component_queue_.push(ele->index());
+//             DBGCOUT(<< "start component at ele " << ele->index() << "\n");
+            
+            while(!component_queue_.empty()){
+                unsigned int ele_idx = component_queue_.front();
+                component_idx_[ele_idx] = counter;
+                component_queue_.pop();
+                prolongate(mesh->element(ele_idx));
+            }
+            counter++;
+        }
+    }
+    
+    MessageOut() << "2D-2D intersections: number of components = " << counter << "\n";
+    
+//     DBGCOUT(<< "Component numbering: \n");
+//     FOR_ELEMENTS(mesh, ele) {
+//         if (ele->dim() == 2){
+//             cout << "2d ele " << ele->index() << ":  " << component_idx_[ele->index()] << endl;
+//         }
+//     }
+}
+
+void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele)
+{
+    ASSERT(ele->dim() == 2);
+    for(int sid=0; sid < ele->n_sides(); sid++) {
+        Edge* edg = ele->side(sid)->edge();
+        
+        for(int j=0; j < edg->n_sides;j++) {
+            ElementFullIter neigh = edg->side(j)->element();
+            if (neigh != ele && component_idx_[neigh->index()] == (unsigned int)-1){
+                component_queue_.push(neigh->index());
+            }
+        }
+    }
+}
 
 
 

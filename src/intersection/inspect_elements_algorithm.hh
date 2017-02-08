@@ -192,6 +192,8 @@ public:
     
     /// Runs the core algorithm for computing 2D-2D intersection in 3D.
     void compute_intersections(const std::vector<std::vector<ILpair>> &intersection_map_);
+    
+    
 private:
     Mesh *mesh;
     
@@ -203,8 +205,20 @@ private:
     /// Object representing a triangle element B.
     Simplex<2> triaB_;
     
+    // Auxiliary vector which keeps component indices for 2d elements.
+    std::vector<unsigned int> component_idx_;
+    
+    /// Prolongation queue in the component mesh.
+    std::queue<unsigned int> component_queue_;
+    
     /// Computes fundamental intersection of two 2D elements.
     void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
+    
+    /// Creates numbering of the 2D components and fills component_idx_ vector.
+    void create_component_numbering();
+    
+    /// Auxiliary function for front-advancing alg. for component numbering.
+    void prolongate(const ElementFullIter& ele);
     
     friend MixedMeshIntersections;
 };
