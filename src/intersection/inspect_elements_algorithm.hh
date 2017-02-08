@@ -208,9 +208,6 @@ private:
     // Auxiliary vector which keeps component indices for 2d elements.
     std::vector<unsigned int> component_idx_;
     
-    /// Prolongation queue in the component mesh.
-    std::queue<unsigned int> component_queue_;
-    
     /// Computes fundamental intersection of two 2D elements.
     void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
     
@@ -218,7 +215,7 @@ private:
     void create_component_numbering();
     
     /// Auxiliary function for front-advancing alg. for component numbering.
-    void prolongate(const ElementFullIter& ele);
+    void prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue);
     
     friend MixedMeshIntersections;
 };

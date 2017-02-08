@@ -715,7 +715,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
             
             ElementFullIter eleA = mesh->element(local_map[i].first);
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
-            unsigned int componentA_idx = local_map[i].second->component_idx();
+            unsigned int componentA_idx = component_idx_[eleA->index()];
             
             IntersectionLocalBase * ilb = local_map[i].second;
             //DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
@@ -725,23 +725,10 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
                 ElementFullIter eleB = mesh->element(local_map[j].first);
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
-                // component check not working, until prolongation will be done also over vertices..
-                unsigned int componentB_idx = local_map[j].second->component_idx();
+                unsigned int componentB_idx = component_idx_[eleB->index()];
+                
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
-                
-//                 //does not solve 'vertex neighbors' (common only one node)
-//                 bool is_not_neighbor = true;
-//                 for(unsigned int k=0; k < eleA->n_sides(); k++)
-//                 {
-//                     Edge * edge = eleA->side(k)->edge();
-//                     for(unsigned int s=0; s < edge->n_sides; s++)
-//                     {
-//                         if(eleA->side(k) != edge->side(s))
-//                             if(edge->side(s)->element()->index() == eleB.index()) is_not_neighbor = false;
-//                     }
-//                 }
-//                 if(is_not_neighbor) continue;
                 
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
 //                                eleA.index(), eleB.index(), componentA_idx, componentB_idx);
@@ -782,19 +769,22 @@ void InspectElementsAlgorithm22::create_component_numbering()
     component_idx_.resize(mesh->n_elements(),-1);
     unsigned int counter = 0;
     
+    // prolongation queue in the component mesh.
+    std::queue<unsigned int> queue;
+    
     FOR_ELEMENTS(mesh, ele) {
         if (ele->dim() == 2 &&
             component_idx_[ele->index()] == (unsigned int)-1
         ){
             // start component
-            component_queue_.push(ele->index());
+            queue.push(ele->index());
 //             DBGCOUT(<< "start component at ele " << ele->index() << "\n");
             
-            while(!component_queue_.empty()){
-                unsigned int ele_idx = component_queue_.front();
+            while(!queue.empty()){
+                unsigned int ele_idx = queue.front();
                 component_idx_[ele_idx] = counter;
-                component_queue_.pop();
-                prolongate(mesh->element(ele_idx));
+                queue.pop();
+                prolongate(mesh->element(ele_idx), queue);
             }
             counter++;
         }
@@ -810,7 +800,7 @@ void InspectElementsAlgorithm22::create_component_numbering()
 //     }
 }
 
-void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele)
+void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue)
 {
     ASSERT(ele->dim() == 2);
     for(int sid=0; sid < ele->n_sides(); sid++) {
@@ -819,7 +809,7 @@ void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele)
         for(int j=0; j < edg->n_sides;j++) {
             ElementFullIter neigh = edg->side(j)->element();
             if (neigh != ele && component_idx_[neigh->index()] == (unsigned int)-1){
-                component_queue_.push(neigh->index());
+                queue.push(neigh->index());
             }
         }
     }
