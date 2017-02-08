@@ -70,7 +70,32 @@ double MixedMeshIntersections::measure_23()
         }
     return subtotal;
 } 
- 
+
+double MixedMeshIntersections::measure_22()
+{
+    double subtotal = 0.0;
+    double val;
+    
+    for(unsigned int i = 0; i < intersection_storage22_.size(); i++){
+        if(intersection_storage22_[i].size() > 1)
+        {
+            ElementFullIter eleA = mesh->element(intersection_storage22_[i].component_ele_idx());
+            ElementFullIter eleB = mesh->element(intersection_storage22_[i].bulk_ele_idx());
+            
+            arma::vec3 from = intersection_storage22_[i][0].coords(eleA);
+            arma::vec3 to = intersection_storage22_[i][1].coords(eleA);
+            val = arma::norm(from - to, 2);
+
+//             DebugOut().fmt("{}--{}:sublength from [{} {} {}] to [{} {} {}] = {}\n",
+//                eleA->id(), eleB->id(),
+//                from[0], from[1], from[2],
+//                to[0], to[1], to[2],
+//                val);
+            subtotal += val;
+        }
+    }
+    return subtotal;
+}
 
 template<unsigned int dim>
 void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim >& iea,
@@ -167,14 +192,18 @@ void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal<
                                                         &(storage.back())
                                                     ));
         
-            DebugOut().fmt("2D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
-            for(const IntersectionPointAux<2,2>& ip : is.points()) {
+//             DebugOut().fmt("2D-2D intersection [{} - {}]:\n",
+//                            mesh->element(is.component_ele_idx())->id(),
+//                            mesh->element(is.bulk_ele_idx())->id());
+//             for(const IntersectionPointAux<2,2>& ip : is.points()) {
 //                 DebugOut() << ip;
-                auto p = ip.coords(mesh->element(is.component_ele_idx()));
+//                 auto p = ip.coords(mesh->element(is.component_ele_idx()));
 //                 DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
-            }
+//             }
         }
     }
+    DBGVAR(algorithm22_.intersectionaux_storage22_.size());
+    DBGVAR(intersection_storage22_.size());
     END_TIMER("Intersection into storage");
 }
 
