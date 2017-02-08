@@ -43,8 +43,6 @@ class IntersectionAux{
     unsigned int component_element_idx_;
     /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
-    /// Index of the intersecting component.
-    unsigned int component_idx_;
     /// Flag for pathologic case.
     bool pathologic_;
     
@@ -67,12 +65,9 @@ public:
     /// Returns intersection point of given @p index.
     const IntersectionPointAux<dimA,dimB> &operator[](unsigned int index) const;
     
-    void set_component_idx(unsigned int comp_idx);
-    
     unsigned int size() const;              ///< Returns number of intersection points.
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
-    unsigned int component_idx() const;     ///< Returns index of component.
     unsigned int is_pathologic() const;      ///< Returns index of bulk element.
     
     /// Computes the relative measure of intersection object.
@@ -101,10 +96,6 @@ inline const IntersectionPointAux< dimA, dimB >& IntersectionAux<dimA,dimB>::ope
 {   ASSERT_DBG(index < i_points_.size());
     return i_points_[index]; }
 
-template<unsigned int dimA, unsigned int dimB>
-inline void IntersectionAux<dimA,dimB>::set_component_idx(unsigned int comp_idx)
-{   component_idx_ = comp_idx; }
-
     
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::size() const
@@ -117,10 +108,6 @@ inline unsigned int IntersectionAux<dimA,dimB>::component_ele_idx() const
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::bulk_ele_idx() const
 {   return bulk_element_idx_; }
-
-template<unsigned int dimA, unsigned int dimB>
-inline unsigned int IntersectionAux<dimA,dimB>::component_idx() const
-{   return component_idx_; }
 
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::is_pathologic() const

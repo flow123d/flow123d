@@ -49,7 +49,6 @@ void InspectElementsAlgorithm<dim>::init()
     closed_elements.assign(mesh->n_elements(), false);
     intersection_list_.assign(mesh->n_elements(),std::vector<IntersectionAux<dim,3>>());
     n_intersections_ = 0;
-    component_counter_ = 0;
     END_TIMER("Intersection initialization");
 }
 
@@ -92,9 +91,6 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
     last_slave_for_3D_elements[bulk_ele_idx] = component_ele_idx;
     
     if(is.points().size() > 0) {
-        
-        component_counter_++;
-        is.set_component_idx(component_counter_);
         intersection_list_[component_ele_idx].push_back(is);
         n_intersections_++;
         return true;
@@ -198,12 +194,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
-//                         component_counter_++;
-//                         DebugOut().fmt("comp: {}\n", component_counter_);
-
-//                         DebugOut().fmt("start/continue component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
-//                         DebugOut().fmt("start/continue component with elements {} {} [{}--{}]\n",
-//                                        elm->id(), ele_3D->id(), elm->region().label(), ele_3D->region().label());
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back());
                         
@@ -248,7 +238,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                         if(closed_elements[component_ele_idx])
                             break;
                     }
-
                 }
             }
             END_TIMER("Bounding box element iteration");
@@ -257,7 +246,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
 
     END_TIMER("Element iteration");
     
-    MessageOut().fmt("number of {}-dim components: {}\n", dim, component_counter_);
     MessageOut().fmt("number of {}-dim intersections: {}\n", dim, n_intersections_);
     // DBG write which elements are closed
 //     FOR_ELEMENTS(mesh, ele) {
@@ -394,9 +382,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
-//                         component_counter_++;
-                        //DebugOut().fmt("comp: {}\n", component_counter_);
-                        
                         //DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back());
@@ -533,7 +518,6 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
     
     // prepare empty intersection object
     IntersectionAux<dim,3> il_other(component_ele_idx, bulk_ele_idx);
-    il_other.set_component_idx(component_counter_);
     intersection_list_[component_ele_idx].push_back(il_other);
     
     Prolongation pr = {component_ele_idx, bulk_ele_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};

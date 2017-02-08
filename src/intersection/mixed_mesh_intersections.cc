@@ -26,13 +26,13 @@ MixedMeshIntersections::~MixedMeshIntersections()
 {}
 
 
-unsigned int MixedMeshIntersections::number_of_components(unsigned int dim)
-{
-    ASSERT(dim < 3);
-    if(dim == 1) return algorithm13_.component_counter_;
-    if(dim == 2) return algorithm23_.component_counter_;
-    return 0;
-}
+// unsigned int MixedMeshIntersections::number_of_components(unsigned int dim)
+// {
+//     ASSERT(dim < 3);
+//     if(dim == 1) return algorithm13_.component_counter_;
+//     if(dim == 2) return algorithm23_.component_counter_;
+//     return 0;
+// }
 
  
 double MixedMeshIntersections::measure_13()

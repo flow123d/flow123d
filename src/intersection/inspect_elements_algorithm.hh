@@ -115,7 +115,6 @@ private:
     
     /// Counter for intersection among elements.
     unsigned int n_intersections_;
-    unsigned int component_counter_;
     
     /// Prolongation queue in the component mesh.
     std::queue<Prolongation> component_queue_;

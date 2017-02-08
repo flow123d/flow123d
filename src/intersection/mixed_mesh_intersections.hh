@@ -94,7 +94,7 @@ public:
     
     // TODO: move following functions into common intersection test code.
     // Functions for tests.
-    unsigned int number_of_components(unsigned int dim);
+//     unsigned int number_of_components(unsigned int dim);
     
     /// Computes the size of the intersection in @p dim dimenstions.
     double measure_13();
