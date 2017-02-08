@@ -31,6 +31,8 @@
 #include "fem/fe_p.hh"
 #include "input/factory.hh"
 
+#include <memory>
+
 
 
 /**
@@ -114,20 +116,14 @@ private:
 	FE_P_disc<0,2,3> fe2;
 	FE_P_disc<0,3,3> fe3;
 
-    /// Raw buffer of n_entities rows each containing Value::size() doubles.
-	std::shared_ptr< std::vector<typename Value::element_type> > raw_data_;
-
 	/// mesh, which is interpolated
-	Mesh* source_mesh_;
+	std::shared_ptr<Mesh> source_mesh_;
 
 	/// mesh reader file
 	FilePath reader_file_;
 
 	/// field name read from input
 	std::string field_name_;
-
-	/// tree of mesh elements
-	BIHTree* bih_tree_;
 
 	/// stored index to last computed element
 	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();

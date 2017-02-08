@@ -20,12 +20,38 @@
 
 
 #include "mesh/msh_gmshreader.h"
+#include "mesh/mesh.h"
 #include "system/file_path.hh"
+
+#include <memory>
 
 
 /**
  * Auxiliary class to map filepaths to instances of readers.
  */
+class ReaderInstance {
+public:
+	struct ReaderData {
+		std::shared_ptr<GmshMeshReader> reader_;
+		std::shared_ptr<Mesh> mesh_;
+	};
+
+	typedef std::map< string, ReaderData > ReaderTable;
+
+	/**
+	 * Returns mesh and reader of given FilePath. If reader doesn't exist, creates its.
+	 */
+	static ReaderData get_instance(const FilePath &file_path);
+
+private:
+	/// Constructor
+	ReaderInstance() {};
+
+	/// Table of readers
+	ReaderTable reader_table_;
+};
+
+
 class ReaderInstances {
 public:
 	typedef std::map< string, std::shared_ptr<GmshMeshReader> > ReaderTable;

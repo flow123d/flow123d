@@ -315,13 +315,12 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 
 	// read mesh, create tree
     {
-       source_mesh_ = new Mesh( Input::Record() );
        reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
-       ReaderInstances::instance()->get_reader(reader_file_)->read_mesh( source_mesh_ );
+       auto reader_data = ReaderInstance::get_instance(reader_file_);
+       source_mesh_ = reader_data.mesh_;
+       source_mesh_->get_bih_tree(); // only create BIH tree
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
-
-	bih_tree_ = new BIHTree( source_mesh_ );
 
 	field_name_ = rec.val<std::string>("field_name");
 
@@ -375,7 +374,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
     FOR_ELEMENTS( dh_->mesh(), ele ) {
     	searched_elements_.clear();
-    	((BIHTree *)bih_tree_)->find_point(ele->centre(), searched_elements_);
+    	source_mesh_->get_bih_tree().find_point(ele->centre(), searched_elements_);
     	found_point_.SetCoord( ele->centre()(0), ele->centre()(1), ele->centre()(2) );
     	std::fill(sum_val.begin(), sum_val.end(), 0.0);
     	std::fill(elem_count.begin(), elem_count.end(), 0);

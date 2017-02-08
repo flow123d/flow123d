@@ -16,6 +16,25 @@
  */
 
 #include "mesh/reader_instances.hh"
+#include "input/accessors.hh"
+
+
+ReaderInstance::ReaderData ReaderInstance::get_instance(const FilePath &file_path) {
+	static ReaderInstance *instance = new ReaderInstance;
+
+	ReaderTable::iterator it = instance->reader_table_.find( string(file_path) );
+	if (it == instance->reader_table_.end()) {
+		ReaderData reader_data;
+		reader_data.reader_ = std::make_shared<GmshMeshReader>(file_path);
+		reader_data.mesh_ = std::make_shared<Mesh>( Input::Record() );
+		reader_data.reader_->read_mesh( reader_data.mesh_.get() );
+		instance->reader_table_.insert( std::pair<string, ReaderData>(string(file_path), reader_data) );
+		return reader_data;
+	} else {
+		return (*it).second;
+	}
+}
+
 
 ReaderInstances * ReaderInstances::instance() {
 	static ReaderInstances *instance = new ReaderInstances;
