@@ -54,8 +54,7 @@ public:
     IntersectionAux();
     /// Constructor taking in element indices.
     IntersectionAux(unsigned int component_element_idx,
-                    unsigned int bulk_element_idx,
-                    unsigned int component_idx = 0);
+                    unsigned int bulk_element_idx);
     /// Destructor.
     virtual ~IntersectionAux();
 
@@ -67,6 +66,8 @@ public:
     
     /// Returns intersection point of given @p index.
     const IntersectionPointAux<dimA,dimB> &operator[](unsigned int index) const;
+    
+    void set_component_idx(unsigned int comp_idx);
     
     unsigned int size() const;              ///< Returns number of intersection points.
     unsigned int component_ele_idx() const; ///< Returns index of component element.
@@ -100,6 +101,11 @@ inline const IntersectionPointAux< dimA, dimB >& IntersectionAux<dimA,dimB>::ope
 {   ASSERT_DBG(index < i_points_.size());
     return i_points_[index]; }
 
+template<unsigned int dimA, unsigned int dimB>
+inline void IntersectionAux<dimA,dimB>::set_component_idx(unsigned int comp_idx)
+{   component_idx_ = comp_idx; }
+
+    
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::size() const
 {   return i_points_.size(); }

@@ -80,10 +80,9 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
 
 template<unsigned int dim> 
 bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_ele_idx,
-                                                       unsigned int bulk_ele_idx,
-                                                       unsigned int component_idx)
+                                                       unsigned int bulk_ele_idx)
 {
-    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, component_idx);
+    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
@@ -94,6 +93,8 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
     
     if(is.points().size() > 0) {
         
+        component_counter_++;
+        is.set_component_idx(component_counter_);
         intersection_list_[component_ele_idx].push_back(is);
         n_intersections_++;
         return true;
@@ -148,9 +149,6 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
             bih.find_bounding_box(bih.ele_bounding_box(component_ele_idx), searchedElements);
             END_TIMER("BIHtree find");
 
-//             component_counter_++;
-//             DebugOut().fmt("comp: {}\n", component_counter_);
-            
             START_TIMER("Bounding box element iteration");
             
             // Go through all element which bounding box intersects the component element bounding box
@@ -194,17 +192,18 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     bool found = compute_initial_CI(component_ele_idx,
-                                                    bulk_ele_idx,
-                                                    component_counter_);
+                                                    bulk_ele_idx);
 
                     // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
-                        component_counter_++;
-                        DebugOut().fmt("comp: {}\n", component_counter_);
-                        
-                        //DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
+//                         component_counter_++;
+//                         DebugOut().fmt("comp: {}\n", component_counter_);
+
+//                         DebugOut().fmt("start/continue component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
+//                         DebugOut().fmt("start/continue component with elements {} {} [{}--{}]\n",
+//                                        elm->id(), ele_3D->id(), elm->region().label(), ele_3D->region().label());
                         
                         prolongation_decide(elm, ele_3D, intersection_list_[component_ele_idx].back());
                         
@@ -258,6 +257,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
 
     END_TIMER("Element iteration");
     
+    MessageOut().fmt("number of {}-dim components: {}\n", dim, component_counter_);
+    MessageOut().fmt("number of {}-dim intersections: {}\n", dim, n_intersections_);
     // DBG write which elements are closed
 //     FOR_ELEMENTS(mesh, ele) {
 //         DebugOut().fmt("Element[{}] closed: {}\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
@@ -302,7 +303,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                     
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     
-                    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, 0);
+                    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
                     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
                     CI.init();
@@ -387,14 +388,13 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                     update_simplex(elm, component_simplex); // update component simplex
                     update_simplex(ele_3D, tetrahedron); // update tetrahedron
                     bool found = compute_initial_CI(component_ele_idx,
-                                                    bulk_ele_idx,
-                                                    component_counter_);
+                                                    bulk_ele_idx);
 
                     // keep the index of the current component element that is being investigated
                     unsigned int current_component_element_idx = component_ele_idx;
                     
                     if(found){
-                        component_counter_++;
+//                         component_counter_++;
                         //DebugOut().fmt("comp: {}\n", component_counter_);
                         
                         //DebugOut().fmt("start component with elements {} {}\n",component_ele_idx, bulk_ele_idx);
@@ -533,6 +533,7 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
     
     // prepare empty intersection object
     IntersectionAux<dim,3> il_other(component_ele_idx, bulk_ele_idx);
+    il_other.set_component_idx(component_counter_);
     intersection_list_[component_ele_idx].push_back(il_other);
     
     Prolongation pr = {component_ele_idx, bulk_ele_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};
@@ -567,8 +568,10 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             // search for indices of neighboring component elements (including the current one)
             std::vector<unsigned int> comp_neighbors = get_element_neighbors<dim>(comp_ele,IP.dim_A(), IP.idx_A());
             
+//             DBGCOUT( << comp_ele->id() << "--" << bulk_ele->id() << ":    ");
 //             for(unsigned int& comp_neighbor_idx : comp_neighbors)
-//                 DebugOut() << comp_neighbor_idx << "  ";
+//                 cout << mesh->element(comp_neighbor_idx)->id() << "  ";
+//             cout << "\n";
             
             unsigned int bulk_current = bulk_ele->index();
             
@@ -585,8 +588,11 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             
             // search for indices of neighboring bulk elements (including the current one)
             std::vector<unsigned int> bulk_neighbors = get_element_neighbors<3>(bulk_ele,IP.dim_B(),IP.idx_B());
-//                 for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
-//                     DebugOut() << bulk_neighbor_idx << "  ";
+            
+//             DBGCOUT( << comp_ele->id() << "--" << bulk_ele->id() << ":    ");
+//             for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
+//                 cout << mesh->element(bulk_neighbor_idx)->id() << "  ";
+//             cout << "\n";
             
             unsigned int comp_current = comp_ele->index();
             unsigned int n_prolongations = 0;
@@ -657,9 +663,15 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     if(is.size() > 0){
 //         for(unsigned int j=0; j < is.size(); j++) 
 //             DebugOut() << is[j];
+//         DebugOut().fmt("intersection of elements {} {} [{}--{}] size {}\n",
+//                        elm->id(), ele_3D->id(),
+//                        elm->region().label(), ele_3D->region().label(),
+//                        is.size()
+//                       );
         
         prolongation_decide(elm, ele_3D,is);
         n_intersections_++;
+//         DBGVAR(n_intersections_);
     }
     else{
         // NOTE: we get here, when create_prolongation creates an empty intersection
@@ -729,7 +741,10 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 //                 }
 //                 if(is_not_neighbor) continue;
                 
-                DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
+//                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
+//                                eleA.index(), eleB.index(), componentA_idx, componentB_idx);
+//                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
+//                                eleA.id(), eleB.id(), componentA_idx, componentB_idx);
                 compute_single_intersection(eleA,
                                             eleB);
             }
@@ -748,14 +763,16 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     update_simplex(eleA, triaA_);
     update_simplex(eleB, triaB_);
     
-    IntersectionAux<2,2> is(eleA->index(), eleB->index(), 0);
+    IntersectionAux<2,2> is(eleA->index(), eleB->index());
     
     ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
-    if(n_local_intersection > 0)
+    if(n_local_intersection > 0){
         intersectionaux_storage22_.push_back(is);
+    }
+
 }
 
 
@@ -817,7 +834,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
                 update_simplex(eleA, abscissa_);
                 update_simplex(eleB, triangle_);
                 
-                IntersectionAux<1,2> is(eleA_idx, eleB_idx, 0);
+                IntersectionAux<1,2> is(eleA_idx, eleB_idx);
                 
                 ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
                 unsigned int n_local_intersection = CI.compute_final(is.points());
@@ -907,7 +924,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
                 if (ele_2D->dim() == 2) { 
                     update_simplex(ele_2D, triangle_); // update triangle
                     
-                    IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx, 0);
+                    IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
                     ComputeIntersection<Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
                     CI.compute_final(is.points());

@@ -154,7 +154,7 @@ private:
     bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
     /// Computes the first intersection, from which we then prolongate.
-    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx, unsigned int component_idx);
+    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
