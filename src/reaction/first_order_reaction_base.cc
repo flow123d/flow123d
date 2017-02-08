@@ -109,7 +109,7 @@ double **FirstOrderReactionBase::compute_reaction(double **concentrations, int l
 
 void FirstOrderReactionBase::update_solution(void)
 {
-    //DBGMSG("FirstOrderReactionBases - update solution\n");
+    //DebugOut() << "FirstOrderReactionBases - update solution\n";
     if(time_->is_changed_dt())
     {
         linear_ode_solver_->set_step(time_->dt());
@@ -138,7 +138,7 @@ bool FirstOrderReactionBase::evaluate_time_constraint(double &time_constraint)
 {
     if (!linear_ode_solver_->evaluate_time_constraint(time_constraint)) return false;
     
-    DBGMSG("CFL constraint(first order reaction): %g.\n", time_constraint);
+    DebugOut().fmt("CFL constraint(first order reaction): {}.\n", time_constraint);
     
     return true;
 }

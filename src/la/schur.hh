@@ -73,6 +73,13 @@ public:
      */
     SchurComplement(SchurComplement &other);
 
+    void set_tolerances(double  r_tol, double a_tol, unsigned int max_it) override;
+
+    /**
+     * Sets specific parameters defined by user in input file and used to calculate. Call set_from_input of complement
+     */
+    void set_from_input(const Input::Record in_rec) override;
+
     /**
      * Returns pointer to LinSys object representing the schur complement.
      */
@@ -104,8 +111,24 @@ public:
 
     /**
      * Solve the system.
+     *
+     * - If matrix and/or rhs is changed the Schur complement is formed.
+     * - The inner linear solver is called for the Schur complement
+     * - Resolve is called to reconstruct eliminated part of the solution vector.
      */
     int solve() override;
+
+    /**
+     * Only resolve the system with current solution vector. This is necessary for nonlinear solvers.
+     * - If matrix and/or rhs is changed the Schur complement is formed.
+     * - Resolve is called to reconstruct eliminated part of the solution vector.
+     */
+    void resolve();
+
+    /**
+     * The solve or resolve must be called prior to computing the residual.
+     */
+    double compute_residual() override;
 
 protected:
     /// create IA matrix
@@ -113,7 +136,7 @@ protected:
 
     void form_schur();
 
-    void resolve();
+
 
     Mat IA;                     // Inverse of block A
 

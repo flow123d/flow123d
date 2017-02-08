@@ -106,6 +106,9 @@ public:
     /// Get set of keys of head type record, if head type is not record return false
     virtual bool get_record_key_set(std::set<std::string> &) const =0;
 
+    /// Check empty Input Type Record, necessary for correct proccess of YAML output, for JSON has no effect
+    virtual bool is_effectively_null() const =0;
+
     /// Get size of array (sequence type), if object is not array return -1
     virtual int get_array_size() const =0;
 
@@ -139,14 +142,14 @@ public:
     std::string as_string() const;
 
     /**
-     * @brief Gets name of descendant of Abstract.
+     * @brief Gets name of descendant Record of Abstract.
      *
      * - for JSON returns value of TYPE key
      * - for YAML returns value of tag
      *
      * If descendant name is not found returns empty string.
      */
-    virtual std::string get_descendant_name() const =0;
+    virtual std::string get_record_name() const =0;
 
 protected:
     /// Forbid default constructor.

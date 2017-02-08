@@ -32,7 +32,6 @@
 #include <boost/type_traits.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/static_assert.hpp>
-//#include <boost/shared_ptr.hpp>
 
 #include "system/system.hh"
 #include "system/exceptions.hh"
@@ -44,6 +43,22 @@
 #include "input/input_exception.hh"
 
 
+
+
+
+/****************************************************************
+ * Definition of macro that allows catch exception and adds address to given error info tag.
+ *
+ * Parameters:
+ *  - ExceptionType: type of exception must be descendant of ExceptionBase
+ *  - AddressEITag: error info tag of string type
+ *  - input_accessor: accessor must be in non-pointer format and have to declare method address_string()
+ */
+#define INPUT_CATCH(ExceptionType, AddressEITag, input_accessor)    \
+		catch (ExceptionType &e ) {                                 \
+			e << AddressEITag(input_accessor.address_string());     \
+			throw;                                                  \
+		}
 
 
 
@@ -148,7 +163,7 @@ protected:
         /**
          * Pointer to data of parent node in the address tree
          */
-    	boost::shared_ptr<AddressData> parent_;
+    	std::shared_ptr<AddressData> parent_;
         /**
          * Index in StorageArray of the parent_ to get actual node.
          */
@@ -219,7 +234,7 @@ protected:
     /**
      * Shared part of address.
      */
-    boost::shared_ptr<AddressData> data_;
+    std::shared_ptr<AddressData> data_;
 
 
 };

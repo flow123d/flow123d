@@ -32,6 +32,7 @@
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
+#include <boost/filesystem.hpp>
 
 #include "main.h"
 
@@ -76,11 +77,11 @@ it::Record & Application::get_input_type() {
 
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
-  main_input_dir_("."),
   main_input_filename_(""),
-  passed_argc_(0),
-  passed_argv_(0),
-  use_profiler(true)
+  //passed_argc_(0),
+  //passed_argv_(0),
+  use_profiler(true),
+  yaml_balance_output_(false)
 {
     // initialize python stuff if we have
     // nonstandard python home (release builds)
@@ -88,21 +89,6 @@ Application::Application( int argc,  char ** argv)
     PythonLoader::initialize(argv[0]);
 #endif
 
-}
-
-
-void Application::split_path(const string& path, string& directory, string& file_name) {
-
-    size_t delim_pos=path.find_last_of(DIR_DELIMITER);
-    if (delim_pos < string::npos) {
-
-        // It seems, that there is some path in fname ... separate it
-        directory =path.substr(0,delim_pos);
-        file_name =path.substr(delim_pos+1); // till the end
-    } else {
-        directory = ".";
-        file_name = path;
-    }
 }
 
 
@@ -126,14 +112,10 @@ void Application::display_version() {
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    xprintf(Msg, "This is Flow123d, version %s revision: %s\n",
-            rev_num_data.version.c_str(),
-            rev_num_data.revision.c_str());
-    xprintf(Msg,
-    	 "Branch: %s\n"
-		 "Build: %s\n"
-		 "Fetch URL: %s\n",
-		 rev_num_data.branch.c_str(), build.c_str() , rev_num_data.url.c_str() );
+    MessageOut().fmt("This is Flow123d, version {} revision: {}\n",
+            rev_num_data.version, rev_num_data.revision);
+    MessageOut().fmt("Branch: {}\nBuild: {}\nFetch URL: {}\n",
+		 rev_num_data.branch, build, rev_num_data.url );
     Profiler::instance()->set_program_info("Flow123d",
             rev_num_data.version, rev_num_data.branch, rev_num_data.revision, build);
 }
@@ -162,7 +144,6 @@ Input::Record Application::read_input() {
 
 
 
-
 void Application::parse_cmd_line(const int argc, char ** argv) {
 	namespace po = boost::program_options;
 
@@ -177,20 +158,31 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
         ("no_log", "Turn off logging.")
+        ("no_signal_handler", "Turn off signal handling. Useful for debugging with valgrind.")
         ("no_profiler", "Turn off profiler output.")
-        ("JSON_machine", po::value< string >(), "Writes full structure of the main input file as a valid CON file into given file")
-        ("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.");
+        ("input_format", po::value< string >(), "Writes full structure of the main input file into given file.")
+		("petsc_redirect", po::value<string>(), "Redirect all PETSc stdout and stderr to given file.")
+		("yaml_balance", "Redirect balance output to YAML format too (simultaneously with the selected balance output format).");
 
     ;
 
+    // Can not use positional arguments together with PETSC options.
+    // Use our own solution trying to use the first unrecognized option as the main input file.
+
     // parse the command line
     po::variables_map vm;
-    po::parsed_options parsed = po::basic_command_line_parser<char>(argc, argv).options(desc).allow_unregistered().run();
+    auto parser = po::basic_command_line_parser<char>(argc, argv)
+            .options(desc)
+            .allow_unregistered();
+    po::parsed_options parsed = parser.run();
     po::store(parsed, vm);
     po::notify(vm);
 
     // get unknown options
     vector<string> to_pass_further = po::collect_unrecognized(parsed.options, po::include_positional);
+
+
+    /*
     passed_argc_ = to_pass_further.size();
     passed_argv_ = new char * [passed_argc_+1];
 
@@ -202,9 +194,15 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         passed_argv_[arg_i++] = xstrcpy( to_pass_further[i].c_str() );
     }
     passed_argc_ = arg_i;
+    */
 
     // if there is "help" option
     if (vm.count("help")) {
+        display_version();
+        cout << endl;
+        cout << "Usage:" << endl;
+        cout << "   flow123d -s <main_input>.yaml <other options> <PETSC options>" << endl;
+        cout << "   flow123d <main_input>.yaml <other options> <PETSC options>" << endl;
         cout << desc << "\n";
         exit( exit_output );
     }
@@ -214,30 +212,17 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     	exit( exit_output );
     }
 
-    // if there is "full_doc" option
-    /*if (vm.count("full_doc")) {
-        Input::Type::TypeBase::lazy_finish();
-        Input::Type::OutputText type_output(&get_input_type());
-        type_output.set_filter(":Field:.*");
-        cout << type_output;
-        exit( exit_output );
-    }*/
-
-    // if there is "JSON_machine" option
-    if (vm.count("JSON_machine")) {
+    // if there is "input_format" option
+    if (vm.count("input_format")) {
         // write ist to json file
-        string json_filename = vm["JSON_machine"].as<string>();
-        ofstream json_stream(json_filename);
-        // check open operation
-        if (json_stream.fail()) {
-    		cerr << "Failed to open file '" << json_filename << "'" << endl;
-        } else {
-            // create the root Record
-            it::Record root_type = get_input_type();
-            Input::Type::TypeBase::lazy_finish();
-            json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
-            json_stream.close();
-        }
+        ofstream json_stream;
+        FilePath(vm["input_format"].as<string>(), FilePath::output_file).open_stream(json_stream);
+        // create the root Record
+        it::Record root_type = get_input_type();
+        root_type.finish();
+        Input::Type::TypeBase::delete_unfinished_types();
+        json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
+        json_stream.close();
         exit( exit_output );
     }
 
@@ -245,14 +230,35 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         this->petsc_redirect_file_ = vm["petsc_redirect"].as<string>();
     }
 
-    // if there is "solve" option
-    if (vm.count("solve")) {
-        string input_filename = vm["solve"].as<string>();
-        split_path(input_filename, main_input_dir_, main_input_filename_);
+    if (vm.count("no_signal_handler")) {
+        this->signal_handler_off_ = true;
     }
+
+    // if there is "solve" option
+    string input_filename = "";
+
+    // check for positional main input file
+    if (to_pass_further.size()) {
+        string file_candidate = to_pass_further[0];
+        if (file_candidate[0] != '-') {
+            // pop the first option
+            input_filename = file_candidate;
+            to_pass_further.erase(to_pass_further.begin());
+        }
+    }
+
+    if (vm.count("solve")) {
+        input_filename = vm["solve"].as<string>();
+    }
+
+    if (input_filename == "")
+        THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
     // possibly turn off profilling
     if (vm.count("no_profiler")) use_profiler=false;
+
+    // preserves output of balance in YAML format
+    if (vm.count("yaml_balance")) yaml_balance_output_=true;
 
     string input_dir;
     string output_dir;
@@ -264,7 +270,12 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
 
     // assumes working directory "."
-    FilePath::set_io_dirs(".", main_input_dir_, input_dir, output_dir );
+    try {
+        main_input_filename_ = FilePath::set_dirs_from_input(input_filename, input_dir, output_dir );
+    } catch (FilePath::ExcMkdirFail &e) {
+        use_profiler = false; // avoid profiler output
+        throw e;
+    }
 
     if (vm.count("log")) {
         this->log_filename_ = vm["log"].as<string>();
@@ -318,8 +329,8 @@ void Application::run() {
         }
 
         if ( iver_fields[0] != ver_fields[0] || iver_fields[1] > ver_fields[1] ) {
-            xprintf(Warn, "Input file with version: '%s' is no compatible with the program version: '%s' \n",
-                    input_version.c_str(), version.c_str());
+        	WarningOut().fmt("Input file with version: '{}' is no compatible with the program version: '{}' \n",
+                    input_version, version);
         }
 
         // should flow123d wait for pressing "Enter", when simulation is completed
@@ -356,6 +367,23 @@ void Application::after_run() {
 
 
 Application::~Application() {
+	// remove balance output files in YAML format if "yaml_balance" option is not set
+	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
+		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );
+		boost::filesystem::path water_file( string(FilePath("water_balance.yaml", FilePath::output_file)) );
+		boost::filesystem::path energy_file( string(FilePath("energy_balance.yaml", FilePath::output_file)) );
+
+		if (boost::filesystem::exists(mass_file)) {
+		    boost::filesystem::remove(mass_file);
+		}
+		if (boost::filesystem::exists(water_file)) {
+		    boost::filesystem::remove(water_file);
+		}
+		if (boost::filesystem::exists(energy_file)) {
+		    boost::filesystem::remove(energy_file);
+		}
+	}
+
     if (use_profiler) {
         if (petsc_initialized) {
             // log profiler data to this stream
@@ -384,10 +412,10 @@ int main(int argc, char **argv) {
         Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
-        std::cerr << e.what();
+        _LOG( Logger::MsgType::error ) << e.what();
         return ApplicationBase::exit_failure;
     } catch (...) {
-        std::cerr << "Unknown exception" << endl;
+        _LOG( Logger::MsgType::error ) << "Unknown exception" << endl;
         return ApplicationBase::exit_failure;
     }
 

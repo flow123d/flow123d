@@ -105,14 +105,15 @@ TEST(OutputTypeTypeBase, record_output_test) {
         sel.close();
     }
 
-    Record main("MainRecord", "The main record of flow.");
-    main.declare_key("array_of_records", Array(output_record), Default::obligatory(), "Array of output streams.");
-    main.declare_key("record_record", record_record, "no comment on record_record");
-    main.declare_key("color", sel, "My favourite color.");
-    main.declare_key("color1", sel, "My second favourite color.");
-    main.declare_key("array_record", array_record, "no commment on array_record");
-    main.declare_key("time", tuple, "Time stepping management");
-    main.close();
+    Record main = Record("MainRecord", "The main record of flow.")
+    	.declare_key("array_of_records", Array(output_record), Default::obligatory(), "Array of output streams.")
+		.declare_key("record_record", record_record, "no comment on record_record")
+		.declare_key("color", sel, "My favourite color.")
+		.declare_key("color1", sel, "My second favourite color.")
+		.declare_key("array_record", array_record, "no commment on array_record")
+    	.declare_key("time", tuple, "Time stepping management")
+    	.close();
+    main.finish();
 
     cout << "## " << "OutputText printout" << endl;
     cout << OutputText(&main) << endl << endl;
@@ -133,6 +134,7 @@ TEST(OutputTypeAbstract, abstract_record_test) {
 	Abstract &a_ref = a_rec.allow_auto_conversion("EqDarcy").close();
     EXPECT_EQ( a_rec, a_ref);
 
+
     // test derived type
     Record b_rec = Record("EqDarcy","test derived type and reducible key")
     	.derive_from(a_rec)
@@ -147,13 +149,15 @@ TEST(OutputTypeAbstract, abstract_record_test) {
     	.declare_key("c_val", Integer(), "")
     	.declare_key("a_val", Double(),"")
 		.close();
+    a_rec.finish();
+    TypeBase::delete_unfinished_types();
 
     cout << "## " << "OutputText printout" << endl;
     cout << OutputText( &b_rec);
     cout << OutputText( &c_rec);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(get_rev_num_data()) << endl;
+    cout << OutputJSONMachine( /* *(&c_rec),*/ get_rev_num_data()) << endl;
 }
 
 
@@ -177,13 +181,11 @@ TEST(OutputTypeAbstract, ad_hoc_abstract_test) {
     	.close();
 
     Record d_rec = Record("D_Record", "Test record.")
-		.declare_key("TYPE", String(), Default("\"D_Record\""), "Type of problem")
     	.declare_key("d_val", Integer(), Default("1"), "")
     	.declare_key("pause", Bool(), Default("false"), "")
     	.close();
 
     Record e_rec = Record("E_Record", "Test record.")
-    	.declare_key("TYPE", String(), Default("\"E_Record\""), "Type of problem")
     	.declare_key("e_val", String(), Default("\"Some value\""), "")
     	.declare_key("pause", Bool(), Default("false"), "")
     	.close();
@@ -198,12 +200,14 @@ TEST(OutputTypeAbstract, ad_hoc_abstract_test) {
     	.declare_key("problem", adhoc_rec, Default::obligatory(), "Base problem")
     	.declare_key("pause", Bool(), Default("false"), "")
     	.close();
+    a_rec.finish();
+    root_rec.finish();
 
     cout << "## " << "OutputText printout";
     cout << OutputText( &root_rec) << endl;
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(get_rev_num_data()) << endl;
+    cout << OutputJSONMachine( *(&root_rec), get_rev_num_data()) << endl;
 }
 
 
@@ -222,13 +226,14 @@ TEST(OutputTypeArray, array_of_array_test) {
         array_record.declare_key("data_description", String(), Default::optional(),
                 "");
         array_record.close();
+        array_record.finish();
     }
 
     cout << "## " << "OutputText printout" << endl;
     cout << OutputText(&array_record) << endl;
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(get_rev_num_data()) << endl;
+    cout << OutputJSONMachine( *(&array_record), get_rev_num_data()) << endl;
 }
 
 
@@ -246,7 +251,8 @@ TEST(OutputTypeParameter, parameter_test) {
 
 	static Instance inst = Instance(param_record, param_vec)
 								.close();
+	inst.finish(FinishStatus::generic_);
 
     cout << endl << "## " << "OutputJSONMachine printout" << endl;
-    cout << OutputJSONMachine(get_rev_num_data()) << endl;
+    cout << OutputJSONMachine(/* *(&param_record),*/ get_rev_num_data()) << endl;
 }

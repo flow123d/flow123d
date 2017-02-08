@@ -16,86 +16,138 @@
  */
 
 #include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <fstream>
 
 #include "file_path.hh"
 #include "system.hh"
+#include <type_traits>
+
+
+
+/**
+ * Helper method, create path string from vector of strings
+ */
+string create_path_from_vec(vector<string> sub_paths) {
+	ASSERT_GT(sub_paths.size(), 0).error();
+
+	if (sub_paths.size() == 1) {
+		return sub_paths[0];
+	} else {
+		boost::filesystem::path path = sub_paths[0];
+		for (unsigned int i=1; i<sub_paths.size(); ++i)
+			path = path / sub_paths[i];
+		return path.string();
+	}
+}
 
 
 // static data members
 map<string,string> FilePath::placeholder;
-string FilePath::output_dir="";
-string FilePath::root_dir="";
+std::shared_ptr<boost::filesystem::path> FilePath::output_dir=std::make_shared<boost::filesystem::path>(".");
+std::shared_ptr<boost::filesystem::path> FilePath::root_dir=std::make_shared<boost::filesystem::path>(".");
+
 
 FilePath::FilePath(string file_path, const  FileType ft)
 : file_type_(ft)
 {
-	abs_file_path_ = file_path;
-    if (output_dir == "") {
-        xprintf(Warn, "Creating FileName object before set_io_dirs is called. No file path resolving.\n");
+    if (*output_dir == boost::filesystem::path(".")) {
+    	WarningOut() << "Creating FileName object before set_io_dirs is called. No file path resolving." << std::endl;
+    	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
         return;
     }
 
-    substitute_value();
+    bool is_abs_path = boost::filesystem::path( convert_for_check_absolute(file_path) ).is_absolute();
+    substitute_value(file_path);
+	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
     if (ft == input_file) {
-    	if ( FilePath::is_absolute_path(abs_file_path_) ) {
+    	if ( is_abs_path ) {
     	} else {
-            abs_file_path_ = root_dir + DIR_DELIMITER + abs_file_path_;
+            abs_file_path_ = std::make_shared<boost::filesystem::path>(*root_dir / file_path);
     	}
     } else if (ft == output_file) {
-        if ( FilePath::is_absolute_path(abs_file_path_) ) {
-            if (abs_file_path_.substr(0, output_dir.size()) == output_dir) {
-            	abs_file_path_=abs_file_path_.substr(output_dir.size()+1);
+        if ( is_abs_path ) {
+            if (abs_file_path_->string().substr(0, output_dir->string().size()) == output_dir->string()) {
+            	abs_file_path_ = std::make_shared<boost::filesystem::path>( abs_file_path_->string().substr(output_dir->string().size()+1) );
             } else {
-                THROW( ExcAbsOutputPath() << EI_Path( abs_file_path_ ) );
+                THROW( ExcAbsOutputPath() << EI_Path( abs_file_path_->string() ) );
             }
         }
-        abs_file_path_ = output_dir + DIR_DELIMITER + abs_file_path_;
+        abs_file_path_ = std::make_shared<boost::filesystem::path>(*output_dir / *abs_file_path_);
     }
 
 }
 
 
+FilePath::FilePath(vector<string> sub_paths, const  FileType ft)
+: FilePath(create_path_from_vec(sub_paths), ft) {}
 
-void FilePath::set_io_dirs(const string working_dir, const string root_input_dir,const string input,const string output) {
+
+FilePath::FilePath(string file_path)
+: FilePath(file_path, FilePath::output_file) {}
+
+
+FilePath::FilePath()
+    : abs_file_path_( std::make_shared<boost::filesystem::path>("/__NO_FILE_NAME_GIVEN__") ),
+      file_type_(output_file)
+{}
+
+
+
+void FilePath::set_io_dirs(const string working_dir, const string root, const string input, const string output) {
+	ASSERT_EQ(working_dir, ".").error();
+    FilePath::set_dirs(root, input, output);
+}
+
+
+void FilePath::set_dirs(const string root, const string input, const string output) {
     // root directory
-    root_dir = root_input_dir;
+	if (boost::filesystem::path( convert_for_check_absolute(root) ).is_absolute()) {
+		root_dir = std::make_shared<boost::filesystem::path>(root);
+	} else {
+		boost::filesystem::path abs_root_path = boost::filesystem::canonical( boost::filesystem::current_path() / root );
+		root_dir = std::make_shared<boost::filesystem::path>(abs_root_path);
+	}
 
-    // relative output dir is relative to working directory
-    // this is possibly independent of position of the main input file
-	output_dir = "";
-    if ( FilePath::is_absolute_path(output) ) {
-    	vector<string> dirs;
-    	boost::split(dirs, output,  boost::is_any_of("/"));
-    	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
-    	    if ( !(*it).size() ) continue;
-    	    if ( !output_dir.size() ) {
-#ifdef FLOW123D_HAVE_CYGWIN
-    	    	output_dir = (*it);
-#else
-    	    	output_dir = DIR_DELIMITER + *it;
-#endif // FLOW123D_HAVE_CYGWIN
-    	    } else {
-            	output_dir = output_dir + DIR_DELIMITER + *it;
-    	    }
-    	    FilePath::create_dir(output_dir);
-        }
+	// set output directory
+	// if param output is absolute output_dir = output
+	// else output_dir = root / output
+	// the resulting relative path is always completed to absulute path
+	boost::filesystem::path full_output_path;
+    if ( !boost::filesystem::path( convert_for_check_absolute(output) ).is_absolute() ) {
+    	if (boost::filesystem::path( convert_for_check_absolute(root) ).is_absolute()) {
+    		full_output_path = boost::filesystem::path(root) / output;
+
+    		create_dir(full_output_path);
+    	} else {
+    		boost::filesystem::path output_path = boost::filesystem::path(root) / output;
+    		create_dir( output_path );
+    		full_output_path = boost::filesystem::canonical( boost::filesystem::current_path() / output_path);
+    	}
     } else {
-    	vector<string> dirs;
-    	string full_output = working_dir + DIR_DELIMITER + output;
-    	boost::split(dirs, full_output, boost::is_any_of("/"));
-    	for (vector<string>::iterator it = dirs.begin(); it != dirs.end(); ++it) {
-    	    if ( !(*it).size() ) continue;
-    	    if ( !output_dir.size() ) output_dir = *it;
-    	    else output_dir = output_dir + DIR_DELIMITER + *it;
-    	    FilePath::create_dir(output_dir);
-        }
-
-    	FilePath::create_canonical_path(working_dir, output);
+    	full_output_path = boost::filesystem::path(output);
+    	create_dir(full_output_path);
     }
+	output_dir = std::make_shared<boost::filesystem::path>( full_output_path );
 
-    // the relative input is relative to the directory of the main input file
+	// the relative input is relative to the directory of the main input file
     add_placeholder("${INPUT}", input);
+}
+
+
+string FilePath::set_dirs_from_input(const string main_yaml, const string input, const string output) {
+	boost::filesystem::path input_path;
+	if ( !boost::filesystem::path( convert_for_check_absolute(main_yaml) ).is_absolute() ) {
+    	input_path = boost::filesystem::path(".") / main_yaml;
+    } else {
+    	input_path = boost::filesystem::path(main_yaml);
+    }
+    if (! boost::filesystem::exists(input_path))
+        THROW(ExcFileOpen() << EI_Path(input_path.string()));
+
+	FilePath::set_dirs(input_path.parent_path().string(), input, output);
+
+
+    return input_path.filename().string();
 }
 
 
@@ -105,70 +157,116 @@ void FilePath::add_placeholder(string key,string value) {
 }
 
 
-void FilePath::substitute_value() {
+void FilePath::substitute_value(string &path) {
     for (std::map<std::string,std::string>::const_iterator it = this->placeholder.begin(); it != this->placeholder.end(); ++it) {
-        size_t i = abs_file_path_.find(it->first,0);
+        size_t i = path.find(it->first,0);
         if (i != std::string::npos) {
-            if (it->second == "" ) xprintf(Warn, "Substituting placeholder %s with empty value.\n", it->first.c_str());
-            abs_file_path_.replace(i, it->first.size(), it->second);
+            ASSERT(it->second != "")(it->first).warning("Substituting placeholder with empty value.");
+            path.replace(i, it->first.size(), it->second);
         }
     }
 }
 
 
-bool FilePath::is_absolute_path(const string path) {
-	if (path.size() == 0) xprintf(UsrErr, "Path can't be empty!\n");
-#ifdef FLOW123D_HAVE_CYGWIN
-	if (path.size() == 1) return false;
-	return isalpha(path[0]) && (path[1] == ':');
-#else
-	return path[0] == DIR_DELIMITER;
-#endif // FLOW123D_HAVE_CYGWIN
-}
-
-
 const string FilePath::get_absolute_working_dir() {
-    string abs_path = boost::filesystem::current_path().string() + "/";
-#ifdef FLOW123D_HAVE_CYGWIN
-    boost::replace_all(abs_path, "\\", "/");
-#endif // FLOW123D_HAVE_CYGWIN
-	return abs_path;
+	return boost::filesystem::current_path().string() + "/";
 }
-
 
 
 void FilePath::create_output_dir() {
     if (file_type_ == output_file) {
-        boost::filesystem::create_directories(
-                boost::filesystem::path(abs_file_path_).parent_path()
-                );
+        create_dir( abs_file_path_->parent_path() );
     }
 }
 
 
+string FilePath::parent_path() const {
+	return abs_file_path_->parent_path().string();
+}
 
-void FilePath::create_dir(string dir) {
-    if (!boost::filesystem::is_directory(dir)) {
-    	boost::filesystem::create_directory(dir);
+
+string FilePath::filename() const {
+	return abs_file_path_->filename().string();
+}
+
+
+string FilePath::stem() const {
+	return abs_file_path_->stem().string();
+}
+
+
+string FilePath::extension() const {
+	return abs_file_path_->extension().string();
+}
+
+
+string FilePath::cut_extension() const {
+	boost::filesystem::path path = abs_file_path_->parent_path() / abs_file_path_->stem();
+	return path.string();
+}
+
+
+
+template <class Stream>
+void FilePath::open_stream(Stream &stream) const
+{
+    if ( std::is_same<Stream, ifstream>::value ) ASSERT(file_type_ == FileType::input_file);
+    if ( std::is_same<Stream, ofstream>::value ) ASSERT(file_type_ == FileType::output_file);
+
+    if (file_type_ == FileType::input_file)
+        stream.open(abs_file_path_->string().c_str(), ios_base::in);
+    else
+        stream.open(abs_file_path_->string().c_str(), ios_base::out);
+
+    if (! stream.is_open())
+        THROW(ExcFileOpen() << EI_Path(abs_file_path_->string()));
+
+}
+
+
+
+bool FilePath::exists() const
+{
+    return boost::filesystem::exists( *(this->abs_file_path_) );
+}
+
+
+
+template void FilePath::open_stream(ifstream &stream) const;
+template void FilePath::open_stream(ofstream &stream) const;
+template void FilePath::open_stream( fstream &stream) const;
+
+string FilePath::convert_for_check_absolute(const string path) {
+	ASSERT(path.length()).error("Empty path.");
+
+	if (path[0] == '/') {
+		return "/" + path;
+	} else {
+		return path;
+	}
+}
+
+
+
+FilePath::operator string() const {
+	return abs_file_path_->string();
+}
+
+
+void FilePath::create_dir(const boost::filesystem::path &dir)
+{
+    try {
+        boost::filesystem::create_directories(dir);
+    } catch (boost::filesystem::filesystem_error &e) {
+        THROW(ExcMkdirFail() << EI_Path( dir.string() ) << make_nested_message(e) );
     }
 }
 
 
-void FilePath::create_canonical_path(const string working_dir, const string output) {
-    boost::filesystem::path working_path = boost::filesystem::path(working_dir);
-    boost::filesystem::path output_path = boost::filesystem::path(output);
+bool FilePath::operator ==(const FilePath &other) const
+    {return *abs_file_path_ == boost::filesystem::path( string(other) ); }
 
-    if (working_dir[0] != DIR_DELIMITER)
-    {
-    	boost::filesystem::path curr = boost::filesystem::current_path();
-    	working_path = boost::filesystem::canonical( curr / working_path );
-    }
 
-    boost::filesystem::path full_path = boost::filesystem::canonical( working_path / output_path );
-
-    boost::filesystem::path curr = boost::filesystem::current_path();
-	output_dir = full_path.string();
-#ifdef FLOW123D_HAVE_CYGWIN
-    boost::replace_all(output_dir, "\\", "/");
-#endif // FLOW123D_HAVE_CYGWIN
+std::ostream& operator<<(std::ostream& stream, const FilePath& fp) {
+    return ( stream << string(fp) );
 }

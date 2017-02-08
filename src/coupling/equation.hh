@@ -30,7 +30,7 @@
 class Mesh;
 class Region;
 class FieldSet;
-typedef std::vector<Region> RegionSet;
+//typedef std::vector<Region> RegionSet;
 class Balance;
 
 
@@ -86,8 +86,8 @@ public:
      * After this method the upper level coupling may set sharing of some fields between equations.
      */
     virtual void initialize() {
-      if (equation_empty_) DBGMSG("Calling 'initialize' of empty equation '%s'.\n",typeid(*this).name());
-      else DBGMSG("Method 'initialize' of '%s' is not implemented.\n",typeid(*this).name());
+      if (equation_empty_) DebugOut().fmt("Calling 'initialize' of empty equation '{}'.\n", typeid(*this).name());
+      else DebugOut().fmt("Method 'initialize' of '{}' is not implemented.\n", typeid(*this).name());
     }
 
     /**
@@ -98,23 +98,25 @@ public:
      *  has to be set after the initialize method and before zero_time_step.
      */
     virtual void zero_time_step() {
-      if (equation_empty_) DBGMSG("Calling 'zero_time_step' of empty equation '%s'.\n",typeid(*this).name());
-      else DBGMSG("Method 'zero_time_step' of '%s' is not implemented.\n",typeid(*this).name());
+      if (equation_empty_) DebugOut().fmt("Calling 'zero_time_step' of empty equation '{}'.\n", typeid(*this).name());
+      else DebugOut().fmt("Method 'zero_time_step' of '{}' is not implemented.\n", typeid(*this).name());
     }
 
 
     /**
      * Require virtual destructor also for child classes.
      */
-    virtual ~EquationBase() {};
+    virtual ~EquationBase() {
+    	balance_.reset();
+    };
 
 
     /**
      *  Calculation of the next time step and its output.
      */
     virtual void update_solution() {
-      if (equation_empty_) DBGMSG("Calling 'update_solution' of empty equation '%s'.\n",typeid(*this).name());
-      else DBGMSG("Method 'update_solution' of '%s' is not implemented.\n",typeid(*this).name());
+      if (equation_empty_) DebugOut().fmt("Calling 'update_solution' of empty equation '{}'.\n", typeid(*this).name());
+      else DebugOut().fmt("Method 'update_solution' of '{}' is not implemented.\n", typeid(*this).name());
     }
 
 
@@ -212,8 +214,8 @@ public:
      * @brief Write computed fields.
      */
     virtual void output_data() {
-      if (equation_empty_) DBGMSG("Calling 'output_data' of empty equation '%s'.\n",typeid(*this).name());
-      else DBGMSG("Method 'output_data' of '%s' is not implemented.\n",typeid(*this).name());
+      if (equation_empty_) DebugOut().fmt("Calling 'output_data' of empty equation '{}'.\n", typeid(*this).name());
+      else DebugOut().fmt("Method 'output_data' of '{}' is not implemented.\n", typeid(*this).name());
     }
 
 protected:
@@ -230,7 +232,7 @@ protected:
     FieldSet *eq_data_;
     
     /// object for calculation and writing the mass balance to file.
-    boost::shared_ptr<Balance> balance_;
+    std::shared_ptr<Balance> balance_;
     
 };
 

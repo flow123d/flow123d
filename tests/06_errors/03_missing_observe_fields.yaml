@@ -1,0 +1,63 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Tcv5
+  mesh:
+    mesh_file: ../00_mesh/strip_xz.msh
+    regions:
+        - !From_Label
+            name: .surface
+            mesh_label: .top
+        - !From_Label
+            name: rock
+            mesh_label: plane
+            
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: rock
+        conductivity: 1e-6
+      - region: .surface
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .bottom
+        bc_type: dirichlet
+        bc_pressure: 0
+    balance: {}
+    output:
+      fields:
+        - piezo_head_p0
+        - velocity_p0 
+    output_stream: 
+      format: !gmsh
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+       - region: rock
+         diff_m: 5e-10
+         disp_l: 1
+       - region: .surface
+         bc_conc: 100
+      solver: 
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    substances: O-18
+    time:
+      end_time: 3600000
+    balance:
+      cumulative: true
+    output_stream: 
+      format: !gmsh
+        variant: ascii
+      name: transport_output_stream
+      times:
+        - step: 36000
+      observe_points:
+        - [ 0.05, 0, 0.01] #DH-15
+
+

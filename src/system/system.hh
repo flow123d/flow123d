@@ -78,25 +78,26 @@ typedef struct SystemInfo {
 
 extern SystemInfo sys_info;
 
-
+/*
 char * 	get_log_fname( void );
 char * 	get_log_file( void );
 void	resume_log_file( void );
-
+*/
 
 #define xprintf(...) _xprintf(__FILE__, __func__, __LINE__, __VA_ARGS__)
 
 int     _xprintf(const char * const xprintf_file, const char * const xprintf_func, const int xprintf_line, MessageType type, const char * const fmt, ... );
-void *	xmalloc(size_t size);
-void * xrealloc( void * ptr, size_t size );
+//void *	xmalloc(size_t size);
+//void * xrealloc( void * ptr, size_t size );
 
 // TODO: implement as a templated function
+/*
 #ifndef xfree
     #define xfree(p) \
     do { if (p) { free(p); (p)=NULL; } \
     } while (0) /// test & free memory
 #endif
-
+*/
 /**
  * @brief Replacement of new/delete operator in the spirit of xmalloc.
  *
@@ -106,29 +107,34 @@ void * xrealloc( void * ptr, size_t size );
  *
  */
 // @{
-
+/*
 void *operator new (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
 void *operator new[] (std::size_t size) OPERATOR_NEW_THROW_EXCEPTION;
 void operator delete( void *p) throw();
 void operator delete[]( void *p) throw();
+*/
 // @}
 
-int     xsystem(const char*);
+//int     xsystem(const char*);
 
 //! @brief Operations on files and directories
 /// @{
+/*
 int     xmkdir( const char *s );  ///< Create directory (GLIBC function, original in <sys/stat.h>)
 int     xchdir( const char *s );  ///< Change directory (GLIBC function, original in <unistd.h>)
 int     xremove( const char *s ); ///< Remove file or directory (function)
 char *  xgetcwd( void );          ///< Get current working directory (GLIBC function, original in <unistd.h>)
 int     xrename( const char * oldname, const char * newname ); ///< Rename file (function)
+*/
 //! @}
 
 // string operations
+/*
 char * xstrcpy(const char*);
 char * xstrtok(char *s, int position = -1);
 char * xstrtok(char*,const char* delim, int position = -1);
 int    xchomp( char * s );
+*/
 
 /**
  * Wrapper to check return codes of C functions. In particular PETSC calls.

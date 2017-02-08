@@ -56,7 +56,7 @@ private:
  */
 class Application : public testing::Test{
 public:
-    static const Input::Type::Record & get_input_type();
+    static Input::Type::Record & get_input_type();
 
     inline Input::Record input()
     {
@@ -80,7 +80,7 @@ private:
 TEST_F(Application, init) {
     using namespace Input;
 
-    FilePath::set_io_dirs("./root","/root","variant", "./output");
+    FilePath::set_io_dirs(".",".","variant", "./output");
 
     Array eq_arr = input().val<Array>("equations");
 
@@ -103,7 +103,7 @@ TEST_F(Application, init) {
 
 namespace it = Input::Type;
 
-const it::Record & Application::get_input_type() {
+it::Record & Application::get_input_type() {
 	return it::Record("Application", "Root record of the whole application.")
 		// Array of equations with types given by method of class Equation
 		.declare_key("equations", it::Array( Equation::get_input_type(), 1, 10 ), it::Default::obligatory(), "")
@@ -157,7 +157,7 @@ EquationA::EquationA(Input::Record rec) {
     using namespace Input;
 
     string mesh_file = rec.val<FilePath>("mesh");
-    EXPECT_EQ("/root/some.msh", mesh_file);
+    EXPECT_TRUE(mesh_file.find("some.msh") != string::npos);
 
     Iterator<double> it = rec.find<double>("parameter_a");
     EXPECT_TRUE(it);
@@ -173,7 +173,7 @@ EquationB::EquationB(Input::Record rec) {
     using namespace Input;
 
     string mesh_file = rec.val<FilePath>("mesh");
-    EXPECT_EQ("/root/some.msh", mesh_file);
+    EXPECT_TRUE(mesh_file.find("some.msh") != string::npos);
     int param = rec.val<int>("parameter_b");
     EXPECT_EQ(314, param);
 

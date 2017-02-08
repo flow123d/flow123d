@@ -117,6 +117,15 @@ public:
         { return safe_compare(other_time, end()); }
 
     /**
+      * Performs rounding safe comparison time (step) == other_time. See @fn gt
+      */
+    inline bool eq(double other_time) const
+        { return this->le(other_time) && this->ge(other_time); }
+
+    inline bool contains(double other_time) const
+        { return this->ge(other_time) && this->lt(other_time + length_); }
+
+    /**
      * Returns true if two time steps are exactly the same.
      */
     bool operator==(const TimeStep & other)
@@ -139,6 +148,8 @@ private:
     /// End time point of the time step.
     double end_;
 };
+
+std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
 
 
 
@@ -236,6 +247,8 @@ public:
    /**
     * @brief Default constructor - steady time governor.
     * 
+    * OBSOLETE.
+    *
     * We can have "zero step" steady problem (no computation, e.g. EquationNothing) and one step steady problem
     * (e.g. steady water flow).
     * 
@@ -247,7 +260,7 @@ public:
     * 
     * Has a private pointer to static TimeMarks and can access them by marks().
     */
-   explicit TimeGovernor(double init_time=0.0,
+    explicit TimeGovernor(double init_time=0.0,
 		   	    TimeMark::Type fixed_time_mask = TimeMark::none_type);
 
    /**
@@ -256,6 +269,14 @@ public:
     * TODO: Partially tested as part of field test. Needs its own unit test.
     */
    TimeGovernor(double init_time, double dt);
+
+   /**
+    * Returns true if the time governor was set from default values
+    */
+   bool is_default() {
+       return (end_time_ == max_end_time)
+               && (max_time_step_ == end_time_ - init_time_);
+   }
 
    /**
     * @brief Sets permanent constraints for time step.
@@ -356,8 +377,8 @@ public:
     /**
      * Simpler interface to TimeMarks::is_current().
      */
-    inline bool is_current(const TimeMark::Type &mask) const
-        {return time_marks_.is_current(*this, equation_mark_type() | mask); }
+    bool is_current(const TimeMark::Type &mask) const;
+
 
     /**
      * Simpler interface to TimeMarks::next().
@@ -480,8 +501,17 @@ public:
      */
     void view(const char *name="") const;
 
+    // Maximal tiem of simulation. More then age of the universe in seconds.
+    static const double max_end_time;
+
     /// Infinity time used for steady case.
     static const double inf_time;
+
+    /**
+     *  Rounding precision for computing time_step.
+     *  Used as technical lower bound for the time step.
+     */
+    static const double time_step_precision;
 
 private:
 
@@ -495,12 +525,6 @@ private:
      * Set time marks for the start time and end time (if finite).
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
-
-    /**
-     *  Rounding precision for computing time_step.
-     *  Used as technical lower bound for the time step.
-     */
-    static const double time_step_precision;
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
@@ -566,7 +590,8 @@ private:
  * streams for various log targets.
  *
  */
-ostream& operator<<(ostream& out, const TimeGovernor& tg);
+std::ostream& operator<<(std::ostream& out, const TimeGovernor& tg);
+
 
 
 #endif /* TIME_HH_ */

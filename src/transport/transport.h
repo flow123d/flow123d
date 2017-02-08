@@ -35,13 +35,14 @@
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
-
+#include "io/equation_output.hh"
 
 class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
 class ConvectionTransport;
+
 
 //=============================================================================
 // TRANSPORT
@@ -89,7 +90,7 @@ public:
 
 
         /// Fields indended for output, i.e. all input fields plus those representing solution.
-        FieldSet output_fields;
+        EquationOutput output_fields;
     };
 
 
@@ -151,7 +152,7 @@ public:
     /**
      * Use Balance object from upstream equation (e.g. in various couplings) instead of own instance.
      */
-    void set_balance_object(boost::shared_ptr<Balance> balance) override;
+    void set_balance_object(std::shared_ptr<Balance> balance) override;
 
     const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }
@@ -176,7 +177,7 @@ public:
     inline void set_velocity_field(const MH_DofHandler &dh) override
     { mh_dh=&dh; }
 
-    void set_output_stream(std::shared_ptr<OutputTime> stream)
+    void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
 
 

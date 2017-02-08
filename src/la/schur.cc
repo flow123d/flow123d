@@ -106,6 +106,15 @@ SchurComplement::SchurComplement(SchurComplement &other)
 }
 
 
+
+void SchurComplement::set_from_input(const Input::Record in_rec)
+{
+    LinSys_PETSC::set_from_input( in_rec );
+
+    ASSERT_PTR(Compl).error();
+    Compl->set_from_input( in_rec );
+}
+
 /**
  *  COMPUTE A SCHUR COMPLEMENT OF A PETSC MATRIX
  *
@@ -128,6 +137,8 @@ SchurComplement::SchurComplement(SchurComplement &other)
 
 void SchurComplement::form_schur()
 {
+    START_TIMER("form schur complement");
+
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
     PetscScalar *rhs_array, *sol_array;
@@ -217,28 +228,17 @@ void SchurComplement::form_rhs()
 }
 
 
-/**
- * COMPUTE ELIMINATED PART OF THE ORIG. SYS. & RESTORE RHS and SOLUTION VECTORS
- *  x_1 = IA * RHS_1 - IAB * x_2
- */
 
-void SchurComplement::resolve()
+void SchurComplement::set_tolerances(double  r_tol, double a_tol, unsigned int max_it)
 {
-    MatMult(IAB,Compl->get_solution(),Sol1);
-
-    VecScale(Sol1,-1);
-
-    MatMultAdd(IA,RHS1,Sol1,Sol1);
-
+    LinSys_PETSC::set_tolerances(r_tol, a_tol, max_it);
+    if (Compl !=nullptr) Compl->set_tolerances(r_tol, a_tol, max_it);
 }
 
 void SchurComplement::set_complement(LinSys_PETSC *ls)
 {
-	OLD_ASSERT(ls != nullptr, "NULL complement ls.\n");
+	ASSERT_PTR(ls).error();
     Compl = ls;
-    if (!in_rec_.is_empty()) {
-        Compl->set_from_input( in_rec_ );
-    }
 }
 
 
@@ -328,21 +328,39 @@ double SchurComplement::get_solution_precision()
 
 int SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
-    {
-        START_TIMER("form schur complement");
-        this->form_schur();
-    }
-
-    //START_TIMER("complement solve");
+    this->form_schur();
     int converged_reason = Compl->solve();
-    //END_TIMER("complement solve");
 
-    {
-        START_TIMER("schur back resolve");
-        this->resolve();
-    }
+    // TODO: Resolve step is not necessary inside of nonlinear solver. Can optimize.
+    this->resolve();
 	return converged_reason;
 }
+
+
+/**
+ * COMPUTE ELIMINATED PART OF THE ORIG. SYS. & RESTORE RHS and SOLUTION VECTORS
+ *  x_1 = IA * RHS_1 - IAB * x_2
+ */
+
+void SchurComplement::resolve()
+{
+    this->form_schur();
+
+    START_TIMER("SchurComplemet::resolve without form schur");
+
+    chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
+    chkerr(VecScale(Sol1,-1));
+    chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
+}
+
+
+double SchurComplement::compute_residual()
+{
+    //DebugOut() << print_var(LinSys_PETSC::compute_residual());
+    resolve();
+    return LinSys_PETSC::compute_residual();
+}
+
 
 
 /**

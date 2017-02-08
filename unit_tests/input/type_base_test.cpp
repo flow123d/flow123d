@@ -83,28 +83,28 @@ TEST(InputTypeScalar, all_types) {
     EXPECT_TRUE( Default("true").check_validity( std::make_shared<Bool>() ) );
     EXPECT_TRUE( Default("false").check_validity( std::make_shared<Bool>() ) );
     EXPECT_FALSE( Default::obligatory().check_validity( std::make_shared<Bool>()) );
-    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Bool>() ); }, ExcWrongDefault,
-            "Default value 'yes' do not match type: 'Bool';" );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Bool>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'yes' of type 'Bool';" );
 
     // Integer
     EXPECT_TRUE( Default("10").check_validity( std::make_shared<Integer>() ) );
     EXPECT_THROW_WHAT( { Default("10").check_validity( std::make_shared<Integer>(0,4) ); }, ExcWrongDefault,
             "Default value '10' do not match type: 'Integer';" );
-    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Integer>() ); }, ExcWrongDefault,
-            "Default value 'yes' do not match type: 'Integer';" );
+    EXPECT_THROW_WHAT( { Default("yes").check_validity( std::make_shared<Integer>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'yes' of type 'Integer';" );
 
     // Double
     EXPECT_TRUE( Default("3.14").check_validity( std::make_shared<Double>() ) );
     EXPECT_TRUE( Default("-5.67E-23").check_validity( std::make_shared<Double>() ) );
     EXPECT_THROW_WHAT( { Default("-1e-10").check_validity( std::make_shared<Double>(0,4.4) ); }, ExcWrongDefault,
             "Default value .* do not match type: 'Double';" );
-    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( std::make_shared<Double>() ); }, ExcWrongDefault,
-            "Default value .* do not match type: 'Double';" );
+    EXPECT_THROW_WHAT( { Default("-3.6t5").check_validity( std::make_shared<Double>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value '-3.6t5' of type 'Double';" );
 
     // String
     EXPECT_TRUE( Default("\"ahoj\"").check_validity( std::make_shared<String>() ) );
-    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( std::make_shared<String>() ); }, ExcWrongDefault,
-            "Default value .* do not match type: 'String';" );
+    EXPECT_THROW_WHAT( { Default("ahoj").check_validity( std::make_shared<String>() ); }, ExcWrongDefaultJSON,
+            "Not valid JSON of Default value 'ahoj' of type 'String';" );
 
 
     // test equivalence operator
@@ -127,10 +127,9 @@ using namespace Input::Type;
 
     // construction
     std::shared_ptr<Array> arr_int = std::make_shared<Array>(Integer(), 1, 8);
-    Array arr_arr_dbl( Array( Double() ));
 
-    Record rec_2("record_type_2", "desc");
-    rec_2.close();
+    Record rec_2 = Record("record_type_2", "desc")
+        .close();
 
     Array arr_rec_shared_ptr( rec_2 );
 
@@ -139,7 +138,14 @@ using namespace Input::Type;
 
     Array arr_of_sel( sel );
 
-    Input::Type::TypeBase::lazy_finish();
+	Record helper_rec = Record("helper_record", "Helper record simplifies finish")
+			.declare_key("val_0", *(arr_int.get()), "desc.")
+			.declare_key("val_1", Array( Double() ), "desc.")
+			.declare_key("val_2", arr_rec_shared_ptr, "desc.")
+			.declare_key("val_3", arr_of_sel, "desc.")
+			.close();
+
+    helper_rec.finish();
 
     // get_sub_type
     EXPECT_EQ( rec_2, arr_rec_shared_ptr.get_sub_type()); // std::smart_ptr assert fails
@@ -301,7 +307,7 @@ TEST_F(InputTypeAttributesTest, base_test) {
 	EXPECT_STREQ( it->second.c_str(), "\"0.5\"" );
 	//EXPECT_TRUE( (it=attributes_->find("parameters")) != attributes_->end() );
 	//EXPECT_STREQ( it->second.c_str(), "[\"a\", \"b\", \"c\"]" );
-	EXPECT_TRUE( (it=attributes_->find("_obsolete")) != attributes_->end() );
+	EXPECT_TRUE( (it=attributes_->find("obsolete")) != attributes_->end() );
 	EXPECT_STREQ( it->second.c_str(), "\"true\"" );
 
 	this->add_attribute_("numeric", "\"5\"");
@@ -345,7 +351,7 @@ TEST_F(InputTypeAttributesTest, base_test) {
 		.declare_key("file", FileName::output(), Default::optional(), "File for output stream.")
 		.close();
 
-	TypeBase::lazy_finish();
+	main_rec.finish();
 
 	{
 		std::stringstream ss;

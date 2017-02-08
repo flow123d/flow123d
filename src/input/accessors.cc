@@ -16,7 +16,6 @@
  */
 
 #include <memory>
-#include <boost/make_shared.hpp>
 #include <boost/lexical_cast.hpp>
 #include "input/accessors.hh"
 
@@ -29,42 +28,19 @@ namespace Input {
  */
 
 
-const char * Exception::what() const throw () {
-    // have preallocated some space for error message we want to return
-    // Is there any difference, if we move this into ExceptionBase ??
-    static std::string message(1024,' ');
+std::ostringstream &Exception::form_message(std::ostringstream &converter) const {
 
-
-    // Be sure that this function do not throw.
-    try {
-        std::ostringstream converter;
-
-        converter << std::endl << std::endl;
-        converter << "--------------------------------------------------------" << std::endl;
-        converter << "User Error: ";
-        print_info(converter);
+    converter << "--------------------------------------------------------" << std::endl;
+    converter << "User Error: ";
+    print_info(converter);
 #ifdef FLOW123D_DEBUG_MESSAGES
-        converter << "\n** Diagnosting info **\n" ;
-        converter << boost::diagnostic_information_what( *this );
-        print_stacktrace(converter);
+    converter << "\n** Diagnosting info **\n" ;
+    converter << boost::diagnostic_information_what( *this );
+    print_stacktrace(converter);
 #endif
-        converter << "--------------------------------------------------------" << std::endl;
+    converter << std::endl << "--------------------------------------------------------" << std::endl;
 
-        message = converter.str();
-        return message.c_str();
-
-    } catch (std::exception &exc) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Message is " << std::endl
-                << exc.what() << std::endl << "*** Aborting! ***" << std::endl;
-
-        std::abort();
-    } catch (...) {
-        std::cerr << "*** Exception encountered in exception handling routines ***" << std::endl << "*** Aborting! ***"
-                << std::endl;
-
-        std::abort();
-    }
-    return 0;
+    return converter;
 }
 
 
@@ -76,7 +52,7 @@ const char * Exception::what() const throw () {
  */
 
 Address::Address()
-: data_(boost::make_shared<AddressData>())
+: data_(std::make_shared<AddressData>())
 {
    data_->root_type_ = nullptr;
    data_->root_storage_ = &Array::empty_storage_;
@@ -86,7 +62,7 @@ Address::Address()
 
 
 Address::Address(const StorageBase * storage_root, const Type::TypeBase *type_root)
-: data_( boost::make_shared<AddressData>() )
+: data_( std::make_shared<AddressData>() )
 {
     if (! storage_root)
         THROW( ExcAddressNullPointer() << EI_AccessorName("storage_root") );
@@ -128,7 +104,7 @@ std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 std::string Address::make_full_address() const {
 	std::vector<unsigned int> path;
-	boost::shared_ptr<AddressData> address_data = data_;
+	std::shared_ptr<AddressData> address_data = data_;
 	while (address_data->parent_ != NULL) {
 		path.push_back(address_data->descendant_order_);
 		address_data = address_data->parent_;

@@ -12,6 +12,7 @@
 #include <boost/regex.hpp>
 
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 
 #include "fields/field.hh"
@@ -36,6 +37,10 @@
 
 
 
+
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+
+
 template <class F>
 class FieldFix : public testing::Test, public F {
 public:
@@ -46,13 +51,13 @@ public:
 	    Profiler::initialize();
 
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    my_mesh = new Mesh();
+	    my_mesh = mesh_constructor();
 	    ifstream in(string(mesh_file).c_str());
 	    my_mesh->read_gmsh_from_stream(in);
 
 
 	    field_.name("test_field");
-	    field_.input_selection( &get_test_selection() );
+	    field_.input_selection( get_test_selection() );
 
 		auto a_rec_type = this->field_.get_input_type();
 		test_field_descriptor = make_shared<Input::Type::Record>(
@@ -73,7 +78,8 @@ public:
 		root_input = input_list(field_input);
 		Input::Record x_rec = *(root_input.begin<Input::Record>());
 		auto field_rec = *(x_rec.find<Input::AbstractRecord>("a"));
-		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, this->n_comp());
+	    FieldAlgoBaseInitData init_data_conc("a", this->n_comp(), UnitSI::dimensionless());
+		my_field_algo_base = FieldType::FieldBaseType::function_factory(field_rec, init_data_conc);
 	}
 
 	void TearDown() {
@@ -161,15 +167,10 @@ const Input::Type::Selection &FieldFix<F>::get_test_selection() {
 // full list
 #define f_list(Dim) \
 	Field<Dim,FV<0>::Scalar> , \
-	Field<Dim,FV<0>::Vector>, \
     Field<Dim,FV<0>::Enum>, \
-    Field<Dim,FV<0>::EnumVector>, \
     Field<Dim,FV<0>::Integer>, \
-	Field<Dim,FV<0>::Vector>, \
-	Field<Dim,FV<2>::VectorFixed>, \
-	Field<Dim,FV<3>::VectorFixed>, \
-	Field<Dim,FV<2>::TensorFixed>, \
-	Field<Dim,FV<3>::TensorFixed>
+	Field<Dim,FV<Dim>::VectorFixed>, \
+	Field<Dim,FV<Dim>::TensorFixed>
 
 // simple list
 #define s_list(Dim) Field<Dim,FV<0>::Scalar>
@@ -247,7 +248,7 @@ TYPED_TEST(FieldFix, mark_input_times) {
 	this->field_.set_input_list(this->input_list(list_ok));
 
 	TimeGovernor tg;
-	TimeMark::Type mark_type = tg.marks().type_fixed_time();
+	TimeMark::Type mark_type = TimeMark::Type(tg.marks().type_fixed_time().bitmap_, tg.equation_mark_type().equation_index_);
 	this->field_.mark_input_times(tg);
 	auto it = tg.marks().next(tg, mark_type);
 	EXPECT_EQ( 1, it->time());
@@ -317,7 +318,7 @@ TYPED_TEST(FieldFix, update_history) {
 	string list_ok = "["
 			"{time=0, region=\"ALL\", a =0, b =0},"
 			"{time=1, region=\"BULK\", a =1, b =0},"
-			"{time=2, region=\"BOUNDARY\", a =1, b =0},"
+			"{time=2, region=\".BOUNDARY\", a =1, b =0},"
 			"{time=3, region=\"ALL\", b =0},"
 			"{time=4, region=\"ALL\", a =0},"
 			"{time=5, region=\"ALL\", a =1}"
@@ -330,6 +331,7 @@ TYPED_TEST(FieldFix, update_history) {
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
 	this->set_input_list( this->input_list(list_ok) );
+	this->units( UnitSI().m() );
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 1.0);
@@ -447,7 +449,7 @@ TYPED_TEST(FieldFix, set_time) {
 	string list_ok = "["
 			"{time=0, region=\"ALL\", a =0, b =0},"
 			"{time=1, region=\"BULK\", a =1, b =0},"
-			"{time=2, region=\"BOUNDARY\", a =1, b =0},"
+			"{time=2, region=\".BOUNDARY\", a =1, b =0},"
 			"{time=3, region=\"ALL\", b =0},"
 			"{time=4, region=\"ALL\", a =0},"
 			"{time=5, region=\"ALL\", a =1}"
@@ -461,6 +463,7 @@ TYPED_TEST(FieldFix, set_time) {
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
 	this->set_input_list( this->input_list(list_ok) );
+	this->units( UnitSI().m() );
 
 	// time = 0.0
 	TimeGovernor tg(0.0, 0.5);
@@ -505,6 +508,8 @@ TYPED_TEST(FieldFix, constructors) {
 	    .flags(FieldFlag::input_copy);
 	this->field_.set_mesh( *(this->my_mesh) );
 	field_default.set_mesh( *(this->my_mesh) );
+	this->field_.units( UnitSI().m() );
+	field_default.units( UnitSI().m() );
 
 	string list_ok = "["
 			"{time=2,  region=\"BULK\", a=0, b=1}, "
@@ -580,20 +585,20 @@ TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
 
-	Mesh mesh;
+	Mesh * mesh = mesh_constructor();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 	ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-	mesh.read_gmsh_from_stream(in);
+	mesh->read_gmsh_from_stream(in);
 
     Field<3, FieldValue<3>::Enum > sorption_type;
-    Field<3, FieldValue<3>::Vector > init_conc;
+    Field<3, FieldValue<3>::VectorFixed > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
 
 
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
 
 
-    sorption_type.input_selection( &get_sorption_type_selection() );
+    sorption_type.input_selection( get_sorption_type_selection() );
     init_conc.set_components(component_names);
 
     it::Record main_record =
@@ -608,11 +613,15 @@ TEST(Field, init_from_input) {
     Input::ReaderToStorage reader( field_input, main_record, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
-    sorption_type.set_mesh(mesh);
-    init_conc.set_mesh(mesh);
-    conductivity.set_mesh(mesh);
+    sorption_type.set_mesh(*mesh);
+    init_conc.set_mesh(*mesh);
+    conductivity.set_mesh(*mesh);
 
-    auto region_set = mesh.region_db().get_region_set("BULK");
+    sorption_type.units( UnitSI().m() );
+    init_conc.units( UnitSI().m() );
+    conductivity.units( UnitSI().m() );
+
+    auto region_set = mesh->region_db().get_region_set("BULK");
 
     sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
     init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
@@ -628,7 +637,7 @@ TEST(Field, init_from_input) {
 
     {	
 
-	    auto ele = mesh.element_accessor(5);
+	    auto ele = mesh->element_accessor(5);
 
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 
@@ -648,18 +657,18 @@ TEST(Field, init_from_input) {
     	ElementAccessor<3> ele;
 
 	    EXPECT_ASSERT_DEATH( {sorption_type.value(ele.centre(), ele);}  , "Invalid element accessor.");
-	    Region reg = mesh.region_db().find_id(40);
+	    Region reg = mesh->region_db().find_id(40);
 
 	    EXPECT_TRUE( sorption_type.is_constant(reg) );
 	    EXPECT_TRUE( init_conc.is_constant(reg) );
 
-	    ele = ElementAccessor<3>(&mesh, reg);
+	    ele = ElementAccessor<3>(mesh, reg);
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );
 	    EXPECT_TRUE( arma::min( arma::vec("10 20 30") == init_conc.value(ele.centre(), ele) ) );
 
    }
 
-
+    delete mesh;
 
 }
 
@@ -715,10 +724,10 @@ TEST(Field, field_result) {
 
     TimeGovernor tg(0.0, 1.0);
 
-    Mesh mesh;
+    Mesh * mesh = mesh_constructor();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh.read_gmsh_from_stream(in);
+    mesh->read_gmsh_from_stream(in);
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -730,16 +739,16 @@ TEST(Field, field_result) {
     Input::Array array=reader.get_root_interface<Input::Array>();
 
     TestFieldSet data;
-    data.set_mesh(mesh);
+    data.set_mesh(*mesh);
     data.set_input_list(array);
 
 
-    Region diagonal_1d = mesh.region_db().find_label("1D diagonal");
-    Region diagonal_2d = mesh.region_db().find_label("2D XY diagonal");
-    Region front_3d = mesh.region_db().find_label("3D front");
-    Region back_3d = mesh.region_db().find_label("3D back");
-    Region top_side = mesh.region_db().find_label(".top side");
-    Region bottom_side = mesh.region_db().find_label(".bottom side");
+    Region diagonal_1d = mesh->region_db().find_label("1D diagonal");
+    Region diagonal_2d = mesh->region_db().find_label("2D XY diagonal");
+    Region front_3d = mesh->region_db().find_label("3D front");
+    Region back_3d = mesh->region_db().find_label("3D back");
+    Region top_side = mesh->region_db().find_label(".top side");
+    Region bottom_side = mesh->region_db().find_label(".bottom side");
 
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_1d}) );
     EXPECT_EQ( result_none, data.scalar.field_result({diagonal_2d}) );
@@ -770,6 +779,7 @@ TEST(Field, field_result) {
     EXPECT_EQ( result_other, data.vector.field_result({diagonal_1d, diagonal_2d}) );
     EXPECT_EQ( result_other, data.tensor.field_result({diagonal_1d, diagonal_2d}) );
 
+    delete mesh;
 }
 
 
@@ -792,9 +802,9 @@ TEST(Field, init_from_default) {
 
     Profiler::initialize();
     
-    Mesh mesh;
+    Mesh * mesh = mesh_constructor();
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh.read_gmsh_from_stream(in);
+    mesh->read_gmsh_from_stream(in);
 
     Space<3>::Point p("1 2 3");
 
@@ -803,21 +813,22 @@ TEST(Field, init_from_default) {
 
         // test default initialization of scalar field
         scalar_field.input_default( "45.0" );
-        scalar_field.set_mesh(mesh);
+        scalar_field.set_mesh(*mesh);
+        scalar_field.units( UnitSI().m() );
 
         scalar_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(0)) );
-        EXPECT_EQ( 45.0, scalar_field.value(p, mesh.element_accessor(6)) );
+        EXPECT_EQ( 45.0, scalar_field.value(p, mesh->element_accessor(0)) );
+        EXPECT_EQ( 45.0, scalar_field.value(p, mesh->element_accessor(6)) );
         // this fails on dev.nti.tul.cz
-        //EXPECT_DEATH( { scalar_field.value(p, mesh.element_accessor(0,true)); }, "Null field ptr " );
+        //EXPECT_DEATH( { scalar_field.value(p, mesh->element_accessor(0,true)); }, "Null field ptr " );
     }
 
     {
         Field<3, FieldValue<3>::Scalar > scalar_field("some", true);
 
         // test death of set_time without default value
-        scalar_field.set_mesh(mesh);
+        scalar_field.set_mesh(*mesh);
 
         EXPECT_THROW_WHAT( {scalar_field.set_time(TimeGovernor().step(), LimitSide::right);} , ExcXprintfMsg, "Missing value of the input field");
     }
@@ -825,16 +836,18 @@ TEST(Field, init_from_default) {
     {
         Field<3, FieldValue<3>::Enum > enum_field("any", true);
 
-        enum_field.input_selection( &get_test_type_selection() );
+        enum_field.input_selection( get_test_type_selection() );
         enum_field.input_default( "\"none\"" );
-        enum_field.set_mesh(mesh);
+        enum_field.set_mesh(*mesh);
+        enum_field.units( UnitSI().m() );
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh.element_accessor(0, true)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(0, true)) );
+
+        delete mesh;
 
     }
-    Field<3, FieldValue<3>::Vector > vector_field;
 
 }
 
@@ -862,14 +875,14 @@ TEST(Field, disable_where) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh mesh;
+    Mesh * mesh = mesh_constructor();
     ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh.read_gmsh_from_stream(in);
+    mesh->read_gmsh_from_stream(in);
 
-    bc_type.set_mesh(mesh);
-    bc_flux.set_mesh(mesh);
-    bc_value.set_mesh(mesh);
-    bc_sigma.set_mesh(mesh);
+    bc_type.set_mesh(*mesh);
+    bc_flux.set_mesh(*mesh);
+    bc_value.set_mesh(*mesh);
+    bc_sigma.set_mesh(*mesh);
 
     /*
     1       37      "1D diagonal"
@@ -890,15 +903,15 @@ TEST(Field, disable_where) {
     auto one = std::make_shared<SConst>();
     one->set_value(1.0);
 
-    bc_type.set_field(RegionSet(1, mesh.region_db().find_id(101)), neumann_type );
-    bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(101)), one );
+    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(101)), neumann_type );
+    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(101)), one );
 
-    bc_type.set_field(RegionSet(1, mesh.region_db().find_id(102)), robin_type );
-    bc_value.set_field(RegionSet(1, mesh.region_db().find_id(102)), one );
-    bc_sigma.set_field(RegionSet(1, mesh.region_db().find_id(102)), one );
+    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(102)), robin_type );
+    bc_value.set_field(RegionSet(1, mesh->region_db().find_id(102)), one );
+    bc_sigma.set_field(RegionSet(1, mesh->region_db().find_id(102)), one );
 
-    bc_type.set_field(RegionSet(1, mesh.region_db().find_id(-3)), neumann_type );
-    bc_flux.set_field(RegionSet(1, mesh.region_db().find_id(-3)), one );
+    bc_type.set_field(RegionSet(1, mesh->region_db().find_id(-3)), neumann_type );
+    bc_flux.set_field(RegionSet(1, mesh->region_db().find_id(-3)), one );
 
 
 
@@ -909,6 +922,8 @@ TEST(Field, disable_where) {
     bc_flux.set_time(TimeGovernor().step(), LimitSide::right);
     bc_value.set_time(TimeGovernor().step(), LimitSide::right);
     bc_sigma.set_time(TimeGovernor().step(), LimitSide::right);
+
+    delete mesh;
 }
 
 

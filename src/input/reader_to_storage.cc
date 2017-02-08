@@ -23,7 +23,9 @@
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
+#include "input/input_type.hh"
 #include "input/accessors.hh"
+
 
 namespace Input {
 using namespace std;
@@ -38,12 +40,13 @@ using namespace internal;
 ReaderToStorage::ReaderToStorage()
 : storage_(nullptr),
   root_type_(nullptr),
-  try_transpose_read_(false)
+  try_transpose_read_(false),
+  transpose_index_(0)
 {}
 
 
 
-ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &root_type)
+ReaderToStorage::ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_type)
 : ReaderToStorage()
 {
 	std::string fname = in_file;
@@ -57,24 +60,22 @@ ReaderToStorage::ReaderToStorage(const FilePath &in_file, const Type::TypeBase &
 		THROW(ExcInputMessage() << EI_Message("Invalid extension of file " + fname + ".\nMust be 'con' or 'yaml'."));
 	}
 
-	std::ifstream in(fname.c_str());
-    if (! in) {
-    	THROW(ExcInputMessage() << EI_Message("Can not open main input file: '" + fname + "'.\n"));
-    }
+	std::ifstream in;
+	in_file.open_stream(in);
 
-    // finish all lazy input types
-    Input::Type::TypeBase::lazy_finish();
+    // finish of root_type ensures finish of whole IST
+    root_type.finish();
 
 	read_stream(in, root_type, format);
 }
 
 
 
-ReaderToStorage::ReaderToStorage( const string &str, const Type::TypeBase &root_type, FileFormat format)
+ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase &root_type, FileFormat format)
 : ReaderToStorage()
 {
-	// finish all lazy input types
-    Input::Type::TypeBase::lazy_finish();
+    // finish of root_type ensures finish of whole IST
+    root_type.finish();
 
 	try {
 		istringstream is(str);
@@ -147,11 +148,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
         return storage;
     }
 
-    // return Null storage if there is null on the current location
-    if (p.is_null_type())
-        return new StorageNull();
-
-    // dispatch types
+    // dispatch types - complex types
     if (typeid(*type) == typeid(Type::Tuple)) {
         return make_storage(p, static_cast<const Type::Tuple *>(type) );
     } else
@@ -160,7 +157,17 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     } else
     if (typeid(*type) == typeid(Type::Array)) {
         return make_storage(p, static_cast<const Type::Array *>(type) );
-    } else
+    } else {
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
+    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
+    }
+
+    // return Null storage if there is null on the current location
+	if (p.is_null_type()) {
+		return new StorageNull();
+	}
+
+    // dispatch types - scalar types
     if (typeid(*type) == typeid(Type::Integer)) {
         return make_storage(p, static_cast<const Type::Integer *>(type) );
     } else
@@ -173,14 +180,11 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
     if (typeid(*type) == typeid(Type::Selection)) {
         return make_storage(p, static_cast<const Type::Selection *>(type) );
     } else {
-    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
-    	if (abstract_record_type != NULL ) return make_storage(p, abstract_record_type );
-
         const Type::String * string_type = dynamic_cast<const Type::String *>(type);
         if (string_type != NULL ) return make_storage(p, string_type );
 
         // default -> error
-        xprintf(Err,"Unknown descendant of TypeBase class, name: %s\n", typeid(type).name());
+        THROW( Type::ExcUnknownDescendant() << Type::EI_TypeName(typeid(type).name()) );
     }
 
     return new StorageNull();
@@ -189,8 +193,14 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *record)
 {
+	// control test, check correct tag (or TYPE key) if Record is derived from Abstract
+	string record_name_from_tag = p.get_record_name();
+	if ( record_name_from_tag != "" ) {
+		ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
+	}
 	std::set<string> keys_to_process;
-	if ( p.get_record_key_set(keys_to_process) ) {
+	bool effectively_null = p.is_effectively_null();
+	if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
         std::set<string>::iterator set_it;
 
         /*Type::Record::KeyIter key_it;
@@ -219,8 +229,15 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         		keys_to_process.erase(set_it);
         	}
 
-            if ( p.down(it->key_) ) {
+            if ( !effectively_null && p.down(it->key_) ) {
                 // key on input => check & use it
+                // check for obsolete key
+
+                auto obsolete_it = it->attributes.find( Type::Attribute::obsolete() );
+                if ( obsolete_it != it->attributes.end()) {
+                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
+                }
+
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;
@@ -244,7 +261,8 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
         }
 
         for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-        	xprintf(Warn, "Unprocessed key '%s' in %s '%s'.\n", (*set_it).c_str(), record->class_name().c_str(), p.as_string().c_str() );
+        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
+        			<< " '" << p.as_string() << "'." << std::endl;
         }
 
         return storage_array;
@@ -295,29 +313,20 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
-	if ( p.is_record_type() ) {
-
-		string descendant_name = p.get_descendant_name();
-		if ( descendant_name == "" ) {
-			if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-				THROW( ExcInputError() << EI_Specification("Missing key 'TYPE' in Abstract.") << EI_ErrorAddress(p.as_string()) << EI_InputType(abstr_rec->desc()) );
-			} else { // auto conversion
-				return abstract_automatic_conversion(p, abstr_rec);
-			}
-		} else {
-			try {
-				return make_storage(p, &( abstr_rec->get_descendant(descendant_name) ) );
-			} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-				THROW( ExcInputError() << EI_Specification("Wrong value '" + descendant_name + "' of the Selection.")
-						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
-			}
-		}
-	} else {
+	string record_name = p.get_record_name();
+	if ( record_name == "" ) {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-			THROW( ExcInputError() << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
-				<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
+			THROW( ExcInputError() << EI_Specification("Can not determine type of the Abstract.") << EI_ErrorAddress(p.as_string())
+					<< EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
 		} else { // auto conversion
 			return abstract_automatic_conversion(p, abstr_rec);
+		}
+	} else {
+		try {
+			return make_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			THROW( ExcInputError() << EI_Specification("Wrong value '" + record_name + "' of the Selection.")
+					<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
 		}
 	}
 
@@ -479,7 +488,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
         }
 
 		if ( arr_size > (int)tuple->size() ) {
-            xprintf(Warn, "Unprocessed keys in tuple '%s', tuple has %d keys but the input is specified by %d values.\n",
+			WarningOut().fmt("Unprocessed keys in tuple '{}', tuple has {} keys but the input is specified by {} values.\n",
                     p.as_string().c_str(), tuple->size(), arr_size );
 		}
 
@@ -642,7 +651,10 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
     } catch (Input::Type::ExcWrongDefault & e) {
         // message to distinguish exceptions thrown during Default value check at declaration
-        xprintf(Msg, "Wrong default value while reading an input stream:\n");
+    	e << Type::EI_Desc("Wrong default value while reading an input stream:\n");
+        e << EI_KeyName("UNKNOWN KEY");
+        throw;
+    } catch (Input::Type::ExcWrongDefaultJSON & e) {
         e << EI_KeyName("UNKNOWN KEY");
         throw;
     }

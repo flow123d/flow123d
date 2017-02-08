@@ -21,9 +21,11 @@
 #include <boost/foreach.hpp>
 
 #include "field.hh"
+#include "field_algo_base.impl.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
+#include "io/observe.hh"
 
 
 /******************************************************************************************
@@ -92,7 +94,7 @@ Field<spacedim,Value>::Field(const Field &other)
 template<int spacedim, class Value>
 Field<spacedim,Value> &Field<spacedim,Value>::operator=(const Field<spacedim,Value> &other)
 {
-	OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
+	//OLD_ASSERT( flags().match( FieldFlag::input_copy )  , "Try to assign to non-copy field '%s' from the field '%s'.", this->name().c_str(), other.name().c_str());
 	OLD_ASSERT(other.shared_->mesh_, "Must call set_mesh before assign to other field.\n");
 	OLD_ASSERT( !shared_->mesh_ || (shared_->mesh_==other.shared_->mesh_),
 	        "Assignment between fields with different meshes.\n");
@@ -172,7 +174,7 @@ void Field<spacedim,Value>::set_mesh(const Mesh &in_mesh) {
 
 /*
 template<int spacedim, class Value>
-boost::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
+std::shared_ptr< typename Field<spacedim,Value>::FieldBaseType >
 Field<spacedim,Value>::operator[] (Region reg)
 {
     OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
@@ -223,7 +225,8 @@ void Field<spacedim, Value>::set_field(
 		const Input::AbstractRecord &a_rec,
 		double time)
 {
-	set_field(domain, FieldBaseType::function_factory(a_rec, n_comp()), time);
+	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
+	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
 }
 
 
@@ -306,8 +309,13 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
-	OLD_ASSERT( flags().match(FieldFlag::input_copy), "Try to call copy from the field '%s' to the non-copy field '%s'.",
-	        other.name().c_str(), this->name().c_str());
+	ASSERT( flags().match(FieldFlag::equation_input))(other.name().c_str())(this->name().c_str())
+	        .error("Can not copy to the non-input field.");
+
+	// do not use copy if the field have its own input
+	if ( flags().match(FieldFlag::declare_input)
+	     && this->shared_->input_list_.size() != 0 ) return;
+
 	if (typeid(other) == typeid(*this)) {
 		auto  const &other_field = dynamic_cast<  Field<spacedim, Value> const &>(other);
 		this->operator=(other_field);
@@ -325,6 +333,13 @@ void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 }
 
 
+template<int spacedim, class Value>
+void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
+{
+    observe->compute_field_values(*this);
+}
+
+
 
 template<int spacedim, class Value>
 FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
@@ -337,7 +352,7 @@ FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
             if (result_all == result_none) // first region
                 result_all = fr;
             else if (fr != result_all)
-                return result_other; // if results from individual regions are different
+                result_all = result_other; // if results from individual regions are different
         } else return result_none; // if field is undefined on any region of the region set
     }
 
@@ -348,6 +363,19 @@ FieldResult Field<spacedim,Value>::field_result( RegionSet region_set) const {
 
 }
 
+
+template<int spacedim, class Value>
+std::string Field<spacedim,Value>::get_value_attribute() const
+{
+    int nrows = Value::NRows_;
+    int ncols = Value::NCols_;
+    string type = "Integer";
+    if (std::is_floating_point<typename Value::element_type>::value)
+        type = "Double";
+
+    return fmt::format("{{ \"shape\": [ {}, {} ], \"type\": \"{}\", \"limit\": [ {}, {} ] }}",
+    					nrows, ncols, type, this->limits().first, this->limits().second);
+}
 
 
 template<int spacedim, class Value>
@@ -449,16 +477,17 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-        auto field_ptr = FieldBaseType::function_factory( a_rec , n_comp() );
+    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
+        auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
         field_ptr->set_mesh( mesh(), is_bc() );
         for(const Region &reg: regions_to_init) {
     		data_->region_history_[reg.idx()]
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
     		region_list+=" "+reg.label();
         }
-        xprintf(Warn, "Using default value '%s' for part of the input field '%s' ('%s').\n"
-                "regions: %s\n",
-                input_default().c_str(), input_name().c_str(), name().c_str(), region_list.c_str());
+        WarningOut().fmt("Using default value '{}' for part of the input field '{}' ('{}').\n"
+                "regions: {}\n",
+                input_default(), input_name(), name(), region_list);
 
     }
     shared_->is_fully_initialized_ = true;
@@ -474,8 +503,10 @@ void Field<spacedim,Value>::add_factory(const std::shared_ptr<FactoryBase> facto
 template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
-	if (rec.opt_val(field.input_name(), field_record))
-		return FieldBaseType::function_factory(field_record, field.n_comp() );
+	if (rec.opt_val(field.input_name(), field_record)) {
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
+		return FieldBaseType::function_factory(field_record, init_data );
+	}
 	else
 		return FieldBasePtr();
 }

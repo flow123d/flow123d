@@ -78,7 +78,7 @@ to molecular diffusion. We consider simple nonequilibrium linear model:
 where $c_m$ is the concentration in the mobile zone, $c_i$ is the concentration in the immobile zone and
 $D_{dp}$ is a \hyperA{DualPorosity-Data::diffusion-rate-immobile}{diffusion rate} between the zones.
 $\vartheta_i$~denotes \hyperA{DualPorosity-Data::porosity-immobile}{porosity of the immobile zone} and 
-$\vartheta_m = \vartheta$ the \hyperlink{TransportOperatorSplitting-Data::porosity::B}{mobile porosity} from 
+$\vartheta_m = \vartheta$ the \hyperA{Solute-Advection-FV-Data::porosity}{mobile porosity} from 
 transport equation \eqref{e:ADE}. One can also set non-zero \hyperA{DualPorosity-Data::init-conc-immobile}{initial 
 concentration in the immobile zone} $c_i(0)$.
 
@@ -90,45 +90,65 @@ in numerical methods.
 \subsection{Equilibrial Sorption}
 \label{sec:sorp_math}
 
-The simulation of monolayer, equilibrial sorption is based on the solution of two algebraic equations, namely the mass balance (in unit volume)
+The simulation of an equilibrium sorption is based on the solution of two algebraic equations, namely the mass balance (in unit volume)
 \begin{equation}
 \label{eq:mass_balance_sorption}
-\th \varrho_l c_l + (1-\th) \varrho_s M_s c_s = c_T = const.
+\th \varrho_l c_l + (1-\th) \varrho_s c_s = c_T = const.
 \end{equation}
 and an empirical sorption law
 \begin{equation}
 \label{eq:relation_cs_cl}
 c_s = f(c_l),
 \end{equation}
-given in terms of the so-called isotherm $f$.
-Its form is determined by the parameter \hyperA{Sorption-Data::sorption-type}{sorption type}:
-\begin{itemize}
- \item ``$none$'': $f(c_l)=0$ (the sorption model returns zero concentration in solid);
- \item ``$linear$'': $f(c_l) = k_l c_l$;
- \item ``$freundlich$'': $f(c_l) = k_F c_l^{\alpha}$;
- \item ``$langmuir$'': $f(c_l) = k_L \frac{\alpha c_l}{1 + \alpha c_l}$.
-       Langmuir isotherm has been derived from thermodynamic laws. $k_L$ denotes the maximal amount 
+given in terms of the so-called isotherm function $f$.  In these equations we use following notation. 
+The concentration in the solid phase, $c_s = \frac{m_{sorbed}}{m_s}$ \units{}{}{} is the adsorbed mass of the substance
+per the unit mass of the solid adsorbent in a reference volume. The concentration
+in the solid can be selected for \Alink{IT::Sorption-OutputFields}{output}.
+The concentration in the liquid phase, $c_l = \frac{m}{m_l}$ \units{}{}{} is the mass of dissolved substance
+per the unit mass of the liquid. The relation between $c_l$ and the concentration $c$ from 
+       the transport equation \eqref{e:ADE} is $c = c_l \varrho_l$.
+ Finally, $\theta$ is the porosity, $\varrho_s$ is the \hyperA{Sorption-Data::rock-density}{solid density} i.e. density of a compact rock with zero porosity,
+ and $\varrho_l$ is the \hyperA{Sorption::solvent-density}{liquid density}, i.e. density of the solvent.
+
+
+The form of the isotherm $f$ is determined by the parameter \hyperA{Sorption-Data::sorption-type}{sorption type}:
+\begin{center}
+\def\arraystretch{2}
+\begin{tabular}{|c|c|p{8cm}|}
+\hline
+\texttt{sorption\_type} & $f(c_l)$ & \\\hline
+``$none$'' & $0$ & The sorption model returns zero concentration in solid.\\\hline
+``$linear$'' & $k_l\varrho_l c_l$ &\\\hline
+``$freundlich$'' & $k_F \varrho_l c_l^{\alpha}$ &\\\hline
+``$langmuir$'' & $k_L \varrho_l \frac{\alpha c_l}{1 + \alpha c_l}$ &
+       Langmuir isotherm has been derived from thermodynamic laws. The number $k_L\varrho_l$ denotes the maximal amount 
        of sorbing specie which can be kept in an unit volume of a bulk matrix. Coefficient $\alpha$ is 
-       a fraction of sorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.
+       a fraction of sorption and desorption rate constant $\alpha = \frac{k_a}{k_d}$.\\\hline
+\end{tabular}
+\end{center}
+Main parameter of these isotherms is the \hyperA{Sorption-Data::distribution-coefficient}{distribution coefficient} $k_i, i\in\{ l,F,L\}$ \units{-1}{3}{}.
+Nonlinear isotherms have an \hyperA{Sorption-Data::isotherm-other}{additional parameter} $\alpha$ \units{}{}{}.
+Note that older versions of Flow123d prior to 2.0.0 used a different coefficient $k_i$ denoted \texttt{isotherm\_mult} with the unit [mol$\,\mathrm{kg}^{-1}$].
+The conversion rule between the old and new distribution coefficient is
+\[ k_i^{new} = \frac{M_s}{\varrho_l} k_i^{old}, \]
+where $M_s$ stands for the \hyperA{Substance::molar-mass}{molar mass} of a substance.
+
+Concept of the general distribution coefficient is throughly discussed e.g. in \cite{ORIA1999}. Key assumptions about $k$ are:
+\begin{itemize}
+ \item Density $\rho_l$ in isotherm expressions is technically the density of the solvent used during measurement of $k$, 
+ which could be different then the density of the solvent used in calculation.
+ E.g. slight changes in the density of water according to variations in chemical composition and isotopes. But usually the difference is negligible. 
+ \item Concentrations in both liquid and solid phase are very small. In particular the number of unoccupied adsorption sites 
+ dominates the number of occupied sites. 
+ \item All adsorption sites are equivalent.
+ \item Sorption is understood in general manner including all linear processes that are able to store the substance.
+ \item System is considered in thermodynamic equilibrium.
+ \item Single distribution coefficient $K$ is specific for combination adsorbent, solvent, substance.
 \end{itemize}
 
-Notation:
-\begin{itemize}
- \item In solid, $c_s = \frac{n}{m_s}$ [mol\,$\mathrm{kg}^{-1}$] is the fraction of the molar amount of the solute 
-       adsorbed $n$ and the amount of the adsorbent $m_s$ (mass of solid), all in unit volume. The concentration
-       in solid can be selected for \hyperA{Sorption::output-fields}{output}.
- \item In liquid, $c_l = \frac{m}{m_l}$ \units{}{}{} is the fraction of the amount of the solute $m$ and 
-       the mass of liquid $m_l$, all in unit volume. The relation between $c_l$ and the concentration $c$ from 
-       transport equation \eqref{e:ADE} is $c = c_l \varrho_l$.
- \item $\varrho_l$, $\varrho_s$ is the \hyperA{Sorption::solvent-density}{liquid (solvent) density} and 
-       the \hyperA{Sorption-Data::rock-density}{solid (rock) density}, respectively.
- \item $M_s$ denotes the \hyperA{Substance::molar-mass}{molar mass} of a substance.
- \item \hyperA{Sorption-Data::isotherm-mult}{Multiplication parameters} are $k_i, i\in\{ l,F,L\}$ [mol\,$\mathrm{kg}^{-1}$].
- \item \hyperA{Sorption-Data::isotherm-other}{Additional parameter} $[\alpha] = 1$ can be set.
-\end{itemize}
 
 Non-zero \hyperA{Sorption-Data::init-conc-solid}{initial concentration} in the solid phase $c_s(0)$ can be set in the input record. 
-Now, further denoting \[ \mu_l = \varrho_l \th, \quad \mu_s = M_s \varrho_s\cdot(1-\th), \]
+Now, further denoting \[ \mu_l = \varrho_l \th, \quad \mu_s = \varrho_s\cdot(1-\th), \]
 and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sorption} reduces to the equation
 \begin{equation}
  c_T = \mu_l c_l + \mu_s f(c_l),
@@ -137,43 +157,42 @@ and using \eqref{eq:relation_cs_cl}, the mass balance \eqref{eq:mass_balance_sor
 which can be either solved iteratively or using interpolation. See subsection \ref{sec:num_sorp_math} 
 in numerical methods for details.
 
-The units of $c_l$, $c_s$ and $k_i$ can vary in literature. To avoid misinterpretation, we derive (according
-to Bowman~\cite{bowman_conversion_1982}) a conversion rule for Freundlich isotherm which will lead the user 
-also in other cases, we believe. 
+The units of $c_l$, $c_s$ and $k_i$ can vary in literature. For an example of conversion rules 
+in the case of Freundlich isotherm we refer to Bowman~\cite{bowman_conversion_1982}.
 
-\paragraph{Units conversion.} Let us have $c$ \units{1}{-3}{}, the mass concentration in liquid, and $s$~[kg\,$\mathrm{kg}^{-1}$], 
-the fraction of the amount of the solute adsorbed and the amount of the adsorbent in solid. 
-The unit of $K$ follows from the dimensional analysis of $s=Kc^{\alpha}$:
-\[[K] = \frac{\rm{kg}^{1-\alpha}\rm{m}^{3\alpha}}{\rm{kg}},\]
-which we want to convert to $k_F$ [mol\,$\mathrm{kg}^{-1}$] in the formula $c_s=k_Fc_l^\alpha$.
-
-The first step is a conversion of the mass of the solute to moles by dividing it by the
-molar mass $M_s$. We then have the formula 
-\begin{eqnarray}
-s&=&Kc^{\alpha} \nonumber \\
-\frac{s}{M_s} &=& K'\left(\frac{c}{M_s}\right)^\alpha, \label{eqn:sorp_molar_conc}\\
-s &=& K'M_s^{1-\alpha}c^\alpha, \nonumber 
-\end{eqnarray}
-where $s=c_sM_s$ and $K'=KM_s^{\alpha-1}$ [$\rm{mol}^{1-\alpha}\rm{kg}^{-1}\rm{m}^{3\alpha}$] is a new constant,
-distributing the molar concentration in liquid to the ratio of the molar mass and the amount of sorbent in solid.
-
-The second step is introducing $c_l = \frac{c}{\varrho_l}$ into the formula \eqref{eqn:sorp_molar_conc}
-\begin{equation}
-c_s = K'\left(\frac{c_l \rho_l }{M_s}\right)^\alpha
-= K' M_s^{-\alpha}\rho_l^{\alpha}c_l^\alpha 
-= \left( K M_s^{-1}\rho_l^{\alpha} \right) c_l^\alpha,
-\end{equation}
-where we can denote 
-\begin{equation}
-k_F=K M_s^{-1}\rho_l^{\alpha},
-\end{equation} 
-which is the constant we are looking for. This can be also translated to the case of the linear isotherm, where
-$\alpha=1$ and $[K] = \rm{kg}^{-1}\rm{m}^{3}$, and we get the conversion rule
-\begin{equation}
-k_l=K M_s^{-1}\rho_l.
-\end{equation} 
-The conversion of different prefixes of units are left on the user. One should be careful using the 
-Freundlich isotherm, though, where the exponent $\alpha$ must not be forgotten.
+% \paragraph{Units conversion.} Let us have $c$ \units{1}{-3}{}, the mass concentration in liquid, and $s$~[kg\,$\mathrm{kg}^{-1}$], 
+% the fraction of the amount of the solute adsorbed and the amount of the adsorbent in solid. 
+% The unit of $K$ follows from the dimensional analysis of $s=Kc^{\alpha}$:
+% \[[K] = \frac{\rm{kg}^{1-\alpha}\rm{m}^{3\alpha}}{\rm{kg}},\]
+% which we want to convert to $k_F$ [mol\,$\mathrm{kg}^{-1}$] in the formula $c_s=k_Fc_l^\alpha$.
+% 
+% The first step is a conversion of the mass of the solute to moles by dividing it by the
+% molar mass $M_s$. We then have the formula 
+% \begin{eqnarray}
+% s&=&Kc^{\alpha} \nonumber \\
+% \frac{s}{M_s} &=& K'\left(\frac{c}{M_s}\right)^\alpha, \label{eqn:sorp_molar_conc}\\
+% s &=& K'M_s^{1-\alpha}c^\alpha, \nonumber 
+% \end{eqnarray}
+% where $s=c_sM_s$ and $K'=KM_s^{\alpha-1}$ [$\rm{mol}^{1-\alpha}\rm{kg}^{-1}\rm{m}^{3\alpha}$] is a new constant,
+% distributing the molar concentration in liquid to the ratio of the molar mass and the amount of sorbent in solid.
+% 
+% The second step is introducing $c_l = \frac{c}{\varrho_l}$ into the formula \eqref{eqn:sorp_molar_conc}
+% \begin{equation}
+% c_s = K'\left(\frac{c_l \rho_l }{M_s}\right)^\alpha
+% = K' M_s^{-\alpha}\rho_l^{\alpha}c_l^\alpha 
+% = \left( K M_s^{-1}\rho_l^{\alpha} \right) c_l^\alpha,
+% \end{equation}
+% where we can denote 
+% \begin{equation}
+% k_F=K M_s^{-1}\rho_l^{\alpha},
+% \end{equation} 
+% which is the constant we are looking for. This can be also translated to the case of the linear isotherm, where
+% $\alpha=1$ and $[K] = \rm{kg}^{-1}\rm{m}^{3}$, and we get the conversion rule
+% \begin{equation}
+% k_l=K M_s^{-1}\rho_l.
+% \end{equation} 
+% The conversion of different prefixes of units are left on the user. One should be careful using the 
+% Freundlich isotherm, though, where the exponent $\alpha$ must not be forgotten.
 
 
 \subsection{Sorption in Dual Porosity Model} 
@@ -202,7 +221,7 @@ In particular, the mass balance in the mobile zone reads:
  \begin{array}{l}
   c_T = \mu_l\cdot c_{ml} + \mu_s\cdot c_{ms},\\
   \mu_l = \varrho_l \cdot \vartheta_m, \\
-  \mu_s = M_s \cdot\varrho_s\cdot(1-\vartheta_m - \vartheta_i)\varphi,
+  \mu_s = \varrho_s\cdot(1-\vartheta_m - \vartheta_i)\varphi,
  \end{array}
  \label{eq:scale_params_m}
 \end{eqnarray}
@@ -211,7 +230,7 @@ while in the immobile zone it has the form:
  \begin{array}{l}
   c_T = \mu_l\cdot c_{il} + \mu_s\cdot c_{is},\\
   \mu_l = \varrho_l \cdot \vartheta_i, \\
-  \mu_s = M_s \cdot\varrho_s\cdot(1-\vartheta_m - \vartheta_i)(1 - \varphi).
+  \mu_s = \varrho_s\cdot(1-\vartheta_m - \vartheta_i)(1 - \varphi).
  \end{array}
  \label{eq:scale_params_i}
 \end{eqnarray}

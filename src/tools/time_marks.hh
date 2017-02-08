@@ -48,7 +48,37 @@ public:
      *  - type_bc_change (hex 0x04)
      *  @see TimeMarks
      */
-    typedef unsigned long int Type;
+	struct Type {
+		Type() : bitmap_(0x1), equation_index_(1) {}
+		Type(unsigned long int bitmap, unsigned char equation_index) : bitmap_(bitmap), equation_index_(equation_index) {}
+
+		/*Type operator&(const Type& other) const {
+			//ASSERT(equation_index_ == other.equation_index_)((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+			return Type( (bitmap_ & other.bitmap_), equation_index_);
+		}*/
+
+		Type operator|(const Type& other) const {
+			// equation_indexes must be same or one of them must be zero
+			if (equation_index_ == 0) {
+				return Type( (bitmap_ | other.bitmap_), other.equation_index_);
+			} else {
+				ASSERT( (equation_index_ == other.equation_index_) || (other.equation_index_ == 0) )
+						((unsigned int)equation_index_)((unsigned int)other.equation_index_).error();
+				return Type( (bitmap_ | other.bitmap_), equation_index_);
+			}
+		}
+
+		Type operator~() const {
+			return Type( ~bitmap_, equation_index_);
+		}
+
+		bool operator==(const Type& other) const {
+			return ( (bitmap_ == other.bitmap_) && ((equation_index_ == other.equation_index_) || (other.equation_index_ == 0)) );
+		}
+
+		unsigned long int bitmap_;
+		unsigned char equation_index_;
+	};
 
     /// Mark Type with all bits set.
     static const Type every_type;
@@ -83,13 +113,15 @@ public:
      */
 
     inline bool match_mask(const TimeMark::Type &mask) const {
-        return ( mask & (~mark_type_) ) == 0;
+        return (( mask.bitmap_ & (~mark_type_.bitmap_) ) == 0) && (mask.equation_index_ == mark_type_.equation_index_ || mask.equation_index_ == 0);
     }
 
     /// Add more bits that a mark satisfies.
     /// @param type type that should be modified
     inline void add_to_type(const TimeMark::Type &type) {
-        mark_type_ |= type;
+        ASSERT( (this->mark_type_.equation_index_ == type.equation_index_) || (type.equation_index_ == 0) )
+                ((unsigned int)this->mark_type_.equation_index_)((unsigned int)type.equation_index_).error();
+        mark_type_.bitmap_ |= type.bitmap_;
     }
 
     /// Comparison of time marks according to their time.
@@ -97,12 +129,19 @@ public:
     bool operator<(const TimeMark& another) const
       { return time_ < another.time(); }
 
+    /// For unordered maps and sets, hashing.
+    bool operator==(const TimeMark & other_mark) const {
+        return (time_ == other_mark.time_) && ( mark_type_ == other_mark.mark_type_);
+    }
+
 
 private:
     /// The marked time.
     double time_;
     /// The type of the TimeMark.
     Type mark_type_;
+
+    friend class TimeMarks;
 };
 
 /**
@@ -120,6 +159,7 @@ std::ostream& operator<<(std::ostream& stream, const TimeMark &marks);
 
 
 /***************************************************************************************/
+class TimeStep;
 class TimeGovernor;
 class TimeMarksIterator;
 
@@ -195,12 +235,17 @@ public:
     inline TimeMark::Type type_input()
     { return type_input_;}
 
+    /// Predefined base TimeMark type for times of balnace output.
+    /// Is defined by constructor as 0x08.
+    inline TimeMark::Type type_balance_output()
+    { return type_balance_output_;}
+
 
     /**
      * Basic method for inserting TimeMarks.
      * @param mark    Reference to TimeMark object.
      */
-    void add(const TimeMark &mark);
+    TimeMark add(const TimeMark &mark);
 
     /**
      * Method for creating and inserting equally spaced TimeMarks.
@@ -215,10 +260,17 @@ public:
     void add_time_marks(double time, double dt, double end_time, TimeMark::Type type);
 
     /**
-     * Find the last time mark matching given mask, and returns true if it is in the time interval of
-     * current time step.
+     * Apply TimeMark::add_to_type (|=) to all time marks matching the filter type.
      */
-    bool is_current(const TimeGovernor &tg, const TimeMark::Type &mask) const;
+    void add_to_type_all(TimeMark::Type filter_type, TimeMark::Type add_type);
+
+    //bool is_current(const TimeStep &time_step, const TimeMark::Type &mask) const;
+
+    /*
+     * Find the last time mark matching given mask, and returns its iterator if it is in the time interval of
+     * the current time step. Returns end(mask) otherwise.
+     */
+    TimeMarks::iterator current(const TimeStep &time_step, const TimeMark::Type &mask) const;
 
     /**
      * Return the first TimeMark with time strictly greater then tg.time() that match the mask.
@@ -238,6 +290,7 @@ public:
      * @param tg    the time governor
      * @param mask  mask of marks to iterate on
      */
+    TimeMarks::iterator last(const TimeStep &time_step, const TimeMark::Type &mask) const;
     TimeMarks::iterator last(const TimeGovernor &tg, const TimeMark::Type &mask) const;
 
     /**
@@ -246,10 +299,16 @@ public:
     TimeMarks::iterator last(const TimeMark::Type &mask) const;
 
     /// Iterator for the begin mimics container-like  of TimeMarks
-    TimeMarks::iterator begin(TimeMark::Type mask = TimeMark::every_type) const;
+    TimeMarks::iterator begin(TimeMark::Type mask) const;
+
+    /// Same as previous, but constructs TimeMark::Type from equation index
+    TimeMarks::iterator begin(unsigned char ei) const;
 
     /// Iterator for the end mimics container-like  of TimeMarks
-    TimeMarks::iterator end(TimeMark::Type mask = TimeMark::every_type) const;
+    TimeMarks::iterator end(TimeMark::Type mask) const;
+
+    /// Same as previous, but constructs TimeMark::Type from equation index
+    TimeMarks::iterator end(unsigned char ei) const;
 
     /// Friend output operator.
     friend std::ostream& operator<<(std::ostream& stream, const TimeMarks &marks);
@@ -260,7 +319,7 @@ private:
     TimeMark::Type next_mark_type_;
 
     /// TimeMarks list sorted according to the their time.
-    std::vector<TimeMark> marks_;
+    std::vector< std::vector<TimeMark> > marks_;
 
     /// Predefined type for fixed time.
     TimeMark::Type type_fixed_time_;
@@ -268,6 +327,8 @@ private:
     TimeMark::Type type_output_;
     /// Predefined type for change of boundary condition.
     TimeMark::Type type_input_;
+    /// Predefined type for balance output
+    TimeMark::Type type_balance_output_;
 };
 
 
@@ -347,5 +408,6 @@ private:
     /// Mask type.
     TimeMark::Type mask_;
 };
+
 
 #endif /* TIME_MARKS_HH_ */

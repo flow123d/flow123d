@@ -84,6 +84,7 @@ public:
     std::string get_string_value() const override;                    ///< Implements @p PathBase::get_string_value
     unsigned int get_node_type_index() const override;                ///< Implements @p PathBase::get_node_type_index
     bool get_record_key_set(std::set<std::string> &) const override;  ///< Implements @p PathBase::get_record_key_set
+    bool is_effectively_null() const override;                        ///< Implements @p PathBase::is_effectively_null
     int get_array_size() const override;                              ///< Implements @p PathBase::get_array_size
     bool is_record_type() const override;                             ///< Implements @p PathBase::is_record_type
     bool is_array_type() const override;                              ///< Implements @p PathBase::is_array_type
@@ -92,8 +93,8 @@ public:
     /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
 
-    /// Implements @p PathBase::get_descendant_name
-    std::string get_descendant_name() const override;
+    /// Implements @p PathBase::get_record_name
+    std::string get_record_name() const override;
 
 protected:
 

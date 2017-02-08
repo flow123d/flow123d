@@ -112,10 +112,10 @@ public:
      *
      * Parameter @p root_type provides input type tree declaration. See @p read_from_stream for details.
      */
-    ReaderToStorage(const FilePath &in_file, const Type::TypeBase &root_type);
+    ReaderToStorage(const FilePath &in_file, Type::TypeBase &root_type);
 
     /// Read a storage from string (e.g. complex default value).
-    ReaderToStorage( const string &default_str, const Type::TypeBase &root_type, FileFormat format);
+    ReaderToStorage( const string &default_str, Type::TypeBase &root_type, FileFormat format);
 
     /**
      * @brief Returns the root accessor.
@@ -125,8 +125,6 @@ public:
     template <class T>
     T get_root_interface() const;
 
-
-protected:
 
     /**
      * @brief Default constructor.
@@ -142,6 +140,8 @@ protected:
      * store the data into private storage tree using \p StorageBase classes.
      */
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
+
+protected:
 
     /// Getter for root of the storage tree.
     StorageBase *get_storage();

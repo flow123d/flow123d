@@ -75,6 +75,7 @@ protected:
      */
     virtual void after_run();
 
+
     /**
      * Parse command line parameters.
      * @param[in] argc       command line argument count
@@ -82,30 +83,25 @@ protected:
      */
     virtual void parse_cmd_line(const int argc, char ** argv);
 
-    /**
-     * Split path to directory (part up to last DIR_SEPARATOR excluded) and filename.
-     * Directory is set to "." if no DIR_SEPARATOR is found.
-     */
-    void split_path(const string& path, string& directory, string& file_name);
-
 private:
 
     /// Get version of program and other base data from rev_num.h and store them to map
     Input::Type::RevNumData get_rev_num_data();
 
-    /// directory of main input file (used to resolve relative paths of other input files)
-    string main_input_dir_;
     /// filename of main input file
     string main_input_filename_;
 
-    int passed_argc_;
-    char ** passed_argv_;
+    //int passed_argc_;
+    //char ** passed_argv_;
     
     /// Description of possible command line arguments.
     string program_arguments_desc_;
 
     /// If true, we do output of profiling information.
     bool use_profiler;
+
+    /// If true, preserves output of balance in YAML format.
+    bool yaml_balance_output_;
 
     /// root input record
     Input::Record root_record;

@@ -7,6 +7,7 @@
 
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest.hh>
+#include <mesh_constructor.hh>
 
 #include "mesh/region.hh"
 #include "mesh/mesh.h"
@@ -140,6 +141,49 @@ TEST(Region, add_nonunique_id_region) {
 }
 
 
+// simplest mesh
+string gmsh_mesh = R"CODE(
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+6
+1       37      "1D diagonal"
+2       38      "2D XY diagonal"
+2       101     ".top side"
+2       102     ".bottom side"
+3       39      "3D back"
+3       40      "3D front"
+$EndPhysicalNames
+$Nodes
+8
+1 1 1 1
+2 -1 1 1
+3 -1 -1 1
+4 1 -1 1
+5 1 -1 -1
+6 -1 -1 -1
+7 1 1 -1
+8 -1 1 -1
+$EndNodes
+$Elements
+13
+1 1 2 37 20 7 3
+2 2 2 38 34 6 3 7
+3 2 2 38 36 3 1 7
+4 4 2 39 40 3 7 1 2
+5 4 2 39 40 3 7 2 8
+6 4 2 39 40 3 7 8 6
+7 4 2 40 42 3 7 6 5
+8 4 2 40 42 3 7 5 4
+9 4 2 41 42 3 7 4 1
+10 2 2 101 101 1 2 3
+11 2 2 101 101 1 3 4
+12 2 2 102 102 6 7 8
+13 2 2 102 102 7 6 5 
+$EndElements
+)CODE";
+
 const string read_regions_yaml = R"YAML(
 - !From_Id
   name: 3D front rename
@@ -172,6 +216,7 @@ const string read_regions_yaml = R"YAML(
   region_ids: 
    - 37
    - 38
+   - 41
   regions:
    - 3D front rename
    - label_1
@@ -194,9 +239,9 @@ TEST(Region, read_regions_from_yaml) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-    GmshMeshReader reader(mesh_file);
-    Mesh * mesh = new Mesh;
+    stringstream in(gmsh_mesh.c_str());
+    GmshMeshReader reader(in);
+    Mesh * mesh = mesh_constructor();
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
 	Input::ReaderToStorage json_reader( read_regions_yaml, element_map_array_input_type, Input::FileFormat::format_YAML);
@@ -230,7 +275,7 @@ TEST(Region, read_regions_from_yaml) {
 	EXPECT_EQ(39, region_db.get_region_set("label_3")[0].id() );
 	EXPECT_EQ(40, region_db.get_region_set("label_3")[1].id() );
 
-	EXPECT_EQ( 5, region_db.get_region_set("label_4").size() );
+	EXPECT_EQ( 6, region_db.get_region_set("label_4").size() );
 	EXPECT_EQ(37, region_db.get_region_set("label_4")[0].id() );
 	EXPECT_EQ(38, region_db.get_region_set("label_4")[1].id() );
 	EXPECT_EQ(39, region_db.get_region_set("label_4")[2].id() );
@@ -243,9 +288,9 @@ TEST(Region, read_regions_from_yaml) {
 	EXPECT_EQ( 1, region_db.get_region_set("label_6").size() );
 	EXPECT_EQ(40, region_db.get_region_set("label_6")[0].id() );
 
-	EXPECT_EQ( 8, region_db.get_region_set("ALL").size() );
-	EXPECT_EQ( 6, region_db.get_region_set("BULK").size() );
-	EXPECT_EQ( 2, region_db.get_region_set("BOUNDARY").size() );
+	EXPECT_EQ( 9, region_db.get_region_set("ALL").size() );
+	EXPECT_EQ( 7, region_db.get_region_set("BULK").size() );
+	EXPECT_EQ( 2, region_db.get_region_set(".BOUNDARY").size() );
 
 	EXPECT_EQ( 37, mesh->element[0].region().id() );
 	EXPECT_EQ( 39, mesh->element[3].region().id() );
@@ -286,7 +331,7 @@ TEST(Region, read_regions_error_messages) {
 
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader reader(mesh_file);
-    Mesh * mesh = new Mesh;
+    Mesh * mesh = mesh_constructor();
 	reader.read_physical_names(mesh);
 
 	{

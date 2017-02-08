@@ -66,7 +66,10 @@ const Record & FirstOrderReaction::get_input_type_single_reaction() {
 
 const Record & FirstOrderReaction::get_input_type() {
 	return Record("FirstOrderReaction", "A model of first order chemical reactions (decompositions of a reactant into products).")
-		.derive_from( ReactionTerm::get_input_type() )
+		.derive_from( ReactionTerm::it_abstract_term() )
+		.derive_from( ReactionTerm::it_abstract_mobile_term() )
+		.derive_from( ReactionTerm::it_abstract_immobile_term() )
+		.derive_from( ReactionTerm::it_abstract_reaction() )
 		.declare_key("reactions", Array( FirstOrderReaction::get_input_type_single_reaction()), Default::obligatory(),
 					"An array of first order chemical reactions.")
 		.declare_key("ode_solver", PadeApproximant::get_input_type(), Default("{}"),

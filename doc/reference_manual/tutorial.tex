@@ -1,14 +1,15 @@
 
 
 \section{Tutorial Problem}
-In the following section, we shall provide an example cook book for preparing and running a model. It is 
-one of the test problem with the main input file:
+In the following section, we shall provide an example cook book for preparing and running a model,
+based on one of the test problems, namely
 \begin{verbatim}
-tests/03_transport_small_12d/flow_vtk.con
+tests/21_solute_fv_frac/03_fv_dp_sorp_small.yaml.
 \end{verbatim}
 We shall start with preparation of the geometry using an external software and then we shall go thoroughly through the 
 commented main input file. The problem includes steady Darcy flow, transport of two substances with explicit
 time discretization and a reaction term consisting of dual porosity and sorption model.
+Further tutorials focussed to particular features can be found in Chapter \ref{chapter:tutorials}.
 
 \subsection{Geometry}
 We consider a~simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). 
@@ -75,137 +76,133 @@ Physical Surface("2d") = {30, 32, 34};
 Notice the labeled physical domains on lines 26 -- 36. Then we just set the discretization step \verb'cl1' and use GMSH to create the mesh file.
 The mesh file contains both the 'bulk' elements where we perform calculations and the 'boundary' elements (on the boundary physical domains) where we only set the boundary conditions.
 
-\subsection{CON File Format}
-The main input file uses a slightly extended JSON file format which together with some particular constructs forms a CON (C++ object notation) file format. 
-Main extensions of the JSON are unquoted key names (as long as they do not contain whitespaces), possibility to use \verb'=' instead of \verb':' 
-and C++ comments, i.e. \verb'//' for a one line and \verb'/* */' for a multi-line comment. In CON file format, we prefer to call JSON objects ``records'' and we introduce also ``abstract records''
-that mimic C++ abstract classes, arrays of a CON file have only elements of the same type (possibly using abstract record types for polymorphism). 
-The usual keys are in lower case and without spaces (using underscores instead),
-there are few special upper case keys that are interpreted by the reader: \verb'REF' key for references, \verb'TYPE' key for specifing actual type of an abstract record.
+\subsection{YAML File Format}
+The main input file uses the YAML file format with some restrictions. 
+We prefer to call YAML objects ``records'' and we introduce also ``abstract records''
+that mimic C++ abstract classes.
+Arrays have only elements of the same type (possibly using abstract record types for polymorphism). 
+The usual keys are in lower case and without spaces (using underscores instead).
 For detailed description see Section \ref{sec:CONformat}.
 
 
 Having the computational mesh from the previous step, we can create the main input file with the description of our problem. 
 \begin{Verbatim}[numbers=left]
-{
-  problem = {
-    TYPE = "SequentialCoupling", 
-    description = "Tutorial problem: 
-    Transport 1D-2D (convection, dual porosity, sorption, sources).", 
-    mesh = {
-      mesh_file = "./input/mesh_with_boundary.msh",
-      sets = [
-          { name="1d_domain", 
-            region_labels = [ "1d_upper", "1d_lower", "1d_left_branch" ]
-          }
-        ]
-    }, // mesh
+flow123d_version: 2.0.0
+problem: !CouplingSequential
+  description: Tutorial problem: Transport 1D-2D (convection, dual
+               porosity, sorption, sources).
+  mesh:
+    mesh_file: ./input/mesh_with_boundary.msh
+    regions:
+      - !Union
+        name: 1d_domain
+        regions:
+          - 1d_upper
+          - 1d_lower
+          - 1d_left_branch
 \end{Verbatim}
-The file starts with a selection of problem type (\verb'SequentialCoupling'), and a textual problem description.
-Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one {\it region set} 
-composed of all 1D regions i.e. representing the whole fracture. Other keys of the \hyperlink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers, 
+The file starts with a selection of problem type (\verb'CouplingSequential'), and a textual problem description.
+Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one region 
+given as the union of all 1D regions i.e. representing the whole fracture. Other keys of the \Alink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers, 
 defining new regions in terms of element numbers (e.g to have leakage on single element), 
 defining boundary regions, and set operations with region sets, see Section \ref{sec:Mesh} for details.
 
 \subsection{Flow Setting}
 Next, we setup the flow problem. We shall consider a flow driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
-The \Alink{DarcyFlowMH-Data::conductivity}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
-Both 2D domain and 1D domain \Alink{DarcyFlowMH-Data::cross-section}{\tt cross\_section} will be set by default,
+The \Alink{Flow-Darcy-MH-Data::conductivity}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
+Both 2D domain and 1D domain \Alink{Flow-Darcy-MH-Data::cross-section}{\tt cross\_section} will be set by default,
 meaning that the thickness of 2D domain is $\delta_2=1$ \unitss{}{1}{} and the fracture cross section is $\delta_1=1$ \unitss{}{2}{}.
 The transition coefficient $\sigma_2$ between dimensions can be scaled by setting the dimensionless parameter 
-$\sigma_{21}$ (\Alink{DarcyFlowMH-Data::sigma}{\tt sigma}). This can be used for simulating additional
+$\sigma_{21}$ (\Alink{Flow-Darcy-MH-Data::sigma}{\tt sigma}). This can be used for simulating additional
 effects which prevent the liquid transition from/to a fracture, like a thin resistance layer. Read Section 
 \ref{sec:darcy_flow} for more details.
 
-\begin{Verbatim}[numbers=left, firstnumber=last]
-    primary_equation = {
-      TYPE = "Steady_MH", 
-
-      input_fields = [
-        { r_set = "1d_domain", conductivity = 1e-6, 
-                               cross_section = 0.04, 
-                               sigma = 0.9 },
-        { region = "2d",       conductivity = 1e-7  },
-        { r_set = "BOUNDARY",
-          bc_type = "dirichlet",
-          bc_pressure = { TYPE="FieldFormula", value = "x+y" }
-        }
-      ],
-
-     output = {
-        output_stream = { 
-          file = "flow.pvd", 
-          format = { TYPE = "vtk", variant = "ascii" }
-        }, 
-        output_fields = [ "pressure_p0", "pressure_p1", "velocity_p0" ]
-      }, 
-      
-      solver = {
-        TYPE = "Petsc",
-        a_tol = 1e-12,
-        r_tol = 1e-12
-      }
-    }, // primary equation
+\begin{Verbatim}[numbers=left, firstnumber=last,commandchars=\\\{\}]
+  flow_equation: !Flow_Darcy_MH\label{vrb:tutorial_floweq}
+    input_fields:\label{vrb:tutorial_flow_input_start}
+      - region: 1d_domain
+        conductivity: 1.0e-06
+        cross_section: 0.04
+        sigma: 0.9
+      - region: 2d
+        conductivity: 1.0e-07
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x+y\label{vrb:tutorial_flow_input_end}
+    output:\label{vrb:tutorial_output_start}
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0\label{vrb:tutorial_output_end}
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    balance: {}
 \end{Verbatim}
-On line 15, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
-solver for steady problems. On lines 17 -- 24, we set both mathematical fields that live on the computational domain 
-and those defining the boundary conditions. We set only the conductivity field since other \hyperlink{IT::DarcyFlowMH-Data}{\tt input\_fields} have appropriate default values.
-We use implicitly defined set ``BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
-pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt TYPE="FieldFormula"}.
+On line \ref{vrb:tutorial_floweq}, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
+solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end}, 
+we set both mathematical fields that live on the computational domain 
+and those defining the boundary conditions. We set only the conductivity field since other \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields}
+have appropriate default values.
+We use implicitly defined region ``.BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
+pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt !FieldFormula}.
 See Section \ref{sec:Fields} for other field types. 
-On lines 26 -- 32, we specify which output fields should be written to the output stream (that means particular output file, with given format).
+On lines \ref{vrb:tutorial_output_start} -- \ref{vrb:tutorial_output_end}, we specify which output fields should be written to the output stream (that means particular output file, with given format).
 Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
-See Section \ref{section_output} for the list of available \hyperlink{IT::DarcyMHOutput-Selection}{\tt output\_fields}.
+See Section \ref{section_output} for the list of available \Alink{IT::Flow-Darcy-MH-OutputFields}{output \tt fields}.
 Finally, we specify type of the linear solver and its tolerances.
 
 
 
 \subsection{Transport Setting}
-The flow model is followed by a transport model in the \Alink{SequentialCoupling::secondary-equation}{\tt secondary\_equation}
-beginning on line 40. For the transport problem, we use an implementation called \hyperlink{IT::TransportOperatorSplitting}{TransportOperatorSplitting}
+The flow model is followed by a transport model in the \Alink{Coupling-Sequential::solute-equation}{\tt solute\_equation}
+beginning on line 40. For the transport problem, we use an implementation called \hyperA{IT::Solute-Advection-FV}{Solute\_Advection\_FV}
 which stands for an explicit finite volume solver of the convection equation (without diffusion).
 The operator splitting method is used for equilibrium sorption as well as for dual porosity model and 
 first order reactions simulation.
 
-\begin{Verbatim}[numbers=left, firstnumber=last]
-    secondary_equation = {
-      TYPE = "TransportOperatorSplitting", 
-
-      substances = [ 
-        {name = "age", molar_mass = 0.018},     // water age
-        {name = "U235", molar_mass = 0.235}     // uranium 235
-      ],
-      
-      input_fields= [
-        { r_set = "ALL",
-          init_conc = 0,
-          porosity= 0.25,
-          sources_density = [1.0, 0]
-        },
-        { r_set = "BOUNDARY",
-          bc_conc = [0.0, 1.0]
-        }
-      ],
-      
-      time = { end_time = 1e6 },
-      mass_balance = { cumulative = true },
+\begin{Verbatim}[numbers=left, firstnumber=last,commandchars=\\\{\}]
+  solute_equation: !Coupling_OperatorSplitting
+    substances:\label{vrb:tutorial_substances_start}
+      - name: age # water age
+        molar_mass: 0.018
+      - name: U235 # uranium 235
+        molar_mass: 0.235\label{vrb:tutorial_substances_end}
+    transport: !Solute_Advection_FV
+      input_fields:\label{vrb:tutorial_transport_input_start}
+        - region: ALL
+          init_conc: 0\label{vrb:tutorial_transport_init_conc}
+          porosity: 0.25
+          sources_density: # source is in the whole volume (l+s) -> times porosity
+            - 0.25
+            - 0
+        - region: .BOUNDARY\label{vrb:tutorial_transport_boundary}
+          bc_conc:
+            - 0.0
+            - 1.0\label{vrb:tutorial_transport_input_end}
+    time:
+      end_time: 1000000
+    balance:
+      cumulative: true
 \end{Verbatim}
 
-On lines 43 -- 46, we set the transported \Alink{TransportOperatorSplitting::substances}{\tt substances}, 
+On lines \ref{vrb:tutorial_substances_start} -- \ref{vrb:tutorial_substances_end}, we set the transported \Alink{Coupling-OperatorSplitting::substances}{\tt substances}, 
 which are identified by their names. Here, the first one is the \verb'age' of the water, with the molar mass of water, 
 and the second one \verb'U235' is the uranium isotope 235. 
-On lines 48 -- 57, we set the input fields, in particular zero initial concentration for all substances,
-\Alink{TransportOperatorSplitting-Data::porosity}{\tt porosity} $\theta = 0.25$ and 
-sources of concentration by \Alink{TransportOperatorSplitting-Data::sources-density}{\tt sources\_density}. 
-Notice line 50 where we can see only single value since an automatic conversion is applied to turn the scalar 
+On lines \ref{vrb:tutorial_transport_input_start} -- \ref{vrb:tutorial_transport_input_end}, we set the input fields, in particular zero initial concentration for all substances,
+\Alink{Solute-Advection-FV-Data::porosity}{\tt porosity} $\theta = 0.25$ and 
+sources of concentration by \Alink{Solute-Advection-FV-Data::sources-density}{\tt sources\_density}. 
+Notice line \ref{vrb:tutorial_transport_init_conc} where we can see only single value since an automatic conversion is applied to turn the scalar 
 zero into the zero vector (of size 2 according to the number of substances). 
 
-The boundary fields are set on lines 54 -- 56. We need not to specify the type of the condition since there is 
-only one type in the current transport model. The boundary condition is equal to $1$ for the uranium 235 and $0$ 
+The boundary fields are set on lines \ref{vrb:tutorial_transport_boundary} -- \ref{vrb:tutorial_transport_input_end}. We need not to specify the type of the condition since there is 
+only one type in the {\tt Solute\_Advection\_FV} transport model. The boundary condition is equal to $1$ for the uranium 235 and $0$ 
 for the age of the water and is automatically applied only on the inflow part of the boundary. 
 
-We also have to prescribe the \hyperlink{IT::TimeGovernor}{\tt time} setting, here only the end time of the simulation
+We also have to prescribe the \hyperA{IT::TimeGovernor}{\tt time} setting, here only the end time of the simulation
 (in seconds: $10^6\,\rm{s}\approx 11.57$ days) is required since the step size is determined from the CFL condition. 
 However, a smaller time step can be enforced if necessary.
 
@@ -213,71 +210,72 @@ Reaction term of the transport model is described in the next subsection, includ
 
 \subsection{Reaction Term}\label{subsubsec:reactions}
 The input information for dual porosity, equilibrial sorption and possibly first order reations are enclosed in the record 
-\Alink{TransportOperatorSplitting::reaction-term}{\tt reaction\_term}, lines 61 -- 100. Go to section \ref{sec:reaction_term}
+\Alink{Coupling-OperatorSplitting::reaction-term}{\tt reaction\_term}, lines \ref{vrb:tutorial_dp_start} -- \ref{vrb:tutorial_dp_end}. Go to section \ref{sec:reaction_term}
 to see how the models can be chained.
 
-The type of the first process is determined by {\tt TYPE="DualPorosity"}, on line 62. 
+The type of the first process is determined by {\tt !DualPorosity}, on line \ref{vrb:tutorial_dp_start}. 
 The \Alink{DualPorosity::input-fields}{\tt input\_fields}
-of dual porosity model are set on lines 64 -- 71 and the output is disabled by setting an empty array on line 73.
+of dual porosity model are set on lines \ref{vrb:tutorial_dp_input_start} -- \ref{vrb:tutorial_dp_input_end} and the output is disabled by setting an empty array on line \ref{vrb:tutorial_dp_output}.
 
-\begin{Verbatim}[numbers=left, firstnumber=last]
-      reaction_term = {
-        TYPE = "DualPorosity",
-        
-        input_fields= [
-          {
-            r_set="ALL",
-            diffusion_rate_immobile = [0.01,0.01],
-            porosity_immobile = 0.25,
-            init_conc_immobile = [0.0, 0.0]
-          }
-        ],
-        
-        output_fields = [],
-        
-        reaction_mobile = {
-          TYPE = "SorptionMobile",
-          solvent_density = 1000.0,     // water
-          substances = ["age", "U235"],
-          solubility = [1.0, 1.0],
-          
-          input_fields= [
-            {
-              r_set="ALL",
-              rock_density = 2800.0,    // granit
-              sorption_type =  ["none", "freundlich"],
-              isotherm_mult = [0, 0.68], 
-              isotherm_other = [0, 1.0]
-            }
-          ],
-          output_fields = []
-        },
-        reaction_immobile = {
-          TYPE = "SorptionImmobile",
-          solvent_density = 1000.0,     // water
-          substances = ["age", "U235"],
-          solubility = [1.0, 1.0],
-          input_fields = { REF="../../reaction_mobile/input_fields" },
-          output_fields = []
-        }
-      },
-      
-      output_stream = { 
-        file = "transport.pvd", 
-        format = { TYPE = "vtk", variant = "ascii" },
-        time_step = 1e5      
-      } 
-
-    } // secondary_equation
-  } // problem
-}
+\begin{Verbatim}[numbers=left, firstnumber=last,commandchars=\\\{\}]
+    reaction_term: !DualPorosity\label{vrb:tutorial_dp_start}
+      input_fields:\label{vrb:tutorial_dp_input_start}
+        - region: ALL
+          diffusion_rate_immobile:
+            - 0.01
+            - 0.01
+          porosity_immobile: 0.25
+          init_conc_immobile:
+            - 0.0
+            - 0.0\label{vrb:tutorial_dp_input_end}
+      output:
+        fields: []\label{vrb:tutorial_dp_output}
+      reaction_mobile: !SorptionMobile\label{vrb:tutorial_sorp_mob}
+        solvent_density: 1000.0 # water\label{vrb:tutorial_sorp_mob_param_start}
+        substances:
+          - age
+          - U235
+        solubility:
+          - 1.0
+          - 1.0\label{vrb:tutorial_sorp_mob_param_end}
+        input_fields: &anchor1\label{vrb:tutorial_sorp_mob_input_start}
+          - region: ALL
+            rock_density: 2800.0 # granite
+            sorption_type:
+              - none
+              - freundlich
+            isotherm_mult:
+              - 0
+              - 0.68
+            isotherm_other:
+              - 0
+              - 1.0\label{vrb:tutorial_sorp_mob_input_end}
+        output:
+          fields: []\label{vrb:tutorial_sorp_mob_output}
+      reaction_immobile: !SorptionImmobile\label{vrb:tutorial_sorp_immob}
+        solvent_density: 1000.0 # water
+        substances:
+          - age
+          - U235
+        solubility:
+          - 1.0
+          - 1.0
+        input_fields: *anchor1\label{vrb:tutorial_sorp_immob_input}
+        output:
+          fields: []\label{vrb:tutorial_dp_end}
+    output_stream:\label{vrb:tutorial_trans_output_start}
+      file: transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 100000.0\label{vrb:tutorial_trans_output_end}
 \end{Verbatim}
 
-Next, we define the equilibrial sorption model such that \hyperlink{IT::SorptionMobile}{\tt SorptionMobile} type takes place in the mobile 
-zone of the dual porosity model while \hyperlink{IT::SorptionImmobile}{\tt SorptionImmobile} type takes place in its immobile zone, see lines 76 and 93.
+Next, we define the equilibrial sorption model such that \hyperA{IT::SorptionMobile}{\tt SorptionMobile} type takes place in the mobile 
+zone of the dual porosity model while \hyperA{IT::SorptionImmobile}{\tt SorptionImmobile} type takes place in its immobile zone, see lines \ref{vrb:tutorial_sorp_mob} and \ref{vrb:tutorial_sorp_immob}.
 Isothermally described sorption simulation can be used in the case of low concentrated solutions without competition between multiple dissolved species.
 
-On lines 77 -- 89, we set the sorption related input information. The solvent is water so the \Alink{Sorption::solvent-density}{\tt solvent\_density} 
+On lines \ref{vrb:tutorial_sorp_mob_param_start} -- \ref{vrb:tutorial_sorp_mob_param_end}, we set the sorption related input information. The solvent is water so the \Alink{Sorption::solvent-density}{\tt solvent\_density} 
 is supposed to be constant all over the simulated area. The vector \Alink{Sorption::substances}{\tt substances} 
 contains the list of names of soluted substances which are considered to be affected by the sorption.
 Solubility is a material characteristic of a sorbing substance related to the solvent. Elements of the vector 
@@ -286,7 +284,7 @@ This constrain is necessary because some substances might have limited solubilit
 its limit they start to precipitate. {\tt solubility} is a crucial parameter for solving a set of nonlinear 
 equations, described further. 
 
-The record \hyperlink{IT::Sorption-Data}{\tt input\_fields} covers the region specific parameters.
+The record \hyperA{IT::Sorption-Data}{\tt input\_fields} covers the region specific parameters.
 All implemented types of sorption can take the rock density in the region into account. The value of 
 \Alink{Sorption-Data::rock-density}{\tt rock\_density} is a constant in our case. 
 The \Alink{Sorption-Data::sorption-type}{\tt sorption\_type} represents the empirically determined isotherm 
@@ -300,15 +298,15 @@ and we want to use. We need to convert it to dimensionless value of \Alink{Sorpt
 in the following way: $k_l = K_dM_s^{-1}\rho_l = K_d\frac{1000}{0.235}\approx0.68$. For further details, see 
 mathematical description in Section \ref{sec:sorp_math}. 
 
-On line 97, notice the reference pointing to the definition of input fields on lines 81 -- 89. Only entire records 
+On line \ref{vrb:tutorial_sorp_immob_input}, notice the reference pointing to the definition of input fields on lines \ref{vrb:tutorial_sorp_mob_input_start} -- \ref{vrb:tutorial_sorp_mob_input_end}. Only entire records 
 can be referenced which is why we have to repeat parts of the input such as solvent density and solubility 
 (records for reaction mobile and reaction immobile have different types).
 
-On lines 90 and 98, we define which sorption specific outputs are to be written to the output file. 
+On lines \ref{vrb:tutorial_sorp_mob_output} and \ref{vrb:tutorial_dp_end}, we define which sorption specific outputs are to be written to the output file. 
 An implicit set of outputs exists. In this case we define an empty set of outputs thus overriding the implicit one. 
 This means that no sorption specific outputs will be written to the output file.
-On lines 102 -- 106 we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
-In the output record for time-dependent process we have to specify the {\tt time\_step} (line 105) which determines the frequency of saving.
+On lines \ref{vrb:tutorial_trans_output_start} -- \ref{vrb:tutorial_trans_output_end} we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
+In the output record for time-dependent process we have to specify the time {\tt step} (line \ref{vrb:tutorial_trans_output_end}) which determines the frequency of saving.
 
 
 

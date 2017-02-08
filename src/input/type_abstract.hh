@@ -90,7 +90,7 @@ protected:
         const string type_name_;
 
         /// Abstract is finished when it has added all descendant records.
-        bool finished_;
+        FinishStatus finish_status_;
 
         /// If Abstract is closed, we do not allow any further declaration calls.
         bool closed_;
@@ -155,7 +155,7 @@ public:
      */
     Abstract &allow_auto_conversion(const string &type_default);
 
-    /// Can be used to close the Abstract for further declarations of keys.
+    /// Close the Abstract and add its to type repository (see @p TypeRepository::add_type).
     Abstract &close();
 
     /**
@@ -171,10 +171,9 @@ public:
     /**
      *  @brief Finish declaration of the Abstract type.
      *
-     *  Set Abstract as parent of derived Records (for mechanism of
-     *  set parent and descendant see \p Record::derive_from)
+     *  Checks if Abstract is closed and completes Abstract (check default descendant, parameters of generic types etc).
      */
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Returns reference to the inherited Record with given name.
     const Record  &get_descendant(const string& name) const;
@@ -191,6 +190,9 @@ public:
 
     /// Returns number of descendants in the child_data_.
     unsigned int child_size() const;
+
+    /// Implements @p TypeBase::finish_status.
+    virtual FinishStatus finish_status() const override;
 
     /// Implements @p TypeBase::is_finished.
     virtual bool is_finished() const override;
@@ -224,36 +226,12 @@ public:
     /**
      * @brief Add inherited Record.
      *
-     * This method is used primarily in combination with registration variable. @see Input::Factory
+     * Do not use this method for set Record as descendant! For this case should be used \p Record::derive_from
+     * method in generating function of Record.
      *
-     * Example of usage:
-	 @code
-		 class SomeBase
-		 {
-		 public:
-    		/// the specification of input abstract record
-    		static const Input::Type::Abstract & get_input_type();
-			...
-		 }
-
-		 class SomeDescendant : public SomeBase
-		 {
-		 public:
-    		/// the specification of input record
-    		static const Input::Type::Record & get_input_type();
-			...
-		 private:
-			/// registers class to factory
-			static const int reg;
-		 }
-
-		 /// implementation of registration variable
-		 const int SomeDescendant::reg =
-			 Input::register_class< SomeDescendant >("SomeDescendant") +
-			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
-	 @endcode
+     * This method is used primarily for registration of Record during its closing.
      */
-    int add_child(const Record &subrec);
+    int add_child(Record &subrec);
 
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
@@ -311,10 +289,10 @@ public:
      * Adds descendants of ancestor Abstract, calls close() and complete keys with non-null
      * pointers to lazy types.
      */
-    bool finish(bool is_generic = false) override;
+	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Add inherited Record.
-    AdHocAbstract &add_child(const Record &subrec);
+    AdHocAbstract &add_child(Record &subrec);
 
 protected:
     /// Reference to ancestor Abstract

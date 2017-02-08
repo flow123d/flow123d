@@ -40,7 +40,10 @@ public:
   /**
    * Static variable for definition of common input record in reaction term.
    */
-  static Input::Type::Abstract & get_input_type();
+  static Input::Type::Abstract & it_abstract_term();
+  static Input::Type::Abstract & it_abstract_mobile_term();
+  static Input::Type::Abstract & it_abstract_immobile_term();
+  static Input::Type::Abstract & it_abstract_reaction();
   
   /// Constructor.
   /** @param init_mesh is the reference to the computational mesh
@@ -87,7 +90,7 @@ public:
    * On the other hand, some do not have (linear reaction, pade approximant) 
    * - that is why it is not pure virtual.
    */
-  virtual void output_data(void){};
+  virtual void output_data(void) override {};
 
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;

@@ -7,21 +7,23 @@ from ist.globals import Globals, FormatMode
 from ist.base import Parsable, Field, List, Dict, InputType
 from ist.utils.htmltree import htmltree
 from ist.utils.texlist2 import TexList
+from utils.logger import Logger
 
 
 class TypeReference(Parsable):
     """
+    Reference element
     :type reference  : unicode
     """
     __fields__ = [
     ]
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         self.reference = json_data
         return self
 
-    def __init__(self):
-        self.reference = None
+    def __init__(self, hash=None):
+        self.reference = hash
 
     def get_reference(self):
         """
@@ -42,6 +44,8 @@ class TypeReference(Parsable):
 
 class TypeSelectionValue(Parsable):
     """
+    Selection value element
+
     :type name           : unicode
     :type description    : unicode
     :type parent         : Parsable
@@ -65,9 +69,8 @@ class TypeSelectionValue(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.name))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.name))
 
-            return '{self.parent.href_id}-{self.name}'.format(self=self)
+            return '{self.parent.href_id}:{self.name}'.format(self=self)
         return self.name
-
 
     @property
     def href_name(self):
@@ -76,6 +79,8 @@ class TypeSelectionValue(Parsable):
 
 class TypeRecordKeyDefault(Parsable):
     """
+    Default in record value
+
     :type type           : unicode
     :type value          : unicode
     """
@@ -92,6 +97,8 @@ class TypeRecordKeyDefault(Parsable):
 
 class TypeRecordKey(Parsable):
     """
+    Key in record
+
     :type key            : unicode
     :type type           : ist.extras.TypeReference
     :type default        : ist.extras.TypeRecordKeyDefault
@@ -112,6 +119,9 @@ class TypeRecordKey(Parsable):
         self.description = None
 
     def include_in_format(self):
+        if self.key.find('TYPE') != -1:
+            Logger.instance().info('  - item starts with TYPE')
+            return False
         return True
 
     @property
@@ -123,7 +133,7 @@ class TypeRecordKey(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.key))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.key))
 
-            return '{self.parent.href_id}-{self.key}'.format(self=self)
+            return '{self.parent.href_id}:{self.key}'.format(self=self)
         return self.key
 
     @property
@@ -132,6 +142,10 @@ class TypeRecordKey(Parsable):
 
 
 class TypeRange(Parsable):
+    """
+    Class TypeRange parent to all range elements
+    """
+
     __fields__ = []
 
     replacements = {
@@ -143,7 +157,7 @@ class TypeRange(Parsable):
         '': 'unknown range'
     }
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         self.min = json_data[0]
         self.max = json_data[1]
         return self
@@ -183,6 +197,8 @@ class TypeRange(Parsable):
 
 class TypeAttributeParameter(Parsable):
     """
+    Parameter in attrs
+
     :type name           : unicode
     :type reference      : ist.extras.TypeReference
     """
@@ -193,7 +209,7 @@ class TypeAttributeParameter(Parsable):
         self.name = None
         self.reference = None
 
-    def parse(self, json_data={ }):
+    def parse(self, json_data={}):
         item = json_data.items()[0]
         self.name = str(item[0])
         self.reference = TypeReference().parse(item[1])
@@ -207,6 +223,8 @@ class TypeAttributeParameter(Parsable):
 
 class TypeAttributes(Parsable):
     """
+    Attributes element
+
     :type obsolete       : unicode
     :type link_name      : unicode
     :type input_type     : InputType

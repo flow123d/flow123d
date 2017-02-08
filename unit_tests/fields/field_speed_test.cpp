@@ -15,6 +15,7 @@
 
 #ifdef FLOW123D_RUN_UNIT_BENCHMARKS
 
+#include <mesh_constructor.hh>
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
@@ -35,7 +36,9 @@
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
-
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+FLOW123D_FORCE_LINK_IN_PARENT(field_python)
+FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
 
 using namespace std;
 
@@ -50,54 +53,42 @@ string field_input = R"JSON(
         region="set_1",
 
         constant_scalar={ TYPE="FieldConstant", value=1.75 },
-        constant_vector={ TYPE="FieldConstant", value=[1.75, 2.75, 3.75] },
         constant_vector_fixed={ TYPE="FieldConstant", value=[1.75, 3.75, 5.75] },
        
         formula_const_scalar={ TYPE="FieldFormula", value="1.75" },
-        formula_const_vector={ TYPE="FieldFormula", value=["1.75", "2.75", "3.75"] },
         formula_const_vector_fixed={ TYPE="FieldFormula", value=["1.75", "3.75", "5.75"] },
 
         formula_simple_scalar={ TYPE="FieldFormula", value="x^2" },
-        formula_simple_vector={ TYPE="FieldFormula", value=["x^2", "y^2", "z^2"] },
         formula_simple_vector_fixed={ TYPE="FieldFormula", value=["x^2", "y^2", "z^2"] },
 
         formula_full_scalar={ TYPE="FieldFormula", value="x+y+z+x^2+y^2+z^2" },
-        formula_full_vector={ TYPE="FieldFormula", value=["x+z+x^2+y^2+z^2", "x+y+x^2+y^2+z^2", "y+z+x^2+y^2+z^2"] },
         formula_full_vector_fixed={ TYPE="FieldFormula", value=["x+y+x^2+y^2+z^2", "y+z+x^2+y^2+z^2", "x+z+x^2+y^2+z^2"] },
 
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
-        python_vector={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 2.75, 3.75 )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
         elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" },
         elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
         region="set_2",
 
         constant_scalar={ TYPE="FieldConstant", value=1.25 },
-        constant_vector={ TYPE="FieldConstant", value=[1.25, 2.25, 3.25] },
         constant_vector_fixed={ TYPE="FieldConstant", value=[1.25, 3.25, 5.25] },
 
         formula_const_scalar={ TYPE="FieldFormula", value="1.25" },
-        formula_const_vector={ TYPE="FieldFormula", value=["1.25", "2.25", "3.25"] },
         formula_const_vector_fixed={ TYPE="FieldFormula", value=["1.25", "3.25", "5.25"] },
 
         formula_simple_scalar={ TYPE="FieldFormula", value="x^3" },
-        formula_simple_vector={ TYPE="FieldFormula", value=["x^3", "y^3", "z^3"] },
         formula_simple_vector_fixed={ TYPE="FieldFormula", value=["x^3", "y^3", "z^3"] },
 
         formula_full_scalar={ TYPE="FieldFormula", value="x+y+z+x^3+y^3+z^3" },
-        formula_full_vector={ TYPE="FieldFormula", value=["x+z+x^3+y^3+z^3", "x+y+x^3+y^3+z^3", "y+z+x^3+y^3+z^3"] },
         formula_full_vector_fixed={ TYPE="FieldFormula", value=["x+y+x^3+y^3+z^3", "y+z+x^3+y^3+z^3", "x+z+x^3+y^3+z^3"] },
 
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
-        python_vector={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 2.25, 3.25 )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
         elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" },
         elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     }
 ]
@@ -127,7 +118,7 @@ public:
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
         FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = new Mesh;
+        mesh_ = mesh_constructor();
         ifstream in(string( mesh_file ).c_str());
         mesh_->read_gmsh_from_stream(in);
 
@@ -218,18 +209,6 @@ public:
     	value_list= std::vector<ReturnType>(list_size);
 	}
 
-	void set_data(FieldValue<3>::Vector::return_type val) {
-		data1_ = arma::vec("1.75 2.75 3.75");
-		data2_ = arma::vec("1.25 2.25 3.25");
-		expect_const_val_ = arma::vec("13.75 22.75 31.75");
-		expect_formula_simple_val_ = arma::vec("9 52 153");
-		expect_formula_full_val_ = arma::vec("250 241 259");
-		expect_elementwise_val_ = arma::vec("9 18 27");
-		test_result_sum_ = arma::vec("0.0 0.0 0.0");
-		input_type_name_ = "vector";
-		value_list= std::vector<ReturnType>(list_size, ReturnType(n_comp_,1));
-	}
-
 	void set_data(FieldValue<3>::VectorFixed::return_type val) {
 		data1_ = arma::vec3("1.75 3.75 5.75");
 		data2_ = arma::vec3("1.25 3.25 5.25");
@@ -244,12 +223,6 @@ public:
 
 	void test_result(FieldValue<3>::Scalar::return_type expected, double multiplicator) {
 		EXPECT_DOUBLE_EQ( this->test_result_sum_, multiplicator * expected * loop_call_count );
-	}
-
-	void test_result(FieldValue<3>::Vector::return_type expected, double multiplicator) {
-		for (int i=0; i<3; i++) {
-			EXPECT_DOUBLE_EQ( this->test_result_sum_[i], multiplicator * expected[i] * loop_call_count );
-		}
 	}
 
 	void test_result(FieldValue<3>::VectorFixed::return_type expected, double multiplicator) {
@@ -308,7 +281,7 @@ public:
 };
 
 
-typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::Vector, FieldValue<3>::VectorFixed > TestedTypes;
+typedef ::testing::Types< FieldValue<3>::Scalar, FieldValue<3>::VectorFixed > TestedTypes;
 TYPED_TEST_CASE(FieldSpeed, TestedTypes);
 
 TYPED_TEST(FieldSpeed, array) {

@@ -23,14 +23,20 @@
 #include <fstream>
 #include "input/accessors.hh"
 
+class FilePath;
+class Observe;
 class OutputDataBase;
 class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
 class Field;
+class FieldSet;
 template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
+class OutputMesh;
+class OutputMeshDiscontinuous;
+
 
 /**
  * \brief The class for outputting data during time.
@@ -49,15 +55,21 @@ public:
     /**
      * \brief Constructor of OutputTime object. It opens base file for writing.
      *
+     * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    OutputTime(const Input::Record &in_rec);
+    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
      * necessary destructors will be called in destructor of Output
      */
     virtual ~OutputTime();
+
+    /**
+     * Return the input array for the output time set of the output stream.
+     */
+    Input::Iterator<Input::Array> get_time_set_array();
 
     /**
      * \brief The specification of output stream
@@ -91,8 +103,14 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const Input::Record &in_rec);
-
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    
+    /**
+     * Create the output mesh from the given computational mesh. The field set passed in is used
+     * to select the field used for adaptivity of the output mesh.
+     */
+    void make_output_mesh(FieldSet &output_fields);
+    
     /**
      * \brief Generic method for registering output data stored in MultiField
      *
@@ -119,22 +137,14 @@ public:
     void write_time_frame();
 
     /**
-     * \brief Registers names of output fields that can be written using this stream.
-     * @param in_array Array of admissible fields (array of selections).
+     * Getter of the oubserve object.
      */
-    void add_admissible_field_names(const Input::Array &in_array);
+    std::shared_ptr<Observe> observe();
 
     /**
      * \brief Clear data for output computed by method @p compute_field_data.
      */
     void clear_data(void);
-
-    /**
-     *  Add time marks matching given @p tg.output_mark_type as well as general output type
-     *  TimeMarks::type_output(). The time marks denotes times when output should be performed according
-     *  to the input record of the output stream, namely keys: time_step, time_list, and include_input_times.
-     */
-    void mark_output_times(const TimeGovernor &tg);
 
     /**
      * Declaration of new exception info used in following exception
@@ -147,13 +157,11 @@ public:
     DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
             << " returning variable size vectors. Try convert to MultiField.\n");
 
-    /**
-     * Record for current output stream
-     */
-    Input::AbstractRecord format_record_;
 
 protected:
-
+    
+    void compute_discontinuous_output_mesh();
+    
     /**
      * Interpolate given @p field into output discrete @p space and store the values
      * into private storage for postponed output.
@@ -209,7 +217,6 @@ protected:
      * output_data_vec_.
      */
     typedef unsigned int DiscreteSpaceFlags;
-    std::map<std::string, DiscreteSpaceFlags> output_names;
 
     /**
      * Record for current output stream
@@ -224,12 +231,28 @@ protected:
     /**
      * Name of base output file
      */
-    string _base_filename;
+    FilePath _base_filename;
+
+    /**
+     * Name of the equation owning the output stream. Usually the balance equation.
+     * Used for forming default output file name and the name of observe output file.
+     */
+    std::string equation_name_;
 
     /**
      * Cached pointer at mesh used by this output stream
      */
     Mesh *_mesh;
+    
+    /// Output mesh.
+    std::shared_ptr<OutputMesh> output_mesh_;
+    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
+    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
+    
+    std::shared_ptr<Observe> observe_;
+
+    /// Auxliary flag for refinement enabling, due to gmsh format.
+    bool enable_refinement_;
 };
 
 

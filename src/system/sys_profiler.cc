@@ -266,7 +266,7 @@ void Timer::add_child(int child_index, const Timer &child)
         ASSERT(i!=idx)(tag()).error("Too many children of the timer");
         idx=i;
     }
-    //DBGMSG("Adding child %d at index: %d\n", child_index, idx);
+    //DebugOut().fmt("Adding child {} at index: {}\n", child_index, idx);
     child_timers[idx] = child_index;
 }
 
@@ -348,10 +348,10 @@ void Profiler::set_program_info(string program_name, string program_version, str
 
 int  Profiler::start_timer(const CodePoint &cp) {
     unsigned int parent_node = actual_node;
-    //DBGMSG("Start timer: %s\n", cp.tag_);
+    //DebugOut().fmt("Start timer: {}\n", cp.tag_);
     int child_idx = find_child(cp);
     if (child_idx < 0) {
-        //DBGMSG("Adding timer: %s\n", cp.tag_);
+        //DebugOut().fmt("Adding timer: {}\n", cp.tag_);
         // tag not present - create new timer
         child_idx=timers_.size();
         timers_.push_back( Timer(cp, actual_node) );
@@ -402,7 +402,8 @@ void Profiler::stop_timer(const CodePoint &cp) {
             if ( cp.hash_ == timers_[node].full_hash_) {
                 // found above - close all nodes between
                 for(; (unsigned int)(actual_node) != node; actual_node=timers_[actual_node].parent_timer) {
-                    xprintf(Warn, "Timer to close '%s' do not match actual timer '%s'. Force closing actual.\n", cp.tag_, timers_[actual_node].tag().c_str());
+                	WarningOut() << "Timer to close '" << cp.tag_ << "' do not match actual timer '"
+                			<< timers_[actual_node].tag() << "'. Force closing actual." << std::endl;
                     timers_[actual_node].stop(true);
                 }
                 // close 'node' itself
@@ -562,14 +563,12 @@ void Profiler::add_timer_info(ReduceFunctor reduce, property_tree::ptree* holder
             // explore the difference in more depth
             if (timer.child_timers[j] == timer_no_child) {
                 // this processor does not have child timer
-                xprintf(Warn,
-                    "Inconsistent tree in '%s': this processor[%d] does not have child-timer[%d]\n",
-                    timer.tag().c_str(), mpi_rank, child_timers[j]);
+                WarningOut() << "Inconsistent tree in '" << timer.tag() << "': this processor[" << mpi_rank
+                	<< "] does not have child-timer[" << child_timers[j] << "]" << std::endl;
             } else {
                 // other processors do not have child timer
-                xprintf(Warn,
-                    "Inconsistent tree in '%s': this processor[%d] contains child-timer[%d] which others do not\n",
-                    timer.tag().c_str(), mpi_rank, timer.child_timers[j]);
+                WarningOut() << "Inconsistent tree in '" << timer.tag() << "': this processor[" << mpi_rank
+                	<< "] contains child-timer[" << timer.child_timers[j] << "] which others do not" << std::endl;
             }
         }
     }
@@ -609,7 +608,7 @@ std::shared_ptr<std::ostream> Profiler::get_default_output_stream() {
     strftime(filename, sizeof (filename) - 1, "profiler_info_%y.%m.%d_%H-%M-%S.log.json", localtime(&start_time));
      json_filepath = FilePath(string(filename), FilePath::output_file);
 
-    //xprintf(MsgLog, "output into: %s\n", json_filepath.c_str());
+    //LogOut() << "output into: " << json_filepath << std::endl;
     return make_shared<ofstream>(json_filepath.c_str());
 }
 
@@ -850,15 +849,12 @@ void Profiler::transform_profiler_data (const string &output_file_suffix, const 
     #else
 
     // print information about windows-cygwin issue and offer manual solution
-    stringstream msg;
-    msg << "# Note: converting json profiler reports is not";
-    msg << " supported under Windows or Cygwin environment for now." << endl;
-    msg << "# You can use python script located in bin/python folder";
-    msg << " in order to convert json report to txt or csv format." << endl;
-    
-    msg << "python profiler_formatter_script.py --input \"" << json_filepath;
-    msg << "\" --output \"profiler.txt\"" << endl;
-    xprintf(Msg, msg.str().c_str());
+    MessageOut() << "# Note: converting json profiler reports is not"
+    		<< " supported under Windows or Cygwin environment for now.\n"
+			<< "# You can use python script located in bin/python folder"
+			<< " in order to convert json report to txt or csv format.\n"
+			<< "python profiler_formatter_script.py --input \"" << json_filepath
+			<< "\" --output \"profiler.txt\"" << std::endl;
     #endif // FLOW123D_HAVE_CYGWIN
 }
 #else

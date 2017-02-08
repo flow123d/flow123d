@@ -21,15 +21,15 @@
 
 
 #include "system/system.hh"
-#include "system/xio.h"
+#include "system/exceptions.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
+#include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
-#include <boost/make_shared.hpp>
 
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
@@ -61,9 +61,11 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("mesh_file", IT::FileName::input(), IT::Default::obligatory(),
 				"Input file with mesh description.")
 		.declare_key("regions", IT::Array( RegionSetBase::get_input_type() ), IT::Default::optional(),
-				"List of additional region and region set definitions not contained in the mesh.\n"
+				"List of additional region and region set definitions not contained in the mesh. "
 				"There are three region sets implicitly defined:\n\n"
-				" - ALL (all regions of the mesh)\n - BOUNDARY (all boundary regions)\n - and BULK (all bulk regions)")
+				"- ALL (all regions of the mesh)\n"
+				"- .BOUNDARY (all boundary regions)\n"
+				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
 		.close();
@@ -73,21 +75,6 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
-Mesh::Mesh(const std::string &input_str, MPI_Comm comm)
-:comm_(comm),
- row_4_el(nullptr),
- el_4_loc(nullptr),
- el_ds(nullptr)
-{
-
-    Input::ReaderToStorage reader( input_str, Mesh::get_input_type(), Input::FileFormat::format_JSON );
-    in_record_ = reader.get_root_interface<Input::Record>();
-
-    reinit(in_record_);
-}
-
-
-
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
@@ -95,7 +82,17 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_4_loc(nullptr),
   el_ds(nullptr)
 {
-    reinit(in_record_);
+	// set in_record_, if input accessor is empty
+	if (in_record_.is_empty()) {
+		istringstream is("{mesh_file=\"\"}");
+	    Input::ReaderToStorage reader;
+	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+	    in_rec.finish();
+	    reader.read_stream(is, in_rec, Input::FileFormat::format_JSON);
+	    in_record_ = reader.get_root_interface<Input::Record>();
+	}
+
+	reinit(in_record_);
 }
 
 
@@ -231,15 +228,20 @@ void Mesh::read_gmsh_from_stream(istream &in) {
 void Mesh::init_from_input() {
     START_TIMER("Reading mesh - init_from_input");
     
-    Input::Array region_list;
-    // read raw mesh, add regions from GMSH file
-    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-    reader.read_physical_names(this);
-    // create regions from input
-    if (in_record_.opt_val("regions", region_list)) {
-        this->read_regions_from_input(region_list);
-    }
-    reader.read_mesh(this);
+	try {
+	    Input::Array region_list;
+	    // read raw mesh, add regions from GMSH file
+	    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
+	    reader.read_physical_names(this);
+	    // create regions from input
+	    if (in_record_.opt_val("regions", region_list)) {
+	        this->read_regions_from_input(region_list);
+	    }
+	    reader.read_mesh(this);
+	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
+	catch (ExceptionBase const &e) {
+		throw;
+	}
     // possibly add implicit_boundary region.
     setup_topology();
     // finish mesh initialization
@@ -266,14 +268,14 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     FOR_ELEMENTS(this, ele)
-        if (ele->quality_measure_smooth() < 0.001) xprintf(Warn, "Bad quality (<0.001) of the element %u.\n", ele.id());
+        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.id());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
     make_edge_permutations();
     count_side_types();
 
-    part_ = boost::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
+    part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
     int *id_4_old = new int[element.size()];
@@ -405,7 +407,8 @@ void Mesh::make_neighbours_and_edges()
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
-                xprintf(Warn, "Lonely boundary element, id: %d, region: %d, dimension %d.\n", bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
+            	WarningOut().fmt("Lonely boundary element, id: {}, region: {}, dimension {}.\n",
+            			bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
@@ -547,7 +550,7 @@ void Mesh::make_neighbours_and_edges()
 		} // for element sides
 	}   // for elements
 
-	xprintf( Msg, "Created %d edges and %d neighbours.\n", edges.size(), vb_neighbours_.size() );
+	MessageOut().fmt( "Created {} edges and {} neighbours.\n", edges.size(), vb_neighbours_.size() );
 }
 
 
@@ -626,7 +629,7 @@ void Mesh::make_edge_permutations()
 void Mesh::element_to_neigh_vb()
 {
 
-    xprintf( MsgVerb, "   Element to neighbours of vb2 type... ")/*orig verb 5*/;
+	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
     FOR_ELEMENTS(this,ele) ele->n_neighs_vb =0;
 
@@ -647,7 +650,7 @@ void Mesh::element_to_neigh_vb()
         ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );
     }
 
-    xprintf( MsgVerb, "O.K.\n")/*orig verb 6*/;
+    //MessageOut() << "... O.K.\n"/*orig verb 6*/;
 }
 
 
@@ -666,7 +669,7 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-	BIHTree bih_tree( this );
+	const BIHTree &bih_tree =get_bih_tree();
 	master_elements.resize(n_elements());
 
 	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
@@ -758,6 +761,13 @@ void Mesh::check_and_finish()
 	if ( in_record_.val<bool>("print_regions") ) {
 		region_db_.print_region_table(cout);
 	}
+}
+
+
+const BIHTree &Mesh::get_bih_tree() {
+    if (! this->bih_tree_)
+        bih_tree_ = std::make_shared<BIHTree>(this);
+    return *bih_tree_;
 }
 
 //-----------------------------------------------------------------------------

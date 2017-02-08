@@ -184,7 +184,7 @@ PathBase * PathJSON::find_ref_node()
         pos = new_pos+1;
     }
     if (relative_ref) {
-    	xprintf(Msg, "Referencing '%s' to '%s'.\n", this->as_string().c_str(), ref_path->as_string().c_str());
+    	MessageOut() << "Referencing '" << this->as_string() << "' to '" << ref_path->as_string() << "'." << std::endl;
     }
     return ref_path;
 }
@@ -295,17 +295,19 @@ PathJSON * PathJSON::clone() const {
 
 
 
-std::string PathJSON::get_descendant_name() const {
+std::string PathJSON::get_record_name() const {
 	std::string desc_name = "";
-	PathJSON type_path(*this);
-	if ( type_path.down("TYPE") ) {
-	    //check if TYPE key is reference
-		PathBase * ref_path = type_path.find_ref_node();
-	    if (ref_path) {
-	        desc_name = ref_path->get_string_value();
-	    	delete ref_path;
-	    } else {
-	    	desc_name = type_path.get_string_value();
+	if ( this->is_record_type() ) {
+		PathJSON type_path(*this);
+		if ( type_path.down("TYPE") ) {
+		    //check if TYPE key is reference
+			PathBase * ref_path = type_path.find_ref_node();
+		    if (ref_path) {
+		        desc_name = ref_path->get_string_value();
+		    	delete ref_path;
+		    } else {
+		    	desc_name = type_path.get_string_value();
+			}
 		}
 	}
 
@@ -316,6 +318,12 @@ std::string PathJSON::get_descendant_name() const {
 
 void PathJSON::remember_reference() {
 	previous_references_.insert(as_string());
+}
+
+
+
+bool PathJSON::is_effectively_null() const {
+	return false;
 }
 
 

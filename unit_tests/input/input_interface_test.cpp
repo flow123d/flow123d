@@ -57,7 +57,7 @@ protected:
     virtual void SetUp() {
         using namespace Input::Type;
 
-        FilePath::set_io_dirs("./json_root_dir","/json_root_dir","variant_input","./output_root");
+        FilePath::set_io_dirs(".",".","variant_input","./output_root");
 
         abstr_rec_ptr = new Abstract("Abstract", "desc");
         abstr_rec_ptr->close();
@@ -129,12 +129,13 @@ protected:
             sub_array_int->new_item(0, new StorageInt(1));
             sub_array_int->new_item(1, new StorageInt(2));
 
-            StorageArray * sub_rec = new StorageArray(5);
-            sub_rec->new_item(0, sub_array_int->deep_copy());
-            sub_rec->new_item(1, new StorageInt(123));
-            sub_rec->new_item(2, new StorageDouble(1.23));
-            sub_rec->new_item(3, new StorageBool(true));
-            sub_rec->new_item(4, new StorageString("123"));
+            StorageArray * sub_rec = new StorageArray(6);
+            sub_rec->new_item(0, new StorageString("SubRecord"));
+            sub_rec->new_item(1, sub_array_int->deep_copy());
+            sub_rec->new_item(2, new StorageInt(123));
+            sub_rec->new_item(3, new StorageDouble(1.23));
+            sub_rec->new_item(4, new StorageBool(true));
+            sub_rec->new_item(5, new StorageString("123"));
 
             StorageArray * sub_array_sub_rec = new StorageArray(2);
             sub_array_sub_rec->new_item(0, sub_rec->deep_copy());
@@ -150,22 +151,23 @@ protected:
             desc_b->new_item(2,new StorageDouble(3.45));
 
 
-            StorageArray * main_array = new StorageArray(15);
-            main_array->new_item(0, sub_rec->deep_copy());
-            main_array->new_item(1, sub_array_int->deep_copy());
-            main_array->new_item(2, sub_array_sub_rec->deep_copy());
-            main_array->new_item(3, new StorageInt(456));
-            main_array->new_item(4, new StorageDouble(4.56));
-            main_array->new_item(5, new StorageBool(false));
-            main_array->new_item(6, new StorageString("456"));
-            main_array->new_item(7, desc_a);
-            main_array->new_item(8, desc_b);
-            main_array->new_item(9, new StorageString("output_subdir/output.vtk"));
-            main_array->new_item(10, new StorageString("input/${INPUT}/input_subdir/input.in"));
-            main_array->new_item(11, new StorageNull());
-            main_array->new_item(12, new StorageInt(1));
-            main_array->new_item(13, new StorageInt(1234));
-            main_array->new_item(14, new StorageInt(12345));
+            StorageArray * main_array = new StorageArray(16);
+            main_array->new_item(0, new StorageString("MainRecord"));
+            main_array->new_item(1, sub_rec->deep_copy());
+            main_array->new_item(2, sub_array_int->deep_copy());
+            main_array->new_item(3, sub_array_sub_rec->deep_copy());
+            main_array->new_item(4, new StorageInt(456));
+            main_array->new_item(5, new StorageDouble(4.56));
+            main_array->new_item(6, new StorageBool(false));
+            main_array->new_item(7, new StorageString("456"));
+            main_array->new_item(8, desc_a);
+            main_array->new_item(9, desc_b);
+            main_array->new_item(10, new StorageString("output_subdir/output.vtk"));
+            main_array->new_item(11, new StorageString("input/${INPUT}/input_subdir/input.in"));
+            main_array->new_item(12, new StorageNull());
+            main_array->new_item(13, new StorageInt(1));
+            main_array->new_item(14, new StorageInt(1234));
+            main_array->new_item(15, new StorageInt(12345));
 
             // check copy constructors and pimpl implementation of Record
             delete sub_array_int;
@@ -230,9 +232,8 @@ TEST_F(InputInterfaceTest, RecordVal) {
 
     EXPECT_EQ("456", record.val<string>("some_string") );
 
-    EXPECT_EQ(FilePath::get_absolute_working_dir()+"json_root_dir/output_root/output_subdir/output.vtk",
-    			(string) record.val<FilePath>("file_output") );
-    EXPECT_EQ("/json_root_dir/input/variant_input/input_subdir/input.in", (string) record.val<FilePath>("file_input") );
+    EXPECT_TRUE( ((string)record.val<FilePath>("file_output")).find("output_subdir/output.vtk") != string::npos);
+    EXPECT_TRUE( ((string)record.val<FilePath>("file_input")).find("input/variant_input/input_subdir/input.in") != string::npos);
 
     // read enum from selection
     EXPECT_EQ( value_b, record.val<SelectionToRead>("selection") );
@@ -246,12 +247,13 @@ TEST_F(InputInterfaceTest, RecordVal) {
     Array array = record.val<Array>("array_of_int");
     EXPECT_EQ(2, *( ++array.begin<int>()) );
 
-    EXPECT_THROW_WHAT( {record.val<string>("some_double");}, ExcTypeMismatch,
-            "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
+    stringstream ss;
+    ss << "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='" << typeid(string).name() << "';";
+    EXPECT_THROW_WHAT( {record.val<string>("some_double");}, ExcTypeMismatch, ss.str());
     EXPECT_THROW( {record.val<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 #ifdef FLOW123D_DEBUG_ASSERTS
-    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, ExcStorageTypeMismatch, "You want value of type 'int'" );
+    EXPECT_THROW_WHAT( {record.val<int>("optional_int");}, feal::Exc_assert, "You have to use Record::find instead." );
 #endif
 
 }
@@ -263,8 +265,9 @@ TEST_F(InputInterfaceTest, RecordFind) {
     Address addr(storage, main);
     Record record(addr, *main);
 
-    Address addr_child_rec( *(addr.down(0)) );
-    const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( main->begin()->type_.get() );
+    Address addr_child_rec( *(addr.down(1)) );
+    Type::Record::KeyIter key_it = main->begin();
+    const Input::Type::Record * child_type_rec = static_cast<const Type::Record *>( (++key_it)->type_.get() );
     Record record_child_rec(addr_child_rec, *child_type_rec );
 
     EXPECT_EQ("/some_record", record_child_rec.address_string() );
@@ -281,8 +284,9 @@ TEST_F(InputInterfaceTest, RecordFind) {
     Iterator<Record> it_r = record.find<Record>("some_record");
     EXPECT_EQ(123, it_r->val<int>("some_integer"));
 
-    EXPECT_THROW_WHAT( {record.find<string>("some_double");}, ExcTypeMismatch,
-            "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='Ss';");
+    stringstream ss;
+    ss << "Program Error: Key:'some_double'. Can not construct Iterator<T> with C.. type T='" << typeid(string).name() << "';";
+    EXPECT_THROW_WHAT( {record.find<string>("some_double");}, ExcTypeMismatch, ss.str());
     EXPECT_THROW( {record.find<string>("unknown");}, Type::Record::ExcRecordKeyNotFound );
 
 }

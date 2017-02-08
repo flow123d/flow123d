@@ -22,6 +22,7 @@
 #include <boost/exception/all.hpp>
 #include <iostream>
 #include <string>
+#include <memory>
 #include "system/stack_trace.hh"
 
 
@@ -79,16 +80,21 @@ public:
     virtual void print_info(std::ostringstream &out) const=0;
     /**
      *  Overloaded method for output the exception message if it is not catched.
-     *  Implements composition of complex message including diagnostic informations and stack trace.
-     *  Should not be overloded in descendant classes. Use @p print_info instead.
+     *  Creates envelope of @p form_message method.
+     *  Should not be overloded in descendant classes. Use @p form_message instead.
      */
-    virtual const char * what () const throw ();
+    const char * what () const throw ();
     /// Destructor, possibly free stacktrace.
     virtual ~ExceptionBase() throw ();
 
 protected:
     /// Return type of message ("Program error" for this class). Can be override in descendants.
     virtual std::string what_type_msg() const;
+    /**
+     *  Method for output the exception message.
+     *  Implements composition of complex message including diagnostic informations and stack trace.
+     */
+    virtual std::ostringstream &form_message(std::ostringstream &) const;
     /// Stacktrace of exception.
     StackTrace stack_trace_;
     /// Stacktrace frames, which will be cut, see @p StackTrace::print method.
@@ -143,7 +149,7 @@ protected:
  */
 #define DECLARE_EXCEPTION( ExcName, Format)                                 \
 struct ExcName : public virtual ::ExceptionBase {                           \
-     virtual void print_info(std::ostringstream &out) const {               \
+     virtual void print_info(std::ostringstream &out) const override {      \
          using namespace internal;                                          \
          ::internal::ExcStream estream(out, *this);                         \
          estream Format ;                                                   \
@@ -226,10 +232,51 @@ public:
 
 
 
+/**
+ * @brief Error info of previous exception.
+ *
+ * Allows keep and propagate message when one exception is catched and other exception is thrown.
+ * Catched exception is stored to EI_Nested and is printed out to message of thrown exception.
+ *
+ * Example of usage:
+ *
+ @code
+    try {
+        // method next() throws ExcA
+        obj.next();
+    } catch ( ExcA &e ) {
+        // add ExcA to EI tags of ExcB
+        THROW( ExcB() << make_nested_ei(e)) );
+    }
+ @endcode
+ *
+ */
+TYPEDEF_ERR_INFO( EI_Nested, std::shared_ptr<ExceptionBase>);
+TYPEDEF_ERR_INFO( EI_NestedMessage, std::string);
 
 
+/**
+ * Create EI_Nested error info with given exception.
+ *
+ * Used for propagation exception message.
+ */
+template <class Exc>
+EI_Nested make_nested_ei(Exc &e) {
+    // Template parameter can be only descendant of ExceptionBase
+    static_assert(std::is_base_of<ExceptionBase, Exc>::value,
+            "Exc must be a descendant of ExceptionBase"
+        );
 
+    return EI_Nested( std::make_shared<Exc>(e) );
+}
 
+/**
+ * Propagate just the 'what' message for exceptions that are not derived from ExceptionBase.
+ */
+template <class Exc>
+EI_NestedMessage make_nested_message(Exc &e) {
+    return EI_NestedMessage( e.what() );
+}
 
 namespace internal {
 
@@ -314,6 +361,10 @@ internal::ExcStream & operator<<(internal::ExcStream & estream, typename EI<Tag,
 TYPEDEF_ERR_INFO( EI_XprintfHeader, std::string);
 TYPEDEF_ERR_INFO( EI_XprintfMessage, std::string);
 DECLARE_EXCEPTION( ExcXprintfMsg, << EI_XprintfHeader::val << EI_XprintfMessage::val);
+
+
+
+
 
 
 

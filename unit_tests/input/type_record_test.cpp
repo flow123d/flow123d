@@ -79,11 +79,6 @@ using namespace Input::Type;
 							.close();
    	   	   	   	   	  }, feal::Exc_assert, "Re-declaration of the key");
 
-   EXPECT_THROW_WHAT( { Record("yy","")
-   	   	   	   				.declare_key("wrong_double", Double(), Default("1.23 4"),"")
-							.close();
-   	   	   	   	   	  }, ExcWrongDefault, "Default value .* do not match type: 'Double';");
-
 /*
    // test documentation of default_at_read_time
    {
@@ -136,17 +131,8 @@ using namespace Input::Type;
     	.declare_key("array_of_str", Array( String() ),"Desc. of array")
     	.declare_key("array_of_str_1", Array( String() ), "Desc. of array")
     	// allow default values for an array
-    	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "");
-    EXPECT_THROW_WHAT( { array_record.declare_key("some_key", Array( Integer() ), Default("ahoj"), ""); }, ExcWrongDefault,
-                  "Default value 'ahoj' do not match type: 'array_of_Integer';"
-                 );
-    array_record.close();
-
-    static Record array_record2 = Record("RecordOfArrays2", "desc.");
-    EXPECT_THROW_WHAT( { array_record2.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), ""); }, ExcWrongDefault,
-                  "Default value '3.2' do not match type: 'array_of_Double';"
-                 );
-    array_record2.close();
+    	.declare_key("array_with_default", Array( Double() ), Default("3.2"), "")
+    	.close();
 }
 
 TEST(InputTypeRecord, allow_convertible) {
@@ -163,7 +149,7 @@ using namespace Input::Type;
 					 .close();
     sub_rec.finish();
 
-    EXPECT_EQ(3, sub_rec.auto_conversion_key_iter()->key_index );
+    EXPECT_EQ(4, sub_rec.auto_conversion_key_iter()->key_index );
     }
 
     {
@@ -195,31 +181,117 @@ using namespace Input::Type;
     //              "Complex type .* shared_ptr."
     //              );
 
-    Record other_record = Record("OtherRecord","desc")
-    	.close();
-    other_record.finish();
-
-    static Record sub_rec = Record( "SubRecord", "")
+    Record sub_rec = Record( "SubRecord", "")
     	.declare_key("bool_key", Bool(), Default("false"), "")
     	.declare_key("int_key", Integer(),  "")
     	.allow_auto_conversion("int_key")
     	.close();
     sub_rec.finish();
 
-    Record record_record = Record("RecordOfRecords", "")
-    	.declare_key("sub_rec_1", other_record, "key desc");
-	EXPECT_THROW_WHAT( { record_record.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc"); }, ExcWrongDefault,
-            "Default value '2.3' do not match type: 'OtherRecord';" );
-	record_record.close();
-
     Record record_record2 = Record("RecordOfRecords2", "")
-    	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "");
-    EXPECT_THROW_WHAT( { record_record2.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), ""); } , Input::ReaderToStorage::ExcAutomaticConversionError,
+    	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "")
+		.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), "")
+    	.close();
+    EXPECT_THROW_WHAT( { record_record2.finish(); } , Input::ReaderToStorage::ExcAutomaticConversionError,
             "Error during automatic conversion of SubRecord record" );
-    record_record2.close();
+
 
     // recursion  -  forbidden
     //record_record->declare_key("sub_rec_2", record_record, "desc.");
+
+}
+
+TEST(InputTypeRecord, check_default_validity) {
+using namespace Input::Type;
+
+	{ // wrong default value of double
+		Record rec = Record("yy","")
+			.declare_key("wrong_double", Double(), Default("1.23 4"),"")
+			.close();
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefaultJSON,
+			"Not valid JSON of Default value '1.23 4' of type 'Double';");
+	}
+
+	{ // wrong default value of array
+		Record rec = Record("SomeRecordOfArrays", "desc.")
+			.declare_key("array_of_str", Array( String() ),"Desc. of array")
+			.declare_key("some_key", Array( Integer() ), Default("ahoj"), "")
+			.close();
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefaultJSON,
+			"Not valid JSON of Default value 'ahoj' of type 'array_of_Integer';");
+	}
+
+	{ // wrong default value of array with minimal size 2
+		Record rec = Record("RecordOfDoubleArray", "desc.")
+			.declare_key("some_key", Array( Double(), 2 ), Default("3.2"), "")
+			.close();
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
+					  "Default value '3.2' do not match type: 'array_of_Double';");
+	}
+
+	{ // wrong default value of SubRecord
+		Record other_record = Record("OtherRecord","desc")
+			.close();
+		other_record.finish();
+
+		Record rec = Record("RecordOfRecords", "")
+			.declare_key("sub_rec_1", other_record, "key desc")
+			.declare_key("sub_rec_2", other_record, Default("2.3"), "key desc")
+			.close();
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
+				"Default value '2.3' do not match type: 'OtherRecord';" );
+	}
+
+	{ // generic record - passed default value
+		Record generic_rec = Record("VariableRecord1","")
+			.root_of_generic_subtree()
+			.declare_key("key", Array(Parameter("param")), Default("[]"),"")
+			.close();
+
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+		Record rec = Record("RecordWithGeneric1", "")
+			.declare_key("int_array", Instance(generic_rec, param_vec).close(), "key desc")
+			.close();
+
+		// simulate order and is_finished parameter of calling finish methods of IST
+		generic_rec.finish(FinishStatus::generic_);
+		rec.finish();
+	}
+
+	{ // generic record - wrong size of default array
+		Record generic_rec = Record("VariableRecord2","")
+			.root_of_generic_subtree()
+			.declare_key("key", Array(Parameter("param"), 2), Default("[]"),"")
+			.close();
+
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+		Record rec = Record("RecordWithGeneric2", "")
+			.declare_key("int_array2", Instance(generic_rec, param_vec).close(), "key desc")
+			.close();
+
+		generic_rec.finish(FinishStatus::generic_);
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
+				"do not match type: 'array_of_Integer';" );
+	}
+
+	{ // generic record - wrong type of default array
+		Record generic_rec = Record("VariableRecord3","")
+			.root_of_generic_subtree()
+			.declare_key("key", Array(Parameter("param")), Default("[ 0.5 ]"),"")
+			.close();
+
+		std::vector<TypeBase::ParameterPair> param_vec;
+		param_vec.push_back( std::make_pair("param", std::make_shared<Integer>()) );
+		Record rec = Record("RecordWithGeneric3", "")
+			.declare_key("int_array3", Instance(generic_rec, param_vec).close(), "key desc")
+			.close();
+
+		generic_rec.finish(FinishStatus::generic_);
+		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
+				"do not match type: 'array_of_Integer'" );
+	}
 
 }
 
@@ -246,6 +318,8 @@ TEST(InputTypeRecord, iterating) {
     // methods begin() and end(), basic work with iterators
     Record::KeyIter it = output_record.begin();
     EXPECT_EQ( 0, it->key_index);
+    EXPECT_EQ("TYPE", it->key_);
+    ++it;
     EXPECT_EQ("file", it->key_);
     EXPECT_EQ("File for output stream.", it->description_);
     EXPECT_EQ(typeid(FileName) , typeid(*(it->type_)));
@@ -254,13 +328,13 @@ TEST(InputTypeRecord, iterating) {
     EXPECT_EQ( "data_description", it->key_);
     EXPECT_EQ( output_record.end(), it+1 );
     // method size()
-    EXPECT_EQ(5, output_record.size());
+    EXPECT_EQ(6, output_record.size());
     //method key_index
-    EXPECT_EQ(0,output_record.key_index("file"));
-    EXPECT_EQ(2,output_record.key_index("compression"));
+    EXPECT_EQ(1,output_record.key_index("file"));
+    EXPECT_EQ(3,output_record.key_index("compression"));
     EXPECT_THROW({output_record.key_index("x_file");}, Record::ExcRecordKeyNotFound );
     // method key_iterator
-    EXPECT_EQ(2,output_record.key_iterator("compression")->key_index);
+    EXPECT_EQ(3,output_record.key_iterator("compression")->key_index);
 
 
 }
@@ -330,9 +404,8 @@ using namespace Input::Type;
     EXPECT_FALSE(rec1.is_finished());
     EXPECT_FALSE(rec2.is_finished());
 
-    EXPECT_EQ(3, composite.size());
+    EXPECT_EQ(4, composite.size());
     EXPECT_EQ("a from rec1", composite.key_iterator("a")->description_);
     EXPECT_EQ("b from composite", composite.key_iterator("b")->description_);
     EXPECT_EQ("c from rec2", composite.key_iterator("c")->description_);
 }
-

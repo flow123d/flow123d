@@ -1,0 +1,13 @@
+"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"plane"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".bc_inflow"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".bc_outflow"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".IMPLICIT_BOUNDARY"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+1	"plane"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+1	".bc_inflow"	"water_volume"	1	1	0	0	0	0	0	0	0	0	0	0
+1	".bc_outflow"	"water_volume"	-1	0	-1	0	0	0	0	0	0	0	0	0
+1	".IMPLICIT_BOUNDARY"	"water_volume"	7.20315e-12	7.35777e-11	-6.63745e-11	0	0	0	0	0	0	0	0	0
+2	"plane"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+2	".bc_inflow"	"water_volume"	2	2	0	0	0	0	0	0	0	0	0	0
+2	".bc_outflow"	"water_volume"	-2	0	-2	0	0	0	0	0	0	0	0	0
+2	".IMPLICIT_BOUNDARY"	"water_volume"	1.44063e-11	1.47155e-10	-1.32749e-10	0	0	0	0	0	0	0	0	0

@@ -25,6 +25,12 @@
 using namespace std;
 
 
+namespace boost {
+    namespace filesystem  {
+        class path;
+}}
+
+
 
 
 /**
@@ -42,9 +48,14 @@ using namespace std;
 class FilePath {
 public:
 
-
+    /**
+     * Reporting failure when openning a file.
+     */
     TYPEDEF_ERR_INFO( EI_Path, string);
+    TYPEDEF_ERR_INFO( EI_Address_String, string);
+    DECLARE_EXCEPTION( ExcFileOpen, << "Can not open file: " << EI_Path::qval << "\nAt input address: " << EI_Address_String::qval );
     DECLARE_EXCEPTION( ExcAbsOutputPath, << "Can not set absolute path " << EI_Path::qval << " for an output file."  );
+    DECLARE_EXCEPTION( ExcMkdirFail, << "Can not create directory: " << EI_Path::qval );
 
     /// Possible types of file.
     enum FileType {
@@ -55,10 +66,7 @@ public:
     /**
      * Default constructor, necessary when using  Input::Record::opt_val() to initialize a FilePath.
      */
-    FilePath()
-        : abs_file_path_("/__NO_FILE_NAME_GIVEN__"),
-          file_type_(output_file)
-    {}
+    FilePath();
 
     /**
      * Translates the given absolute or relative path to a file @p file_path depending on the file type @p ft.
@@ -73,20 +81,51 @@ public:
      */
     FilePath(string file_path, const  FileType ft);
 
+    /// Same as previous, but create path from vector of strings.
+    FilePath(vector<string> sub_paths, const  FileType ft);
+
+    /// Same as previous but implicitly use FileType::output_file
+    FilePath(string file_path);
+
     /**
+     * @brief Obsolete method for set input and output directories.
+     *
+     * Ensures consistency of unit tests.
+     *
      * Set:
      * - working directory (used only if the output directory is relative)
      * - root directory (of the main input file)
      * - input directory to replace ${INPUT} place holder
      * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
      */
-    static void set_io_dirs(const string working_dir, const string root_input,const string input,const string output);
+    static void set_io_dirs(const string working_dir, const string root, const string input, const string output);
+
+    /**
+     * @brief Method for set input and output directories.
+     *
+     * Set:
+     * - root directory (of the main input file)
+     * - input directory to replace ${INPUT} place holder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
+     */
+    static void set_dirs(const string root, const string input, const string output);
+
+    /**
+     * @brief Method for set input and output directories.
+     *
+     * Same as previous, but in first argument accepts full path of yaml file and returns filename of this yaml file.
+     *
+     * Set:
+     * - root directory (of the main yaml input file)
+     * - input directory to replace ${INPUT} place holder
+     * - output directory used as prefix to the output files (relative output dirs are relative to the working directory)
+     */
+    static string set_dirs_from_input(const string main_yaml, const string input, const string output);
 
     /**
      * This class is implicitly convertible to string.
      */
-    inline operator string() const
-        {return abs_file_path_;}
+    operator string() const;
 
     /*!
      * @brief Add new item to place holder.
@@ -109,9 +148,8 @@ public:
      */
     static const string get_absolute_working_dir();
 
-    /// Equality comparison operators for regions.
-    inline bool operator ==(const FilePath &other) const
-        {return abs_file_path_ == string(other); }
+    /// Equality comparison operators for FilePaths.
+    bool operator ==(const FilePath &other) const;
 
 
     /**
@@ -120,33 +158,67 @@ public:
      */
     void create_output_dir();
 
+    /**
+     * Return path to file.
+     */
+    string parent_path() const;
+
+    /**
+     * Return name of file with extension.
+     */
+    string filename() const;
+
+    /**
+     * Return name of file without extension.
+     */
+    string stem() const;
+
+    /**
+     * Return extension of file.
+     */
+    string extension() const;
+
+    /**
+     * Return path to file with filename without extension.
+     */
+    string cut_extension() const;
+
+
+    /**
+     * Open stream for this FilePath.
+     * Open mode is determined from the FilePath type.
+     */
+    template <class Stream>
+    void open_stream(Stream &stream) const;
+
+    /**
+     * Return true if the FilePath is a file.
+     */
+    bool exists() const;
+
 private:
     /**
-     * Substitutes placeholders in @p abs_file_path_.
+     * Create a directory, and check for exceptions.
      */
-    void substitute_value();
-
+    static void create_dir(const boost::filesystem::path &dir);
 
     /**
-     * Test if get path is absolute for used operating system.
+     * Substitutes placeholders in @p path.
      */
-    static bool is_absolute_path(const string path);
-
+    void substitute_value(string &path);
 
     /**
-     * Check if directory stored in output_dir doesn't exist and create its
+     * @brief Prepare path string for check absolute path.
+     *
+     * Check first char of path string. If it is slash '/', add second slash char. Two slashes
+     * at begin is necessary for correct output of boost::filesystem::path.is_absolute() method
+     * for detection absolute path in unix format ("/home/x/y/z") under cygwin.
      */
-    static void create_dir(string dir);
-
-
-    /**
-     * Create canonical path of output directory given by relative path.
-     */
-    static void create_canonical_path(const string working_dir, const string output);
+    static string convert_for_check_absolute(string path);
 
 
     /// Final absolute path to the file.
-    string abs_file_path_;
+    std::shared_ptr<boost::filesystem::path> abs_file_path_;
 
     /// File type
     FileType file_type_;
@@ -155,10 +227,16 @@ private:
     static std::map<string,string> placeholder;
 
     /// Prefix path for output files.
-    static string output_dir;
+    static std::shared_ptr<boost::filesystem::path> output_dir;
 
     /// Prefix path for input files (directory of the main input file).
-    static string root_dir;
+    static std::shared_ptr<boost::filesystem::path> root_dir;
 };
+
+/**
+ * @brief Allow redirect FilePath to stream.
+ */
+std::ostream& operator<<(std::ostream& stream, const FilePath& fp);
+
 
 #endif /* FILE_NAME_HH_ */

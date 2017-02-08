@@ -21,7 +21,6 @@
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
-
 string input = R"INPUT(
 {   
    tensor1=3.14,
@@ -31,14 +30,15 @@ string input = R"INPUT(
 
    init_conc={
        TYPE="FieldConstant",
-       value=[1.2, 2.3, 3.4]
+       value=[1.2, 2.3, 3.4],
+       unit="dm"
    }
 }
 )INPUT";
 
 
 typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
-typedef FieldAlgorithmBase<3, FieldValue<3>::Vector > VectorField;
+typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
 
 
 void check_tensor_field(std::shared_ptr<TensorField> field,const  std::string& expected, vector<Space<3>::Point> points,ElementAccessor<3> elem) {
@@ -77,31 +77,35 @@ TEST(FieldConst, read_from_input) {
     point_2(0)=2.0; point_2(1)=4.0; point_2(2)=6.0;
     ElementAccessor<3> elm;
 
-    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), 3);
+
+    UnitSI unit = UnitSI().m();
+    FieldAlgoBaseInitData init_data_conc( "init_conc", 3, unit, std::make_pair(0.0, 0.3) );
+    auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
 
         result = conc->value( point_1, elm);
-        EXPECT_DOUBLE_EQ( 1.2 , result[0]);
-        EXPECT_DOUBLE_EQ( 2.3, result[1]);
-        EXPECT_DOUBLE_EQ( 3.4, result[2]);
+        EXPECT_DOUBLE_EQ( 0.12 , result[0]);
+        EXPECT_DOUBLE_EQ( 0.23, result[1]);
+        EXPECT_DOUBLE_EQ( 0.34, result[2]);
 
         result = conc->value( point_2, elm);
-        EXPECT_DOUBLE_EQ( 1.2 , result[0]);
-        EXPECT_DOUBLE_EQ( 2.3, result[1]);
-        EXPECT_DOUBLE_EQ( 3.4, result[2]);
+        EXPECT_DOUBLE_EQ( 0.12 , result[0]);
+        EXPECT_DOUBLE_EQ( 0.23, result[1]);
+        EXPECT_DOUBLE_EQ( 0.34, result[2]);
     }
 
-    auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"));
+    FieldAlgoBaseInitData init_data_tensor("tensor", 0, UnitSI::dimensionless(), std::make_pair(0.0, 10.0));
+
+    auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"), init_data_tensor);
     check_tensor_field(tensor1, "3.14 0 0; 0 3.14 0; 0 0 3.14", {point_1, point_2}, elm);
 
-    auto tensor2=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor2"));
+    auto tensor2=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor2"), init_data_tensor);
     check_tensor_field(tensor2, "1 0 0; 0 2 0; 0 0 3", {point_1, point_2}, elm);
 
-    auto tensor3=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor3"));
+    auto tensor3=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor3"), init_data_tensor);
     check_tensor_field(tensor3, "1 2 3; 2 4 5; 3 5 6", {point_1, point_2}, elm);
 
-    auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"));
+    auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"), init_data_tensor);
     check_tensor_field(tensor4, "1 2 3; 4 5 6; 7 8 9", {point_1, point_2}, elm);
 }
-

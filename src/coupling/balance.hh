@@ -23,9 +23,11 @@
 #include "transport/substance.hh"
 #include "petscmat.h"
 #include "fields/unit_si.hh"
+#include "tools/time_marks.hh"
 
 class RegionDB;
-
+class TimeGovernor;
+class TimeStep;
 
 
 
@@ -40,46 +42,47 @@ class RegionDB;
  *
  * The mass, flux and source are calculated as follows:
  *
- * 	m(q,c,r) =  ( M'(q,c) * solution )[r]
- * 	f(q,c,r) = -( R' * ( F(q,c) * solution + fv(q,c) ) )[r]
- * 	s(q,c,r) =  ( S'(q,c) * solution + sv(q,c) )[r]
+ * 	m(q,r) =  ( M'(q) * solution + mv(q) )[r]
+ * 	f(q,r) = -( R' * ( F(q) * solution + fv(q) ) )[r]
+ * 	s(q,r) =  ( S'(q) * solution + sv(q) )[r]
  *
  * where M' stands for matrix transpose,
  *
- * 	m(q,c,r)...mass of q-th substance's c-th component in region r
- * 	f(q,c,r)...incoming flux of q-th substance's c-th component in region r
- * 	s(q,c,r)...source of q-th substance's c-th component in region r
+ * 	m(q,r)...mass of q-th substance in region r
+ * 	f(q,r)...incoming flux of q-th substance in region r
+ * 	s(q,r)...source of q-th substance in region r
  *
  * and
  *
- * 	M(q,c)...region_mass_matrix_[q*quantities_.size() + c]		n_dofs x n_bulk_regions
- * 	F(q,c)...be_flux_matrix_[q*quantities_.size() + c]			n_boundary_edges x n_dofs
- * 	S(q,c)...region_source_matrix_[q*quantities_.size() + c]	n_dofs x n_bulk_regions
- * 	SV(q,c)..region_source_rhs_[q*quantities_.size() + c]		n_dofs x n_bulk_regions
- * 	fv(q,c)..be_flux_vec_[q*quantities_.size() + c]				n_boundary_edges
- * 	sv(q,c)..region_source_vec_[q*quantities_.size() + c]    	n_bulk_regions
- * 	R........region_be_matrix_									n_boundary_edges x n_boundary_regions
+ * 	M(q)...region_mass_matrix_		n_dofs x n_bulk_regions
+ * 	F(q)...be_flux_matrix_			n_boundary_edges x n_dofs
+ * 	S(q)...region_source_matrix_	n_dofs x n_bulk_regions
+ * 	SV(q)..region_source_rhs_		n_dofs x n_bulk_regions
+ *  mv(q)..region_mass_vec_         n_bulk_regions
+ * 	fv(q)..be_flux_vec_				n_boundary_edges
+ * 	sv(q)..region_source_vec_    	n_bulk_regions
+ * 	R......region_be_matrix_		n_boundary_edges x n_boundary_regions
  * 
  * Remark: Matrix F and the vector fv are such that F*solution+fv produces _outcoming_ fluxes per boundary edge.
  * However we write to output _incoming_ flux due to users' convention and consistently with input interface.
  *
  * Note that it holds:
  *
- * 	sv(q,c) = column sum of SV(q,c)
+ * 	sv(q) = column sum of SV(q)
  *
  * Except for that, we also provide information on positive/negative flux and source:
  *
- * 	fp(q,c,r) = ( R' * EFP(q,c) )[r],	EFP(q,c)[e] = max{ 0, ( F(q,c) * solution + fv(q,c) )[e] }
- * 	fn(q,c,r) = ( R' * EFN(q,c) )[r],	EFN(q,c)[e] = min{ 0, ( F(q,c) * solution + fv(q,c) )[e] }
- * 	sp(q,c,r) = sum_{i in DOFS } max{ 0, ( S(q,c)[i,r] * solution[i] + SV(q,c)[i,r] ) }
- * 	sn(q,c,r) = sum_{i in DOFS } min{ 0, ( S(q,c)[i,r] * solution[i] + SV(q,c)[i,r] ) }
+ * 	fp(q,r) = ( R' * EFP(q) )[r],	EFP(q)[e] = max{ 0, ( F(q) * solution + fv(q) )[e] }
+ * 	fn(q,r) = ( R' * EFN(q) )[r],	EFN(q)[e] = min{ 0, ( F(q) * solution + fv(q) )[e] }
+ * 	sp(q,r) = sum_{i in DOFS } max{ 0, ( S(q)[i,r] * solution[i] + SV(q)[i,r] ) }
+ * 	sn(q,r) = sum_{i in DOFS } min{ 0, ( S(q)[i,r] * solution[i] + SV(q)[i,r] ) }
  *
  * where
  *
- * 	fp(q,c,r)...positive (inward) flux of q-th quantity's c-th component in region r
- * 	fn(q,c,r)...negative (outward) flux of q-th quantity's c-th component in region r
- * 	sp(q,c,r)...positive source (spring) of q-th quantity's c-th component in region r
- * 	sn(q,c,r)...negative source (sink) of q-th quantity's c-th component in region r
+ * 	fp(q,r)...positive (inward) flux of q-th quantity in region r
+ * 	fn(q,r)...negative (outward) flux of q-th quantity in region r
+ * 	sp(q,r)...positive source (spring) of q-th quantity in region r
+ * 	sn(q,r)...negative source (sink) of q-th quantity in region r
  *
  * Remark: The matrix R is needed only for calculation of signed fluxes.
  * The reason is that to determine sign, we decompose flux to sum of local contributions
@@ -137,23 +140,36 @@ public:
 	/// Input selection for file format.
 	static const Input::Type::Selection & get_format_selection_input_type();
 
+
 	/**
 	 * Constructor.
-	 * @param file_prefix  Prefix of output file name.
-	 * @param mesh         Mesh.
-	 * @param in_rec       Input record of balance.
+     * @param file_prefix  Prefix of output file name.
+     * @param mesh         Mesh.
 	 */
-	Balance(const std::string &file_prefix,
-			const Mesh *mesh,
-			const Input::Record &in_rec);
+	Balance(const std::string &file_prefix, const Mesh *mesh);
 
+	/**
+	 * Destructor.
+	 */
 	~Balance();
 
+    /**
+     * Initialize the balance object according to the input.
+     * The balance output time marks are set according to the already existing output time marks of the same equation.
+     * So, this method must be called after Output::
+     *
+     * @param in_rec       Input record of balance.
+     * @param tg           TimeGovernor of the equation. We need just equation mark type.
+     *
+     */
+    void init_from_input(const Input::Record &in_rec, TimeGovernor &tg);
+
 	/// Setter for units of conserved quantities.
-	void units(const UnitSI &unit) { units_ = unit; units_.undef(false); }
+	void units(const UnitSI &unit);
 
 	/// Getter for cumulative_.
 	inline bool cumulative() const { return cumulative_; }
+
 
 	/**
 	 * Define a single conservative quantity.
@@ -176,6 +192,10 @@ public:
 	 */
 	void allocate(unsigned int n_loc_dofs,
 			unsigned int max_dofs_per_boundary);
+
+
+    /// Returns true if the given time step is marked for the balance output.
+    bool is_current(const TimeStep &step);
 
 	/**
 	 * This method must be called before assembling the matrix for computing mass.
@@ -220,7 +240,6 @@ public:
 	 * Adds elements into matrix for computing mass.
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
-	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
@@ -233,7 +252,6 @@ public:
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
 	 * @param elem_idx      Local index of boundary edge.
-	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
@@ -246,7 +264,6 @@ public:
 	 * Adds elements into matrix for computing source.
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
-	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
@@ -254,9 +271,19 @@ public:
 			unsigned int region_idx,
 			const std::vector<int> &dof_indices,
 			const std::vector<double> &values);
+    
+    /**
+     * Adds element into vector for computing mass.
+     * @param quantity_idx  Index of quantity.
+     * @param region_idx    Index of bulk region.
+     * @param value         Value to be added.
+     */
+    void add_mass_vec_value(unsigned int quantity_idx,
+            unsigned int region_idx,
+            double value);
 
 	/**
-	 * Adds element into vector for computing (outcoing) flux.
+	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
 	 * @param elem_idx      Local index of boundary edge.
 	 * @param value         Value to be added.
@@ -269,11 +296,10 @@ public:
 	 * Adds elements into vector for computing source.
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
-	 * @param n_dofs        Number of dofs to be added.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
 	 */
-	void add_source_rhs_values(unsigned int quantity_idx,
+	void add_source_vec_values(unsigned int quantity_idx,
 			unsigned int region_idx,
 			const std::vector<int> &dof_values,
 			const std::vector<double> &values);
@@ -383,12 +409,23 @@ public:
 private:
 	/// Size of column in output (used if delimiter is space)
 	static const unsigned int output_column_width = 20;
+	/**
+	 * Postponed allocation and initialization to allow calling setters in arbitrary order.
+	 * In particular we need to perform adding of output times after the output time marks are set.
+	 * On the other hand we need to read the input before we make the allocation.
+	 *
+	 * The initialization is done during the first call of any start_*_assembly method.
+	 */
+	void lazy_initialize();
 
 	/// Perform output in old format (for compatibility)
 	void output_legacy(double time);
 
 	/// Perform output in csv format
 	void output_csv(double time, char delimiter, const std::string& comment_string, unsigned int repeat = 0);
+
+	/// Perform output in yaml format
+	void output_yaml(double time);
 
 	/// Return part of output represented by zero values. Count of zero values is given by cnt parameter.
 	std::string csv_zero_vals(unsigned int cnt, char delimiter);
@@ -403,8 +440,22 @@ private:
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
 
-    /// Handle for file for output of balance and total fluxes over individual regions and region sets.
+	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
+    unsigned int n_loc_dofs_;
+    unsigned int max_dofs_per_boundary_;
+
+
+    /// Save prefix passed in in constructor.
+    std::string file_prefix_;
+
+    /// File path for output_ stream.
+    FilePath balance_output_file_;
+
+    /// Handle for file for output in given OutputFormat of balance and total fluxes over individual regions and region sets.
     ofstream output_;
+
+    // The same as the previous case, but for output in YAML format.
+    ofstream output_yaml_;
 
     /// Format of output file.
     OutputFormat output_format_;
@@ -432,6 +483,9 @@ private:
 
     /// Vectors for calculation of flux (n_boundary_edges).
     Vec *be_flux_vec_;
+    
+    /// Vectors for calculation of mass (n_bulk_regions).
+    Vec *region_mass_vec_;
 
     /// Vectors for calculation of source (n_bulk_regions).
     Vec *region_source_vec_;
@@ -484,6 +538,12 @@ private:
 	/// time of last calculated balance
 	double last_time_;
 
+	/// TimeMark type for balance output of particular equation.
+	TimeMark::Type balance_output_type_;
+
+	/// TimeMark type for output of particular equation.
+	TimeMark::Type output_mark_type_;
+
 	/// true before calculating the mass at initial time, otherwise false
 	bool initial_;
 
@@ -493,11 +553,27 @@ private:
 	/// true before allocating necessary internal structures (Petsc matrices etc.)
 	bool allocation_done_;
 
+	/// If the balance is on. Balance is off in the case of no balance output time marks.
+    bool balance_on_;
+
+    /// Add output time marks to balance output time marks.
+    bool add_output_times_;
+
+
 	/// MPI rank.
 	int rank_;
 
 	/// hold count of line printed into output_
 	unsigned int output_line_counter_;
+
+	/// marks whether YAML output has printed header
+	bool output_yaml_header_;
+
+    /// Record for current balance
+    Input::Record input_record_;
+
+
+
 
 };
 

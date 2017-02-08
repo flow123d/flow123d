@@ -75,9 +75,11 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 }
 
 
-bool Parameter::finish(bool is_generic) {
-	if (!is_generic) THROW( ExcParamaterInIst() << EI_Object(this->name_));
-	return true;
+FinishStatus Parameter::finish(FinishStatus finish_type) {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
+	if (finish_type == FinishStatus::regular_) THROW( ExcParamaterInIst() << EI_Object(this->name_));
+	return finish_type;
 }
 
 
@@ -107,8 +109,8 @@ const Instance &Instance::close() const {
 }
 
 
-bool Instance::finish(bool is_generic) {
-	return generic_type_.finish(true);
+FinishStatus Instance::finish(FinishStatus finish_type) {
+	return generic_type_.finish(finish_type);
 }
 
 
@@ -125,6 +127,7 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
 	try {
 		created_instance_ = generic_type_.make_instance(parameters_);
 	} catch (ExcParamaterNotSubsituted &e) {
+
 	    ParameterMap aux_map;
 	    for(auto &item : vec) aux_map[item.first]=0;
         e << EI_ParameterList( TypeBase::print_parameter_map_keys_to_json(aux_map) );
@@ -141,7 +144,7 @@ TypeBase::MakeInstanceReturnType Instance::make_instance(std::vector<ParameterPa
         ParameterMap aux_map;
         for(auto &item : vec) aux_map[item.first]=0;
 
-		ASSERT_DBG(map_it != created_instance_.second.end())(vec_it->first)(TypeBase::print_parameter_map_keys_to_json(aux_map))
+		ASSERT_DBG(map_it != created_instance_.second.end())(vec_it->first)(generic_type_.type_name())
 				.error("Unused parameter in input type instance");
 	}
 #endif
