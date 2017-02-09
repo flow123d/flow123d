@@ -29,7 +29,7 @@ using namespace computeintersection;
 void fill_12d_solution(std::vector<computeintersection::IntersectionLocal<1,2>> &ils)
 {
     ils.clear();
-    ils.resize(9);
+    ils.resize(10);
     // ips[0] is empty
     ils[1].points() = {computeintersection::IntersectionPoint<1,2>({0}, {0, 0})};
     ils[2].points() = {computeintersection::IntersectionPoint<1,2>({1}, {0, 0})};
@@ -41,6 +41,7 @@ void fill_12d_solution(std::vector<computeintersection::IntersectionLocal<1,2>> 
                        computeintersection::IntersectionPoint<1,2>({2./3}, {0, 0.4})};
     ils[8].points() = {computeintersection::IntersectionPoint<1,2>({0}, {0, 0}),
                        computeintersection::IntersectionPoint<1,2>({1}, {1, 0})};
+    //ils[9] is empty
 }
 
 

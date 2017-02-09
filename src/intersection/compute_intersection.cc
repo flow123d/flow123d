@@ -215,11 +215,11 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
     arma::vec3 Det = -arma::cross(U,V);
     
     
-//     A.print();
-//     U.print();
-//     C.print();
-//     V.print();
-//     K.print();
+//     A.print("A");
+//     U.print("U");
+//     C.print("C");
+//     V.print("V");
+//     K.print("K");
 //     Det.print();
 //     cout <<endl;
 
@@ -233,7 +233,7 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
         maximum = fabs(Det[2]);
         max_index = 2;
     }
-//     DBGMSG("det max: %e\n", maximum);
+//     DBGVAR(maximum);
     //abscissa is parallel to triangle side
     if(std::abs(maximum) <= std::sqrt(rounding_epsilon)) return false;
 
@@ -254,7 +254,8 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
     // change sign according to side orientation
     if(RefElement<2>::normal_orientation(side)) t=-t;
 
-//     DBGMSG("s = %f; t = %f\n",s,t);
+    DBGVAR(s);
+    DBGVAR(t);
 
     // if IP is inside of triangle side
     if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
@@ -302,23 +303,24 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
                     signed_plucker_product(1),
                     signed_plucker_product(2)};
     double w_sum = w[0] + w[1] + w[2];
-
+    
     unsigned int n_positive = 0;
     unsigned int n_negative = 0;
     unsigned int zero_idx_sum =0;
 //     DebugOut().VarFmt(std::fabs(w_sum));
 //     DebugOut().VarFmt(scale_line_);
 //     DebugOut().VarFmt(scale_triangle_);
-    if(std::fabs(w_sum) > rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_) {
+    if(std::fabs(w_sum) > rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_)
         w = w / w_sum;
-
-        for (unsigned int i=0; i < 3; i++) {
-            //DebugOut().VarFmt(i).VarFmt(w[i]);
-            if (w[i] > rounding_epsilon) n_positive++;
-            else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
-            else n_negative++;
-        }
+        
+    for (unsigned int i=0; i < 3; i++) {
+        //DebugOut().VarFmt(i).VarFmt(w[i]);
+        if (w[i] > rounding_epsilon) n_positive++;
+        else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
+        else n_negative++;
     }
+
+//     w.print("w");
 
     // any negative barycentric coordinate means, no intersection
     if (n_negative>0) return IntersectionResult::none;
@@ -359,7 +361,7 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
 unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPointAux< 1, 2 > >& IP12s)
 {
     IntersectionResult result = compute(IP12s);
-            
+//     DBGVAR((int)result);
     // skip empty cases
     if(result == IntersectionResult::none) return 0;
     
@@ -545,28 +547,12 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
         if(!CI12[i].is_computed()) // if not computed yet
         {
 //             DBGVAR(i);
-            IntersectionResult result = CI12[i].compute(IP12s);
-            
-            // skip empty cases
-            if(result == IntersectionResult::none ||
-               result == IntersectionResult::degenerate)
-               continue; 
+            if(CI12[i].compute_final(IP12s) == 0) continue;
             
             unsigned int triangle_side = i%3; //i goes from 0 to 5 -> i%3 = 0,1,2,0,1,2
             
             for(IntersectionPointAux<1,2> &IP : IP12s)
             {
-                // possibly cut the line
-                arma::vec2 theta;
-                double t = IP.local_bcoords_A()[1];
-                if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
-                        // possibly set abscissa vertex {0,1}
-                        if( fabs(t) <= geometry_epsilon)       { theta = {1,0}; IP.set_topology_A(0,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
-                        else if(fabs(1-t) <= geometry_epsilon) { theta = {0,1}; IP.set_topology_A(1,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
-                        // IP found
-                }
-                else continue; // IP outside
-        
                 IntersectionPointAux<2,1> IP21 = IP.switch_objects();   // swicth dim 12 -> 21
                 IntersectionPointAux<2,2> IP22(IP21, triangle_side);    // interpolate dim 21 -> 22
                 
