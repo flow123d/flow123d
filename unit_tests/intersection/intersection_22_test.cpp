@@ -22,8 +22,6 @@ using namespace computeintersection;
 typedef std::pair<unsigned int, double>    TestCaseResult;  // number of components, total length
 typedef std::pair<std::string, TestCaseResult>   TestCase;
 
-
-
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_solution(std::vector< TestCase> &c)
 {
@@ -63,7 +61,6 @@ TEST(intersection_prolongation_23d, all) {
     fill_solution(solution_coords);
     
     // for each mesh, compute intersection area and compare with old NGH
-    unsigned int i_file=0;
     for(auto &test_case : solution_coords)
     {
         string file_name = test_case.first+".msh";
@@ -73,17 +70,6 @@ TEST(intersection_prolongation_23d, all) {
     
         MessageOut() << "Computing intersection on mesh: " << file_name << "\n";
         
-//     string filename = dir_name + "test1_incomp_coherence.msh";
-//     string filename = dir_name + "test1_comp.msh";
-    
-//     string filename = dir_name + "cube_2f_incomp.msh";
-//     string filename = dir_name + "cube_2f_incomp_SurfaceComp.msh";
-//     string filename = dir_name + "cube_mult_compXincomp.msh";
-//     string filename = dir_name + "cube_mult_compXincomp_triangle.msh";
-    
-//     string filename = dir_name + "cube_mult_compXincomp_extract.msh";
-    
-        
         Mesh *mesh = mesh_constructor();
         ifstream in(string(mesh_file).c_str());
         mesh->read_gmsh_from_stream(in);
@@ -91,5 +77,3 @@ TEST(intersection_prolongation_23d, all) {
         compute_intersection(mesh, case_result);
     }
 }
-
-//*/
