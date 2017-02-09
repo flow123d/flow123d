@@ -19,9 +19,16 @@
 
 namespace computeintersection {
 
+template<unsigned int dimA, unsigned int dimB>
+IntersectionAlgorithmBase<dimA,dimB>::IntersectionAlgorithmBase(Mesh* mesh)
+: mesh(mesh)
+{}
+
+template<unsigned int dimA, unsigned int dimB>
 template<unsigned int simplex_dim>
-void update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
+void IntersectionAlgorithmBase<dimA,dimB>::update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
 {
+    ASSERT(simplex_dim == element->dim());
     arma::vec3 *field_of_points[simplex_dim+1];
     for(unsigned int i=0; i < simplex_dim+1; i++)
         field_of_points[i]= &(element->node[i]->point());
@@ -30,8 +37,8 @@ void update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simp
 
 
 template<unsigned int dim>    
-InspectElementsAlgorithm<dim>::InspectElementsAlgorithm(Mesh* _mesh)
-: mesh(_mesh)
+InspectElementsAlgorithm<dim>::InspectElementsAlgorithm(Mesh* input_mesh)
+: IntersectionAlgorithmBase<dim,3>(input_mesh)
 {
 }
 
@@ -83,7 +90,7 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
 {
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
-    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -185,8 +192,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                         //
                         // - repeat until both queues are empty
                     
-                    update_simplex(elm, component_simplex); // update component simplex
-                    update_simplex(ele_3D, tetrahedron); // update tetrahedron
+                    this->update_simplex(elm, simplexA); // update component simplex
+                    this->update_simplex(ele_3D, simplexB); // update tetrahedron
                     bool found = compute_initial_CI(component_ele_idx,
                                                     bulk_ele_idx);
 
@@ -268,7 +275,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
         if (elm->dim() == dim &&                                    // is component element
             bih.ele_bounding_box(component_ele_idx).intersect(bih.tree_box()))   // its bounding box intersects 3D mesh bounding box
         {   
-            update_simplex(elm, component_simplex); // update component simplex
+            this->update_simplex(elm, simplexA); // update component simplex
             std::vector<unsigned int> searchedElements;
             
             START_TIMER("BIHtree find");
@@ -289,11 +296,11 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                     ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
-                    update_simplex(ele_3D, tetrahedron); // update tetrahedron
+                    this->update_simplex(ele_3D, simplexB); // update tetrahedron
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
+                    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
                     CI.init();
                     CI.compute(is);
                     END_TIMER("Compute intersection");
@@ -373,8 +380,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                         //
                         // - repeat until both queues are empty
                     
-                    update_simplex(elm, component_simplex); // update component simplex
-                    update_simplex(ele_3D, tetrahedron); // update tetrahedron
+                    this->update_simplex(elm, simplexA); // update component simplex
+                    this->update_simplex(ele_3D, simplexB); // update tetrahedron
                     bool found = compute_initial_CI(component_ele_idx,
                                                     bulk_ele_idx);
 
@@ -631,13 +638,13 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
 
     //TODO: optimization: this might be called before and not every time 
     //(component element is not changing when emptying bulk queue)
-    update_simplex(elm, component_simplex);
-    update_simplex(ele_3D, tetrahedron);
+    this->update_simplex(elm, simplexA);
+    this->update_simplex(ele_3D, simplexB);
 
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     
     START_TIMER("Compute intersection");
-    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -672,7 +679,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
 
 
 InspectElementsAlgorithm22::InspectElementsAlgorithm22(Mesh* input_mesh)
-: mesh(input_mesh)
+: IntersectionAlgorithmBase<2,2>(input_mesh)
 {}
 
 
@@ -737,12 +744,12 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
 //                 compute_single_intersection(eleA,
 //                                             eleB);
                 
-                update_simplex(eleA, triaA_);
-                update_simplex(eleB, triaB_);
+                update_simplex(eleA, simplexA);
+                update_simplex(eleB, simplexB);
                 
                 IntersectionAux<2,2> is(eleA_idx, eleB_idx);
                 
-                ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
+                ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB);
                 CI.init();
                 unsigned int n_local_intersection = CI.compute(is);
                 
@@ -777,12 +784,12 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     ASSERT_DBG(eleB->dim() == 2);
     ASSERT_DBG(eleA->index() != eleB->index());
     
-    update_simplex(eleA, triaA_);
-    update_simplex(eleB, triaB_);
+    update_simplex(eleA, simplexA);
+    update_simplex(eleB, simplexB);
     
     IntersectionAux<2,2> is(eleA->index(), eleB->index());
     
-    ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
+    ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB);
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
@@ -847,7 +854,7 @@ void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele, std::que
 
 
 InspectElementsAlgorithm12::InspectElementsAlgorithm12(Mesh* input_mesh)
-: mesh(input_mesh)
+: IntersectionAlgorithmBase<1,2>(input_mesh)
 {}
 
 
@@ -899,12 +906,12 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 //                 compute_single_intersection(eleA,
 //                                             eleB);
                 
-                update_simplex(eleA, abscissa_);
-                update_simplex(eleB, triangle_);
+                update_simplex(eleA, simplexA);
+                update_simplex(eleB, simplexB);
                 
                 IntersectionAux<1,2> is(eleA_idx, eleB_idx);
                 
-                ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+                ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
                 unsigned int n_local_intersection = CI.compute_final(is.points());
     
                 if(n_local_intersection > 0)
@@ -945,13 +952,13 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 //     ASSERT_DBG(eleA->dim() == 1);
 //     ASSERT_DBG(eleB->dim() == 2);
 //     
-//     update_simplex(eleA, abscissa_);
-//     update_simplex(eleB, triangle_);
+//     this->update_simplex(eleA, simplexA);
+//     this->update_simplex(eleB, simplexB);
 //     
 //     IntersectionAux<1,2> is(eleA->index(), eleB->index(), 0);
 // //     std::vector<unsigned int> prolongation_table;
 //     
-//     ComputeIntersection< Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+//     ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
 //     unsigned int n_local_intersection = CI.compute_final(is.points());
 //     
 //     if(n_local_intersection > 0)
@@ -975,7 +982,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
         if (elm->dim() == 1)                                    // is component element
             //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
         {   
-            update_simplex(elm, abscissa_); // update component simplex
+            update_simplex(elm, simplexA); // update component simplex
             std::vector<unsigned int> searchedElements;
             
             START_TIMER("BIHtree find");
@@ -991,11 +998,11 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
                 ElementFullIter ele_2D = mesh->element(bulk_ele_idx);
                 
                 if (ele_2D->dim() == 2) { 
-                    update_simplex(ele_2D, triangle_); // update triangle
+                    update_simplex(ele_2D, simplexB); // update triangle
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(abscissa_, triangle_);
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
                     CI.compute_final(is.points());
                     END_TIMER("Compute intersection");
                     
@@ -1012,6 +1019,11 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
 }
 
 // Declaration of specializations implemented in cpp:
+template class IntersectionAlgorithmBase<1,3>;
+template class IntersectionAlgorithmBase<2,3>;
+template class IntersectionAlgorithmBase<1,2>;
+template class IntersectionAlgorithmBase<2,2>;
+
 template class InspectElementsAlgorithm<1>;
 template class InspectElementsAlgorithm<2>;
 

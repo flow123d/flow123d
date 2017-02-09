@@ -41,11 +41,27 @@ class InspectElementsAlgorithm22;
 
 /// First = element index, Second = pointer to intersection object.
 typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
-
-/// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
-template<unsigned int simplex_dim>
-void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
     
+template<unsigned int dimA, unsigned int dimB>
+class IntersectionAlgorithmBase{
+public:
+    IntersectionAlgorithmBase(Mesh* mesh);
+protected:
+   
+    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
+    template<unsigned int simplex_dim>
+    void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
+    
+    /// Mesh pointer.
+    Mesh *mesh;
+    
+    const unsigned int undefined_elm_idx_ = -1;
+    
+    /// Objects representing single elements.
+    Simplex<dimA> simplexA;
+    Simplex<dimB> simplexB;
+};
+
 /** @brief Class implements algorithm for dim-dimensional intersections with 3D elements.
  * 
  * @p dim-D elements that are continuously neighbouring are called component elements.
@@ -81,20 +97,9 @@ void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simpl
  * TODO: check unit test prolongation 13d, because it has different results for BIH only and BB search
  */
 template<unsigned int dim>
-class InspectElementsAlgorithm{
-public:
-    /** @brief Auxiliary structure for prolongation process.
-     * 
-     * Contains index of component element, index of bulk element 
-     * and its index in vector of bulk elements intersecting with the component element.
-     */
-    struct Prolongation{
-        unsigned int component_elm_idx;
-        unsigned int elm_3D_idx;
-        unsigned int dictionary_idx;
-    };
-    
-    
+class InspectElementsAlgorithm : public IntersectionAlgorithmBase<dim,3>
+{
+public:  
     InspectElementsAlgorithm(Mesh *_mesh);
     ~InspectElementsAlgorithm();
     
@@ -111,7 +116,21 @@ public:
     //@}
     
 private:
-    const unsigned int undefined_elm_idx_ = -1;
+    using IntersectionAlgorithmBase<dim,3>::mesh;
+    using IntersectionAlgorithmBase<dim,3>::undefined_elm_idx_;
+    using IntersectionAlgorithmBase<dim,3>::simplexA;
+    using IntersectionAlgorithmBase<dim,3>::simplexB;
+    
+    /** @brief Auxiliary structure for prolongation process.
+     * 
+     * Contains index of component element, index of bulk element 
+     * and its index in vector of bulk elements intersecting with the component element.
+     */
+    struct Prolongation{
+        unsigned int component_elm_idx;
+        unsigned int elm_3D_idx;
+        unsigned int dictionary_idx;
+    };
     
     /// Counter for intersection among elements.
     unsigned int n_intersections_;
@@ -125,17 +144,10 @@ private:
     std::vector<bool> closed_elements;
     std::vector<unsigned int> last_slave_for_3D_elements;
     
-    /// Mesh pointer.
-    Mesh *mesh;
     /// Elements bounding boxes.
     std::vector<BoundingBox> elements_bb;
     /// Bounding box of all 3D elements.
     BoundingBox mesh_3D_bb;
-    
-    /// Object representing a single component element.
-    Simplex<dim> component_simplex;
-    /// Object representing a single bulk element.
-    Simplex<3> tetrahedron;
     
     /// Resulting vector of intersections.
     std::vector<std::vector<IntersectionAux<dim,3>>> intersection_list_;
@@ -176,7 +188,6 @@ private:
                                      std::queue<Prolongation>& queue);
     
     friend class MixedMeshIntersections;
-    friend class InspectElementsAlgorithm22;
 };
 
 /** @brief Implements algorithm for finding 2D-2D intersections.
@@ -184,7 +195,7 @@ private:
  * It uses previously computed 2D-3D intersections and find candidates
  * which have intersection in the same bulk (3D) element.
  */
-class InspectElementsAlgorithm22
+class InspectElementsAlgorithm22 : public IntersectionAlgorithmBase<2,2>
 {
 public:
     InspectElementsAlgorithm22(Mesh *input_mesh);
@@ -196,17 +207,10 @@ public:
                                std::vector<IntersectionLocal<2,2>> &storage);
     
 private:
-    Mesh *mesh;
-    
     unsigned int component_counter_;
     
     /// Stores temporarily 2D-2D intersections.
     std::vector<IntersectionAux<2,2>> intersectionaux_storage22_;
-    
-    /// Object representing a triangle element A.
-    Simplex<2> triaA_;
-    /// Object representing a triangle element B.
-    Simplex<2> triaB_;
     
     // Auxiliary vector which keeps component indices for 2d elements.
     std::vector<unsigned int> component_idx_;
@@ -244,7 +248,7 @@ private:
  *  at the same time.
  *  We might need to deal with intersections outside 3D mesh, using partially algorithm (2)
  */
-class InspectElementsAlgorithm12
+class InspectElementsAlgorithm12 : public IntersectionAlgorithmBase<1,2>
 {
 public:
     InspectElementsAlgorithm12(Mesh *input_mesh);
@@ -262,16 +266,9 @@ public:
      * BIH is used to find intersection candidates.
      */
     void compute_intersections_2(const BIHTree& bih);
-private:
-    Mesh *mesh;
-    
+private: 
     /// Stores temporarily 1D-2D intersections.
     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
-    
-    /// Object representing a line element.
-    Simplex<1> abscissa_;
-    /// Object representing a triangle element.
-    Simplex<2> triangle_;
     
     /// Computes fundamental 1D-2D intersection of candidate pair.
 //     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
