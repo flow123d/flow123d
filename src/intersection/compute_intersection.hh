@@ -81,14 +81,10 @@ public:
      * If some of the Plucker products are zero:
      * 1 zero product -> IP is on the triangle side
      * 2 zero products -> IP is at the vertex of triangle (there is no other IP)
-     * 3 zero products: 
-     *      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
-     *      -> triangle side is part of the line (and otherwise)     
+     * 3 zero products: -> line and triangle are coplanar
+     * 
      * IP is intersection of triangle and whole line (bisector).
-     * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
-     * @param compute_zeros_plucker_products - if true, resolve pathologic cases (zero Plucker products), 
-     * otherwise ignore. E.g. in 2d-3d is false when looking for tetrahedron edges X triangle intersection
-     * (these would be found before in triangle line X tetrahedron intersection).
+     * @param IP12s - input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
      * @return Orientation flag (0,1 sign of product if get intersection, 2 - three zero products (degenerated),
      * 3 - no intersection
      * 
@@ -98,8 +94,7 @@ public:
 	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
-     * TODO: as in 1d-3d check the topology after interpolation
-     * @param IP12s input/output vector of IPs. If IP found, it is pushed back.
+     * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
      * @return number of intersection points found
      */
     unsigned int compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
@@ -188,12 +183,13 @@ private:
      */
     bool compute_plucker(IntersectionPointAux<1,2> &IP, const arma::vec3 &local);
     
-    /** Computes intersection of abscissa and triangle side for zero Plucker product - pathologic case.
+    /** Computes intersection of abscissa and triangle side in degenerate case (all products are zero).
+     * Inspects also topology.
      * @param side_idx is the local index of the triangle side
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_pathologic(unsigned int side_idx, IntersectionPointAux<1,2> &IP);
+    bool compute_degenerate(unsigned int side_idx, IntersectionPointAux<1,2> &IP);
     
     /// Flag 'computed'; is true if intersection has been computed already.
     bool computed_;
