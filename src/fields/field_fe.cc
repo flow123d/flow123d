@@ -23,6 +23,7 @@
 #include "fem/fe_values.hh"
 #include "fem/finite_element.hh"
 #include "fem/mapping_p1.hh"
+#include "fem/fe_p.hh"
 #include "mesh/reader_instances.hh"
 
 
@@ -323,10 +324,6 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
     }
 
 	field_name_ = rec.val<std::string>("field_name");
-
-	map1_ = new MappingP1<1,3>();
-	map2_ = new MappingP1<2,3>();
-	map3_ = new MappingP1<3,3>();
 }
 
 
@@ -336,11 +333,27 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	// Mesh can't be set for field which is not initialized.
 	if (field_name_ == "") return;
 
+	this->make_dof_handler(mesh);
+}
+
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
+	// temporary solution - these objects will be set through FieldCommon
+	map1_ = new MappingP1<1,3>();
+	map2_ = new MappingP1<2,3>();
+	map3_ = new MappingP1<3,3>();
+	fe1_ = new FE_P_disc<0,1,3>();
+	fe2_ = new FE_P_disc<0,2,3>();
+	fe3_ = new FE_P_disc<0,3,3>();
+
 	dh_ = new DOFHandlerMultiDim( const_cast<Mesh &>(*mesh) );
-	dh_->distribute_dofs(fe1, fe2, fe3);
+	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
     dof_indices = new unsigned int[ndofs];
-    // allocate data_
+
+    // allocate data_vec_
 	unsigned int data_size = dh_->n_global_dofs();
 	data_vec_ = new VectorSeqDouble();
 	data_vec_->resize(data_size);

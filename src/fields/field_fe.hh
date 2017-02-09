@@ -28,7 +28,7 @@
 #include "mesh/ngh/include/ngh_interface.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
-#include "fem/fe_p.hh"
+#include "fem/finite_element.hh"
 #include "input/factory.hh"
 
 #include <memory>
@@ -103,18 +103,37 @@ public:
 	virtual ~FieldFE();
 
 private:
+	/// Create DofHandler object
+	void make_dof_handler(const Mesh *mesh);
 
+	/// DOF handler object
     DOFHandlerMultiDim *dh_;
+    /// Store data of Field
     VectorSeqDouble *data_vec_;
+    /// Array of indexes to data_vec_, used for get/set values
     unsigned int *dof_indices;
 
+    /**
+     * Mapping object allows get value of 1D element.
+     *
+     * For correct functionality must be created proper descendant of Mapping class.
+     */
     Mapping<1,3> *map1_;
+    /// Same as previous, but allows get value of 2D element.
     Mapping<2,3> *map2_;
+    /// Same as previous, but allows get value of 3D element.
     Mapping<3,3> *map3_;
 
-	FE_P_disc<0,1,3> fe1;
-	FE_P_disc<0,2,3> fe2;
-	FE_P_disc<0,3,3> fe3;
+    /**
+     * Used in DOFHandler::distribute_dofs method. Represents 1D element.
+     *
+     * For correct functionality must be created proper descendant of FiniteElement class.
+     */
+    FiniteElement<1,3> *fe1_;
+    /// Same as previous, but represents 2D element.
+    FiniteElement<2,3> *fe2_;
+    /// Same as previous, but represents 3D element.
+    FiniteElement<3,3> *fe3_;
 
 	/// mesh, which is interpolated
 	std::shared_ptr<Mesh> source_mesh_;
