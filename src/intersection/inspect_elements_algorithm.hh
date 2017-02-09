@@ -190,11 +190,15 @@ public:
     InspectElementsAlgorithm22(Mesh *input_mesh);
     
     /// Runs the core algorithm for computing 2D-2D intersection in 3D.
-    void compute_intersections(const std::vector<std::vector<ILpair>> &intersection_map_);
+//     void compute_intersections(const std::vector<std::vector<ILpair>> &intersection_map_);
     
+    void compute_intersections(std::vector<std::vector<ILpair>> &intersection_map,
+                               std::vector<IntersectionLocal<2,2>> &storage);
     
 private:
     Mesh *mesh;
+    
+    unsigned int component_counter_;
     
     /// Stores temporarily 2D-2D intersections.
     std::vector<IntersectionAux<2,2>> intersectionaux_storage22_;

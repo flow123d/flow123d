@@ -12,7 +12,7 @@
 #include "mesh/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
-#include "../../src/intersection/mixed_mesh_intersections.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
@@ -65,8 +65,11 @@ void compute_intersection(Mesh *mesh)
 
     // compute intersection
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(IntersectionType(IntersectionType::d12_3
+    ie.compute_intersections(IntersectionType(IntersectionType::d23
                                             | IntersectionType::d22));
+    
+    double total_length = ie.measure_22();
+    cout << "total_length = " << total_length << endl;
     
     // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage12_.size(); i++)
@@ -100,49 +103,16 @@ TEST(intersection_prolongation_23d, all) {
 //     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = "intersection/2d-2d/";
-//     string filename = dir_name + "test1_incomp_coherence.msh";
-    string filename = dir_name + "test1_comp.msh";
-//     std::vector<string> filenames;
-//     
-//     // read mesh file names
-//     DIR *dir;
-//     struct dirent *ent;
-//     if ((dir = opendir (dir_name.c_str())) != NULL) {
-//         // print all the files and directories within directory 
-//         xprintf(Msg,"Testing mesh files: \n");
-//         while ((ent = readdir (dir)) != NULL) {
-//             string fname = ent->d_name;
-//             // test extension ".msh"
-//             if(fname.size() >= 4)
-//             {
-//                 string ext = fname.substr(fname.size()-4);
-// //                 xprintf(Msg,"%s\n",ext.c_str());
-//                 if(ext == ".msh"){
-//                     filenames.push_back(ent->d_name);
-//                     xprintf(Msg,"%s\n",ent->d_name);
-//                 }
-//             }
-//         }
-//         closedir (dir);
-//     } else {
-//         ASSERT(0).error("Could not open directory with testing meshes.");
-//     }
-//     
-//     std::sort(filenames.begin(), filenames.end(), less<string>());
-        
-//     std::vector<std::vector<std::vector<arma::vec3>>> solution;
-//     fill_23d_solution(solution);
     
+    string filename = dir_name + "cube_2f_incomp.msh";
 
-    
     MessageOut() << "Computing intersection on mesh: " << filename << "\n";
     FilePath mesh_file(filename, FilePath::input_file);
     
     Mesh *mesh = mesh_constructor();
-    // read mesh with gmshreader
-    GmshMeshReader reader(mesh_file);
-    reader.read_mesh(mesh);
-    mesh->setup_topology();
+    ifstream in(string(mesh_file).c_str());
+    mesh->read_gmsh_from_stream(in);
+    
     compute_intersection(mesh);
 }
 

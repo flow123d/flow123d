@@ -246,7 +246,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
 
     END_TIMER("Element iteration");
     
-    MessageOut().fmt("number of {}-dim intersections: {}\n", dim, n_intersections_);
+    MessageOut().fmt("{}D-3D: number of intersections = {}\n", dim, n_intersections_);
     // DBG write which elements are closed
 //     FOR_ELEMENTS(mesh, ele) {
 //         DebugOut().fmt("Element[{}] closed: {}\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
@@ -676,20 +676,24 @@ InspectElementsAlgorithm22::InspectElementsAlgorithm22(Mesh* input_mesh)
 {}
 
 
-void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::vector<ILpair>>& intersection_map_)
+void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<ILpair>>& intersection_map,
+                                                       std::vector<IntersectionLocal<2,2>> &storage)
 {
     //DebugOut() << "Intersections 2d-2d\n";
-    
+    ASSERT(storage.size() == 0);
     create_component_numbering();
+    
+    unsigned int ele_idx, eleA_idx, eleB_idx,
+                 componentA_idx, componentB_idx;
     
     FOR_ELEMENTS(mesh, ele) {
     if (ele->dim() == 3)
     {
-        unsigned int ele_idx = ele->index();
+        ele_idx = ele->index();
         // if there are not at least 2 2D elements intersecting 3D element; continue
-        if(intersection_map_[ele_idx].size() < 2) continue;
+        if(intersection_map[ele_idx].size() < 2) continue;
         
-        const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
+        const std::vector<ILpair> &local_map = intersection_map[ele_idx];
         
         //DebugOut() << "more than 2 intersections in tetrahedron found\n";
         for(unsigned int i=0; i < local_map.size(); i++)
@@ -697,34 +701,74 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
             //TODO: 1] compute all plucker coords at once
             //TODO: 2] pass plucker coords from 2d-3d
             
-            ElementFullIter eleA = mesh->element(local_map[i].first);
+            eleA_idx = local_map[i].first;
+            ElementFullIter eleA = mesh->element(eleA_idx);
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
-            unsigned int componentA_idx = component_idx_[eleA->index()];
+            componentA_idx = component_idx_[eleA_idx];
             
-            IntersectionLocalBase * ilb = local_map[i].second;
-            //DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
+//             IntersectionLocalBase * ilb = local_map[i].second;
+//             DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), componentA_idx);
             
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
-                ElementFullIter eleB = mesh->element(local_map[j].first);
-                if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
-                
-                unsigned int componentB_idx = component_idx_[eleB->index()];
-                
+                eleB_idx = local_map[j].first;
+                componentB_idx = component_idx_[eleB_idx];
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
+                
+                ElementFullIter eleB = mesh->element(eleB_idx);
+                if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
+                
+                //skip candidates already computed
+                bool skip = false;
+                for(unsigned int k=0; k<intersection_map[eleA_idx].size(); k++)
+                {
+                    if(intersection_map[eleA_idx][k].first == eleB_idx) {
+                        skip = true;
+                        break;
+                    }
+                }
+                if(skip) continue;
                 
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
 //                                eleA.index(), eleB.index(), componentA_idx, componentB_idx);
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
 //                                eleA.id(), eleB.id(), componentA_idx, componentB_idx);
-                compute_single_intersection(eleA,
-                                            eleB);
+//                 compute_single_intersection(eleA,
+//                                             eleB);
+                
+                update_simplex(eleA, triaA_);
+                update_simplex(eleB, triaB_);
+                
+                IntersectionAux<2,2> is(eleA_idx, eleB_idx);
+                
+                ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA_, triaB_);
+                CI.init();
+                unsigned int n_local_intersection = CI.compute(is);
+                
+//                 if(n_local_intersection > 0){
+//                     intersectionaux_storage22_.push_back(is);
+//                 }
+                
+                if(n_local_intersection > 0)
+                {
+                    storage.push_back(IntersectionLocal<2,2>(is));
+                    intersection_map[eleA_idx].push_back(std::make_pair(
+                                                         eleB_idx,
+                                                         &(storage.back())
+                                                         ));
+                    intersection_map[eleB_idx].push_back(std::make_pair(
+                                                         eleA_idx,
+                                                         &(storage.back())
+                                                         ));
+                }
             }
         }
     }
     }
+    MessageOut() << "2D-2D: number of intersections = " << storage.size() << "\n";
 }
+
 
 void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIter& eleA,
                                                              const ElementFullIter& eleB)
@@ -751,7 +795,7 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
 void InspectElementsAlgorithm22::create_component_numbering()
 {
     component_idx_.resize(mesh->n_elements(),-1);
-    unsigned int counter = 0;
+    component_counter_ = 0;
     
     // prolongation queue in the component mesh.
     std::queue<unsigned int> queue;
@@ -766,15 +810,15 @@ void InspectElementsAlgorithm22::create_component_numbering()
             
             while(!queue.empty()){
                 unsigned int ele_idx = queue.front();
-                component_idx_[ele_idx] = counter;
+                component_idx_[ele_idx] = component_counter_;
                 queue.pop();
                 prolongate(mesh->element(ele_idx), queue);
             }
-            counter++;
+            component_counter_++;
         }
     }
     
-    MessageOut() << "2D-2D intersections: number of components = " << counter << "\n";
+    MessageOut() << "2D-2D: number of components = " << component_counter_ << "\n";
     
 //     DBGCOUT(<< "Component numbering: \n");
 //     FOR_ELEMENTS(mesh, ele) {
@@ -811,6 +855,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
                                                        std::vector<IntersectionLocal<1,2>> &storage)
 {
     //DebugOut() << "Intersections 1d-2d\n";
+    ASSERT(storage.size() == 0);
     
     FOR_ELEMENTS(mesh, ele) {
     if (ele->dim() == 3)
@@ -881,16 +926,17 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
     }
     }
     
+    MessageOut() << "2D-2D: number of intersections = " << storage.size() << "\n";
     // just dbg output
-    for(IntersectionLocal<1,2> &is : storage)
-    {
-        //DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
-        for(const IntersectionPoint<1,2>& ip : is.points()) {
-            //DebugOut() << ip;
-            auto p = ip.coords(mesh->element(is.component_ele_idx()));
-            //DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
-        }
-    }
+//     for(IntersectionLocal<1,2> &is : storage)
+//     {
+//         DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
+//         for(const IntersectionPoint<1,2>& ip : is.points()) {
+//             DebugOut() << ip;
+//             auto p = ip.coords(mesh->element(is.component_ele_idx()));
+//             DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+//         }
+//     }
 }
 
 // void InspectElementsAlgorithm12::compute_single_intersection(const ElementFullIter& eleA,
