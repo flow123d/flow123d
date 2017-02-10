@@ -43,7 +43,7 @@ class ISTFormatter(object):
     @staticmethod
     def tree2html(element, try_pretty=0):
         import xml.etree.ElementTree as ET
-        html_string = ET.tostring(element.root, method='html')
+        html_string = ET.tostring(element.root, method='html').decode()
         if not try_pretty:
             return html_string
 

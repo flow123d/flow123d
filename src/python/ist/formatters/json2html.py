@@ -762,8 +762,8 @@ class HTMLFormatter(object):
         :return: html div object
         """
         html = htmltree('div', 'card navigation')
-
-        sorted_items = sorted(items, cmp=HTMLFormatter.__cmp)
+        import functools
+        sorted_items = sorted(items, key=functools.cmp_to_key(HTMLFormatter.__cmp))
 
         html.h3('Records ')
         HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=False, cls='r')
