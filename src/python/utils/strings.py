@@ -6,7 +6,6 @@
 Simple module which provides string/list utilities
 """
 
-from __future__ import absolute_import
 from scripts.core.base import Printer
 
 format_n_lines_successful = dict(
@@ -119,7 +118,7 @@ def replace_placeholders(template, **kwargs):
     result = str(template)
     _format_ = kwargs.get('_format_', '$${}$$')
 
-    for key, value in kwargs.items():
+    for key, value in list(kwargs.items()):
         result = result.replace(_format_.format(key), value)
     return result
 
@@ -134,8 +133,8 @@ def format_dict(d, align_keys=True, indent=0, eq=' = ', sort=True):
     """
     p = '    '
     result = list()
-    max_width = max(len(k) for k in d.keys())
-    keys = sorted(d.keys()) if sort else d.keys()
+    max_width = max(len(k) for k in list(d.keys()))
+    keys = sorted(d.keys()) if sort else list(d.keys())
     for k in keys:
         v = d.get(k)
         i = indent * p

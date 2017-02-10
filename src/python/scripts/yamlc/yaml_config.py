@@ -305,22 +305,22 @@ class ConfigPool(object):
         return self.add_case(yaml_file)
 
     def parse(self):
-        for k, v in self.configs.items():
+        for k, v in list(self.configs.items()):
             self.configs[k] = ConfigBase(k)
 
-        for k, v in self.files.items():
+        for k, v in list(self.files.items()):
             config = Paths.join(Paths.dirname(k), yamlc.CONFIG_YAML)
             self.files[k] = self.configs[config]
 
     __iadd__ = add
 
     def update(self, proc, time_limit, memory_limit, **kwargs):
-        for config in self.configs.values():
+        for config in list(self.configs.values()):
             config.update(proc, time_limit, memory_limit, **kwargs)
 
     def filter_tags(self, include, exclude):
         include = set(include) if include else None
         exclude = set(exclude) if exclude else None
 
-        for config in self.configs.values():
+        for config in list(self.configs.values()):
             config.filter_tags(include, exclude)

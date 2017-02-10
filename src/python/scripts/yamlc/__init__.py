@@ -79,6 +79,7 @@ class ConfigCaseFiles(object):
         self.json_output = self.in_output('result.json')
         self.dump_output = self.in_output('result.p')
         self.status_file = self.in_output('runtest.status.json')
+        self.valgrind_out = self.in_output('valgrind.out')
 
         self.input = self.in_root(input)
         self.ref_output = ref_output
