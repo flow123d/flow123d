@@ -312,6 +312,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	flags_ = init_data.flags_;
 
 
 	// read mesh, create tree
@@ -330,10 +331,11 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
-	// Mesh can't be set for field which is not initialized.
-	if (field_name_ == "") return;
-
-	this->make_dof_handler(mesh);
+	// Mesh can be set only for field initialized from input.
+	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
+		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+		this->make_dof_handler(mesh);
+	}
 }
 
 
@@ -363,88 +365,90 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 
 template <int spacedim, class Value>
 bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
-	// Time can't be set for field which is not initialized.
-	if (field_name_ == "") return false;
+	// Time can be set only for field initialized from input.
+	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
+	    ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
+		if ( reader_file_ == FilePath() ) return false;
 
-	ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of elementwise field, did you call set_mesh()?\n");
-    if ( reader_file_ == FilePath() ) return false;
+		// value of last computed element must be recalculated if time is changed
+		computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
-    // value of last computed element must be recalculated if time is changed
-    computed_elm_idx_ = numeric_limits<unsigned int>::max();
+		GMSH_DataHeader search_header;
+		search_header.actual = false;
+		search_header.field_name = field_name_;
+		search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
+		search_header.n_entities = source_mesh_->element.size();
+		search_header.time = time.end();
 
-    GMSH_DataHeader search_header;
-    search_header.actual = false;
-    search_header.field_name = field_name_;
-    search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-    search_header.n_entities = source_mesh_->element.size();
-    search_header.time = time.end();
+		bool boundary_domain_ = false;
+		std::vector<double> data_vec = *(ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
+				source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_));
+		std::vector<double> sum_val(4);
+		std::vector<unsigned int> elem_count(4);
 
-    bool boundary_domain_ = false;
-    std::vector<double> data_vec = *(ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
-    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_));
-    std::vector<double> sum_val(4);
-    std::vector<unsigned int> elem_count(4);
-
-    FOR_ELEMENTS( dh_->mesh(), ele ) {
-    	searched_elements_.clear();
-    	source_mesh_->get_bih_tree().find_point(ele->centre(), searched_elements_);
-    	found_point_.SetCoord( ele->centre()(0), ele->centre()(1), ele->centre()(2) );
-    	std::fill(sum_val.begin(), sum_val.end(), 0.0);
-    	std::fill(elem_count.begin(), elem_count.end(), 0);
-    	for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
-    		ElementFullIter elm = source_mesh_->element( *it );
-			switch (elm->dim()) {
-				case 0: {
-					ngh::set_point_from_element(point_, elm);
-					if (point_ == found_point_) {
-						sum_val[0] += data_vec[*it];
-						++elem_count[0];
+		FOR_ELEMENTS( dh_->mesh(), ele ) {
+			searched_elements_.clear();
+			source_mesh_->get_bih_tree().find_point(ele->centre(), searched_elements_);
+			found_point_.SetCoord( ele->centre()(0), ele->centre()(1), ele->centre()(2) );
+			std::fill(sum_val.begin(), sum_val.end(), 0.0);
+			std::fill(elem_count.begin(), elem_count.end(), 0);
+			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
+				ElementFullIter elm = source_mesh_->element( *it );
+				switch (elm->dim()) {
+					case 0: {
+						ngh::set_point_from_element(point_, elm);
+						if (point_ == found_point_) {
+							sum_val[0] += data_vec[*it];
+							++elem_count[0];
+						}
+						break;
 					}
-					break;
-				}
-				case 1: {
-					ngh::set_abscissa_from_element(abscissa_, elm);
-					if ( abscissa_.IsInner(found_point_) ) {
-						sum_val[1] += data_vec[*it];
-						++elem_count[1];
+					case 1: {
+						ngh::set_abscissa_from_element(abscissa_, elm);
+						if ( abscissa_.IsInner(found_point_) ) {
+							sum_val[1] += data_vec[*it];
+							++elem_count[1];
+						}
+						break;
 					}
-					break;
-				}
-				case 2: {
-					ngh::set_triangle_from_element(triangle_, elm);
-					if ( triangle_.IsInner(found_point_) ) {
-						sum_val[2] += data_vec[*it];
-						++elem_count[2];
+					case 2: {
+						ngh::set_triangle_from_element(triangle_, elm);
+						if ( triangle_.IsInner(found_point_) ) {
+							sum_val[2] += data_vec[*it];
+							++elem_count[2];
+						}
+						break;
 					}
-					break;
-				}
-				case 3: {
-					ngh::set_tetrahedron_from_element(tetrahedron_, elm);
-					if ( tetrahedron_.IsInner(found_point_) ) {
-						sum_val[3] += data_vec[*it];
-						++elem_count[3];
+					case 3: {
+						ngh::set_tetrahedron_from_element(tetrahedron_, elm);
+						if ( tetrahedron_.IsInner(found_point_) ) {
+							sum_val[3] += data_vec[*it];
+							++elem_count[3];
+						}
+						break;
 					}
-					break;
 				}
 			}
-    	}
-    	unsigned int dim = ele->dim();
-    	double elem_value = 0.0;
-    	do {
-    		if (elem_count[dim] > 0) {
-    			elem_value = sum_val[dim] / elem_count[dim];
-    			break;
-    		}
-    		++dim;
-    	} while (dim<4);
+			unsigned int dim = ele->dim();
+			double elem_value = 0.0;
+			do {
+				if (elem_count[dim] > 0) {
+					elem_value = sum_val[dim] / elem_count[dim];
+					break;
+				}
+				++dim;
+			} while (dim<4);
 
-    	dh_->get_loc_dof_indices( ele, dof_indices);
-    	ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
-    	(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
-    }
+			dh_->get_loc_dof_indices( ele, dof_indices);
+			ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
+			(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
+		}
 
 
-    return search_header.actual;
+		return search_header.actual;
+	} else return false;
+
 }
 
 

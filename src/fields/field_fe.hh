@@ -162,6 +162,9 @@ private:
 	/// 0D (point) element, used for computing intersection
 	TPoint point_, found_point_;
 
+	/// Field flags.
+	FieldFlag::Flags flags_;
+
     /// Registrar of class to factory
     static const int registrar;
 };
