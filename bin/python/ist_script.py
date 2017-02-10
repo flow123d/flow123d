@@ -28,7 +28,7 @@ import pathfix
 pathfix.append_to_path()
 
 import system.versions
-system.versions.require_version_2()
+system.versions.require_version_3()
 
 import os
 import sys

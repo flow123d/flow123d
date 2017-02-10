@@ -40,7 +40,7 @@ import pathfix
 pathfix.append_to_path()
 
 import system.versions
-system.versions.require_version_2()
+system.versions.require_version_3()
 
 from optparse import OptionParser
 from coverage import coverage_merge_module
