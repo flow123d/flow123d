@@ -2,7 +2,7 @@ flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Interpolated boundary condition - big cube
   mesh:
-    mesh_file: input/large_mesh.msh
+    mesh_file: ../00_mesh/cube_20x20x20.msh
   flow_equation: !Flow_Darcy_MH
     output_specific:
     nonlinear_solver:
@@ -26,4 +26,3 @@ problem: !Coupling_Sequential
       file: ./large_cube.msh
       format: !gmsh
         variant: ascii
-      name: flow_output_stream
