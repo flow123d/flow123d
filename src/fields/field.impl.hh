@@ -269,38 +269,41 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     	auto rh = data_->region_history_[reg.idx()];
 
     	// skip regions with no matching BC flag
-    	// skipping regions with empty history - no_check regions
-        if (reg.is_boundary() == is_bc() && !rh.empty() ) {
-        	double last_time_in_history = rh.front().first;
-        	unsigned int history_size=rh.size();
-        	unsigned int i_history;
-        	OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+    	if (reg.is_boundary() != is_bc()) continue;
 
-        	// set history index
-        	if ( time_step.gt(last_time_in_history) ) {
-        		// in smooth time_step
-        		i_history=0;
-        	} else {
-        		// time_step .eq. input_time; i.e. jump time
-        	    is_jump_time_=true;
-        		if (limit_side == LimitSide::right) {
-        			i_history=0;
-        		} else {
-        			i_history=1;
-        		}
-        	}
-        	i_history=min(i_history, history_size - 1);
-        	OLD_ASSERT(i_history >= 0, "Empty field history.");
-        	// possibly update field pointer
-        	auto new_ptr = rh.at(i_history).second;
-        	if (new_ptr != region_fields_[reg.idx()]) {
-        		region_fields_[reg.idx()]=new_ptr;
-        		set_time_result_ = TimeStatus::changed;
-        	}
-        	// let FieldBase implementation set the time
-    		if ( new_ptr->set_time(time_step) )  set_time_result_ = TimeStatus::changed;
+    	// Check regions with empty history, possibly set default.
+    	if ( rh.empty()) continue;
 
+        double last_time_in_history = rh.front().first;
+        unsigned int history_size=rh.size();
+        unsigned int i_history;
+        OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+
+        // set history index
+        if ( time_step.gt(last_time_in_history) ) {
+            // in smooth time_step
+            i_history=0;
+        } else {
+            // time_step .eq. input_time; i.e. jump time
+            is_jump_time_=true;
+            if (limit_side == LimitSide::right) {
+                i_history=0;
+            } else {
+                i_history=1;
+            }
         }
+        i_history=min(i_history, history_size - 1);
+        OLD_ASSERT(i_history >= 0, "Empty field history.");
+        // possibly update field pointer
+
+        auto new_ptr = rh.at(i_history).second;
+        if (new_ptr != region_fields_[reg.idx()]) {
+            region_fields_[reg.idx()]=new_ptr;
+            set_time_result_ = TimeStatus::changed;
+        }
+        // let FieldBase implementation set the time
+        if ( new_ptr->set_time(time_step) )  set_time_result_ = TimeStatus::changed;
+
     }
 
     return changed();
@@ -426,6 +429,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 						data_->region_history_[reg.idx()].push_front(
 								HistoryPoint(input_time, field_instance)
 						);
+						//DebugOut() << "Update history" << print_var(this->name()) <<print_var(reg.label()) << print_var(input_time);
 					}
 					break;
 				}
@@ -439,7 +443,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 template<int spacedim, class Value>
 void Field<spacedim,Value>::check_initialized_region_fields_() {
 	OLD_ASSERT(mesh(), "Null mesh pointer.");
-    if (shared_->is_fully_initialized_) return;
+    //if (shared_->is_fully_initialized_) return;
 
     // check there are no empty field pointers, collect regions to be initialized from default value
     RegionSet regions_to_init; // empty vector
@@ -490,7 +494,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
                 input_default(), input_name(), name(), region_list);
 
     }
-    shared_->is_fully_initialized_ = true;
+    //shared_->is_fully_initialized_ = true;
 }
 
 

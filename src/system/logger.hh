@@ -243,8 +243,14 @@ Logger &operator<<(Logger & log, const T & x)
 #define DebugOut() \
 	_LOG( Logger::MsgType::debug )
 
-#define VarFmt( var ) \
-    fmt("'" + string(#var) + "': {} " , (var))
+/**
+ * Print variable name and value.
+ * Usage:
+ * DebugOut() << print_var(x) << print_var(y)
+ */
+#define print_var(var) \
+    std::string(#var) << "=" << (var) << ", "
+
 
 
 

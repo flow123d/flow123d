@@ -71,7 +71,7 @@ class RuntestParser(object):
     @classmethod
     def create_from_fields(cls, json, **fields):
         obj = Map()
-        for k, v in fields.items():
+        for k, v in list(fields.items()):
             value = json.get(k, None)
             obj[k] = v(value) if value is not None else None
         return obj

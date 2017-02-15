@@ -161,7 +161,7 @@ set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
       execute_process(
           COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
       # is cygwin env?
       if (CYGWIN)
@@ -554,8 +554,9 @@ if(USE_PYTHON)
 endif()
 
 # find python 
-find_package(PythonInterp 2.7 REQUIRED)
-find_package(PythonLibs 2.7   REQUIRED)
+set(Python_ADDITIONAL_VERSIONS 3.4) # for cmake version 2.8
+find_package(PythonInterp 3.4 REQUIRED)
+find_package(PythonLibs   3.4 REQUIRED)
 # TODO: remove dependency on python
 include_directories(${PYTHON_INCLUDE_DIRS})
 

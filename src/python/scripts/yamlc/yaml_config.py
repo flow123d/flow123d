@@ -4,7 +4,7 @@
 # ----------------------------------------------
 import itertools
 import yaml
-
+import re
 # ----------------------------------------------
 from copy import deepcopy
 # ----------------------------------------------
@@ -21,6 +21,8 @@ class ConfigCase(object):
     :type config   : ConfigBase
     """
 
+    sanitise_regex = re.compile(r'[^a-zA-Z0-9_-]+]')
+
     def __init__(self, o, config):
         o = ConfigBase.merge(yamlc.DEFAULTS, deepcopy(o))
 
@@ -30,13 +32,24 @@ class ConfigCase(object):
         self.memory_limit = float(o.get(yamlc.TAG_MEMORY_LIMIT, None))
         self.tags = set(o.get(yamlc.TAG_TAGS, None))
         self.check_rules = o.get(yamlc.TAG_CHECK_RULES, None)
+        self.input = o.get(yamlc.TAG_INPUTS)
         self.config = config
 
         if self.config:
             self.file = Paths.join(self.config.root, Paths.basename(self.file))
             self.without_ext = Paths.basename(Paths.without_ext(self.file))
-            self.shortname = '{name}.{proc}'.format(
-                name=self.without_ext, proc=self.proc)
+
+            # if input file is non standard we will have slightly different
+            # output folder to ensure, we will not have all results in the same folder
+            if self.input == 'input':
+                self.shortname = '{name}.{proc}'.format(
+                    name=self.without_ext,
+                    proc=self.proc)
+            else:
+                self.shortname = '{name}.{proc}.{input}'.format(
+                    name=self.without_ext,
+                    proc=self.proc,
+                    input=self.sanitise_regex.sub('', self.input))
 
             self.fs = yamlc.ConfigCaseFiles(
                 root=self.config.root,
@@ -46,7 +59,9 @@ class ConfigCase(object):
                     self.config.root,
                     yamlc.TEST_RESULTS,
                     self.shortname
-                ))
+                ),
+                input=self.input
+            )
         else:
             # create temp folder where files will be
             tmp_folder = Paths.temp_file(o.get('tmp') + '-{date}-{time}-{rnd}')
@@ -55,16 +70,24 @@ class ConfigCase(object):
             self.fs = yamlc.ConfigCaseFiles(
                 root=tmp_folder,
                 ref_output=tmp_folder,
-                output=tmp_folder
+                output=tmp_folder,
+                input='input'
             )
 
     @property
     def as_string(self):
         if self.file:
-            return '{} x {}'.format(
-                self.proc,
-                Paths.path_end(Paths.without_ext(self.file), level=2)
-            )
+            if self.input == 'input':
+                return '{} x {}'.format(
+                    self.proc,
+                    Paths.path_end(Paths.without_ext(self.file), level=2)
+                )
+            else:
+                return '{} x {} ({})'.format(
+                    self.proc,
+                    Paths.path_end(Paths.without_ext(self.file), level=2),
+                    self.sanitise_regex.sub('_', self.input)
+                )
         return 'process'
 
     @property
@@ -124,9 +147,13 @@ class ConfigBase(object):
             for case in self.yaml_config.get(yamlc.TAG_TEST_CASES, []):
                 case_config = self.merge(self.common_config, case)
 
-                # ensure that value is array
+                # ensure that value are array
                 case_config[yamlc.TAG_FILES] = ensure_iterable(
                     case_config.get(yamlc.TAG_FILES, []))
+                case_config[yamlc.TAG_INPUTS] = ensure_iterable(
+                    case_config.get(yamlc.TAG_INPUTS, []))
+                case_config[yamlc.TAG_INPUTS] = [str(x) for x in case_config[yamlc.TAG_INPUTS]]
+
                 # keep correct order
                 self.cases.append(case_config)
                 for f in case_config[yamlc.TAG_FILES]:
@@ -211,14 +238,19 @@ class ConfigBase(object):
     @classmethod
     def _get_all_for_case(cls, case):
         result = list()
+        # product of all files, cpus and inputs
         changes = list(itertools.product(
             case[yamlc.TAG_FILES],
-            case[yamlc.TAG_PROC]))
+            case[yamlc.TAG_PROC],
+            case[yamlc.TAG_INPUTS],
+        ))
 
-        for f, p in changes:
+        # copy original and edit changes
+        for f, p, i in changes:
             dummy_case = deepcopy(case)
             dummy_case[yamlc.TAG_FILES] = f
             dummy_case[yamlc.TAG_PROC] = p
+            dummy_case[yamlc.TAG_INPUTS] = i
             result.append(dummy_case)
         return result
 
@@ -273,22 +305,22 @@ class ConfigPool(object):
         return self.add_case(yaml_file)
 
     def parse(self):
-        for k, v in self.configs.items():
+        for k, v in list(self.configs.items()):
             self.configs[k] = ConfigBase(k)
 
-        for k, v in self.files.items():
+        for k, v in list(self.files.items()):
             config = Paths.join(Paths.dirname(k), yamlc.CONFIG_YAML)
             self.files[k] = self.configs[config]
 
     __iadd__ = add
 
     def update(self, proc, time_limit, memory_limit, **kwargs):
-        for config in self.configs.values():
+        for config in list(self.configs.values()):
             config.update(proc, time_limit, memory_limit, **kwargs)
 
     def filter_tags(self, include, exclude):
         include = set(include) if include else None
         exclude = set(exclude) if exclude else None
 
-        for config in self.configs.values():
+        for config in list(self.configs.values()):
             config.filter_tags(include, exclude)

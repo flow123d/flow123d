@@ -11,7 +11,7 @@ class Command(ArtifactStep):
     Class Command is abstract class for artifact step
     Each step does certain action (such as copy files)
     """
-    yaml_tag = u'!Command'
+    yaml_tag = '!Command'
 
     def __init__(self, command, output=None, **kwargs):
         self.command = [str(c) for c in command] if command else None

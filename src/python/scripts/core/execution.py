@@ -19,7 +19,7 @@ class OutputMode(object):
     Class OutputMode helper class for redirecting output from a command
     """
 
-    WRITE, APPEND, SHOW, HIDE, VARIABLE, DUMMY = range(6)
+    WRITE, APPEND, SHOW, HIDE, VARIABLE, DUMMY = list(range(6))
 
     def __init__(self, mode, filename=None, fp=None):
         self.mode = mode

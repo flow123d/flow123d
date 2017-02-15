@@ -84,6 +84,7 @@ class ModuleRuntest(ScriptModule):
         local_run = LocalRun(case)
         local_run.mpi = case.proc > 1
         local_run.progress = self.progress
+        local_run.massif = self.arg_options.massif
 
         # on demand we do not clean dirs or run comparisons
         no_clean = self.arg_options.no_clean
@@ -138,7 +139,7 @@ class ModuleRuntest(ScriptModule):
         jobs = list()
         """ :type: list[(str, PBSModule)] """
 
-        for yaml_file, yaml_config in self.configs.files.items():
+        for yaml_file, yaml_config in list(self.configs.files.items()):
             for case in yaml_config.get_one(yaml_file):
                 pbs_run = pbs_module.Module(case)
                 pbs_run.queue = self.arg_options.get('queue', True)
@@ -174,7 +175,7 @@ class ModuleRuntest(ScriptModule):
         runner = ParallelThreads(self.arg_options.parallel)
         runner.stop_on_error = not self.arg_options.keep_going
 
-        for yaml_file, yaml_config in self.configs.files.items():
+        for yaml_file, yaml_config in list(self.configs.files.items()):
             for case in yaml_config.get_one(yaml_file):
                 # create main process which first clean output dir
                 # and then execute test following with comparisons
