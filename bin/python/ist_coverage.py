@@ -80,7 +80,7 @@ class IST:
         def is_none(self, yaml):
             if (yaml == None):
                 return False
-            if (isinstance(yaml, basestring) and yaml.strip()==""  ):
+            if (isinstance(yaml, str) and yaml.strip() == ""  ):
                 return False
             self.yaml=yaml
             return True
@@ -203,7 +203,7 @@ class IST:
                 
             self.append_file(filename)
             if (type(self.yaml) == dict): 
-                for (key, child) in self.childs.iteritems():
+                for (key, child) in self.childs.items():
                     if key in self.yaml:                        
                         child.add_file(self.yaml[key], filename)
                         
@@ -215,7 +215,7 @@ class IST:
 
         def dfs_report_files(self, of):
             self.dfs_report_files_base(of)
-            for (key, child) in self.childs.iteritems():
+            for (key, child) in self.childs.items():
                 child.dfs_report_files(of)
                     
         def transpose(self, yaml):
@@ -225,7 +225,7 @@ class IST:
             if (type(self.yaml) == dict):                 
                 new_dict={}
                 max_len=0
-                for (key, value) in self.yaml.iteritems():
+                for (key, value) in self.yaml.items():
                     child=self.childs[key]
                     new_dict[key]=child.transpose(value)
                     max_len=max(max_len, len(new_dict[key]))
@@ -233,7 +233,7 @@ class IST:
                 t_dict=[]
                 for i in range(max_len):
                     tt={}
-                    for (key, t_item) in new_dict.iteritems():
+                    for (key, t_item) in new_dict.items():
                         if len(t_item) > 1:
                             assert i<len(t_item), "Different lengths of arrays to transpose."
                             tt[key]=t_item[i]

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
 from ist.globals import Globals, FormatMode
 from ist.base import Parsable, Field, List, Dict, InputType
 from ist.utils.htmltree import htmltree
@@ -210,7 +209,7 @@ class TypeAttributeParameter(Parsable):
         self.reference = None
 
     def parse(self, json_data={}):
-        item = json_data.items()[0]
+        item = list(json_data.items())[0]
         self.name = str(item[0])
         self.reference = TypeReference().parse(item[1])
         return self

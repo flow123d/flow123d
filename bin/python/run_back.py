@@ -67,7 +67,7 @@ def main():
                     iniFiles[iniFileFullPath] = nproc
 
     #submit tasks
-    for iniFile in iniFiles.iterkeys():
+    for iniFile in iniFiles.keys():
         os.system("./run_flow.sh -np " + str(iniFiles[iniFile]) + " -s " + iniFile + " -m hydra >> benchmark.log") #for Hydra
         #os.system("./run_flow.sh -np " + str(iniFiles[iniFile]) + " -s " + iniFile + " -m rex >> benchmark.log") #for Rex
 

@@ -33,7 +33,7 @@ class use_cache(object):
         self.cache_duration = cache_duration
 
     def __call__(self, f):
-        name = f.func_name
+        name = f.__name__
 
         # call wrapped function or use caches value
         def wrapper(other, *args, **kwargs):

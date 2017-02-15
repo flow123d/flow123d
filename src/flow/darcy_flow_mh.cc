@@ -743,7 +743,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembler assembler)
                     double bc_flux = -data_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_sigma = data_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-                    DebugOut().fmt("erow: {} flux: {} mesure: {} cs: {}", edge_row, bc_flux, bcd->element()->measure(), cross_section);
+                    //DebugOut().fmt("erow: {} flux: {} mesure: {} cs: {}", edge_row, bc_flux, bcd->element()->measure(), cross_section);
                     ls->mat_set_value(edge_row, edge_row, -bcd->element()->measure() * bc_sigma * cross_section );
                     ls->rhs_set_value(edge_row, (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
 

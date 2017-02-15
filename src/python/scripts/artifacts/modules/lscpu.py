@@ -13,7 +13,7 @@ class CommandLSCPU(Command):
     Class CommandLSCPU runs lscpu command and export output to json
     """
 
-    yaml_tag = u'!Command.lscpu'
+    yaml_tag = '!Command.lscpu'
     fields = dict(
         x64='Architecture',
         modes='CPU op-mode(s)',
@@ -47,7 +47,7 @@ class CommandLSCPU(Command):
         result = dict()
 
         for line in lines:
-            for field, phrase in self.fields.items():
+            for field, phrase in list(self.fields.items()):
                 if line.startswith(phrase):
                     try:
                         result[field] = line.split(':')[1].strip()
