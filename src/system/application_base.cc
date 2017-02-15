@@ -20,6 +20,7 @@
 #include "system/logger_options.hh"
 #include "system/armadillo_tools.hh"
 #include "system/file_path.hh"
+#include <signal.h>
 
 #ifdef FLOW123D_HAVE_PETSC
 #include <petsc.h>
@@ -27,12 +28,29 @@
 #endif
 
 
+
+
 // Function that catches all program signals.
-PetscErrorCode signal_handler(int signal, void *context)
+PetscErrorCode petsc_signal_handler(int signal, void *context)
 {
-  THROW( ExcSignal() << EI_Signal(signal) << EI_SignalName(strsignal(signal)) );
-  
+  if (signal == SIGINT) {
+      cout << "SIGINT\n";
+  }
+  if (signal == SIGFPE ||   // FPE: Floating Point Exception,probably divide by zero
+      signal == SIGILL ||   // Illegal instruction: Likely due to memory corruption
+      signal == SIGPIPE ||  // Broken Pipe: Likely while reading or writing to a socket
+      signal == SIGSEGV )   // SEGV: Segmentation Violation, probably memory access out of range
+  {
+      // Signals handled by us.
+      THROW( ExcSignal() << EI_Signal(signal) << EI_SignalName(strsignal(signal)) );
+  } else {
+      return PetscSignalHandlerDefault(signal,(void*)0);
+  }
   return 0;
+}
+
+void system_signal_handler(int signal) {
+    petsc_signal_handler(signal, nullptr);
 }
 
 
@@ -117,7 +135,9 @@ void ApplicationBase::petsc_initialize(int argc, char ** argv) {
 
     PetscInitialize(&argc,&argv,PETSC_NULL,PETSC_NULL);
     if (! signal_handler_off_) {
-        PetscPushSignalHandler(signal_handler, nullptr);
+        // PETSc do not catch SIGINT, but someone on the way does, we try to fix it.
+        signal(SIGINT, system_signal_handler);
+        PetscPushSignalHandler(petsc_signal_handler, nullptr);
     }
 
     int mpi_size;

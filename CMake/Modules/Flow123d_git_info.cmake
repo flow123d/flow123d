@@ -47,6 +47,9 @@ if (GIT_FOUND)
   STRING(REGEX REPLACE ".* \\[([^]]*)\\] .*" "\\1" GIT_REMOTE_BRANCH "${GIT_FULL_BRANCH_INFO}")
   STRING(REGEX REPLACE "([^\\w]*)/.*" "\\1" GIT_REMOTE "${GIT_REMOTE_BRANCH}")
   
+  # detection of remote is unstable, use "origin" instead
+  SET(GIT_REMOTE "origin")
+  
   # Get Fetch URL of the remote
   execute_process(
     COMMAND git remote show -n ${GIT_REMOTE}
@@ -70,6 +73,8 @@ if (GIT_FOUND)
   #message(STATUS "GIT_DESCRIBE: ${GIT_DESCRIBE}")
   #message(STATUS "GIT_REMOTE_BRANCH: ${GIT_REMOTE_BRANCH}")
   #message(STATUS "GIT_FULL_URL: ${GIT_FULL_URL_INFO}")
+  #message(STATUS "GIT_FULL_URL_ESC_QUOTES: ${GIT_FULL_URL_ESC_QUOTES}")
+  #message(STATUS "GIT_URL_TMP: ${GIT_URL_TMP}")
   #message(STATUS "GIT_URL: ${GIT_URL}")
   
   # first try to read version from file
@@ -99,6 +104,7 @@ if (GIT_FOUND)
       
   set(GIT_BRANCH ${GIT_BRANCH} CACHE INTERNAL "Current git branch.")
   set(GIT_DESCRIBE ${GIT_DESCRIBE} CACHE INTERNAL "Human readable description of last git commit.")
+  set(GIT_SHORT_HASH ${GIT_SHORT_HASH} CACHE INTERNAL "Short hash of current commit.")
   set(GIT_URL ${GIT_URL} CACHE INTERNAL "URL of remote repository.")
   set(GIT_VERSION_MAJOR ${GIT_VERSION_MAJOR} CACHE INTERNAL "Major version component.")
   set(GIT_VERSION_MINOR ${GIT_VERSION_MINOR} CACHE INTERNAL "Minor version component.")

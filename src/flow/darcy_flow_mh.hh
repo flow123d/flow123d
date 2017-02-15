@@ -377,10 +377,10 @@ public:
 		master_map.fill(1.0 / 2);
 		slave_map.fill(1.0 / 3);
 
-		tensor_average[0].push_back( trans( master_map ) * master_map );
-		tensor_average[0].push_back( trans( master_map ) * slave_map );
-		tensor_average[1].push_back( trans( slave_map ) * master_map );
-		tensor_average[1].push_back( trans( slave_map ) * slave_map );
+		tensor_average[0].push_back( master_map.t() * master_map );
+		tensor_average[0].push_back( master_map.t() * slave_map );
+		tensor_average[1].push_back( slave_map.t() * master_map );
+		tensor_average[1].push_back( slave_map.t() * slave_map );
 	}
 
 	void assembly(LinSys &ls);

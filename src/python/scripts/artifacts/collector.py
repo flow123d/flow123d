@@ -16,7 +16,7 @@ class Collector(ArtifactStep):
     directory and copies them to specific output directory
     """
 
-    yaml_tag = u'!Collector'
+    yaml_tag = '!Collector'
 
     def __init__(self, source=None, target=None, includes='*',
                  excludes=None, flat=False, name=None, remove_original=False,

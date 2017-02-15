@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-from __future__ import absolute_import
 import pathfix
 pathfix.init()
 # ----------------------------------------------

@@ -874,7 +874,7 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 	double delta_i, delta_j;
 	arma::mat product;
 	arma::vec dirichlet_i, dirichlet_j;
-	unsigned int ele_type_i, ele_type_j;
+	unsigned int ele_type_i, ele_type_j; // element type 0-master, 1-slave for row and col
 
 	unsigned int i,j;
 	vector<int> dofs_i,dofs_j;
@@ -917,9 +917,9 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 				arma::vec rhs(dofs_i.size());
 				rhs.zeros();
 				ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
-				auto dofs_i_cp=dofs_i;
-				auto dofs_j_cp=dofs_j;
-				ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
+				//auto dofs_i_cp=dofs_i;
+				//auto dofs_j_cp=dofs_j;
+				//ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
 			}
 		}
 		OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
