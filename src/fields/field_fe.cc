@@ -395,38 +395,15 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 			std::fill(elem_count.begin(), elem_count.end(), 0);
 			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
 				ElementFullIter elm = source_mesh_->element( *it );
-				switch (elm->dim()) {
-					case 0: {
-						ngh::set_point_from_element(point_, elm);
-						if (point_ == found_point_) {
-							sum_val[0] += data_vec[*it];
-							++elem_count[0];
-						}
-						break;
-					}
-					case 1: {
-						ngh::set_abscissa_from_element(abscissa_, elm);
-						if ( abscissa_.IsInner(found_point_) ) {
-							sum_val[1] += data_vec[*it];
-							++elem_count[1];
-						}
-						break;
-					}
-					case 2: {
-						ngh::set_triangle_from_element(triangle_, elm);
-						if ( triangle_.IsInner(found_point_) ) {
-							sum_val[2] += data_vec[*it];
-							++elem_count[2];
-						}
-						break;
-					}
-					case 3: {
-						ngh::set_tetrahedron_from_element(tetrahedron_, elm);
-						if ( tetrahedron_.IsInner(found_point_) ) {
-							sum_val[3] += data_vec[*it];
-							++elem_count[3];
-						}
-						break;
+				arma::mat map = elm->element_map();
+				arma::vec projection = elm->project_point(ele->centre(), map);
+				if (projection.min() >= -BoundingBox::epsilon) {
+					// projection in element
+					arma::vec3 projection_point = map.col(elm->dim()) + map.cols(0, elm->dim()-1) * projection.rows(0, elm->dim()-1);
+					if ( arma::norm(projection_point - ele->centre(), "inf") < 2*BoundingBox::epsilon ) {
+						// point on the element
+						sum_val[elm->dim()] += data_vec[*it];
+						++elem_count[elm->dim()];
 					}
 				}
 			}
