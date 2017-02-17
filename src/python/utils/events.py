@@ -29,7 +29,7 @@ class Event(object):
         return self
 
     def fire(self, *args, **kwargs):
-        items = self.handlers.items()
+        items = list(self.handlers.items())
         sorted_x = sorted(items, key=operator.itemgetter(1), reverse=True)
         for handler in sorted_x:
             handler[0](*args, **kwargs)

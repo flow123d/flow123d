@@ -144,6 +144,7 @@ class RuntestArgs(ParserArgs):
 
      :type keep_going        : bool
      :type valgrind          : bool|str
+     :type massif            : bool|str
      :type parallel          : int
      :type batch             : bool
      :type include           : list
@@ -179,6 +180,7 @@ class RuntestArgs(ParserArgs):
         self.keep_going = None
         self.valgrind = None
         self.parallel = None
+        self.massif = None
         self.batch = None
         self.include = None
         self.exclude = None
@@ -263,7 +265,7 @@ class Parser(object):
         :type action: str
         :type name: str
         """
-        items = {k:v for k, v in locals().items() if v != cls.NONE and k not in cls.IGNORED}
+        items = {k:v for k, v in list(locals().items()) if v != cls.NONE and k not in cls.IGNORED}
         names = [x.strip() for x in name.split(',')]
         names.reverse()
         parser.add_argument(*names, **items)

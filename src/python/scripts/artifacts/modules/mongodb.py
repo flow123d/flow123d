@@ -36,7 +36,7 @@ class DatabaseMongo(ArtifactStep):
     source directory, and publish them into remote mongo db
     """
 
-    yaml_tag = u'!Database.mongodb'
+    yaml_tag = '!Database.mongodb'
 
     def __init__(self, server, username, password, source):
         self.server = server
@@ -152,7 +152,7 @@ class DatabaseMongo(ArtifactStep):
         """
         :type o: dict
         """
-        for k, v in o.items():
+        for k, v in list(o.items()):
             if k in fields:
                 o[k] = method(v)
 
