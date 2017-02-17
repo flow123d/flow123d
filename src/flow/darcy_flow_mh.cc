@@ -788,13 +788,13 @@ void DarcyMH::allocate_mh_matrix()
     FOR_EDGES(mesh_, edg){
         int edg_idx = mh_dh.row_4_edge[edg->side(0)->edge_idx()];
         
-        FOR_EDGES(mesh_, edg2){
-            int edg_idx2 = mh_dh.row_4_edge[edg2->side(0)->edge_idx()];
-            if(edg_idx == edg_idx2){
+//        FOR_EDGES(mesh_, edg2){
+//            int edg_idx2 = mh_dh.row_4_edge[edg2->side(0)->edge_idx()];
+//            if(edg_idx == edg_idx2){
 //                 DBGCOUT(<< "P[ " << rank << " ] " << "edg alloc: " << edg_idx << "  " << edg_idx2 << "\n");
-                ls->mat_set_value(edg_idx, edg_idx2, 0.0);
-            }
-        }
+                ls->mat_set_value(edg_idx, edg_idx, 0.0);
+//            }
+//        }
     }
     
     if (mortar_method_ == MortarP0) {
