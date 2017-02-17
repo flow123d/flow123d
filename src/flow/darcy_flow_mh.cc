@@ -690,9 +690,11 @@ void DarcyMH::allocate_mh_matrix()
    
     class Neighbour *ngh;
 
-    int side_row, edge_row = 0;
+    //int side_row, edge_row = 0;
     int tmp_rows[100];
-    int side_rows[4], edge_rows[4];
+    int local_dofs[9];
+
+    int *edge_rows;
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[1000];
@@ -702,40 +704,28 @@ void DarcyMH::allocate_mh_matrix()
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int nsides = ele_ac.n_sides();
-        int ele_row = ele_ac.ele_row();
+        //int ele_row = ele_ac.ele_row();
         
         //allocate at once matrix [sides,ele]x[sides,ele]
-        unsigned int loc_size = 1 + nsides;
+        unsigned int loc_size = 1 + 2*nsides;
 //         unsigned int loc_size = 1 + 2*nsides;
-        std::vector<int> dofs(loc_size);
-        dofs[nsides] = ele_row;
+        //std::vector<int> dofs(loc_size);
+        //dofs[nsides] = ele_row;
         
-        for (unsigned int i = 0; i < nsides; i++) {
-
-            side_rows[i] = side_row = ele_ac.side_row(i);
-            edge_rows[i] = edge_row = ele_ac.edge_row(i);
-            dofs[i] = side_row;
-//             dofs[nsides+1 + i] = edge_row;
+        unsigned int i = 0;
+        local_dofs[0] = ele_ac.ele_row();
+        for (; i < nsides; i++) {
+            local_dofs[i+1] = ele_ac.side_row(i);
+            local_dofs[i+nsides+1] = ele_ac.edge_row(i);
         }
+        edge_rows = local_dofs + nsides +1;
+        int ele_row = local_dofs[0];
         
-        // sides-sides, sides-ele, ele-sides, ele-ele
-        ls->mat_set_values(loc_size, dofs.data(), loc_size, dofs.data(), zeros);
-        // ele-edges
-        ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
-        // edges-ele
-        ls->mat_set_values(nsides, edge_rows, 1, &ele_row, zeros);
-        // sides-edges
-        ls->mat_set_values(nsides, side_rows, nsides, edge_rows, zeros);
-        // sides-edges
-        ls->mat_set_values(nsides, edge_rows, nsides, side_rows, zeros);
+        // whole local MH matrix
+        ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
         
-        for (unsigned int i = 0; i < nsides; i++)
-            for (unsigned int j = 0; j < nsides; j++){
-                if(i != j)
-                    ls->mat_set_value(edge_rows[i], edge_rows[j], 0.0);
-            }
             
-        // D, E',E block: compatible connections: element-edge
+        // compatible negihboring
         
         for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
@@ -743,9 +733,7 @@ void DarcyMH::allocate_mh_matrix()
             ngh = ele_ac.full_iter()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
             
-            tmp_rows[0] = ele_row;
-            tmp_rows[1] = neigh_edge_row;
-            
+
             // be carefull with ele-ele entry
             ls->mat_set_value(ele_row, neigh_edge_row, 0.0);
             ls->mat_set_value(neigh_edge_row, ele_row, 0.0);
@@ -759,7 +747,7 @@ void DarcyMH::allocate_mh_matrix()
                 ls->mat_set_values(1, &neigh_edge_row, nsides, edge_rows, zeros);
 
                 // save all global edge indices to higher positions
-                tmp_rows[2+i] = tmp_rows[1];
+                tmp_rows[i] = neigh_edge_row;
             }
         }
 
@@ -769,9 +757,9 @@ void DarcyMH::allocate_mh_matrix()
         case 2:
             n_neigh = ele_ac.full_iter()->n_neighs_vb;
             // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
-            OLD_ASSERT(n_neigh*n_neigh<1000, "Too many values in E block.");
-            ls->mat_set_values(ele_ac.full_iter()->n_neighs_vb, tmp_rows+2,
-                    ele_ac.full_iter()->n_neighs_vb, tmp_rows+2, zeros);
+            ASSERT_LT(n_neigh*n_neigh, 1000);
+            ls->mat_set_values(ele_ac.full_iter()->n_neighs_vb, tmp_rows,
+                    ele_ac.full_iter()->n_neighs_vb, tmp_rows, zeros);
 
             // Here I cannot add values to the same positions, since it uses ADD_VALUE, when counting nnz.
 //         case 1: // included also for case 2
@@ -782,7 +770,7 @@ void DarcyMH::allocate_mh_matrix()
 //             ls->mat_set_values(ele_ac.n_sides(), edge_rows, ele_ac.n_sides(), edge_rows, zeros);
         }
     }
-
+/*
     // alloc edge diagonal entries
     if(rank == 0)
     FOR_EDGES(mesh_, edg){
@@ -796,7 +784,7 @@ void DarcyMH::allocate_mh_matrix()
 //            }
 //        }
     }
-    
+  */
     if (mortar_method_ == MortarP0) {
         P0_CouplingAssembler(*this).assembly(*ls);
     } else if (mortar_method_ == MortarP1) {
@@ -878,53 +866,55 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 
 	unsigned int i,j;
 	vector<int> dofs_i,dofs_j;
+	//vector<IsecList>::const_iterator ml_it_ = master_list_.begin() + ele_idx;
 
-	for(ml_it_ = master_list_.begin(); ml_it_ != master_list_.end(); ++ml_it_) {
+    for(ml_it_ = master_list_.begin(); ml_it_ != master_list_.end(); ++ml_it_) {
 
-    	if (ml_it_->size() == 0) continue; // skip empty masters
-
-
-		// on the intersection element we consider
-		// * intersection dofs for master and slave
-		//   those are dofs of the space into which we interpolate
-		//   base functions from individual master and slave elements
-		//   For the master dofs both are usualy eqivalent.
-		// * original dofs - for master same as intersection dofs, for slave
-		//   all dofs of slave elements
-
-		// form list of intersection dofs, in this case pressures in barycenters
-		// but we do not use those form MH system in order to allow second schur somplement. We rather map these
-		// dofs to pressure traces, i.e. we use averages of traces as barycentric values.
+        if (ml_it_->size() == 0) continue; // skip empty masters
 
 
-		master_ = intersections_[ml_it_->front()].master_iter();
-		delta_0 = master_->measure();
+        // on the intersection element we consider
+        // * intersection dofs for master and slave
+        //   those are dofs of the space into which we interpolate
+        //   base functions from individual master and slave elements
+        //   For the master dofs both are usualy eqivalent.
+        // * original dofs - for master same as intersection dofs, for slave
+        //   all dofs of slave elements
 
-		double master_sigma=darcy_.data_->sigma.value( master_->centre(), master_->element_accessor());
+        // form list of intersection dofs, in this case pressures in barycenters
+        // but we do not use those form MH system in order to allow second schur somplement. We rather map these
+        // dofs to pressure traces, i.e. we use averages of traces as barycentric values.
 
-		// rows
-		double check_delta_sum=0;
-		for(i = 0; i <= ml_it_->size(); ++i) {
-			pressure_diff(i, dofs_i, ele_type_i, delta_i, dirichlet_i);
-			check_delta_sum+=delta_i;
-			//columns
-			for (j = 0; j <= ml_it_->size(); ++j) {
-				pressure_diff(j, dofs_j, ele_type_j, delta_j, dirichlet_j);
 
-				double scale =  -master_sigma * delta_i * delta_j / delta_0;
-				product = scale * tensor_average[ele_type_i][ele_type_j];
+        master_ = intersections_[ml_it_->front()].master_iter();
+        delta_0 = master_->measure();
 
-				arma::vec rhs(dofs_i.size());
-				rhs.zeros();
-				ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
-				//auto dofs_i_cp=dofs_i;
-				//auto dofs_j_cp=dofs_j;
-				//ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
-			}
-		}
-		OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
-    } // loop over master elements
-}
+        double master_sigma=darcy_.data_->sigma.value( master_->centre(), master_->element_accessor());
+
+        // rows
+        double check_delta_sum=0;
+        for(i = 0; i <= ml_it_->size(); ++i) {
+            pressure_diff(i, dofs_i, ele_type_i, delta_i, dirichlet_i);
+            check_delta_sum+=delta_i;
+            //columns
+            for (j = 0; j <= ml_it_->size(); ++j) {
+                pressure_diff(j, dofs_j, ele_type_j, delta_j, dirichlet_j);
+
+                double scale =  -master_sigma * delta_i * delta_j / delta_0;
+                product = scale * tensor_average[ele_type_i][ele_type_j];
+
+                arma::vec rhs(dofs_i.size());
+                rhs.zeros();
+                ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
+                //auto dofs_i_cp=dofs_i;
+                //auto dofs_j_cp=dofs_j;
+                //ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
+            }
+        }
+        OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
+
+    }
+ }
 
 
 
