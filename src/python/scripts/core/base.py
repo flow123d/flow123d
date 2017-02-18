@@ -605,13 +605,13 @@ class IO(object):
         :rtype : str or None
         """
         if name and Paths.exists(name):
-            with open(name, mode) as fp:
+            with open(name, mode, encoding='utf-8', errors='replace') as fp:
                 return fp.read()
 
     @classmethod
     def write(cls, name, string, mode='w'):
         Paths.ensure_path(name)
-        with open(name, mode) as fp:
+        with open(name, mode, encoding='utf-8', errors='replace') as fp:
             fp.write(string)
         return True
 
