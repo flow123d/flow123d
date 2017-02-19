@@ -32,7 +32,7 @@ public:
         unsigned int dim = ele_ac.dim();
         dim_assembler[dim-1]->assemble(ele_ac);
         
-        assembly_dim_connections(ele_ac);
+        //assembly_dim_connections(ele_ac);
         
         //schur_allocations(ele_ac);
         
@@ -70,35 +70,7 @@ protected:
             }
         }
     }
-    
-    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
-        //D, E',E block: compatible connections: element-edge
-        int ele_row = ele_ac.ele_row();
-        
-        Neighbour *ngh;
-        
-        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
-            // every compatible connection adds a 2x2 matrix involving
-            // current element pressure  and a connected edge pressure
-            ngh= ele_ac.full_iter()->neigh_vb[i];
-            rows[0]=ele_row;
-            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
-            
-            //DebugOut() << print_var(ele_ac.dim()-1) << print_var(ngh->side()->dim());
-            dim_assembler[ngh->side()->dim()-1]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
-
-            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
-
-            // update matrix for weights in BDDCML
-            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-               int ind = rows[1];
-               // there is -value on diagonal in block C!
-               double new_val = local_vb[0];
-               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
-            }
-        }
-    }
-
+/*
     void schur_allocations(LocalElementAccessorBase<3> ele_ac){
             
         LinSys* ls = ad_->lin_sys;
@@ -149,7 +121,7 @@ protected:
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
     }
-    
+  */
 };
 
 class AssemblerMH : public AssemblerBase

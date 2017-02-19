@@ -69,8 +69,21 @@ protected:
     {}
 };
 
+template <int dim>
+class NeighSideValues {
+private:
+    // assembly face integrals (BC)
+    MappingP1<dim+1,3> side_map_;
+    QGauss<dim> side_quad_;
+    FE_P_disc<0,dim+1,3> fe_p_disc_;
+public:
+    NeighSideValues<dim>()
+    :  side_quad_(1),
+       fe_side_values_(side_map_, side_quad_, fe_p_disc_, update_normal_vectors)
+    {}
+    FESideValues<dim+1,3> fe_side_values_;
 
-
+};
 
 
 
@@ -84,8 +97,6 @@ public:
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
-        side_quad_(1),
-        fe_side_values_(map_, side_quad_, fe_p_disc_, update_normal_vectors),
 
         velocity_interpolation_quad_(0), // veloctiy values in barycenter
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
@@ -102,6 +113,7 @@ public:
             loc_side_dofs[i] = i;
             loc_edge_dofs[i] = nsides + i + 1;
         }
+        //DebugOut() << print_var(this) << print_var(side_quad_.size());
     }
 
 
@@ -113,6 +125,7 @@ public:
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
+        ASSERT_EQ_DBG(ele_ac.dim(), dim);
         loc_system_.reset();
     
         set_dofs_and_bc(ele_ac);
@@ -124,16 +137,20 @@ public:
         loc_system_.eliminate_solution();
         
         ad_->lin_sys->set_local_system(loc_system_);
+
+        assembly_dim_connections(ele_ac);
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
     {
+        ASSERT_LT_DBG(ele->dim(), 3);
+        //DebugOut() << "alv " << print_var(this);
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
         ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
-        fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
-        nv = fe_side_values_.normal_vector(0);
+        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
+        nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
                         2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
@@ -390,16 +407,47 @@ protected:
         }
     }
     
+
+    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
+        //D, E',E block: compatible connections: element-edge
+        int ele_row = ele_ac.ele_row();
+        int rows[2];
+        double local_vb[4]; // 2x2 matrix
+
+        Neighbour *ngh;
+
+        //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
+        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh= ele_ac.full_iter()->neigh_vb[i];
+            rows[0]=ele_row;
+            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+
+
+            assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+
+            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
+
+            // update matrix for weights in BDDCML
+            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+               int ind = rows[1];
+               // there is -value on diagonal in block C!
+               double new_val = local_vb[0];
+               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
+            }
+        }
+    }
+
+
+
     // assembly volume integrals
     FE_RT0<dim,3> fe_rt_;
     MappingP1<dim,3> map_;
     QGauss<dim> quad_;
     FEValues<dim,3> fe_values_;
 
-    // assembly face integrals (BC)
-    QGauss<dim> side_quad_;
-    FE_P_disc<0,dim+1,3> fe_p_disc_;
-    FESideValues<dim+1,3> fe_side_values_;
+    NeighSideValues<dim<3?dim:2> ngh_values_;
 
     // Interpolation of velocity into barycenters
     QGauss<dim> velocity_interpolation_quad_;
