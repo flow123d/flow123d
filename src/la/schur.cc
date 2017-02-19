@@ -141,11 +141,14 @@ void SchurComplement::form_schur()
 
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
+    MatStructure mat_subset_pattern;
     PetscScalar *rhs_array, *sol_array;
 
     mat_reuse=MAT_REUSE_MATRIX;
+    mat_subset_pattern=SUBSET_NONZERO_PATTERN;
     if (state==created) {
     	mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
+    	mat_subset_pattern=DIFFERENT_NONZERO_PATTERN;
 
         // create complement system
         // TODO: introduce LS as true object, clarify its internal states
@@ -167,6 +170,8 @@ void SchurComplement::form_schur()
         Compl->set_solution( sol_array );
 
         VecRestoreArray( Sol2, &sol_array );
+
+
 
     }
 
@@ -193,10 +198,10 @@ void SchurComplement::form_schur()
 		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, const_cast<Mat *>( Compl->get_matrix() ) );
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
 		if ( is_negative_definite() ) {
-			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), -1, xA, mat_subset_pattern);
 		} else {
 			ierr+=MatScale(*( Compl->get_matrix() ),-1.0);
-			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, SUBSET_NONZERO_PATTERN);
+			ierr+=MatAXPY(*( Compl->get_matrix() ), 1, xA, mat_subset_pattern);
 		}
 		Compl->set_matrix_changed();
 

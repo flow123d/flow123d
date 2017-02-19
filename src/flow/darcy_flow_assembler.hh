@@ -34,7 +34,7 @@ public:
         
         assembly_dim_connections(ele_ac);
         
-        schur_allocations(ele_ac);
+        //schur_allocations(ele_ac);
         
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
@@ -98,7 +98,7 @@ protected:
             }
         }
     }
-    
+
     void schur_allocations(LocalElementAccessorBase<3> ele_ac){
             
         LinSys* ls = ad_->lin_sys;
