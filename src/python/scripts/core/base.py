@@ -122,7 +122,10 @@ class _Printer(object):
         return not self.level & self.__class__.level
 
     def _write(self, str):
-        sys.stdout.write(str)
+        try:
+            sys.stdout.write(str)
+        except UnicodeEncodeError as e:
+            print(str.encode('utf-8'))
 
         if self.__class__.log_file:
             with open(self.__class__.log_file, "a+") as fp:

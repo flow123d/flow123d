@@ -474,12 +474,13 @@ class ComparisonMultiThread(SequentialThreads):
         super(ComparisonMultiThread, self).on_thread_complete(thread)
 
         # append ndiff to file
-        with open(self.output, 'a+') as fp:
-            fp.write('-' * 60 + '\n')
-            fp.write(thread.name + '\n')
-            fp.write('-' * 60 + '\n')
-            fp.write(thread.executor.output.read())
-            fp.write('\n' * 3)
+        content = list()
+        content.append('-' * 60 + '\n')
+        content.append(thread.name + '\n')
+        content.append('-' * 60 + '\n')
+        content.append(thread.executor.output.read())
+        content.append('\n' * 3)
+        IO.append(self.output, '\n'.join(content) or '')
 
     def to_json(self):
         items = []
