@@ -663,7 +663,7 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
-        assembler.assemble(ele_ac, true);
+        assembler.assemble(ele_ac);
     }    
     
     if (balance_ != nullptr)

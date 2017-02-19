@@ -27,16 +27,16 @@ public:
     AssemblyDataPtr ad_;
     MultidimAssembly dim_assembler;
     
-    void assemble(LocalElementAccessorBase<3> ele_ac, bool fill_matrix = true){
+    void assemble(LocalElementAccessorBase<3> ele_ac){
         
         unsigned int dim = ele_ac.dim();
         dim_assembler[dim-1]->assemble(ele_ac);
         
-        assembly_dim_connections(ele_ac,fill_matrix);
+        assembly_dim_connections(ele_ac);
         
         schur_allocations(ele_ac);
         
-        if (ad_->balance != nullptr && fill_matrix)
+        if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
     }
     
@@ -71,7 +71,7 @@ protected:
         }
     }
     
-    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac, bool fill_matrix){
+    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
         int ele_row = ele_ac.ele_row();
         
@@ -84,9 +84,9 @@ protected:
             rows[0]=ele_row;
             rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
             
-            if (fill_matrix)
-                dim_assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
             
+            dim_assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+
             ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
 
             // update matrix for weights in BDDCML
