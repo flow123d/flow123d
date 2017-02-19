@@ -84,8 +84,8 @@ protected:
             rows[0]=ele_row;
             rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
             
-            
-            dim_assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+            //DebugOut() << print_var(ele_ac.dim()-1) << print_var(ngh->side()->dim());
+            dim_assembler[ngh->side()->dim()-1]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
 
             ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
 

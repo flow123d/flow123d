@@ -397,9 +397,9 @@ protected:
     FEValues<dim,3> fe_values_;
 
     // assembly face integrals (BC)
-    QGauss<dim-1> side_quad_;
-    FE_P_disc<0,dim,3> fe_p_disc_;
-    FESideValues<dim,3> fe_side_values_;
+    QGauss<dim> side_quad_;
+    FE_P_disc<0,dim+1,3> fe_p_disc_;
+    FESideValues<dim+1,3> fe_side_values_;
 
     // Interpolation of velocity into barycenters
     QGauss<dim> velocity_interpolation_quad_;
