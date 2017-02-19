@@ -684,17 +684,10 @@ void DarcyMH::allocate_mh_matrix()
     // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
    
-    class Neighbour *ngh;
 
-    //int side_row, edge_row = 0;
     int tmp_rows[100];
-    int local_dofs[9];
-
-    int *edge_rows;
+    int local_dofs[100];
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[1000];
@@ -704,71 +697,57 @@ void DarcyMH::allocate_mh_matrix()
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int nsides = ele_ac.n_sides();
-        //int ele_row = ele_ac.ele_row();
         
         //allocate at once matrix [sides,ele]x[sides,ele]
         unsigned int loc_size = 1 + 2*nsides;
-//         unsigned int loc_size = 1 + 2*nsides;
-        //std::vector<int> dofs(loc_size);
-        //dofs[nsides] = ele_row;
-        
         unsigned int i = 0;
-        local_dofs[0] = ele_ac.ele_row();
+        
         for (; i < nsides; i++) {
-            local_dofs[i+1] = ele_ac.side_row(i);
-            local_dofs[i+nsides+1] = ele_ac.edge_row(i);
+            local_dofs[i] = ele_ac.side_row(i);
+            local_dofs[i+nsides] = ele_ac.edge_row(i);
         }
-        edge_rows = local_dofs + nsides +1;
-        int ele_row = local_dofs[0];
+        local_dofs[i+nsides] = ele_ac.ele_row();
+        int * edge_rows = local_dofs + nsides;
+        //int ele_row = local_dofs[0];
         
         // whole local MH matrix
         ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
         
-            
-        // compatible negihboring
-        
-        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+
+        // compatible neighborings rows
+        unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
+        for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            ngh = ele_ac.full_iter()->neigh_vb[i];
+            Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
-            
+            tmp_rows[i] = neigh_edge_row;
+            //DebugOut() << "CC" << print_var(tmp_rows[i]);
+        }
 
-            // be carefull with ele-ele entry
-            ls->mat_set_value(ele_row, neigh_edge_row, 0.0);
-            ls->mat_set_value(neigh_edge_row, ele_row, 0.0);
-            
-            if (n_schur_compls == 2) {
-                // for 2. Schur: N dim edge is conected with N dim element =>
-                // there are nz between N dim edge and N-1 dim edges of the element
-                
-                // be carefull with edge-edge entry
-                ls->mat_set_values(nsides, edge_rows, 1, &neigh_edge_row, zeros);
-                ls->mat_set_values(1, &neigh_edge_row, nsides, edge_rows, zeros);
+        // allocate always also for schur 2
+        ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows, zeros); // (edges, ele)  x (neigh edges)
+        ls->mat_set_values(n_neighs, tmp_rows, nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
+        ls->mat_set_values(n_neighs, tmp_rows, n_neighs, tmp_rows, zeros);  // (neigh edges) x (neigh edges)
 
-                // save all global edge indices to higher positions
-                tmp_rows[i] = neigh_edge_row;
+
+
+        unsigned int i_rows=0;
+        vector<unsigned int> &master_list = mesh_->master_elements[ele_ac.ele_global_idx()];
+        if (mortar_method_ == MortarP0 || mortar_method_ == MortarP1) {
+            for(unsigned int i_isec : master_list) {
+                Intersection &isec = mesh_->intersections[i_isec];
+                for(unsigned int i_side=0; i_side < isec.slave->n_sides(); i_side++) {
+
+                    tmp_rows[i_rows++] = mh_dh.row_4_edge[ isec.slave->side(i_side)->edge_idx() ];
+                    //DebugOut() << "NC" << print_var(tmp_rows[i_rows-1]);
+                }
             }
         }
+        ls->mat_set_values(nsides, edge_rows, i_rows, tmp_rows, zeros);   // master edges x neigh edges
+        ls->mat_set_values(i_rows, tmp_rows, nsides, edge_rows, zeros);   // neigh edges  x master edges
+        ls->mat_set_values(i_rows, tmp_rows, i_rows, tmp_rows, zeros);  // neigh edges  x neigh edges
 
-        // add virtual values for schur complement allocation
-        uint n_neigh;
-        switch (n_schur_compls) {
-        case 2:
-            n_neigh = ele_ac.full_iter()->n_neighs_vb;
-            // Connections between edges of N+1 dim. elements neighboring with actual N dim element 'ele'
-            ASSERT_LT(n_neigh*n_neigh, 1000);
-            ls->mat_set_values(ele_ac.full_iter()->n_neighs_vb, tmp_rows,
-                    ele_ac.full_iter()->n_neighs_vb, tmp_rows, zeros);
-
-            // Here I cannot add values to the same positions, since it uses ADD_VALUE, when counting nnz.
-//         case 1: // included also for case 2
-//             // -(C')*(A-)*B block and its transpose conect edge with its elements
-//             ls->mat_set_values(1, &ele_row, ele_ac.n_sides(), edge_rows, zeros);
-//             ls->mat_set_values(ele_ac.n_sides(), edge_rows, 1, &ele_row, zeros);
-//             // -(C')*(A-)*C block conect all edges of every element
-//             ls->mat_set_values(ele_ac.n_sides(), edge_rows, ele_ac.n_sides(), edge_rows, zeros);
-        }
     }
 /*
     // alloc edge diagonal entries
@@ -785,11 +764,12 @@ void DarcyMH::allocate_mh_matrix()
 //        }
     }
   */
+    /*
     if (mortar_method_ == MortarP0) {
         P0_CouplingAssembler(*this).assembly(*ls);
     } else if (mortar_method_ == MortarP1) {
         P1_CouplingAssembler(*this).assembly(*ls);
-    }
+    }*/
 }
 
 void DarcyMH::assembly_source_term()
@@ -854,6 +834,10 @@ void P0_CouplingAssembler::pressure_diff(int i_ele,
 	}
 
 }
+
+
+
+
 
 /**
  * Works well but there is large error next to the boundary.

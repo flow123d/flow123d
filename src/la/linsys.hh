@@ -362,6 +362,11 @@ public:
     }
     
     /**
+     * Add given dense matrix to preallocation.
+     */
+    //virtual void allocate(std::vector<int> rows, std::vector<int> cols);
+
+    /**
      * Shortcut to assembly into matrix and RHS in one call, possibly apply Dirichlet boundary conditions.
      * @p row_dofs - are global indices of rows of dense @p matrix and rows of dense vector @rhs in global system
      * @p col_dofs - are global indices of columns of the matrix, and possibly
