@@ -87,6 +87,13 @@ ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase &root_type, 
 
 
 
+StorageBase *ReaderToStorage::get_storage()
+{
+	return storage_;
+}
+
+
+
 void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format)
 {
 	ASSERT(storage_==nullptr).error();

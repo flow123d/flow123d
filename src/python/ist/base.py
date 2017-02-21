@@ -2,11 +2,11 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
 from ist.globals import Globals, FormatMode
 from ist.utils.htmltree import htmltree
 from ist.utils.texlist2 import TexList
 from utils.logger import Logger
+import collections
 
 
 class InputType(object):
@@ -79,9 +79,9 @@ class Field(object):
         for name in self.names:
             if name in json_data:
                 # parsable classes will handle parsing by themselves
-                if callable(getattr(self.type, 'parse', None)):
+                if isinstance(getattr(self.type, 'parse', None), collections.Callable):
                     instance = self.type()
-                    if callable(getattr(self.type, 'set_subtype', None)):
+                    if isinstance(getattr(self.type, 'set_subtype', None), collections.Callable):
                         instance.set_subtype(self.subtype)
                     return instance.parse(json_data[name])
 
@@ -297,7 +297,7 @@ class List(list):
 
     def parse(self, json_data):
         if self.subtype:
-            if callable(getattr(self.subtype, 'parse', None)):
+            if isinstance(getattr(self.subtype, 'parse', None), collections.Callable):
                 for item in json_data:
                     self.append(self.subtype().parse(item))
             else:
@@ -346,19 +346,19 @@ class Unicode(Parsable):
 
     def __init__(self):
         super(Parsable, self).__init__()
-        self.value = u''
+        self.value = ''
 
-    def parse(self, json_data=u''):
-        self.value = unicode(json_data)
+    def parse(self, json_data=''):
+        self.value = str(json_data)
         return self
 
     def __str__(self):
-        return unicode.__str__(unicode(self.value))
+        return str.__str__(str(self.value))
 
     def __repr__(self):
-        return unicode.__repr__(unicode(self.value))
+        return str.__repr__(str(self.value))
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.value)
 
     @property

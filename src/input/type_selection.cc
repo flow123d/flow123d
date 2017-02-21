@@ -81,8 +81,6 @@ FinishStatus Selection::finish(FinishStatus finish_type ) {
 
 
 
-
-
 TypeBase::TypeHash Selection::content_hash() const
 {
     std::size_t seed=0;
@@ -117,6 +115,10 @@ string Selection::type_name() const {
    return data_->type_name_;
 }
 
+
+string Selection::class_name() const {
+	return "Selection";
+}
 
 
 bool Selection::operator==(const TypeBase &other) const {
@@ -172,6 +174,12 @@ string Selection::key_list() const {
 TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Selection>(*this), ParameterMap() );
 }
+
+
+
+Selection::SelectionData::SelectionData(const string &name)
+: type_name_(name), closed_(false), finish_status_(FinishStatus::none_)
+{}
 
 
 

@@ -112,7 +112,7 @@ void Application::display_version() {
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    MessageOut().fmt("This is Flow123d, version {} revision: {}\n",
+    MessageOut().fmt("This is Flow123d, version {} commit: {}\n",
             rev_num_data.version, rev_num_data.revision);
     MessageOut().fmt("Branch: {}\nBuild: {}\nFetch URL: {}\n",
 		 rev_num_data.branch, build, rev_num_data.url );

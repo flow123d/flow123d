@@ -96,7 +96,7 @@ class ExtendedThread(threading.Thread):
             name=self.name
         )
 
-    def __nonzero__(self):
+    def __bool__(self):
         return not self.with_error()
 
     def was_successful(self):
@@ -181,7 +181,16 @@ class MultiThreads(ExtendedThread):
 
     @property
     def returncode(self):
-        return max(self.returncodes.values()) if self.returncodes else 0
+        # SKIPPED
+        if not self.returncodes or set(self.returncodes.values()) == {None}:
+            return None
+
+        # OK returncode
+        if (set(self.returncodes.values()) - {None}) == {0}:
+            return 0
+
+        # ERROR returncode
+        return max(set(self.returncodes.values()) - {None, 0})
 
     @property
     def total(self):
@@ -385,7 +394,8 @@ class PyPy(ExtendedThread):
             duration=self.duration,
             username=getpass.getuser(),
             hostname=platform.node(),
-            nodename=platform.node().split('.')[0].strip('0123456789')
+            nodename=platform.node().split('.')[0].strip('0123456789'),
+            commit=self.get_commit(),
         )
 
         if self.case:
@@ -407,6 +417,25 @@ class PyPy(ExtendedThread):
 
     def dump(self):
         return PyPyResult(self)
+
+    @classmethod
+    def get_commit(cls):
+        """
+        Calls git show on git root to determine unix timestamp of the current commit (HEAD)
+        :return:
+        """
+        import subprocess
+        try:
+            root = Paths.flow123d_root()
+            # get current hash(%H) and date(%ct) from git repo
+            result = subprocess.check_output('git show -s --format=%H,%ct HEAD'.split(), cwd=root).decode()
+            sha, date = str(result).strip().split(',')
+            return dict(
+                hash=sha,
+                date=int(date)
+            )
+        except:
+            return None
 
     @classmethod
     def generate_status_file(cls, target):
@@ -445,12 +474,13 @@ class ComparisonMultiThread(SequentialThreads):
         super(ComparisonMultiThread, self).on_thread_complete(thread)
 
         # append ndiff to file
-        with open(self.output, 'a+') as fp:
-            fp.write('-' * 60 + '\n')
-            fp.write(thread.name + '\n')
-            fp.write('-' * 60 + '\n')
-            fp.write(thread.executor.output.read())
-            fp.write('\n' * 3)
+        content = list()
+        content.append('-' * 60 + '\n')
+        content.append(thread.name + '\n')
+        content.append('-' * 60 + '\n')
+        content.append(thread.executor.output.read())
+        content.append('\n' * 3)
+        IO.append(self.output, '\n'.join(content) or '')
 
     def to_json(self):
         items = []
