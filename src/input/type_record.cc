@@ -17,10 +17,8 @@
 
 #include "input_type.hh"
 #include "type_repository.hh"
-#include "attribute_lib.hh"
-
-#include "system/system.hh"
 #include "input/reader_to_storage.hh"
+#include "attribute_lib.hh"
 
 #include <boost/typeof/typeof.hpp>
 #include <boost/algorithm/string.hpp>
@@ -314,6 +312,12 @@ Record &Record::close() const {
 
 string Record::type_name() const {
     return data_->type_name_;
+}
+
+
+
+string Record::class_name() const {
+	return "Record";
 }
 
 
