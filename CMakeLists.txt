@@ -510,6 +510,27 @@ message(STATUS "YamlCpp_INCLUDE_DIR = ${YamlCpp_INCLUDE_DIR}")
 message(STATUS "=======================================================\n\n")
 
 
+#################################################################################
+#  ZLIB_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== ZLIB-CORE ======================================")
+message(STATUS "=======================================================")
+message(STATUS "Zlib_ROOT_HINT = ${Zlib_ROOT_HINT}")
+
+find_package(Zlib)
+
+# use zlib compression of VTK files
+if(Zlib_FOUND)
+    flow_define(HAVE_ZLIB)
+endif()
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Zlib_FOUND = ${Zlib_FOUND}")
+message(STATUS "Zlib_LIBRARY = ${Zlib_LIBRARY}")
+message(STATUS "Zlib_INCLUDE_DIR = ${Zlib_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
+
+
 ####################################################################################
 # PYTHON
 message(STATUS "=======================================================")
@@ -613,6 +634,7 @@ include_directories(
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
     ${YamlCpp_INCLUDE_DIR}
+    ${Zlib_INCLUDE_DIR}
     ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
     ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
@@ -832,6 +854,7 @@ message(STATUS "BDDCML:     ${BDDCML_LIBRARIES}")
 message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
+message(STATUS "ZLib:       ${Zlib_LIBRARY}")
 message(STATUS "===========================================")
 
 

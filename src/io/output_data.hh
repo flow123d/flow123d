@@ -57,7 +57,7 @@ public:
     /**
      * \brief Print all data stored in output data to appended binary format
      */
-    void print_binary_all(ostream &out_stream) override;
+    void print_binary_all(ostream &out_stream, bool print_data_size = true) override;
 
     void print_all_yaml(ostream &out_stream, unsigned int precision) override;
 

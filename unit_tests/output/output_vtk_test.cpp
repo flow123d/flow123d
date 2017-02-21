@@ -11,6 +11,8 @@
 #include <mesh_constructor.hh>
 #include <fstream>
 
+#include "config.h"
+
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
@@ -136,4 +138,25 @@ TEST_F(TestOutputVTK, write_data_binary) {
 
     check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
 }
+
+#ifdef FLOW123D_HAVE_ZLIB
+
+const string test_output_time_compressed = R"YAML(
+file: ./test1.pvd
+format: !vtk
+  variant: binary_zlib
+)YAML";
+
+TEST_F(TestOutputVTK, write_data_compressed) {
+	this->init_mesh(test_output_time_compressed);
+    this->current_step=0;
+    set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+    set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+    set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+    this->write_data();
+
+    check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");
+}
+
+#endif // FLOW123D_HAVE_ZLIB
 

@@ -58,7 +58,7 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    virtual void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
