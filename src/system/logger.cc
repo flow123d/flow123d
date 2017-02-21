@@ -231,8 +231,8 @@ bool Logger::print_screen_header(std::ostream& stream, std::stringstream& scr_st
 	}
 
 	if (type_ != MsgType::message) { // type of message (besides Message)
-		stream << msg_type_string(type_) << "\n";
-		return false; // logger message starts at new line
+		stream << msg_type_string(type_) << " ";
+		return true; // logger message starts at new line
 	} else {
 		return true; // logger message continues on the same line as header
 	}

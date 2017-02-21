@@ -25,6 +25,28 @@
 #include "Python.h"
 #include <string>
 
+/*
+ * Notes on Python 3 API
+ *
+ *   - PyObject * PyUnicode_FromString(const char * u):
+ *          Create a Unicode object from a UTF-8 encoded
+ *          null-terminated char buffer u
+ *          
+ *   - const char * PyUnicode_AsUTF8(PyObject *unicode):
+ *          Return a pointer to the UTF-8 encoding of the Unicode object.
+ *          Reverse action of PyUnicode_FromString.
+ *
+ * Our functions are only converting from string to wstring and back during 
+ *      initialization
+ * 
+ *   - wstring to_py_string(const string &str):
+ *          useful when setting program name, and altering path
+ * 
+ *   - string from_py_string(const wstring &wstr):
+ *          so far no usage in the program, but serves for converting wstring to 
+ *          string
+ */
+
 
 namespace internal {
 /**

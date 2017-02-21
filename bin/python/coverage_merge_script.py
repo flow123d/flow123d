@@ -35,13 +35,12 @@ If no files are specified all xml files in current directory will be selected.
 Useful when there is not known precise file name only location
 """
 
-from __future__ import absolute_import
 
 import pathfix
 pathfix.append_to_path()
 
 import system.versions
-system.versions.require_version_2()
+system.versions.require_version_3()
 
 from optparse import OptionParser
 from coverage import coverage_merge_module
