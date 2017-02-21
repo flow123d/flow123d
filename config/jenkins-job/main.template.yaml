@@ -350,7 +350,7 @@
                 CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
                 DOCKER_TOOLBOX_PATH=/home/builder/jenkins/static/DockerToolbox-1.12.2.exe \
-                FLOW_GIT_HASH=${{GIT_COMMIT:0:6}}\    
+                FLOW_GIT_HASH=${{GIT_COMMIT:0:6}} \
                 create-packages
           make -C flow123d/bin/docker/package \
                 CID=${{DOCKER_PID}} \
