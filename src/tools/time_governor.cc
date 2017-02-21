@@ -383,10 +383,8 @@ double TimeGovernor::estimate_dt() const {
     // if the step estimate gets by rounding lower than lower constraint program will not crash
     // will just output a user warning.
     if (step_estimate < lower_constraint_) {
-    	static char buffer[1024];
-    	sprintf(buffer, "Time step estimate is below the lower constraint of time step. The difference is: %.16f.\n",
+        DebugOut().fmt("Time step estimate is below the lower constraint of time step. The difference is: {:.16f}.\n",
                 lower_constraint_ - step_estimate);
-    	WarningOut() << buffer;
     }
     
     return step_estimate;
@@ -488,16 +486,23 @@ void TimeGovernor::view(const char *name) const
 {
 	static char buffer[1024];
 #ifdef FLOW123D_DEBUG_MESSAGES
-	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>    end_time: %f end_fixed_time: %f type: 0x%x\n",
-	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_, end_time_,  end_of_fixed_dt_interval_, eq_mark_type_.bitmap_);
-#else
-	sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
-	            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
-#endif
-	MessageOut() << buffer;
+    MessageOut().fmt(
+            "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>    "
+            "end_time: {} end_fixed_time: {} type: {:#x}\n",
+            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_,
+            end_time_,  end_of_fixed_dt_interval_, eq_mark_type_.bitmap_);
+
     MessageOut().fmt("Lower time step constraint [{}]: {} \nUpper time step constraint [{}]: {} \n",
             lower_constraint_, lower_constraint_message_.c_str(), 
             upper_constraint_, upper_constraint_message_.c_str() );
+#else
+    MessageOut().fmt(
+            "TG[{}]:{:06d}    t:{:10.4f}    dt:{:10.6f}    dt_int<{:10.6f},{:10.6f}>\n",
+            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_);
+
+	//sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
+	//            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
+#endif
 }
 
 

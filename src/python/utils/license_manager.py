@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
 import os
 import re
 import datetime
@@ -192,10 +191,10 @@ class LicenseManager(object):
         new_vars = basic_vars.copy()
         new_vars.update(old_vars)
         new_vars['brief'].obligatory = True
-        keys = new_vars.keys()
+        keys = list(new_vars.keys())
 
         # create _name_ variables
-        for key, doxy in new_vars.items():
+        for key, doxy in list(new_vars.items()):
             new_vars['_' + key + '_'] = doxy.value()
             new_vars[key] = ' '.join(doxy.lines)
 

@@ -5,8 +5,31 @@
 from scripts.core.base import Paths
 # ----------------------------------------------
 
+"""
+{
+    proc=[1],                   # array of int, where each int represents
+                                # number of cores which will be used
+    inputs=['input'],           # array (or single string) of string specifying input location
+                                # argument (-i) for flow123d. Path can be absolute
+                                # or relative (towards yaml file dir)
+    time_limit=30,              # number of seconds (give or take resolution) allowed for test to run
+    memory_limit=400,           # number of MB allowed for test to use (include all children processes)
+    tags=[],                    # array of string, representing tags for case
+    check_rules=[               # array of objects, representing check rules
+        {
+            'ndiff': {          # key is tool which will be used
+                'files': ['*']  # regexp matching for files which will be compared using this tool
+            }
+        }
+    ]
+}
+
+
+"""
+
 DEFAULTS = dict(
     proc=[1],
+    inputs=['input'],
     time_limit=30,
     memory_limit=400,
     tags=[],
@@ -26,6 +49,7 @@ TAG_MEMORY_LIMIT = 'memory_limit'
 TAG_TEST_CASES = 'test_cases'
 TAG_CHECK_RULES = 'check_rules'
 TAG_TAGS = 'tags'
+TAG_INPUTS = 'inputs'
 REF_OUTPUT_DIR = 'ref_out'
 TEST_RESULTS = 'test_results'
 
@@ -38,7 +62,7 @@ class ConfigCaseFiles(object):
     Class ConfigCaseFiles is helper class for defining path for ConfigCase
     """
 
-    def __init__(self, root, ref_output, output):
+    def __init__(self, root, ref_output, output, input):
         """
         :type ref_output: str
         :type output: str
@@ -55,8 +79,9 @@ class ConfigCaseFiles(object):
         self.json_output = self.in_output('result.json')
         self.dump_output = self.in_output('result.p')
         self.status_file = self.in_output('runtest.status.json')
+        self.valgrind_out = self.in_output('valgrind.out')
 
-        self.input = self.in_root('input')
+        self.input = self.in_root(input)
         self.ref_output = ref_output
 
     def in_root(self, *names):

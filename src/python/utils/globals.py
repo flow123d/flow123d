@@ -74,7 +74,7 @@ def wait_for(obj, property, period=0.1, max_wait=5):
         time.sleep(period)
         wait += period
         if wait > max_wait:
-            print 'done waiting on ', property
+            print('done waiting on ', property)
             return None
 
 

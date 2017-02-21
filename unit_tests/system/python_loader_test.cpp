@@ -38,14 +38,85 @@ import math
 def func_xyz(x,y,z):
     return ( x*y*z+a , )     # one value tuple
 
+print (func_xyz(1, 2, 3))
+
+)CODE";
+
+
+string invalid_code = R"CODE(
+import math
+
+def func_xyz(x,y,z):
+    return ( x*y*z+a , )     # one value tuple
+
 print func_xyz(1, 2, 3)
 
 )CODE";
 
+string invalid_code2 = R"CODE(
+this is invalid python code
+)CODE";
+
+
+string produce_error = R"CODE(
+def func_xyz():
+    return a()
+    
+def a():
+    b()
+    
+def b():
+    return division_by_zero_origin()
+    
+def division_by_zero_origin():
+    return 1/0
+)CODE";
+
+
+/**
+ * We are testing that load_module_from_string call will fail because
+ * variable is not defined in the code
+ */
 TEST(PythonLoader, print_error) {
-	EXPECT_THROW_WHAT( { PythonLoader::load_module_from_string("func_xyz", python_print); },
-	    PythonLoader::ExcPythonError,
-        "Message: global name 'a' is not defined\nTraceback");
+    EXPECT_THROW_WHAT(
+        { PythonLoader::load_module_from_string("func_xyz", python_print); },
+        PythonLoader::ExcPythonError,
+        "Message: name 'a' is not defined\nTraceback"
+    );
+}
+
+
+/**
+ * We are testing that compilation here will fail, since code itself is invalid
+ * after Py_CompileString call check_error will react and raise Error
+ */
+TEST(PythonLoader, compilation_error) {
+    EXPECT_THROW_WHAT(
+        { PythonLoader::load_module_from_string("func_xyz", invalid_code); },
+        PythonLoader::ExcPythonError,
+        "invalid syntax"
+    );
+    EXPECT_THROW_WHAT(
+        { PythonLoader::load_module_from_string("func_xyz", invalid_code2); },
+        PythonLoader::ExcPythonError,
+        "invalid syntax"
+    );
+}
+
+
+/**
+ * We are testing that compilation here will succeed but execution of this code
+ * will fail, causing traceback to be displayed
+ */
+TEST(PythonLoader, traceback_error) {
+    PyObject * module = PythonLoader::load_module_from_string("func_xyz", produce_error);
+    PyObject * func = PyObject_GetAttrString(module, "func_xyz");
+    PyObject_CallFunction(func, NULL);
+    EXPECT_THROW_WHAT(
+        { PythonLoader::check_error(); },
+        PythonLoader::ExcPythonError,
+        "division_by_zero_origin"
+    );
 }
 
 
