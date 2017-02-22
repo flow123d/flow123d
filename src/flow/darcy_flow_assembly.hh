@@ -23,6 +23,7 @@
 
 #include "la/local_system.hh"
 
+#include "coupling/balance.hh"
 
 
 class AssemblyBase
@@ -139,6 +140,9 @@ public:
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
+
+        if (ad_->balance != nullptr)
+            add_fluxes_in_balance_matrix(ele_ac);
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
@@ -438,6 +442,27 @@ protected:
             }
         }
     }
+
+    void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
+        unsigned int local_boundary_index=0;
+
+        for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
+            Boundary* bcd = ele_ac.side(i)->cond();
+
+            if (bcd) {
+                /*
+                    DebugOut()("add_flux: {} {} {} {}\n",
+                            mh_dh.el_ds->myp(),
+                            ele_ac.ele_global_idx(),
+                            local_boundary_index,
+                            side_row);*/
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, local_boundary_index,
+                                                     {ele_ac.side_row(i)}, {1});
+                ++local_boundary_index;
+            }
+        }
+    }
+
 
 
 

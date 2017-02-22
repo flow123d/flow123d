@@ -36,8 +36,8 @@ public:
         
         schur_allocations(ele_ac);
         
-        if (ad_->balance != nullptr)
-            add_fluxes_in_balance_matrix(ele_ac);
+
+        //    add_fluxes_in_balance_matrix(ele_ac);
     }
     
 protected:
@@ -52,24 +52,6 @@ protected:
     double local_vb[4]; // 2x2 matrix
     int edge_rows[4];
     
-    void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
-        
-        for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
-            Boundary* bcd = ele_ac.side(i)->cond();
-
-            if (bcd) {
-                /*
-                    DebugOut()("add_flux: {} {} {} {}\n",
-                            mh_dh.el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            local_boundary_index,
-                            side_row);*/
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, local_boundary_index,
-                                                     {ele_ac.side_row(i)}, {1});
-                ++local_boundary_index;
-            }
-        }
-    }
 
     void schur_allocations(LocalElementAccessorBase<3> ele_ac){
             
