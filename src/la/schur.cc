@@ -207,6 +207,7 @@ void SchurComplement::form_schur()
 		ierr+=MatGetSubMatrix( matrix_, IsB, IsB, mat_reuse, &C);
 
 		if (state==created) MatDuplicate(C, MAT_DO_NOT_COPY_VALUES, const_cast<Mat *>( Compl->get_matrix() ) );
+		MatZeroEntries( *( Compl->get_matrix()) );
 
 		// compute complement = (-1)cA+xA = Bt*IA*B - C
 		if ( is_negative_definite() ) {
