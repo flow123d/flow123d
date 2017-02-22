@@ -9,6 +9,7 @@
 #include "darcy_flow_assembly.hh"
 #include "assembly_lmh.hh"
 
+/*
 
 class AssemblerBase
 {
@@ -52,7 +53,7 @@ protected:
     double local_vb[4]; // 2x2 matrix
     int edge_rows[4];
     
-/*
+
     void schur_allocations(LocalElementAccessorBase<3> ele_ac){
             
         LinSys* ls = ad_->lin_sys;
@@ -103,9 +104,9 @@ protected:
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
     }
-*/
-};
 
+};*/
+/*
 class AssemblerMH : public AssemblerBase
 {
 public:
@@ -126,5 +127,5 @@ public:
     }
 };
 
-
+*/
 #endif // DARCY_FLOW_ASSEMBLER_HH_

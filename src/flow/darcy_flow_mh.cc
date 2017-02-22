@@ -58,6 +58,8 @@
 
 #include "fields/vec_seq_double.hh"
 
+#include "darcy_flow_assembly.hh"
+
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
@@ -650,7 +652,7 @@ void  DarcyMH::get_parallel_solution_vector(Vec &vec)
 //   are in fact pointers to allocating or filling functions - this is governed by Linsystem roitunes
 //
 // =======================================================================================
-void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
+void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
@@ -666,7 +668,8 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
     data_->local_boundary_index=0;
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
-        assembler.assemble(ele_ac);
+        unsigned int dim = ele_ac.dim();
+        assembler[dim-1]->assemble(ele_ac);
     }    
     
     if (balance_ != nullptr)
@@ -1163,7 +1166,7 @@ void DarcyMH::assembly_linear_system() {
 
         assembly_source_term();
         
-        auto multidim_assembler = AssemblerMH(data_);
+        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
 	    assembly_mh_matrix( multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();

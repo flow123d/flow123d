@@ -47,13 +47,14 @@
 #include "flow/darcy_flow_interface.hh"
 #include "input/input_exception.hh"
 
+
 /// external types:
 class LinSys;
 class LinSys_BDDC;
 class Mesh;
 class DarcyFlowMHOutput;
 class Balance;
-class AssemblerBase;
+class AssemblyBase;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -115,6 +116,9 @@ public:
              );
     DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
             << "Missing the key 'time', obligatory for the transient problems.");
+
+
+    typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -293,7 +297,7 @@ protected:
      * - add support for Robin type sources
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
-    void assembly_mh_matrix(AssemblerBase& assembler);
+    void assembly_mh_matrix(MultidimAssembly& assembler);
 
     /// Source term is implemented differently in LMH version.
     virtual void assembly_source_term();
