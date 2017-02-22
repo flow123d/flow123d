@@ -148,7 +148,7 @@ void SchurComplement::form_schur()
     mat_subset_pattern=SUBSET_NONZERO_PATTERN;
     if (state==created) {
     	mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
-    	mat_subset_pattern=DIFFERENT_NONZERO_PATTERN;
+    	//mat_subset_pattern=DIFFERENT_NONZERO_PATTERN;
 
         // create complement system
         // TODO: introduce LS as true object, clarify its internal states
