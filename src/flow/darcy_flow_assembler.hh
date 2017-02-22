@@ -34,7 +34,7 @@ public:
         
         //assembly_dim_connections(ele_ac);
         
-        schur_allocations(ele_ac);
+        //schur_allocations(ele_ac);
         
 
         //    add_fluxes_in_balance_matrix(ele_ac);
@@ -52,7 +52,7 @@ protected:
     double local_vb[4]; // 2x2 matrix
     int edge_rows[4];
     
-
+/*
     void schur_allocations(LocalElementAccessorBase<3> ele_ac){
             
         LinSys* ls = ad_->lin_sys;
@@ -103,7 +103,7 @@ protected:
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
     }
-
+*/
 };
 
 class AssemblerMH : public AssemblerBase
