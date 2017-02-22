@@ -166,7 +166,9 @@ public:
         Mesh *mesh;
         MH_DofHandler *mh_dh;
 
+
         uint water_balance_idx;
+        unsigned int local_boundary_index;
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         

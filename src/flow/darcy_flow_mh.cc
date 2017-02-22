@@ -661,6 +661,9 @@ void DarcyMH::assembly_mh_matrix(AssemblerBase& assembler)
     if (balance_ != nullptr)
         balance_->start_flux_assembly(water_balance_idx_);
 
+    // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
+    // including various pre- and post-actions
+    data_->local_boundary_index=0;
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         assembler.assemble(ele_ac);
