@@ -508,7 +508,7 @@ template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
 	if (rec.opt_val(field.input_name(), field_record)) {
-		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), const_cast<FieldCommon &>(field).flags());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
 		return FieldBaseType::function_factory(field_record, init_data );
 	}
 	else

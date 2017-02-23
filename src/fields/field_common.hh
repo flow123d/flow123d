@@ -241,6 +241,9 @@ public:
     FieldFlag::Flags &flags()
     { return flags_; }
 
+    FieldFlag::Flags get_flags() const
+    { return flags_; }
+
     /**
      * Returns time set by last call of set_time method.
      * Can be different for different field copies.
