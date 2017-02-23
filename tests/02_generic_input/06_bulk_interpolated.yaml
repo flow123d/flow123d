@@ -11,7 +11,8 @@ problem: !Coupling_Sequential
     input_fields:
       - region: .BOUNDARY
         bc_type: dirichlet
-        bc_piezo_head: 0.1
+        bc_pressure: !FieldFormula
+          value: x-z
       - region: BULK
         conductivity: !FieldFE
           mesh_data_file: ref_out/07_bulk_interpolation_cube/large_cube.msh
