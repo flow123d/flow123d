@@ -226,7 +226,7 @@ protected:
                     // homogeneous neumann
                 } else if ( type == DarcyMH::EqData::dirichlet ) {
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    loc_system_.set_solution(loc_system_.row_dofs[edge_row],bc_pressure,-1);
+                    loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
                     dirichlet_edge[i] = 1;
                     
                 } else if ( type == DarcyMH::EqData::total_flux) {
@@ -288,7 +288,7 @@ protected:
                         // Force Dirichlet type during the first iteration of the unsteady case.
                         if (switch_dirichlet || ad_->force_bc_switch ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                            loc_system_.set_solution(loc_system_.row_dofs[edge_row],bc_pressure, -1);
+                            loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);

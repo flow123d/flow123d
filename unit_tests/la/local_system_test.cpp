@@ -74,8 +74,12 @@ TEST(la, simple_local_system_solution) {
     
     LocalSystem ls(m, n);
     // set solution with preferred diagonal entries
-    ls.set_solution(11, s1, d1);
-    ls.set_solution(13, s2, d2);
+    //ls.set_solution(11, s1, d1);
+    ls.set_solution_row(1, s1, d1);
+    ls.set_solution_col(4, s1);
+    //ls.set_solution(13, s2, d2);
+    ls.set_solution_row(3, s2, d2);
+    //ls.set_solution_col(6, s1); // out of matrix
     
     fill_ls(ls);
 //     cout << "matrix:\n" << ls.get_matrix();
@@ -93,8 +97,10 @@ TEST(la, simple_local_system_solution) {
     
     //change and do not set the preferred diagonal value
     ls.reset();
-    ls.set_solution(11, s1);
-    ls.set_solution(13, s2);
+    ls.set_solution_row(1, s1);
+    ls.set_solution_col(4, s1);
+    ls.set_solution_row(3, s2);
+
     fill_ls(ls);
     ls.eliminate_solution();
     
@@ -109,9 +115,13 @@ TEST(la, simple_local_system_solution) {
     
     //same as before, but add solution, that corresponds only with column 8 (should be eliminated)
     ls.reset();
-    ls.set_solution(11, s1);
-    ls.set_solution(13, s2);
-    ls.set_solution(8, s2);
+    ls.set_solution_row(1, s1);
+    ls.set_solution_col(4, s1);
+
+    ls.set_solution_row(3, s2);
+
+    ls.set_solution_col(1, s2);
+
     fill_ls(ls);
     ls.eliminate_solution();
     
@@ -151,7 +161,6 @@ TEST(la, simple_local_system_no_solution) {
     EXPECT_ARMA_EQ(res_mat, ls.get_matrix());
     EXPECT_ARMA_EQ(res_rhs, ls.get_rhs());
 }
-
 
 
 
@@ -394,3 +403,4 @@ TEST_F(SetValues, add_value_single) {
         check_result(true);
     }  
 };
+

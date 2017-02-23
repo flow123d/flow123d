@@ -353,11 +353,14 @@ public:
 //             for(unsigned int i=0; i< local.row_dofs.size(); i++)
 //                 cout << local.row_dofs[i] << " ";
 //             cout <<endl;
-        mat_set_values(local.matrix.n_rows, const_cast<int*>(local.row_dofs.data()),
-                       local.matrix.n_cols, const_cast<int*>(local.col_dofs.data()),
+
+        // This is always done only once, see implementation.
+        local.eliminate_solution();
+        mat_set_values(local.matrix.n_rows, (int *)(local.row_dofs.memptr()),
+                       local.matrix.n_cols, (int *)(local.col_dofs.memptr()),
                        tmp.memptr());
         
-        rhs_set_values(local.matrix.n_rows, const_cast<int*>(local.row_dofs.data()),
+        rhs_set_values(local.matrix.n_rows, (int *)(local.row_dofs.memptr()),
                        local.rhs.memptr());
     }
     
