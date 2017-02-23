@@ -49,8 +49,6 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "GMSH mesh with data. Can be different from actual computational mesh.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
-		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
-		//		"Definition of unit.")
         .close();
 }
 
@@ -371,9 +369,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
 
-		// value of last computed element must be recalculated if time is changed
-		computed_elm_idx_ = numeric_limits<unsigned int>::max();
-
 		GMSH_DataHeader search_header;
 		search_header.actual = false;
 		search_header.field_name = field_name_;
@@ -390,7 +385,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		FOR_ELEMENTS( dh_->mesh(), ele ) {
 			searched_elements_.clear();
 			source_mesh_->get_bih_tree().find_point(ele->centre(), searched_elements_);
-			found_point_.SetCoord( ele->centre()(0), ele->centre()(1), ele->centre()(2) );
 			std::fill(sum_val.begin(), sum_val.end(), 0.0);
 			std::fill(elem_count.begin(), elem_count.end(), 0);
 			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {

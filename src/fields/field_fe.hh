@@ -25,7 +25,6 @@
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
-#include "mesh/ngh/include/ngh_interface.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
 #include "fem/finite_element.hh"
@@ -144,23 +143,8 @@ private:
 	/// field name read from input
 	std::string field_name_;
 
-	/// stored index to last computed element
-	unsigned int computed_elm_idx_ = numeric_limits<unsigned int>::max();
-
 	/// vector stored suspect elements in calculating the intersection
 	std::vector<unsigned int> searched_elements_;
-
-	/// 3D (tetrahedron) element, used for computing intersection
-	TTetrahedron tetrahedron_;
-
-	/// 2D (triangle) element, used for computing intersection
-	TTriangle triangle_;
-
-	/// 1D (abscissa) element, used for computing intersection
-	TAbscissa abscissa_;
-
-	/// 0D (point) element, used for computing intersection
-	TPoint point_, found_point_;
 
 	/// Field flags.
 	FieldFlag::Flags flags_;
