@@ -134,9 +134,6 @@ private:
     /// Same as previous, but represents 3D element.
     FiniteElement<3,3> *fe3_;
 
-	/// mesh, which is interpolated
-	std::shared_ptr<Mesh> source_mesh_;
-
 	/// mesh reader file
 	FilePath reader_file_;
 

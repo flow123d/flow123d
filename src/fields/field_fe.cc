@@ -313,14 +313,8 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	flags_ = init_data.flags_;
 
 
-	// read mesh, create tree
-    {
-       reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
-       source_mesh_ = ReaderInstance::get_mesh(reader_file_);
-       source_mesh_->get_bih_tree(); // only create BIH tree
-	   // no call to mesh->setup_topology, we need only elements, no connectivity
-    }
-
+	// read data from input record
+    reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 	field_name_ = rec.val<std::string>("field_name");
 }
 
@@ -368,26 +362,28 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
 
+		std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
+
 		GMSH_DataHeader search_header;
 		search_header.actual = false;
 		search_header.field_name = field_name_;
 		search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-		search_header.n_entities = source_mesh_->element.size();
+		search_header.n_entities = source_mesh->element.size();
 		search_header.time = time.end();
 
 		bool boundary_domain_ = false;
 		std::vector<double> data_vec = *(ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(search_header,
-				source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_));
+				source_mesh->elements_id_maps(boundary_domain_), this->component_idx_));
 		std::vector<double> sum_val(4);
 		std::vector<unsigned int> elem_count(4);
 
 		FOR_ELEMENTS( dh_->mesh(), ele ) {
 			searched_elements_.clear();
-			source_mesh_->get_bih_tree().find_point(ele->centre(), searched_elements_);
+			source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements_);
 			std::fill(sum_val.begin(), sum_val.end(), 0.0);
 			std::fill(elem_count.begin(), elem_count.end(), 0);
 			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
-				ElementFullIter elm = source_mesh_->element( *it );
+				ElementFullIter elm = source_mesh->element( *it );
 				arma::mat map = elm->element_map();
 				arma::vec projection = elm->project_point(ele->centre(), map);
 				if (projection.min() >= -BoundingBox::epsilon) {
