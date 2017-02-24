@@ -144,9 +144,6 @@ private:
 	/// field name read from input
 	std::string field_name_;
 
-	/// vector stored suspect elements in calculating the intersection
-	std::vector<unsigned int> searched_elements_;
-
 	/// Field flags.
 	FieldFlag::Flags flags_;
 

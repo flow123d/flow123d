@@ -388,13 +388,14 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 	std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);
+	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 
 	FOR_ELEMENTS( dh_->mesh(), ele ) {
-		searched_elements_.clear();
-		source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements_);
+		searched_elements.clear();
+		source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements);
 		std::fill(sum_val.begin(), sum_val.end(), 0.0);
 		std::fill(elem_count.begin(), elem_count.end(), 0);
-		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
+		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
 			ElementFullIter elm = source_mesh->element( *it );
 			arma::mat map = elm->element_map();
 			arma::vec projection = elm->project_point(ele->centre(), map);
