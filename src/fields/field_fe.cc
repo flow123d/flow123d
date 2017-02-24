@@ -316,8 +316,7 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	// read mesh, create tree
     {
        reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
-       auto reader_data = ReaderInstance::get_instance(reader_file_);
-       source_mesh_ = reader_data.mesh_;
+       source_mesh_ = ReaderInstance::get_mesh(reader_file_);
        source_mesh_->get_bih_tree(); // only create BIH tree
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
@@ -377,7 +376,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		search_header.time = time.end();
 
 		bool boundary_domain_ = false;
-		std::vector<double> data_vec = *(ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<double>(search_header,
+		std::vector<double> data_vec = *(ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(search_header,
 				source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_));
 		std::vector<double> sum_val(4);
 		std::vector<unsigned int> elem_count(4);
