@@ -372,49 +372,56 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		search_header.time = time.end();
 
 		bool boundary_domain_ = false;
-		std::vector<double> data_vec = *(ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(search_header,
-				source_mesh->elements_id_maps(boundary_domain_), this->component_idx_));
-		std::vector<double> sum_val(4);
-		std::vector<unsigned int> elem_count(4);
-
-		FOR_ELEMENTS( dh_->mesh(), ele ) {
-			searched_elements_.clear();
-			source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements_);
-			std::fill(sum_val.begin(), sum_val.end(), 0.0);
-			std::fill(elem_count.begin(), elem_count.end(), 0);
-			for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
-				ElementFullIter elm = source_mesh->element( *it );
-				arma::mat map = elm->element_map();
-				arma::vec projection = elm->project_point(ele->centre(), map);
-				if (projection.min() >= -BoundingBox::epsilon) {
-					// projection in element
-					arma::vec3 projection_point = map.col(elm->dim()) + map.cols(0, elm->dim()-1) * projection.rows(0, elm->dim()-1);
-					if ( arma::norm(projection_point - ele->centre(), "inf") < 2*BoundingBox::epsilon ) {
-						// point on the element
-						sum_val[elm->dim()] += data_vec[*it];
-						++elem_count[elm->dim()];
-					}
-				}
-			}
-			unsigned int dim = ele->dim();
-			double elem_value = 0.0;
-			do {
-				if (elem_count[dim] > 0) {
-					elem_value = sum_val[dim] / elem_count[dim];
-					break;
-				}
-				++dim;
-			} while (dim<4);
-
-			dh_->get_loc_dof_indices( ele, dof_indices);
-			ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
-			(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
-		}
-
+		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(search_header,
+				source_mesh->elements_id_maps(boundary_domain_), this->component_idx_);
+		this->interpolate(data_vec);
 
 		return search_header.actual;
 	} else return false;
 
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
+{
+	std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
+	std::vector<double> sum_val(4);
+	std::vector<unsigned int> elem_count(4);
+
+	FOR_ELEMENTS( dh_->mesh(), ele ) {
+		searched_elements_.clear();
+		source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements_);
+		std::fill(sum_val.begin(), sum_val.end(), 0.0);
+		std::fill(elem_count.begin(), elem_count.end(), 0);
+		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
+			ElementFullIter elm = source_mesh->element( *it );
+			arma::mat map = elm->element_map();
+			arma::vec projection = elm->project_point(ele->centre(), map);
+			if (projection.min() >= -BoundingBox::epsilon) {
+				// projection in element
+				arma::vec3 projection_point = map.col(elm->dim()) + map.cols(0, elm->dim()-1) * projection.rows(0, elm->dim()-1);
+				if ( arma::norm(projection_point - ele->centre(), "inf") < 2*BoundingBox::epsilon ) {
+					// point on the element
+					sum_val[elm->dim()] += (*data_vec)[*it];
+					++elem_count[elm->dim()];
+				}
+			}
+		}
+		unsigned int dim = ele->dim();
+		double elem_value = 0.0;
+		do {
+			if (elem_count[dim] > 0) {
+				elem_value = sum_val[dim] / elem_count[dim];
+				break;
+			}
+			++dim;
+		} while (dim<4);
+
+		dh_->get_loc_dof_indices( ele, dof_indices);
+		ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
+		(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
+	}
 }
 
 

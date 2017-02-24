@@ -25,6 +25,7 @@
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
+#include "mesh/element_data_cache.hh"
 #include "fem/dofhandler.hh"
 #include "fem/mapping.hh"
 #include "fem/finite_element.hh"
@@ -104,6 +105,9 @@ public:
 private:
 	/// Create DofHandler object
 	void make_dof_handler(const Mesh *mesh);
+
+	/// Interpolate data over all elements of target mesh.
+	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
 
 	/// DOF handler object
     DOFHandlerMultiDim *dh_;
