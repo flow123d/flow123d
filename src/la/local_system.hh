@@ -123,8 +123,8 @@ public:
      */
     void add_value(unsigned int row, double rhs_val);
 
-    void set_matrix(std::vector<uint> rows, std::vector<uint> cols, arma::mat matrix);
-    void set_rhs(std::vector<uint> rows, std::vector<uint> cols, arma::mat matrix);
+    void set_matrix(arma::mat matrix);
+    void set_rhs(arma::vec rhs);
 
 
 
