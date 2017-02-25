@@ -49,6 +49,11 @@ TypeBase::TypeHash Tuple::content_hash() const
 }
 
 
+string Tuple::class_name() const {
+	return "Tuple";
+}
+
+
 Tuple & Tuple::allow_auto_conversion(const string &from_key)
 {
 	ASSERT(false)(this->type_name()).error("Call of allow_auto_conversion method is forbidden for type Tuple");

@@ -19,6 +19,7 @@
 #include "input/type_repository.hh"
 #include "input/type_generic.hh"
 #include "input/type_tuple.hh"
+#include "input/type_selection.hh"
 #include "system/system.hh"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/iostreams/filtering_stream.hpp>

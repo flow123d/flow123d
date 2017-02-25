@@ -144,8 +144,7 @@ public:
 protected:
 
     /// Getter for root of the storage tree.
-    StorageBase *get_storage()
-    { return storage_;}
+    StorageBase *get_storage();
 
 
     /**

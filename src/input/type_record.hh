@@ -18,15 +18,21 @@
 #ifndef TYPE_RECORD_HH_
 #define TYPE_RECORD_HH_
 
-#include <memory>
 #include "system/exceptions.hh"
 
 #include "type_base.hh"
 #include "storage.hh"
 
+#include <string>
+#include <memory>
+#include <vector>
+#include <map>
 
 namespace Input {
 namespace Type {
+
+
+using namespace std;
 
 
 /** *********************************************************************************************************************************
@@ -171,7 +177,6 @@ class Abstract;
 class Record : public TypeBase {
 	friend class OutputBase;
 	friend class Abstract;
-	friend class AdHocAbstract;
 
 public:
 
@@ -335,7 +340,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    virtual string class_name() const override { return "Record"; }
+    virtual string class_name() const override;
 
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const override;

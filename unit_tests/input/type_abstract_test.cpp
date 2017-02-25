@@ -10,9 +10,17 @@
 
 #include <flow_gtest.hh>
 
+#include <input/type_abstract.hh>
+
+// Test of correct includes in type_abstract.hh
+TEST(InputTypeAbstract, includes) {
+	using namespace Input::Type;
+	Abstract a_rec = Abstract("EqBase","Base of equation records.");
+	EXPECT_EQ( a_rec.class_name(), "Abstract");
+}
+
+
 #include <input/input_type.hh>
-
-
 
 /**
  * Test Abstract.

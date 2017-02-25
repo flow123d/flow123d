@@ -19,14 +19,17 @@
 #define TYPE_SELECTION_HH_
 
 #include "system/exceptions.hh"
-
 #include "system/system.hh"
+
 #include "type_base.hh"
+
+#include <string>
+#include <vector>
 
 namespace Input {
 namespace Type {
 
-using std::string;
+using namespace std;
 
 
 
@@ -131,7 +134,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Selection"; }
+    string class_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     bool operator==(const TypeBase &other) const override;
@@ -210,9 +213,7 @@ private:
     public:
 
     	/// Constructor.
-        SelectionData(const string &name)
-        : type_name_(name), closed_(false), finish_status_(FinishStatus::none_)
-        {}
+        SelectionData(const string &name);
 
         /// Inster new value to the Selection
         void add_value(const int value, const std::string &key,

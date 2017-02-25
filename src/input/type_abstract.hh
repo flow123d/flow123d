@@ -18,15 +18,24 @@
 #ifndef TYPE_ABSTRACT_HH_
 #define TYPE_ABSTRACT_HH_
 
-#include "system/exceptions.hh"
-
 #include "type_base.hh"
-#include "type_selection.hh"
+#include "type_record.hh"
+
+#include <string>
+#include <vector>
+#include <memory>
 
 
 namespace Input {
 namespace Type {
 
+
+using namespace std;
+
+
+class Selection;
+class AdHocAbstract;
+class OutputBase;
 
 
 /**
@@ -52,7 +61,6 @@ namespace Type {
  */
 class Abstract : public TypeBase {
 	friend class OutputBase;
-	//friend class Record;
 	friend class AdHocAbstract;
 
 protected:
@@ -63,14 +71,7 @@ protected:
     class ChildData {
     public:
     	/// Constructor
-        ChildData(const string &name, const string &description)
-        : selection_of_childs( std::make_shared<Selection> (name + "_TYPE_selection") ),
-		  description_(description),
-		  type_name_(name),
-		  finish_status_(FinishStatus::none_),
-		  closed_(false),
-		  selection_default_(Default::obligatory())
-        {}
+        ChildData(const string &name, const string &description);
 
         /**
          * @brief Selection composed from names of derived Records.
@@ -206,7 +207,7 @@ public:
      */
     virtual string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Abstract"; }
+    string class_name() const override;
 
     /**
      * @brief Container-like access to the descendants of the Abstract.
@@ -279,7 +280,7 @@ public:
 	TypeHash content_hash() const   override;
 
     /// Override @p Type::TypeBase::class_name.
-	string class_name() const override { return "AdHocAbstract"; }
+	string class_name() const override;
 
 
     /**

@@ -2,6 +2,29 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version 2.1.2
+(2017-02-21)
+
+## User interface
+* Improved installer script and extended install documentation.
+
+### New features
+* Add support for compressed VTK output.
+* Better test for initialization of fields.
+
+### Bug fixes
+* Fix that runtest hangs when ndiff produced a binary stdout.
+* Fix noncompatible P0 algorithm.
+
+
+### Internals:
+* Use python 3 only.
+* Own build of mpich preventing error on valgrind use.
+* Cleanup of input headers.
+
+
+***********************************************
+
 #Flow123d version 2.1.0
 (2016-12-16)
 
