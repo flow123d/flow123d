@@ -174,3 +174,15 @@ void LocalSystem::add_value(unsigned int row, double rhs_val)
     
     rhs(row) += rhs_val;
 }
+
+
+void LocalSystem::set_matrix(arma::mat m) {
+    ASSERT_EQ_DBG(matrix.n_rows, m.n_rows);
+    ASSERT_EQ_DBG(matrix.n_cols, m.n_cols);
+    matrix = m;
+}
+
+void LocalSystem::set_rhs(arma::vec r) {
+    ASSERT_EQ_DBG(matrix.n_rows, r.n_rows);
+    rhs = r;
+}
