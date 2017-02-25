@@ -82,6 +82,15 @@ Address::Address(const Address& other)
 {}
 
 
+Address::AddressData::~AddressData() {
+	if (	!parent_
+			&& root_storage_ == actual_storage_
+			&& root_type_ ) {
+		delete root_storage_;
+	}
+}
+
+
 std::shared_ptr<Address> Address::down(unsigned int idx) const {
 
 	auto addr = std::make_shared<Address>(this->data_->root_storage_, this->data_->root_type_);
@@ -316,6 +325,23 @@ string Array::address_string() const
 
 
 StorageArray Array::empty_storage_ = StorageArray(0);
+
+
+
+/*****************************************************************************
+ * Implementation of the class Input::IteratorBase
+ */
+
+
+IteratorBase::IteratorBase(const Address &address, const unsigned int index)
+: address_(address), index_(index)
+{}
+
+
+const Address &IteratorBase::get_address() const {
+	return address_;
+}
+
 
 
 /*****************************************************************************

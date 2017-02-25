@@ -74,6 +74,9 @@ public:
      */
     int write_tail(void);
 
+    /// Override @p OutputTime::init_from_input.
+    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec) override;
+
 protected:
 
     /**
@@ -171,6 +174,13 @@ protected:
     * Make subdirectory for VTU time frames.
     */
    void make_subdirectory();
+
+   /**
+    * Compress data stored in @p uncompressed_stream to @p compressed_stream.
+    *
+    * Use ZLib compression.
+    */
+   void compress_data(stringstream &uncompressed_stream, stringstream &compressed_stream);
 
 
    /**

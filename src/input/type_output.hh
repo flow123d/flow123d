@@ -20,10 +20,13 @@
 
 
 #include "input/input_type_forward.hh"
+#include "input/type_base.hh"
 #include "input/type_record.hh"
 #include "input/type_abstract.hh"
 #include <string>
 #include <ostream>
+#include <vector>
+#include <memory>
 
 
 
