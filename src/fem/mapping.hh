@@ -208,7 +208,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
         el_bar_coords.zeros();
         lambda = 0;
         // Apply somewhere permutation of indices!
-        for (int j=0; j<dim-1; j++)
+        for (unsigned int j=0; j<dim-1; j++)
         {
             side_bar_coords(j) = sub_point(j);
             lambda += sub_point(j);

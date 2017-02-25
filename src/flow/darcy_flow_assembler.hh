@@ -9,6 +9,7 @@
 #include "darcy_flow_assembly.hh"
 #include "assembly_lmh.hh"
 
+/*
 
 class AssemblerBase
 {
@@ -27,17 +28,17 @@ public:
     AssemblyDataPtr ad_;
     MultidimAssembly dim_assembler;
     
-    void assemble(LocalElementAccessorBase<3> ele_ac, bool fill_matrix = true){
+    void assemble(LocalElementAccessorBase<3> ele_ac){
         
         unsigned int dim = ele_ac.dim();
         dim_assembler[dim-1]->assemble(ele_ac);
         
-        assembly_dim_connections(ele_ac,fill_matrix);
+        //assembly_dim_connections(ele_ac);
         
-        schur_allocations(ele_ac);
+        //schur_allocations(ele_ac);
         
-        if (ad_->balance != nullptr && fill_matrix)
-            add_fluxes_in_balance_matrix(ele_ac);
+
+        //    add_fluxes_in_balance_matrix(ele_ac);
     }
     
 protected:
@@ -52,53 +53,7 @@ protected:
     double local_vb[4]; // 2x2 matrix
     int edge_rows[4];
     
-    void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
-        
-        for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
-            Boundary* bcd = ele_ac.side(i)->cond();
 
-            if (bcd) {
-                /*
-                    DebugOut()("add_flux: {} {} {} {}\n",
-                            mh_dh.el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            local_boundary_index,
-                            side_row);*/
-                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, local_boundary_index,
-                                                     {ele_ac.side_row(i)}, {1});
-                ++local_boundary_index;
-            }
-        }
-    }
-    
-    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac, bool fill_matrix){
-        //D, E',E block: compatible connections: element-edge
-        int ele_row = ele_ac.ele_row();
-        
-        Neighbour *ngh;
-        
-        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
-            // every compatible connection adds a 2x2 matrix involving
-            // current element pressure  and a connected edge pressure
-            ngh= ele_ac.full_iter()->neigh_vb[i];
-            rows[0]=ele_row;
-            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
-            
-            if (fill_matrix)
-                dim_assembler[ngh->side()->dim()]->assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
-            
-            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
-
-            // update matrix for weights in BDDCML
-            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-               int ind = rows[1];
-               // there is -value on diagonal in block C!
-               double new_val = local_vb[0];
-               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
-            }
-        }
-    }
-    
     void schur_allocations(LocalElementAccessorBase<3> ele_ac){
             
         LinSys* ls = ad_->lin_sys;
@@ -149,9 +104,9 @@ protected:
             ls->mat_set_values(nsides, edge_rows, nsides, edge_rows, zeros);
         }
     }
-    
-};
 
+};*/
+/*
 class AssemblerMH : public AssemblerBase
 {
 public:
@@ -172,5 +127,5 @@ public:
     }
 };
 
-
+*/
 #endif // DARCY_FLOW_ASSEMBLER_HH_

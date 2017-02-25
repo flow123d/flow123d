@@ -219,8 +219,8 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( off_vec_, &off_array );
 
     for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
-        on_nz[i]  = static_cast<PetscInt>( on_array[i]+0.1  );  // small fraction to ensure correct rounding
-        off_nz[i] = static_cast<PetscInt>( off_array[i]+0.1 );
+        on_nz[i]  = std::min( rows_ds_->lsize(), static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
+        off_nz[i] = std::min( rows_ds_->size() - rows_ds_->lsize(), static_cast<uint>( off_array[i]+0.1 ) );
     }
 
     VecRestoreArray(on_vec_,&on_array);
