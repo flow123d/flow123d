@@ -309,6 +309,7 @@ add_library(flow123d_lib
     flow/darcy_flow_mh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
+    flow/mortar_assembly.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc

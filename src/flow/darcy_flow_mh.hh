@@ -120,6 +120,13 @@ public:
 
     typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
 
+    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
+    enum MortarMethod {
+        NoMortar = 0,
+        MortarP0 = 1,
+        MortarP1 = 2
+    };
+
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
     /// to this equation for possible coupling.
@@ -172,6 +179,9 @@ public:
 
 
         uint water_balance_idx;
+
+        MortarMethod mortar_method_;
+
         unsigned int local_boundary_index;
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
@@ -184,12 +194,6 @@ public:
         std::vector<char> bc_switch_dirichlet;
     };
 
-    /// Type of experimental Mortar-like method for non-compatible 1d-2d interaction.
-    enum MortarMethod {
-        NoMortar = 0,
-        MortarP0 = 1,
-        MortarP1 = 2
-    };
     /// Selection for enum MortarMethod.
     static const Input::Type::Selection & get_mh_mortar_selection();
 
@@ -322,7 +326,6 @@ protected:
     //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
 
-    MortarMethod mortar_method_;
 
     std::shared_ptr<Balance> balance_;
     /// index of water balance within the Balance object.
@@ -361,82 +364,14 @@ protected:
 	std::shared_ptr<EqData> data_;
 
     friend class DarcyFlowMHOutput;
-    friend class P0_CouplingAssembler;
-    friend class P1_CouplingAssembler;
+    //friend class P0_CouplingAssembler;
+    //friend class P1_CouplingAssembler;
 
 private:
   /// Registrar of class to factory
   static const int registrar;
 };
 
-
-class P0_CouplingAssembler {
-public:
-	P0_CouplingAssembler(const DarcyMH &darcy)
-	: darcy_(darcy),
-	  master_list_(darcy.mesh_->master_elements),
-	  intersections_(darcy.mesh_->intersections),
-	  master_(nullptr),
-	  tensor_average(2)
-	{
-		arma::mat master_map(1,2), slave_map(1,3);
-		master_map.fill(1.0 / 2);
-		slave_map.fill(1.0 / 3);
-
-		tensor_average[0].push_back( master_map.t() * master_map );
-		tensor_average[0].push_back( master_map.t() * slave_map );
-		tensor_average[1].push_back( slave_map.t() * master_map );
-		tensor_average[1].push_back( slave_map.t() * slave_map );
-	}
-
-	void assembly(LinSys &ls);
-	void pressure_diff(int i_ele,
-			vector<int> &dofs,
-			unsigned int &ele_type,
-			double &delta,
-			arma::vec &dirichlet);
-private:
-	typedef vector<unsigned int> IsecList;
-
-	const DarcyMH &darcy_;
-
-	const vector<IsecList> &master_list_;
-	const vector<Intersection> &intersections_;
-
-	vector<IsecList>::const_iterator ml_it_;
-	const Element *master_;
-
-	/// Row matrices to compute element pressure as average of boundary pressures
-	vector< vector< arma::mat > > tensor_average;
-	/// measure of master element, should be sum of intersection measures
-	double delta_0;
-};
-
-
-
-class P1_CouplingAssembler {
-public:
-	P1_CouplingAssembler(const DarcyMH &darcy)
-	: darcy_(darcy),
-	  intersections_(darcy.mesh_->intersections),
-	  rhs(5),
-	  dofs(5),
-	  dirichlet(5)
-	{
-		rhs.zeros();
-	}
-
-	void assembly(LinSys &ls);
-	void add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
-private:
-
-	const DarcyMH &darcy_;
-	const vector<Intersection> &intersections_;
-
-	arma::vec rhs;
-	vector<int> dofs;
-	vector<double> dirichlet;
-};
 
 
 

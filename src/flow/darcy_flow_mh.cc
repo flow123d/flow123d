@@ -267,8 +267,8 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
     size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
-    mortar_method_= in_rec.val<MortarMethod>("mortar_method");
-    if (mortar_method_ != NoMortar) {
+    data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
+    if (data_->mortar_method_ != NoMortar) {
         mesh_->make_intersec_elements();
     }
     
@@ -675,11 +675,6 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     if (balance_ != nullptr)
         balance_->finish_flux_assembly(water_balance_idx_);
 
-    if (mortar_method_ == MortarP0) {
-        P0_CouplingAssembler(*this).assembly(*schur0);
-    } else if (mortar_method_ == MortarP1) {
-        P1_CouplingAssembler(*this).assembly(*schur0);
-    }  
 }
 
 
@@ -740,7 +735,7 @@ void DarcyMH::allocate_mh_matrix()
 
         unsigned int i_rows=0;
         vector<unsigned int> &master_list = mesh_->master_elements[ele_ac.ele_global_idx()];
-        if (mortar_method_ == MortarP0 || mortar_method_ == MortarP1) {
+        if (data_->mortar_method_ == MortarP0 || data_->mortar_method_ == MortarP1) {
             for(unsigned int i_isec : master_list) {
                 Intersection &isec = mesh_->intersections[i_isec];
                 for(unsigned int i_side=0; i_side < isec.slave->n_sides(); i_side++) {
@@ -802,242 +797,6 @@ void DarcyMH::assembly_source_term()
     	balance_->finish_source_assembly(water_balance_idx_);
 }
 
-
-void P0_CouplingAssembler::pressure_diff(int i_ele,
-		vector<int> &dofs, unsigned int &ele_type, double &delta, arma::vec &dirichlet) {
-
-	const Element *ele;
-
-	if (i_ele == (int)(ml_it_->size()) ) { // master element .. 1D
-		ele_type = 0;
-		delta = -delta_0;
-		ele=master_;
-	} else {
-		ele_type = 1;
-		const Intersection &isect=intersections_[ (*ml_it_)[i_ele] ];
-		delta = isect.intersection_true_size();
-		ele = isect.slave_iter();
-	}
-
-	dofs.resize(ele->n_sides());
-        dirichlet.resize(ele->n_sides());
-        dirichlet.zeros();
-
-	for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
-		dofs[i_side]=darcy_.mh_dh.row_4_edge[ele->side(i_side)->edge_idx()];
-		Boundary * bcd = ele->side(i_side)->cond();
-		if (bcd) {			
-			ElementAccessor<3> b_ele = bcd->element_accessor();
-			auto type = (DarcyMH::EqData::BC_Type)darcy_.data_->bc_type.value(b_ele.centre(), b_ele);
-			//DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
-			if (type == DarcyMH::EqData::dirichlet) {
-				//DebugOut().fmt("Dirichlet: {}\n", ele->index());
-				dofs[i_side] = -dofs[i_side];
-				double bc_pressure = darcy_.data_->bc_pressure.value(b_ele.centre(), b_ele);
-				dirichlet[i_side] = bc_pressure;
-			}
-		} 
-	}
-
-}
-
-
-
-
-
-/**
- * Works well but there is large error next to the boundary.
- */
- void P0_CouplingAssembler::assembly(LinSys &ls) {
-	double delta_i, delta_j;
-	arma::mat product;
-	arma::vec dirichlet_i, dirichlet_j;
-	unsigned int ele_type_i, ele_type_j; // element type 0-master, 1-slave for row and col
-
-	unsigned int i,j;
-	vector<int> dofs_i,dofs_j;
-	//vector<IsecList>::const_iterator ml_it_ = master_list_.begin() + ele_idx;
-
-    for(ml_it_ = master_list_.begin(); ml_it_ != master_list_.end(); ++ml_it_) {
-
-        if (ml_it_->size() == 0) continue; // skip empty masters
-
-
-        // on the intersection element we consider
-        // * intersection dofs for master and slave
-        //   those are dofs of the space into which we interpolate
-        //   base functions from individual master and slave elements
-        //   For the master dofs both are usualy eqivalent.
-        // * original dofs - for master same as intersection dofs, for slave
-        //   all dofs of slave elements
-
-        // form list of intersection dofs, in this case pressures in barycenters
-        // but we do not use those form MH system in order to allow second schur somplement. We rather map these
-        // dofs to pressure traces, i.e. we use averages of traces as barycentric values.
-
-
-        master_ = intersections_[ml_it_->front()].master_iter();
-        delta_0 = master_->measure();
-
-        double master_sigma=darcy_.data_->sigma.value( master_->centre(), master_->element_accessor());
-
-        // rows
-        double check_delta_sum=0;
-        for(i = 0; i <= ml_it_->size(); ++i) {
-            pressure_diff(i, dofs_i, ele_type_i, delta_i, dirichlet_i);
-            check_delta_sum+=delta_i;
-            //columns
-            for (j = 0; j <= ml_it_->size(); ++j) {
-                pressure_diff(j, dofs_j, ele_type_j, delta_j, dirichlet_j);
-
-                double scale =  -master_sigma * delta_i * delta_j / delta_0;
-                product = scale * tensor_average[ele_type_i][ele_type_j];
-
-                arma::vec rhs(dofs_i.size());
-                rhs.zeros();
-                ls.set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
-                //auto dofs_i_cp=dofs_i;
-                //auto dofs_j_cp=dofs_j;
-                //ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
-            }
-        }
-        OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
-
-    }
- }
-
-
-
- void P1_CouplingAssembler::add_sides(const Element * ele, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
- {
-
-		for(unsigned int i_side=0; i_side < ele->n_sides(); i_side++ ) {
-			dofs[shift+i_side] =  darcy_.mh_dh.row_4_edge[ele->side(i_side)->edge_idx()];
-			Boundary * bcd = ele->side(i_side)->cond();
-
-			if (bcd) {
-				ElementAccessor<3> b_ele = bcd->element_accessor();
-				auto type = (DarcyMH::EqData::BC_Type)darcy_.data_->bc_type.value(b_ele.centre(), b_ele);
-				//DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
-				if (type == DarcyMH::EqData::dirichlet) {
-					//DebugOut().fmt("Dirichlet: {}\n", ele->index());
-					dofs[shift + i_side] = -dofs[shift + i_side];
-					double bc_pressure = darcy_.data_->bc_pressure.value(b_ele.centre(), b_ele);
-					dirichlet[shift + i_side] = bc_pressure;
-				}
-			}
-		}
- }
-
-
-/**
- * P1 connection of different dimensions
- *
- * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
- */
-
-void P1_CouplingAssembler::assembly(LinSys &ls) {
-
-	for (const Intersection &intersec : intersections_) {
-    	const Element * master = intersec.master_iter();
-       	const Element * slave = intersec.slave_iter();
-
-	add_sides(slave, 0, dofs, dirichlet);
-       	add_sides(master, 3, dofs, dirichlet);
-       	
-		double master_sigma=darcy_.data_->sigma.value( master->centre(), master->element_accessor());
-
-/*
- * Local coordinates on 1D
- *         t0
- * node 0: 0.0
- * node 1: 1.0
- *
- * base fce points
- * t0 = 0.0    on side 0 node 0
- * t0 = 1.0    on side 1 node 1
- *
- * Local coordinates on 2D
- *         t0  t1
- * node 0: 0.0 0.0
- * node 1: 1.0 0.0
- * node 2: 0.0 1.0
- *
- * base fce points
- * t0=0.5, t1=0.0        on side 0 nodes (0,1)
- * t0=0.5, t1=0.5        on side 1 nodes (1,2)
- * t0=0.0, t1=0.5        on side 2 nodes (2,0)
- */
-
-
-
-        arma::vec point_Y(1);
-        point_Y.fill(1.0);
-        arma::vec point_2D_Y(intersec.map_to_slave(point_Y)); // local coordinates of  Y on slave (1, t0, t1)
-        arma::vec point_1D_Y(intersec.map_to_master(point_Y)); //  local coordinates of  Y on master (1, t0)
-
-        arma::vec point_X(1);
-        point_X.fill(0.0);
-        arma::vec point_2D_X(intersec.map_to_slave(point_X)); // local coordinates of  X on slave (1, t0, t1)
-        arma::vec point_1D_X(intersec.map_to_master(point_X)); // local coordinates of  X on master (1, t0)
-
-        arma::mat base_2D(3, 3);
-        // basis functions are numbered as sides
-        // TODO:
-        // Use RT finite element to evaluate following matrices.
-
-        // Ravirat - Thomas base functions evaluated in points (0,0), (1,0), (0,1)
-        // 2D RT_i(t0, t1) = a0 + a1*t0 + a2*t1
-        //         a0     a1      a2
-        base_2D << 1.0 << 0.0 << -2.0 << arma::endr // RT for side 0
-                << 1.0 << -2.0 << 0.0 << arma::endr // RT for side 1
-                << -1.0 << 2.0 << 2.0 << arma::endr;// RT for side 2
-                
-
-        arma::mat base_1D(2, 2);
-        // Ravirat - Thomas base functions evaluated in points (0,0), (1,0), (0,1)
-        // 1D RT_i(t0) =   a0 + a1 * t0
-        //          a0     a1
-        base_1D << 1.0 << -1.0 << arma::endr // RT for side 0,
-                << 0.0 << 1.0 << arma::endr; // RT for side 1,
-
-
-
-        // Consider both 2D and 1D value are defined for the test function
-        // related to the each of 5 DOFs involved in the intersection.
-        // One of these values is always zero.
-        // Compute difference of the 2D and 1D value for every DOF.
-        // Compute value of this difference in both endpoints X,Y of the intersection.
-
-        arma::vec difference_in_Y(5);
-        arma::vec difference_in_X(5);
-        // slave sides 0,1,2
-        difference_in_Y.subvec(0, 2) = -base_2D * point_2D_Y;
-        difference_in_X.subvec(0, 2) = -base_2D * point_2D_X;
-        // master sides 3,4
-        difference_in_Y.subvec(3, 4) = base_1D * point_1D_Y;
-        difference_in_X.subvec(3, 4) = base_1D * point_1D_X;
-
-        // applying the Simpson's rule
-        // to the product of two linear functions f, g we get
-        // (b-a)/6 * ( 3*f(a)*g(a) + 3*f(b)*g(b) + 2*f(a)*g(b) + 2*f(b)*g(a) )
-        arma::mat A(5, 5);
-        for (int i = 0; i < 5; ++i) {
-            for (int j = 0; j < 5; ++j) {
-                A(i, j) = -master_sigma * intersec.intersection_true_size() *
-                        ( difference_in_Y[i] * difference_in_Y[j]
-                          + difference_in_Y[i] * difference_in_X[j]/2
-                          + difference_in_X[i] * difference_in_Y[j]/2
-                          + difference_in_X[i] * difference_in_X[j]
-                        ) * (1.0 / 3.0);
-
-            }
-        }
-        auto dofs_cp=dofs;
-        ls.set_values( dofs_cp, dofs_cp, A, rhs, dirichlet, dirichlet);
-
-    }
-}
 
 
 

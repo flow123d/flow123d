@@ -46,11 +46,16 @@ void LocalSystem::reset()
     solution_eliminated = false;
 }
 
+
 void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
 {
-    set_size(nrows, ncols);
+    matrix.set_size(nrows, ncols);
+    rhs.set_size(nrows);
+    row_dofs.resize(matrix.n_rows);
+    col_dofs.resize(matrix.n_cols);
     reset();
 }
+
 
 
 void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)

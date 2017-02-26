@@ -24,6 +24,7 @@
 #include "la/local_system.hh"
 
 #include "coupling/balance.hh"
+#include "flow/mortar_assembly.hh"
 
 
 class AssemblyBase
@@ -70,6 +71,8 @@ protected:
     {}
 };
 
+
+
 template <int dim>
 class NeighSideValues {
 private:
@@ -85,7 +88,6 @@ public:
     FESideValues<dim+1,3> fe_side_values_;
 
 };
-
 
 
 
@@ -115,6 +117,13 @@ public:
             loc_edge_dofs[i] = nsides + i + 1;
         }
         //DebugOut() << print_var(this) << print_var(side_quad_.size());
+
+        if (ad_->mortar_method_ == DarcyMH::MortarP0) {
+            mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
+        } else if (ad_->mortar_method_ == DarcyMH::MortarP1) {
+            mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
+        }
+
     }
 
 
@@ -135,14 +144,16 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        loc_system_.eliminate_solution();
         
+
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
 
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
+
+        mortar_assembly->assembly(ele_ac);
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
@@ -485,6 +496,8 @@ protected:
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;
+
+    std::shared_ptr<MortarAssemblyBase> mortar_assembly;
 };
 
 

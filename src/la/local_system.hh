@@ -80,6 +80,7 @@ public:
     //void set_solution_rows(DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag);
     //void set_solution_cols(DofVec & loc_cols, const arma::vec &solution);
 
+
     /** 
      * When finished with assembly of the local system,
      * this function eliminates all the known dofs.
