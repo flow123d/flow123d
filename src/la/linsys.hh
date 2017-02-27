@@ -347,6 +347,7 @@ public:
     }
 
     void set_local_system(LocalSystem & local){
+        local.eliminate_solution();
         arma::mat tmp = local.matrix.t();
 //         DBGCOUT(<< "\n" << tmp);
 //         DBGCOUT(<< "row dofs: \n");
@@ -355,7 +356,6 @@ public:
 //             cout <<endl;
 
         // This is always done only once, see implementation.
-        local.eliminate_solution();
         mat_set_values(local.matrix.n_rows, (int *)(local.row_dofs.memptr()),
                        local.matrix.n_cols, (int *)(local.col_dofs.memptr()),
                        tmp.memptr());
