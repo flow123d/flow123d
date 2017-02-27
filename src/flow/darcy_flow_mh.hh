@@ -374,39 +374,8 @@ private:
 
 
 
-
 void mat_count_off_proc_values(Mat m, Vec v);
 
-
-
-/**
- * @brief Mixed-hybrid solution of unsteady Darcy flow.
- *
- * Standard discretization with time term and sources picewise constant
- * on the element. This leads to violation of the discrete maximum principle for
- * non-acute meshes or to too small timesteps. For simplicial meshes this can be solved by lumping to the edges. See DarcyFlowLMH_Unsteady.
- */
-/*
-class DarcyFlowMH_Unsteady : public DarcyFlowMH_Steady
-{
-public:
-
-    DarcyFlowMH_Unsteady(Mesh &mesh, const Input::Record in_rec);
-    //DarcyFlowMH_Unsteady();
-
-    static const Input::Type::Record & get_input_type();
-protected:
-    void read_initial_condition() override;
-    void modify_system() override;
-    void setup_time_term();
-    
-private:
-    /// Registrar of class to factory
-    static const int registrar;
-
-
-};
-*/
 
 #endif  //DARCY_FLOW_MH_HH
 //-----------------------------------------------------------------------------

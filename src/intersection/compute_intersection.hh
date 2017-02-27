@@ -40,8 +40,6 @@
 #include "mesh/ref_element.hh"
 #include "intersection/intersection_point_aux.hh"
 
-namespace computeintersection {
-
 // forward declare
 template<class A, class B> class ComputeIntersection;
 class Plucker;
@@ -573,7 +571,6 @@ private:
     }
 };
 
-} // END namespace_close
 
 
 #endif  // COMPUTE_INTERSECTION_H_

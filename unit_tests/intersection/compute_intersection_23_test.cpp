@@ -23,7 +23,6 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 
 void compute_intersection_area_23d(Mesh *mesh)
@@ -62,7 +61,7 @@ void compute_intersection_area_23d(Mesh *mesh)
     // compute intersection
     MessageOut() << "Computing polygon area by NEW algorithm\n";
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d23);
+    ie.compute_intersections(IntersectionType::d23);
     area1 = ie.measure_23();
 
 //     ie.print_mesh_to_file_23("output_intersection_23");

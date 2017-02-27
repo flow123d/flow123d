@@ -4,7 +4,7 @@
 #include <armadillo>
 #include "system/system.hh"
 
-namespace computeintersection {
+
 
 /**
  * Simplex<N> represents N-dimensional simplex,
@@ -134,5 +134,5 @@ template<unsigned int N> Simplex<N-1>& Simplex<N>::operator[](unsigned int idx)
 {   ASSERT_DBG(idx < N+1);
     return simplices_[idx]; }
 
-} // END namespace_close
+
 #endif /* SIMPLEX_H_ */

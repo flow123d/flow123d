@@ -17,7 +17,7 @@
 #include "mesh/ref_element.hh"
 #include "mesh/bih_tree.hh"
 
-namespace computeintersection {
+
 
 template<unsigned int simplex_dim>
 void update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
@@ -929,4 +929,4 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
 template class InspectElementsAlgorithm<1>;
 template class InspectElementsAlgorithm<2>;
 
-} // END namespace
+

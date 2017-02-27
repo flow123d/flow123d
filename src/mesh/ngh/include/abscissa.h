@@ -22,6 +22,8 @@
 #include "point.h"
 #include "mesh/bounding_box.hh"
 
+namespace ngh {
+
 
 class TAbscissa : public TBisector {
 private:
@@ -55,5 +57,7 @@ public:
         return TAbscissa::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif

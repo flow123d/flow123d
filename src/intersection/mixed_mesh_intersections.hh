@@ -29,9 +29,7 @@
 
 class Mesh; // forward declare
 
-namespace computeintersection {
 
-class MixedMeshIntersections;
 class InspectElementsAlgorithm22;
 class IntersectionLocalBase;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
@@ -83,6 +81,7 @@ public:
      * intersection_map_[element index][i].first = other element index
      * intersection_map_[element index][i].second = pointer to the intersection object
      */
+    typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
     std::vector<std::vector<ILpair>> element_intersections_;
     
     MixedMeshIntersections(Mesh *mesh);
@@ -113,16 +112,19 @@ private:
     InspectElementsAlgorithm22 algorithm22_;
     InspectElementsAlgorithm12 algorithm12_;
     
+    template<uint dim_A, uint dim_B>
+    void store_intersection(std::vector<IntersectionLocal<dim_A, dim_B>> &storage, IntersectionAux<dim_A, dim_B> &isec_aux);
+
     /// Auxiliary function that calls InspectElementsAlgorithm<dim>.
     template<unsigned int dim> void compute_intersections(InspectElementsAlgorithm<dim> &iea,
                                                           std::vector<IntersectionLocal<dim,3>> &storage);
     void compute_intersections_22(std::vector<IntersectionLocal<2,2>> &storage);
     void compute_intersections_12(std::vector<IntersectionLocal<1,2>> &storage);
     void compute_intersections_12_2(std::vector<IntersectionLocal<1,2>> &storage);
+    void compute_intersections_12_ngh_plane(std::vector< IntersectionLocal< 1, 2 > >& storage);
 };
 
     
-} // END namespace
 
 
 #endif // INSPECT_ELEMENTS_H_

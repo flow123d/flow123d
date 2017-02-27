@@ -131,8 +131,8 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
 // generates triangle vs tetrahedron mesh
 template<unsigned int dimA, unsigned int dimB>
 void generate_meshes(unsigned int N,
-                     vector<computeintersection::Simplex<dimA>>& eleA,
-                     vector<computeintersection::Simplex<dimB>>& eleB,
+                     vector<Simplex<dimA>>& eleA,
+                     vector<Simplex<dimB>>& eleB,
                      vector<Space<3>::Point*>& nodes)
 {
     ASSERT(dimA <= dimB).error("Unsupported dimensions.");
@@ -176,12 +176,12 @@ void generate_meshes(unsigned int N,
 
 
 template<unsigned int dimA, unsigned int dimB>
-void compute_intersection(computeintersection::Simplex<dimA>& eleA,
-                          computeintersection::Simplex<dimB>& eleB);
+void compute_intersection(Simplex<dimA>& eleA,
+                          Simplex<dimB>& eleB);
 
 template<>
-void compute_intersection<1,2>(computeintersection::Simplex<1>& eleA,
-                               computeintersection::Simplex<2>& eleB)
+void compute_intersection<1,2>(Simplex<1>& eleA,
+                               Simplex<2>& eleB)
 {
     // compute intersection
     
@@ -198,8 +198,8 @@ void compute_intersection<1,2>(computeintersection::Simplex<1>& eleA,
     
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
-        computeintersection::IntersectionAux<1,2> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-        computeintersection::ComputeIntersection<computeintersection::Simplex<1>, computeintersection::Simplex<2>> CI(eleA, eleB);
+        IntersectionAux<1,2> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
+        ComputeIntersection<Simplex<1>, Simplex<2>> CI(eleA, eleB);
         END_TIMER("CI create");
         START_TIMER("CI compute");
         CI.compute_final(is.points());
@@ -212,8 +212,8 @@ void compute_intersection<1,2>(computeintersection::Simplex<1>& eleA,
 }
 
 template<unsigned int dimA, unsigned int dimB>
-void compute_intersection(computeintersection::Simplex<dimA>& eleA,
-                          computeintersection::Simplex<dimB>& eleB)
+void compute_intersection(Simplex<dimA>& eleA,
+                          Simplex<dimB>& eleB)
 {
     // compute intersection
     START_TIMER("Compute intersection");
@@ -229,8 +229,8 @@ void compute_intersection(computeintersection::Simplex<dimA>& eleA,
     
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
-        computeintersection::IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-        computeintersection::ComputeIntersection<computeintersection::Simplex<dimA>, computeintersection::Simplex<dimB>> CI(eleA, eleB);
+        IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
+        ComputeIntersection<Simplex<dimA>, Simplex<dimB>> CI(eleA, eleB);
         CI.init();
         END_TIMER("CI create");
         START_TIMER("CI compute");
@@ -244,8 +244,8 @@ void compute_intersection(computeintersection::Simplex<dimA>& eleA,
 }
 
 
-void compute_intersection_ngh_12(computeintersection::Simplex<1>& eleA,
-                                 computeintersection::Simplex<2>& eleB)
+void compute_intersection_ngh_12(Simplex<1>& eleA,
+                                 Simplex<2>& eleB)
 {
     TAbscissa tabs;
     TTriangle ttr;
@@ -264,8 +264,8 @@ void compute_intersection_ngh_12(computeintersection::Simplex<1>& eleA,
     END_TIMER("Compute intersection NGH");
 }
 
-void compute_intersection_ngh_22(computeintersection::Simplex<2>& eleA,
-                                 computeintersection::Simplex<2>& eleB)
+void compute_intersection_ngh_22(Simplex<2>& eleA,
+                                 Simplex<2>& eleB)
 {
     TTriangle ttrA, ttrB;
     TIntersectionType it = unknown;
@@ -285,8 +285,8 @@ void compute_intersection_ngh_22(computeintersection::Simplex<2>& eleA,
     END_TIMER("Compute intersection NGH");
 } 
 
-void compute_intersection_ngh_13(computeintersection::Simplex<1>& eleA,
-                                 computeintersection::Simplex<3>& eleB)
+void compute_intersection_ngh_13(Simplex<1>& eleA,
+                                 Simplex<3>& eleB)
 {
     double length;
     
@@ -307,8 +307,8 @@ void compute_intersection_ngh_13(computeintersection::Simplex<1>& eleA,
     END_TIMER("Compute intersection NGH"); }
 } 
 
-void compute_intersection_ngh_23(computeintersection::Simplex<2>& eleA,
-                                 computeintersection::Simplex<3>& eleB)
+void compute_intersection_ngh_23(Simplex<2>& eleA,
+                                 Simplex<3>& eleB)
 {
     double area;
     
@@ -346,8 +346,8 @@ TEST(speed_simple_12, all) {
     const unsigned int n = n_meshes;
     
     //seed_rand();
-    vector<computeintersection::Simplex<1>> eleA;
-    vector<computeintersection::Simplex<2>> eleB;
+    vector<Simplex<1>> eleA;
+    vector<Simplex<2>> eleB;
     vector<Space<3>::Point*> nodes;
     generate_meshes<1,2>(n,eleA, eleB, nodes);
     
@@ -404,8 +404,8 @@ TEST(speed_simple_22, all) {
     const unsigned int n = n_meshes;
     
     //seed_rand();
-    vector<computeintersection::Simplex<2>> eleA;
-    vector<computeintersection::Simplex<2>> eleB;
+    vector<Simplex<2>> eleA;
+    vector<Simplex<2>> eleB;
     vector<Space<3>::Point*> nodes;
     generate_meshes<2,2>(n,eleA, eleB, nodes);
     
@@ -463,8 +463,8 @@ TEST(speed_simple_13, all) {
     const unsigned int n = n_meshes;
     
     //seed_rand();
-    vector<computeintersection::Simplex<1>> eleA;
-    vector<computeintersection::Simplex<3>> eleB;
+    vector<Simplex<1>> eleA;
+    vector<Simplex<3>> eleB;
     vector<Space<3>::Point*> nodes;
     generate_meshes<1,3>(n,eleA, eleB, nodes);
 
@@ -523,8 +523,8 @@ TEST(speed_simple_23, all) {
     const unsigned int n = n_meshes;
     
     //seed_rand();
-    vector<computeintersection::Simplex<2>> eleA;
-    vector<computeintersection::Simplex<3>> eleB;
+    vector<Simplex<2>> eleA;
+    vector<Simplex<3>> eleB;
     vector<Space<3>::Point*> nodes;
     generate_meshes<2,3>(n,eleA, eleB, nodes);
     

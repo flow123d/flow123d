@@ -20,7 +20,6 @@
 #include <dirent.h>
 
 using namespace std;
-using namespace computeintersection;
 
 
 /// Create results for the meshes in directory 'prolong_meshes_23d'.
@@ -51,8 +50,8 @@ using namespace computeintersection;
 // }
 
 /// auxiliary function for sorting intersection storage 13d
-// bool compare_is23(const computeintersection::IntersectionLocal<2,3>& a,
-//                   const computeintersection::IntersectionLocal<2,3>& b)
+// bool compare_is23(const IntersectionLocal<2,3>& a,
+//                   const IntersectionLocal<2,3>& b)
 // {
 //     if (a.component_ele_idx() == b.component_ele_idx())
 //         return a.bulk_ele_idx() <= b.bulk_ele_idx();
@@ -75,7 +74,7 @@ void compute_intersection(Mesh *mesh)
 //     }
     
 //     //test solution
-//     std::vector<computeintersection::IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
+//     std::vector<IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
 //     
 //     // sort the storage, so it is the same for every algorithm (BIH, BB ...)
 //     // and we avoid creating the intersection map for exact IPs

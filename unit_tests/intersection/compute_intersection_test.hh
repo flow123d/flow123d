@@ -11,7 +11,6 @@
 
 #include "intersection/simplex.hh"
 
-using namespace computeintersection;
 
 static const std::vector<std::vector<unsigned int>> permutations_triangle = {
     {0,1,2},

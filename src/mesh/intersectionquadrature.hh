@@ -146,7 +146,7 @@
 class Intersection {
 public:
     Intersection(const ElementFullIter ele_master, const ElementFullIter ele_slave,
-    			 const ngh::IntersectionLocal *isec);
+    			 const IntersectionLocal *isec);
 
     /// dimension of the master element
     unsigned int master_dim();
@@ -173,7 +173,7 @@ private:
     arma::Mat<double> master_map, slave_map;
     /// shift vector of the linear transform
     arma::vec master_shift, slave_shift;
-    void intersection_point_to_vectors(const ngh::IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2);
+    void intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2);
 };
 
 

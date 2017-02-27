@@ -34,6 +34,11 @@
  * @f]
  * where @f$\{w_i\}@f$, @f$\{p_i\}@f$ are the quadrature weights and the quadrature points,
  * respectively.
+ *
+ * TODO:
+ * - remove set_weight, set point; quadrature should be set by its descendants
+ * - introduce Quadrature point which should store point coords together with the weight in raw double[1+dim] array
+ *   and just return arma object on the flys
  */
 template<unsigned int dim>
 class Quadrature {

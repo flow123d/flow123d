@@ -23,7 +23,6 @@
 #include <armadillo>
 #include "mesh/mesh_types.hh"
 
-namespace computeintersection {
 
 //TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
 static const double geometry_epsilon = 1e-9;//8*std::numeric_limits<double>::epsilon();//1e-9;
@@ -246,6 +245,4 @@ template<unsigned int N, unsigned int M>
 bool IntersectionPointAux<N,M>::is_pathologic() const
 {   return (unsigned int)(orientation_) > 1; }
 
-
-} // END namespace
 #endif /* INTERSECTIONPOINT_H_ */

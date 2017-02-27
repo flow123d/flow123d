@@ -9,13 +9,20 @@
 #include <iostream>
 
 using namespace std;
-namespace computeintersection{
+
+IntersectionLocalBase::IntersectionLocalBase()
+{}
+
+
+IntersectionLocalBase::~IntersectionLocalBase()
+{}
 
 IntersectionLocalBase::IntersectionLocalBase(unsigned int component_element_idx, 
                                              unsigned int bulk_element_idx,
                                              unsigned int comp_idx)
 : component_element_idx_(component_element_idx), bulk_element_idx_(bulk_element_idx), component_idx_(comp_idx)
 {}
+
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::IntersectionLocal()
@@ -42,22 +49,48 @@ template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::~IntersectionLocal()
 {}
 
+/*
+template<>
+double IntersectionLocal<1,2>::compute_measure()
+{
+    double length = 0;
+
+    if(i_points_.size() > 1) // zero measure for point intersections
+        for(unsigned int i=0; i < i_points_.size()-1; i++)
+        {
+            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
+        }
+    return length;
+}
+
+template<>
+double IntersectionLocal<2,2>::compute_measure()
+{
+    //ASSERT_EQ_DBG(i_points_.size(), 2);
+    double length = 0;
     
+    if(i_points_.size() > 1) // zero measure for point intersections
+        for(unsigned int i=0; i < i_points_.size()-1; i++)
+        {
+            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
+        }
+    return length;
+}
+
 // 1D-3D
 template<>
 double IntersectionLocal<1,3>::compute_measure()
 {
-    //ASSERT(i_points_.size() > 1, "Not enough intersetion points to define a line.");
     double length = 0;
     
-    if(i_points_.size() > 1)
-    for(unsigned int i=0; i < i_points_.size()-1; i++)
-    {
-        length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
-    }
+    if(i_points_.size() > 1) // zero measure for point intersections
+        for(unsigned int i=0; i < i_points_.size()-1; i++)
+        {
+            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
+        }
     return length;
 }
-
+*/
 
 
 // 2D-3D
@@ -165,4 +198,3 @@ template ostream& operator<< <1,2>(ostream &os, const IntersectionLocal<1,2>& s)
 template ostream& operator<< <2,2>(ostream &os, const IntersectionLocal<2,2>& s);
 template ostream& operator<< <1,3>(ostream &os, const IntersectionLocal<1,3>& s); 
 template ostream& operator<< <2,3>(ostream &os, const IntersectionLocal<2,3>& s); 
-}

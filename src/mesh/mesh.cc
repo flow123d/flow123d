@@ -699,9 +699,9 @@ void Mesh::make_intersec_elements() {
                         for(unsigned int i_elm : candidate_list) {
 				ElementFullIter elm = this->element( i_elm );
 				if (elm->dim() == 2) {
-					IntersectionLocal *intersection;
-					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
-					if (intersection && intersection->get_type() == IntersectionLocal::line) {
+				    ngh::IntersectionLocal *intersection;
+					ngh::GetIntersection( ngh::TAbscissa(ele), ngh::TTriangle(*elm), intersection);
+					if (intersection && intersection->get_type() == ngh::IntersectionLocal::line) {
 
 						master_elements[i_ele].push_back( intersections.size() );
 						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );

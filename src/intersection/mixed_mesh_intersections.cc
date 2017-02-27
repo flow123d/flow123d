@@ -15,8 +15,13 @@
 
 #include "mesh/mesh.h"
 #include "mixed_mesh_intersections.hh"
+#include "mesh/bih_tree.hh"
 
-namespace computeintersection {
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/intersection.h"
+
+
 
 MixedMeshIntersections::MixedMeshIntersections(Mesh* mesh)
 : mesh(mesh), algorithm13_(mesh), algorithm23_(mesh), algorithm22_(mesh), algorithm12_(mesh)
@@ -71,6 +76,20 @@ double MixedMeshIntersections::measure_23()
     return subtotal;
 } 
  
+template<uint dim_A, uint dim_B>
+void MixedMeshIntersections::store_intersection(std::vector<IntersectionLocal<dim_A, dim_B>> &storage, IntersectionAux<dim_A, dim_B> &isec_aux) {
+    unsigned int ele_a_idx = isec_aux.component_ele_idx();
+    unsigned int ele_b_idx = isec_aux.bulk_ele_idx();
+
+    storage.push_back(IntersectionLocal<dim_A, dim_B>(isec_aux));
+    element_intersections_[ele_a_idx].push_back(
+            std::make_pair(ele_b_idx, &(storage.back())) );
+
+    element_intersections_[ele_b_idx].push_back(
+            std::make_pair(ele_a_idx, &(storage.back())) );
+
+}
+
 
 template<unsigned int dim>
 void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim >& iea,
@@ -103,30 +122,7 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
                     
                     // skip zero intersections (are made in iea.prolongate())
                     if(iea.intersection_list_[idx][j].size() == 0) continue;
-                    
-                    bulk_idx = iea.intersection_list_[idx][j].bulk_ele_idx();
-                    storage.push_back(IntersectionLocal<dim,3>(iea.intersection_list_[idx][j]));
-                    
-                    // create map for component element
-                    element_intersections_[idx].push_back(std::make_pair(
-                                                        bulk_idx,
-                                                        &(storage.back()))
-                                                    );
-                    
-//                  // write down intersections
-//                     IntersectionLocal<dim,3>* il = 
-//                         static_cast<IntersectionLocal<dim,3>*> (intersection_map_[idx][j].second);
-//                     DebugOut() << il;
-//                     for(IntersectionPoint<dim,3> &ip : il->points())
-//                         ip.coords(mesh->element(idx)).print(DebugOut());
-
-                    // create map for bulk element
-                    element_intersections_[bulk_idx].push_back(
-                                                std::make_pair(
-                                                    idx, 
-                                                    &(storage.back())
-                                                ));
-                }
+                    store_intersection(storage, iea.intersection_list_[idx][j]);                }
         }
     }
     END_TIMER("Intersection into storage");
@@ -157,15 +153,7 @@ void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal<
                 skip = true;
         }
         if(! skip) {
-            storage.push_back(IntersectionLocal<2,2>(is));
-            element_intersections_[triaA_idx].push_back(std::make_pair(
-                                                        triaB_idx,
-                                                        &(storage.back())
-                                                    ));
-            element_intersections_[triaB_idx].push_back(std::make_pair(
-                                                        triaA_idx,
-                                                        &(storage.back())
-                                                    ));
+            store_intersection(storage, is);
         
             DebugOut().fmt("2D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
             for(const IntersectionPointAux<2,2>& ip : is.points()) {
@@ -231,18 +219,7 @@ void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLoca
     storage.reserve(algorithm12_.intersectionaux_storage12_.size());
     
     for(IntersectionAux<1,2> &is : algorithm12_.intersectionaux_storage12_) {
-        unsigned int abscissa_idx = is.component_ele_idx();
-        unsigned int triangle_idx = is.bulk_ele_idx();
-
-        storage.push_back(IntersectionLocal<1,2>(is));
-        element_intersections_[abscissa_idx].push_back(std::make_pair(
-                                                    triangle_idx,
-                                                    &(storage.back())
-                                                ));
-        element_intersections_[triangle_idx].push_back(std::make_pair(
-                                                    abscissa_idx,
-                                                    &(storage.back())
-                                                ));
+        store_intersection(storage, is);
 //         DebugOut().fmt("1D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
 //         for(const IntersectionPointAux<1,2>& ip : is.points()) {
 //             //DebugOut() << ip;
@@ -254,7 +231,54 @@ void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLoca
 }
 
 
-void MixedMeshIntersections::compute_intersections(computeintersection::IntersectionType d)
+
+
+void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< IntersectionLocal< 1, 2 > >& storage)
+{
+    /* Algorithm:
+     *
+     * 1) create BIH tree
+     * 2) for every 1D, find list of candidates
+     * 3) compute intersections for 1d, store it to master_elements
+     *
+     */
+
+    const BIHTree &bih_tree =mesh->get_bih_tree();
+
+    for(unsigned int i_ele=0; i_ele<mesh->n_elements(); i_ele++) {
+        Element &ele = mesh->element[i_ele];
+
+        if (ele.dim() == 1) {
+            vector<unsigned int> candidate_list;
+            bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+
+            for(unsigned int i_elm : candidate_list) {
+                ElementFullIter elm = mesh->element( i_elm );
+                if (elm->dim() == 2) {
+                    ngh::IntersectionLocal *intersection;
+                    GetIntersection( ngh::TAbscissa(ele), ngh::TTriangle(*elm), intersection);
+                    if (intersection && intersection->get_type() == ngh::IntersectionLocal::line) {
+
+                        // make IntersectionAux<1,2> from IntersectionLocal (from ngh)
+                        IntersectionAux<1,2> is(ele.index(), elm.index());
+                        for(uint i=0; i< intersection->n_points(); i++) {
+                            is.points().push_back(IntersectionPointAux<1,2>(
+                                    arma::vec::fixed<2>( intersection->get_point(i)->el1_coord().data() ),
+                                    arma::vec::fixed<3>( intersection->get_point(i)->el2_coord().data() ) ));
+                        }
+
+                        store_intersection(storage, is);
+                    }
+                }
+
+            }
+        }
+    }
+
+}
+
+
+void MixedMeshIntersections::compute_intersections(IntersectionType d)
 {
     element_intersections_.resize(mesh->n_elements());
     
@@ -290,8 +314,12 @@ void MixedMeshIntersections::compute_intersections(computeintersection::Intersec
         START_TIMER("Intersections 1D-2D (3)");
         compute_intersections_12(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (3)");
+
+        compute_intersections_12_ngh_plane(intersection_storage12_);
     }
 }
+
+
 
  
 void MixedMeshIntersections::print_mesh_to_file_13(string name)
@@ -496,4 +524,4 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
     //}
 }
 
-} // END namespace
+

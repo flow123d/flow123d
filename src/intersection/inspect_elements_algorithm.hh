@@ -29,18 +29,17 @@
 
 class Mesh; // forward declare
 
-namespace computeintersection {
-
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 class IntersectionLocalBase;
 
-class MixedMeshIntersections;
+
 class InspectElementsAlgorithm22;
 
 /// First = element index, Second = pointer to intersection object.
 typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
+
 
 /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
 template<unsigned int simplex_dim>
@@ -206,7 +205,7 @@ private:
     /// Computes fundamental intersection of two 2D elements.
     void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
     
-    friend MixedMeshIntersections;
+    friend class MixedMeshIntersections;
 };
 
 
@@ -262,9 +261,8 @@ private:
     /// Computes fundamental 1D-2D intersection of candidate pair.
 //     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
     
-    friend MixedMeshIntersections;
+    friend class MixedMeshIntersections;
 };
 
-} // END namespace
 
 #endif // INSPECT_ELEMENTS_ALGORITHM_H_

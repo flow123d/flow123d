@@ -22,7 +22,6 @@
 
 #include "system/system.hh"
 
-namespace computeintersection{
 
 //forward declare
 template<unsigned int, unsigned int> class IntersectionPointAux;
@@ -121,5 +120,4 @@ inline unsigned int IntersectionAux<dimA,dimB>::is_pathologic() const
 {   return pathologic_; }
 
 
-} // END NAMESPACE
 #endif /* INTERSECTIONAUX_H_ */

@@ -25,7 +25,7 @@
 // inicializovat objekt, cist zbytek tokenu z tok a naplnit map a shift pro master a slave
 // viz dokumentace k Armadillu
 Intersection::Intersection(const  ElementFullIter ele_master, const ElementFullIter ele_slave,
-    			 const ngh::IntersectionLocal *isec)
+    			 const IntersectionLocal *isec)
 :	dim(isec->n_points() - 1),
 	master(ele_master), slave(ele_slave),
 	master_map(master->dim(), dim), slave_map(slave->dim(), dim),
@@ -64,7 +64,7 @@ unsigned int Intersection::slave_dim()
 
 
 
-void Intersection::intersection_point_to_vectors(const ngh::IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2)
+void Intersection::intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2)
 {
 	const vector<double> &coord_el1 = point->el1_coord();
 	OLD_ASSERT_EQUAL(coord_el1.size() , vec1.n_elem);

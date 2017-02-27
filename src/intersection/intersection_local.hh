@@ -24,7 +24,6 @@
 #include <mesh/mesh_types.hh>
 #include "system/system.hh"
 
-namespace computeintersection{
 
     
 //forwward declare
@@ -35,6 +34,7 @@ template<unsigned int, unsigned int> class IntersectionPoint;
 template<unsigned int, unsigned int> class IntersectionLocal;
 template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionLocal<dimA,dimB>& il);
 template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<dimA,dimB>& ip);
+
 
 
 /** @brief Common base for intersection object.
@@ -57,17 +57,23 @@ protected:
     unsigned int component_idx_;
 
 public:
-    IntersectionLocalBase(){}
+    IntersectionLocalBase();
     /// Constructor taking in element indices.
     IntersectionLocalBase(unsigned int component_element_idx,
                           unsigned int bulk_element_idx,
                           unsigned int component_idx);
-    ~IntersectionLocalBase(){}
+    ~IntersectionLocalBase();
     
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
     unsigned int component_idx() const;     ///< Returns index of component.
+
+    virtual double compute_measure() =0;
 };
+
+/// First = element index, Second = pointer to intersection object.
+typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
+
 
 
 inline unsigned int IntersectionLocalBase::component_ele_idx() const
@@ -119,8 +125,9 @@ public:
     //@}
     
     /// Computes the relative measure of intersection object.
-    double compute_measure();
+    double compute_measure() override;
     
+
     /// Friend output operator.
     friend std::ostream& operator<< <>(std::ostream& os, const IntersectionLocal<dimA,dimB>& intersection);
 };
@@ -200,5 +207,19 @@ template<unsigned int dimA, unsigned int dimB>
 const arma::vec::fixed< dimB  >& IntersectionPoint<dimA,dimB>::bulk_coords() const
 {   return bulk_coords_; }
 
-} // END NAMESPACE
+
+template<unsigned int dimA, unsigned int dimB>
+double IntersectionLocal<dimA,dimB>::compute_measure()
+{
+    ASSERT_LT_DBG(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
+    double length = 0;
+
+    if(i_points_.size() > 1) // zero measure for point intersections
+        for(unsigned int i=0; i < i_points_.size()-1; i++)
+        {
+            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
+        }
+    return length;
+}
+
 #endif /* INTERSECTION_LOCAL_H_ */

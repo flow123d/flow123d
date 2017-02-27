@@ -28,7 +28,6 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 /**
  * Ideas for testing:
@@ -40,7 +39,7 @@ using namespace computeintersection;
  *      therefore we sort real points, see compare_coords()
  * - due to sorting, we have no control of correct tracing
  *      (at the moment the comparison of final area with old NGH sort of checks that)
- * - in future, we could have analytical objects in std::vector<computeintersection::IntersectionAux<2,3>> solution
+ * - in future, we could have analytical objects in std::vector<IntersectionAux<2,3>> solution
  *      and check also for topologic position, correct tracing order, orientation of IP, barycentric coords...
  *      - problem here is, we have to always pay attention to given permutations...
  * 
@@ -198,7 +197,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     EXPECT_EQ(il.size(), is.size());
     
     std::vector<arma::vec3> coords(is.size());
-    computeintersection::IntersectionLocal<2,3> temp_ilc(is);
+    IntersectionLocal<2,3> temp_ilc(is);
     //     std::cout << temp_ilc;
     for(unsigned int i=0; i < is.size(); i++)
     {
@@ -246,7 +245,7 @@ void compare_with_ngh(Mesh *mesh)
     // compute intersection
     MessageOut() << "Computing polygon area by NEW algorithm\n";
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d23);
+    ie.compute_intersections(IntersectionType::d23);
     area1 = ie.measure_23();
 
 //     ie.print_mesh_to_file_23("output_intersection_23");
@@ -265,7 +264,7 @@ TEST(area_intersections, all) {
     
     read_files_from_dir(dir_name, "msh", filenames);
     
-    //std::vector<computeintersection::IntersectionAux<2,3>> solution;
+    //std::vector<IntersectionAux<2,3>> solution;
     std::vector<TestCaseResult> solution_coords;
     fill_solution(solution_coords);
     //EXPECT_EQ(solution_coords.size(), filenames.size());

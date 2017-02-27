@@ -22,33 +22,32 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 
 /// Create results for the meshes in directory 'simple_meshes_12d'.
-void fill_12d_solution(std::vector<computeintersection::IntersectionLocal<1,2>> &ils)
+void fill_12d_solution(std::vector<IntersectionLocal<1,2>> &ils)
 {
     ils.clear();
     ils.resize(9);
     // ips[0] is empty
-    ils[1].points() = {computeintersection::IntersectionPoint<1,2>({0}, {0, 0})};
-    ils[2].points() = {computeintersection::IntersectionPoint<1,2>({1}, {0, 0})};
-    ils[3].points() = {computeintersection::IntersectionPoint<1,2>({0.5}, {0, 0})};
-    ils[4].points() = {computeintersection::IntersectionPoint<1,2>({0.5}, {0, 0})};
-    ils[5].points() = {computeintersection::IntersectionPoint<1,2>({0.5}, {0.5, 0})};
-    ils[6].points() = {computeintersection::IntersectionPoint<1,2>({0.5}, {0.25, 0.25})};
-    ils[7].points() = {computeintersection::IntersectionPoint<1,2>({1./3}, {0.2, 0}),
-                       computeintersection::IntersectionPoint<1,2>({2./3}, {0, 0.4})};
-    ils[8].points() = {computeintersection::IntersectionPoint<1,2>({0}, {0, 0}),
-                       computeintersection::IntersectionPoint<1,2>({1}, {1, 0})};
+    ils[1].points() = {IntersectionPoint<1,2>({0}, {0, 0})};
+    ils[2].points() = {IntersectionPoint<1,2>({1}, {0, 0})};
+    ils[3].points() = {IntersectionPoint<1,2>({0.5}, {0, 0})};
+    ils[4].points() = {IntersectionPoint<1,2>({0.5}, {0, 0})};
+    ils[5].points() = {IntersectionPoint<1,2>({0.5}, {0.5, 0})};
+    ils[6].points() = {IntersectionPoint<1,2>({0.5}, {0.25, 0.25})};
+    ils[7].points() = {IntersectionPoint<1,2>({1./3}, {0.2, 0}),
+                       IntersectionPoint<1,2>({2./3}, {0, 0.4})};
+    ils[8].points() = {IntersectionPoint<1,2>({0}, {0, 0}),
+                       IntersectionPoint<1,2>({1}, {1, 0})};
 }
 
 
 ///Permutes triangle coordinates of IP<1,2> according to given permutation.
-std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vector<computeintersection::IntersectionPoint<1,2>> ips, 
+std::vector<IntersectionPoint<1,2>> permute_coords(std::vector<IntersectionPoint<1,2>> ips, 
                                                                         const std::vector<unsigned int> &permute)
 {
-    std::vector<computeintersection::IntersectionPoint<1,2>> new_points(ips.size());
+    std::vector<IntersectionPoint<1,2>> new_points(ips.size());
     for(unsigned int i = 0; i < ips.size(); i++)
     {
         arma::vec3 new_coords;
@@ -62,12 +61,12 @@ std::vector<computeintersection::IntersectionPoint<1,2>> permute_coords(std::vec
         for(unsigned int j = 0; j < 3; j++)
             new_coords[j] = old_coords[permute[j]];
         
-        new_points[i] = computeintersection::IntersectionPoint<1,2>(ips[i].comp_coords(), new_coords.subvec(1,2));
+        new_points[i] = IntersectionPoint<1,2>(ips[i].comp_coords(), new_coords.subvec(1,2));
     }
     return new_points;
 }
 
-void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection::IntersectionPoint<1,2>> &ips)
+void compute_intersection_12d(Mesh *mesh, const std::vector<IntersectionPoint<1,2>> &ips)
 {
     Simplex<1> line = create_simplex<1>(mesh->element(1));
     Simplex<2> tria = create_simplex<2>(mesh->element(0));
@@ -76,12 +75,12 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<computeintersection:
     ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria);
     CI.compute_final(is.points());
     
-    computeintersection::IntersectionLocal<1,2> ilc(is);
+    IntersectionLocal<1,2> ilc(is);
     
 //     DebugOut() << ilc;
     
     auto ipc = ilc.points();
-//     for(computeintersection::IntersectionPoint<1,2> &ip: ipc)
+//     for(IntersectionPoint<1,2> &ip: ipc)
 //     {
 //         ip.coords(mesh->element(1)).print(DebugOut(),"ip");
 //     }
@@ -107,7 +106,7 @@ TEST(intersections_12d, all) {
     
     read_files_from_dir(dir_name, "msh", filenames);
     
-    std::vector<computeintersection::IntersectionLocal<1,2>> solution;
+    std::vector<IntersectionLocal<1,2>> solution;
     fill_12d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH

@@ -26,6 +26,8 @@
 #include "point.h"
 #include "myvector.h"
 
+namespace ngh {
+
 class TBisector {
 protected:
     static int numberInstance;
@@ -62,5 +64,7 @@ public:
         return TBisector::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif

@@ -33,7 +33,6 @@
 #include <dirent.h>
 
 using namespace std;
-using namespace computeintersection;
 
 static const std::string profiler_file = "speed_test_profiler.log";
 static const unsigned int profiler_loop = 10;
@@ -58,8 +57,8 @@ void compute_intersection(Mesh *mesh)
     // compute intersection
     
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d23);
-//     ie.compute_intersections((computeintersection::IntersectionType)(computeintersection::IntersectionType::d23 | computeintersection::IntersectionType::d22));
+    ie.compute_intersections(IntersectionType::d23);
+//     ie.compute_intersections((IntersectionType)(IntersectionType::d23 | IntersectionType::d22));
 //     ie.print_mesh_to_file_13("output_intersection_speed_13");
 //     ie.print_mesh_to_file_23("output_intersection_speed_23");
     

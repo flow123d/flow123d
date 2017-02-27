@@ -21,7 +21,7 @@
 #include <iostream>
 #include "system/system.hh"
 
-namespace computeintersection{
+
 
 #ifndef _PLUCKER_H
 #define _PLUCKER_H
@@ -139,4 +139,4 @@ inline arma::vec6 Plucker::get_plucker_coords() const
 
 #endif
 
-} // END namespace_close
+

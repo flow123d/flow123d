@@ -14,7 +14,7 @@
 #include "system/system.hh"
 
 using namespace std;
-namespace computeintersection{
+
 
 template<unsigned int N, unsigned int M>
 void IntersectionPointAux<N,M>::clear()
@@ -164,7 +164,7 @@ template ostream& operator<< <3,1>(ostream &os, const IntersectionPointAux<3,1>&
 template ostream& operator<< <2,3>(ostream &os, const IntersectionPointAux<2,3>& s);
 template ostream& operator<< <3,2>(ostream &os, const IntersectionPointAux<3,2>& s);
 
-} // END namespace
+
 
 
 

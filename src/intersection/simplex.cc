@@ -5,7 +5,7 @@
 #include "mesh/ref_element.hh"
 
 using namespace std;
-namespace computeintersection {
+
 
 template<unsigned int N> void Simplex<N>::set_simplices(arma::vec3 **field_of_pointers_to_coordinates)
 {
@@ -87,4 +87,4 @@ template ostream& operator<< <1>(ostream &os, const Simplex<1>& s);
 template ostream& operator<< <2>(ostream &os, const Simplex<2>& s); 
 template ostream& operator<< <3>(ostream &os, const Simplex<3>& s); 
 
-} // END namespace_close
+

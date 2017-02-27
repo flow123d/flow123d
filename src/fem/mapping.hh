@@ -174,6 +174,9 @@ public:
      * @param pid  Permutations index.
      * @param subq @p dim-1 dimensional quadrature for integration on the side.
      * @param q    The computed @p dim dimensional quadrature.
+     *
+     * TODO: use similar functionality in RefElement for point transformation, should be part of Quadrature classes since it is
+     * related to the RefElement only.
      */
     void transform_subquadrature(unsigned int sid,
     		unsigned int pid,

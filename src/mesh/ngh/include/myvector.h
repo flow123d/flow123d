@@ -18,6 +18,9 @@
 #ifndef vectorH
 #define vectorH
 
+
+namespace ngh {
+
 class TPoint;
 
 
@@ -69,5 +72,7 @@ TVector Cross(const TVector&, const TVector&);
 double Dot(const TVector&, const TVector&);
 bool AreParallel(const TVector&, const TVector&);
 bool ArePerpendicular(const TVector&, const TVector&);
+
+} //namespace ngh
 
 #endif
