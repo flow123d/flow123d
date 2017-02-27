@@ -153,7 +153,8 @@ public:
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
 
-        mortar_assembly->assembly(ele_ac);
+        if (mortar_assembly)
+            mortar_assembly->assembly(ele_ac);
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override

@@ -7,19 +7,23 @@
 
 #include "flow/mortar_assembly.hh"
 #include "la/linsys.hh"
-
+#include "mesh/intersection.hh"
+#include <armadillo>
 
 P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 : MortarAssemblyBase(data),
-  tensor_average(16),
+  tensor_average_(16),
   delta_0(0.0)
 {
 
     for(uint row_dim=0; row_dim<4; row_dim ++)
         for(uint col_dim=0; col_dim<4; col_dim ++) {
-            auto row_avg = arma::vec(row_dim+1, fill::ones) / (row_dim+1);
-            auto col_avg = arma::vec(col_dim+1, fill::ones) / (col_dim+1);
-            tensor_average(row_dim, col_dim) = row_avg.t() * col_avg;
+            arma::vec row_avg = arma::vec(row_dim+1);
+            row_avg.fill(1.0 / (row_dim+1));
+            arma::vec col_avg = arma::vec(col_dim+1);
+            col_avg.fill(1.0 / (col_dim+1));
+            arma::mat avg = row_avg * col_avg.t(); // tensor product
+            tensor_average(row_dim, col_dim) = avg;
         }
 }
 
@@ -103,9 +107,9 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
     isec_data_list.clear();
     isec_data_list.resize(master_list.size()+1);
 
-    pressure_diff(ele_ac, -delta_0, isec_data_list[i]);
+    pressure_diff(ele_ac, -delta_0, isec_data_list[master_list.size()]);
     for(i = 0; i < master_list.size(); ++i) {
-        const Intersection &isect=intersections_[ isec_list[i] ];
+        const Intersection &isect=intersections_[ master_list[i] ];
         double delta = isect.intersection_true_size();
         ele_ac.reinit(isect.slave_iter()->index());
         pressure_diff(ele_ac, delta, isec_data_list[i]);
@@ -118,23 +122,34 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
         //columns
         for(IsecData &col_ele : isec_data_list) {
 
+
             double scale =  -master_sigma * row_ele.delta * col_ele.delta / delta_0;
-            product = scale * tensor_average[row_ele.dim][col_ele.dim];
+            product = scale * tensor_average(row_ele.dim, col_ele.dim);
+            DebugOut()
+                    << print_var(row_ele.dofs[0])
+                    << print_var(col_ele.dofs[0]) << endl
+                    << print_var(master_sigma)
+                    << print_var(row_ele.delta)
+                    << print_var(col_ele.delta) << endl
+                    << product;
 
-            arma::vec rhs(dofs_i.size());
-            rhs.zeros();
 
-            local_system_.reset(row_ele.dofs, col_ele.dofs);
-            for(i=0; i< row_ele.n_dirichlet; i++) loc_system_.set_solution_row(row_ele.dirichlet_dofs, row_ele.dirichlet_sol);
-            for(i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs, col_ele.dirichlet_sol);
+            //arma::vec rhs(dofs_i.size());
+            //rhs.zeros();
+
+            loc_system_.reset(row_ele.dofs, col_ele.dofs);
+
+            for(i=0; i< row_ele.n_dirichlet; i++) loc_system_.set_solution_row(row_ele.dirichlet_dofs[i], row_ele.dirichlet_sol[i]);
+            for(i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
             loc_system_.set_matrix(product);
-            data_->lin_sys->set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
+            //data_->lin_sys->set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
+            data_->lin_sys->set_local_system(loc_system_);
             //auto dofs_i_cp=dofs_i;
             //auto dofs_j_cp=dofs_j;
             //ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
         }
     }
-    data_->lin_sys->set_local_system(local_system_);
+    DebugOut() << print_var(check_delta_sum);
     OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
  }
 

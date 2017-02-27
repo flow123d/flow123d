@@ -43,7 +43,6 @@ void LocalSystem::reset()
     rhs.zeros();
     // drop all dirichlet values
     n_elim_rows=n_elim_cols=0;
-    solution_eliminated = false;
 }
 
 
@@ -103,8 +102,9 @@ void LocalSystem::set_solution_cols(DofVec & loc_cols, const arma::vec &solution
 
 void LocalSystem::eliminate_solution()
 {
-    if (! n_elim_rows || ! n_elim_cols || solution_eliminated) return;
+    if (! n_elim_rows &&  ! n_elim_cols ) return;
     
+    DebugOut().fmt("elim rows: {} elim_cols: {}", n_elim_rows, n_elim_cols);
     
     arma::mat tmp_mat = matrix;
     arma::vec tmp_rhs = rhs;
@@ -128,6 +128,7 @@ void LocalSystem::eliminate_solution()
         for(ic=0; ic < n_elim_cols; ic++) {
             col = elim_cols[ic];
             if (row_dofs[row] == col_dofs[col]) {
+                ASSERT_DBG(fabs(solution_rows[ir] - solution_cols[ic]) <1e-12 );
                 // if preferred value is not set, then try using matrix value
                 double new_diagonal = matrix(row, col);
 
@@ -149,10 +150,19 @@ void LocalSystem::eliminate_solution()
             }
         }
     }
-    
+
+    DebugOut()
+        << tmp_mat << endl
+        << tmp_rhs;
+
+    DebugOut()
+        << matrix << endl
+        << rhs;
+
     matrix = tmp_mat;
     rhs = tmp_rhs;
-    solution_eliminated = true;
+    n_elim_cols=n_elim_rows=0;
+
 }
 
 

@@ -10,6 +10,8 @@
 
 #include "mesh/mesh.h"
 #include "flow/darcy_flow_mh.hh"
+#include "la/local_system.hh"
+#include <vector>
 
 
 typedef std::shared_ptr<DarcyMH::EqData> AssemblyDataPtr;
@@ -54,7 +56,7 @@ class P0_CouplingAssembler :public MortarAssemblyBase {
 public:
     P0_CouplingAssembler(AssemblyDataPtr data);
     void assembly(LocalElementAccessorBase<3> ele_ac);
-    void pressure_diff(uint i_ele, const IsecList &isec_list, LocalElementAccessorBase<3> ele_ac, IsecData &i_data);
+    void pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta, IsecData &i_data);
 private:
     inline arma::mat & tensor_average(unsigned int row_dim, unsigned int col_dim) {
         return tensor_average_[4*row_dim + col_dim];
@@ -63,7 +65,9 @@ private:
     vector<IsecData> isec_data_list;
 
     /// Row matrices to compute element pressure as average of boundary pressures
-    vector< vector< arma::mat > > tensor_average;
+    std::vector< arma::mat > tensor_average_;
+
+
     /// measure of master element, should be sum of intersection measures
     double delta_0;
 };

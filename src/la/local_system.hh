@@ -155,11 +155,6 @@ protected:
      */
     //bool solution_not_set;
 
-    /**
-     *  Solution eliminated, no further changes until next call of reset.
-     *  Used by LinSys::set_local_system, and by asserts in add_value methods.
-     */
-    bool solution_eliminated;
 
     friend class LinSys;
 
