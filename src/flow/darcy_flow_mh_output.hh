@@ -155,7 +155,7 @@ private:
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
-    DOFHandlerMultiDim *dh;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
     MappingP1<1,3> map1;
     MappingP1<2,3> map2;
     MappingP1<3,3> map3;

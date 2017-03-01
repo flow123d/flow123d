@@ -61,7 +61,7 @@ public:
 	template<unsigned int dim>
 	inline Mapping<dim,3> *mapping();
 
-	inline DOFHandlerMultiDim *dh();
+	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
 
@@ -88,7 +88,7 @@ private:
 	Mapping<3,3> *map3_;
 
 	/// Object for distribution of dofs.
-	DOFHandlerMultiDim *dh_;
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 

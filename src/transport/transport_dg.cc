@@ -154,7 +154,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
 
-	dh_ = new DOFHandlerMultiDim(*mesh_);
+	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
 }
@@ -176,7 +176,6 @@ FEObjects::~FEObjects()
 	delete map1_;
 	delete map2_;
 	delete map3_;
-	delete dh_;
 }
 
 template<> FiniteElement<0,3> *FEObjects::fe<0>() { return 0; }
@@ -199,7 +198,7 @@ template<> Mapping<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> Mapping<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> Mapping<3,3> *FEObjects::mapping<3>() { return map3_; }
 
-DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
+std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 
 
 template<class Model>

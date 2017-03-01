@@ -19,10 +19,6 @@
 #include "fields/field_fe.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
-#include "quadrature/quadrature.hh"
-#include "fem/fe_values.hh"
-#include "fem/finite_element.hh"
-#include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "mesh/reader_instances.hh"
 
@@ -62,31 +58,36 @@ const int FieldFE<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  dh_(nullptr),
   data_vec_(nullptr),
   dof_indices(nullptr),
-  map1_(nullptr),
-  map2_(nullptr),
-  map3_(nullptr),
   field_name_("")
 {}
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::set_fe_data(DOFHandlerMultiDim *dh,
+void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
 		Mapping<1,3> *map1,
 		Mapping<2,3> *map2,
 		Mapping<3,3> *map3,
 		VectorSeqDouble *data)
 {
     dh_ = dh;
-    map1_ = map1;
-    map2_ = map2;
-    map3_ = map3;
     data_vec_ = data;
 
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
     dof_indices = new unsigned int[ndofs];
+
+    // initialization data of value handlers
+	FEValueInitData init_data;
+	init_data.dh = dh_;
+	init_data.data_vec = data_vec_;
+	init_data.ndofs = ndofs;
+	init_data.n_comp = this->n_comp();
+
+	// initialize value handler objects
+	value_handler1_.initialize(init_data, map1);
+	value_handler2_.initialize(init_data, map2);
+	value_handler3_.initialize(init_data, map3);
 }
 
 
@@ -97,93 +98,15 @@ void FieldFE<spacedim, Value>::set_fe_data(DOFHandlerMultiDim *dh,
 template <int spacedim, class Value>
 typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
-	Point p_rel = p - elm.element()->node[0]->point();
-	DOFHandlerBase::CellIterator cell = dh_->mesh()->element(elm.idx());
-
-	if (elm.dim() == 1) {
-		arma::mat::fixed<3,1> m1 = elm.element()->node[1]->point() - elm.element()->node[0]->point();
-		arma::mat::fixed<1,3> im1 = pinv(m1);
-
-		Quadrature<1> q1(1);
-		q1.set_point(0, im1*p_rel);
-
-		FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(), update_values);
-		fe_values1.reinit(cell);
-
-		dh_->get_loc_dof_indices(cell, dof_indices);
-
-		if (dh_->fe<1>()->is_scalar()) {
-			double value = 0;
-			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_value(i, 0);
-			this->value_(0,0) = value;
-		}
-		else {
-			arma::vec3 value;
-			value.zeros();
-			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_vector(i, 0);
-			for (unsigned int i=0; i<3; i++)
-				this->value_(i,0) = value(i);
-		}
-	}
-	else if (elm.dim() == 2) {
-		arma::mat::fixed<3,2> m2;
-		m2.col(0) = elm.element()->node[1]->point() - elm.element()->node[0]->point();
-		m2.col(1) = elm.element()->node[2]->point() - elm.element()->node[0]->point();
-		arma::mat::fixed<2,3> im2 = pinv(m2);
-
-		Quadrature<2> q2(1);
-		q2.set_point(0, im2*p_rel);
-
-		FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(), update_values);
-		fe_values2.reinit(cell);
-
-		dh_->get_loc_dof_indices(cell, dof_indices);
-
-		if (dh_->fe<2>()->is_scalar()) {
-			double value = 0;
-			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_value(i, 0);
-			this->value_(0,0) = value;
-		}
-		else {
-			arma::vec3 value;
-			value.zeros();
-			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_vector(i, 0);
-			for (unsigned int i=0; i<3; i++)
-				this->value_(i,0) = value(i);
-		}	}
-	else {
-		arma::mat33 m3;
-		m3.col(0) = elm.element()->node[1]->point() - elm.element()->node[0]->point();
-		m3.col(1) = elm.element()->node[2]->point() - elm.element()->node[0]->point();
-		m3.col(2) = elm.element()->node[3]->point() - elm.element()->node[0]->point();
-		arma::mat33 im3 = inv(m3);
-
-		Quadrature<3> q3(1);
-		q3.set_point(0, im3*p_rel);
-
-		FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(), update_values);
-		fe_values3.reinit(cell);
-
-		dh_->get_loc_dof_indices(cell, dof_indices);
-
-		if (dh_->fe<3>()->is_scalar()) {
-			double value = 0;
-			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_value(i, 0);
-			this->value_(0,0) = value;
-		}
-		else {
-			arma::vec3 value;
-			value.zeros();
-			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_vector(i, 0);
-			for (unsigned int i=0; i<3; i++)
-				this->value_(i,0) = value(i);
-		}
+	switch (elm.dim()) {
+	case 1:
+		return value_handler1_.value(p, elm);
+	case 2:
+		return value_handler2_.value(p, elm);
+	case 3:
+		return value_handler3_.value(p, elm);
+	default:
+		ASSERT(false).error("Invalid element dimension!");
 	}
 
     return this->r_value_;
@@ -195,113 +118,23 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
  * Returns std::vector of scalar values in several points at once.
  */
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
-                   std::vector<typename Value::return_type>  &value_list)
+void FieldFE<spacedim, Value>::value_list (const std::vector< Point > &point_list, const ElementAccessor<spacedim> &elm,
+                   std::vector<typename Value::return_type> &value_list)
 {
-	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->element( elm.idx() );
-
-	if (elm.dim() == 1) {
-		arma::mat::fixed<3,1> m1 = elm.element()->node[1]->point() - elm.element()->node[0]->point();
-		arma::mat::fixed<1,3> im1 = pinv(m1);
-
-		dh_->get_loc_dof_indices(cell, dof_indices);
-
-		for (unsigned int k=0; k<point_list.size(); k++) {
-			Quadrature<1> q1(1);
-			Point p_rel = point_list[k] - elm.element()->node[0]->point();
-			q1.set_point(0, im1*p_rel);
-
-			FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(), update_values);
-			fe_values1.reinit(cell);
-
-			Value envelope(value_list[k]);
-
-			if (dh_->fe<1>()->is_scalar()) {
-				double value = 0;
-				for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-					value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_value(i, 0);
-				envelope(0,0) = value;
-			}
-			else {
-				arma::vec3 value;
-				value.zeros();
-				for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
-					value += (*data_vec_)[dof_indices[i]]*fe_values1.shape_vector(i, 0);
-				for (int i=0; i<3; i++)
-					envelope(i,0) = value(i);
-			}
-		}
-	}
-	else if (elm.dim() == 2) {
-		arma::mat::fixed<3,2> m2;
-		m2.col(0) = elm.element()->node[1]->point() - elm.element()->node[0]->point();
-		m2.col(1) = elm.element()->node[2]->point() - elm.element()->node[0]->point();
-		arma::mat::fixed<2,3> im2 = pinv(m2);
-
-		dh_->get_loc_dof_indices(cell, dof_indices);
-
-		for (unsigned int k=0; k<point_list.size(); k++) {
-			Quadrature<2> q2(1);
-			Point p_rel = point_list[k] - elm.element()->node[0]->point();
-			q2.set_point(0, im2*p_rel);
-
-			FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(), update_values);
-			fe_values2.reinit(cell);
-
-			Value envelope(value_list[k]);
-
-			if (dh_->fe<2>()->is_scalar()) {
-				double value = 0;
-				for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-					value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_value(i, 0);
-				envelope(0,0) = value;
-			}
-			else {
-				arma::vec3 value;
-				value.zeros();
-				for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
-					value += (*data_vec_)[dof_indices[i]]*fe_values2.shape_vector(i, 0);
-				for (int i=0; i<3; i++)
-					envelope(i,0) = value(i);
-			}
-		}
-	}
-	else {
-		arma::mat33 m3;
-		m3.col(0) = elm.element()->node[1]->point() - elm.element()->node[0]->point();
-		m3.col(1) = elm.element()->node[2]->point() - elm.element()->node[0]->point();
-		m3.col(2) = elm.element()->node[3]->point() - elm.element()->node[0]->point();
-		arma::mat33 im3 = inv(m3);
-
-		dh_->get_loc_dof_indices(cell, dof_indices);
-
-		for (unsigned int k=0; k<point_list.size(); k++) {
-			Quadrature<3> q3(1);
-			Point p_rel = point_list[k] - elm.element()->node[0]->point();
-			q3.set_point(0, im3*p_rel);
-
-			FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(), update_values);
-			fe_values3.reinit(cell);
-
-			Value envelope(value_list[k]);
-
-			if (dh_->fe<3>()->is_scalar()) {
-				double value = 0;
-				for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-					value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_value(i, 0);
-				envelope(0,0) = value;
-			}
-			else {
-				arma::vec3 value;
-				value.zeros();
-				for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
-					value += (*data_vec_)[dof_indices[i]]*fe_values3.shape_vector(i, 0);
-				for (int i=0; i<3; i++)
-					envelope(i,0) = value(i);
-			}
-		}
+	switch (elm.dim()) {
+	case 1:
+		value_handler1_.value_list(point_list, elm, value_list);
+		break;
+	case 2:
+		value_handler2_.value_list(point_list, elm, value_list);
+		break;
+	case 3:
+		value_handler3_.value_list(point_list, elm, value_list);
+		break;
+	default:
+		ASSERT(false).error("Invalid element dimension!");
 	}
 }
 
@@ -334,14 +167,11 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	map1_ = new MappingP1<1,3>();
-	map2_ = new MappingP1<2,3>();
-	map3_ = new MappingP1<3,3>();
 	fe1_ = new FE_P_disc<0,1,3>();
 	fe2_ = new FE_P_disc<0,2,3>();
 	fe3_ = new FE_P_disc<0,3,3>();
 
-	dh_ = new DOFHandlerMultiDim( const_cast<Mesh &>(*mesh) );
+	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
     dof_indices = new unsigned int[ndofs];
@@ -350,6 +180,18 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	unsigned int data_size = dh_->n_global_dofs();
 	data_vec_ = new VectorSeqDouble();
 	data_vec_->resize(data_size);
+
+	// initialization data of value handlers
+	FEValueInitData init_data;
+	init_data.dh = dh_;
+	init_data.data_vec = data_vec_;
+	init_data.ndofs = ndofs;
+	init_data.n_comp = this->n_comp();
+
+	// initialize value handler objects
+	value_handler1_.initialize(init_data);
+	value_handler2_.initialize(init_data);
+	value_handler3_.initialize(init_data);
 }
 
 

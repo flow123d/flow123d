@@ -22,13 +22,12 @@
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/vec_seq_double.hh"
+#include "fields/fe_value_handler.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/element_data_cache.hh"
 #include "fem/dofhandler.hh"
-#include "fem/mapping.hh"
-#include "fem/finite_element.hh"
 #include "input/factory.hh"
 
 #include <memory>
@@ -64,7 +63,7 @@ public:
      * @param map3 3D mapping.
      * @param data Vector of dof values.
      */
-    void set_fe_data(DOFHandlerMultiDim *dh,
+    void set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
     		Mapping<1,3> *map1,
     		Mapping<2,3> *map2,
     		Mapping<3,3> *map3,
@@ -110,22 +109,18 @@ private:
 	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
 
 	/// DOF handler object
-    DOFHandlerMultiDim *dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     unsigned int *dof_indices;
 
-    /**
-     * Mapping object allows get value of 1D element.
-     *
-     * For correct functionality must be created proper descendant of Mapping class.
-     */
-    Mapping<1,3> *map1_;
-    /// Same as previous, but allows get value of 2D element.
-    Mapping<2,3> *map2_;
-    /// Same as previous, but allows get value of 3D element.
-    Mapping<3,3> *map3_;
+    /// Value handler that allows get value of 1D elements.
+    FEValueHandler<1, spacedim, Value> value_handler1_;
+    /// Value handler that allows get value of 2D elements.
+    FEValueHandler<2, spacedim, Value> value_handler2_;
+    /// Value handler that allows get value of 3D elements.
+    FEValueHandler<3, spacedim, Value> value_handler3_;
 
     /**
      * Used in DOFHandler::distribute_dofs method. Represents 1D element.

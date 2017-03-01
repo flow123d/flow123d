@@ -39,7 +39,6 @@ public:
     typedef FieldFE<3, FieldValue<3>::VectorFixed > VecField;
 
     virtual void SetUp() {
-    	this->dh = nullptr;
     	this->mesh = nullptr;
         // setup FilePath directories
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -49,7 +48,6 @@ public:
     }
 
     virtual void TearDown() {
-    	if (dh != nullptr) delete dh;
     	if (mesh != nullptr) delete mesh;
     }
 
@@ -61,7 +59,7 @@ public:
     }
 
     void create_dof_handler(double val1, double val2, double val3) {
-        dh = new DOFHandlerMultiDim(*mesh);
+        dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
         v.resize(3);
         v[0] = val1;
         v[1] = val2;
@@ -77,7 +75,7 @@ public:
     }
 
     Mesh *mesh;
-    DOFHandlerMultiDim *dh;
+    std::shared_ptr<DOFHandlerMultiDim> dh;
     double dof_values[3];
     VectorSeqDouble v;
 
