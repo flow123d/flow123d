@@ -104,7 +104,7 @@ void LocalSystem::eliminate_solution()
 {
     if (! n_elim_rows &&  ! n_elim_cols ) return;
     
-    DebugOut().fmt("elim rows: {} elim_cols: {}", n_elim_rows, n_elim_cols);
+    //DebugOut().fmt("elim rows: {} elim_cols: {}", n_elim_rows, n_elim_cols);
     
     arma::mat tmp_mat = matrix;
     arma::vec tmp_rhs = rhs;
@@ -151,13 +151,6 @@ void LocalSystem::eliminate_solution()
         }
     }
 
-    DebugOut()
-        << tmp_mat << endl
-        << tmp_rhs;
-
-    DebugOut()
-        << matrix << endl
-        << rhs;
 
     matrix = tmp_mat;
     rhs = tmp_rhs;
