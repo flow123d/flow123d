@@ -161,7 +161,13 @@ class RefElement
 {
 public:
     typedef arma::vec::fixed<dim> LocalPoint;
-    typedef arma::vec::fixed<dim+1> BaryPoint; // barycentric coordinates
+    /**
+     * Barycentric coordinates.
+     *
+     * e.g. coordinates (a,b,c) on triangle with vertices X, Y, Z
+     * represents a point: a*X+b*Y+c*Z
+     */
+    typedef arma::vec::fixed<dim+1> BaryPoint;
     typedef arma::vec::fixed<dim> FaceBaryPoint;
         
 	/**
@@ -275,8 +281,8 @@ public:
 	static unsigned int permutation_index(unsigned int p[n_nodes_per_side]);
 
     /** @brief Converts from local to barycentric coordinates.
-     * @param lp point in local coordinates
-     * @return point in barycentric coordinates
+     * @param lp point in local coordinates (x,y)
+     * @return point in barycentric coordinates (1-x-y, x, y)
      */
     static BaryPoint local_to_bary(const LocalPoint& lp);
     
@@ -343,6 +349,7 @@ public:
      */
     template<unsigned int subdim> static BaryPoint interpolate(arma::vec::fixed<subdim+1> coord, int sub_simplex_idx);
 
+
     /**
      * Basic line interpolation.
      */
@@ -400,7 +407,6 @@ private:
     //TODO: implement for 1d and 2d
     static const IdxVector<n_lines> topology_zeros_[dim];   ///< Maps the zero mask of the barycentric coordinates to topology indices.
 };
-
 
 
 

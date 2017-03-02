@@ -299,16 +299,20 @@ auto RefElement<dim>::local_to_bary(const LocalPoint& lp) -> BaryPoint
 {
     ASSERT_EQ_DBG(lp.n_rows, dim);
     BaryPoint bp;
-    bp.rows(0, dim - 1) = lp;
-    bp( dim ) = 1.0 - arma::sum(lp);
+    bp.rows(1, dim ) = lp;
+    bp( 0 ) = 1.0 - arma::sum(lp);
     return bp;
+
+    // new armadillo
+    // return arma::join_col( arma::vec::fixed<1>( { 1.0 - arma::sum( local )} ), local);
+
 }
 
 template<unsigned int dim>
 auto RefElement<dim>::bary_to_local(const BaryPoint& bp) -> LocalPoint
 {
     ASSERT_EQ_DBG(bp.n_rows, dim+1);
-    LocalPoint lp = bp.rows(0, dim - 1);
+    LocalPoint lp = bp.rows(1, dim);
     return lp;
 }
 
