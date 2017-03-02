@@ -68,7 +68,7 @@ public:
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
     unsigned int component_idx() const;     ///< Returns index of component.
 
-    virtual double compute_measure() =0;
+    virtual double compute_measure() const =0;
 };
 
 /// First = element index, Second = pointer to intersection object.
@@ -125,7 +125,7 @@ public:
     //@}
     
     /// Computes the relative measure of intersection object.
-    double compute_measure() override;
+    double compute_measure() const override;
     
 
     /// Friend output operator.
@@ -157,7 +157,8 @@ inline unsigned int IntersectionLocal<dimA,dimB>::size() const
 /** @brief Class represents an intersection point of simplex<N> and simplex<M>.
  * It contains barycentric coordinates of the point on both simplices.
  */
-template<unsigned int dimA, unsigned int dimB> class IntersectionPoint {
+template<unsigned int dimA, unsigned int dimB>
+class IntersectionPoint {
     
     arma::vec::fixed<dimA> comp_coords_; ///< Local coordinates of an IP on simplex<dimA>.
     arma::vec::fixed<dimB> bulk_coords_; ///< Local coordinates of an IP on simplex<dimB>.
@@ -208,18 +209,5 @@ const arma::vec::fixed< dimB  >& IntersectionPoint<dimA,dimB>::bulk_coords() con
 {   return bulk_coords_; }
 
 
-template<unsigned int dimA, unsigned int dimB>
-double IntersectionLocal<dimA,dimB>::compute_measure()
-{
-    ASSERT_LT_DBG(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
-    double length = 0;
-
-    if(i_points_.size() > 1) // zero measure for point intersections
-        for(unsigned int i=0; i < i_points_.size()-1; i++)
-        {
-            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
-        }
-    return length;
-}
 
 #endif /* INTERSECTION_LOCAL_H_ */

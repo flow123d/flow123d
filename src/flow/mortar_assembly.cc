@@ -6,15 +6,19 @@
  */
 
 #include "flow/mortar_assembly.hh"
+#include "quadrature/intersection_quadrature.hh"
 #include "la/linsys.hh"
-#include "mesh/intersection.hh"
+//#include "mesh/intersection.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 #include <armadillo>
 
 P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 : MortarAssemblyBase(data),
   tensor_average_(16),
-  delta_0(0.0)
+  delta_0(0.0),
+  quadrature_(*(data->mesh))
 {
+    isec_data_list.reserve(30);
 
     for(uint row_dim=0; row_dim<4; row_dim ++)
         for(uint col_dim=0; col_dim<4; col_dim ++) {
@@ -28,7 +32,9 @@ P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 }
 
 
-void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta, IsecData &i_data) {
+void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta) {
+    isec_data_list.push_back(IsecData());
+    IsecData &i_data = isec_data_list.back();
 
     i_data.dim= ele_ac.dim();
     i_data.delta = delta;
@@ -64,17 +70,13 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
  * Works well but there is large error next to the boundary.
  */
  void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
-    double delta_i, delta_j;
     arma::mat product;
-    arma::vec dirichlet_i, dirichlet_j;
-    unsigned int ele_type_i, ele_type_j; // element type 0-master, 1-slave for row and col
-
     unsigned int i,j;
-    vector<int> dofs_i,dofs_j;
-    //vector<IsecList>::const_iterator ml_it_ = master_list_.begin() + ele_idx;
 
-    const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
-    if (master_list.size() == 0) return; // skip empty masters
+    if (ele_ac.dim() > 2) return; // supported only for 1D and @D master elements
+
+    auto &isec_list = mixed_mesh_.element_intersections_[ele_ac.ele_global_idx()];
+    if (isec_list.size() == 0) return; // skip empty masters
 
 
     // on the intersection element we consider
@@ -99,20 +101,19 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
      *  - use one big or more smaller local systems to set.
      */
 
-
-
     double master_sigma=data_->sigma.value( ele_ac.full_iter()->centre(), ele_ac.element_accessor() );
-    delta_0 = ele_ac.full_iter()->measure();
-
+    delta_0 = 1.0;
+    uint master_dim = ele_ac.dim();
+    uint m_idx = ele_ac.ele_global_idx();
     isec_data_list.clear();
-    isec_data_list.resize(master_list.size()+1);
 
-    pressure_diff(ele_ac, -delta_0, isec_data_list[master_list.size()]);
-    for(i = 0; i < master_list.size(); ++i) {
-        const Intersection &isect=intersections_[ master_list[i] ];
-        double delta = isect.intersection_true_size();
-        ele_ac.reinit(isect.slave_iter()->index());
-        pressure_diff(ele_ac, delta, isec_data_list[i]);
+    pressure_diff(ele_ac, -delta_0);
+    for(i = 0; i < isec_list.size(); ++i) {
+        quadrature_.reinit(isec_list[i].second);
+        ele_ac.reinit( quadrature_.slave_idx() );
+
+        DebugOut().fmt("Assembly: {} {}", m_idx, ele_ac.ele_global_idx());
+        pressure_diff(ele_ac, quadrature_.measure());
     }
 
     // rows
@@ -125,15 +126,6 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 
             double scale =  -master_sigma * row_ele.delta * col_ele.delta / delta_0;
             product = scale * tensor_average(row_ele.dim, col_ele.dim);
-            DebugOut()
-                    << print_var(row_ele.dofs[0])
-                    << print_var(col_ele.dofs[0]) << endl
-                    << print_var(master_sigma)
-                    << print_var(row_ele.delta)
-                    << print_var(col_ele.delta) << endl
-                    << product;
-
-
             //arma::vec rhs(dofs_i.size());
             //rhs.zeros();
 
@@ -149,8 +141,8 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
             //ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
         }
     }
-    DebugOut() << print_var(check_delta_sum);
-    OLD_ASSERT(check_delta_sum < 1E-5*delta_0, "sum err %f > 0\n", check_delta_sum/delta_0);
+    DebugOut() << print_var(check_delta_sum) << print_var(delta_0);
+    ASSERT_LT_DBG(check_delta_sum, 1E-5*delta_0)(delta_0);
  }
 
 
@@ -183,7 +175,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
  */
 
 void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
-
+/*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters
     double master_sigma=data_->sigma.value( ele_ac.full_iter()->centre(), ele_ac.element_accessor());
@@ -192,11 +184,11 @@ void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
     add_sides(ele_ac, 3, dofs, dirichlet);
 
     for(uint i = 0; i < master_list.size(); ++i) {
-        const Intersection &intersec = intersections_[ master_list[i] ];
+        const IntersectionQuadrature &intersec = intersections_[ master_list[i] ];
         const Element * slave = intersec.slave_iter();
         ele_ac.reinit(intersec.slave_iter()->index());
         add_sides(ele_ac, 0, dofs, dirichlet);
-
+*/
 
 /*
  * Local coordinates on 1D
@@ -220,7 +212,7 @@ void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
  * t0=0.0, t1=0.5        on side 2 nodes (2,0)
  */
 
-
+/*
 
         arma::vec point_Y(1);
         point_Y.fill(1.0);
@@ -287,7 +279,7 @@ void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
         auto dofs_cp=dofs;
         data_->lin_sys->set_values( dofs_cp, dofs_cp, A, rhs, dirichlet, dirichlet);
 
-    }
+    }*/
 }
 
 

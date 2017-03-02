@@ -31,7 +31,7 @@
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
 
-#include "mesh/mesh.h"
+
 #include "mesh/ref_element.hh"
 
 // think about following dependencies
@@ -41,6 +41,15 @@
 
 
 #include "mesh/bih_tree.hh"
+
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/intersection.h"
+
+#include "intersection/mixed_mesh_intersections.hh"
+
+
+#include "mesh/mesh.h"
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -672,12 +681,9 @@ void Mesh::element_to_neigh_vb()
 
 
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
 
 
-void Mesh::make_intersec_elements() {
+MixedMeshIntersections & Mesh::mixed_intersections() {
 	/* Algorithm:
 	 *
 	 * 1) create BIH tree
@@ -685,33 +691,11 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-	const BIHTree &bih_tree =get_bih_tree();
-	master_elements.resize(n_elements());
-
-	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
-		Element &ele = this->element[i_ele];
-
-		if (ele.dim() == 1) {
-			vector<unsigned int> candidate_list;
-                        bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-                        
-			//for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
-                        for(unsigned int i_elm : candidate_list) {
-				ElementFullIter elm = this->element( i_elm );
-				if (elm->dim() == 2) {
-				    ngh::IntersectionLocal *intersection;
-					ngh::GetIntersection( ngh::TAbscissa(ele), ngh::TTriangle(*elm), intersection);
-					if (intersection && intersection->get_type() == ngh::IntersectionLocal::line) {
-
-						master_elements[i_ele].push_back( intersections.size() );
-						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
-				    }
-				}
-
-			}
-		}
-	}
-
+    if (! intersections) {
+        intersections = std::make_shared<MixedMeshIntersections>(this);
+        intersections->compute_intersections();
+    }
+    return *intersections;
 }
 
 

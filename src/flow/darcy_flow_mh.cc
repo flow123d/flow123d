@@ -34,7 +34,6 @@
 #include "input/factory.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
 #include "la/distribution.hh"
 #include "la/linsys.hh"
@@ -45,6 +44,7 @@
 #include "la/local_to_global_map.hh"
 
 #include "flow/darcy_flow_mh.hh"
+
 #include "flow/darcy_flow_mh_output.hh"
 #include "flow/darcy_flow_assembler.hh"
 
@@ -59,6 +59,9 @@
 #include "fields/vec_seq_double.hh"
 
 #include "darcy_flow_assembly.hh"
+
+#include "intersection/mixed_mesh_intersections.hh"
+#include "intersection/intersection_local.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
@@ -269,7 +272,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     n_schur_compls = in_rec.val<int>("n_schurs");
     data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
     if (data_->mortar_method_ != NoMortar) {
-        mesh_->make_intersec_elements();
+        mesh_->mixed_intersections();
     }
     
 
@@ -732,15 +735,15 @@ void DarcyMH::allocate_mh_matrix()
         ls->mat_set_values(n_neighs, tmp_rows, n_neighs, tmp_rows, zeros);  // (neigh edges) x (neigh edges)
 
 
-
         unsigned int i_rows=0;
-        vector<unsigned int> &master_list = mesh_->master_elements[ele_ac.ele_global_idx()];
-        if (data_->mortar_method_ == MortarP0 || data_->mortar_method_ == MortarP1) {
-            for(unsigned int i_isec : master_list) {
-                Intersection &isec = mesh_->intersections[i_isec];
-                for(unsigned int i_side=0; i_side < isec.slave->n_sides(); i_side++) {
-
-                    tmp_rows[i_rows++] = mh_dh.row_4_edge[ isec.slave->side(i_side)->edge_idx() ];
+        if (data_->mortar_method_ != NoMortar) {
+            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
+            for(auto &isec : isec_list ) {
+                IntersectionLocalBase *local = isec.second;
+                Element &slave_ele = mesh_->element[local->bulk_ele_idx()];
+                DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
+                for(unsigned int i_side=0; i_side < slave_ele.n_sides(); i_side++) {
+                    tmp_rows[i_rows++] = mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ];
                     //DebugOut() << "NC" << print_var(tmp_rows[i_rows-1]);
                 }
             }

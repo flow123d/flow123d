@@ -92,10 +92,24 @@ double IntersectionLocal<1,3>::compute_measure()
 }
 */
 
+template<unsigned int dimA, unsigned int dimB>
+double IntersectionLocal<dimA,dimB>::compute_measure() const
+{
+    ASSERT_LT_DBG(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
+    double length = 0;
+
+    if(i_points_.size() > 1) // zero measure for point intersections
+        for(unsigned int i=0; i < i_points_.size()-1; i++)
+        {
+            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
+        }
+    return length;
+}
+
 
 // 2D-3D
 template<>
-double IntersectionLocal<2,3>::compute_measure()
+double IntersectionLocal<2,3>::compute_measure() const
 {
     double subtotal = 0.0;
     

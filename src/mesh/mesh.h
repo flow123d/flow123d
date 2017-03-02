@@ -29,7 +29,6 @@
 #include "mesh/edges.h"
 #include "mesh/neighbours.h"
 #include "mesh/boundaries.h"
-#include "mesh/intersection.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/region_set.hh"
 #include "mesh/bounding_box.hh"
@@ -37,7 +36,6 @@
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
 #include "system/exceptions.hh"
-
 
 
 
@@ -183,7 +181,7 @@ public:
     inline MPI_Comm get_comm() const { return comm_; }
 
 
-    void make_intersec_elements();
+    MixedMeshIntersections &mixed_intersections();
 
     unsigned int n_sides();
 
@@ -253,7 +251,7 @@ public:
      * Vector of individual intersections of two elements.
      * This is enough for local mortar.
      */
-    vector<Intersection>  intersections;
+    std::shared_ptr<MixedMeshIntersections>  intersections;
 
     /**
      * For every element El we have vector of indices into @var intersections array for every intersection in which El is master element.

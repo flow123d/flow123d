@@ -79,9 +79,9 @@ public:
      * For every element, stores list of intersections with this element.
      *
      * intersection_map_[element index][i].first = other element index
-     * intersection_map_[element index][i].second = pointer to the intersection object
+     * intersection_map_[element index][i].second = index pointer to the intersection object
      */
-    typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
+    typedef std::pair<unsigned int, IntersectionLocalBase *> ILpair;
     std::vector<std::vector<ILpair>> element_intersections_;
     
     MixedMeshIntersections(Mesh *mesh);
@@ -114,6 +114,9 @@ private:
     
     template<uint dim_A, uint dim_B>
     void store_intersection(std::vector<IntersectionLocal<dim_A, dim_B>> &storage, IntersectionAux<dim_A, dim_B> &isec_aux);
+
+    template<uint dim_A, uint dim_B>
+    void append_to_index( std::vector<IntersectionLocal<dim_A, dim_B>> &storage);
 
     /// Auxiliary function that calls InspectElementsAlgorithm<dim>.
     template<unsigned int dim> void compute_intersections(InspectElementsAlgorithm<dim> &iea,

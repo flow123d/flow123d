@@ -185,7 +185,7 @@ add_library(mesh_lib
     mesh/mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
-    mesh/intersection.cc
+#    mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc
     mesh/region_set.cc
@@ -227,6 +227,7 @@ target_link_libraries(mesh_lib
 # fem_lib    
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
+    quadrature/intersection_quadrature.cc
     fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc

@@ -14,8 +14,10 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 #include "mixed_mesh_intersections.hh"
 #include "mesh/bih_tree.hh"
+
 
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/abscissa.h"
@@ -78,17 +80,35 @@ double MixedMeshIntersections::measure_23()
  
 template<uint dim_A, uint dim_B>
 void MixedMeshIntersections::store_intersection(std::vector<IntersectionLocal<dim_A, dim_B>> &storage, IntersectionAux<dim_A, dim_B> &isec_aux) {
-    unsigned int ele_a_idx = isec_aux.component_ele_idx();
-    unsigned int ele_b_idx = isec_aux.bulk_ele_idx();
+    //unsigned int ele_a_idx = isec_aux.component_ele_idx();
+    //unsigned int ele_b_idx = isec_aux.bulk_ele_idx();
 
     storage.push_back(IntersectionLocal<dim_A, dim_B>(isec_aux));
+    /*
     element_intersections_[ele_a_idx].push_back(
             std::make_pair(ele_b_idx, &(storage.back())) );
 
     element_intersections_[ele_b_idx].push_back(
             std::make_pair(ele_a_idx, &(storage.back())) );
+    */
 
 }
+
+template<uint dim_A, uint dim_B>
+void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_A, dim_B>> &storage)
+{
+    for(auto &isec : storage) {
+        unsigned int ele_a_idx = isec.component_ele_idx();
+        unsigned int ele_b_idx = isec.bulk_ele_idx();
+        element_intersections_[ele_a_idx].push_back(
+                std::make_pair(ele_b_idx, &(isec)) );
+/*
+        element_intersections_[ele_b_idx].push_back(
+                std::make_pair(ele_a_idx, &(isec)) );*/
+    }
+}
+
+
 
 
 template<unsigned int dim>
@@ -262,9 +282,16 @@ void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< Intersec
                         // make IntersectionAux<1,2> from IntersectionLocal (from ngh)
                         IntersectionAux<1,2> is(ele.index(), elm.index());
                         for(uint i=0; i< intersection->n_points(); i++) {
+                            // convert local to barycentric
+                            ASSERT_EQ_DBG(intersection->get_point(i)->el1_coord().size(), 1)(i);
+                            ASSERT_EQ_DBG(intersection->get_point(i)->el2_coord().size(), 2)(i);
+
+                            arma::vec::fixed<1> local_on_1d = arma::vec::fixed<1>(intersection->get_point(i)->el1_coord().data());
+                            arma::vec::fixed<2> local_on_2d = arma::vec::fixed<2>(intersection->get_point(i)->el2_coord().data());
+
                             is.points().push_back(IntersectionPointAux<1,2>(
-                                    arma::vec::fixed<2>( intersection->get_point(i)->el1_coord().data() ),
-                                    arma::vec::fixed<3>( intersection->get_point(i)->el2_coord().data() ) ));
+                                    RefElement<1>::local_to_bary( local_on_1d ),
+                                    RefElement<2>::local_to_bary( local_on_2d ) ));
                         }
 
                         store_intersection(storage, is);
@@ -282,9 +309,6 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 {
     element_intersections_.resize(mesh->n_elements());
     
-    if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
-        ASSERT(0).error("NOT IMPLEMENTED.");
-    }
     
     if(d & IntersectionType::d12_2){
         START_TIMER("Intersections 1D-2D (2)");
@@ -315,8 +339,22 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         compute_intersections_12(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (3)");
 
+    }
+
+    if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
+        intersection_storage12_.clear();
         compute_intersections_12_ngh_plane(intersection_storage12_);
     }
+
+    ASSERT_EQ(intersection_storage13_.size(), 0);
+    ASSERT_EQ(intersection_storage23_.size(), 0);
+    ASSERT_EQ(intersection_storage22_.size(), 0);
+    // compose master
+    append_to_index(intersection_storage13_);
+    append_to_index(intersection_storage23_);
+    append_to_index(intersection_storage22_);
+    append_to_index(intersection_storage12_);
+
 }
 
 

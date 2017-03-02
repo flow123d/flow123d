@@ -9,6 +9,7 @@
 #define SRC_FLOW_MORTAR_ASSEMBLY_HH_
 
 #include "mesh/mesh.h"
+#include "quadrature/intersection_quadrature.hh"
 #include "flow/darcy_flow_mh.hh"
 #include "la/local_system.hh"
 #include <vector>
@@ -25,8 +26,7 @@ public:
     virtual void assembly(LocalElementAccessorBase<3> ele_ac) {};
     MortarAssemblyBase(AssemblyDataPtr data)
     : data_(data),
-      master_list_(data->mesh->master_elements),
-      intersections_(data->mesh->intersections)
+      mixed_mesh_(data->mesh->mixed_intersections())
     {
 
     }
@@ -35,8 +35,7 @@ public:
 
 protected:
     AssemblyDataPtr data_;
-    const vector<IsecList> &master_list_;
-    const vector<Intersection> &intersections_;
+    MixedMeshIntersections &mixed_mesh_;
     LocalSystem loc_system_;
 
 };
@@ -56,7 +55,7 @@ class P0_CouplingAssembler :public MortarAssemblyBase {
 public:
     P0_CouplingAssembler(AssemblyDataPtr data);
     void assembly(LocalElementAccessorBase<3> ele_ac);
-    void pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta, IsecData &i_data);
+    void pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta);
 private:
     inline arma::mat & tensor_average(unsigned int row_dim, unsigned int col_dim) {
         return tensor_average_[4*row_dim + col_dim];
@@ -70,6 +69,8 @@ private:
 
     /// measure of master element, should be sum of intersection measures
     double delta_0;
+
+    IntersectionQuadratureP0 quadrature_;
 };
 
 
