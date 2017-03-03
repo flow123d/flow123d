@@ -9,6 +9,7 @@
 
 #include <flow_gtest.hh>
 #include <cmath>
+#include "arma_expect.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
@@ -77,6 +78,12 @@ TEST(FeValues, test_all) {
         ElementFullIter it( el_vec(0) );
         EXPECT_DOUBLE_EQ( 2.5 * 2, integrate<1>( it ) );
 
+        // projection methods
+        MappingP1<1,3> map;
+        arma::vec3 vec("2.0 0.0 0.0");
+        EXPECT_ARMA_EQ( arma::mat("2 1; 0 0; 0 0"), map.element_map(ele));
+        EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), map.project_point( vec, ele ) );
+
     }
 
     {
@@ -109,6 +116,12 @@ TEST(FeValues, test_all) {
 
         ElementFullIter it( el_vec(0) );
         EXPECT_DOUBLE_EQ( 19.0 / 12.0 * 9.0 , integrate<2>( it ) );
+
+        // projection methods
+        MappingP1<2,3> map;
+        arma::vec3 vec("1.0 1.4 0.0");
+        EXPECT_ARMA_EQ( arma::mat("2 3 0; -1 3 1; 0 0 0"), map.element_map(ele));
+        EXPECT_ARMA_EQ( arma::vec("0.2 0.2 0.6"), map.project_point( vec, ele ) );
     }
 
 }

@@ -21,6 +21,7 @@
 #define MAPPING_P1_HH_
 
 #include "fem/mapping.hh"
+#include "mesh/elements.h"
 
 
 /**
@@ -104,6 +105,39 @@ public:
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
+
+    /**
+     * Map from reference element to global coord system.
+     * Matrix(3, dim+1), last column is the translation vector.
+     */
+    inline arma::mat element_map(Element &elm) const
+    {
+    	ASSERT_EQ(elm.dim(), dim).error();
+
+        arma::vec3 &v0 = elm.node[0]->point();
+        arma::mat A(3, dim+1);
+
+        for(unsigned int i=0; i < dim; i++ ) {
+            A.col(i) = elm.node[i+1]->point() - v0;
+        }
+        A.col(dim) = v0;
+        return A;
+    }
+
+    /**
+     * Project given point to the barycentic coordinates.
+     * Result vector have dimension dim()+1. Local coordinates are the first.
+     * Last is 1-...
+     */
+    arma::vec project_point(const arma::vec3 &point, const arma::mat &map) const;
+
+
+    /**
+     * Project a point and create the map as well.
+     */
+    inline arma::vec project_point(const arma::vec3 &point, Element &elm) {
+        return project_point(point, this->element_map(elm) );
+    }
 
 private:
 
