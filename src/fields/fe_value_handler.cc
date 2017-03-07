@@ -86,12 +86,11 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);
+		envelope.zeros();
 
 		if (dh_->fe<elemdim>()->is_scalar()) {
-			double value = 0;
 			for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++)
-				value += (*data_vec_)[dof_indices[i]]*fe_values.shape_value(i, 0);
-			envelope(0,0) = value;
+				value_list[k] += (*data_vec_)[dof_indices[i]]*fe_values.shape_value(i, 0);
 		}
 		else {
 			arma::vec3 value;
