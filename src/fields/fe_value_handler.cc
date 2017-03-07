@@ -48,43 +48,15 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 }
 
 
-template <int elemdim, int spacedim, class Value>
+template <int elemdim, int spacedim, class Value> inline
 typename Value::return_type const &FEValueHandler<elemdim, spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
-	ASSERT_PTR(map_).error();
-
-	Point p_rel = p - elm.element()->node[0]->point();
-	DOFHandlerBase::CellIterator cell = dh_->mesh()->element(elm.idx());
-
-	arma::mat::fixed<3,elemdim> m;
-	for (unsigned i=0; i<elemdim; ++i) {
-		m.col(i) = elm.element()->node[i+1]->point() - elm.element()->node[0]->point();
-	}
-	arma::mat::fixed<elemdim,3> im = pinv(m);
-
-	Quadrature<elemdim> quad(1);
-	quad.set_point(0, im*p_rel);
-
-	FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(), update_values);
-	fe_values.reinit(cell);
-
-	dh_->get_loc_dof_indices(cell, dof_indices);
-
-	if (dh_->fe<elemdim>()->is_scalar()) {
-		double value = 0;
-		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++)
-			value += (*data_vec_)[dof_indices[i]]*fe_values.shape_value(i, 0);
-		this->value_(0,0) = value;
-	}
-	else {
-		arma::vec3 value;
-		value.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++)
-			value += (*data_vec_)[dof_indices[i]]*fe_values.shape_vector(i, 0);
-		for (unsigned int i=0; i<3; i++)
-			this->value_(i,0) = value(i);
-	}
-
+	std::vector<Point> point_list;
+	point_list.push_back(p);
+	std::vector<typename Value::return_type> v_list;
+	v_list.push_back(r_value_);
+	this->value_list(point_list, elm, v_list);
+	this->r_value_ = v_list[0];
 	return this->r_value_;
 }
 
