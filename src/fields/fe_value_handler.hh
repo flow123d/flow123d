@@ -25,6 +25,7 @@
 #include "mesh/point.hh"
 
 
+/// Initialization structure of FEValueHandler class.
 struct FEValueInitData
 {
 	/// DOF handler object
@@ -37,6 +38,9 @@ struct FEValueInitData
     unsigned int n_comp;
 };
 
+/**
+ * Helper class that allows compute finite element values specified by element dimension.
+ */
 template <int elemdim, int spacedim, class Value>
 class FEValueHandler
 {
