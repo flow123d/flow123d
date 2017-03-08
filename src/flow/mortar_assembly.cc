@@ -102,17 +102,18 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
      */
 
     double master_sigma=data_->sigma.value( ele_ac.full_iter()->centre(), ele_ac.element_accessor() );
-    delta_0 = 1.0;
+    delta_0 =  ele_ac.full_iter()->measure();
+
     uint master_dim = ele_ac.dim();
     uint m_idx = ele_ac.ele_global_idx();
     isec_data_list.clear();
 
-    pressure_diff(ele_ac, -delta_0);
+    pressure_diff(ele_ac, -1.0);
     for(i = 0; i < isec_list.size(); ++i) {
         quadrature_.reinit(isec_list[i].second);
         ele_ac.reinit( quadrature_.slave_idx() );
 
-        DebugOut().fmt("Assembly: {} {}", m_idx, ele_ac.ele_global_idx());
+        //DebugOut().fmt("Assembly: {} {} {}", m_idx, ele_ac.ele_global_idx(), quadrature_.measure());
         pressure_diff(ele_ac, quadrature_.measure());
     }
 
@@ -124,7 +125,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
         for(IsecData &col_ele : isec_data_list) {
 
 
-            double scale =  -master_sigma * row_ele.delta * col_ele.delta / delta_0;
+            double scale =  -master_sigma * row_ele.delta * col_ele.delta * delta_0;
             product = scale * tensor_average(row_ele.dim, col_ele.dim);
             //arma::vec rhs(dofs_i.size());
             //rhs.zeros();

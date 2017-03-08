@@ -151,10 +151,13 @@ void LocalSystem::eliminate_solution()
         }
     }
 
-
     matrix = tmp_mat;
     rhs = tmp_rhs;
     n_elim_cols=n_elim_rows=0;
+
+    //DebugOut() << matrix;
+    //DebugOut() << rhs;
+
 
 }
 

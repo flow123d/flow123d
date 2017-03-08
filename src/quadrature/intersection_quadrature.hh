@@ -160,7 +160,6 @@ public:
     {
         slave_idx_ = isec->bulk_ele_idx();
         measure_= isec->compute_measure();
-        DebugOut() << print_var(slave_idx_) << print_var(measure_);
     }
 
 
