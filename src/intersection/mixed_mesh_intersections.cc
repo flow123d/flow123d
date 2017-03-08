@@ -346,9 +346,9 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         compute_intersections_12_ngh_plane(intersection_storage12_);
     }
 
-    ASSERT_EQ(intersection_storage13_.size(), 0);
-    ASSERT_EQ(intersection_storage23_.size(), 0);
-    ASSERT_EQ(intersection_storage22_.size(), 0);
+    //ASSERT_EQ(intersection_storage13_.size(), 0);
+    //ASSERT_EQ(intersection_storage23_.size(), 0);
+    //ASSERT_EQ(intersection_storage22_.size(), 0);
     // compose master
     append_to_index(intersection_storage13_);
     append_to_index(intersection_storage23_);

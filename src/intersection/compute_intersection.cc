@@ -305,9 +305,9 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
     unsigned int n_positive = 0;
     unsigned int n_negative = 0;
     unsigned int zero_idx_sum =0;
-    DebugOut() << print_var(std::fabs(w_sum));
-    DebugOut() << print_var(scale_line_);
-    DebugOut() << print_var(scale_triangle_);
+    //DebugOut() << print_var(std::fabs(w_sum));
+    //DebugOut() << print_var(scale_line_);
+    //DebugOut() << print_var(scale_triangle_);
     if(std::fabs(w_sum) > rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_) {
         w = w / w_sum;
 
@@ -1286,6 +1286,9 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
     sum_idx.fill(0);
     for(unsigned int ie=0; ie <3; ie++) {
         unsigned int edge_ip_ori = (unsigned int)(IP12s_[ vtx_edges[ie]].orientation());
+        if (RefElement<3>::interact(Interaction<0,1>(vtx_edges[ie]))[0] != i_vertex
+            && edge_ip_ori!= int(IntersectionResult::degenerate) )
+            edge_ip_ori = (edge_ip_ori +1)%2;
         ASSERT_LT_DBG(edge_ip_ori, 3);
         n_ori[edge_ip_ori]++;
         sum_idx[edge_ip_ori]+=ie;

@@ -149,6 +149,10 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0, 0, 0.4},
                 {0.2, 0, 0.4}
                 }});
+    c.push_back({ "24_s", { // s2 corners on : s3 vertex, edge , face
+                {0.5, 0, 0.125},
+                {0.5, 0.25, 0},
+                {1.0, 0, 0}}});
     c.push_back({ "25_s", { // s2 corners on : s3 vertex, edge , face
                 {0.5, 0.5, 0},
                 {0, 0, 0.5},
@@ -223,23 +227,25 @@ void compare_with_ngh(Mesh *mesh)
 
     // compute intersection by NGH
     MessageOut() << "Computing polygon area by NGH algorithm\n";
-    TTriangle ttr;
-    TTetrahedron tte;
-    TIntersectionType it = area;
+    ngh::TTriangle ttr;
+    ngh::TTetrahedron tte;
+    ngh::TIntersectionType it = ngh::area;
 
     FOR_ELEMENTS(mesh, elm) {
         if (elm->dim() == 2) {
-        ttr.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
+        ttr.SetPoints(
+                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
         }else if(elm->dim() == 3){
-        tte.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
-                     TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
+        tte.SetPoints(
+                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
+                ngh::TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
         }
     }
-    GetIntersection(ttr, tte, it, area2);
+    ngh::GetIntersection(ttr, tte, it, area2);
     
     
     // compute intersection

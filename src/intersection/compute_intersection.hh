@@ -562,7 +562,7 @@ private:
             std::swap(obj_before_ip, obj_after_ip);
         }
         //DebugOut().fmt("_before: {} _after: {}\n", object_before_ip, object_after_ip);
-        ASSERT_DBG( ! have_backlink(obj_after_ip) ); // at least one could be target object
+        ASSERT_DBG( ! have_backlink(obj_after_ip) )(obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
         object_next[obj_before_ip] = ip_idx;
         IP_next.push_back( obj_after_ip);
         if (object_next[obj_after_ip] == no_idx) {
