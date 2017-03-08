@@ -22,8 +22,11 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <string>
+
 
 #include "system/fmt/format.h"
+#include "system/exc_common.hh"
 
 
 
@@ -160,7 +163,11 @@ public:
 	template<class... T>
 	Logger& fmt(T&&... t)
 	{
-	    return *this << fmt::format(std::forward<T>(t)...);
+	    try {
+	        return *this << fmt::format(std::forward<T>(t)...);
+	    } catch (const fmt::FormatError & e) {
+	        THROW(ExcMessage() << EI_Message("FormatError: " + std::string(e.what())));
+	    }
 	}
 
 	/// Destructor.
