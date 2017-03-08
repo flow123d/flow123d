@@ -548,7 +548,7 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& comp_ele,
                                                         const ElementFullIter& bulk_ele,
-                                                        const IntersectionAux<dim,3> &is)
+                                                        IntersectionAux<dim,3> is)
 {
     //DebugOut() << "DECIDE\n";
     // number of IPs that are at vertices of component element (counter used for closing element)
