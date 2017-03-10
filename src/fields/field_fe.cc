@@ -66,9 +66,9 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		Mapping<1,3> *map1,
-		Mapping<2,3> *map2,
-		Mapping<3,3> *map3,
+		MappingP1<1,3> *map1,
+		MappingP1<2,3> *map2,
+		MappingP1<3,3> *map3,
 		VectorSeqDouble *data)
 {
     dh_ = dh;
@@ -239,8 +239,21 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
 			ElementFullIter elm = source_mesh->element( *it );
-			arma::mat map = elm->element_map();
-			arma::vec projection = elm->project_point(ele->centre(), map);
+			arma::mat map;
+			arma::vec projection;
+			switch (elm->dim()) {
+			case 1:
+				value_handler1_.point_projection(ele->centre(), projection, map, *elm);
+				break;
+			case 2:
+				value_handler2_.point_projection(ele->centre(), projection, map, *elm);
+				break;
+			case 3:
+				value_handler3_.point_projection(ele->centre(), projection, map, *elm);
+				break;
+			default:
+				ASSERT(false).error("Invalid element dimension!");
+			}
 			if (projection.min() >= -BoundingBox::epsilon) {
 				// projection in element
 				arma::vec3 projection_point = map.col(elm->dim()) + map.cols(0, elm->dim()-1) * projection.rows(0, elm->dim()-1);

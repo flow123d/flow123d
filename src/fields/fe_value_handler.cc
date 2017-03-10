@@ -73,7 +73,7 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, Mapping<elemdim,3> *map)
+void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
 	ASSERT(dof_indices == nullptr).error("Multiple initialization.");
 
@@ -134,6 +134,16 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
 	}
+}
+
+
+template <int elemdim, int spacedim, class Value>
+void FEValueHandler<elemdim, spacedim, Value>::point_projection(arma::vec source_point, arma::vec &target_point, arma::mat &elm_map, Element &elm)
+{
+	ASSERT_PTR(map_).error();
+
+	elm_map = map_->element_map(elm);
+	target_point = map_->project_point(source_point, elm_map);
 }
 
 
