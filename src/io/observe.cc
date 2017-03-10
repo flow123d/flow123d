@@ -21,6 +21,7 @@
 #include "mesh/region.hh"
 #include "io/observe.hh"
 #include "io/output_data.hh"
+#include "fem/mapping_p1.hh"
 
 
 namespace IT = Input::Type;
@@ -127,7 +128,10 @@ void ObservePoint::snap(Mesh &mesh)
              case 3: snap_to_subelement<3>(); break;
              default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
     }
-    this->global_coords_ =  elm.element_map() * arma::join_cols(this->local_coords_, arma::ones(1));
+    arma::mat map;
+    arma::vec projection;
+    this->point_projection(arma::vec3("0 0 0"), projection, map, elm);
+    this->global_coords_ =  map * arma::join_cols(this->local_coords_, arma::ones(1));
 }
 
 
@@ -152,10 +156,11 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     for (unsigned int i_candidate=0; i_candidate<process_list.size(); ++i_candidate) {
         unsigned int i_elm=process_list[i_candidate];
         Element & elm = mesh.element[i_elm];
-        arma::mat map = elm.element_map();
+        arma::mat map;
+        arma::vec projection;
 
         // get barycentric coordinates (1,2,0)
-        arma::vec projection = elm.project_point(input_point_, map);
+        this->point_projection(input_point_, projection, map, elm);
 
         // check that point is on the element
         if (projection.min() >= -BoundingBox::epsilon) {
@@ -196,8 +201,9 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         Element & elm = mesh.element[i_elm];
         // if element match region filter store it as observe element to the obs. point
         if (elm.region().is_in_region_set(region_set)) {
-            arma::mat map = elm.element_map();
-            arma::vec projection = elm.project_point(input_point_, map);
+            arma::mat map;
+            arma::vec projection;
+            this->point_projection(input_point_, projection, map, elm);
             projection = elm.clip_to_element(projection);
 
             projection[elm.dim()] = 1.0; // use last coordinates for translation
@@ -228,8 +234,9 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
             // if element match region filter, update the obs. point
             if (elm.region().is_in_region_set(region_set)) {
-                arma::mat map = elm.element_map();
-                arma::vec projection = elm.project_point(input_point_, map);
+                arma::mat map;
+                arma::vec projection;
+                this->point_projection(input_point_, projection, map, elm);
                 arma::vec point_on_element = elm.clip_to_element(projection);
 
                 point_on_element[elm.dim()] = 1.0; // use last coordinates for translation
@@ -258,6 +265,44 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
     out << setw(indent_spaces) << "" << "  snap_dim: " << snap_dim_ << endl;
     out << setw(indent_spaces) << "" << "  snap_region: " << snap_region_name_ << endl;
     out << setw(indent_spaces) << "" << "  observe_point: " << field_value_to_yaml(global_coords_, precision) << endl;
+}
+
+
+
+void ObservePoint::point_projection(arma::vec source_point, arma::vec &target_point, arma::mat &elm_map, Element &elm) {
+	switch (elm.dim()) {
+	case 0:
+	{
+		MappingP1<0,3> mapping;
+		elm_map = mapping.element_map(elm);
+		target_point = mapping.project_point(source_point, elm_map);
+		break;
+	}
+	case 1:
+	{
+		MappingP1<1,3> mapping;
+		elm_map = mapping.element_map(elm);
+		target_point = mapping.project_point(source_point, elm_map);
+		break;
+	}
+	case 2:
+	{
+		MappingP1<2,3> mapping;
+		elm_map = mapping.element_map(elm);
+		target_point = mapping.project_point(source_point, elm_map);
+		break;
+	}
+	case 3:
+	{
+		MappingP1<3,3> mapping;
+		elm_map = mapping.element_map(elm);
+		target_point = mapping.project_point(source_point, elm_map);
+		break;
+	}
+	default:
+		ASSERT(false).error("Invalid element dimension!");
+	}
+
 }
 
 

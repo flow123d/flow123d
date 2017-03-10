@@ -90,6 +90,9 @@ protected:
      */
     void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
+    /// Project point to given element by dimension of this element.
+    void point_projection(arma::vec source_point, arma::vec &target_point, arma::mat &elm_map, Element &elm);
+
     /// Index in the input array.
     Input::Record in_rec_;
 
