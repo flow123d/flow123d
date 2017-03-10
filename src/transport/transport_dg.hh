@@ -23,6 +23,7 @@
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "fields/vec_seq_double.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 #include "io/equation_output.hh"
@@ -60,7 +61,7 @@ public:
 	template<unsigned int dim>
 	inline Mapping<dim,3> *mapping();
 
-	inline DOFHandlerMultiDim *dh();
+	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
 
@@ -87,7 +88,7 @@ private:
 	Mapping<3,3> *map3_;
 
 	/// Object for distribution of dofs.
-	DOFHandlerMultiDim *dh_;
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 
@@ -460,7 +461,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<Vec> output_vec;
+	vector<VectorSeqDouble> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

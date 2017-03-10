@@ -51,6 +51,8 @@ public:
     double GetMin(int) const;
     double GetMax(int) const;
 
+    bool IsInner(const TPoint&) const;
+
     static int getNumInstances() {
         return TAbscissa::numberInstance;
     }
