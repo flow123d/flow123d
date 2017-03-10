@@ -117,6 +117,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .name("fluid_density")
             .description("Density of fluid.")
             .units( UnitSI().kg().m(-3) )
+            .input_default("1000")
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_capacity
