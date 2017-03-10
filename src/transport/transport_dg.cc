@@ -193,10 +193,10 @@ template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
 template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
 template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
 
-template<> Mapping<0,3> *FEObjects::mapping<0>() { return map0_; }
-template<> Mapping<1,3> *FEObjects::mapping<1>() { return map1_; }
-template<> Mapping<2,3> *FEObjects::mapping<2>() { return map2_; }
-template<> Mapping<3,3> *FEObjects::mapping<3>() { return map3_; }
+template<> MappingP1<0,3> *FEObjects::mapping<0>() { return map0_; }
+template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
+template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
+template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 

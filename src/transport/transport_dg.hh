@@ -27,6 +27,7 @@
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 #include "io/equation_output.hh"
+#include "fem/mapping_p1.hh"
 
 class Distribution;
 class OutputTime;
@@ -59,7 +60,7 @@ public:
 	inline Quadrature<dim> *q();
 
 	template<unsigned int dim>
-	inline Mapping<dim,3> *mapping();
+	inline MappingP1<dim,3> *mapping();
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
@@ -82,10 +83,10 @@ private:
 	Quadrature<3> *q3_;
 
 	/// Auxiliary mappings of reference elements.
-	Mapping<0,3> *map0_;
-	Mapping<1,3> *map1_;
-	Mapping<2,3> *map2_;
-	Mapping<3,3> *map3_;
+	MappingP1<0,3> *map0_;
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
