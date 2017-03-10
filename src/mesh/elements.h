@@ -104,39 +104,6 @@ public:
     }
 
     /**
-     * Map from reference element to global coord system.
-     * Matrix(3, dim()+1), last column is the translation vector.
-     *
-     * Temporary, this should be provided be a separate finite element mapping class.
-     */
-    inline arma::mat element_map() const
-    {
-        arma::vec3 &v0 = node[0]->point();
-        arma::mat A(3, dim()+1);
-
-        for(unsigned int i=0; i < dim(); i++ ) {
-            A.col(i) = node[i+1]->point() - v0;
-        }
-        A.col(dim()) = v0;
-        return A;
-    }
-
-    /**
-     * Project given point to the barycentic coordinates.
-     * Result vector have dimension dim()+1. Local coordinates are the first.
-     * Last is 1-...
-     */
-    arma::vec project_point(const arma::vec3 &point, const arma::mat &map) const;
-
-
-    /**
-     * Project a point and create the map as well.
-     */
-    inline arma::vec project_point(const arma::vec3 &point) {
-        return project_point(point, this->element_map() );
-    }
-
-    /**
      * Clip a point given by barycentric cocordinates to the element.
      * If the point is out of the element the closest point
      * projection to the element surface is used.
