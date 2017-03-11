@@ -105,15 +105,16 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
     delta_0 =  ele_ac.full_iter()->measure();
 
     uint master_dim = ele_ac.dim();
-    uint m_idx = ele_ac.ele_global_idx();
+    uint m_idx = ele_ac.full_iter()->id();
     isec_data_list.clear();
 
-    pressure_diff(ele_ac, -1.0);
+    double ref_master_measure = 1.0 / master_dim;
+    pressure_diff(ele_ac, -ref_master_measure);
     for(i = 0; i < isec_list.size(); ++i) {
         quadrature_.reinit(isec_list[i].second);
         ele_ac.reinit( quadrature_.slave_idx() );
 
-        //DebugOut().fmt("Assembly: {} {} {}", m_idx, ele_ac.ele_global_idx(), quadrature_.measure());
+        //DebugOut().fmt("Assembly: {} {} {}", m_idx, ele_ac.full_iter()->id(), quadrature_.measure());
         pressure_diff(ele_ac, quadrature_.measure());
     }
 
@@ -142,8 +143,9 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
             //ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
         }
     }
-    DebugOut() << print_var(check_delta_sum) << print_var(delta_0);
-    ASSERT_LT_DBG(check_delta_sum, 1E-5*delta_0)(delta_0);
+    if (abs(check_delta_sum) > 1E-5)
+        DebugOut() << print_var(check_delta_sum) << print_var(delta_0);
+    ASSERT_LT_DBG(abs(check_delta_sum), 1E-5*delta_0)(delta_0);
  }
 
 

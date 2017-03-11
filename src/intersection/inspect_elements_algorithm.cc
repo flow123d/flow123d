@@ -637,7 +637,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     ElementFullIter elm = mesh->element(pr.component_elm_idx);
     ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
     
-    //DebugOut().fmt("Prolongate {}D: {} in {}.\n", dim, pr.component_elm_idx, pr.elm_3D_idx);
+    DebugOut().fmt("Prolongate: {} in {}.\n", elm->id(), ele_3D->id());
 
     //TODO: optimization: this might be called before and not every time 
     //(component element is not changing when emptying bulk queue)

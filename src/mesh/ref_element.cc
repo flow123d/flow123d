@@ -96,7 +96,7 @@ template<> const IdxVector<3> RefElement<3>::side_nodes_[] = {
 
 // Order clockwise, faces opposite to the lines from node_lines.
 template<> const IdxVector<3> RefElement<3>::node_sides_[] = {
-        { 1, 0, 2 },
+        { 2, 1, 0 },
         { 3, 0, 1 },
         { 3, 2, 0 },
         { 3, 1, 2 }

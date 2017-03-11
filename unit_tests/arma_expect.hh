@@ -27,7 +27,7 @@ arma::uvec mat_shape(const Mat &x) {
 
 
 template<class ArmaMat1, class ArmaMat2>
-bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
+bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, bool fatal = false)
 {
     std::ostringstream fail_message;
 
@@ -57,17 +57,23 @@ bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat)
             no_failure=false;
         }
     }
-
     if (! no_failure) {
-        GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );
+        if (fatal) {
+            GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );
+            ASSERT(false);
+        } else {
+            GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );
+        }
         return false;
     }
     return true;
 }
 
-#define EXPECT_ARMA_EQ( A, B) \
-    EXPECT_TRUE(expect_arma_eqal(A, B))
+#define EXPECT_ARMA_EQ( A, B ) \
+    expect_arma_eqal(A, B, false)
 
+#define ASSERT_ARMA_EQ( A, B) \
+    expect_arma_eqal(A, B, true)
 
 
 #endif /* UNIT_TESTS_ARMA_EXPECT_HH_ */
