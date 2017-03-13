@@ -115,7 +115,7 @@ public:
     	ASSERT_EQ(elm.dim(), dim).error();
 
         arma::vec3 &v0 = elm.node[0]->point();
-        arma::mat A(3, dim+1);
+        arma::mat::fixed<3, dim+1> A;
 
         for(unsigned int i=0; i < dim; i++ ) {
             A.col(i) = elm.node[i+1]->point() - v0;

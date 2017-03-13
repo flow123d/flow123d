@@ -276,22 +276,6 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
     }
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::vec MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat &map) const
-{
-
-    if (dim == 0) return arma::ones(1);
-
-    arma::mat A=map.cols(0, dim-1);
-    arma::mat AtA = A.t()*A;
-    arma::vec Atb = A.t()*(point - map.col(dim));
-    arma::vec bary_coord(dim+1);
-    bary_coord.rows(0, dim - 1) = solve(AtA, Atb);
-    bary_coord( dim ) = 1.0 - arma::sum( bary_coord.rows(0,dim-1) );
-
-    return bary_coord;
-}
-
 template<>
 void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cell,
                             unsigned int sid,
@@ -299,6 +283,25 @@ void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cel
                             MappingInternalData &data,
                             FEValuesData<0,3> &fv_data)
 {}
+
+template<unsigned int dim, unsigned int spacedim>
+arma::vec MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat &map) const
+{
+    arma::mat A=map.cols(0, dim-1);
+    arma::mat::fixed<dim, dim> AtA = A.t()*A;
+    arma::vec::fixed<dim> Atb = A.t()*(point - map.col(dim));
+    arma::vec::fixed<dim+1> bary_coord;
+    bary_coord.rows(0, dim - 1) = solve(AtA, Atb);
+    bary_coord( dim ) = 1.0 - arma::sum( bary_coord.rows(0,dim-1) );
+
+    return bary_coord;
+}
+
+template<>
+arma::vec MappingP1<0,3>::project_point(const arma::vec3 &point, const arma::mat &map) const
+{
+    return arma::ones(1);
+}
 
 
 
