@@ -19,6 +19,7 @@
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
+#include "mesh/bounding_box.hh"
 
 
 /**
@@ -138,12 +139,12 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::point_projection(arma::vec source_point, arma::vec &target_point, arma::mat &elm_map, Element &elm)
+bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, Element &elm)
 {
 	ASSERT_PTR(map_).error();
 
-	elm_map = map_->element_map(elm);
-	target_point = map_->project_point(source_point, elm_map);
+	arma::vec projection = map_->project_point(point, map_->element_map(elm));
+	return (projection.min() >= -BoundingBox::epsilon);
 }
 
 

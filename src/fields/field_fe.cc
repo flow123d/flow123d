@@ -239,29 +239,24 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
 			ElementFullIter elm = source_mesh->element( *it );
-			arma::mat map;
-			arma::vec projection;
+			bool contains=false;
 			switch (elm->dim()) {
 			case 1:
-				value_handler1_.point_projection(ele->centre(), projection, map, *elm);
+				contains = value_handler1_.contains_point(ele->centre(), *elm);
 				break;
 			case 2:
-				value_handler2_.point_projection(ele->centre(), projection, map, *elm);
+				contains = value_handler2_.contains_point(ele->centre(), *elm);
 				break;
 			case 3:
-				value_handler3_.point_projection(ele->centre(), projection, map, *elm);
+				contains = value_handler3_.contains_point(ele->centre(), *elm);
 				break;
 			default:
 				ASSERT(false).error("Invalid element dimension!");
 			}
-			if (projection.min() >= -BoundingBox::epsilon) {
-				// projection in element
-				arma::vec3 projection_point = map.col(elm->dim()) + map.cols(0, elm->dim()-1) * projection.rows(0, elm->dim()-1);
-				if ( arma::norm(projection_point - ele->centre(), "inf") < 2*BoundingBox::epsilon ) {
-					// point on the element
-					sum_val[elm->dim()] += (*data_vec)[*it];
-					++elem_count[elm->dim()];
-				}
+			if (contains) {
+				// projection point in element
+				sum_val[elm->dim()] += (*data_vec)[*it];
+				++elem_count[elm->dim()];
 			}
 		}
 		unsigned int dim = ele->dim();
