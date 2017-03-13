@@ -383,6 +383,10 @@ class PyPy(ExtendedThread):
         rc = getattr(self.executor, 'returncode', None)
         self.returncode = rc if self.custom_error is None or str(rc) == "0" else self.custom_error
 
+        # reverse return code if death test is set
+        if self.case and self.case.death_test is not None:
+            self.returncode = self.case.death_test.reverse_return_code(self.returncode)
+
         # propagate on_complete event
         self.on_process_complete(self)
 

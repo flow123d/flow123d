@@ -677,6 +677,7 @@ class TestPrinterStatus(object):
         '0':    'passed',
         'None': 'skipped',
         '-1':   'skipped',
+        '100':  'death',
     }
 
     errors = {
