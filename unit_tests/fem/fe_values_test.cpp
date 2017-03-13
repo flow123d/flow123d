@@ -84,10 +84,10 @@ TEST(FeValues, test_all) {
         EXPECT_DOUBLE_EQ( 2.5 * 2, integrate<1>( it ) );
 
         // projection methods
-        MappingP1<1,3> map;
-        arma::vec3 vec("2.0 0.0 0.0");
-        EXPECT_ARMA_EQ( arma::mat("2 1; 0 0; 0 0"), map.element_map(ele));
-        EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), map.project_point( vec, ele ) );
+        MappingP1<1,3> mapping;
+        arma::mat map = mapping.element_map(ele);
+        EXPECT_ARMA_EQ( arma::mat("2 1; 0 0; 0 0"), map);
+        EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), mapping.project_point( arma::vec("2.0 0.0 0.0"), map ) );
 
     }
 
@@ -123,10 +123,10 @@ TEST(FeValues, test_all) {
         EXPECT_DOUBLE_EQ( 19.0 / 12.0 * 9.0 , integrate<2>( it ) );
 
         // projection methods
-        MappingP1<2,3> map;
-        arma::vec3 vec("1.0 1.4 0.0");
-        EXPECT_ARMA_EQ( arma::mat("2 3 0; -1 3 1; 0 0 0"), map.element_map(ele));
-        EXPECT_ARMA_EQ( arma::vec("0.2 0.2 0.6"), map.project_point( vec, ele ) );
+        MappingP1<2,3> mapping;
+        arma::mat map = mapping.element_map(ele);
+        EXPECT_ARMA_EQ( arma::mat("2 3 0; -1 3 1; 0 0 0"), map);
+        EXPECT_ARMA_EQ( arma::vec("0.2 0.2 0.6"), mapping.project_point( arma::vec("1.0 1.4 0.0"), map ) );
     }
 
 }
@@ -150,28 +150,31 @@ public:
 TEST(ElementMapping, element_map) {
     Profiler::initialize();
     armadillo_setup();
-    MappingP1<3,3> map;
+    MappingP1<3,3> mapping;
 
     {
         TestElementMapping ele({ "0 0 0", "1 0 0", "0 1 0", "0 0 1"});
-        EXPECT_ARMA_EQ( arma::mat("1 0 0 0; 0 1 0 0; 0 0 1 0"), map.element_map(ele));
-        EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), map.project_point( arma::vec3("0.1 0.2 0.3"), ele ) );
-        EXPECT_ARMA_EQ( arma::vec("0.5 0.5 0.5 -0.5"), map.project_point( arma::vec3("0.5 0.5 0.5"), ele ) );
+        arma::mat map = mapping.element_map(ele);
+        EXPECT_ARMA_EQ( arma::mat("1 0 0 0; 0 1 0 0; 0 0 1 0"), map);
+        EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), mapping.project_point( arma::vec3("0.1 0.2 0.3"), map ) );
+        EXPECT_ARMA_EQ( arma::vec("0.5 0.5 0.5 -0.5"), mapping.project_point( arma::vec3("0.5 0.5 0.5"), map ) );
     }
 
     {
         // trnaslated
         TestElementMapping ele({ "1 2 3", "2 2 3", "1 3 3", "1 2 4"});
-        EXPECT_ARMA_EQ( arma::mat("1 0 0 1; 0 1 0 2; 0 0 1 3"), map.element_map(ele));
-        EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), map.project_point( arma::vec3("1.1 2.2 3.3"), ele ) );
-        EXPECT_ARMA_EQ( arma::vec("0.5 0.5 0.5 -0.5"), map.project_point( arma::vec3("1.5 2.5 3.5"), ele ) );
+        arma::mat map = mapping.element_map(ele);
+        EXPECT_ARMA_EQ( arma::mat("1 0 0 1; 0 1 0 2; 0 0 1 3"), map);
+        EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), mapping.project_point( arma::vec3("1.1 2.2 3.3"), map ) );
+        EXPECT_ARMA_EQ( arma::vec("0.5 0.5 0.5 -0.5"), mapping.project_point( arma::vec3("1.5 2.5 3.5"), map ) );
     }
 
     {
         // simplest cube element 7
         TestElementMapping ele({ "-1 -1 1", "1 1 -1", "-1 -1 -1", "1 -1 -1"});
-        EXPECT_ARMA_EQ( arma::mat("2 0 2 -1; 2 0 0 -1; -2 -2 -2 1"), map.element_map(ele));
-        EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25 0.25"), map.project_point( arma::vec3("0 -0.5 -0.5"), ele ) );
-        //EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), map.project_point( arma::vec3("0.1 0.2 0.3"), ele ) );
+        arma::mat map = mapping.element_map(ele);
+        EXPECT_ARMA_EQ( arma::mat("2 0 2 -1; 2 0 0 -1; -2 -2 -2 1"), map);
+        EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25 0.25"), mapping.project_point( arma::vec3("0 -0.5 -0.5"), map ) );
+        //EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), mapping.project_point( arma::vec3("0.1 0.2 0.3"), map ) );
     }
 }

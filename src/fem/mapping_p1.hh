@@ -131,14 +131,6 @@ public:
      */
     arma::vec project_point(const arma::vec3 &point, const arma::mat &map) const;
 
-
-    /**
-     * Project a point and create the map as well.
-     */
-    inline arma::vec project_point(const arma::vec3 &point, Element &elm) {
-        return project_point(point, this->element_map(elm) );
-    }
-
 private:
 
     /**
