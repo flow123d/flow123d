@@ -73,7 +73,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
     arma::mat product;
     unsigned int i,j;
 
-    if (ele_ac.dim() > 2) return; // supported only for 1D and @D master elements
+    if (ele_ac.dim() > 2) return; // supported only for 1D and 2D master elements
 
     auto &isec_list = mixed_mesh_.element_intersections_[ele_ac.ele_global_idx()];
     if (isec_list.size() == 0) return; // skip empty masters
@@ -100,8 +100,24 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
      *  - Is it better to have more smaller local system then single big one?
      *  - use one big or more smaller local systems to set.
      */
+    ElementFullIter ele = ele_ac.full_iter();
+    arma::vec3 ele_centre = ele->centre();
+    double master_sigma = 2*data_->sigma.value( ele_centre, ele->element_accessor()) *
+                    2*data_->conductivity.value( ele_centre, ele->element_accessor())
+                    /**
+                     * ?? How to deal with anisotropy ??
+                     * 3d-2d : compute nv of 2d triangle
+                     * 2d-2d : interpret as 2d-1d-2d, should be symmetric master-slave
+                     * 2d-1d : nv is tangent to 2d and normal to 1d
+                    arma::dot(data_->anisotropy.value( ele_centre, ele->element_accessor())*nv, nv)
+                    */
+                    / data_->cross_section.value( ele_centre, ele->element_accessor() );       // crossection of lower dim.
 
-    double master_sigma=data_->sigma.value( ele_ac.full_iter()->centre(), ele_ac.element_accessor() );
+                    // data_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
+                    // data_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+
+
+
     delta_0 =  ele_ac.full_iter()->measure();
 
     uint master_dim = ele_ac.dim();
@@ -110,42 +126,46 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 
     double ref_master_measure = 1.0 / master_dim;
     pressure_diff(ele_ac, -ref_master_measure);
+    double cs_sqr_avg = 0.0;
+    double isec_sum = 0.0;
     for(i = 0; i < isec_list.size(); ++i) {
         quadrature_.reinit(isec_list[i].second);
         ele_ac.reinit( quadrature_.slave_idx() );
-
+        double cs = data_->cross_section.value(ele_ac.full_iter()->centre(), ele_ac.full_iter()->element_accessor());
+        double isec_measure = quadrature_.measure();
+        //DebugOut() << print_var(cs) << print_var(isec_measure);
+        cs_sqr_avg += cs*cs*isec_measure;
+        isec_sum += isec_measure;
         //DebugOut().fmt("Assembly: {} {} {}", m_idx, ele_ac.full_iter()->id(), quadrature_.measure());
-        pressure_diff(ele_ac, quadrature_.measure());
+        pressure_diff(ele_ac, isec_measure);
     }
+    if ( ! (ele_ac.dim() == 2 && master_dim ==2 ) ) {
+        double ref_master_measure = 1.0 / master_dim;
+        if ( abs(isec_sum - ref_master_measure) > 1E-5)
+            WarningOut().fmt("Wrong intersection area: {} != {}", isec_sum, ref_master_measure );
+    }
+    //DebugOut().fmt( "cs2: {} d0: {}", cs_sqr_avg, delta_0);
+    master_sigma = master_sigma * (cs_sqr_avg / isec_sum)
+            / isec_sum;
+
 
     // rows
-    double check_delta_sum=0;
     for(IsecData &row_ele : isec_data_list) {
-        check_delta_sum+=row_ele.delta;
         //columns
         for(IsecData &col_ele : isec_data_list) {
 
 
             double scale =  -master_sigma * row_ele.delta * col_ele.delta * delta_0;
             product = scale * tensor_average(row_ele.dim, col_ele.dim);
-            //arma::vec rhs(dofs_i.size());
-            //rhs.zeros();
 
             loc_system_.reset(row_ele.dofs, col_ele.dofs);
 
             for(i=0; i< row_ele.n_dirichlet; i++) loc_system_.set_solution_row(row_ele.dirichlet_dofs[i], row_ele.dirichlet_sol[i]);
             for(i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
             loc_system_.set_matrix(product);
-            //data_->lin_sys->set_values( dofs_i, dofs_j, product, rhs, dirichlet_i, dirichlet_j);
             data_->lin_sys->set_local_system(loc_system_);
-            //auto dofs_i_cp=dofs_i;
-            //auto dofs_j_cp=dofs_j;
-            //ls.set_values( dofs_i_cp, dofs_j_cp, product, rhs, dirichlet_i, dirichlet_j);
         }
     }
-    if (abs(check_delta_sum) > 1E-5)
-        DebugOut() << print_var(check_delta_sum) << print_var(delta_0);
-    ASSERT_LT_DBG(abs(check_delta_sum), 1E-5*delta_0)(delta_0);
  }
 
 
