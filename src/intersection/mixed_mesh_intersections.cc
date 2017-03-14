@@ -83,7 +83,9 @@ void MixedMeshIntersections::store_intersection(std::vector<IntersectionLocal<di
     //unsigned int ele_a_idx = isec_aux.component_ele_idx();
     //unsigned int ele_b_idx = isec_aux.bulk_ele_idx();
 
-    storage.push_back(IntersectionLocal<dim_A, dim_B>(isec_aux));
+    IntersectionLocal<dim_A, dim_B> isec(isec_aux);
+    if (isec.compute_measure() < 1e-14) return;
+    storage.push_back(isec);
     /*
     element_intersections_[ele_a_idx].push_back(
             std::make_pair(ele_b_idx, &(storage.back())) );
@@ -101,7 +103,7 @@ void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_
         unsigned int ele_a_idx = isec.component_ele_idx();
         unsigned int ele_b_idx = isec.bulk_ele_idx();
         element_intersections_[ele_a_idx].push_back(
-                std::make_pair(ele_b_idx, &(isec)) );
+                    std::make_pair(ele_b_idx, &(isec)) );
 /*
         element_intersections_[ele_b_idx].push_back(
                 std::make_pair(ele_a_idx, &(isec)) );*/
@@ -310,35 +312,41 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     element_intersections_.resize(mesh->n_elements());
     
     
-    if(d & IntersectionType::d12_2){
-        START_TIMER("Intersections 1D-2D (2)");
-        compute_intersections_12_2(intersection_storage12_);
-        END_TIMER("Intersections 1D-2D (2)");
-    }
     
     if(d & (IntersectionType::d13 | IntersectionType::d12_3)){
         START_TIMER("Intersections 1D-3D");
         compute_intersections<1>(algorithm13_,intersection_storage13_);
         END_TIMER("Intersections 1D-3D");
     }
+    append_to_index(intersection_storage13_);
+
     
     if(d & (IntersectionType::d23 | IntersectionType::d22 | IntersectionType::d12_3)){
         START_TIMER("Intersections 2D-3D");
         compute_intersections<2>(algorithm23_,intersection_storage23_);
         END_TIMER("Intersections 2D-3D");
     }
+    append_to_index(intersection_storage23_);
     
      if(d & IntersectionType::d22){
         START_TIMER("Intersections 2D-2D");
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
     }
-    
+    append_to_index(intersection_storage22_);
+
+
     if(d & IntersectionType::d12_3){
         START_TIMER("Intersections 1D-2D (3)");
         compute_intersections_12(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (3)");
 
+    }
+
+    if(d & IntersectionType::d12_2){
+        START_TIMER("Intersections 1D-2D (2)");
+        compute_intersections_12_2(intersection_storage12_);
+        END_TIMER("Intersections 1D-2D (2)");
     }
 
     if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
@@ -350,9 +358,6 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     //ASSERT_EQ(intersection_storage23_.size(), 0);
     //ASSERT_EQ(intersection_storage22_.size(), 0);
     // compose master
-    append_to_index(intersection_storage13_);
-    append_to_index(intersection_storage23_);
-    append_to_index(intersection_storage22_);
     append_to_index(intersection_storage12_);
 
 }

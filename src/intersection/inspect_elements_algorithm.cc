@@ -730,8 +730,10 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 //                 if(is_not_neighbor) continue;
                 
                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
-                compute_single_intersection(eleA,
-                                            eleB);
+                if (componentA_idx < componentB_idx)
+                    compute_single_intersection(eleA, eleB);
+                else
+                    compute_single_intersection(eleB, eleA);
             }
         }
     }

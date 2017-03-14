@@ -74,6 +74,7 @@ public:
     unsigned int is_pathologic() const;      ///< Returns index of bulk element.
     
     /// Computes the relative measure of intersection object.
+    /// TODO: unifiy implementation with IntersectionLocalb
     double compute_measure();
     
     /// Friend output operator.

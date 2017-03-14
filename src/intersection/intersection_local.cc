@@ -49,48 +49,6 @@ template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::~IntersectionLocal()
 {}
 
-/*
-template<>
-double IntersectionLocal<1,2>::compute_measure()
-{
-    double length = 0;
-
-    if(i_points_.size() > 1) // zero measure for point intersections
-        for(unsigned int i=0; i < i_points_.size()-1; i++)
-        {
-            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
-        }
-    return length;
-}
-
-template<>
-double IntersectionLocal<2,2>::compute_measure()
-{
-    //ASSERT_EQ_DBG(i_points_.size(), 2);
-    double length = 0;
-    
-    if(i_points_.size() > 1) // zero measure for point intersections
-        for(unsigned int i=0; i < i_points_.size()-1; i++)
-        {
-            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
-        }
-    return length;
-}
-
-// 1D-3D
-template<>
-double IntersectionLocal<1,3>::compute_measure()
-{
-    double length = 0;
-    
-    if(i_points_.size() > 1) // zero measure for point intersections
-        for(unsigned int i=0; i < i_points_.size()-1; i++)
-        {
-            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
-        }
-    return length;
-}
-*/
 
 template<unsigned int dimA, unsigned int dimB>
 double IntersectionLocal<dimA,dimB>::compute_measure() const
@@ -105,6 +63,7 @@ double IntersectionLocal<dimA,dimB>::compute_measure() const
         }
     return length;
 }
+
 
 
 // 2D-3D
