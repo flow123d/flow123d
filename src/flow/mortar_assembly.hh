@@ -65,11 +65,6 @@ private:
 
     /// Row matrices to compute element pressure as average of boundary pressures
     std::vector< arma::mat > tensor_average_;
-
-
-    /// measure of master element, should be sum of intersection measures
-    double delta_0;
-
     IntersectionQuadratureP0 quadrature_;
 };
 

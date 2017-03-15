@@ -159,7 +159,21 @@ public:
     inline void reinit(const IntersectionLocalBase *isec)
     {
         slave_idx_ = isec->bulk_ele_idx();
-        measure_= isec->compute_measure();
+        ElementFullIter ele = mesh_.element(isec->component_ele_idx());
+        if (typeid(isec) == typeid(IntersectionLocal<2,2> *)) {
+            //
+            auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
+            ASSERT_EQ_DBG( il->size(), 2);
+
+            arma::vec3 diff = (*il)[0].coords(ele) - (*il)[1].coords(ele);
+            measure_= arma::norm(diff, 2);
+        } else {
+            // We can save some multiplications moving measure of the master element into
+            // common scale coefficient. However then the meaning of measure_ depends on the case.
+
+            // multiply by jacobian of transform to real element.
+            measure_= isec->compute_measure() * ele->measure() * ele->dim();
+        }
     }
 
 

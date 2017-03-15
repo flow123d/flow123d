@@ -15,7 +15,6 @@
 P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 : MortarAssemblyBase(data),
   tensor_average_(16),
-  delta_0(0.0),
   quadrature_(*(data->mesh))
 {
     isec_data_list.reserve(30);
@@ -118,14 +117,12 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 
 
 
-    delta_0 =  ele_ac.full_iter()->measure();
 
     uint master_dim = ele_ac.dim();
     uint m_idx = ele_ac.full_iter()->id();
     isec_data_list.clear();
 
-    double ref_master_measure = 1.0 / master_dim;
-    pressure_diff(ele_ac, -ref_master_measure);
+    pressure_diff(ele_ac, -1.0);
     double cs_sqr_avg = 0.0;
     double isec_sum = 0.0;
     for(i = 0; i < isec_list.size(); ++i) {
@@ -144,6 +141,8 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
         if ( abs(isec_sum - ref_master_measure) > 1E-5)
             WarningOut().fmt("Wrong intersection area: {} != {}", isec_sum, ref_master_measure );
     }
+    isec_data_list[0].delta = -isec_sum;
+
     //DebugOut().fmt( "cs2: {} d0: {}", cs_sqr_avg, delta_0);
     master_sigma = master_sigma * (cs_sqr_avg / isec_sum)
             / isec_sum;
@@ -155,7 +154,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
         for(IsecData &col_ele : isec_data_list) {
 
 
-            double scale =  -master_sigma * row_ele.delta * col_ele.delta * delta_0;
+            double scale =  -master_sigma * row_ele.delta * col_ele.delta;
             product = scale * tensor_average(row_ele.dim, col_ele.dim);
 
             loc_system_.reset(row_ele.dofs, col_ele.dofs);
