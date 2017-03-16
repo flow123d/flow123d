@@ -132,6 +132,10 @@ public:
      * values at @p unit_support_points.
      */
     std::vector<arma::vec::fixed<dim> > unit_support_points;
+    
+private:
+  
+  void init();
 
 };
 

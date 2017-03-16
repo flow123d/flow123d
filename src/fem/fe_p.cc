@@ -19,6 +19,19 @@
 #include "fe_p.hh"
 #include "mesh/ref_element.hh"
 
+
+template<unsigned int degree, unsigned int dim>
+void DofDistribution<degree,dim>::init()
+{
+  for (unsigned int i = 0; i <= dim; i++)
+  {
+      number_of_single_dofs[i] = 0;
+      number_of_pairs[i] = 0;
+      number_of_triples[i] = 0;
+      number_of_sextuples[i] = 0;
+  }
+}
+
 /****** Template specializations ******/
 
 /*** 1D finite elements ***/
@@ -27,6 +40,7 @@
 template<>
 DofDistribution<0,1>::DofDistribution()
 {
+    init();
     number_of_dofs = 1;
 
     number_of_single_dofs[1] = 1;
@@ -38,6 +52,7 @@ DofDistribution<0,1>::DofDistribution()
 template<>
 DofDistribution<1,1>::DofDistribution()
 {
+    init();
     number_of_dofs = 2;
 
     number_of_single_dofs[0] = 2;
@@ -50,6 +65,7 @@ DofDistribution<1,1>::DofDistribution()
 template<>
 DofDistribution<2,1>::DofDistribution()
 {
+    init();
     number_of_dofs = 3;
 
     number_of_single_dofs[0] = 2;
@@ -65,6 +81,7 @@ DofDistribution<2,1>::DofDistribution()
 template<>
 DofDistribution<3,1>::DofDistribution()
 {
+    init();
     number_of_dofs = 4;
 
     number_of_single_dofs[0] = 2;
@@ -85,6 +102,7 @@ DofDistribution<3,1>::DofDistribution()
 template<>
 DofDistribution<0,2>::DofDistribution()
 {
+    init();
     number_of_dofs = 1;
 
     number_of_single_dofs[2] = 1;
@@ -97,6 +115,7 @@ DofDistribution<0,2>::DofDistribution()
 template<>
 DofDistribution<1,2>::DofDistribution()
 {
+    init();
     number_of_dofs = 3;
 
     number_of_single_dofs[0] = 3;
@@ -110,6 +129,7 @@ DofDistribution<1,2>::DofDistribution()
 template<>
 DofDistribution<2,2>::DofDistribution()
 {
+    init();
     number_of_dofs = 6;
 
     number_of_single_dofs[0] = 3;
@@ -130,6 +150,7 @@ DofDistribution<2,2>::DofDistribution()
 template<>
 DofDistribution<3,2>::DofDistribution()
 {
+    init();
     number_of_dofs = 10;
 
     number_of_single_dofs[0] = 3;
@@ -163,6 +184,7 @@ DofDistribution<3,2>::DofDistribution()
 template<>
 DofDistribution<0,3>::DofDistribution()
 {
+    init();
     number_of_dofs = 1;
 
     number_of_single_dofs[3] = 1;
@@ -175,6 +197,7 @@ DofDistribution<0,3>::DofDistribution()
 template<>
 DofDistribution<1,3>::DofDistribution()
 {
+    init();
     number_of_dofs = 4;
 
     number_of_single_dofs[0] = 4;
@@ -189,6 +212,7 @@ DofDistribution<1,3>::DofDistribution()
 template<>
 DofDistribution<2,3>::DofDistribution()
 {
+    init();
     number_of_dofs = 10;
 
     number_of_single_dofs[0] = 4;
@@ -216,6 +240,7 @@ DofDistribution<2,3>::DofDistribution()
 template<>
 DofDistribution<3,3>::DofDistribution()
 {
+    init();
     number_of_dofs = 20;
 
     number_of_single_dofs[0] = 4;
