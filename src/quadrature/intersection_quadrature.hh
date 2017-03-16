@@ -160,7 +160,7 @@ public:
     {
         slave_idx_ = isec->bulk_ele_idx();
         ElementFullIter ele = mesh_.element(isec->component_ele_idx());
-        if (typeid(isec) == typeid(IntersectionLocal<2,2> *)) {
+        if (typeid(*isec) == typeid(IntersectionLocal<2,2>)) {
             //
             auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
             ASSERT_EQ_DBG( il->size(), 2);

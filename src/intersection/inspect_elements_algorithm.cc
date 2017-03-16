@@ -83,7 +83,8 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
                                                        unsigned int bulk_ele_idx,
                                                        unsigned int component_idx)
 {
-    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, component_idx);
+    //DebugOut().fmt("3d-2d: {} {} {}", component_ele_idx, bulk_ele_idx, component_idx);
+    IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx, component_counter_);
     START_TIMER("Compute intersection");
     ComputeIntersection<Simplex<dim>, Simplex<3>> CI(component_simplex, tetrahedron);
     CI.init();
@@ -532,7 +533,7 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
     //DebugOut().fmt("prolongation: c {} in b {}\n",component_ele_idx,bulk_ele_idx);
     
     // prepare empty intersection object
-    IntersectionAux<dim,3> il_other(component_ele_idx, bulk_ele_idx);
+    IntersectionAux<dim,3> il_other(component_ele_idx, bulk_ele_idx, component_counter_);
     intersection_list_[component_ele_idx].push_back(il_other);
     
     Prolongation pr = {component_ele_idx, bulk_ele_idx, (unsigned int)intersection_list_[component_ele_idx].size() - 1};
@@ -637,7 +638,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     ElementFullIter elm = mesh->element(pr.component_elm_idx);
     ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
     
-    DebugOut().fmt("Prolongate: {} in {}.\n", elm->id(), ele_3D->id());
+    //DebugOut().fmt("Prolongate: {} in {}.\n", elm->id(), ele_3D->id());
 
     //TODO: optimization: this might be called before and not every time 
     //(component element is not changing when emptying bulk queue)
@@ -693,7 +694,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
         
         const std::vector<ILpair> &local_map = intersection_map_[ele_idx];
         
-        //DebugOut() << "more than 2 intersections in tetrahedron found\n";
+        //DebugOut() << print_var(local_map.size());
         for(unsigned int i=0; i < local_map.size(); i++)
         {
             //TODO: 1] compute all plucker coords at once
@@ -704,15 +705,20 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
             unsigned int componentA_idx = local_map[i].second->component_idx();
             
             IntersectionLocalBase * ilb = local_map[i].second;
+
             //DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), ilb->component_idx());
             
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
+
                 ElementFullIter eleB = mesh->element(local_map[j].first);
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
                 // component check not working, until prolongation will be done also over vertices..
                 unsigned int componentB_idx = local_map[j].second->component_idx();
+                DebugOut().fmt("compute intersection 2d-2d: e_{}=c_{} e_{}=c_{}\n",
+                        eleA->id(), componentA_idx, eleB->id(),  componentB_idx);
+
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
                 
@@ -729,7 +735,7 @@ void InspectElementsAlgorithm22::compute_intersections(const std::vector< std::v
 //                 }
 //                 if(is_not_neighbor) continue;
                 
-                DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",eleA.index(), eleB.index(), componentA_idx, componentB_idx);
+
                 if (componentA_idx < componentB_idx)
                     compute_single_intersection(eleA, eleB);
                 else

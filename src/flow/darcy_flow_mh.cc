@@ -741,7 +741,7 @@ void DarcyMH::allocate_mh_matrix()
             for(auto &isec : isec_list ) {
                 IntersectionLocalBase *local = isec.second;
                 Element &slave_ele = mesh_->element[local->bulk_ele_idx()];
-                DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
+                //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
                 for(unsigned int i_side=0; i_side < slave_ele.n_sides(); i_side++) {
                     tmp_rows[i_rows++] = mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ];
                     //DebugOut() << "NC" << print_var(tmp_rows[i_rows-1]);
