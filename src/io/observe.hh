@@ -37,6 +37,10 @@ public:
     static const Input::Type::Record & get_input_type();
 
 protected:
+    /// Helper enum specifies settings in point_projection method
+    enum ProjectionCases {
+    	clip_update, update_if_in_elem, no_update
+    };
     /**
      *  Default constructor just for testing.
      */
@@ -91,7 +95,8 @@ protected:
     void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
     /// Project point to given element by dimension of this element.
-    void point_projection(arma::vec source_point, arma::vec &target_point, arma::mat &elm_map, Element &elm);
+    void point_projection(arma::mat &elm_map, Element &elm); // obsolete method, will be removed
+    bool point_projection(arma::vec point, unsigned int i_elm, double &projection_min, Element &elm, ProjectionCases projection_case);
 
     /// Index in the input array.
     Input::Record in_rec_;

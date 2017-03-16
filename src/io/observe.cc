@@ -27,6 +27,25 @@
 namespace IT = Input::Type;
 
 
+/*******************************************************************
+ * Helper functions.
+ */
+
+/// Add all node neighbours to the next level list
+void fill_next_level_list(Element & elm, vector<unsigned int> & candidate_list) {
+	Mesh & mesh = *(elm.mesh_);
+    for (unsigned int n=0; n < elm.n_nodes(); n++) {
+        for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+            candidate_list.push_back(i_node_ele);
+    }
+}
+
+
+
+/*******************************************************************
+ * implementation of ObservePoint
+ */
+
 const Input::Type::Record & ObservePoint::get_input_type() {
     return IT::Record("ObservePoint", "Specification of the observation point. The actual observe element and the observe point on it is determined as follows:\n\n"
             "1. Find an initial element containing the initial point. If no such element exists we report the error.\n"
@@ -129,8 +148,7 @@ void ObservePoint::snap(Mesh &mesh)
              default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
     }
     arma::mat map;
-    arma::vec projection;
-    this->point_projection(arma::vec3("0 0 0"), projection, map, elm);
+    this->point_projection(map, elm);
     this->global_coords_ =  map * arma::join_cols(this->local_coords_, arma::ones(1));
 }
 
@@ -153,45 +171,38 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
     unsigned int min_dist_idx=0;
     double min_dist=numeric_limits<double>::max();
+    double projection_min;
     for (unsigned int i_candidate=0; i_candidate<process_list.size(); ++i_candidate) {
         unsigned int i_elm=process_list[i_candidate];
         Element & elm = mesh.element[i_elm];
-        arma::mat map;
-        arma::vec projection;
 
-        // get barycentric coordinates (1,2,0)
-        this->point_projection(input_point_, projection, map, elm);
-
-        // check that point is on the element
-        if (projection.min() >= -BoundingBox::epsilon) {
-            // This is initial element.
-            //input_point_.print(cout, "input_point");
-            //cout << "i_el: " << i_elm << endl;
-            //projection.print(cout, "projection");
-
-
-            // if element match region filter store it as observe element to the obs. point
-            if (elm.region().is_in_region_set(region_set)) {
-                projection[elm.dim()] = 1.0; // use last coordinates for translation
-                arma::vec global_coord = map*projection;
-                update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
-            }
-
-            closed_elements.insert(i_elm);
-            // add all node neighbours to the next level list
-            for (unsigned int n=0; n < elm.n_nodes(); n++) {
-                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
-                    candidate_list.push_back(i_node_ele);
+        // if element match region filter store it as observe element to the obs. point
+        if (elm.region().is_in_region_set(region_set)) {
+            // check that point is on the element
+            if ( point_projection(input_point_, i_elm, projection_min, elm, ProjectionCases::update_if_in_elem) ) {
+                closed_elements.insert(i_elm);
+                fill_next_level_list(elm, candidate_list);
+            } else {
+                // Point out of the element. Keep the closest element.
+                double distance = fabs(projection_min);
+                if (distance < min_dist) {
+                    min_dist=distance;
+                    min_dist_idx = i_candidate;
+                }
             }
         } else {
-            // Point out of the element. Keep the closest element.
-            double distance = fabs(projection.min());
-            if (distance < min_dist) {
-                min_dist=distance;
-                min_dist_idx = i_candidate;
+            // check that point is on the element
+            if ( point_projection(input_point_, i_elm, projection_min, elm, ProjectionCases::no_update) ) {
+                closed_elements.insert(i_elm);
+                fill_next_level_list(elm, candidate_list);
+            } else {
+                // Point out of the element. Keep the closest element.
+                double distance = fabs(projection_min);
+                if (distance < min_dist) {
+                    min_dist=distance;
+                    min_dist_idx = i_candidate;
+                }
             }
-            //DebugOut() << print_var(i_candidate);
-            //DebugOut() << print_var(projection);
         }
     }
 
@@ -201,26 +212,14 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         Element & elm = mesh.element[i_elm];
         // if element match region filter store it as observe element to the obs. point
         if (elm.region().is_in_region_set(region_set)) {
-            arma::mat map;
-            arma::vec projection;
-            this->point_projection(input_point_, projection, map, elm);
-            projection = elm.clip_to_element(projection);
-
-            projection[elm.dim()] = 1.0; // use last coordinates for translation
-            arma::vec global_coord = map*projection;
-            update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
+            this->point_projection(input_point_, i_elm, projection_min, elm, ProjectionCases::clip_update);
         }
 
         WarningOut().fmt("Failed to find the element containing the initial observe point ({}).\n"
                 "Using the closest element instead.\n", in_rec_.address_string());
 
         closed_elements.insert(i_elm);
-        // add all node neighbours to the next level list
-        for (unsigned int n=0; n < elm.n_nodes(); n++) {
-            for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
-                candidate_list.push_back(i_node_ele);
-        }
-
+        fill_next_level_list(elm, candidate_list);
     }
 
     // Try to snap to the observe element with required snap_region
@@ -234,20 +233,9 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
             // if element match region filter, update the obs. point
             if (elm.region().is_in_region_set(region_set)) {
-                arma::mat map;
-                arma::vec projection;
-                this->point_projection(input_point_, projection, map, elm);
-                arma::vec point_on_element = elm.clip_to_element(projection);
-
-                point_on_element[elm.dim()] = 1.0; // use last coordinates for translation
-                arma::vec global_coord = map*point_on_element;
-                update_projection(i_elm, point_on_element.rows(0, elm.dim()-1), global_coord);
+                this->point_projection(input_point_, i_elm, projection_min, elm, ProjectionCases::clip_update);
              }
-            // add all node neighbours to the next level list
-            for (unsigned int n=0; n < elm.n_nodes(); n++) {
-                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
-                    candidate_list.push_back(i_node_ele);
-            }
+            fill_next_level_list(elm, candidate_list);
         }
     }
     if (! have_observe_element()) {
@@ -269,34 +257,30 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
 
 
 
-void ObservePoint::point_projection(arma::vec source_point, arma::vec &target_point, arma::mat &elm_map, Element &elm) {
+void ObservePoint::point_projection(arma::mat &elm_map, Element &elm) {
 	switch (elm.dim()) {
 	case 0:
 	{
 		MappingP1<0,3> mapping;
 		elm_map = mapping.element_map(elm);
-		target_point = mapping.project_point(source_point, elm_map);
 		break;
 	}
 	case 1:
 	{
 		MappingP1<1,3> mapping;
 		elm_map = mapping.element_map(elm);
-		target_point = mapping.project_point(source_point, elm_map);
 		break;
 	}
 	case 2:
 	{
 		MappingP1<2,3> mapping;
 		elm_map = mapping.element_map(elm);
-		target_point = mapping.project_point(source_point, elm_map);
 		break;
 	}
 	case 3:
 	{
 		MappingP1<3,3> mapping;
 		elm_map = mapping.element_map(elm);
-		target_point = mapping.project_point(source_point, elm_map);
 		break;
 	}
 	default:
@@ -306,7 +290,67 @@ void ObservePoint::point_projection(arma::vec source_point, arma::vec &target_po
 }
 
 
+bool ObservePoint::point_projection(arma::vec point, unsigned int i_elm, double &projection_min, Element &elm, ProjectionCases projection_case) {
+	arma::vec projection;
+	arma::mat elm_map;
 
+	switch (elm.dim()) {
+	case 0:
+	{
+		MappingP1<0,3> mapping;
+		elm_map = mapping.element_map(elm);
+		projection = mapping.project_point(point, elm_map);
+		break;
+	}
+	case 1:
+	{
+		MappingP1<1,3> mapping;
+		elm_map = mapping.element_map(elm);
+		projection = mapping.project_point(point, elm_map);
+		break;
+	}
+	case 2:
+	{
+		MappingP1<2,3> mapping;
+		elm_map = mapping.element_map(elm);
+		projection = mapping.project_point(point, elm_map);
+		break;
+	}
+	case 3:
+	{
+		MappingP1<3,3> mapping;
+		elm_map = mapping.element_map(elm);
+		projection = mapping.project_point(point, elm_map);
+		break;
+	}
+	default:
+		ASSERT(false).error("Invalid element dimension!");
+	}
+
+	projection_min = projection.min(); // set min value of projection vector
+	bool return_status = (projection_min >= -BoundingBox::epsilon); // set return value, true if point in element
+
+	if (projection_case != ProjectionCases::no_update) {
+		if (projection_case == ProjectionCases::clip_update) {
+			projection = elm.clip_to_element(projection);
+		}
+
+		if ( return_status || (projection_case == ProjectionCases::clip_update) ) {
+            projection[elm.dim()] = 1.0; // use last coordinates for translation
+            arma::vec global_coord = elm_map*projection;
+            update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
+		}
+	}
+
+	return return_status;
+}
+
+
+
+
+/*******************************************************************
+ * implementation of Observe
+ */
 
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision)
 : mesh_(&mesh),  
