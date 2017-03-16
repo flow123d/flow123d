@@ -27,6 +27,23 @@
 namespace IT = Input::Type;
 
 
+/**
+ * Helper class allows calculate projection points by dimension (dim)
+ */
+template<unsigned int dim>
+class ProjectionHandler {
+public:
+private:
+    /// Mapping object.
+    MappingP1<dim,3> map_;
+
+};
+
+template class ProjectionHandler<1>;
+template class ProjectionHandler<2>;
+template class ProjectionHandler<3>;
+
+
 /*******************************************************************
  * Helper functions.
  */
@@ -259,12 +276,6 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
 
 void ObservePoint::point_projection(arma::mat &elm_map, Element &elm) {
 	switch (elm.dim()) {
-	case 0:
-	{
-		MappingP1<0,3> mapping;
-		elm_map = mapping.element_map(elm);
-		break;
-	}
 	case 1:
 	{
 		MappingP1<1,3> mapping;
@@ -293,20 +304,20 @@ void ObservePoint::point_projection(arma::mat &elm_map, Element &elm) {
 bool ObservePoint::point_projection(arma::vec point, unsigned int i_elm, double &projection_min, Element &elm, ProjectionCases projection_case) {
 	arma::vec projection;
 	arma::mat elm_map;
+	bool return_status = false;
 
 	switch (elm.dim()) {
-	case 0:
-	{
-		MappingP1<0,3> mapping;
-		elm_map = mapping.element_map(elm);
-		projection = mapping.project_point(point, elm_map);
-		break;
-	}
 	case 1:
 	{
 		MappingP1<1,3> mapping;
 		elm_map = mapping.element_map(elm);
 		projection = mapping.project_point(point, elm_map);
+
+		projection_min = projection.min(); // set min value of projection vector
+		return_status = (projection_min >= -BoundingBox::epsilon); // set return value, true if point in element
+		if (projection_case == ProjectionCases::clip_update) {
+			projection = mapping.clip_to_element(projection);
+		}
 		break;
 	}
 	case 2:
@@ -314,6 +325,12 @@ bool ObservePoint::point_projection(arma::vec point, unsigned int i_elm, double 
 		MappingP1<2,3> mapping;
 		elm_map = mapping.element_map(elm);
 		projection = mapping.project_point(point, elm_map);
+
+		projection_min = projection.min(); // set min value of projection vector
+		return_status = (projection_min >= -BoundingBox::epsilon); // set return value, true if point in element
+		if (projection_case == ProjectionCases::clip_update) {
+			projection = mapping.clip_to_element(projection);
+		}
 		break;
 	}
 	case 3:
@@ -321,25 +338,22 @@ bool ObservePoint::point_projection(arma::vec point, unsigned int i_elm, double 
 		MappingP1<3,3> mapping;
 		elm_map = mapping.element_map(elm);
 		projection = mapping.project_point(point, elm_map);
+
+		projection_min = projection.min(); // set min value of projection vector
+		return_status = (projection_min >= -BoundingBox::epsilon); // set return value, true if point in element
+		if (projection_case == ProjectionCases::clip_update) {
+			projection = mapping.clip_to_element(projection);
+		}
 		break;
 	}
 	default:
 		ASSERT(false).error("Invalid element dimension!");
 	}
 
-	projection_min = projection.min(); // set min value of projection vector
-	bool return_status = (projection_min >= -BoundingBox::epsilon); // set return value, true if point in element
-
-	if (projection_case != ProjectionCases::no_update) {
-		if (projection_case == ProjectionCases::clip_update) {
-			projection = elm.clip_to_element(projection);
-		}
-
-		if ( return_status || (projection_case == ProjectionCases::clip_update) ) {
-            projection[elm.dim()] = 1.0; // use last coordinates for translation
-            arma::vec global_coord = elm_map*projection;
-            update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
-		}
+	if ( (return_status && projection_case == ProjectionCases::update_if_in_elem) || (projection_case == ProjectionCases::clip_update) ) {
+		projection[elm.dim()] = 1.0; // use last coordinates for translation
+		arma::vec global_coord = elm_map*projection;
+		update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
 	}
 
 	return return_status;

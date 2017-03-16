@@ -34,13 +34,14 @@ public:
             << "Failed to find the observe element with snap region: " << EI_RegionName::qval
             << " close to the initial observe point. Using maximal number of neighbour levels: " << EI_NLevels::val << "\n");
 
-    static const Input::Type::Record & get_input_type();
-
-protected:
     /// Helper enum specifies settings in point_projection method
     enum ProjectionCases {
     	clip_update, update_if_in_elem, no_update
     };
+
+    static const Input::Type::Record & get_input_type();
+
+protected:
     /**
      *  Default constructor just for testing.
      */

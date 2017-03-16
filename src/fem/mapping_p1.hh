@@ -110,7 +110,7 @@ public:
      * Map from reference element to global coord system.
      * Matrix(3, dim+1), last column is the translation vector.
      */
-    inline arma::mat element_map(Element &elm) const
+    arma::mat::fixed<3, dim+1> element_map(Element &elm) const
     {
     	ASSERT_EQ(elm.dim(), dim).error();
 
@@ -129,7 +129,14 @@ public:
      * Result vector have dimension dim()+1. Local coordinates are the first.
      * Last is 1-...
      */
-    arma::vec project_point(const arma::vec3 &point, const arma::mat &map) const;
+    arma::vec::fixed<dim+1> project_point(const arma::vec3 &point, const arma::mat &map) const;
+
+    /**
+     * Clip a point given by barycentric cocordinates to the element.
+     * If the point is out of the element the closest point
+     * projection to the element surface is used.
+     */
+    arma::vec clip_to_element(arma::vec &barycentric);
 
 private:
 

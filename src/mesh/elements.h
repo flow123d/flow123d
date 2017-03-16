@@ -104,21 +104,6 @@ public:
     }
 
     /**
-     * Clip a point given by barycentric cocordinates to the element.
-     * If the point is out of the element the closest point
-     * projection to the element surface is used.
-     */
-    inline arma::vec clip_to_element(arma::vec &barycentric) {
-       switch (dim()) {
-                case 1: return RefElement<1>::clip(barycentric);
-                case 2: return RefElement<2>::clip(barycentric);
-                case 3: return RefElement<3>::clip(barycentric);
-                default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
-        }
-        return barycentric; // should never happen
-    }
-
-    /**
      * Return list of element vertices.
      */
     inline vector<arma::vec3> vertex_list() {
