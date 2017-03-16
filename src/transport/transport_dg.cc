@@ -154,9 +154,10 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
 
+    ds_ = new EqualOrderDiscreteSpace(mesh_, fe1_, fe2_, fe3_);
 	dh_ = new DOFHandlerMultiDim(*mesh_);
 
-	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
+	dh_->distribute_dofs(ds_);
 }
 
 

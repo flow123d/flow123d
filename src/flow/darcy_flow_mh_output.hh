@@ -163,6 +163,7 @@ private:
     FE_P_disc<1,1,3> fe1;
     FE_P_disc<1,2,3> fe2;
     FE_P_disc<1,3,3> fe3;
+    DiscreteSpace *ds;
 
     OutputFields output_fields;
 

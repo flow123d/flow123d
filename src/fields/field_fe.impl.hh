@@ -67,7 +67,7 @@ void FieldFE<spacedim, Value>::set_fe_data(const DOFHandlerMultiDim *dh,
     data_vec_ = data;
     VecGetArray(*data_vec_, &data_);
 
-    unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
+    unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices = new unsigned int[ndofs];
 }
 
@@ -89,21 +89,21 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		Quadrature<1> q1(1);
 		q1.set_point(0, im1*p_rel);
 
-		FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(), update_values);
+		FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(cell), update_values);
 		fe_values1.reinit(cell);
 
 		dh_->get_loc_dof_indices(cell, dof_indices);
 
-		if (dh_->fe<1>()->is_scalar()) {
+		if (dh_->fe<1>(cell)->is_scalar()) {
 			double value = 0;
-			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<1>(cell)->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values1.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
-			for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<1>(cell)->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values1.shape_vector(i, 0);
 			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
@@ -118,21 +118,21 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		Quadrature<2> q2(1);
 		q2.set_point(0, im2*p_rel);
 
-		FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(), update_values);
+		FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(cell), update_values);
 		fe_values2.reinit(cell);
 
 		dh_->get_loc_dof_indices(cell, dof_indices);
 
-		if (dh_->fe<2>()->is_scalar()) {
+		if (dh_->fe<2>(cell)->is_scalar()) {
 			double value = 0;
-			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<2>(cell)->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values2.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
-			for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<2>(cell)->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values2.shape_vector(i, 0);
 			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
@@ -147,21 +147,21 @@ typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point 
 		Quadrature<3> q3(1);
 		q3.set_point(0, im3*p_rel);
 
-		FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(), update_values);
+		FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(cell), update_values);
 		fe_values3.reinit(cell);
 
 		dh_->get_loc_dof_indices(cell, dof_indices);
 
-		if (dh_->fe<3>()->is_scalar()) {
+		if (dh_->fe<3>(cell)->is_scalar()) {
 			double value = 0;
-			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<3>(cell)->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values3.shape_value(i, 0);
 			this->value_(0,0) = value;
 		}
 		else {
 			arma::vec3 value;
 			value.zeros();
-			for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
+			for (unsigned int i=0; i<dh_->fe<3>(cell)->n_dofs(); i++)
 				value += data_[dof_indices[i]]*fe_values3.shape_vector(i, 0);
 			for (unsigned int i=0; i<3; i++)
 				this->value_(i,0) = value(i);
@@ -195,21 +195,21 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 			Point p_rel = point_list[k] - elm.element()->node[0]->point();
 			q1.set_point(0, im1*p_rel);
 
-			FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(), update_values);
+			FEValues<1,3> fe_values1(*map1_, q1, *dh_->fe<1>(cell), update_values);
 			fe_values1.reinit(cell);
 
 			Value envelope(value_list[k]);
 
-			if (dh_->fe<1>()->is_scalar()) {
+			if (dh_->fe<1>(cell)->is_scalar()) {
 				double value = 0;
-				for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
+				for (unsigned int i=0; i<dh_->fe<1>(cell)->n_dofs(); i++)
 					value += data_[dof_indices[i]]*fe_values1.shape_value(i, 0);
 				envelope(0,0) = value;
 			}
 			else {
 				arma::vec3 value;
 				value.zeros();
-				for (unsigned int i=0; i<dh_->fe<1>()->n_dofs(); i++)
+				for (unsigned int i=0; i<dh_->fe<1>(cell)->n_dofs(); i++)
 					value += data_[dof_indices[i]]*fe_values1.shape_vector(i, 0);
 				for (int i=0; i<3; i++)
 					envelope(i,0) = value(i);
@@ -229,21 +229,21 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 			Point p_rel = point_list[k] - elm.element()->node[0]->point();
 			q2.set_point(0, im2*p_rel);
 
-			FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(), update_values);
+			FEValues<2,3> fe_values2(*map2_, q2, *dh_->fe<2>(cell), update_values);
 			fe_values2.reinit(cell);
 
 			Value envelope(value_list[k]);
 
-			if (dh_->fe<2>()->is_scalar()) {
+			if (dh_->fe<2>(cell)->is_scalar()) {
 				double value = 0;
-				for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
+				for (unsigned int i=0; i<dh_->fe<2>(cell)->n_dofs(); i++)
 					value += data_[dof_indices[i]]*fe_values2.shape_value(i, 0);
 				envelope(0,0) = value;
 			}
 			else {
 				arma::vec3 value;
 				value.zeros();
-				for (unsigned int i=0; i<dh_->fe<2>()->n_dofs(); i++)
+				for (unsigned int i=0; i<dh_->fe<2>(cell)->n_dofs(); i++)
 					value += data_[dof_indices[i]]*fe_values2.shape_vector(i, 0);
 				for (int i=0; i<3; i++)
 					envelope(i,0) = value(i);
@@ -264,21 +264,21 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point >  &point_li
 			Point p_rel = point_list[k] - elm.element()->node[0]->point();
 			q3.set_point(0, im3*p_rel);
 
-			FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(), update_values);
+			FEValues<3,3> fe_values3(*map3_, q3, *dh_->fe<3>(cell), update_values);
 			fe_values3.reinit(cell);
 
 			Value envelope(value_list[k]);
 
-			if (dh_->fe<3>()->is_scalar()) {
+			if (dh_->fe<3>(cell)->is_scalar()) {
 				double value = 0;
-				for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
+				for (unsigned int i=0; i<dh_->fe<3>(cell)->n_dofs(); i++)
 					value += data_[dof_indices[i]]*fe_values3.shape_value(i, 0);
 				envelope(0,0) = value;
 			}
 			else {
 				arma::vec3 value;
 				value.zeros();
-				for (unsigned int i=0; i<dh_->fe<3>()->n_dofs(); i++)
+				for (unsigned int i=0; i<dh_->fe<3>(cell)->n_dofs(); i++)
 					value += data_[dof_indices[i]]*fe_values3.shape_vector(i, 0);
 				for (int i=0; i<3; i++)
 					envelope(i,0) = value(i);
