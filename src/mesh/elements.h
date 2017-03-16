@@ -159,6 +159,8 @@ public:
     	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
     	return vertices;
     }
+    
+    unsigned int get_proc() const;
 
 
     unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)

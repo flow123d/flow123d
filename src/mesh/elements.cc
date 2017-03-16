@@ -28,6 +28,7 @@
 #include "mesh/boundaries.h"
 //#include "materials.hh"
 #include "mesh/accessors.hh"
+#include "la/distribution.hh"
 
 
 
@@ -217,6 +218,12 @@ arma::vec Element::project_point(const arma::vec3 &point, const arma::mat &map) 
     return bary_coord;
 }
 
+
+unsigned int Element::get_proc() const
+{
+  return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
+}
+    
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:
