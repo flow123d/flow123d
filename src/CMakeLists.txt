@@ -217,6 +217,7 @@ target_link_libraries(mesh_lib
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
     fem/fe_p.cc
+    fem/discrete_space.cc
     fem/dofhandler.cc
     fem/fe_values.cc
     fem/finite_element.cc
