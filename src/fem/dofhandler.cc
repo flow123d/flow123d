@@ -390,8 +390,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     
     lsize_ = next_free_dof - offset;
 
-    n_local_dofs_ = next_free_dof - offset;
-    
     // communicate n_dofs across all processes
     dof_ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);
     n_global_dofs_ = dof_ds_->size();

@@ -94,11 +94,11 @@ TEST(DOFHandler, test_all) {
     FE_P<1,1,3> fe1;
     FE_P<1,2,3> fe2;
     FE_P<1,3,3> fe3;
-    EqualOrderDiscreteSpace ds(mesh, &fe1, &fe2, &fe3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(&ds);
+    dh.distribute_dofs(ds);
     
-    EXPECT_EQ( 8, dh.lsize() );
+    EXPECT_EQ( 8, dh.n_global_dofs() );
     
     unsigned int indices[5][dh.max_elem_dofs()];
     for (unsigned int i=0; i<5; i++)
@@ -146,11 +146,11 @@ TEST(DOFHandler, test_all) {
     FE_P<1,1,3> fe1;
     FE_P<1,2,3> fe2;
     FE_P<1,3,3> fe3;
-    EqualOrderDiscreteSpace ds(mesh, &fe1, &fe2, &fe3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(&ds);
+    dh.distribute_dofs(ds);
     
-    EXPECT_EQ( 15, dh.lsize() );
+    EXPECT_EQ( 15, dh.n_global_dofs() );
     
     unsigned int indices[mesh->n_elements()][dh.max_elem_dofs()];
     for (unsigned int i=0; i<mesh->n_elements(); i++)

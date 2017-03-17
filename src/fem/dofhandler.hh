@@ -45,7 +45,7 @@ public:
      * @param _mesh The mesh.
      */
     DOFHandlerBase(Mesh &_mesh)
-    : global_dof_offset(0), n_global_dofs_(0), n_local_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
+    : global_dof_offset(0), n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
 
     /**
      * @brief Alias for iterator over cells.
@@ -62,8 +62,6 @@ public:
      */
     const unsigned int n_global_dofs() const { return n_global_dofs_; }
     
-    const unsigned int n_local_dofs() const { return n_local_dofs_; }
-
     /**
      * @brief Returns the number of the first global dof handled by this
      * DOFHandler.
@@ -131,8 +129,6 @@ protected:
      */
     unsigned int n_global_dofs_;
     
-    unsigned int n_local_dofs_;
-
     /**
      * @brief Number of dofs associated to local process.
      */
