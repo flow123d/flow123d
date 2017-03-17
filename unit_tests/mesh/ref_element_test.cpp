@@ -250,7 +250,7 @@ TEST(RefElement, bary_local){
     EXPECT_ARMA_EQ( arma::vec(bp),  RefElement<2>::local_to_bary(lp));
     EXPECT_ARMA_EQ( arma::vec(lp),  RefElement<2>::bary_to_local(bp));
     
-    lp = "0.2 0.3 0.4"; bp = "0.10.2 0.3 0.4";
+    lp = "0.2 0.3 0.4"; bp = "0.1 0.2 0.3 0.4";
     EXPECT_ARMA_EQ( arma::vec(bp),  RefElement<3>::local_to_bary(lp));
     EXPECT_ARMA_EQ( arma::vec(lp),  RefElement<3>::bary_to_local(bp));
 }
