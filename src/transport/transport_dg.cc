@@ -154,8 +154,8 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
 
-    ds_ = new EqualOrderDiscreteSpace(mesh_, fe1_, fe2_, fe3_);
-	dh_ = new DOFHandlerMultiDim(*mesh_);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe1_, fe2_, fe3_);
+	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
 	dh_->distribute_dofs(ds_);
 }
@@ -177,7 +177,6 @@ FEObjects::~FEObjects()
 	delete map1_;
 	delete map2_;
 	delete map3_;
-	delete dh_;
 }
 
 template<> FiniteElement<0,3> *FEObjects::fe<0>() { return 0; }
@@ -200,7 +199,7 @@ template<> Mapping<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> Mapping<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> Mapping<3,3> *FEObjects::mapping<3>() { return map3_; }
 
-DOFHandlerMultiDim *FEObjects::dh() { return dh_; }
+std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 
 
 template<class Model>
@@ -313,7 +312,7 @@ void TransportDG<Model>::initialize()
 	{
 		// for each substance we allocate output array and vector
 		//output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-		VecCreateSeq(PETSC_COMM_SELF, output_vector_size, &output_vec[sbi]);
+		output_vec[sbi].resize(output_vector_size);
 	}
 	data_.output_field.set_components(Model::substances_.names());
 	data_.output_field.set_mesh(*Model::mesh_);
@@ -368,8 +367,6 @@ TransportDG<Model>::~TransportDG()
     if (gamma.size() > 0) {
         // initialize called
 
-        for (auto &vec : output_vec) VecDestroy(&vec);
-
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             delete ls[i];
@@ -402,8 +399,8 @@ void TransportDG<Model>::output_vector_gather()
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
 		// gather solution to output_vec[sbi]
-	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
-		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), output_vec[sbi], INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+		VecScatterEnd(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
 	}
     VecScatterDestroy(&(output_scatter));
 

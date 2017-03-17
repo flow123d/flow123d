@@ -285,7 +285,7 @@ public:
      * @param fe3d The 3D finite element.
      * @param offset The offset.
      */
-    void distribute_dofs(DiscreteSpace *ds,
+    void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     		const unsigned int offset = 0);
 
     /**
@@ -373,7 +373,7 @@ private:
      * @brief Pointer to the finite element class for which the handler
      * distributes dofs.
      */
-    DiscreteSpace *ds_;
+    std::shared_ptr<DiscreteSpace> ds_;
 
     /**
      * @brief Number of dofs associated to geometrical entities.

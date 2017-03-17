@@ -246,7 +246,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 }
 
 
-void DOFHandlerMultiDim::distribute_dofs(DiscreteSpace *ds,
+void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
 		const unsigned int offset)
 {
 	// First check if dofs are already distributed.
@@ -375,7 +375,7 @@ void DOFHandlerMultiDim::distribute_dofs(DiscreteSpace *ds,
       }
       
       // add dofs owned only by the element
-      for (int i=0; i<elem_dof_starts[cell.index()+1] - elem_dof_starts[cell.index()]; i++)
+      for (int i=0; i<elem_dof_starts[loc_el+1] - elem_dof_starts[loc_el]; i++)
       {
         elem_dofs[elem_dof_starts[loc_el]+i] = next_free_dof++;
         dof_indices.push_back(elem_dofs[elem_dof_starts[loc_el]+i]);
@@ -507,7 +507,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     row_4_el = mesh_->get_row_4_el();
 
     // create local array of edges
-    for (unsigned int iedg=0; iedg<mesh_->edges.size(); iedg++)
+    for (unsigned int iedg=0; iedg<mesh_->n_edges(); iedg++)
     {
         bool is_edge_local = false;
         Edge *edg = &mesh_->edges[iedg];
@@ -522,7 +522,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     }
 
     // create local array of neighbours
-	for (unsigned int inb=0; inb<mesh_->vb_neighbours_.size(); inb++)
+	for (unsigned int inb=0; inb<mesh_->n_vb_neighbours(); inb++)
 	{
 		Neighbour *nb = &mesh_->vb_neighbours_[inb];
 		if (el_is_local(mesh_->element.index(nb->element()))

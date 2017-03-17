@@ -92,6 +92,8 @@ public:
      */
     bool set_time(const TimeStep &time) override;
     
+    /// Implements @p FieldAlgirithmBase::set_mesh.
+    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
     
     virtual ~FieldAddPotential();
 

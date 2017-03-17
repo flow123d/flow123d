@@ -138,7 +138,7 @@ private:
 
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
-    vector<double> corner_pressure;
+    VectorSeqDouble corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
     VectorSeqDouble ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
@@ -155,15 +155,14 @@ private:
     // integrals of squared differences on individual elements - error indicators, can be written out into VTK files
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
-    Vec vec_corner_pressure;
-    DOFHandlerMultiDim *dh;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
     MappingP1<1,3> map1;
     MappingP1<2,3> map2;
     MappingP1<3,3> map3;
     FE_P_disc<1,1,3> fe1;
     FE_P_disc<1,2,3> fe2;
     FE_P_disc<1,3,3> fe3;
-    DiscreteSpace *ds;
+    std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
 
