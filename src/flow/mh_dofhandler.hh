@@ -112,10 +112,22 @@ typedef unsigned int uint;
 template <int spacedim>
 class LocalElementAccessorBase {
 public:
-    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx)
+    /*
+    LocalElementAccessorBase()
+    : dh(nullptr), local_ele_idx_(0), ele(dh->mesh_->element(0))
+    {}
+*/
+
+    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
     : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->element(ele_global_idx()))
     {}
-
+/*
+    void setup(LocalElementAccessorBase<spacedim> other) {
+        dh = other.dh;
+        local_ele_idx_= other.local_ele_idx_;
+        ele = dh->mesh_->element(ele_global_idx());
+    }
+*/
     void reinit( uint loc_ele_idx)
     {
         local_ele_idx_=loc_ele_idx;

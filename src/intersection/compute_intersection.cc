@@ -254,8 +254,8 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
     // change sign according to side orientation
     if(RefElement<2>::normal_orientation(side)) t=-t;
 
-    DBGVAR(s);
-    DBGVAR(t);
+//     DBGVAR(s);
+//     DBGVAR(t);
 
     // if IP is inside of triangle side
     if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){

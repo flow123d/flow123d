@@ -12,7 +12,6 @@
 #include <numeric>
 #include <iostream>
 #include <algorithm>
-#include "system/global_defs.h"
 
 template <int N, int M>
 arma::uvec mat_shape(const arma::mat::fixed<N, M> &x) {
@@ -60,7 +59,7 @@ bool expect_arma_eqal(const ArmaMat1 &ref_arma_mat, const ArmaMat2 &arma_mat, bo
     if (! no_failure) {
         if (fatal) {
             GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );
-            ASSERT(false);
+            throw;
         } else {
             GTEST_NONFATAL_FAILURE_( fail_message.str().c_str() );
         }

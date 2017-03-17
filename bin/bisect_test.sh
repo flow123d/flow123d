@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # Usage:
-# git bisect bisect_test.sh <runtest arguments>
+# git bisect start <bad/new commit> <good/old commit>
+# git bisect run bisect_test.sh <runtest arguments>
 #
 # For every bisect level try to build:
 # Result in git bisect skip if build fails.

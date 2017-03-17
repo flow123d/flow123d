@@ -130,10 +130,21 @@ template<uint dim_A, uint dim_B>
 void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_A, dim_B>> &storage)
 {
     for(auto &isec : storage) {
+
         unsigned int ele_a_idx = isec.component_ele_idx();
         unsigned int ele_b_idx = isec.bulk_ele_idx();
+        ASSERT_EQ_DBG(mesh->element(ele_a_idx)->dim(), dim_A)(ele_a_idx);
+        ASSERT_EQ_DBG(mesh->element(ele_b_idx)->dim(), dim_B)(ele_b_idx);
         element_intersections_[ele_a_idx].push_back(
                     std::make_pair(ele_b_idx, &(isec)) );
+
+
+        if (dim_B==3) {
+            // necessary for 2d-2d intersections
+            element_intersections_[ele_b_idx].push_back(
+                        std::make_pair(ele_a_idx, &(isec)) );
+
+        }
 /*
         element_intersections_[ele_b_idx].push_back(
                 std::make_pair(ele_a_idx, &(isec)) );*/
@@ -369,7 +380,8 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     }
     append_to_index(intersection_storage23_);
     
-     if(d & IntersectionType::d22){
+
+    if(d & IntersectionType::d22){
         START_TIMER("Intersections 2D-2D");
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
@@ -400,6 +412,13 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     //ASSERT_EQ(intersection_storage22_.size(), 0);
     // compose master
     append_to_index(intersection_storage12_);
+
+    // release temporary links from 3d elements
+    FOR_ELEMENTS(mesh, elm) {
+        if(elm->dim() == 3) element_intersections_[elm->index()].clear();
+    }
+
+
 
 }
 

@@ -61,11 +61,15 @@ private:
         return tensor_average_[4*row_dim + col_dim];
     }
 
+    void add_to_linsys(double scale);
+
     vector<IsecData> isec_data_list;
 
     /// Row matrices to compute element pressure as average of boundary pressures
     std::vector< arma::mat > tensor_average_;
     IntersectionQuadratureP0 quadrature_;
+    arma::mat product_;
+    LocalElementAccessorBase<3> slave_ac_;
 };
 
 

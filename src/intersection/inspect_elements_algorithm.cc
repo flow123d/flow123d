@@ -689,12 +689,13 @@ InspectElementsAlgorithm22::InspectElementsAlgorithm22(Mesh* input_mesh)
 void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<ILpair>>& intersection_map,
                                                        std::vector<IntersectionLocal<2,2>> &storage)
 {
-    DebugOut() << "Intersections 2d-2d\n";
+//     DebugOut() << "Intersections 2d-2d\n";
     ASSERT(storage.size() == 0);
     create_component_numbering();
     
     unsigned int ele_idx, eleA_idx, eleB_idx,
-                 componentA_idx, componentB_idx;
+                 componentA_idx, componentB_idx,
+                 temp_eleA_idx;
                  
     typedef std::pair<unsigned int, unsigned int> ipair;
     std::unordered_set<ipair, boost::hash<ipair>> computed_pairs;
@@ -708,7 +709,7 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
         
         const std::vector<ILpair> &local_map = intersection_map[ele_idx];
         
-        DebugOut() << "more than 2 intersections in tetrahedron found\n";
+//         DebugOut() << print_var(local_map.size());
         for(unsigned int i=0; i < local_map.size(); i++)
         {
             //TODO: 1] compute all plucker coords at once
@@ -719,13 +720,14 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
             componentA_idx = component_idx_[eleA_idx];
             
-            IntersectionLocalBase * ilb = local_map[i].second;
-            DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), componentA_idx);
+//             IntersectionLocalBase * ilb = local_map[i].second;
+//             DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), componentA_idx);
             
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
                 eleB_idx = local_map[j].first;
                 componentB_idx = component_idx_[eleB_idx];
+
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
                 
@@ -733,17 +735,22 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
                 // set master -- slave order
+                // do not overwrite the original eleA
+                temp_eleA_idx = eleA_idx;
+                ElementFullIter temp_eleA = eleA;
                 if (componentA_idx < componentB_idx){
-                    std::swap(eleA_idx, eleB_idx);
-                    std::swap(eleA, eleB);
+                    std::swap(temp_eleA_idx, eleB_idx);
+                    std::swap(temp_eleA, eleB);
                 }
                 
                 //skip candidates already computed
-                ipair ip = std::make_pair(eleA_idx, eleB_idx);
-                if(computed_pairs.count(ip) == 1)
+                ipair ip = std::make_pair(temp_eleA_idx, eleB_idx);
+                if(computed_pairs.count(ip) == 1){
+//                     DBGCOUT(<< "skip: " << eleA_idx << " " << eleB_idx << "\n");
                     continue;
+                }
                 else{
-                    compute_single_intersection(eleA, eleB, storage);
+                    compute_single_intersection(temp_eleA, eleB, storage);
                     computed_pairs.emplace(ip);
                 }
                 
@@ -837,7 +844,7 @@ void InspectElementsAlgorithm22::create_component_numbering()
 void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue)
 {
     ASSERT(ele->dim() == 2);
-    for(int sid=0; sid < ele->n_sides(); sid++) {
+    for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
         Edge* edg = ele->side(sid)->edge();
         
         for(int j=0; j < edg->n_sides;j++) {

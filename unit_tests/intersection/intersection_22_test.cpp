@@ -29,10 +29,10 @@ void fill_solution(std::vector< TestCase> &c)
     c.push_back({"cube_2f_comp_coarse", {1,0}});
     c.push_back({"cube_2f_comp_fine", {1,0}});
     c.push_back({"cube_2f_incomp", {2,1}});
-//     c.push_back({"cube_2f_incomp_SurfaceComp", {2,1}});
-//     c.push_back({"cube_mult_compXincomp", {3,2}});
-//     c.push_back({"cube_mult_compXincomp_triangle", {4,6.840032688952172}});
-//     c.push_back({"cube_mult_compXincomp_2triangles", {5,10.988973338817276}});
+    c.push_back({"cube_2f_incomp_SurfaceComp", {2,1}});
+    c.push_back({"cube_mult_compXincomp", {3,2}});
+    c.push_back({"cube_mult_compXincomp_triangle", {4,6.840032688952172}});
+    c.push_back({"cube_mult_compXincomp_2triangles", {5,10.988973338817276}});
 }
 
 void compute_intersection(Mesh *mesh, TestCaseResult result)
@@ -46,7 +46,7 @@ void compute_intersection(Mesh *mesh, TestCaseResult result)
     double total_length = ie.measure_22();
     cout << "total_length = " << setprecision(17) << total_length << endl;
     EXPECT_EQ(result.first, ie.number_of_components(2));
-    EXPECT_EQ(result.second, total_length);
+    EXPECT_DOUBLE_EQ(result.second, total_length);
 }
 
 
