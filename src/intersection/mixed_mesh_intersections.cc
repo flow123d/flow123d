@@ -339,14 +339,14 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     }
     append_to_index(intersection_storage23_);
     
-
+/*
     if(d & IntersectionType::d22){
         START_TIMER("Intersections 2D-2D");
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
     }
     append_to_index(intersection_storage22_);
-
+*/
 
     if(d & IntersectionType::d12_3){
         START_TIMER("Intersections 1D-2D (3)");
