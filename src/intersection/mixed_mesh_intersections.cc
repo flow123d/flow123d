@@ -112,9 +112,13 @@ void MixedMeshIntersections::store_intersection(std::vector<IntersectionLocal<di
     //unsigned int ele_a_idx = isec_aux.component_ele_idx();
     //unsigned int ele_b_idx = isec_aux.bulk_ele_idx();
 
+    //WARNING: 
+    // - not all algorithms uses this function (e.g. 2d2d pushes directly into storage)
+    // - we cannot throw away isec of zero measure generaly (e.g. 1d2d, 1d3d)
+    // - is it not better to test number of IPs according to dimensions?
+    
     IntersectionLocal<dim_A, dim_B> isec(isec_aux);
-    // NOTE Is it not better to test number of IPs?
-    if (isec.compute_measure() < 1e-14) return;
+//     if (isec.compute_measure() < 1e-14) return;
     storage.push_back(isec);
     /*
     element_intersections_[ele_a_idx].push_back(
@@ -288,6 +292,7 @@ void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLoca
     START_TIMER("Intersection algorithm");
     algorithm12_.compute_intersections_2(mesh->get_bih_tree());
     END_TIMER("Intersection algorithm");
+    DBGVAR(algorithm12_.intersectionaux_storage12_.size());
     
     START_TIMER("Intersection into storage");
     storage.reserve(algorithm12_.intersectionaux_storage12_.size());
