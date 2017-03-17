@@ -28,7 +28,11 @@ namespace IT = Input::Type;
 
 
 /**
- * Helper class allows calculate projection points by dimension (dim)
+ * Helper class allows to work with ObservePoint above elements with different dimensions
+ *
+ * Allows:
+ *  - calculate projection of points by dimension
+ *  - snap to subelement
  */
 template<unsigned int dim>
 class ProjectionHandler {
@@ -70,7 +74,31 @@ public:
 		}
 
 		return return_status;
-	};
+	}
+
+    /**
+     * Snap local coords to the subelement. Called by the ObservePoint::snap method.
+     */
+	void snap_to_subelement(Element & elm)
+	{
+		if (observe_data_->snap_dim_ <= dim) {
+			double min_dist = 2.0; // on the ref element the max distance should be about 1.0, smaler then 2.0
+			arma::vec min_center;
+			for(auto &center : RefElement<dim>::centers_of_subelements(observe_data_->snap_dim_))
+			{
+				double dist = arma::norm(center - observe_data_->local_coords_, 2);
+				if ( dist < min_dist) {
+					min_dist = dist;
+					min_center = center;
+				}
+			}
+			observe_data_->local_coords_ = min_center;
+		}
+
+		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
+		observe_data_->global_coords_ =  elm_map * arma::join_cols(observe_data_->local_coords_, arma::ones(1));
+	}
+
 private:
 	/// Shared data of ObservePoint
 	std::shared_ptr<ObservePoint::ObserveData> observe_data_;
@@ -163,37 +191,30 @@ bool ObservePoint::have_observe_element() {
 
 
 
-template <int ele_dim>
-void ObservePoint::snap_to_subelement()
-{
-    if (observe_data_->snap_dim_ >  ele_dim) return;
-
-    double min_dist = 2.0; // on the ref element the max distance should be about 1.0, smaler then 2.0
-    arma::vec min_center;
-    for(auto &center : RefElement<ele_dim>::centers_of_subelements(observe_data_->snap_dim_))
-    {
-        double dist = arma::norm(center - observe_data_->local_coords_, 2);
-        if ( dist < min_dist) {
-            min_dist = dist;
-            min_center = center;
-        }
-    }
-    observe_data_->local_coords_ = min_center;
-}
-
-
 void ObservePoint::snap(Mesh &mesh)
 {
     Element & elm = mesh.element[observe_data_->element_idx_];
     switch (elm.dim()) {
-             case 1: snap_to_subelement<1>(); break;
-             case 2: snap_to_subelement<2>(); break;
-             case 3: snap_to_subelement<3>(); break;
-             default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
+        case 1:
+        {
+        	ProjectionHandler<1> ph(observe_data_);
+        	ph.snap_to_subelement(elm);
+            break;
+        }
+        case 2:
+        {
+        	ProjectionHandler<2> ph(observe_data_);
+        	ph.snap_to_subelement(elm);
+            break;
+        }
+        case 3:
+        {
+        	ProjectionHandler<3> ph(observe_data_);
+        	ph.snap_to_subelement(elm);
+            break;
+        }
+        default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
     }
-    arma::mat map;
-    this->point_projection(map, elm);
-    observe_data_->global_coords_ =  map * arma::join_cols(observe_data_->local_coords_, arma::ones(1));
 }
 
 
@@ -299,33 +320,6 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
     out << setw(indent_spaces) << "" << "  observe_point: " << field_value_to_yaml(observe_data_->global_coords_, precision) << endl;
 }
 
-
-
-void ObservePoint::point_projection(arma::mat &elm_map, Element &elm) {
-	switch (elm.dim()) {
-	case 1:
-	{
-		MappingP1<1,3> mapping;
-		elm_map = mapping.element_map(elm);
-		break;
-	}
-	case 2:
-	{
-		MappingP1<2,3> mapping;
-		elm_map = mapping.element_map(elm);
-		break;
-	}
-	case 3:
-	{
-		MappingP1<3,3> mapping;
-		elm_map = mapping.element_map(elm);
-		break;
-	}
-	default:
-		ASSERT(false).error("Invalid element dimension!");
-	}
-
-}
 
 
 bool ObservePoint::point_projection(unsigned int i_elm, double &projection_min, Element &elm, ProjectionCases projection_case) {

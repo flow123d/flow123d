@@ -87,12 +87,6 @@ protected:
     bool have_observe_element();
 
     /**
-     * Snap local coords to the subelement. Called by the snap method.
-     */
-    template <int ele_dim>
-    void snap_to_subelement();
-
-    /**
      *  Snap to the center of closest subelement with dimension snap_dim_.
      *  This makes final adjustment of global_coords_ and local_coords_.
      */
@@ -120,7 +114,6 @@ protected:
     void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
     /// Project point to given element by dimension of this element.
-    void point_projection(arma::mat &elm_map, Element &elm); // obsolete method, will be removed
     bool point_projection(unsigned int i_elm, double &projection_min, Element &elm, ProjectionCases projection_case);
 
     /// Index in the input array.
