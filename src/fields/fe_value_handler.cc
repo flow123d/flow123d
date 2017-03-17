@@ -125,12 +125,12 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Quadrature<elemdim> quad(1);
 		quad.set_point(0, im*p_rel);
 
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(cell), update_values);
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++)
+		for (unsigned int i=0; i<dh_->fe<elemdim>(cell)->n_dofs(); i++)
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
 	}

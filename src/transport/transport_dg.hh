@@ -28,6 +28,7 @@
 #include "flow/mh_dofhandler.hh"
 #include "io/equation_output.hh"
 
+class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
@@ -87,6 +88,8 @@ private:
 	Mapping<2,3> *map2_;
 	Mapping<3,3> *map3_;
 
+    std::shared_ptr<DiscreteSpace> ds_;
+    
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
