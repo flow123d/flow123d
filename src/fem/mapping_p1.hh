@@ -129,14 +129,14 @@ public:
      * Result vector have dimension dim()+1. Local coordinates are the first.
      * Last is 1-...
      */
-    arma::vec::fixed<dim+1> project_point(const arma::vec3 &point, const arma::mat &map) const;
+    arma::vec::fixed<dim+1> project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const;
 
     /**
      * Clip a point given by barycentric cocordinates to the element.
      * If the point is out of the element the closest point
      * projection to the element surface is used.
      */
-    arma::vec clip_to_element(arma::vec &barycentric);
+    arma::vec::fixed<dim+1> clip_to_element(arma::vec::fixed<dim+1> &barycentric);
 
 private:
 

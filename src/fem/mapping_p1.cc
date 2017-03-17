@@ -285,9 +285,9 @@ void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cel
 {}
 
 template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat &map) const
+arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const
 {
-    arma::mat A=map.cols(0, dim-1);
+    arma::mat::fixed<3, dim> A=map.cols(0, dim-1);
     arma::mat::fixed<dim, dim> AtA = A.t()*A;
     arma::vec::fixed<dim> Atb = A.t()*(point - map.col(dim));
     arma::vec::fixed<dim+1> bary_coord;
@@ -298,20 +298,20 @@ arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 
 }
 
 template<>
-arma::vec::fixed<1> MappingP1<0,3>::project_point(const arma::vec3 &point, const arma::mat &map) const
+arma::vec::fixed<1> MappingP1<0,3>::project_point(const arma::vec3 &point, const arma::mat::fixed<3,1> &map) const
 {
     return arma::ones(1);
 }
 
 
 template<unsigned int dim, unsigned int spacedim>
-arma::vec MappingP1<dim,spacedim>::clip_to_element(arma::vec &barycentric) {
+arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::clip_to_element(arma::vec::fixed<dim+1> &barycentric) {
     return RefElement<dim>::clip(barycentric);
 }
 
 
 template<>
-arma::vec MappingP1<0,3>::clip_to_element(arma::vec &barycentric) {
+arma::vec::fixed<1> MappingP1<0,3>::clip_to_element(arma::vec::fixed<1> &barycentric) {
 	ASSERT(false).error("Clipping isn't supported for dim=0.");
     return barycentric; // should never happen
 }

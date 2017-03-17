@@ -57,8 +57,8 @@ public:
 	}
 
 	bool projection(unsigned int i_elm, double &projection_min, Element &elm, ObservePoint::ProjectionCases projection_case) {
-		arma::mat elm_map = mapping_.element_map(elm);
-		arma::vec projection = mapping_.project_point(observe_data_->input_point_, elm_map);
+		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
+		arma::vec::fixed<dim+1> projection = mapping_.project_point(observe_data_->input_point_, elm_map);
 
 		projection_min = projection.min(); // set min value of projection vector
 		bool return_status = (projection_min >= -BoundingBox::epsilon); // set return value, true if point in element
@@ -69,7 +69,7 @@ public:
 		if ( (return_status && projection_case == ObservePoint::ProjectionCases::update_if_in_elem)
 				|| (projection_case == ObservePoint::ProjectionCases::clip_update) ) {
 			projection[elm.dim()] = 1.0; // use last coordinates for translation
-			arma::vec global_coord = elm_map*projection;
+			arma::vec3 global_coord = elm_map*projection;
 			update_projection(i_elm, projection.rows(0, elm.dim()-1), global_coord);
 		}
 
