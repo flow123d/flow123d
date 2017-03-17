@@ -310,9 +310,17 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
     //DebugOut() << print_var(std::fabs(w_sum));
     //DebugOut() << print_var(scale_line_);
     //DebugOut() << print_var(scale_triangle_);
+     
     if(std::fabs(w_sum) > rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_)
         w = w / w_sum;
-        
+    
+    /* case 'w_sum == 0':
+     * 1] all products are zero => n_negative=0 and n_positive=0 => it is degenerate case (coplanar case)
+     * 2] at least two products are nonzero AND some of them must be negative => no intersection 
+     *    (it happens when line is parallel with the triangle but not coplanar; unit test line_triangle09.msh)
+     * See the IF conditions below.
+     */
+
     for (unsigned int i=0; i < 3; i++) {
         //DebugOut() << print_var(i) << print_var(w[i]);
         if (w[i] > rounding_epsilon) n_positive++;
