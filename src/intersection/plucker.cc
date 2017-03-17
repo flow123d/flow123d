@@ -1,7 +1,7 @@
 #include "plucker.hh"
 
 using namespace std;
-namespace computeintersection{
+
 
 
 double Plucker::operator*(const Plucker &b){
@@ -35,4 +35,4 @@ ostream& operator<<(ostream& os, const Plucker& p)
     return os;
 }
 
-} // END namespace_close
+

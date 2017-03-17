@@ -174,6 +174,9 @@ public:
      * @param pid  Permutations index.
      * @param subq @p dim-1 dimensional quadrature for integration on the side.
      * @param q    The computed @p dim dimensional quadrature.
+     *
+     * TODO: use similar functionality in RefElement for point transformation, should be part of Quadrature classes since it is
+     * related to the RefElement only.
      */
     void transform_subquadrature(unsigned int sid,
     		unsigned int pid,
@@ -208,7 +211,7 @@ void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
         el_bar_coords.zeros();
         lambda = 0;
         // Apply somewhere permutation of indices!
-        for (int j=0; j<dim-1; j++)
+        for (unsigned int j=0; j<dim-1; j++)
         {
             side_bar_coords(j) = sub_point(j);
             lambda += sub_point(j);

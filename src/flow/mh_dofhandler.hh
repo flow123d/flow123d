@@ -116,6 +116,12 @@ public:
     : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->element(ele_global_idx()))
     {}
 
+    void reinit( uint loc_ele_idx)
+    {
+        local_ele_idx_=loc_ele_idx;
+        ele=dh->mesh_->element(ele_global_idx());
+    }
+
     uint dim() {
         return ele->dim();
     }

@@ -242,15 +242,15 @@ TEST(RefElement, interpolate) {
 
 
 TEST(RefElement, bary_local){
-    arma::vec lp("0.3"), bp("0.3 0.7");
+    arma::vec lp("0.3"), bp("0.7 0.3 ");
     EXPECT_ARMA_EQ( arma::vec(bp),  RefElement<1>::local_to_bary(lp));
     EXPECT_ARMA_EQ( arma::vec(lp),  RefElement<1>::bary_to_local(bp));
     
-    lp = "0.2 0.3"; bp = "0.2 0.3 0.5";
+    lp = "0.2 0.3"; bp = "0.5 0.2 0.3";
     EXPECT_ARMA_EQ( arma::vec(bp),  RefElement<2>::local_to_bary(lp));
     EXPECT_ARMA_EQ( arma::vec(lp),  RefElement<2>::bary_to_local(bp));
     
-    lp = "0.2 0.3 0.4"; bp = "0.2 0.3 0.4 0.1";
+    lp = "0.2 0.3 0.4"; bp = "0.10.2 0.3 0.4";
     EXPECT_ARMA_EQ( arma::vec(bp),  RefElement<3>::local_to_bary(lp));
     EXPECT_ARMA_EQ( arma::vec(lp),  RefElement<3>::bary_to_local(bp));
 }

@@ -50,8 +50,10 @@
 
 #include "mesh/mesh_types.hh"
 #include <armadillo>
+//#include <iostream>
+#include "intersection/intersection_local.hh"
 
-#include "mesh/ngh/include/intersectionLocal.h"
+//#include "mesh/ngh/include/intersectionLocal.h"
 
 
 
@@ -137,41 +139,54 @@
  *
  *  K tomu staci mit matici transformace pruniku na referencni element. Takze bych pro jednotlive dvojice element - prunik mel matici + posouvaci vektor z armadila.
  *
- *
+ * TODO:
+ * - review previous notes
  *
  */
 
-#include <iostream>
 
-class Intersection {
+/**
+ * Quadrature class for mortar like P0 algorithm. Currently is considered to be constructed on fly from IntersectionLocal.
+ * If we find a way how to merge it with IntersectionQuadratureP1 we can save these new object instead IntersectionLocal
+ * or precompute these if it pays off.
+ */
+class IntersectionQuadratureP0 {
 public:
-    Intersection(const ElementFullIter ele_master, const ElementFullIter ele_slave,
-    			 const IntersectionLocal *isec);
+    inline IntersectionQuadratureP0( Mesh &mesh)
+    : mesh_(mesh)
+    {}
 
-    /// dimension of the master element
-    unsigned int master_dim();
+    inline void reinit(const IntersectionLocalBase *isec)
+    {
+        slave_idx_ = isec->bulk_ele_idx();
+        ElementFullIter ele = mesh_.element(isec->component_ele_idx());
+        if (typeid(isec) == typeid(IntersectionLocal<2,2> *)) {
+            //
+            auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
+            ASSERT_EQ_DBG( il->size(), 2);
 
-    /// dimension of the slave element
-    unsigned int slave_dim();
+            arma::vec3 diff = (*il)[0].coords(ele) - (*il)[1].coords(ele);
+            measure_= arma::norm(diff, 2);
+        } else {
+            // We can save some multiplications moving measure of the master element into
+            // common scale coefficient. However then the meaning of measure_ depends on the case.
 
-    const Element * master_iter() const
-        {return const_cast<Element *>( (Element *)(master) );}
-    const Element * slave_iter() const
-        {return const_cast<Element *>( (Element *)(slave) );}
+            // multiply by jacobian of transform to real element.
+            measure_= isec->compute_measure() * ele->measure() * ele->dim();
+        }
+    }
 
-    arma::vec map_to_master(const arma::vec &point) const;
-    arma::vec map_to_slave(const arma::vec &point) const;
-    double intersection_true_size() const;
+
+    inline uint slave_idx() const
+        {return slave_idx_;}
+
+    inline double measure() const
+        {return measure_;}
+
 private:
-    /// dimenze pruniku
-    unsigned int dim;
-    ElementFullIter master, slave; // master lower dimension
-
-    /// matrix part of linear transform from reference element of intersection to reference element of master or slave
-    arma::Mat<double> master_map, slave_map;
-    /// shift vector of the linear transform
-    arma::vec master_shift, slave_shift;
-    void intersection_point_to_vectors(const IntersectionPoint *point, arma::vec &vec1, arma::vec &vec2);
+    Mesh &mesh_;
+    unsigned int slave_idx_;
+    double measure_;
 };
 
 

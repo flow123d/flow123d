@@ -10,6 +10,17 @@
 
 #include <flow_gtest.hh>
 
+
+#include <input/type_record.hh>
+
+// Test of correct includes in type_record.hh
+TEST(InputTypeRecord, includes) {
+	using namespace Input::Type;
+	Record rec = Record("EmptyRec", "description").close();
+	EXPECT_EQ( rec.class_name(), "Record");
+}
+
+
 #include <input/input_type.hh>
 #include <input/reader_to_storage.hh>
 

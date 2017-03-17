@@ -385,3 +385,17 @@ double LinSys_BDDC::get_solution_precision()
 }
 
 
+void LinSys_BDDC::print_matrix(std::ostream& out)
+{
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    if(rank == 0){
+        out << "zzz = [\n";
+    
+        bddcml_->writeMatrix(out);
+        out << "];\n" 
+            << "zzz(:,1:2) = zzz(:,1:2) + ones(size(zzz),2);\n" // fix matlab indices (+1)
+            << "matrix_bddc = spconvert(zzz);\n";
+    }
+}

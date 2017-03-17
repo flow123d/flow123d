@@ -21,6 +21,9 @@
 #include "myvector.h"
 #include "point.h"
 
+
+namespace ngh {
+
 class TPlain {
 private:
     static int numberInstance;
@@ -66,5 +69,7 @@ public:
         return TPlain::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif

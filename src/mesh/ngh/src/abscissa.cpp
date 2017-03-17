@@ -20,6 +20,8 @@
 #include "mesh/ngh/include/abscissa.h"
 #include "stdio.h"
 
+namespace ngh {
+
 int TAbscissa::numberInstance = 0;
 
 int TAbscissa::generateId() {
@@ -106,3 +108,5 @@ double TAbscissa::GetMax(int x) const {
         return X0->Get(x);
     }
 }
+
+} // namespace ngh

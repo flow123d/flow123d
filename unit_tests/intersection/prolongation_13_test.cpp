@@ -26,7 +26,6 @@
 
 
 using namespace std;
-using namespace computeintersection;
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
@@ -123,8 +122,8 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
 }
 
 /// auxiliary function for sorting intersection storage 13d
-bool compare_is13(const computeintersection::IntersectionLocal<1,3>& a,
-                  const computeintersection::IntersectionLocal<1,3>& b)
+bool compare_is13(const IntersectionLocal<1,3>& a,
+                  const IntersectionLocal<1,3>& b)
 {
     if (a.component_ele_idx() == b.component_ele_idx())
         return a.bulk_ele_idx() <= b.bulk_ele_idx();
@@ -138,7 +137,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     double computed_length = 0;
     
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d13);
+    ie.compute_intersections(IntersectionType::d13);
     ie.print_mesh_to_file_13("output_intersection_13");
     
     MessageOut().fmt("N intersections {}\n",ie.intersection_storage13_.size());
@@ -154,8 +153,8 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 //         
 //         if( (elm->dim() == 1) && (ie.intersection_map_[elm->index()].size() > 0) )
 //         {
-//             computeintersection::IntersectionLocal<1,3>* il13 = 
-//                 static_cast<computeintersection::IntersectionLocal<1,3>*> (ie.intersection_map_[elm->index()][0].second);
+//             IntersectionLocal<1,3>* il13 = 
+//                 static_cast<IntersectionLocal<1,3>*> (ie.intersection_map_[elm->index()][0].second);
 //             if(il13 != nullptr)
 //             {
 // //                 DebugOut().fmt("comp idx {}, bulk idx {}, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
@@ -166,7 +165,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 //     }
     
     //test solution
-    std::vector<computeintersection::IntersectionLocal<1,3>> ilc = ie.intersection_storage13_;
+    std::vector<IntersectionLocal<1,3>> ilc = ie.intersection_storage13_;
     
     // sort the storage, so it is the same for every algorithm (BIH, BB ...)
     // and we avoid creating the intersection map for exact IPs

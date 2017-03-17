@@ -9,12 +9,19 @@
 #include <iostream>
 
 using namespace std;
-namespace computeintersection{
+
+IntersectionLocalBase::IntersectionLocalBase()
+{}
+
+
+IntersectionLocalBase::~IntersectionLocalBase()
+{}
 
 IntersectionLocalBase::IntersectionLocalBase(unsigned int component_element_idx, 
                                              unsigned int bulk_element_idx)
 : component_element_idx_(component_element_idx), bulk_element_idx_(bulk_element_idx)
 {}
+
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::IntersectionLocal()
@@ -41,19 +48,18 @@ template<unsigned int dimA, unsigned int dimB>
 IntersectionLocal<dimA,dimB>::~IntersectionLocal()
 {}
 
-    
-// 1D-3D
-template<>
-double IntersectionLocal<1,3>::compute_measure()
+
+template<unsigned int dimA, unsigned int dimB>
+double IntersectionLocal<dimA,dimB>::compute_measure() const
 {
-    //ASSERT(i_points_.size() > 1, "Not enough intersetion points to define a line.");
+    ASSERT_LT_DBG(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
     double length = 0;
-    
-    if(i_points_.size() > 1)
-    for(unsigned int i=0; i < i_points_.size()-1; i++)
-    {
-        length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
-    }
+
+    if(i_points_.size() > 1) // zero measure for point intersections
+        for(unsigned int i=0; i < i_points_.size()-1; i++)
+        {
+            length += abs(i_points_[i].comp_coords()[0] - i_points_[i+1].comp_coords()[0]);
+        }
     return length;
 }
 
@@ -61,7 +67,7 @@ double IntersectionLocal<1,3>::compute_measure()
 
 // 2D-3D
 template<>
-double IntersectionLocal<2,3>::compute_measure()
+double IntersectionLocal<2,3>::compute_measure() const
 {
     double subtotal = 0.0;
     
@@ -164,4 +170,3 @@ template ostream& operator<< <1,2>(ostream &os, const IntersectionLocal<1,2>& s)
 template ostream& operator<< <2,2>(ostream &os, const IntersectionLocal<2,2>& s);
 template ostream& operator<< <1,3>(ostream &os, const IntersectionLocal<1,3>& s); 
 template ostream& operator<< <2,3>(ostream &os, const IntersectionLocal<2,3>& s); 
-}

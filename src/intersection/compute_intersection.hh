@@ -40,8 +40,6 @@
 #include "mesh/ref_element.hh"
 #include "intersection/intersection_point_aux.hh"
 
-namespace computeintersection {
-
 // forward declare
 template<class A, class B> class ComputeIntersection;
 class Plucker;
@@ -542,34 +540,14 @@ private:
     auto vertex_faces(uint i_vtx) -> FacePair;
 
 
-    inline bool have_backlink(uint i_obj) {
-        ASSERT_LT_DBG(i_obj, object_next.size());
-        unsigned int ip = object_next[i_obj];
-        if (ip == no_idx) return false;
-        ASSERT_LT_DBG(ip, IP_next.size());
-        return IP_next[ip] == i_obj;
-    }
-
+    inline bool have_backlink(uint i_obj);
     /**
      * Set links: obj_before -> IP -> obj_after
      * if obj_after have null successor, set obj_after -> IP (backlink)
      */
-    inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip) {
-        if (have_backlink(obj_after_ip)) {
-            // target object is already target of other IP, so it must be source object
-            std::swap(obj_before_ip, obj_after_ip);
-        }
-        //DebugOut().fmt("_before: {} _after: {}\n", object_before_ip, object_after_ip);
-        ASSERT_DBG( ! have_backlink(obj_after_ip) ); // at least one could be target object
-        object_next[obj_before_ip] = ip_idx;
-        IP_next.push_back( obj_after_ip);
-        if (object_next[obj_after_ip] == no_idx) {
-            object_next[obj_after_ip] = ip_idx;
-        }
-    }
+    inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip);
 };
 
-} // END namespace_close
 
 
 #endif  // COMPUTE_INTERSECTION_H_

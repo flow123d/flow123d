@@ -149,6 +149,7 @@ add_library(la_lib
     la/linsys_BDDC.cc
     la/linsys_PETSC.cc
     la/sparse_graph.cc
+    la/local_system.cc
 )
 target_link_libraries(la_lib 
     input_lib system_lib
@@ -184,7 +185,7 @@ add_library(mesh_lib
     mesh/mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
-    mesh/intersection.cc
+#    mesh/intersection.cc
     mesh/ref_element.cc
     mesh/partitioning.cc
     mesh/region_set.cc
@@ -226,6 +227,7 @@ target_link_libraries(mesh_lib
 # fem_lib    
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
+    quadrature/intersection_quadrature.cc
     fem/fe_p.cc
     fem/dofhandler.cc
     fem/fe_values.cc
@@ -283,7 +285,8 @@ target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib
     fparser     
     armadillo
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${Zlib_LIBRARY})
 
 
 
@@ -307,6 +310,7 @@ add_library(flow123d_lib
     flow/darcy_flow_mh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc
+    flow/mortar_assembly.cc
 
     reaction/reaction_term.cc
     reaction/first_order_reaction.cc

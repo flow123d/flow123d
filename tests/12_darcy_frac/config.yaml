@@ -8,3 +8,10 @@ test_cases:
     - 08_square_noncomp_p0.yaml
     - 09_square_noncomp_p1.yaml
   proc: [1]
+
+# do not run these
+- files:
+    - 04_bddc.yaml
+    - 20_cube_noncomp_p0.yaml
+    - 21_cube_noncomp_p1.yaml   
+  proc: []  

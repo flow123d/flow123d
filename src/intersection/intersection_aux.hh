@@ -22,7 +22,6 @@
 
 #include "system/system.hh"
 
-namespace computeintersection{
 
 //forward declare
 template<unsigned int, unsigned int> class IntersectionPointAux;
@@ -71,6 +70,7 @@ public:
     unsigned int is_pathologic() const;      ///< Returns index of bulk element.
     
     /// Computes the relative measure of intersection object.
+    /// TODO: unifiy implementation with IntersectionLocalb
     double compute_measure();
     
     /// Friend output operator.
@@ -114,5 +114,4 @@ inline unsigned int IntersectionAux<dimA,dimB>::is_pathologic() const
 {   return pathologic_; }
 
 
-} // END NAMESPACE
 #endif /* INTERSECTIONAUX_H_ */

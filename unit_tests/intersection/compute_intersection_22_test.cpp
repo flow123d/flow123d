@@ -23,11 +23,10 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 /// auxiliary function for sorting intersection point according to x,y local coordinates of component triangle
-bool compare_ip22(const computeintersection::IntersectionPoint<2,2>& a,
-                  const computeintersection::IntersectionPoint<2,2>& b)
+bool compare_ip22(const IntersectionPoint<2,2>& a,
+                  const IntersectionPoint<2,2>& b)
 {
     if (a.comp_coords()[0] == b.comp_coords()[0])
         return a.comp_coords()[1] <= b.comp_coords()[1];
@@ -36,44 +35,44 @@ bool compare_ip22(const computeintersection::IntersectionPoint<2,2>& a,
 }
 
 /// Create results for the meshes in directory 'simple_meshes_22d'.
-void fill_22d_solution(std::vector<computeintersection::IntersectionLocal<2,2>> &ils)
+void fill_22d_solution(std::vector<IntersectionLocal<2,2>> &ils)
 {
     ils.clear();
     ils.resize(10);
     
-    ils[0].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.5,0.5})));
+    ils[0].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.5,0.5})));
     
-    ils[1].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0,1})));
+    ils[1].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0,1})));
     
-    ils[2].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,1})));
+    ils[2].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,1})));
     
-    ils[3].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0.25,0.25}),arma::vec2({0,1})));
+    ils[3].points().push_back(IntersectionPoint<2,2>(arma::vec2({0.25,0.25}),arma::vec2({0,1})));
     
-    ils[4].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,0})));
-    ils[4].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,1}),arma::vec2({0,1})));
+    ils[4].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,0})));
+    ils[4].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,1}),arma::vec2({0,1})));
     
-    ils[5].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,0})));
-    ils[5].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0.25,0.75}),arma::vec2({0,1})));
+    ils[5].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,0})));
+    ils[5].points().push_back(IntersectionPoint<2,2>(arma::vec2({0.25,0.75}),arma::vec2({0,1})));
     
-    ils[6].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,0})));
-    ils[6].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0.25,0.5}),arma::vec2({0,1})));
+    ils[6].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0}),arma::vec2({0,0})));
+    ils[6].points().push_back(IntersectionPoint<2,2>(arma::vec2({0.25,0.5}),arma::vec2({0,1})));
     
-    ils[7].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({1,1})/4,arma::vec2({0.5,0})));
-    ils[7].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({2,5})/8,arma::vec2({0,0.5})));
+    ils[7].points().push_back(IntersectionPoint<2,2>(arma::vec2({1,1})/4,arma::vec2({0.5,0})));
+    ils[7].points().push_back(IntersectionPoint<2,2>(arma::vec2({2,5})/8,arma::vec2({0,0.5})));
     
-    ils[8].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.4,0.4})));
-    ils[8].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0.25,0.5}),arma::vec2({0.5,0.5})));
+    ils[8].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0.4,0.4})));
+    ils[8].points().push_back(IntersectionPoint<2,2>(arma::vec2({0.25,0.5}),arma::vec2({0.5,0.5})));
     
-    ils[9].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0,0})));
-    ils[9].points().push_back(computeintersection::IntersectionPoint<2,2>(arma::vec2({2/3.0,1/3.0}),arma::vec2({2.0/30,2.0/30})));
+    ils[9].points().push_back(IntersectionPoint<2,2>(arma::vec2({0,0.5}),arma::vec2({0,0})));
+    ils[9].points().push_back(IntersectionPoint<2,2>(arma::vec2({2/3.0,1/3.0}),arma::vec2({2.0/30,2.0/30})));
 }
 
 // Permutes tetrahedron coordinates of IP<2,2> according to given permutation.
-computeintersection::IntersectionLocal<2,2> permute_coords(computeintersection::IntersectionLocal<2,2> il,
+IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
                                                            std::vector<unsigned int> permute)
 {
-    computeintersection::IntersectionLocal<2,2> new_il = il;
-    std::vector<computeintersection::IntersectionPoint<2,2>> & points = il.points();
+    IntersectionLocal<2,2> new_il = il;
+    std::vector<IntersectionPoint<2,2>> & points = il.points();
     for(unsigned int i = 0; i < points.size(); i++)
     {
         arma::vec3 new_coords;
@@ -87,12 +86,12 @@ computeintersection::IntersectionLocal<2,2> permute_coords(computeintersection::
         for(unsigned int j = 0; j < 3; j++)
             new_coords[j] = old_coords[permute[j]];
         
-        new_il.points()[i] = computeintersection::IntersectionPoint<2,2>(new_coords.subvec(1,2), points[i].bulk_coords());
+        new_il.points()[i] = IntersectionPoint<2,2>(new_coords.subvec(1,2), points[i].bulk_coords());
     }
     return new_il;
 }
 
-void compute_intersection_22d(Mesh *mesh, const computeintersection::IntersectionLocal<2,2> &il)
+void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
     Simplex<2> triaA = create_simplex<2>(mesh->element(0)),
                triaB = create_simplex<2>(mesh->element(1));
@@ -108,7 +107,7 @@ void compute_intersection_22d(Mesh *mesh, const computeintersection::Intersectio
 //         ip.coords(mesh->element(0)).print("ip");
 //     }
 
-    computeintersection::IntersectionLocal<2,2> ilc(is);
+    IntersectionLocal<2,2> ilc(is);
     EXPECT_EQ(ilc.size(), il.size());
     
     // sort ips in ils according local coordinates of component triangle
@@ -131,7 +130,7 @@ TEST(intersections_22d, all) {
     
     read_files_from_dir(dir_name, "msh", filenames);
     
-    std::vector<computeintersection::IntersectionLocal<2,2>> solution;
+    std::vector<IntersectionLocal<2,2>> solution;
     fill_22d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH

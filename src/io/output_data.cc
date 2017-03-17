@@ -96,11 +96,13 @@ void OutputData<Value>::print_ascii_all(ostream &out_stream)
 
 /// Prints the whole data vector into stream.
 template <class Value>
-void OutputData<Value>::print_binary_all(ostream &out_stream)
+void OutputData<Value>::print_binary_all(ostream &out_stream, bool print_data_size)
 {
-	// write size of data
-	unsigned long long int data_byte_size = this->n_values * n_elem_ * sizeof(ElemType);
-	out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
+	if (print_data_size) {
+		// write size of data
+		unsigned long long int data_byte_size = this->n_values * n_elem_ * sizeof(ElemType);
+		out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
+	}
     // write data
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
@@ -116,7 +118,7 @@ void OutputData<Value>::print_all_yaml(ostream &out_stream, unsigned int precisi
 {
     out_stream << "[ ";
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
-        if (idx != 0) out_stream << ", ";
+        if (idx != 0) out_stream << " , ";
         ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         typename Value::return_type value;
         out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin), precision );

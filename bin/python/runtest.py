@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-from __future__ import absolute_import
 import pathfix
 pathfix.init()
 # ----------------------------------------------
@@ -28,6 +27,9 @@ def create_parser():
     argparser.Parser.add(group, '--valgrind, -v', nargs='?', default=False, help="""R|
         Run tests under valgrind, with python suppression with optional argument
         <valgrind args> passed to the valgrind. (In PBS mode this arguments is ignored.)?
+    """)
+    argparser.Parser.add(group, '--massif', action='store_true', default=False, help="""R|
+        If set will print valgrind massif memory allocation stats.
     """)
     argparser.Parser.add(group, '--parallel, -p', default=1, type=int, help="""R|
         Run at most N jobs in parallel.

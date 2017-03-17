@@ -29,19 +29,17 @@
 
 class Mesh; // forward declare
 
-namespace computeintersection {
-
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 class IntersectionLocalBase;
 
-class MixedMeshIntersections;
+
 class InspectElementsAlgorithm22;
 
 /// First = element index, Second = pointer to intersection object.
 typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
-    
+
 template<unsigned int dimA, unsigned int dimB>
 class IntersectionAlgorithmBase{
 public:
@@ -170,7 +168,7 @@ private:
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
     void prolongation_decide(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele, 
-                             const IntersectionAux<dim,3> &is);
+                             IntersectionAux<dim,3> is);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
@@ -216,7 +214,8 @@ private:
     std::vector<unsigned int> component_idx_;
     
     /// Computes fundamental intersection of two 2D elements.
-    void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB);
+    void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB,
+                                     std::vector<IntersectionLocal<2,2>> &storage);
     
     /// Creates numbering of the 2D components and fills component_idx_ vector.
     void create_component_numbering();
@@ -224,7 +223,7 @@ private:
     /// Auxiliary function for front-advancing alg. for component numbering.
     void prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue);
     
-    friend MixedMeshIntersections;
+    friend class MixedMeshIntersections;
 };
 
 
@@ -273,9 +272,8 @@ private:
     /// Computes fundamental 1D-2D intersection of candidate pair.
 //     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
     
-    friend MixedMeshIntersections;
+    friend class MixedMeshIntersections;
 };
 
-} // END namespace
 
 #endif // INSPECT_ELEMENTS_ALGORITHM_H_

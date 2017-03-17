@@ -23,52 +23,51 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 
 /// Create results for the meshes in directory 'simple_meshes_13d'.
-void fill_13d_solution(std::vector<computeintersection::IntersectionLocal<1,3>> &ils)
+void fill_13d_solution(std::vector<IntersectionLocal<1,3>> &ils)
 {
     ils.clear();
     ils.resize(12);
     // ils[0] is empty
-    ils[1].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
-    ils[1].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({1./3}),arma::vec3({1,1,1})/3));
+    ils[1].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
+    ils[1].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({1./3}),arma::vec3({1,1,1})/3));
     // only one IP
-    ils[2].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
+    ils[2].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
     
-    ils[3].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
-    ils[3].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({2./3}),arma::vec3({0,1,0})));
+    ils[3].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0,0,0})));
+    ils[3].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({2./3}),arma::vec3({0,1,0})));
     
-    ils[4].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({0,0.5,0})));
-    ils[4].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({0.5,0.5,0})));
+    ils[4].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({0,0.5,0})));
+    ils[4].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({0.5,0.5,0})));
     
-    ils[5].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({1./3}),arma::vec3({0,0.5,0})));
-    ils[5].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({2./3}),arma::vec3({0.5,0,0})));
+    ils[5].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({1./3}),arma::vec3({0,0.5,0})));
+    ils[5].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({2./3}),arma::vec3({0.5,0,0})));
     // only one IP
-    ils[6].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0.25,0,0.25})));
+    ils[6].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({0.25,0,0.25})));
     
-    ils[7].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({1,1,1})/4));
-    ils[7].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({3,0,3})*0.1));
+    ils[7].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({1,1,1})/4));
+    ils[7].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({3,0,3})*0.1));
     
-    ils[8].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({1,1,1})*0.2));
-    ils[8].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({1}),arma::vec3({1,1,1})*0.3));
+    ils[8].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0}),arma::vec3({1,1,1})*0.2));
+    ils[8].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({1}),arma::vec3({1,1,1})*0.3));
     
     // ils[9] is empty
     // only one IP
-    ils[10].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({1,0,0})/2));
+    ils[10].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({1,0,0})/2));
     
-    ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({2,1,0})/4));
-    ils[11].points().push_back(computeintersection::IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({2,0,1})/4));
+    ils[11].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0.25}),arma::vec3({2,1,0})/4));
+    ils[11].points().push_back(IntersectionPoint<1,3>(arma::vec::fixed<1>({0.5}),arma::vec3({2,0,1})/4));
 }
 
 
 //Permutes tetrahedron coordinates of IP<1,3> according to given permutation.
-computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::IntersectionLocal<1,3> il,
+IntersectionLocal<1,3> permute_coords(IntersectionLocal<1,3> il,
                                                            const std::vector<unsigned int> &permute)
 {
-    computeintersection::IntersectionLocal<1,3> new_il = il;
-    std::vector<computeintersection::IntersectionPoint<1,3>> & points = il.points();
+    IntersectionLocal<1,3> new_il = il;
+    std::vector<IntersectionPoint<1,3>> & points = il.points();
     for(unsigned int i = 0; i < points.size(); i++)
     {
         arma::vec4 new_coords;
@@ -82,12 +81,12 @@ computeintersection::IntersectionLocal<1,3> permute_coords(computeintersection::
         for(unsigned int j = 0; j < 4; j++)
             new_coords[j] = old_coords[permute[j]];
         
-        new_il.points()[i] = computeintersection::IntersectionPoint<1,3>(points[i].comp_coords(), new_coords.subvec(1,3));
+        new_il.points()[i] = IntersectionPoint<1,3>(points[i].comp_coords(), new_coords.subvec(1,3));
     }
     return new_il;
 }
 
-void compute_intersection_13d(Mesh *mesh, const computeintersection::IntersectionLocal<1,3> &il)
+void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
     Simplex<1> line = create_simplex<1>(mesh->element(1));
@@ -104,7 +103,7 @@ void compute_intersection_13d(Mesh *mesh, const computeintersection::Intersectio
 //         ip.coords(mesh->element(0)).print(DebugOut(),"ip");
 //     }
 
-    computeintersection::IntersectionLocal<1,3> ilc(is);
+    IntersectionLocal<1,3> ilc(is);
     EXPECT_EQ(il.size(), ilc.size());
     
     for(unsigned int i=0; i < ilc.size(); i++)
@@ -125,7 +124,7 @@ TEST(intersections_13d, all) {
     
     read_files_from_dir(dir_name, "msh", filenames);
     
-    std::vector<computeintersection::IntersectionLocal<1,3>> solution;
+    std::vector<IntersectionLocal<1,3>> solution;
     fill_13d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH

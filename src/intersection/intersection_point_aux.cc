@@ -14,7 +14,7 @@
 #include "system/system.hh"
 
 using namespace std;
-namespace computeintersection{
+
 
 template<unsigned int N, unsigned int M>
 void IntersectionPointAux<N,M>::clear()
@@ -72,11 +72,20 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1
     local_bcoords_B_.rows(1,M) = local_bcoords_B_.rows(0,M-1);
     local_bcoords_B_[0] = bb;
     
-    idx_A_ = IP.idx_A();
-    idx_B_ = idx_B;
-    orientation_ = IP.orientation();
     dim_A_ = IP.dim_A();
+    idx_A_ = IP.idx_A();
+    orientation_ = IP.orientation();
+
+    /**
+     * TODO: set correct topology on B. Currently this is done ad hoc after call of this constructor.
+     * Problem, dim_B_ can not be used as template parameter. Can we have some variant of interact without
+     * template?
+     */
+    //dim_B_ = IP.dim_B();
+    //idx_B_ =RefElement<M>::interact(Interaction<dim_B_, M-1>(IP.idx_B()));
+
     dim_B_ = M-1;
+    idx_B_ = idx_B;
 };
 
 
@@ -164,7 +173,7 @@ template ostream& operator<< <3,1>(ostream &os, const IntersectionPointAux<3,1>&
 template ostream& operator<< <2,3>(ostream &os, const IntersectionPointAux<2,3>& s);
 template ostream& operator<< <3,2>(ostream &os, const IntersectionPointAux<3,2>& s);
 
-} // END namespace
+
 
 
 

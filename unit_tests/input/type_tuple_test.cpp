@@ -10,6 +10,17 @@
 
 #include <flow_gtest.hh>
 
+#include <input/type_tuple.hh>
+
+// Test of correct includes in type_tuple.hh
+TEST(InputTypeTuple, includes) {
+	using namespace Input::Type;
+	Tuple tpl = Tuple("EmptyTuple", "description").close();
+	EXPECT_EQ( tpl.class_name(), "Tuple");
+}
+
+
+
 #include <input/input_type.hh>
 
 

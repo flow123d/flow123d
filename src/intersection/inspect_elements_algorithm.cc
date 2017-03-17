@@ -5,6 +5,9 @@
  *      Author: pe
  */
 
+#include <unordered_set>
+#include <boost/functional/hash.hpp>
+
 #include "inspect_elements_algorithm.hh"
 #include "intersection_point_aux.hh"
 #include "intersection_aux.hh"
@@ -17,7 +20,7 @@
 #include "mesh/ref_element.hh"
 #include "mesh/bih_tree.hh"
 
-namespace computeintersection {
+
 
 template<unsigned int dimA, unsigned int dimB>
 IntersectionAlgorithmBase<dimA,dimB>::IntersectionAlgorithmBase(Mesh* mesh)
@@ -540,7 +543,7 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& comp_ele,
                                                         const ElementFullIter& bulk_ele,
-                                                        const IntersectionAux<dim,3> &is)
+                                                        IntersectionAux<dim,3> is)
 {
     //DebugOut() << "DECIDE\n";
     // number of IPs that are at vertices of component element (counter used for closing element)
@@ -634,7 +637,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     ElementFullIter elm = mesh->element(pr.component_elm_idx);
     ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
     
-    //DebugOut().fmt("Prolongate {}D: {} in {}.\n", dim, pr.component_elm_idx, pr.elm_3D_idx);
+//     DebugOut().fmt("Prolongate: {} in {}.\n", elm->id(), ele_3D->id());
 
     //TODO: optimization: this might be called before and not every time 
     //(component element is not changing when emptying bulk queue)
@@ -686,12 +689,15 @@ InspectElementsAlgorithm22::InspectElementsAlgorithm22(Mesh* input_mesh)
 void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<ILpair>>& intersection_map,
                                                        std::vector<IntersectionLocal<2,2>> &storage)
 {
-    //DebugOut() << "Intersections 2d-2d\n";
+    DebugOut() << "Intersections 2d-2d\n";
     ASSERT(storage.size() == 0);
     create_component_numbering();
     
     unsigned int ele_idx, eleA_idx, eleB_idx,
                  componentA_idx, componentB_idx;
+                 
+    typedef std::pair<unsigned int, unsigned int> ipair;
+    std::unordered_set<ipair, boost::hash<ipair>> computed_pairs;
     
     FOR_ELEMENTS(mesh, ele) {
     if (ele->dim() == 3)
@@ -702,7 +708,7 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
         
         const std::vector<ILpair> &local_map = intersection_map[ele_idx];
         
-        //DebugOut() << "more than 2 intersections in tetrahedron found\n";
+        DebugOut() << "more than 2 intersections in tetrahedron found\n";
         for(unsigned int i=0; i < local_map.size(); i++)
         {
             //TODO: 1] compute all plucker coords at once
@@ -713,8 +719,8 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
             componentA_idx = component_idx_[eleA_idx];
             
-//             IntersectionLocalBase * ilb = local_map[i].second;
-//             DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), componentA_idx);
+            IntersectionLocalBase * ilb = local_map[i].second;
+            DebugOut().fmt("2d-2d ILB: {} {} {}\n", ilb->bulk_ele_idx(), ilb->component_ele_idx(), componentA_idx);
             
             for(unsigned int j=i+1; j < local_map.size(); j++)
             {
@@ -726,49 +732,41 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
                 ElementFullIter eleB = mesh->element(eleB_idx);
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
-                //skip candidates already computed
-                bool skip = false;
-                for(unsigned int k=0; k<intersection_map[eleA_idx].size(); k++)
-                {
-                    if(intersection_map[eleA_idx][k].first == eleB_idx) {
-                        skip = true;
-                        break;
-                    }
+                // set master -- slave order
+                if (componentA_idx < componentB_idx){
+                    std::swap(eleA_idx, eleB_idx);
+                    std::swap(eleA, eleB);
                 }
-                if(skip) continue;
+                
+                //skip candidates already computed
+                ipair ip = std::make_pair(eleA_idx, eleB_idx);
+                if(computed_pairs.count(ip) == 1)
+                    continue;
+                else{
+                    compute_single_intersection(eleA, eleB, storage);
+                    computed_pairs.emplace(ip);
+                }
+                
+//                 bool skip = false;
+//                 for(unsigned int k=0; k<intersection_map[eleA_idx].size(); k++)
+//                 {
+//                     if(intersection_map[eleA_idx][k].first == eleB_idx) {
+//                         skip = true;
+//                         break;
+//                     }
+//                 }
+//                 if(skip) continue;
                 
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
 //                                eleA.index(), eleB.index(), componentA_idx, componentB_idx);
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
 //                                eleA.id(), eleB.id(), componentA_idx, componentB_idx);
-//                 compute_single_intersection(eleA,
-//                                             eleB);
                 
-                update_simplex(eleA, simplexA);
-                update_simplex(eleB, simplexB);
-                
-                IntersectionAux<2,2> is(eleA_idx, eleB_idx);
-                
-                ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB);
-                CI.init();
-                unsigned int n_local_intersection = CI.compute(is);
-                
-//                 if(n_local_intersection > 0){
-//                     intersectionaux_storage22_.push_back(is);
-//                 }
-                
-                if(n_local_intersection > 0)
-                {
-                    storage.push_back(IntersectionLocal<2,2>(is));
-                    intersection_map[eleA_idx].push_back(std::make_pair(
-                                                         eleB_idx,
-                                                         &(storage.back())
-                                                         ));
-                    intersection_map[eleB_idx].push_back(std::make_pair(
-                                                         eleA_idx,
-                                                         &(storage.back())
-                                                         ));
-                }
+//                 IntersectionAux<2,2> is;
+//                 if (componentA_idx < componentB_idx)
+//                     compute_single_intersection(eleA, eleB, storage);
+//                 else
+//                     compute_single_intersection(eleB, eleA, storage);
             }
         }
     }
@@ -778,7 +776,8 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
 
 
 void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIter& eleA,
-                                                             const ElementFullIter& eleB)
+                                                             const ElementFullIter& eleB,
+                                                             std::vector<IntersectionLocal<2,2>> &storage)
 {
     ASSERT_DBG(eleA->dim() == 2);
     ASSERT_DBG(eleB->dim() == 2);
@@ -794,7 +793,7 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     unsigned int n_local_intersection = CI.compute(is);
     
     if(n_local_intersection > 0){
-        intersectionaux_storage22_.push_back(is);
+        storage.push_back(IntersectionLocal<2,2>(is));
     }
 
 }
@@ -1027,4 +1026,4 @@ template class IntersectionAlgorithmBase<2,2>;
 template class InspectElementsAlgorithm<1>;
 template class InspectElementsAlgorithm<2>;
 
-} // END namespace
+

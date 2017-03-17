@@ -28,7 +28,6 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 /**
  * Ideas for testing:
@@ -40,7 +39,7 @@ using namespace computeintersection;
  *      therefore we sort real points, see compare_coords()
  * - due to sorting, we have no control of correct tracing
  *      (at the moment the comparison of final area with old NGH sort of checks that)
- * - in future, we could have analytical objects in std::vector<computeintersection::IntersectionAux<2,3>> solution
+ * - in future, we could have analytical objects in std::vector<IntersectionAux<2,3>> solution
  *      and check also for topologic position, correct tracing order, orientation of IP, barycentric coords...
  *      - problem here is, we have to always pay attention to given permutations...
  * 
@@ -113,6 +112,7 @@ void fill_solution(std::vector< TestCaseResult> &c)
     c.push_back({ "01_s", {{0.5, 0, 0.5}} }); // s2 corner - s3 edge
 
     c.push_back({ "05_s", {{0.2, 0, 0.8}, {0.8,0, 0.2}} }); // s2 plane - s3 edge
+
     c.push_back({ "06_s", {{0, 0, 0}, {1, 0, 0}}}); // s2 side identical with s3 edge
     c.push_back({ "07_s", {{0, 0, 0}, {0, 0, 1}}}); // s3 edge in s2 plane
     c.push_back({ "08_s", {{0, 0, 0}, {0, 0, 0.5}}}); // s3 edge in s2 plane
@@ -129,13 +129,21 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 }});
 
     c.push_back({ "12_s", { // s2 identical with face of s3
+//                {0, 0, 0},
+//                {1, 0, 0},
+//                {0, 1, 0}
+                {0, 1, 0},
                 {0, 0, 0},
-                {1, 0, 0},
-                {0, 1, 0}}});
+                {1, 0, 0}
+    }});
     c.push_back({ "13_s", { // s2 side on s3 edge; s2 corner on s3 edge
-                {0.2, 0, 0},
+//                {0.2, 0, 0},
+//                {0.2, 0.8, 0},
+//                {0.8, 0.2, 0}
                 {0.2, 0.8, 0},
-                {0.8, 0.2, 0}}});
+                {0.8, 0.2, 0},
+                {0.2, 0, 0}
+    }});
     c.push_back({ "14_s", { // s2 side on s3 edge; s2 corner on s3 edge
                 {0, 0, 0},
                 {0.5, 0.5, 0},
@@ -144,12 +152,33 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0, 0.2, 0}}});
     
     // special polygon, on S3 boundary
+    c.push_back({ "20_s", {
+                {0.25, 0, 0},
+                {0, 0.125, 0.125},
+                {0, 0, 0}
+                }});
 
+    c.push_back({ "21_s", {
+                {0.5, 0, 0},
+                {0.5, 0.5, 0},
+                {0.5, 0.25, 0.25},
+                {0.5, 0, 0.25}
+                }});
     c.push_back({ "22_s", {
                 {0.2, 0.2, 0.4},
                 {0, 0, 0.4},
                 {0.2, 0, 0.4}
                 }});
+    c.push_back({ "23_s", {
+                {0.5, 0.5, 0},
+                {0, 0, 0},
+                {0.25, 0.25, 0.5}
+                }});
+
+    c.push_back({ "24_s", { // s2 corners on : s3 vertex, edge , face
+                {0.5, 0, 0.125},
+                {0.5, 0.25, 0},
+                {1.0, 0, 0}}});
     c.push_back({ "25_s", { // s2 corners on : s3 vertex, edge , face
                 {0.5, 0.5, 0},
                 {0, 0, 0.5},
@@ -158,7 +187,13 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.5, 0.5, 0},
                 {0, 0.25, 0.25},
                 {0, 0, 1}}});
-
+    /*
+    c.push_back({ "27_s", {
+                {0, 0.25, 0.25},
+                {0.25, 0, 0},
+                {0, 0, 0}
+                }});
+*/
 }
 
 /// auxiliary function for sorting intersection point according to x,y local coordinates of component triangle
@@ -198,7 +233,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     EXPECT_EQ(il.size(), is.size());
     
     std::vector<arma::vec3> coords(is.size());
-    computeintersection::IntersectionLocal<2,3> temp_ilc(is);
+    IntersectionLocal<2,3> temp_ilc(is);
     //     std::cout << temp_ilc;
     for(unsigned int i=0; i < is.size(); i++)
     {
@@ -207,15 +242,16 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     // sort computed coords according to real coordinates
     //std::sort(coords.begin(), coords.end(),compare_coords);
     
-    
+    bool ok=true;
     for(unsigned int i=0; i < coords.size(); i++)
     {
         std::cout << "---------- check IP[" << i << "] ----------\n";
         
-        EXPECT_ARMA_EQ(il[i], coords[i]);
+        ok=EXPECT_ARMA_EQ(il[i], coords[i]);
 //         EXPECT_ARMA_EQ(il[i].comp_coords(), ilc[i].comp_coords());
 //         EXPECT_ARMA_EQ(il[i].bulk_coords(), ilc[i].bulk_coords());
     }
+    ASSERT(ok);
 }
 
 void compare_with_ngh(Mesh *mesh)
@@ -224,29 +260,31 @@ void compare_with_ngh(Mesh *mesh)
 
     // compute intersection by NGH
     MessageOut() << "Computing polygon area by NGH algorithm\n";
-    TTriangle ttr;
-    TTetrahedron tte;
-    TIntersectionType it = area;
+    ngh::TTriangle ttr;
+    ngh::TTetrahedron tte;
+    ngh::TIntersectionType it = ngh::area;
 
     FOR_ELEMENTS(mesh, elm) {
         if (elm->dim() == 2) {
-        ttr.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
+        ttr.SetPoints(
+                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
         }else if(elm->dim() == 3){
-        tte.SetPoints(TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                     TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                     TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
-                     TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
+        tte.SetPoints(
+                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
+                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
+                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
+                ngh::TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
         }
     }
-    GetIntersection(ttr, tte, it, area2);
+    ngh::GetIntersection(ttr, tte, it, area2);
     
     
     // compute intersection
     MessageOut() << "Computing polygon area by NEW algorithm\n";
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d23);
+    ie.compute_intersections(IntersectionType::d23);
     area1 = ie.measure_23();
 
 //     ie.print_mesh_to_file_23("output_intersection_23");

@@ -20,7 +20,7 @@
 #include <dirent.h>
 
 using namespace std;
-using namespace computeintersection;
+
 
 void compute_intersection(Mesh *mesh)
 {

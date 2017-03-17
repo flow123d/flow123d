@@ -7,7 +7,6 @@
 #include "intersection/plucker.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 TEST(simplex, all) {
     

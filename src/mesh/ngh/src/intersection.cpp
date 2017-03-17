@@ -29,6 +29,8 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
 void GetIntersection(const TBisector & B1, const TBisector &B2,
         TPosition &pos, double &t1, double &t2) {
     TNSolutions ns;
@@ -1122,3 +1124,4 @@ template<class A, class B> bool QuickIntersectionTest(const A &a, const B &b) {
     return true;
 }
 
+} // namespace ngh

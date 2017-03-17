@@ -23,7 +23,6 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 
 /// Create results for the meshes in directory 'prolong_meshes_23d'.
@@ -106,8 +105,8 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
 }
 
 /// auxiliary function for sorting intersection storage 13d
-bool compare_is23(const computeintersection::IntersectionLocal<2,3>& a,
-                  const computeintersection::IntersectionLocal<2,3>& b)
+bool compare_is23(const IntersectionLocal<2,3>& a,
+                  const IntersectionLocal<2,3>& b)
 {
     if (a.component_ele_idx() == b.component_ele_idx())
         return a.bulk_ele_idx() <= b.bulk_ele_idx();
@@ -122,10 +121,10 @@ void compute_intersection_23d(Mesh *mesh,
 
     // compute intersection
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d23);
+    ie.compute_intersections(IntersectionType::d23);
     
     //test solution
-    std::vector<computeintersection::IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
+    std::vector<IntersectionLocal<2,3>> ilc = ie.intersection_storage23_;
     
     // write computed intersections
     /*
