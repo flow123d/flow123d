@@ -29,17 +29,14 @@ using namespace std;
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
-                       std::vector<double> &lengths,
-                       std::vector<unsigned int>& n_components
+                       std::vector<double> &lengths
                       )
 {
     unsigned int n_files=7;
     ils.clear();
     lengths.clear();
-    n_components.clear();
     ils.resize(n_files);
     lengths.resize(n_files);
-    n_components.resize(n_files, 1);
     
     lengths[0] = 1.5*sqrt(0.27)+0.35+0.2 + sqrt(0.065) + 0.1*sqrt(18) + sqrt(0.105);
     lengths[1] = sqrt(0.24*0.24 + 0.0016 + 0.04) + sqrt( 2* 0.0225 + 0.75*0.75) + 
@@ -53,7 +50,6 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     lengths[6] = 2*0.25*sqrt(3) + 2*0.1*sqrt(9+1+1);
     
     ils[0].resize(9);
-    n_components[0] = 2;
     ils[0][0] = {arma::vec3({1,1,1})/4,arma::vec3({1,0,1})*0.3};
     ils[0][1] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
     ils[0][2] = {arma::vec3({1,1,1})/4,arma::vec3({0.2,0.5,0.2})};
@@ -76,7 +72,6 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     ils[1][6] = {arma::vec3({1,0,1})*0.3,arma::vec3({35,-25,35})*0.01};
     
     ils[2].resize(12);
-    n_components[2] = 3;
     ils[2][0] = {arma::vec3({0.44,0.46,0}),arma::vec3({0.2,0.5,0.2})};
     ils[2][1] = {arma::vec3({0.2,0.5,0.2}),arma::vec3({1,1,1})/4};
     ils[2][2] = {arma::vec3({1,1,1})/4,arma::vec3({0,1,1})*0.05};
@@ -92,14 +87,12 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     ils[2][11] = {arma::vec3({0,-5,5})*0.1,arma::vec3({1./3,0,2./3})};
     
     ils[3].resize(4);
-    n_components[3] = 4;
     ils[3][0] = {arma::vec3({0.25,0.25,0.25}),arma::vec3({0.25,0.25,0})};
     ils[3][1] = {arma::vec3({0.25,0.25,-1}),arma::vec3({0.25,0.25,-1.25})};
     ils[3][2] = {arma::vec3({0.25,0.5,0.25}),arma::vec3({0.25,0.5,0})};
     ils[3][3] = {arma::vec3({0.25,0.5,-1}),arma::vec3({0.25,0.5,-1.25})};
     
     ils[4].resize(6);
-    n_components[4] = 3;
     ils[4][0] = {arma::vec3({0.4,0,0.25}),arma::vec3({0.4,0.25,0.25})};
     ils[4][1] = {arma::vec3({0.4,-0.25,0.25}),arma::vec3({0.4,0,0.25})};
     
@@ -110,12 +103,10 @@ void fill_13d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     ils[4][5] = {arma::vec3({0.5,0,0.5}),arma::vec3({0,0,0})};
     
     ils[5].resize(2);
-    n_components[5] = 2;
     ils[5][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
     ils[5][1] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
     
     ils[6].resize(9);
-    n_components[6] = 2;
     ils[6][0] = {arma::vec3({0,0,0}),arma::vec3({0.25,0.25,0.25})};
     ils[6][1] = {arma::vec3({0,0,0})};
     ils[6][2] = {arma::vec3({-0.25,-0.25,-0.25}),arma::vec3({0,0,0})};
@@ -141,8 +132,7 @@ bool compare_is13(const IntersectionLocal<1,3>& a,
 }
 
 void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il,
-                              const double &length,
-                              const unsigned int &n_components)
+                              const double &length)
 {
     double computed_length = 0;
     
@@ -182,7 +172,6 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     std::sort(ilc.begin(), ilc.end(),compare_is13);
     
     EXPECT_EQ(il.size(), ilc.size());
-    EXPECT_EQ(n_components,ie.number_of_components(1));
     
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
@@ -213,8 +202,7 @@ TEST(intersection_prolongation_13d, all) {
         
     std::vector<std::vector<std::vector<arma::vec3>>> solution;
     std::vector<double> lengths;
-    std::vector<unsigned int> n_components;
-    fill_13d_solution(solution, lengths, n_components);
+    fill_13d_solution(solution, lengths);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s<filenames.size(); s++)
@@ -234,6 +222,6 @@ TEST(intersection_prolongation_13d, all) {
         
         mesh->setup_topology();
         
-        compute_intersection_13d(mesh, solution[s], lengths[s], n_components[s]);
+        compute_intersection_13d(mesh, solution[s], lengths[s]);
     }
 }

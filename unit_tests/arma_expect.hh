@@ -13,7 +13,6 @@
 #include <iostream>
 #include <algorithm>
 
-
 template <int N, int M>
 arma::uvec mat_shape(const arma::mat::fixed<N, M> &x) {
     return arma::uvec({ N, M});

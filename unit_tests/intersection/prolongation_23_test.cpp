@@ -26,14 +26,11 @@ using namespace std;
 
 
 /// Create results for the meshes in directory 'prolong_meshes_23d'.
-void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils, 
-                       std::vector<unsigned int>& n_components)
+void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
 {
     unsigned int n_files=9;
     ils.clear();
-    n_components.clear();
     ils.resize(n_files);
-    n_components.resize(n_files, 1);
     
     ils[0].resize(4);
     ils[0][0] = {   {0.25, 0.25, 0},
@@ -54,7 +51,6 @@ void fill_23d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils,
     
     // no prolongation over a gap between two tetrahedra
     ils[1].resize(4);
-    n_components[1] = 4;
     ils[1][0] = {   {0.25, 0.25, 0.25},
                     {0.25, 0.25, 0},
                     {0.2, 0.25, 0}};
@@ -119,8 +115,7 @@ bool compare_is23(const IntersectionLocal<2,3>& a,
 }
 
 void compute_intersection_23d(Mesh *mesh,
-                              const std::vector<std::vector<arma::vec3>> &il,
-                              const unsigned int& n_components)
+                              const std::vector<std::vector<arma::vec3>> &il)
 {
     double area = 0;
 
@@ -146,7 +141,6 @@ void compute_intersection_23d(Mesh *mesh,
     std::sort(ilc.begin(), ilc.end(),compare_is23);
     
     EXPECT_EQ(ilc.size(), il.size());
-    EXPECT_EQ(n_components,ie.number_of_components(2));
     
     for(unsigned int i=0; i < ilc.size(); i++)
         for(unsigned int j=0; j < ilc[i].size(); j++)
@@ -175,8 +169,7 @@ TEST(intersection_prolongation_23d, all) {
     read_files_from_dir(dir_name, "msh", filenames);
         
     std::vector<std::vector<std::vector<arma::vec3>>> solution;
-    std::vector<unsigned int> n_components;
-    fill_23d_solution(solution, n_components);
+    fill_23d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
@@ -191,6 +184,6 @@ TEST(intersection_prolongation_23d, all) {
         
         mesh->setup_topology();
         
-        compute_intersection_23d(mesh, solution[s], n_components[s]);
+        compute_intersection_23d(mesh, solution[s]);
     }
 }

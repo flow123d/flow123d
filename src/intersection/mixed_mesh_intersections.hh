@@ -98,6 +98,7 @@ public:
     /// Computes the size of the intersection in @p dim dimenstions.
     double measure_13();
     double measure_23();
+    double measure_22();
     
     /// Generates a mesh file of the given name, including the intersection.
     void print_mesh_to_file_13(std::string name);

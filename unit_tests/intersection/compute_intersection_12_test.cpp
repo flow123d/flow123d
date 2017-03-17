@@ -8,7 +8,6 @@
 #include <flow_gtest_mpi.hh>
 #include "arma_expect.hh"
 
-#include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
@@ -28,7 +27,7 @@ using namespace std;
 void fill_12d_solution(std::vector<IntersectionLocal<1,2>> &ils)
 {
     ils.clear();
-    ils.resize(9);
+    ils.resize(10);
     // ips[0] is empty
     ils[1].points() = {IntersectionPoint<1,2>({0}, {0, 0})};
     ils[2].points() = {IntersectionPoint<1,2>({1}, {0, 0})};
@@ -40,6 +39,7 @@ void fill_12d_solution(std::vector<IntersectionLocal<1,2>> &ils)
                        IntersectionPoint<1,2>({2./3}, {0, 0.4})};
     ils[8].points() = {IntersectionPoint<1,2>({0}, {0, 0}),
                        IntersectionPoint<1,2>({1}, {1, 0})};
+    //ils[9] is empty
 }
 
 
@@ -71,7 +71,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<IntersectionPoint<1,
     Simplex<1> line = create_simplex<1>(mesh->element(1));
     Simplex<2> tria = create_simplex<2>(mesh->element(0));
     
-    IntersectionAux<1,2> is(1, 0, 0);
+    IntersectionAux<1,2> is(1, 0);
     ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria);
     CI.compute_final(is.points());
     

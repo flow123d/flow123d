@@ -36,8 +36,9 @@ MixedMeshIntersections::~MixedMeshIntersections()
 unsigned int MixedMeshIntersections::number_of_components(unsigned int dim)
 {
     ASSERT(dim < 3);
-    if(dim == 1) return algorithm13_.component_counter_;
-    if(dim == 2) return algorithm23_.component_counter_;
+//     if(dim == 1) return algorithm13_.component_counter_;
+    if(dim == 2) return algorithm22_.component_counter_;
+    else xprintf(Err, "Not implemented for dim %d\n.",dim);
     return 0;
 }
 
@@ -77,14 +78,47 @@ double MixedMeshIntersections::measure_23()
         }
     return subtotal;
 } 
+
+
+double MixedMeshIntersections::measure_22()
+{
+    double subtotal = 0.0;
+    double val;
+    
+    for(unsigned int i = 0; i < intersection_storage22_.size(); i++){
+        if(intersection_storage22_[i].size() > 1)
+        {
+            ElementFullIter eleA = mesh->element(intersection_storage22_[i].component_ele_idx());
+//             ElementFullIter eleB = mesh->element(intersection_storage22_[i].bulk_ele_idx());
+            
+            arma::vec3 from = intersection_storage22_[i][0].coords(eleA);
+            arma::vec3 to = intersection_storage22_[i][1].coords(eleA);
+            val = arma::norm(from - to, 2);
+
+//             DebugOut().fmt("{}--{}:sublength from [{} {} {}] to [{} {} {}] = {}\n",
+//                eleA->id(), eleB->id(),
+//                from[0], from[1], from[2],
+//                to[0], to[1], to[2],
+//                val);
+            subtotal += val;
+        }
+    }
+    return subtotal;
+}
+
  
 template<uint dim_A, uint dim_B>
 void MixedMeshIntersections::store_intersection(std::vector<IntersectionLocal<dim_A, dim_B>> &storage, IntersectionAux<dim_A, dim_B> &isec_aux) {
     //unsigned int ele_a_idx = isec_aux.component_ele_idx();
     //unsigned int ele_b_idx = isec_aux.bulk_ele_idx();
 
+    //WARNING: 
+    // - not all algorithms uses this function (e.g. 2d2d pushes directly into storage)
+    // - we cannot throw away isec of zero measure generaly (e.g. 1d2d, 1d3d)
+    // - is it not better to test number of IPs according to dimensions?
+    
     IntersectionLocal<dim_A, dim_B> isec(isec_aux);
-    if (isec.compute_measure() < 1e-14) return;
+//     if (isec.compute_measure() < 1e-14) return;
     storage.push_back(isec);
     /*
     element_intersections_[ele_a_idx].push_back(
@@ -120,8 +154,6 @@ void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_
                 std::make_pair(ele_a_idx, &(isec)) );*/
     }
 }
-
-
 
 
 template<unsigned int dim>
@@ -168,35 +200,48 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
 void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal< 2, 2 > >& storage)
 {
     START_TIMER("Intersection algorithm");
-    algorithm22_.compute_intersections(element_intersections_);
+    algorithm22_.compute_intersections(element_intersections_, storage);
     END_TIMER("Intersection algorithm");
     
-    START_TIMER("Intersection into storage");
-    storage.reserve(algorithm22_.intersectionaux_storage22_.size());
-    
-    for(IntersectionAux<2,2> &is : algorithm22_.intersectionaux_storage22_) {
-        unsigned int triaA_idx = is.component_ele_idx();
-        unsigned int triaB_idx = is.bulk_ele_idx();
-
-        //HACK: 'skip flag' move this check into algorithm12_.compute_intersections()
-        bool skip = false;
-        for(unsigned int i=0; i<element_intersections_[triaA_idx].size(); i++)
-        {
-            if(element_intersections_[triaA_idx][i].first == triaB_idx)
-                skip = true;
-        }
-        if(! skip) {
-            store_intersection(storage, is);
-        
-            DebugOut().fmt("2D-2D intersection [{} - {}]:\n",is.component_ele_idx(), is.bulk_ele_idx());
-            for(const IntersectionPointAux<2,2>& ip : is.points()) {
-//                 DebugOut() << ip;
-                auto p = ip.coords(mesh->element(is.component_ele_idx()));
-//                 DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
-            }
-        }
-    }
-    END_TIMER("Intersection into storage");
+//     START_TIMER("Intersection into storage");
+// 
+//     storage.reserve(algorithm22_.intersectionaux_storage22_.size());
+//     
+//     for(IntersectionAux<2,2> &is : algorithm22_.intersectionaux_storage22_) {
+//         unsigned int triaA_idx = is.component_ele_idx();
+//         unsigned int triaB_idx = is.bulk_ele_idx();
+// 
+//         //HACK: 'skip flag' move this check into algorithm12_.compute_intersections()
+//         bool skip = false;
+//         for(unsigned int i=0; i<element_intersections_[triaA_idx].size(); i++)
+//         {
+//             if(element_intersections_[triaA_idx][i].first == triaB_idx)
+//                 skip = true;
+//         }
+//         if(! skip) {
+//             storage.push_back(IntersectionLocal<2,2>(is));
+//             element_intersections_[triaA_idx].push_back(std::make_pair(
+//                                                         triaB_idx,
+//                                                         &(storage.back())
+//                                                     ));
+//             element_intersections_[triaB_idx].push_back(std::make_pair(
+//                                                         triaA_idx,
+//                                                         &(storage.back())
+//                                                     ));
+//         
+// //             DebugOut().fmt("2D-2D intersection [{} - {}]:\n",
+// //                            mesh->element(is.component_ele_idx())->id(),
+// //                            mesh->element(is.bulk_ele_idx())->id());
+// //             for(const IntersectionPointAux<2,2>& ip : is.points()) {
+// //                 DebugOut() << ip;
+// //                 auto p = ip.coords(mesh->element(is.component_ele_idx()));
+// //                 DebugOut() << "[" << p[0] << " " << p[1] << " " << p[2] << "]\n";
+// //             }
+//         }
+//     }
+//     DBGVAR(algorithm22_.intersectionaux_storage22_.size());
+// 
+//     END_TIMER("Intersection into storage");
 }
 
 void MixedMeshIntersections::compute_intersections_12(vector< IntersectionLocal< 1, 2 > >& storage)
@@ -247,6 +292,7 @@ void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLoca
     START_TIMER("Intersection algorithm");
     algorithm12_.compute_intersections_2(mesh->get_bih_tree());
     END_TIMER("Intersection algorithm");
+    DBGVAR(algorithm12_.intersectionaux_storage12_.size());
     
     START_TIMER("Intersection into storage");
     storage.reserve(algorithm12_.intersectionaux_storage12_.size());
@@ -339,14 +385,14 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     }
     append_to_index(intersection_storage23_);
     
-/*
+
     if(d & IntersectionType::d22){
         START_TIMER("Intersections 2D-2D");
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
     }
     append_to_index(intersection_storage22_);
-*/
+
 
     if(d & IntersectionType::d12_3){
         START_TIMER("Intersections 1D-2D (3)");
