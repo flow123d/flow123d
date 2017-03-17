@@ -15,7 +15,8 @@
 P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 : MortarAssemblyBase(data),
   tensor_average_(16),
-  quadrature_(*(data->mesh))
+  quadrature_(*(data->mesh)),
+  slave_ac_(data->mh_dh)
 {
     isec_data_list.reserve(30);
 
@@ -68,14 +69,8 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 /**
  * Works well but there is large error next to the boundary.
  */
- void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
-    arma::mat product;
-    unsigned int i,j;
-
-    if (ele_ac.dim() > 2) return; // supported only for 1D and 2D master elements
-
-    auto &isec_list = mixed_mesh_.element_intersections_[ele_ac.ele_global_idx()];
-    if (isec_list.size() == 0) return; // skip empty masters
+void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
+{
 
 
     // on the intersection element we consider
@@ -99,7 +94,15 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
      *  - Is it better to have more smaller local system then single big one?
      *  - use one big or more smaller local systems to set.
      */
-    ElementFullIter ele = ele_ac.full_iter();
+
+
+    if (master_ac.dim() > 2) return; // supported only for 1D and 2D master elements
+    auto &isec_list = mixed_mesh_.element_intersections_[master_ac.ele_global_idx()];
+    if (isec_list.size() == 0) return; // skip empty masters
+
+    //slave_ac_.setup(master_ac);
+
+    ElementFullIter ele = master_ac.full_iter();
     arma::vec3 ele_centre = ele->centre();
     double master_sigma = 2*data_->sigma.value( ele_centre, ele->element_accessor()) *
                     2*data_->conductivity.value( ele_centre, ele->element_accessor())
@@ -118,28 +121,26 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 
 
 
-    uint master_dim = ele_ac.dim();
-    uint m_idx = ele_ac.full_iter()->id();
+
+    uint m_idx = master_ac.full_iter()->id();
     isec_data_list.clear();
 
-    pressure_diff(ele_ac, -1.0);
+    pressure_diff(master_ac, -1.0);
     double cs_sqr_avg = 0.0;
     double isec_sum = 0.0;
-    for(i = 0; i < isec_list.size(); ++i) {
+    for(uint i = 0; i < isec_list.size(); ++i) {
         quadrature_.reinit(isec_list[i].second);
-        ele_ac.reinit( quadrature_.slave_idx() );
-        double cs = data_->cross_section.value(ele_ac.full_iter()->centre(), ele_ac.full_iter()->element_accessor());
+        slave_ac_.reinit( quadrature_.slave_idx() );
+        double cs = data_->cross_section.value(slave_ac_.full_iter()->centre(), slave_ac_.full_iter()->element_accessor());
         double isec_measure = quadrature_.measure();
         //DebugOut() << print_var(cs) << print_var(isec_measure);
         cs_sqr_avg += cs*cs*isec_measure;
         isec_sum += isec_measure;
-        //DebugOut().fmt("Assembly: {} {} {}", m_idx, ele_ac.full_iter()->id(), quadrature_.measure());
-        pressure_diff(ele_ac, isec_measure);
+        DebugOut().fmt("Assembly: {} {} {}", m_idx, slave_ac_.full_iter()->id(), isec_measure);
+        pressure_diff(slave_ac_, isec_measure);
     }
-    if ( ! (ele_ac.dim() == 2 && master_dim ==2 ) ) {
-        double ref_master_measure = 1.0 / master_dim;
-        if ( abs(isec_sum - ref_master_measure) > 1E-5)
-            WarningOut().fmt("Wrong intersection area: {} != {}", isec_sum, ref_master_measure );
+    if ( ! (slave_ac_.dim() == 2 && master_ac.dim() ==2 ) ) {
+        ASSERT( fabs(isec_sum - ele->measure()) < 1E-5)(isec_sum)(ele->measure()).warning("Wrong intersection area");
     }
     isec_data_list[0].delta = -isec_sum;
 
@@ -147,47 +148,51 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
     master_sigma = master_sigma * (cs_sqr_avg / isec_sum)
             / isec_sum;
 
+    add_to_linsys(master_sigma);
 
+
+}
+
+void P0_CouplingAssembler::add_to_linsys(double scale)
+{
     // rows
-    for(IsecData &row_ele : isec_data_list) {
-        //columns
-        for(IsecData &col_ele : isec_data_list) {
+     for(IsecData &row_ele : isec_data_list) {
+         //columns
+         for(IsecData &col_ele : isec_data_list) {
 
 
-            double scale =  -master_sigma * row_ele.delta * col_ele.delta;
-            product = scale * tensor_average(row_ele.dim, col_ele.dim);
+             double s =  -scale * row_ele.delta * col_ele.delta;
+             product_ = s * tensor_average(row_ele.dim, col_ele.dim);
 
-            loc_system_.reset(row_ele.dofs, col_ele.dofs);
+             loc_system_.reset(row_ele.dofs, col_ele.dofs);
 
-            for(i=0; i< row_ele.n_dirichlet; i++) loc_system_.set_solution_row(row_ele.dirichlet_dofs[i], row_ele.dirichlet_sol[i]);
-            for(i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
-            loc_system_.set_matrix(product);
-            data_->lin_sys->set_local_system(loc_system_);
-        }
-    }
- }
+             for(uint i=0; i< row_ele.n_dirichlet; i++) loc_system_.set_solution_row(row_ele.dirichlet_dofs[i], row_ele.dirichlet_sol[i]);
+             for(uint i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
+             loc_system_.set_matrix(product_);
+             data_->lin_sys->set_local_system(loc_system_);
+         }
+     }
+}
 
+void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
+{
+    for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
+        dofs[shift+i_side] =  ele_ac.edge_row(i_side);
+        Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
 
-
- void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)
- {
-        for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
-            dofs[shift+i_side] =  ele_ac.edge_row(i_side);
-            Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
-
-            if (bcd) {
-                ElementAccessor<3> b_ele = bcd->element_accessor();
-                auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
-                //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
-                if (type == DarcyMH::EqData::dirichlet) {
-                    //DebugOut().fmt("Dirichlet: {}\n", ele->index());
-                    dofs[shift + i_side] = -dofs[shift + i_side];
-                    double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
-                    dirichlet[shift + i_side] = bc_pressure;
-                }
+        if (bcd) {
+            ElementAccessor<3> b_ele = bcd->element_accessor();
+            auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
+            //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
+            if (type == DarcyMH::EqData::dirichlet) {
+                //DebugOut().fmt("Dirichlet: {}\n", ele->index());
+                dofs[shift + i_side] = -dofs[shift + i_side];
+                double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
+                dirichlet[shift + i_side] = bc_pressure;
             }
         }
- }
+    }
+}
 
 
 /**
