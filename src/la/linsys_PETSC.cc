@@ -264,6 +264,10 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
 
     if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
 
+    //PetscViewerPushFormat(PETSC_VIEWER_STDOUT_SELF, PETSC_VIEWER_ASCII_INDEX);
+    //MatView(matrix_, PETSC_VIEWER_STDOUT_SELF);
+    //VecView(rhs_, PETSC_VIEWER_STDOUT_SELF);
+
     matrix_changed_ = true;
     rhs_changed_ = true;
 }

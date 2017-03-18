@@ -7,6 +7,8 @@ test_cases:
     - 07_square_compatible.yaml
     - 08_square_noncomp_p0.yaml
     - 09_square_noncomp_p1.yaml
+    - 20_cube_23d_p0_simple.yaml
+    - 30_cube_22d_p0.yaml
   proc: [1]
 
 # do not run these

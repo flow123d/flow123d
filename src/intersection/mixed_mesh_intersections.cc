@@ -118,7 +118,8 @@ void MixedMeshIntersections::store_intersection(std::vector<IntersectionLocal<di
     // - is it not better to test number of IPs according to dimensions?
     
     IntersectionLocal<dim_A, dim_B> isec(isec_aux);
-//     if (isec.compute_measure() < 1e-14) return;
+    //if ( (! (dim_A==1 && dim_B==2)) && isec.compute_measure() < 1e-14) return;
+
     storage.push_back(isec);
     /*
     element_intersections_[ele_a_idx].push_back(

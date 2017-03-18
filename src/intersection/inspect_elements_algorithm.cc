@@ -799,7 +799,8 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
-    if(n_local_intersection > 0){
+    // do not store point intersections
+    if(n_local_intersection > 1){
         storage.push_back(IntersectionLocal<2,2>(is));
     }
 
