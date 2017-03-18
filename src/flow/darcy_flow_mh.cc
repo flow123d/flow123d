@@ -690,12 +690,12 @@ void DarcyMH::allocate_mh_matrix()
     LinSys *ls = schur0;
    
 
-    int tmp_rows[100];
-    int local_dofs[100];
+    int tmp_rows[200];
+    int local_dofs[200];
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
-    double zeros[1000];
-    for(int i=0; i<1000; i++) zeros[i] = 0.0;
+    double zeros[100000];
+    for(int i=0; i<100000; i++) zeros[i] = 0.0;
 
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
@@ -744,10 +744,15 @@ void DarcyMH::allocate_mh_matrix()
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
                 for(unsigned int i_side=0; i_side < slave_ele.n_sides(); i_side++) {
                     tmp_rows[i_rows++] = mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ];
-                    //DebugOut() << "NC" << print_var(tmp_rows[i_rows-1]);
+                    //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
                 }
             }
         }
+        /*
+        for(unsigned int i_side=0; i_side < ele_ac.full_iter()->n_sides(); i_side++) {
+            DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
+        }*/
+
         ls->mat_set_values(nsides, edge_rows, i_rows, tmp_rows, zeros);   // master edges x neigh edges
         ls->mat_set_values(i_rows, tmp_rows, nsides, edge_rows, zeros);   // neigh edges  x master edges
         ls->mat_set_values(i_rows, tmp_rows, i_rows, tmp_rows, zeros);  // neigh edges  x neigh edges
