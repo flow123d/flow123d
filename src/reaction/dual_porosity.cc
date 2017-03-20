@@ -48,15 +48,15 @@ const Record & DualPorosity::get_input_type() {
             "Dual porosity model in transport problems.\n"
             "Provides computing the concentration of substances in mobile and immobile zone.\n"
             )
-		.derive_from(ReactionTerm::get_input_type())
+		.derive_from(ReactionTerm::it_abstract_term())
 		.declare_key("input_fields", Array(DualPorosity::EqData().make_field_descriptor_type("DualPorosity")), Default::obligatory(),
 						"Containes region specific data necessary to construct dual porosity model.")
 		.declare_key("scheme_tolerance", Double(0.0), Default("1e-3"),
 					 "Tolerance according to which the explicit Euler scheme is used or not."
 					 "Set 0.0 to use analytic formula only (can be slower).")
 
-		.declare_key("reaction_mobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in mobile zone.")
-		.declare_key("reaction_immobile", ReactionTerm::get_input_type(), Default::optional(), "Reaction model in immobile zone.")
+		.declare_key("reaction_mobile", ReactionTerm::it_abstract_mobile_term(), Default::optional(), "Reaction model in mobile zone.")
+		.declare_key("reaction_immobile", ReactionTerm::it_abstract_immobile_term(), Default::optional(), "Reaction model in immobile zone.")
 		.declare_key("output",
 		                    EqData().output_fields.make_output_type("DualPorosity", ""),
 		                    IT::Default("{ \"fields\": [ \"conc_immobile\" ] }"),
@@ -80,7 +80,8 @@ DualPorosity::EqData::EqData()
           .name("porosity_immobile")
           .description("Porosity of the immobile zone.")
           .input_default("0")
-          .units( UnitSI::dimensionless() );
+          .units( UnitSI::dimensionless() )
+		  .set_limits(0.0);
 
   *this += init_conc_immobile
           .name("init_conc_immobile")
@@ -91,7 +92,8 @@ DualPorosity::EqData::EqData()
   *this +=porosity
         .name("porosity")
         .units( UnitSI::dimensionless() )
-        .flags( FieldFlag::input_copy );
+        .flags( FieldFlag::input_copy )
+		.set_limits(0.0);
 
   *this += conc_immobile
           .name("conc_immobile")

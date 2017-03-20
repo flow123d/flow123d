@@ -1,0 +1,8 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000
+
+test_cases:
+- files:
+  - 05_unsteady_flow.yaml
+  time_limit: 120

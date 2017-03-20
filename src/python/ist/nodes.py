@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
 from ist.extras import TypeSelectionValue, TypeReference, TypeRecordKey, TypeRange, TypeAttributes, \
     TypeAttributeParameter
 from ist.base import Field, Parsable, InputType, List, Unicode, SmartList
 
 
 # used in all node types
+from utils.logger import Logger
+
 base_fields = [
     Field("id", index=True),
     Field("attributes", t=TypeAttributes, default=TypeAttributes()),
@@ -53,7 +54,10 @@ class TypeSelection(Parsable):
         self.generic_type = None
 
     def include_in_format(self):
-        return self.name.find('TYPE') == -1
+        if self.name.find('TYPE') != -1:
+            Logger.instance().info('  - item starts with TYPE')
+            return False
+        return True
 
     def get_fields(self, *args):
         for arg in args:
@@ -104,7 +108,18 @@ class TypeRecord(Parsable):
                     return sub_item
 
 
-class TypeParameters(Parsable): pass
+class TypeTuple(TypeRecord):
+    """
+    Class TypeTuple defines input_type of value Tuple
+    """
+    pass
+
+
+class TypeParameters(Parsable):
+    """
+    Class TypeParameter is abstract parent
+    """
+    pass
 
 
 class TypeAbstract(Parsable):
@@ -289,6 +304,7 @@ class TypeArray(Parsable):
         self.attributes = None
         self.parameters = None
         self.generic_type = None
+
 
 class TypeParameter(Parsable):
     """

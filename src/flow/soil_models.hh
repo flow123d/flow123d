@@ -75,7 +75,11 @@ public:
     // template <class T>  T conductivity_(const T &h) const;
     // template <class T>  T water_content_(const T &h) const;
 
+
+
     typedef SoilModelBase::DiffDouble DiffDouble;
+
+    SoilModelImplBase(double cut_fraction);
 
     void reset(SoilData data) override;
 
@@ -89,6 +93,7 @@ public:
 
 private:
     Model model_;
+    double cut_fraction_;
 };
 
 

@@ -1,0 +1,72 @@
+# Test goal: Test that TimeMarks have separate marks for every equation. 
+# Author: David Flanderka
+# Source for reference: qualitative (only output times are important)
+
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: 'Tests correct functionality of balance output. Check fix of problem when 
+    both balances (water and mass) are performed in time step when is expected only one.'
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_str.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: .BOUNDARY
+        time: 0.0
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: (x-0.5)*y
+      - region: .BOUNDARY
+        time: 1.0                       # no output at time 1.0
+        bc_pressure: !FieldFormula
+          value: 2*(x-0.5)*y
+    
+    output:
+      times:
+          - 0.0
+          - 2.0
+      add_input_times: true #   
+      fields:
+        - pressure_p0
+        - velocity_p0
+    balance: 
+      add_output_times: true
+      times:
+        - 3.0
+    output_stream: 
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: .right
+          bc_conc: 1
+        - region: .bottom
+          bc_conc: 2
+        - region: .top
+          bc_conc: 3
+    balance: 
+      add_output_times: true
+      times:
+        - 4.0
+    output_stream: 
+      file: ./transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - 0.0
+        - 1.0  # no input at time 1.0
+        - 5.0
+      name: transport_output_stream
+    substances:
+      - tracer
+    time:
+      end_time: 5
+    balance:
+      cumulative: true

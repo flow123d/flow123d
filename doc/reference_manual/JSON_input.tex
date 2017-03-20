@@ -1,73 +1,254 @@
 
+In this chapter, we shall describe structure of the main input file and data formats of other input files.
+In particular we briefly describe the GMSH file format used for both the computational mesh as well as for the input of general spatial data.
 
-\section{Main Input File (CON File Format)}
+
+\section{Main Input File}
 \label{sec:CONformat}
 
-\tbd{Update, brief documentation of YAML format}
-
-\begin{figure}
- \begin{center}
- \includegraphics[scale=0.4]{\fig/input_subsystem.pdf}
- % input_subsystem.pdf: 0x0 pixel, -2147483648dpi, 0.00x0.00 cm, bb=
- \caption{Sturucture of the input subsystem. Grey boxes are not implemented yet.}
- \label{fig:input_subsystem}
- \end{center}
-\end{figure}
-
-In this section, we shall describe structure of the main input file that is given through the parameter \verb'-s' on the command line.
-The file formats of other files that are referenced from the main input file and used for input of the mesh or large field data
-(e.g. the GMSH file format) are described in following sections. The input subsystem was designed with the aim to provide uniform initialization of 
-C++ classes and data structures. Its structure is depicted on Figure \ref{fig:input_subsystem}.
-The structure of the input is described by the Input Types Tree (ITT) of (usually static) objects which follows the structure of the classes.
-The data from an input file are read by apropriate reader, their structure is checked against ITT and they are pushed into the Internal Storage Buffer (ISB).
-An accessor object to the root data record is the result of the file reading. The data can be retrieved through accessors which combine 
-raw data stored in in IBS with their meaning described in ITT. ITT can be printed out in various formats providing description of the input structure both for 
-humans and other software.
-
-Currently, the JSON input file format is only implemented and in fact it is slight extension of the JSON file format. On the other hand
-the data for initialization of the C++ data structures are coded in particular way. Combination of this extension and restriction of the JSON file format produce 
-what we call CON (C++ object notation) file format.
+In this section, we shall describe structure of the main input file that is given either as the first positional argument or through 
+the parameter \verb'-s' on the command line. First, we provide a quick introduction to the YAML file format. Then, we demonstrate the most important 
+input structures on the examples. 
 
 
-\subsection{JSON for Humans}
 
-Basic syntax of the CON file is very close to the JSON file format with only few extensions, namely:
-\begin{itemize}
-\item You can use C++ (or JavaScript) comments. One line comments \verb'//' and multi-line comments \verb'/* */'.
-\item The quoting of the keys is optional if they do not contain spaces (holds for all CON keys).
-\item You can use equality sign \verb'=' instead of colon \verb':' for separation of keys and values in JSON objects.
-\item You can use any whitespace to separate tokens in JSON object or JSON array.
-\end{itemize}
-The aim of these extensions is to simplify writing input files manually. However these extensions can be easily filtered out and converted to 
-the generic JSON format. For the description of the JSON format we refer to \url{http://www.json.org/}. 
 
-\subsection{CON Constructs}
-The CON file format constructs are designed for initialization of C++ strongly typed variables. The primitive data types can be initialized from 
-the primitive CON constructs: 
-\begin{itemize}
- \item {\it Bool} --- initialized from the JSON keywords \verb'true' and \verb'false'.
- \item {\it Double}, {\it Integer} --- initialized from JSON numeric data. 
- \item {\it String}, {\it FileName}, {\it Selections} --- initialized from JSON strings
-\end{itemize}
-Selections are typed like the C++ enum types that are initialized from them.
-Various kind of containers can be initialized by the {\it Array} construct, that is an JSON array with elements of the same CON type. 
-The C++ structures and classes can be initialize from the {\it Record} construct, which is represented by a JSON object. However, in constrast to JSON,
-these Records have different types in similar way as the strong typed C++ structures. The types are described by ITT of the particular program
-which can be printed out in several formats, in particular description of ITT for Flow123d forms content of Chapter \ref{chapter:input-tree-reference}.
-In order to allow certain kind of polymorphism, we introduce also the {\it AbstractRecord} construct, where the type of the record is not given by ITT but 
-can be chosen as part of the input. 
 
-\subsection{CON Special Keys}
-All keys in Records should be in lower case, possibly using digits and underscore. The keys all in upper case are reserved for special function in the 
-CON file. These are:
-\begin{description}
 
-\item[TYPE key]:
+
+\subsection{YAML basics}
+YAML is a human readable data format. It is designed to be both human readable and human editable. As it is not a markup languages, there are
+no tags to determine type of the data. The indentation and justification is used instead for data organization. Moreover the used YAML format (version 1.2) is 
+superset of the JSON format, another minimalist data serialization format where braces and brackets are used instead of indentation.
+For the more detailed description see \href{https://en.wikipedia.org/wiki/YAML}{Wikipedia} 
+for further technical details and for reference parsers for various programming languages see YAML \href{http://yaml.org/}{home page} .
+
+\subsubsection{Hierarchy of Mappings and Lists}
+Elementary data are organized to lists and mappings. Let us start with an example of a list:
 \begin{verbatim}
-TYPE=<Selection of AbstractRecord>
+# Example of list 
+- 3.14                  # a number
+- 2014-01-14            # a date
+- Simple string.        # a string
+- "3 is three"          # quoting necessary
+- '3 is three'          # other qouting
+- true                  # boolean
 \end{verbatim}
-Is used to specify particular type of an AbstractRecord. This way you can choose which particular implementation of an abstract C++ class should be instantiated.
-The value of the key is a string from the Selection that consists of names of Records that was declared as descendants of the AbstractRecord.
+Comments are started by a hash (\verb'#') which can appear anywhere on a line and marks the comment up to the end of line.
+The the list follows with singel item per line preceded by a dash (\verb'-'). Any value starting by a digit is interpreted as a number
+or date. Values starting with letter is interpreted as a string. Otherwise one may use double (\verb'""') or single (\verb"''") 
+quotas to mark a string value explicitly. Finally some strings are interpreted as boolean values, it is recommended to use 
+\verb'true' and \verb'false' (other possible pairs are e.g. \verb'yes/no', \verb'y/n', \verb'on/off'). 
+
+Alternatively a list may be written in compact "JSON" way enclosing the list into brackets:
+\begin{verbatim}
+# Compact list
+[ 3.14, 2014-01-14, Simple string.,
+"3 is three", '3 is three'] 
+\end{verbatim}
+
+Other data structure is called mapping, which is also known as directory or associative array:
+\begin{verbatim}
+# Example of a mapping
+pi: 3.14
+date: 2014-01-14   
+name: Mr. Simple String
+\end{verbatim}
+
+Again one may use also JSON syntax with mapping enclosed in braces:
+\begin{verbatim}
+# Compact mapping
+{ pi: 3.14, date: 2014-01-14,   
+name: Mr. Simple String }
+\end{verbatim}
+
+Mappings and lists may by mutually nested:
+\begin{verbatim}
+list:
+    - one
+    - two
+    - 
+        - three one 
+        - three two
+map:
+    a: one 
+    b: two
+\end{verbatim}
+
+A string may be split to more lines using {\it greater then} (\verb'>') and multi-line strings may be entered after {\it vertical line} (\verb'|'):
+\begin{verbatim}
+# single long string
+one_line: >
+    Single line string
+    broken into two lines.
+# multi line string
+multi_line: |
+    First line.
+    Second line.
+\end{verbatim}
+In the first case the line breaks are replaced by space, in the second case the line breaks are preserved.
+In both cases the leading indentation is removed.
+
+
+\subsubsection{Tags}
+YAML format defines a syntax for explicit specification of types of values including the types specific to an application.
+The application specific tags are used by Flow123d to specify particular implementation of various algorithms or data types.
+The general syntax of tags is quite complicated, so we present only the syntax used in the Flow123d input.
+\begin{verbatim}
+    field_a: !FieldFormula
+        value: !!str "5 * x" 
+    field_b:  !FieldFormula "5 * x"   
+\end{verbatim}
+
+The \verb'field_a' have specified evaluation algorithm \verb'FieldFormula', the key value have explicitly specified the default tag \verb'str'.
+Note that default types are detected automatically and need not to be specified. On the third line we use even more compact way to 
+express the same thing. Further details about usage of tags in Flow123d follows in Section \ref{sec:abstract}.
+
+\subsubsection{References}
+Anchors and references allows to reduce redundancy in the input data:
+\begin{verbatim}
+aux_name: &anchor_name John Smith
+aux_man: &common_man
+    sex: man
+    city: Prague
+    
+people:
+   - << *_common_man
+     name: John Paul
+   - << *_common_man
+     name: *anchor_name
+\end{verbatim}
+On the first line, we define the anchor \verb'&anchor_name' for the value \verb'John Smith'. On the second line, 
+we define the anchor \verb'&common_man' for the dictionary. Later, we use \verb'<<' to inject the dictionary 
+referenced by \verb'*common_man'. Finally the anchor \verb'&anchor_name' is referenced by \verb'*anchor_name' to reuse the 
+name \verb'John Smith'.
+
+Ignoring the auxiliary keys \verb'aux_name' and \verb'aux_man' this is equivalent to:
+\begin{verbatim}
+people:
+   - sex: man
+     city: Prague
+     name: John Paul
+   - sex: man
+     city: Prague
+     name: John Smith
+\end{verbatim}
+
+
+\subsubsection{Gotchas}
+\begin{itemize}
+ \item Unquoted string values can not contain characters: colon \verb':', hash \verb'#', 
+ brackets \verb'[]', braces \verb'{}', less then \verb'<', vertical bar \verb'|'.
+ \item For indentation one can use only spaces; tabs are not allowed. However, your editor may automatically convert tabs to spaces.
+ \item Boolean special strings must be quoted if you want to express a string. This is not problem for the Flow123d input.
+ \item Numbers starting with digit zero are interpreted as octal numbers. 
+\end{itemize}
+
+\subsection{Flow123d input types}
+\label{sec:input_types}
+Flow123d have a subsystem for definition of the structure of the input file including preliminary checks for the 
+correctness of the values. This subsystem works with elementary data types:
+\begin{itemize}
+ \item {\it Bool} corresponds to the YAML boolean values
+ \item {\it Double}, {\it Integer} initialized from YAML numeric values. 
+ \item {\it String}, {\it FileName}, {\it Selections} initialized from YAML strings.
+\end{itemize}
+Numerical values have defined valid ranges. FileName valus are used for reference to external files either for input or for output.
+Selection type defines a finite number of valid string values which may appear on the input. 
+These elementary types are further organized into Records and Arrays in order to specify strongly typed definition of the 
+input data file. Array and Records forms so called input structure tree (IST).
+
+In order to allow simple input of simple things while keeping complex things possible, the input system provides
+so called automatic conversions from simple types to complex ones. 
+So if the type of a value on input does not match the expected data type the automatic conversion tries to convert 
+the given type to the expected type. Automatic conversion rules for individual composed types follows.
+
+\subsubsection{Record $=$ Mapping}
+A Record is initialized from the YAML mapping. However, in contrast to YAML mappings 
+the Records have fixed keys with fixed types. 
+This is natural as a Records is used for initialization of C++ objects which 
+are also strongly typed. Every Record type have unique name and have defined list of its keys.
+Keys are lowercase strings without spaces, possibly using digits and underscore. Every key have 
+specified its type and default value specification. Default value specification can be:
+\begin{description} 
+ \item[obligatory] --- means no default value, which has to be specified at input. 
+ \item[optional] --- means no default value, but value is needs not to be specified. Unspecified value usually means that you turn off some functionality.
+ \item[default at declaration] --- the default value is explicitly given in declaration and is automatically provided by the input subsystem if needed
+ \item[default at read time] --- the default value is provided at read time, usually from some other variable. In the documentation, 
+ there is only textual description where the default value comes from.
+\end{description}
+
+Records that have all keys with default value or optional safe the single key $K$ may support autoconversion from an input of the type that match 
+the type of the key $K$. For example:
+\begin{verbatim}
+  mesh: "mesh_file.msh"
+\end{verbatim}
+is converted to:
+\begin{verbatim}
+  mesh:
+    mesh_file: "mesh_file.msh"
+    regions: null
+    partitioning: any_neighboring
+    print_regions: false
+    intersection_search: BIHsearch
+\end{verbatim}
+with the key \verb'regions' being optional and the last three keys having its default values. 
+
+
+\subsubsection{Array $=$ List}
+An Array is initialized from a YAML list. But, in opposition to the YAML mapping, the values in a single Array 
+have all the same type. So the particular Array type is given by the type of its elements and a specification of its size range.
+
+Automatic conversion performs kind of transposition of the data. It simplifies input of the list of records (or arrays) 
+with redundant structure, e.g. consider input
+\begin{verbatim}
+  list:
+    a: [1,2)
+    b: 4
+    c: [5,6]
+\end{verbatim}
+Assuming that key \verb'list' have the type Array of Records and keys \verb'a', \verb'b', \verb'c' are all numerical scalars this input is equivalent to
+\begin{verbatim}
+  list:
+    - a: 1
+      b: 4
+      c: 5
+    - a: 2
+      b: 4
+      c: 6
+\end{verbatim}
+The rule works as follows, if a key $K$ should have type Array, but some other type is on the input, 
+we search through the input undeer the key $K$ for all Arrays $S$ standng instead of scalars.
+All these arrays must have the same length $n$. Then the $i$-th element of the key $A$ array is
+copy of the input keeping only $i$-th elements of the Arrays $S$.
+As a special case if there are no Arrays $S$ a list with single element equal to the input is created.
+Only this simplest conversion to an Array is applied if inappropriate type is found 
+while the transposition is processed.
+
+
+
+
+
+\subsubsection{Abstract (record)}
+\label{sec:abstract}
+An Abstract type allows a certain kind of polymorphism corresponding to a pure abstract class in C++ or to an interface in Java. 
+Every Abstract type have unique name and set of Records that implements the Abstract. The particular type must be provided on input through the YAML tag.
+See description of \hyperlink{sec:Fields}{Fields} below for examples.
+
+An Abstract type may have specified the default implementation. If this default Record supports automatic conversion from one of its keys
+we can see it as an automatic conversion from that key to the Abstract. For example
+\begin{verbatim}
+ conductivity: 2.0
+\end{verbatim}
+where conductivity is of Abstract type \verb'Field' with scalar values, is in fact converted to
+\begin{verbatim}
+ conductivity: !FieldConstant
+    value: 2.0
+\end{verbatim}
+as the \verb'FieldConstant' is default implementation of the field and it is auto=convertible from the key \verb'value'. 
+
+
+
 
 
 %\item[INCLUDE\_RECORD]:\\
@@ -108,102 +289,132 @@ The value of the key is a string from the Selection that consists of names of Re
 % have variable format
 % allow vectors in the 'line records']
 
-\item[REF key]:
-\begin{verbatim}
-{ REF=<address> }
-\end{verbatim}
-The record in input file that contains only the key \verb'REF' is replaced by the JSON entity that is referenced by the \verb'<address>'. 
-The address is a string with format similar to UNIX path, i.e. with grammar
-\begin{verbatim}
-    <address> = <address> / <item>
-              = <item>  
-              = <null>
-    <item> = <index>
-           = <key>
-           = ..
-\end{verbatim}
-where \verb'index' is non-negative integer and key is valid CON record key (lowercase, digits, underscores).
-The address can be absolute or relative identification of an entity. The relative address is relative to the entity in which the reference record is contained.
-One can use two dots \verb'".."' to move to parent entity.
 
-Example:
-\begin{verbatim}
-mesh={
-        file_name="xyz"
-}
-array=[
-        {x=1 y=0}       
-        {x=2 y=0}
-        {x=3 y=0}
-]               
-outer_record={
-        output_file="x_out"
-        inner_record={
-                output_file={REF="../output_file"} // value "x_out"
-        }
-        x={REF="/array/2/x"}                       // value "3"
-        f_name={REF="/mesh/file_name"}             // value "xyz"
-}       
-\end{verbatim}
-\end{description}
 
-\subsection{Record Types}
-A Record type is given by the set of key specifications, which in turn consist from: key name, type of value and default value specification.
-Default value specification can be:
-\begin{description} 
- \item[obligatory] --- means no default value, which has to be specified at input. 
- \item[optional] --- means no default value, but value is needs not to be specified. Unspecified value usually means that you turn off some functionality.
- \item[default at declaration] --- the default value is explicitly given in declaration and is automatically provided by the input subsystem if needed
- \item[default at read time] --- the default value is provided at read time, usually from some other variable. In the documentation, 
- there is only textual description where the default value comes from.
-\end{description}
+\subsection{Input subsystem}
+This section provides some implementation details about the Flow123d input subsystem. This may be helpful to better understand behavior of the program for 
+some special input constructions.
 
-\subsubsection{Implicit Creation of Composed Entities}
-Consider a Record type in which all keys have default values (possibly except one). Then the specification
-of the Record can contain a {\it key for default construction}. User can specify only the value of this particular key instead of the whole record, all other keys are initialized from its default values.
-Moreover, an AbstractRecord type may have a default value for the \verb'TYPE' key.
-This allows to express simple tasks by simple inputs but still make complex inputs possible. 
-Similar functionality holds for arrays. If the user sets a non-array value where an array is expected the reader provides an array with a unique element holding the given value.
+\begin{figure}
+ \begin{center}
+ \includegraphics[scale=0.4]{\fig/input_subsystem.pdf}
+ % input_subsystem.pdf: 0x0 pixel, -2147483648dpi, 0.00x0.00 cm, bb=
+ \caption{Sturucture of the input subsystem. HDF5 format not yet supported.}
+ \label{fig:input_subsystem}
+ \end{center}
+\end{figure}
+
+The input subsystem of Flow123d is designed with the aim to provide uniform initialization of 
+C++ classes and data structures. The scheme of the input is depicted on Figure \ref{fig:input_subsystem}.
+The structure of the input file is described by the Input Structure Tree (IST) consisting of the input objects describing 
+the types discussed in the previous Section \ref{sec:input_types}. The structure of the tree mostly follows follows the structure of the computational classes.
+
+When reading the input file, the file is first parsed by the specific format parser. Using a common interface to the parsed data, the 
+structure of the data is checked against the IST and the data are pushed into the storage tree. If the input data and IST do not match
+the automatic conversions described above are applied, where appropriate.
+An accessor object to the root data record is the result of the file reading. The data can be retrieved through the 
+accessors which combine raw data of the storage with their meaning described in IST. The IST can be written out in the JSON format
+providing the description of the input file structure. This IST file is used both for generation of the input reference in HTML and \LaTeX
+formats and for the Model editor --- specialized editor for the input file that is part of the GeoMop tools currently in development.
+
+While the recommended format of the input file is YAML the JSON format can be used as well. This may be useful in particular if the input file
+should be machine generated. Although the JSON format is technically subset of the YAML format. We use separate parser and use special keys in order to
+mimic tags and references supported by the YAML. The type of an abstract is specified by the key \verb'TYPE'. A reference is given by a record with the only key 
+\verb'REF' which contains a string specifying the address of the value that should be substituted.
+
 
 
 \section{Important Record Types of Flow123d Input}
-
+Complete description of the input structure tree can be generated into HTML or LaTeX format. While the former one provides better interactivity 
+through the hyperlinks the later one is part of this user manual. The generated documentation provides whole details for all keys, but 
+it may be difficult to understand the concept of the input structures. This section is aimed to provide this higher level picture.
 
 \subsection{Mesh Record}
 \label{sec:Mesh}
-The \hyperA{IT::Mesh}{mesh record} provides initialization for the computational mesh consisting of points, lines, triangles and tetrahedrons in 3D space.
+The \hyperA{IT::Mesh}{mesh record} provides initialization of the computational mesh consisting of points, lines, triangles and tetrahedrons in the 3D ambient space.
 Currently, we support only GMSH mesh file format \href{http://geuz.org/gmsh/doc/texinfo/gmsh.html#MSH-ASCII-file-format}{MSH ASCII}. 
-The input file is provided by the key \hyperA{Mesh::mesh-file}{{\tt mesh\_file}}. The file format allows to group elements into {\it regions} identified either by ID number or by string label. 
-The regions with labels starting with the dot character are treated as {\it boundary regions}. Their elements are removed from the computational domain, however they can be used to specify boundary
-conditions. Other regions are called {\it bulk regions}. User can create new labeled regions through the key 
-\hyperA{Mesh::regions}{{\tt regions}}. 
-\tbd{Update info about Mesh record.}
-%, the new region can be specified either by its ID
-%or by list of IDs of its elements. The latter possibility overrides original region assigned to the elements, which can be useful for specification of small areas ``ad hoc''.
-%The key \hyperA{Mesh::sets}{{\tt sets}} allows specification of sets of regions in terms of list of region IDs or labels and basic set operations. The difference between regions and sets is that
-%regions form disjoint covering of elements, the sets, however, may overlap. There are three predefined region sets: ``ALL'', ``.BOUNDARY'', ``BULK''.
+The input file is provided by the key \hyperA{Mesh::mesh-file}{{\tt mesh\_file}}. The file format allows to group elements into {\it regions} 
+identified by a unique label (or by ID number). The regions with labels starting with the dot character are treated as {\it boundary regions}. 
+Their elements are removed from the computational domain, however they can be used to specify boundary
+conditions. Other regions are called {\it bulk regions}. Every element lies directly in just one {\it simple region} while the simple regions may be 
+grouped into composed regions called also region sets. A simple region may be part of any number of composed regions.
+Initial assignment of the simple regions to the elements is given by the physical groups of the input GMSH file. Further
+modification of this assignment as well as creation of new simple or composed regions can be done 
+through the list of operations under the key \hyperA{Mesh::regions}{{\tt regions}}. The operations are performed in the order given by the input.
+Operation \hyperA{IT::From-Id}{{\tt From\_Id}} sets the name of a simple region having only ID in the input GMSH file. Operation 
+\hyperA{IT::From-Label}{{\tt From\_Label}} can rename a simple region. Operation \hyperA{IT::From-Elements}{{\tt From\_Elements}}
+assign new simple region to the given list of elements overwriting their region given by the input mesh file. Finally operations 
+\hyperA{IT::Union}{{\tt Union}}, \hyperA{IT::Difference}{{\tt Difference}} and \hyperA{IT::Intersection}{{\tt Intersection}}
+implements standard set operations with both simple and complex regions resulting in new composed regions.
 
 
-\subsection{Field Records}
-\label{sec:Fields}
+
+
+\subsection{Input Fields}
+Input of every equation contains the key \verb'input_fields' used consistently for the input of the equation parameters 
+in form of general time--space dependent fields.  The input fields are organized into a list of {\it field descriptors}, see 
+e.g. \hyperA{IT::Flow-Darcy-MH-Data}{\tt Data} record, the field descriptor of the DarcyFlow equation.
+The field descriptor is a Record with keys 
+\hyperA{Flow-Darcy-MH-Data::time}{{\tt time}}, 
+\hyperA{Flow-Darcy-MH-Data::region}{{\tt region}}, 
+\hyperA{Flow-Darcy-MH-Data::rid}{{\tt rid}}
+and further keys corresponding to the 
+names of input fields supported by the equation. The field descriptor is used to prescribe
+a change of one or more fields in particular time (key \verb'time') and on particular region given  by the name (key \verb'region', preferred way) 
+or by the region id (key \verb'rid'). 
+The array is processed sequentially and latter values overwrite the previous ones. Change times of a single field must form a non-decreasing sequence.
+Changes in fields given by the fields descriptor are interpreted as discontinuous changes of the changed fields
+and equations try to adopt its time stepping to match these time points. This is in contrast with changes of the field values given by
+the evaluation algorithms, these are always assumed to be continuous and the time steps are not adapted. 
+
+
+
+Example:
+\begin{verbatim}
+input_fields:
+  - # time=0.0  - default value
+    region: BULK
+    conductivity: 1   # setting the conductivity field on all regions
+  - region: 2d_part
+    conductivity: 2  # overwriting the previous value
+  - time: 1.0
+    region: 2d_part
+    conductivity: !FieldFormula
+      # from time=1.0 we switch to the linear function in time
+      value: 2+t
+  - time: 2.0
+    region: 2d_part
+    conductivity: !FieldElementwise
+      # from time=2.0 we switch to elementwise field, but only
+      # on the region "2d_part"
+      gmsh_file: ./input/data.msh
+      field_name: conductivity
+\end{verbatim}
+
+
+
+\subsubsection{Field Algorithms}
+\label{sec:Fields}\hypertarget{sec:Fields}{}
+
 A general time and space dependent, scalar, vector, or  tensor valued function can be specified through the family of abstract records 
-Field $R^m -> \mathcal{S}$, where $m$ is currently always $m=3$ and $\mathcal{S}$ is a specification of the target space, which can be:
+\verb'Field:R3 -> X', where $X$ is a type of value returned by the field, which can be:
 \begin{itemize}
- \item {\bf $\mathcal{T}$} --- scalar valued field, with scalars of type $\mathcal{T}$
- \item {\bf $\mathcal{T}[d]$} --- vector valued field, with vector of fixed size $d$ and elements of type $\mathcal{T}$
- \item {\bf $\mathcal{T}[\tt n]$} --- vector valued field, with vector of variable size (given by some input) and elements of type $\mathcal{T}$
- \item {\bf $\mathcal{T}[d, d]$} --- tensor valued field, with square tensor of fixed size and elements of type $\mathcal{T}$
+ \item $T$ --- scalar valued field, with scalars of type $T$
+ \item $T[d]$ --- vector valued field, with vector of fixed size $d$ and elements of type $T$
+ \item $T[d, d]$ --- tensor valued field, with square tensor of fixed size and elements of type $T$
 \end{itemize}
-the scalar types can be
+the scalar type $T$ can be one of
 \begin{itemize}
  \item {\bf Real} --- scalar real valued field
  \item {\bf Int}  --- scalar integer valued field
- \item {\bf Enum} --- scalar non negative integer valued field, should be convertible to appropriate C++ enum type
+ \item {\bf Enum} --- scalar non negative integer valued field. Values on the input are of the type Selection.
 \end{itemize}
 
-Each of these abstract record has the same set of descendants which implement various algorithms to specify and compute values of the field. These are
+Each of these abstract records have the same set of descendants which implement various evaluation algorithms of the fields. These are
 \begin{description}
- \item[FieldConstant] --- field that is constant in space
+ \item[FieldConstant] --- field that is constant both in space and time
+ \item[TimeFunction] --- field that is constant in space and continuous in time. Values are interpolated (currently only linear interpolation) from 
+ the sequence of time-value pairs provided on input.
  \item[FieldFormula] --- field that is given by runtime parsed formula using $x,y,z,t$ coordinates. The \href{http://warp.povusers.org/FunctionParser/}{Function Parser} library is used
  with syntax rules described \href{http://warp.povusers.org/FunctionParser/fparser.html#literals}{here}.
  \item[FieldPython] --- field can be implemented by Python script either specified by string (key \hyperA{FieldPython::script-string}{{\tt script\_string}}) 
@@ -220,66 +431,79 @@ Moreover, all Field abstract types have default value \verb'TYPE=FieldConstant'.
 
 Examples:
 \begin{verbatim}
-constant_scalar_function = 1.0
-// is same as
-constant_scalar_function = {
-  TYPE=FieldConstant,
-  value=1.0
-}
+input fields:
+   - conductivity: 1.0
+     # is equivalent to
+   - conductivity: !FieldConstant
+        value=1.0
+   
+   - anisotropy: [1 ,2, 3] # diagonal tensor
+     # is equivalent to
+   - anisotropy: !FieldConstant
+        value=[[1,0,0],[0,2,0],[0,0,3]]
 
-conductivity_tensor = [1 ,2, 3]
-// is same as
-conductivity_tensor = {
-    TYPE=FieldConstant,
-    value=[[1,0,0],[0,2,0],[0,0,3]]
-}
-
-concentration = {
-    TYPE=FieldFormula,
-    value="x+y+z"
-}
-//is same as (provided the vector has 2 elements)
-concentration = {
-    TYPE=FieldFormula,
-    value=["x+y+z", "x+y+z"]
-}       
+     # concentration for 2 components   
+   - conc: !FieldFormula  ["x+y", "x+z"]
+     # is equivalent to
+   - conc: 
+       - !FieldFormula
+         value: "x+y"
+       - !FieldFormula
+         value: "x+z"
 \end{verbatim}
 
-\subsection{Field Data for Equations}
-Every equation record has key \verb'input_fields', intended to set both the bulk and boundary fields. These keys contain an array of region-time initialization records
-like the \hyperA{IT::Flow-Darcy-MH-Data}{\tt Data} record of the DarcyFlow equation. Every such record specifies fields on particular region 
-(keys \hyperA{Flow-Darcy-MH-Data::region}{{\tt region}} and \hyperA{Flow-Darcy-MH-Data::rid}{{\tt rid}} ) starting from the time specified by the key \hyperA{Flow-Darcy-MH-Data::time}{{\tt time}}.
-The array is processed sequentially and latter values overwrite the previous ones. Times should form a non-decreasing sequence.
+\subsubsection{Field Units}
+Every field (e.g. conductivity or storativity) have specified unit in terms of powers of the base SI units. 
+The user, however, may set input in different units specified by the key \verb'unit' 
+supported by every field algorithm. The key have type \verb'Unit' record with a single auto convertible key 
+\verb'unit_formula'. The unit formula is evaluated  into a coefficient and an SI unit. The resulting SI unit 
+must match expected SI unit of the field, while the input value 
+of the field (including values from external files or returned by Python functions)  
+is multiplied by the coefficient before further processing.
 
-Example:
+The unit formula have form: {\tt <UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,}
+where {\tt <Variable>} is a variable name and {\tt <UnitExpr>} is a units expression
+which consists of products and divisions of terms, where a term has form \verb'<Base>^<N>', 
+where {\tt <N>} is an integer exponent and {\tt <Base>} is either a base SI unit, 
+a derived unit, or a variable defined in the same unit formula.
+Example, unit for the pressure head: 
 \begin{verbatim}
-input_fields = [   
-    { // time=0.0  - default value
-        r_set="BULK",
-        conductivity=1   // setting the conductivity field on all regions
-    },
-    {
-        region="2d_part",
-        conductivity=2  // overwriting the previous value
-    },
-    {   time=1.0,
-        region="2d_part",
-        conductivity={
-            // from time=1.0 we switch to the linear function in time
-            TYPE=FieldFormula,
-            value="2+t"      
-        }    
-    },
-    {   time=2.0,
-        region="2d_part",
-        conductivity={
-            // from time=2.0 we switch to elementwise field, but only
-            // on the region "2d_part"
-            TYPE=FieldElementwise,
-            gmsh_file="./input/data.msh",
-            field_name="conductivity"
-        }
-    }    
-]               
+   MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2
 \end{verbatim}
 
+
+\subsection{Output Records}
+Output from the models is controlled by an interplay of following records: \hyperA{IT::OutputStream}{{\tt OutputStream}},
+\hyperA{IT::Balance}{{\tt Balance}}, and \hyperA{IT::EquationOutput}{{\tt EquationOutput}}. The first two are part of the 
+records of so called {\it balance equations} which provides complete description of some balanced quantity. 
+Every such equation have its own balance output controlled by the \verb'Balance' record and its own output stream for the 
+spatial data controled by the \verb'OutputStream' record. Further every equation with its own output fields 
+(every input field is also output field) have the \verb'EquationOutput' record to setup output of its fields.
+
+\subsubsection{Balance}
+The balance output is performed in times given by the key \hyperA{Balance::times}{{\tt times}}
+with type \verb'TimeGrid' described \hyperlink{sec:TimeGrid}{below}. Setting the key \hyperA{Balance::add-output-times}{{\tt add\_output\_times}} 
+to \verb'true' the set of balance output times is enriched by the output times of the output stream of the same equation.
+
+\subsubsection{OutputStream}
+Set the file format of the output stream, possibly setting the output name, however the default value for the file name is preferred and the corresponding key 
+\hyperA{OutputStream::file}{{\tt file}} is obsolete.
+The time set provided by the optional key \hyperA{OutputStream::times}{{\tt times}} is used as a default time set for a similar key in associated 
+\verb'EquationOutput' records. Finally, the key \hyperA{OutputStream::observe-points}{{\tt observe\_points}} is used to specify observation points
+in which the associated equation output evaluates the observed fields.
+
+\subsubsection{EquationOuput}
+The output of the fields can be done in two ways: full spatial information saved only at selected time points in form of 
+VTU or GMSH file, or full temporal information saved for every computational time, but only in selected output points.
+The list of fields for spatial output is given by key \hyperA{EquationOutput::fields}{{\tt fields}} while the fields 
+evaluated in the observation points are selected by the key \hyperA{EquationOutput::observe-fields}{{\tt observe\_fields}}.
+The outputs times for the spatial output can be selected individually for every field in the 
+\hyperA{EquationOutput::fields}{{\tt fields}} however the default list of output times is given by the key
+\hyperA{EquationOutput::times}{{\tt times}} which can by optionally extended by the list of input times
+using the key \hyperA{EquationOutput::add-input-times}{{\tt add\_input\_times}}.
+
+\subsubsection{TimeGrid Array}
+\hypertarget{sec:TimeGrid}{}
+
+An array of the \hyperA{IT::TimeGrid}{{\tt TimeGrid}} records may be used to setup a sequence of times. Such sequence is used in particular 
+to triger various types of output. A single TimeGrid represents a regular grid of times with given start time, end time and step.

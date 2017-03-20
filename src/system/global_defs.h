@@ -178,7 +178,9 @@
  * descendants of parent Abstract.
  */
 #define FLOW123D_FORCE_LINK_IN_CHILD(x) int force_link_##x = 0;
-#define FLOW123D_FORCE_LINK_IN_PARENT(x) extern int force_link_##x; void func_##x() { force_link_##x = 1; }
+#define _TOKENPASTE(x, y) func_ ## x ## y     // helper macro
+#define _TOKENPASTE2(x, y) _TOKENPASTE(x, y)  // helper macro
+#define FLOW123D_FORCE_LINK_IN_PARENT(x) extern int force_link_##x; void _TOKENPASTE2(x, __LINE__)(void) { force_link_##x = 1; }
 
 
 ///@}

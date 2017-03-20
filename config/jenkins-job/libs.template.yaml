@@ -1,0 +1,242 @@
+#########################################################################################
+# Template for project Flow123d - LIBS
+#########################################################################################
+
+
+# defaults values
+- defaults:
+    name: lib-defaults
+    node: "{platform}"
+    workspace: "libs-build"
+    # TODO log rotate 200 days
+    wrappers:
+      - build-name:
+          name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+
+- project:
+    name: Multijob libs
+    platform: linux
+    build-type: [Debug, Release]
+    lib: [armadillo, petsc, yamlcpp]
+    step: [cmake, build, package]
+    jobs:
+      - "{lib}-{build-type}-install-image"
+      - "{lib}-{build-type}-start-image"
+      - "{lib}-{build-type}-stop-image"
+      - "{lib}-{build-type}-step-{step}"
+      - "{lib}-{build-type}-multijob"
+      # bddcml extra
+      - "{lib}-{build-type}-install-image":
+          lib: bddcml
+      - "bddcml-{build-type}-start-image" # installing different image
+      - "{lib}-{build-type}-stop-image":
+          lib: bddcml
+      - "{lib}-{build-type}-step-{step}":
+          lib: bddcml
+      - "{lib}-{build-type}-multijob":
+          lib: bddcml
+
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- INSTALL IMAGE --------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-install-image"
+    display-name: "{build-type} / {lib} install image"
+    defaults: lib-defaults
+    builders:
+      - shell: |
+          whoami
+          cd docker-config/dockerfiles
+          ls -lad
+          docker build --tag flow123d/base                  base
+          docker build --tag flow123d/base-build            base-build
+
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-start-image"
+    display-name: "{build-type} / {lib} start image"
+    defaults: lib-defaults
+    builders:
+      - shell: |
+          rm -f /tmp/docker_test.cid
+          docker run --privileged -di --cidfile /tmp/docker_test.cid  -v /packages:/packages flow123d/base-build bash
+          #docker run --privileged -ti -v /packages:/packages flow123d/base-build bash
+          docker_pid=`cat /tmp/docker_test.cid`
+          echo "DOCKER_PID=${{docker_pid}}" >> prop.file
+          # clone git
+          docker exec ${{docker_pid}} git clone https://github.com/flow123d/docker-config.git /docker-config
+
+# ---------------------------------------------------------------------------- #
+# ---------- STOP IMAGE ------------------------------------------------------ #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-stop-image"
+    display-name: "{build-type} / {lib} stop image"
+    defaults: lib-defaults
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker stop ${{DOCKER_PID}} || echo "no such container"
+          docker rm   ${{DOCKER_PID}} || echo "no such container"
+
+          #rm -rf /packages
+          rm -rf packages
+          mkdir -p packages
+          cp -r /packages/* packages
+    publishers:
+      - ssh:
+          site: 'ciflow.nti.tul.cz'
+          target: ''
+          source: 'packages/**'
+          remove-prefix: 'packages'
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- [cmake, build, package] ----------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-step-{step}"
+    display-name: "{build-type} / {lib} step {step}"
+    defaults: lib-defaults
+    builders:
+      - inject:
+          properties-file: prop.file
+      - shell: |
+          docker exec ${{DOCKER_PID}} bash -c "cd docker-config/cmakefiles/{lib}/ && make BUILD_TYPE={build-type} {step}"
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- MULTIJOB -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "{lib}-{build-type}-multijob"
+    display-name: "{build-type} / {lib} multijob"
+    project-type: multijob
+    defaults: lib-defaults
+
+    block-downstream: yes
+    scm:
+      - git:
+          url: https://github.com/flow123d/docker-config.git
+          basedir: docker-config
+          browser: githubweb
+          browser-url: https://github.com/x3mSpeedy/docker-config/
+          skip-tag: true
+          branches:
+            - origin/master
+
+    wrappers:
+      - inject:
+          script-content: |
+            rm -f prop.file && touch prop.file
+            echo "BUILD_NAME=${{GIT_BRANCH#origin/}}@${{GIT_COMMIT:0:6}}" >> prop.file
+      - build-name:
+          name:  "${{GIT_BRANCH}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+
+    triggers:
+      - github
+
+    builders:
+      - multijob:
+          name: "install image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "{lib}-{build-type}-install-image"
+      - multijob:
+          name: "start image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "{lib}-{build-type}-start-image"
+      - multijob:
+          name: "cmake step"
+          condition: SUCCESSFUL
+          projects:
+            - name: "{lib}-{build-type}-step-cmake"
+      - multijob:
+          name: "build step"
+          condition: SUCCESSFUL
+          projects:
+            - name: "{lib}-{build-type}-step-build"
+      - multijob:
+          name: "package step"
+          condition: SUCCESSFUL
+          projects:
+            - name: "{lib}-{build-type}-step-package"
+      - multijob:
+          name: "stop image"
+          condition: SUCCESSFUL
+          projects:
+            - name: "{lib}-{build-type}-stop-image"
+
+
+
+
+
+
+# ---------------------------------------------------------------------------- #
+# ---------- BDDCML EXTRA ---------------------------------------------------- #
+#            we need to run same image for BDDCML library
+#            but we install out petsc lib debian package
+# ---------------------------------------------------------------------------- #
+
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+- job-template:
+    name: "bddcml-{build-type}-start-image"
+    display-name: "{build-type} / bddcml start image"
+    defaults: lib-defaults
+    builders:
+      - shell: |
+          rm -f /tmp/docker_test.cid
+          docker run --privileged -di --cidfile /tmp/docker_test.cid -v /packages:/packages flow123d/base-build bash
+          docker_pid=`cat /tmp/docker_test.cid`
+          echo "DOCKER_PID=${{docker_pid}}" >> prop.file
+          # install petsc
+          docker exec ${{docker_pid}} wget -P /tmp http://ciflow.nti.tul.cz/static/packages/PETSC_3.6.1_{build-type}/PETSC_3.6.1.deb
+          docker exec ${{docker_pid}} dpkg -i /tmp/PETSC_3.6.1.deb
+          # clone git
+          docker exec ${{docker_pid}} git clone https://github.com/flow123d/docker-config.git /docker-config
+
+
+
+- project:
+    name: Multijob trigger multijob
+    platform: linux
+    build-type: [Debug, Release]
+    jobs:
+      - "{build-type}-trigger-multijob"
+
+- job-template:
+    name: "{build-type}-trigger-multijob"
+    project-type: multijob
+    wrappers:
+      - build-name:
+          name: "{build-type}-trigger #${{BUILD_NUMBER}}"
+    builders:
+      - multijob:
+          name: "{build-type} yamlcpp"
+          projects:
+            - name: "yamlcpp-{build-type}-multijob"
+      - multijob:
+          name: "{build-type} armadillo"
+          projects:
+            - name: "armadillo-{build-type}-multijob"
+      - multijob:
+          name: "{build-type} petsc"
+          projects:
+            - name: "petsc-{build-type}-multijob"
+      - multijob:
+          name: "{build-type} bddcml"
+          projects:
+            - name: "bddcml-{build-type}-multijob"

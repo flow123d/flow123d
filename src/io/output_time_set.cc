@@ -84,10 +84,16 @@ void OutputTimeSet::add(double begin, double step, double end, TimeMark::Type ma
     //DebugOut().fmt("set add: {} {} {} {}\n", begin, step, end, mark_type);
     ASSERT_GE( step, 2*numeric_limits<double>::epsilon());
     ASSERT_LE( begin, end);
-    ASSERT_LT( end, TimeGovernor::inf_time );
+    ASSERT_LE( end, TimeGovernor::inf_time );
     TimeMark::Type output_mark_type = mark_type | TimeGovernor::marks().type_output();
 
-    unsigned int n_steps=((end - begin) / step + TimeGovernor::time_step_precision);
+    double n_steps_dbl=((end - begin) / step + TimeGovernor::time_step_precision);
+    if (n_steps_dbl > 1.0e+6) {
+        WarningOut().fmt("Output step: {} to small, fixing number of output steps to 1e6.", step);
+        n_steps_dbl=1e6;
+        step = (end - begin)/n_steps_dbl;
+    }
+    unsigned int n_steps = (unsigned int)n_steps_dbl;
     for(unsigned int i = 0; i <= n_steps; i++) {
         auto mark = TimeMark(begin + i * step, output_mark_type);
         double time = TimeGovernor::marks().add(mark).time();

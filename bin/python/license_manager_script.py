@@ -189,7 +189,7 @@ import pathfix
 pathfix.append_to_path()
 
 import system.versions
-system.versions.require_version_2()
+system.versions.require_version_3()
 
 import sys
 from optparse import OptionParser
@@ -271,10 +271,13 @@ def parse_args(parser):
 
 
 def main():
+    """
+    Main function for license scriptdsvsd
+    """
     parser = create_parser()
     (options, args) = parse_args(parser)
 
-    variables = { }
+    variables = {}
     for name_value in options.variables:
         name, value = name_value.split(':', 1)
         variables[name] = value

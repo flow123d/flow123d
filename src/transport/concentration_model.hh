@@ -60,7 +60,7 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> diff_m;
 
 	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
-	    MultiField<3, FieldValue<3>::Scalar > sorption_mult;     ///< Coefficient of linear sorption.
+	    MultiField<3, FieldValue<3>::Scalar > sorption_coefficient;     ///< Coefficient of linear sorption.
 
 
 		MultiField<3, FieldValue<3>::Scalar> output_field;

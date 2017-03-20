@@ -37,6 +37,7 @@ define_test(type_record)
 define_test(type_abstract)
 define_test(type_generic)
 define_test(type_tuple)
+define_test(type_selection)
 
 define_test(storage)
 define_test(comment_filter)
@@ -51,6 +52,8 @@ define_test(type_repository)
 
 define_test(factory)
 define_test(type_dispatch)
+
+define_test(ist_finish)
 
 define_test(yaml_lib)
 define_test(json_spirit)

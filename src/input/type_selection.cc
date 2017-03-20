@@ -28,6 +28,7 @@ Selection::Selection()
 : data_(std::make_shared<SelectionData>("EmptySelection"))
 {
     close();
+    finish();
 }
 
 
@@ -49,7 +50,7 @@ Selection::Selection(const string &name, const string &desc)
 Selection &Selection::add_value(const int value, const std::string &key,
         const std::string &description, TypeBase::attribute_map attributes)
 {
-    ASSERT(!is_finished())(key)(type_name()).error("Declaration of new key in finished Selection.");
+    ASSERT(!is_closed())(key)(type_name()).error("Declaration of new key in closed Selection.");
 
     data_->add_value(value, key, description, attributes);
     return *this;
@@ -67,6 +68,16 @@ const Selection & Selection::close() const {
 }
 
 
+FinishStatus Selection::finish(FinishStatus finish_type ) {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
+	if (this->is_finished()) return data_->finish_status_;
+
+	ASSERT(data_->closed_)(this->type_name()).error();
+
+	data_->finish_status_ = finish_type;
+	return data_->finish_status_;
+}
 
 
 
@@ -86,8 +97,13 @@ TypeBase::TypeHash Selection::content_hash() const
 
 
 
+FinishStatus Selection::finish_status() const {
+    return data_->finish_status_;
+}
+
+
 bool Selection::is_finished() const {
-    return is_closed();
+    return data_->finish_status_ != FinishStatus::none_;
 }
 
 
@@ -99,6 +115,10 @@ string Selection::type_name() const {
    return data_->type_name_;
 }
 
+
+string Selection::class_name() const {
+	return "Selection";
+}
 
 
 bool Selection::operator==(const TypeBase &other) const {
@@ -154,6 +174,12 @@ string Selection::key_list() const {
 TypeBase::MakeInstanceReturnType Selection::make_instance(std::vector<ParameterPair> vec) {
 	return std::make_pair( std::make_shared<Selection>(*this), ParameterMap() );
 }
+
+
+
+Selection::SelectionData::SelectionData(const string &name)
+: type_name_(name), closed_(false), finish_status_(FinishStatus::none_)
+{}
 
 
 

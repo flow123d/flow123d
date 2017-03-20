@@ -80,8 +80,8 @@ bool Tokenizer::skip_to(const std::string& pattern, const std::string &end_searc
 bool Tokenizer::next_line(bool assert_for_remaining_tokens) {
     // input assert about remaining tokens
     if (assert_for_remaining_tokens && (! eol() )) {
-    	WarningOut() << "Remaining tokens, file '" << f_name_ << "', line '" << line_num()
-    			<< "', after token #" << position_.line_position_ << "." << std::endl;
+    	WarningOut().fmt( "Remaining token '{}', file '{}', line {} after token #{}\n",
+    			*tok_, f_name_, line_num(), position_.line_position_);
     }
 
     if (eof()) return false; // we are sure that at least one getline will occur
@@ -146,6 +146,8 @@ void Tokenizer::set_position(const Tokenizer::Position pos)
 	in_->clear();
 	in_->seekg(pos.file_position_);
 	position_ = pos;
+	line_="";
+	set_tokenizer();
 }
 
 

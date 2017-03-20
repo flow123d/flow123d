@@ -7,7 +7,9 @@ we can combine continuum models and discrete fracture network models.
 For more information see the project pages:
 [flow123d.github.com](http://flow123d.github.com).
 
-[![CI Build Status](http://ci2.nti.tul.cz/buildStatus/icon?job=Flow123d-linux-release-multijob)](http://ci2.nti.tul.cz/job/Flow123d-linux-release-multijob/)
+Release [![Build Status](http://ciflow.nti.tul.cz:8080/buildStatus/icon?job=Flow123d-ci2runner-release-multijob)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) |
+ Debug [![Build Status](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/badge/icon)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/)
+ 
 ## License ##
 
 The source code of Flow123d is licensed under GPL3 license. For details look
@@ -19,38 +21,59 @@ The sources of released versions can be downloaded from the project [web page](h
 development branches can be obtained by 
 
     > git clone https://github.com/flow123d/flow123d.git
+    
+Flow123d now uses [Docker](https://www.docker.com/) tool. Docker containers wrap
+a piece of software in a complete filesystem that contains everything needed to run: code, runtime, system tools,
+system libraries – anything that can be installed on a server.
 
 ### Windows OS prerequisities ###
 
-If you are running Windows, you have to install [Cygwin](https://www.cygwin.com/)  for emulation of
-POSIX unix environment (both 32-bit and 64-bit version should work). Then all what follows has to be done in the directories under
-cygwin, e.g "C:\cygwin\home\user\" and within the cygwin shell. In addition to the packages mentioned for the Linux you will need:
+If you are running Windows, you have to install [Docker Toolbox](https://www.docker.com/products/docker-toolbox). If Docker Toolbox is not installed it can be automatically installed
+by Windows Flow123d installator.
 
-* openssh (for MPICH)
-* some editor that can save Unix like text files (eg. notepad+ or sublime) 
+On Windows system, you have to:
+
+* install Docker Toolbox
+* make sure powershell is in the system path
 
 
 ### Linux OS prerequisities ###
+
+On Linux system, you have to install:
+
+* docker
+* make, cmake
+
+## Linux OS prerequisities without docker ##
+
+**This approach is not recommended but it is still possible**
+
+It is also possible to use Flow123d without docker. This however requires
+much greater effort and complex prerequisities:
+
 Requested packages are: 
 
 * gcc, g++                        C/C++ compiler in version 4.7 and higher (we use C++11)
 * gfortran                        Fortran compiler for compilation of BLAS library for PETSc.
 * python, perl                    Scripting languages 
 * make, cmake (>2.8.8), patch       Building tools
-
-Recommended packages for development: 
 * libboost                        General purpose C++ library 
-
-Namely you need development version of the Boost sub-libraries: "Program Options", "Serialize", "Regex", and "Filesystem".
-In Debian/Ubuntu distributions, these are in separate packages:
-
 * libboost-program-options-dev 
 * libboost-serialize-dev
 * libboost-regex-dev
 * libboost-filesystem-dev 
 
-Flow123d downloads and installs Boost during configuration if it is not found in the system, but it may
-take long. Optionally you may need
+Requested libraries are:
+* Yamlcpp library 
+* Armadillo
+* PETSc
+* BDDCML and Blopex
+
+these libraries can be installed using cmake projects in our other
+ [repository](https://github.com/flow123d/docker-config/tree/master/cmakefiles) 
+ but you must edit config.cmake properly so the libraries are found
+
+ Optionally you may need:
 
 * doxygen, graphviz     for source generated documentation and its dependency diagrams 
 * texlive-latex         or other Latex package to build reference manual, we use also some extra packages:
@@ -59,28 +82,46 @@ take long. Optionally you may need
 * imagemagick		tool is used to generate some graphics for the reference manual	
 * Python 2.7 and python libraries - markdown, json for HTML manual
 
-Flow123d depends also on PETSc library. It can be installed automatically during configuration,
-but for good parallel performance it has to be configured manually see appropriate section later on.
+### Compile Flow123d ###
 
+To compile Flow123d use docker image `flow-libs-dev-rel` for *release* or
+`flow-libs-dev-dbg` for *debug* version. Images can be found [here](https://github.com/flow123d/docker-config/tree/master/dockerfiles).
 
-### Compile Flow123 ###
+In order ro compile Flow123d:
 
-Copy file `config.cmake.template` to `config.cmake`:
+1) Clone [docker-config](https://github.com/flow123d/docker-config) repository:
+```sh
+ $ git clone https://github.com/flow123d/docker-config.git
+```     
 
-    > cp config.cmake.template config.cmake
+2) Install Docker images (this may take a while):
+```sh
+$ cd docker-config/bin
+$ ./configure
+```
+3) Enter docker image:
+```sh
+$ docker run -ti --rm -u $(id -u):$(id -g) flow-libs-dev-rel:user
+```
 
-Edit file `config.cmake`, set `PETSC_DIR` and `PETSC_ARCH` variables if you have your own installation of PETSc.
-For further options see comments in the template file.
+4) Clone Flow123d repository and copy config file
+```sh
+$ git clone https://github.com/flow123d/flow123d.git
+$ cd flow123d
+$ cp config/config-jenkins-docker-release.cmake config.cmake
+```
 
-Then run the compilation by:
-
-    > make all
+5) Run compilation:
+```sh
+$ make -j 2 all
+```
 
 This runs configuration and then the build process. If the configuration
 fails and you need to correct your `config.cmake` or other system setting
 you have to cleanup all files generated by unsuccessful cmake configuration by:
-
-    > make clean-all
+```sh
+$ make clean-all
+```
 
 Try this every time if your build doesn't work and you don't know why.
 
@@ -88,11 +129,10 @@ Try this every time if your build doesn't work and you don't know why.
 
 Build can take quite long time when running on single processor. Use make's parameter '-j N' to 
 use N parallel processes. Developers can set appropriate alias in '.bashrc', e.g. :
-    
-    export NUMCPUS=`grep -c '^processor' /proc/cpuinfo`
-    alias pmake='time nice make -j$NUMCPUS --load-average=$NUMCPUS'
-
-
+```sh
+export NUMCPUS=`grep -c '^processor' /proc/cpuinfo`
+alias pmake='time nice make -j$NUMCPUS --load-average=$NUMCPUS'
+```
 
 
 ### Manual PETSc installation (optional) ###
@@ -214,43 +254,11 @@ highlight the packages we are familiar with.
 
 ## Build the reference manual ##
 
-The reference manual can be built by
-
-    > make ref-doc
-
-which calls LaTeX commands to make the final pdf file `doc/reference_manual/flow123d_doc.pdf`.
-The LaTeX source files depends on several packages that are needed for succesful build. In the list below 
-we provide a hint to find these packages (and names of distribution packages if you are using TeXLive under Ubuntu):
-
-* hyperref
-* colortbl
-* amsmath
-* natbib
-* graphicx
-* array (in CTAN package tools)
-* tabularx (in CTAN package tools)
-* multicol (in CTAN package tools)
-* longtable (in CTAN package tools)
-* pdflscape (in several distributions include in package bundle 'oberdiek')
- 
-which can be found in Ubuntu in 'texlive-latex-base' package
-
-* caption
-* subcaption
-* fancyvrb
-* rotating
-
-which can be found in Ubuntu in 'texlive-latex-recommended' package
-
-* amssymb (in CTAN package amsfonts)
-
-which can be found in Ubuntu in 'texlive-base' package
-
-* etoolbox
-
-which can be found in Ubuntu in 'texlive-latex-extra' package, but is also enclosed in Flow123d reference manual source directory
-
-All these packages can be also obtained from [CTAN-Comprehensive TeX Archive Network](http://ctan.org/).
+The reference manual can be built by while in docker container
+```sh
+$ make ref-doc
+```
+To copy out reference manual from docker use command `docker cp`.
 
 
 ## Troubleshooting ##
@@ -280,13 +288,6 @@ All these packages can be also obtained from [CTAN-Comprehensive TeX Archive Net
 * ** Windows line ends**  If you use a shell script for PETSC configuration under cygwin,
   always check if you use UNIX line ends. It can be specified in the notepad
   of Windows 7.
-
-* ** older Windows ** For some older Windows versions it may be necessary to set in configuration of PETSC
-    --with-timer=nt 
-
-* ** Cygwin remap problem ** You may get strange errors during configuration of PETSc, like 
-
-    C:\cygwin\bin\python.exe: *** unable to remap C:\cygwin\bin\cygssl.dll to same address as parent(0xDF0000) != 0xE00000
 
   or other errors usually related to DLL conflicts.
   (see http://www.tishler.net/jason/software/rebase/rebase-2.4.2.README)

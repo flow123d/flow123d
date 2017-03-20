@@ -15,6 +15,7 @@
 #include "io/output_mesh.hh"
 
 #include "mesh/mesh.h"
+#include "mesh_constructor.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "system/sys_profiler.hh"
@@ -93,7 +94,7 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
     ASSERT(res);
     
     // read mesh
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     stringstream in(ref_element_mesh.c_str());
     mesh->read_gmsh_from_stream(in);
     

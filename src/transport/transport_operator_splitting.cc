@@ -85,7 +85,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				// input data
 		.declare_key("transport", ConcentrationTransportBase::get_input_type(), Default::obligatory(),
 				"Type of numerical method for solute transport.")
-		.declare_key("reaction_term", ReactionTerm::get_input_type(), Default::optional(),
+		.declare_key("reaction_term", ReactionTerm::it_abstract_term(), Default::optional(),
 					"Reaction model involved in transport.")
 /*
 		.declare_key("output_fields", Array(ConvectionTransport::get_output_selection()),
@@ -258,8 +258,7 @@ void TransportOperatorSplitting::zero_time_step()
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
     if(reaction) reaction->zero_time_step();
-    convection->output_stream()->write_time_frame();
-    if (balance_ != nullptr) balance_->output(time_->t());
+    output_data();
 
 }
 

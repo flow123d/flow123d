@@ -23,11 +23,31 @@
 
 using namespace Input::Type;
         
-Abstract & ReactionTerm::get_input_type() {
+Abstract & ReactionTerm::it_abstract_term() {
 	return Abstract("ReactionTerm",
-			"Equation for reading information about simple chemical reactions.")
+			"Abstract equation for a reaction term (dual porosity, sorption, reactions). Can be part of coupling with a transport equation via. operator splitting.")
 			.close();
 }
+
+Abstract & ReactionTerm::it_abstract_mobile_term() {
+    return Abstract("ReactionTermMobile",
+            "Abstract equation for a reaction term of the MOBILE pores (sorption, reactions). Is part of dual porosity model.")
+            .close();
+}
+
+Abstract & ReactionTerm::it_abstract_immobile_term() {
+    return Abstract("ReactionTermImmobile",
+            "Abstract equation for a reaction term of the IMMOBILE pores (sorption, reactions). Is part of dual porosity model.")
+            .close();
+}
+
+Abstract & ReactionTerm::it_abstract_reaction() {
+    return Abstract("GenericReaction",
+            "Abstract equation for a reaction of species in single compartment (e.g. mobile solid)."
+            "It can be part of: direct operator splitting coupling, dual porosity model, any sorption.")
+            .close();
+}
+
 
 ReactionTerm::ReactionTerm(Mesh &init_mesh, Input::Record in_rec)
     : EquationBase(init_mesh, in_rec),

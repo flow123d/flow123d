@@ -28,13 +28,14 @@
 
 using namespace std;
 
+
 string python_code = R"CODE(
 def testFunc():
-    print "Python hallo."
+    print ("Python hallo.")
 
 class testClass:
     def testMethod(self):
-        print "eggs!"
+        print ("eggs!")
 )CODE";
 
 string python_function = R"CODE(
@@ -145,7 +146,7 @@ TEST(FieldPython, read_from_input) {
     Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
     UnitSI unit = UnitSI().m();
-    FieldAlgoBaseInitData init_data(3, unit);
+    FieldAlgoBaseInitData init_data("field_python", 3, unit);
 
     auto flux=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("field_string"), init_data);
     {
@@ -200,7 +201,7 @@ TEST(FieldPython, read_from_input) {
 TEST(FieldPython, python_exception) {
     FieldPython<3, FieldValue<3>::Scalar> scalar_func;
 	EXPECT_THROW_WHAT( { scalar_func.set_python_field_from_string(python_function, "func_xxx"); }, PythonLoader::ExcPythonError,
-        "Message: 'module' object has no attribute 'func_xxx'");
+        "Message: module 'python_field_func_xxx' has no attribute 'func_xxx'");
 
 }
 

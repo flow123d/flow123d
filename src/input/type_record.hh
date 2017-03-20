@@ -18,15 +18,21 @@
 #ifndef TYPE_RECORD_HH_
 #define TYPE_RECORD_HH_
 
-#include <memory>
 #include "system/exceptions.hh"
 
 #include "type_base.hh"
 #include "storage.hh"
 
+#include <string>
+#include <memory>
+#include <vector>
+#include <map>
 
 namespace Input {
 namespace Type {
+
+
+using namespace std;
 
 
 /** *********************************************************************************************************************************
@@ -171,7 +177,6 @@ class Abstract;
 class Record : public TypeBase {
 	friend class OutputBase;
 	friend class Abstract;
-	friend class AdHocAbstract;
 
 public:
 
@@ -192,7 +197,7 @@ public:
         unsigned int key_index;                ///< Position inside the record.
         string key_;                           ///< Key identifier.
         string description_;                   ///< Key description in context of particular Record type.
-        std::shared_ptr<TypeBase> type_;     ///< Type of the key.
+        std::shared_ptr<TypeBase> type_;       ///< Type of the key.
         Default default_;                      ///< Default, type and possibly value itself.
         /**
          * Is true if the key was created through copy_keys method, but not explicitly declared.
@@ -235,16 +240,15 @@ public:
     /**
      * @brief Method to derive new Record from an AbstractRecord @p parent.
      *
-     * This register the @p parent in the newly created Record. Method creates TYPE key of Record and must be
-     * call before declaration of keys.
+     * This register the @p parent to Record. Method checks if TYPE key of Record exists and ensures that Record
+     * has assigned one parent only once.
      *
-     * Mechanism of set parent to derived Record and child to parent Abstract is a bit more complicated. For
-     * correct finish it must be done in these steps:
+     * Usage of this method:
      *
-     * - in derive_from is set @p parent to derived Record
-     * - in \p close is set derived Record to parent (or to all parents for multiple inheritance) and registered
-     *   parents in derived Record are erased
-     * - in \p AbstractRecord::finish is re-registered parents to descendant (through \p add_parent method)
+     * - during creating Record before its closing (optional usage but recommended for better clarity)
+     * - in \p Abstract::add_child provides bilateral binding between parent and child
+     *
+     * See also \p close and \p Abstract::add_child methods
      */
     virtual Record &derive_from(Abstract &parent);
 
@@ -309,12 +313,19 @@ public:
     /**
      * @brief Close the Record for further declarations of keys.
      *
-     * Add Record to type repository (see @p TypeRepository::add_type) and set Record
-     * as descendant of parent if Record is derived (for mechanism of set parent and
-     * descendant see \p derive_from)
+     * Adds Record to type repository (see @p TypeRepository::add_type) and provides correct bindings
+     * between parent Abstract and child Record if Record is derived from one or more Abstracts.
+     *
+     * Mechanism of set parent to derived Record and child to parent Abstract is provided with
+     * \p Abstract::add_child method.
+     *
+     * See also \p derive_from and \p Abstract::add_child methods
      */
     Record &close() const;
 
+
+    /// Implements @p TypeBase::finish_status.
+    FinishStatus finish_status() const override;
 
     /// Implements @p TypeBase::is_finished.
     bool is_finished() const override;
@@ -329,7 +340,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    virtual string class_name() const override { return "Record"; }
+    virtual string class_name() const override;
 
     /// Class comparison and Record type name comparision.
     bool operator==(const TypeBase &other) const override;
@@ -379,16 +390,16 @@ public:
     /**
      * @brief Finish declaration of the Record type.
      *
-     * Calls close() and completes Record (check auto convertible key, parameters of generic types etc).
+     * Checks if Record is closed and completes Record (check auto convertible key, parameters of generic types etc).
      */
-    bool finish(bool is_generic = false) override;
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /**
      * @brief Add TYPE key as obligatory.
      *
      * This method can't be used for derived record.
      */
-    Record &has_obligatory_type_key();
+    //Record &has_obligatory_type_key();
 
     Record &add_attribute(std::string key, TypeBase::json_string value);
 
@@ -421,7 +432,7 @@ protected:
      *
      * TYPE key must be declared as first key of Record.
      */
-    Record &declare_type_key();
+    //Record &declare_type_key();
 
     /**
      * @brief Set parent Abstract of Record.
@@ -430,7 +441,7 @@ protected:
      * in Abstract::finish() and refill @p parent_vec_ vector of correct parents (for complete
      * mechanism of set parent and descendant see \p derive_from)
      */
-    const Record &add_parent(Abstract &parent) const;
+    //const Record &add_parent(Abstract &parent) const;
 
     /**
      * @brief Set data of Instance of generic type.
@@ -486,7 +497,7 @@ protected:
         std::vector< std::shared_ptr<Abstract> > parent_vec_;
 
         /// Record is finished when it is correctly derived (optional) and have correct shared pointers to types in all keys.
-        bool finished;
+        FinishStatus finish_status_;
 
         /// If record is closed, we do not allow any further declare_key calls.
         bool closed_;

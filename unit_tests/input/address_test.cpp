@@ -35,7 +35,6 @@ TEST(InputAddress, address_output_test) {
 		.close();
 
 	IT::Record other_record = IT::Record("Other", "Record with data for other problem")
-			.declare_key("TYPE", IT::String(), IT::Default("\"Other\""),	"Type of problem")
 		    .close();
 	{
 		other_record.finish();
@@ -52,8 +51,6 @@ TEST(InputAddress, address_output_test) {
 		.close();
 
 	IT::Record sequential_coupling_record = IT::Record("SequentialCoupling", "Record with data for a general sequential coupling")
-		.declare_key("TYPE", IT::String(), IT::Default("\"SequentialCoupling\""),
-				"Type of problem")
 		.declare_key("regions", IT::Array(region_input_type),IT::Default::obligatory(),
 	             "Definition of region.")
 		.close();
@@ -71,7 +68,7 @@ TEST(InputAddress, address_output_test) {
 				"Simulation problem to be solved.")
 		.close();
 
-	Input::ReaderToStorage json_reader( read_input_json,  root_record, Input::FileFormat::format_JSON);
+	Input::ReaderToStorage json_reader( read_input_json, root_record, Input::FileFormat::format_JSON);
 	Input::Record i_rec = json_reader.get_root_interface<Input::Record>();
 
 	EXPECT_EQ("/", i_rec.address_string() );

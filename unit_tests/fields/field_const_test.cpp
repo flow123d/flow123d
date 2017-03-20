@@ -21,7 +21,6 @@
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
-
 string input = R"INPUT(
 {   
    tensor1=3.14,
@@ -80,7 +79,7 @@ TEST(FieldConst, read_from_input) {
 
 
     UnitSI unit = UnitSI().m();
-    FieldAlgoBaseInitData init_data_conc(3, unit);
+    FieldAlgoBaseInitData init_data_conc( "init_conc", 3, unit, std::make_pair(0.0, 0.3) );
     auto conc=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("init_conc"), init_data_conc);
     {
         arma::vec result;
@@ -96,7 +95,7 @@ TEST(FieldConst, read_from_input) {
         EXPECT_DOUBLE_EQ( 0.34, result[2]);
     }
 
-    FieldAlgoBaseInitData init_data_tensor(0, UnitSI::dimensionless());
+    FieldAlgoBaseInitData init_data_tensor("tensor", 0, UnitSI::dimensionless(), std::make_pair(0.0, 10.0));
 
     auto tensor1=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor1"), init_data_tensor);
     check_tensor_field(tensor1, "3.14 0 0; 0 3.14 0; 0 0 3.14", {point_1, point_2}, elm);
@@ -110,4 +109,3 @@ TEST(FieldConst, read_from_input) {
     auto tensor4=TensorField::function_factory(in_rec.val<Input::AbstractRecord>("tensor4"), init_data_tensor);
     check_tensor_field(tensor4, "1 2 3; 4 5 6; 7 8 9", {point_1, point_2}, elm);
 }
-

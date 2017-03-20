@@ -2,14 +2,18 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 
-from __future__ import absolute_import
 from ist.globals import Globals, FormatMode
 from ist.utils.htmltree import htmltree
 from ist.utils.texlist2 import TexList
 from utils.logger import Logger
+import collections
 
 
 class InputType(object):
+    """
+    Class InputType is enum-like class for types
+    """
+
     UNKNOWN = 0
     SELECTION = 4
     RECORD = 1
@@ -22,10 +26,14 @@ class InputType(object):
     STRING = 128
     BOOL = 256
     FILENAME = 512
+    TUPLE = 1024
 
-    MAIN_TYPE = SELECTION | RECORD | ABSTRACT
+    MAIN_TYPE = SELECTION | RECORD | ABSTRACT | TUPLE
 
     def __eq__(self, other):
+        if other is None:
+            return False
+
         if type(other) is int:
             return bool(self.value & other)
 
@@ -50,6 +58,10 @@ class InputType(object):
 
 
 class Field(object):
+    """
+    Class Field registers new field on class
+    """
+
     def __init__(self, names, t=str, index=False, subtype=None, save_as=None, required=False, link_to_parent=False, default=None):
         """
         :type subtype: class
@@ -67,9 +79,9 @@ class Field(object):
         for name in self.names:
             if name in json_data:
                 # parsable classes will handle parsing by themselves
-                if callable(getattr(self.type, 'parse', None)):
+                if isinstance(getattr(self.type, 'parse', None), collections.Callable):
                     instance = self.type()
-                    if callable(getattr(self.type, 'set_subtype', None)):
+                    if isinstance(getattr(self.type, 'set_subtype', None), collections.Callable):
                         instance.set_subtype(self.subtype)
                     return instance.parse(json_data[name])
 
@@ -90,15 +102,34 @@ class Field(object):
 
 
 class Parsable(object):
+    """
+    Class Parsable is abstract helper class for parsable objects
+    """
+
     __fields__ = []
 
     def __init__(self):
         self.parent = None
         self.unique_name = None
         self.references = list()
+        self.secnerefer = list()
+
+    def add_link(self, target):
+        """
+        :type target: Parsable
+        """
+        left = self.get_generic_root()
+        right = target.get_generic_root()
+        left.add_ref(right)
+        right.add_fer(left)
 
     def add_ref(self, ref):
-        self.references.append(ref)
+        if ref.input_type == InputType.MAIN_TYPE:
+            self.references.append(ref)
+
+    def add_fer(self, fer):
+        if fer.input_type == InputType.MAIN_TYPE:
+            self.secnerefer.append(fer)
 
     def parse(self, json_data={}):
         for field in self.__fields__:
@@ -115,6 +146,8 @@ class Parsable(object):
 
             if field.index:
                 if value:
+                    if (self.has_generic_link()):
+                        value="instance_"+value
                     unique_name = Globals.save(value, self)
                     if value != unique_name:
                         self.unique_name = unique_name
@@ -131,7 +164,38 @@ class Parsable(object):
 
     def include_in_format(self):
         input_type = getattr(self, 'input_type', None)
-        return input_type is not None and input_type == InputType.MAIN_TYPE
+        name = getattr(self, 'name', '')
+
+        if not (input_type == InputType.MAIN_TYPE):
+            Logger.instance().info('  - item is not main type ')
+            return False
+
+        if self.has_generic_link():
+            Logger.instance().info('  - item contains generic link')
+            return False
+
+        return name != 'EmptyRecord'
+
+    def has_generic_link(self):
+        return getattr(self, 'generic_type', None) is not None
+
+    def get_parameter_dict(self):
+        return getattr(self, 'parameters', {})
+
+    def get_generic_root(self):
+        """
+        return generic root of this object
+        :rtype: Parsable
+        """
+        root = self
+        while True:
+            try:
+                if root.generic_type:
+                    root = root.generic_type.get_reference()
+                else:
+                    break
+            except: break
+        return root
 
 
     @property
@@ -147,9 +211,8 @@ class Parsable(object):
         # if getattr(self, 'unique_name', None):
         #     return self.unique_name
 
-        if getattr(self, 'name', None):
-            return self.name
-
+        # return self.href_id
+        return getattr(self, 'name', None)
 
     @property
     def href_id(self):
@@ -221,6 +284,10 @@ class Parsable(object):
 
 
 class List(list):
+    """
+    Class List adds extra functionality to classic list (such as parsing)
+    """
+
     def __init__(self):
         super(List, self).__init__()
         self.subtype = str
@@ -230,7 +297,7 @@ class List(list):
 
     def parse(self, json_data):
         if self.subtype:
-            if callable(getattr(self.subtype, 'parse', None)):
+            if isinstance(getattr(self.subtype, 'parse', None), collections.Callable):
                 for item in json_data:
                     self.append(self.subtype().parse(item))
             else:
@@ -246,6 +313,11 @@ class List(list):
 
 
 class SmartList(List):
+    """
+    Class SmartList adds extra functionality to List
+    parsing is compatible with previous versions
+    """
+
     def parse(self, json_data):
         if type(json_data) is dict:
             return super(SmartList, self).parse([dict([x]) for x in json_data.items()])
@@ -253,6 +325,10 @@ class SmartList(List):
 
 
 class Dict(dict):
+    """
+    Class Dict adds extra functionality to classic dict
+    """
+
     def parse(self, json_data):
         for key, value in json_data.items():
             self[key] = value
@@ -264,24 +340,25 @@ class Dict(dict):
 
 class Unicode(Parsable):
     """
+    Class Unicode represents str and unicode data
     :type value          : unicode
     """
 
     def __init__(self):
         super(Parsable, self).__init__()
-        self.value = u''
+        self.value = ''
 
-    def parse(self, json_data=u''):
-        self.value = unicode(json_data)
+    def parse(self, json_data=''):
+        self.value = str(json_data)
         return self
 
     def __str__(self):
-        return unicode.__str__(unicode(self.value))
+        return str.__str__(str(self.value))
 
     def __repr__(self):
-        return unicode.__repr__(unicode(self.value))
+        return str.__repr__(str(self.value))
 
-    def __nonzero__(self):
+    def __bool__(self):
         return bool(self.value)
 
     @property
@@ -299,9 +376,12 @@ class Unicode(Parsable):
                     return '{}::{}'.format(parent_id[4:], TexList.name_mode(self.value))
                 return '{}::{}'.format(parent_id, TexList.name_mode(self.value))
 
-            return '{self.parent.href_id}-{self.value}'.format(self=self)
+            return '{self.parent.href_id}:{self.value}'.format(self=self)
         return self.value
 
 
 class NotImplementedException(Exception):
+    """
+    Simple exception class
+    """
     pass

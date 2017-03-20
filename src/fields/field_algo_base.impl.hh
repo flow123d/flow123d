@@ -62,7 +62,7 @@ FieldAlgorithmBase<spacedim, Value>::FieldAlgorithmBase(unsigned int n_comp)
 
 template <int spacedim, class Value>
 string FieldAlgorithmBase<spacedim, Value>::template_name() {
-	return boost::str(boost::format("R%i -> %s") % spacedim % Value::type_name() );
+	return boost::str(boost::format("R%i_to_%s") % spacedim % Value::type_name() );
 }
 
 
@@ -71,7 +71,7 @@ template <int spacedim, class Value>
 Input::Type::Abstract & FieldAlgorithmBase<spacedim, Value>::get_input_type() {
 	stringstream ss;
 	ss << "[" << Value::NRows_  << ", " << Value::NCols_  << "]";
-    return it::Abstract("Field:"+template_name(), "Abstract for all time-space functions.")
+    return it::Abstract("Field_"+template_name(), "Abstract for all time-space functions.")
 			.allow_auto_conversion("FieldConstant")
 			.root_of_generic_subtree()
 			.add_attribute(FlowAttribute::field_value_shape(), ss.str() )
@@ -92,24 +92,37 @@ const Input::Type::Instance & FieldAlgorithmBase<spacedim, Value>::get_input_typ
 	return it::Instance(get_input_type(), param_vec).close();
 }
 
-
 template <int spacedim, class Value>
-const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si() {
-    return it::Record("FieldUnit", "Set unit of Field by user. \n"
-    							   "Unit is defined as product or proportion of base or derived SI units \n"
-			   	   	   	   	       "and it is allowed to use subdefinitions. Example: \n"
-	   	   	       	   	   	       "'MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2', \n"
-  	   	   	       	   	   	       "allows define pressure head in MPa with subdefinitions of density and \n"
-  	   	   	       	   	   	       "gravity acceleration. In subdefinitions can be used multiplicative \n"
-  	   	   	       	   	   	       "coeficient. Resulting unit must correspond with defined Field unit \n"
-  	   	   	       	   	   	       "butit can differ in coefficient.")
+const Input::Type::Record & FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys() {
+    auto unit_record = it::Record("Unit",
+           "Specify unit of an input value. "
+           "Evaluation of the unit formula results into a coeficient and a "
+           "unit in terms of powers of base SI units. The unit must match "
+           "expected SI unit of the value, while the value provided on the input "
+           "is multiplied by the coefficient before further processing. "
+           "The unit formula have a form:\n"
+           "```\n"
+           "<UnitExpr>;<Variable>=<Number>*<UnitExpr>;...,\n"
+           "```\n"
+           "where ```<Variable>``` is a variable name and ```<UnitExpr>``` is a units expression "
+           "which consists of products and divisions of terms.\n\n"
+           "A term has a form: "
+           "```<Base>^<N>```, where ```<N>``` is an integer exponent and ```<Base>``` "
+           "is either a base SI unit, a derived unit, or a variable defined in the same unit formula. "
+           "Example, unit for the pressure head:\n\n"
+           "```MPa/rho/g_; rho = 990*kg*m^-3; g_ = 9.8*m*s^-2```"
+            )
+        .allow_auto_conversion("unit_formula")
         .declare_key("unit_formula", it::String(), it::Default::obligatory(),
                                    "Definition of unit." )
-        .allow_auto_conversion("unit_formula")
-		.close();
+        .close();
+
+    return it::Record("FieldAlgorithmBase_common_aux", "")
+        .declare_key("unit", unit_record, it::Default::optional(),
+                                "Unit of the field values provided in the main input file, in the external file, or "
+                                "by a function (FieldPython).")
+        .close();
 }
-
-
 
 template <int spacedim, class Value>
 shared_ptr< FieldAlgorithmBase<spacedim, Value> >
@@ -189,35 +202,6 @@ void FieldAlgorithmBase<spacedim, Value>::init_unit_conversion_coefficient(const
     	}
     }
 }
-
-
-
-/****************************************************************************
- *  Macros for explicit instantiation of particular field class template.
- */
-
-
-// Instantiation of fields with values dependent of the dimension of range space
-#define INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_to)                                                               \
-template class field<dim_from, FieldValue<dim_to>::VectorFixed >;                       \
-template class field<dim_from, FieldValue<dim_to>::TensorFixed >;                       \
-
-// Instantiation of fields with domain in the ambient space of dimension @p dim_from
-#define INSTANCE_TO_ALL(field, dim_from) \
-template class field<dim_from, FieldValue<0>::Enum >;                       \
-template class field<dim_from, FieldValue<0>::Integer >;                       \
-template class field<dim_from, FieldValue<0>::Scalar >;                       \
-\
-INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
-
-
-// All instances of one field class template @p field.
-// currently we need only fields on 3D ambient space (and 2D for some tests)
-// so this is to save compilation time and avoid memory problems on the test server
-#define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL( field, 3) \
-INSTANCE_TO_ALL( field, 2)
-// currently we use only 3D ambient space
 
 
 
