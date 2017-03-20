@@ -149,7 +149,6 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	q2_ = new QGauss<2>(q_order);
 	q3_ = new QGauss<3>(q_order);
 
-	map0_ = new MappingP1<0,3>;
 	map1_ = new MappingP1<1,3>;
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
@@ -172,7 +171,6 @@ FEObjects::~FEObjects()
 	delete q1_;
 	delete q2_;
 	delete q3_;
-	delete map0_;
 	delete map1_;
 	delete map2_;
 	delete map3_;
@@ -193,7 +191,6 @@ template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
 template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
 template<> Quadrature<3> *FEObjects::q<3>() { return q3_; }
 
-template<> MappingP1<0,3> *FEObjects::mapping<0>() { return map0_; }
 template<> MappingP1<1,3> *FEObjects::mapping<1>() { return map1_; }
 template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }

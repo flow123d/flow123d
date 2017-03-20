@@ -276,14 +276,6 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
     }
 }
 
-template<>
-void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cell,
-                            unsigned int sid,
-                            const Quadrature<0> &q,
-                            MappingInternalData &data,
-                            FEValuesData<0,3> &fv_data)
-{}
-
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const
 {
@@ -297,28 +289,13 @@ arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 
     return bary_coord;
 }
 
-template<>
-arma::vec::fixed<1> MappingP1<0,3>::project_point(const arma::vec3 &point, const arma::mat::fixed<3,1> &map) const
-{
-    return arma::ones(1);
-}
-
-
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::clip_to_element(arma::vec::fixed<dim+1> &barycentric) {
     return RefElement<dim>::clip(barycentric);
 }
 
 
-template<>
-arma::vec::fixed<1> MappingP1<0,3>::clip_to_element(arma::vec::fixed<1> &barycentric) {
-	ASSERT(false).error("Clipping isn't supported for dim=0.");
-    return barycentric; // should never happen
-}
 
-
-
-template class MappingP1<0,3>;
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
 template class MappingP1<3,3>;

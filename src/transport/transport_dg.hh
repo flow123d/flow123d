@@ -83,7 +83,6 @@ private:
 	Quadrature<3> *q3_;
 
 	/// Auxiliary mappings of reference elements.
-	MappingP1<0,3> *map0_;
 	MappingP1<1,3> *map1_;
 	MappingP1<2,3> *map2_;
 	MappingP1<3,3> *map3_;
