@@ -86,6 +86,7 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
 
 		Field<3, FieldValue<3>::Integer> region_id;
+        Field<3, FieldValue<3>::Integer> subdomain;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
 

@@ -225,6 +225,10 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
+                
+    *this += subdomain.name("subdomain")
+      .units( UnitSI::dimensionless() )
+      .flags(FieldFlag::equation_external_output);
 
 
     // add all input fields to the output list
@@ -250,6 +254,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
+    data_.subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
     // DG variant and order
