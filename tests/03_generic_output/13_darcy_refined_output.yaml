@@ -1,8 +1,26 @@
-flow123d_version: 2.0.0_rc
+#################
+# Goal: Test uniformly refined output mesh for all dimension.
+# Author: Pavel Exner
+# Reference: reference solution
+
+flow123d_version: 2.0.0
 problem: !Coupling_Sequential
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
-    mesh_file: ./input/test1_new.msh
+    mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
+    regions:
+      - !Union
+        name: fractures
+        regions:
+          - 2d_fracture_1
+          - 2d_fracture_2
+      - !Union
+        name: dirichlet_boundary
+        regions:
+          - .1d_channel
+          - .2d_fracture_1
+          - .2d_fracture_2
+          - .3d_cube
   flow_equation: !Flow_Darcy_MH
     output_specific:
     nonlinear_solver:
@@ -14,27 +32,14 @@ problem: !Coupling_Sequential
       - region: 1d_channel
         anisotropy: 10
         sigma: 0.05
-      - region: 2d_fracture_1
-        anisotropy: 1
-        sigma: 0.5
-      - region: 2d_fracture_2
+       # using region set
+      - region: fractures
         anisotropy: 1
         sigma: 0.5
       - region: 3d_cube
         anisotropy: 0.1
-      - region: .1d_channel
-        bc_type: dirichlet
-        bc_pressure: !FieldFormula
-          value: x-z
-      - region: .2d_fracture_1
-        bc_type: dirichlet
-        bc_pressure: !FieldFormula
-          value: x-z
-      - region: .2d_fracture_2
-        bc_type: dirichlet
-        bc_pressure: !FieldFormula
-          value: x-z
-      - region: .3d_cube
+      # using region set
+      - region: dirichlet_boundary
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x-z
@@ -44,7 +49,7 @@ problem: !Coupling_Sequential
         - pressure_p0
         - velocity_p0
     output_stream: 
-      file: ./test1.pvd
+      file: ./flow.pvd
       format: !vtk
         variant: ascii
       name: flow_output_stream
