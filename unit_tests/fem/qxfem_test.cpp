@@ -12,6 +12,7 @@
 #include "mesh/point.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include "mesh_constructor.hh"
 
 #include "fem/singularity.hh"
 
@@ -218,7 +219,7 @@ TEST(CircleEllipseProjection, parallel){
 TEST(qxfem, singularity) {
     
     // read mesh - simplset cube from test1
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     stringstream in(ref_element_mesh.c_str());
     mesh->read_gmsh_from_stream(in);
     ElementFullIter ele = mesh->element(0);
@@ -325,7 +326,7 @@ TEST(qxfem, qxfem_factory) {
     QXFEMFactory<2,3> qfactory(12);
     
     // read mesh
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     stringstream in(ref_element_mesh.c_str());
     mesh->read_gmsh_from_stream(in);
     ElementFullIter ele = mesh->element(0);

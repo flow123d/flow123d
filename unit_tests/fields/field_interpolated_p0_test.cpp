@@ -28,6 +28,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 
 #include "system/system.hh"
 #include "input/input_type.hh"
@@ -41,6 +42,7 @@
 #include "mesh/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
+
 
 
 
@@ -130,7 +132,7 @@ public:
         Profiler::initialize();
 
         //FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = new Mesh;
+        mesh = mesh_constructor();
         stringstream in(gmsh_mesh.c_str());
         mesh->read_gmsh_from_stream(in);
 
@@ -152,9 +154,9 @@ public:
 
     }
 
-    const FieldAlgoBaseInitData& init_data() {
+    const FieldAlgoBaseInitData& init_data(std::string field_name) {
     	static UnitSI unit = UnitSI().m();
-    	static const FieldAlgoBaseInitData init_data(0, unit);
+    	static const FieldAlgoBaseInitData init_data(field_name, 0, unit);
     	return init_data;
     }
 
@@ -168,7 +170,7 @@ public:
 
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
 
     for (unsigned int j=1; j<3; j++) {
     	field.set_time(test_time[j-1]);
@@ -186,7 +188,7 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
 
 /*TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_unit_conversion) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
 
     for (unsigned int j=1; j<3; j++) {
     	field.set_time(test_time[j-1]);
@@ -204,7 +206,7 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
 
 TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_large) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("scalar_large"), init_data());
+    field.init_from_input(rec.val<Input::Record>("scalar_large"), init_data("scalar_large"));
     field.set_time(0.0);
 
     //EXPECT_DOUBLE_EQ( 0.650, field.value(point, mesh->element_accessor(0)) );

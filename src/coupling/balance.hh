@@ -251,12 +251,19 @@ public:
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param elem_idx      Local index of boundary edge.
+	 * @param boundary_idx  Local index of boundary edge.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
+     * 
+     * The order of local boundary edges is given by traversing
+     * the local elements and their sides.
+     * 
+     * TODO: Think of less error-prone way of finding the local
+     * boundary index for a given Boundary object. It can be 
+     * possibly done when we will have a boundary mesh.
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
-			unsigned int elem_idx,
+			unsigned int boundary_idx,
 			const std::vector<int> &dof_indices,
 			const std::vector<double> &values);
 
@@ -285,11 +292,13 @@ public:
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param elem_idx      Local index of boundary edge.
+	 * @param boundary_idx  Local index of boundary edge.
 	 * @param value         Value to be added.
+     * 
+     * For determining the local boundary index see @ref add_flux_matrix_values.
 	 */
 	void add_flux_vec_value(unsigned int quantity_idx,
-			unsigned int elem_idx,
+			unsigned int boundary_idx,
 			double value);
 
 	/**

@@ -13,9 +13,12 @@ Package contains:
 @url https://github.com/flow123d/flow123d
 """
 
-from __future__ import absolute_import
-import os, json, datetime, importlib
+import os
+import json
+import datetime
+import importlib
 from utils.logger import Logger
+import collections
 
 
 class ProfilerJSONDecoder(json.JSONDecoder):
@@ -29,7 +32,6 @@ class ProfilerJSONDecoder(json.JSONDecoder):
     returned object has all values properly typed so
     formatters can make mathematical or other operation without worries
     """
-
 
     def decode(self, json_string):
         """Decodes json_string which is string that is given to json.loads method"""
@@ -49,7 +51,6 @@ class ProfilerJSONDecoder(json.JSONDecoder):
         self.convert_fields(default_obj, self.dateFields, self.parse_date, False)
 
         return default_obj
-
 
     def default_serializer(self, obj):
         """Default JSON serializer."""
@@ -80,7 +81,6 @@ class ProfilerFormatter(object):
     Class which dynamically loads formatter and perform conversion
     """
 
-
     @staticmethod
     def get_class_instance(cls):
         """Method returns class instance upon given name in profiler.formatters.* ns"""
@@ -88,7 +88,6 @@ class ProfilerFormatter(object):
         class_ = getattr(module, cls)
         instance = class_()
         return instance
-
 
     @staticmethod
     def list_formatters():
@@ -102,7 +101,7 @@ class ProfilerFormatter(object):
             try:
                 module = importlib.import_module("formatters." + name)
                 class_ = getattr(module, name)
-                if getattr(class_, 'format') is not None and callable(getattr(class_, 'format')):
+                if getattr(class_, 'format') is not None and isinstance(getattr(class_, 'format'), collections.Callable):
                     result.append(name)
             except:
                 pass
@@ -161,7 +160,7 @@ class ProfilerFormatter(object):
                 Logger.instance().info('File "%s" generated', output_file)
             # otherwise just print result to stdout
             else:
-                print output
+                print(output)
         except Exception as ex:
             # return string with message on error
             Logger.instance().exception('Cannot save file ' + output_file, ex)

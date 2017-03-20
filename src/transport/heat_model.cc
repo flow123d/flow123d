@@ -104,7 +104,8 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .description("Porosity.")
             .units( UnitSI::dimensionless() )
             .input_default("1.0")
-            .flags_add(in_main_matrix & in_time_term);
+            .flags_add(in_main_matrix & in_time_term)
+			.set_limits(0.0);
 
     *this+=water_content
             .name("water_content")
@@ -116,6 +117,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .name("fluid_density")
             .description("Density of fluid.")
             .units( UnitSI().kg().m(-3) )
+            .input_default("1000")
             .flags_add(in_main_matrix & in_time_term);
 
     *this+=fluid_heat_capacity
@@ -128,7 +130,8 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .name("fluid_heat_conductivity")
             .description("Heat conductivity of fluid.")
             .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
-            .flags_add(in_main_matrix);
+            .flags_add(in_main_matrix)
+			.set_limits(0.0);
 
 
     *this+=solid_density
@@ -147,7 +150,8 @@ HeatTransferModel::ModelEqData::ModelEqData()
             .name("solid_heat_conductivity")
             .description("Heat conductivity of solid (rock).")
             .units( UnitSI::W() * UnitSI().m(-1).K(-1) )
-            .flags_add(in_main_matrix);
+            .flags_add(in_main_matrix)
+			.set_limits(0.0);
 
     *this+=disp_l
             .name("disp_l")

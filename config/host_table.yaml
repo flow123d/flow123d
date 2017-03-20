@@ -1,0 +1,19 @@
+# host_table.yaml 
+# file serves as lookup table when using python script in queue mode
+# each key is hostname and each value names a module which should be loaded
+# modules are located in /src/python/scripts/pbs/modules
+# 
+# If no mathching key for current machine exists try to use pbs_<hostname>
+# where all dots(.) are replaced with undescores(_)
+
+# for testing purposes
+janhybs:              local_pbs
+
+# for testing purposes
+ci2runner.nti.tul.cz: local_pbs
+
+# metacentrum frontend node tarkil
+tarkil.cesnet.cz:     pbs_tarkil_cesnet_cz
+
+# TUL cluster hydra
+hydra.kai.tul.cz:     pbs_hydra_kai_tul_cz

@@ -24,6 +24,7 @@
 #include "output_time.hh"
 
 #include <ostream>
+#include <cstdint>
 
 using namespace std;
 
@@ -60,11 +61,6 @@ public:
     static const Input::Type::Selection & get_input_type_variant();
 
     /**
-	 * \brief The definition of input record for selection of compression type
-	 */
-    static const Input::Type::Selection & get_input_type_compression();
-
-    /**
      * \brief This function write data to VTK (.pvd) file format
      * for curent time
      */
@@ -80,24 +76,19 @@ public:
      */
     int write_tail(void);
 
+    /// Override @p OutputTime::init_from_input.
+    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec) override;
+
 protected:
 
     /**
      * \brief The declaration enumeration used for variant of file VTK format
      */
-    typedef enum Variant {
-    	VARIANT_ASCII  = 1,
-    	VARIANT_BINARY = 2
-    } Variant;
-
-    /**
-     * \brief The declaration of enumeration used for type of compression
-     * used in file format
-     */
-    typedef enum Compression {
-    	COMPRESSION_NONE = 1,
-    	COMPRESSION_GZIP = 2
-    } Compression;
+    typedef enum {
+    	VARIANT_ASCII  = 0,
+    	VARIANT_BINARY_UNCOMPRESSED = 1,
+    	VARIANT_BINARY_ZLIB = 2
+    } VTKVariant;
 
     // VTK Element types
     typedef enum {
@@ -129,17 +120,6 @@ protected:
         VTK_TETRA_SIZE = 4
     } VTKElemSize;
 
-    typedef enum { VTK_INT8, VTK_UINT8, VTK_INT16, VTK_UINT16, VTK_INT32, VTK_UINT32, 
-                   VTK_FLOAT32, VTK_FLOAT64
-    } VTKValueType;
-
-    static const std::string vtk_value_type_map(VTKValueType t) {
-        static const std::vector<std::string> types = {
-            "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32",
-            "Float32","Float64"};
-        return types[t];
-    };
-
     /// Registrar of class to factory
     static const int registrar;
 
@@ -154,14 +134,14 @@ protected:
     void fill_element_types_vector(std::vector<unsigned int> &data, std::shared_ptr<OutputMeshBase> output_mesh);
 
     /**
-     * Write registered data to output stream using ascii format
+     * Write registered data of all components of given Field to output stream
      */
-    void write_vtk_data_ascii(OutputDataFieldVec &output_data_map);
+    void write_vtk_field_data(OutputDataFieldVec &output_data_map);
 
     /**
-     * Write registered data to output stream using ascii format
+     * Write output data stored in OutputData vector to output stream
      */
-    void write_vtk_data_ascii(OutputDataPtr output_data, VTKValueType type);
+    void write_vtk_data(OutputDataPtr output_data);
     
     /**
      * \brief Write names of data sets in @p output_data vector that have value type equal to @p type.
@@ -197,6 +177,13 @@ protected:
     */
    void make_subdirectory();
 
+   /**
+    * Compress data stored in @p uncompressed_stream to @p compressed_stream.
+    *
+    * Use ZLib compression.
+    */
+   void compress_data(stringstream &uncompressed_stream, stringstream &compressed_stream);
+
 
    /**
     * Data output stream (could be same as base_file)
@@ -204,13 +191,23 @@ protected:
    ofstream _data_file;
 
    /**
+    * Stream of appended data (used only for binary appended output)
+    */
+   ostringstream appended_data_;
+
+   /**
     * Path to time frame VTU data subdirectory
     */
    string subdir_name_;
 
+   /// Basename of main output file (without extension)
    string main_output_basename_;
 
+   /// Main output file directory
    string main_output_dir_;
+
+   /// Output format (ascii, binary or binary compressed)
+   VTKVariant variant_type_;
 };
 
 #endif /* OUTPUT_VTK_HH_ */

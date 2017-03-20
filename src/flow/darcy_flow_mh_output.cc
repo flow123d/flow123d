@@ -176,9 +176,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {
-    chkerr(VecDestroy(&vec_corner_pressure));
-
-    delete dh;
+    if (dh) {
+        chkerr(VecDestroy(&vec_corner_pressure));
+        delete dh;
+    }
 };
 
 

@@ -1,0 +1,69 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test12 - radioactive decay simulation, long decay chain with biffurcation
+  mesh:
+    mesh_file: ../00_mesh/prism_3el.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - rid: 1
+        anisotropy: 0.01
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_piezo_head: 0
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: {}
+    output_stream: 
+      file: ./lin_react.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - rid: 1
+          init_conc:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.04
+            - 0.05
+            - 0.06
+        - region: .BOUNDARY
+          bc_conc:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.04
+            - 0.05
+            - 0.06
+    output_stream: 
+      file: ./transport_lin_react.pvd
+      format: !vtk
+        variant: ascii
+      name: transport_output_stream
+      times:
+        - step: 0.5
+    substances:
+      - A
+      - B
+      - C
+      - D
+      - E
+      - F
+    time:
+      end_time: 10.0
+    reaction_term: !FirstOrderReaction
+      reactions:
+        - reactants: D
+          reaction_rate: 0.277258872
+          products: E
+    balance:
+      cumulative: true

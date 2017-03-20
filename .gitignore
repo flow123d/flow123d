@@ -44,6 +44,10 @@ doc/reference_manual/*.out
 doc/reference_manual/*.synctex.gz
 doc/reference_manual/*.toc
 doc/reference_manual/flow_version.tex
+doc/reference_manual/tutor_figures/*
+doc/reference_manual/*.yaml
+doc/reference_manual/input_reference.json
+doc/reference_manual/input_reference.json.tex
 
 .cproject
 .project
@@ -55,3 +59,28 @@ doc/reference_manual/flow_version.tex
 bin/pythonenv.sh
 tests/runtest.sh
 bin/runtest.sh
+
+/config/jenkins.ini
+/config/jenkins-job/jobs/*.yaml
+/config/jenkins-job/jenkins.ini
+
+/tests/runtest
+/tests_old/runtest
+
+# add test results to ignore
+/tests/*/test_results*
+/tests/*/output
+
+
+# artifact folder
+/.artifacts*
+
+# folder containing symlink to python sources
+/lib
+/publish
+/bin/runtest
+/bin/exec_parallel
+/unit_tests/test_scripts/consumer_cc
+/bin/python/jenkins_jobs_script.py
+/docker.sh
+/bench_data

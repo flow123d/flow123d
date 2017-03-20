@@ -73,8 +73,8 @@ RegionSetFromId::RegionSetFromId(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetFromId::get_region_input_type()
 {
-    return IT::Record("From_Id", "Region declared by id and name.\n"
-    					"Allows to create new region with given id and label\n"
+    return IT::Record("From_Id", "Elementary region declared by ID."
+    					"Allows to create new region with given id and label"
     					"or specify existing region by id which will be renamed.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
@@ -122,7 +122,8 @@ RegionSetFromLabel::RegionSetFromLabel(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetFromLabel::get_region_input_type()
 {
-    return IT::Record("From_Label", "Allows to rename existing region specified by mesh_label.")
+    return IT::Record("From_Label", "Gives a new name to an elementary region"
+            "with original name (in the mesh file) given by  ```mesh_label.```")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"New label (name) of the region. Has to be unique in one mesh.")
@@ -187,17 +188,17 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 
 const IT::Record & RegionSetFromElements::get_region_input_type()
 {
-    return IT::Record("From_Elements", "Region declared by name, ID and enum of elements.\n"
-    								   "Allows to create new region and assign elements to its.\n"
-    								   "Elements are specified by ids.")
+    return IT::Record("From_Elements", "Elementary region declared by a list of elements. "
+    								   "The new region is assigned to the list of elements spefied by the key"
+    								   "```element_list```.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
 		.declare_key("id", IT::Integer(0), IT::Default::optional(),
-				"The ID of the region to which you assign label.\n"
-				"If new region is created and ID is not set, unique ID will be generated automatically.")
+				"The ID of the region. "
+				"If unset a unique ID will be generated automatically.")
 		.declare_key("element_list", IT::Array( IT::Integer(0), 1 ), IT::Default::obligatory(),
-				"Specification of the region by the list of elements.")
+				"List of IDs of elements.")
 		.close();
 }
 
@@ -270,7 +271,7 @@ RegionSetUnion::RegionSetUnion(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetUnion::get_region_input_type()
 {
-    return IT::Record("Union", "Defines region as a union of given two or more regions.\n"
+    return IT::Record("Union", "Defines region (set) as a union of given two or more regions. "
     						   "Regions can be given by names or IDs or both ways together.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
@@ -324,12 +325,12 @@ RegionSetDifference::RegionSetDifference(const Input::Record &rec, Mesh *mesh)
 
 const IT::Record & RegionSetDifference::get_region_input_type()
 {
-    return IT::Record("Difference", "Defines region as a difference of given pair of regions.")
+    return IT::Record("Difference", "Defines region (set) as a difference of given pair of regions.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
-				"Label (name) of the region. Has to be unique in one mesh.\n")
+				"Label (name) of the region. Has to be unique in one mesh.")
 		.declare_key("regions", IT::Array( IT::String(), 2, 2 ), IT::Default::obligatory(),
-				"Defines region as a difference of given pair of regions.")
+				"List of exactly two regions given by their names.")
 		.close();
 }
 
@@ -367,12 +368,12 @@ RegionSetIntersection::RegionSetIntersection(const Input::Record &rec, Mesh *mes
 
 const IT::Record & RegionSetIntersection::get_region_input_type()
 {
-    return IT::Record("Intersection", "Defines region as an intersection of given two or more regions.")
+    return IT::Record("Intersection", "Defines region (set) as an intersection of given two or more regions.")
         .derive_from(RegionSetBase::get_input_type())
 		.declare_key("name", IT::String(), IT::Default::obligatory(),
 				"Label (name) of the region. Has to be unique in one mesh.\n")
 		.declare_key("regions", IT::Array( IT::String(), 2 ), IT::Default::obligatory(),
-				"Defines region as an intersection of given pair of regions.")
+				"List of two or more regions given by their names.")
 		.close();
 }
 

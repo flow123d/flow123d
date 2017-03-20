@@ -9,6 +9,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest.hh>
+#include <mesh_constructor.hh>
 
 #include <fields/multi_field.hh>
 #include <fields/field_elementwise.hh>
@@ -24,6 +25,9 @@
 using namespace std;
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
+FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
 
 string field_constant_input = R"YAML(
 common: !FieldConstant 
@@ -103,7 +107,7 @@ protected:
 
     	FilePath mesh_file( "../fields/simplest_cube_data.msh", FilePath::input_file);
         GmshMeshReader reader(mesh_file);
-        mesh = new Mesh;
+        mesh = mesh_constructor();
         reader.read_physical_names(mesh);
         reader.read_mesh(mesh);
         mesh->check_and_finish();
@@ -114,7 +118,7 @@ protected:
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
-    	    FieldAlgoBaseInitData init_data(3, UnitSI::dimensionless());
+    	    FieldAlgoBaseInitData init_data("test_mf", 3, UnitSI::dimensionless());
     		auto subfield = ScalarField::function_factory((*it), init_data);
     		subfield->set_mesh(mesh, false);
     		subfield->set_time(0.0);
@@ -124,7 +128,7 @@ protected:
     	}
     }
 
-    static const Input::Type::Record & get_input_type();
+    static Input::Type::Record & get_input_type();
     static ScalarMultiField empty_mf;
     Mesh *mesh;
     Space<3>::Point point;
@@ -132,7 +136,7 @@ protected:
 
 MultiFieldTest::ScalarMultiField MultiFieldTest::empty_mf = MultiFieldTest::ScalarMultiField();
 
-const Input::Type::Record & MultiFieldTest::get_input_type() {
+Input::Type::Record & MultiFieldTest::get_input_type() {
 	return Input::Type::Record("MultiField", "Complete multi field")
 		.declare_key("const_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("const_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
@@ -221,7 +225,7 @@ TEST(Operators, assignment) {
     FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
     FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
     GmshMeshReader msh_reader(mesh_file);
-    Mesh * mesh = new Mesh;
+    Mesh * mesh = mesh_constructor();
     msh_reader.read_physical_names(mesh);
 	msh_reader.read_mesh(mesh);
 	mesh->check_and_finish();

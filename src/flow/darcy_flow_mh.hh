@@ -47,7 +47,7 @@
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "flow/darcy_flow_interface.hh"
-
+#include "input/input_exception.hh"
 
 /// external types:
 class LinSys;
@@ -132,6 +132,8 @@ public:
     DECLARE_EXCEPTION(ExcSolverDiverge,
             << "Diverged nonlinear solver. Reason: " << EI_Reason::val
              );
+    DECLARE_INPUT_EXCEPTION(ExcMissingTimeGovernor,
+            << "Missing the key 'time', obligatory for the transient problems.");
 
     /// Class with all fields used in the equation DarcyFlow.
     /// This is common to all implementations since this provides interface
@@ -248,13 +250,17 @@ public:
     virtual void postprocess();
     virtual void output_data() override;
 
-    ~DarcyMH();
+    virtual ~DarcyMH() override;
 
 
 protected:
-
-    virtual bool zero_time_term();
-
+    /**
+     * Returns true is the fields involved in the time term have values that makes the time term zero.
+     * For time_global==true, it returns true if there are no field descriptors in the input list, so the
+     * fields )of the time ter) have their default values for whole simulation.
+     * If time_global==false (default), only the actual values are considered.
+     */
+    virtual bool zero_time_term(bool time_global=false);
 
     /// Solve method common to zero_time_step and update solution.
     void solve_nonlinear();
@@ -347,6 +353,7 @@ protected:
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
 	double tolerance_;
+	unsigned int min_n_it_;
 	unsigned int max_n_it_;
 	unsigned int nonlinear_iteration_; //< Actual number of completed nonlinear iterations, need to pass this information into assembly.
 
@@ -364,6 +371,7 @@ protected:
     Vec previous_solution;
 
 	std::shared_ptr<EqData> data_;
+    bool data_changed_;
     
     //XFEM:
     bool use_xfem;  ///< Flag determines using XFEM
@@ -395,10 +403,10 @@ public:
 		master_map.fill(1.0 / 2);
 		slave_map.fill(1.0 / 3);
 
-		tensor_average[0].push_back( trans( master_map ) * master_map );
-		tensor_average[0].push_back( trans( master_map ) * slave_map );
-		tensor_average[1].push_back( trans( slave_map ) * master_map );
-		tensor_average[1].push_back( trans( slave_map ) * slave_map );
+		tensor_average[0].push_back( master_map.t() * master_map );
+		tensor_average[0].push_back( master_map.t() * slave_map );
+		tensor_average[1].push_back( slave_map.t() * master_map );
+		tensor_average[1].push_back( slave_map.t() * slave_map );
 	}
 
 	void assembly(LinSys &ls);

@@ -25,7 +25,7 @@
 namespace IT=Input::Type;
 
 const IT::Record & OutputMeshBase::get_input_type() {
-    return IT::Record("OutputStream", "Parameters of output.")
+    return IT::Record("OutputMesh", "Parameters of the refined output mesh.")
         .declare_key("max_level", IT::Integer(1,20),IT::Default("3"),
             "Maximal level of refinement of the output mesh.")
         .declare_key("refine_by_error", IT::Bool(), IT::Default("false"),

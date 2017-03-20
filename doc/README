@@ -30,7 +30,8 @@ LICENSE
 petsc_options_help
  - (not complete) list of PETSc options
  
- 
+htmldoc
+ - html documentation folder
  
  
 

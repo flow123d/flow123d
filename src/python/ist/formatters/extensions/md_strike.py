@@ -9,14 +9,16 @@ MDStrike Extension for Python-Markdown
 Converts ~~expression~~ to line-through text <del /> tag is used
 """
 
-from __future__ import absolute_import
-from __future__ import unicode_literals
 from markdown.extensions import Extension
 from markdown.inlinepatterns import Pattern
 from markdown.util import etree
 
 
 class StrikeThroughExtension(Extension):
+    """
+    Class StrikeThroughExtension is module for md allowing to strike through the text
+    """
+
     def __init__(self, *args, **kwargs):
         self.md = None
         self.config = {
@@ -30,12 +32,16 @@ class StrikeThroughExtension(Extension):
         # append to end of inline patterns
         # WIKILINK_RE = r'\[\[([\w0-9_ -]+)\]\]'
         WIKILINK_RE = r'~~([\w0-9_#-]+)~~'
-        wikilinkPattern = StrikeThroughPattern(WIKILINK_RE, { })
+        wikilinkPattern = StrikeThroughPattern(WIKILINK_RE, {})
         wikilinkPattern.md = md
         md.inlinePatterns.add('mdstrikethrough', wikilinkPattern, "<not_strong")
 
 
 class StrikeThroughPattern(Pattern):
+    """
+    Class StrikeThroughPattern handles single match in md
+    """
+
     def __init__(self, pattern, config):
         super(StrikeThroughPattern, self).__init__(pattern)
         self.config = config
@@ -50,4 +56,10 @@ class StrikeThroughPattern(Pattern):
 
 
 def makeExtension(*args, **kwargs):
+    """
+    register extension
+    :param args:
+    :param kwargs:
+    :return:
+    """
     return StrikeThroughExtension(*args, **kwargs)

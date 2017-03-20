@@ -19,14 +19,17 @@
 #define TYPE_SELECTION_HH_
 
 #include "system/exceptions.hh"
-
 #include "system/system.hh"
+
 #include "type_base.hh"
+
+#include <string>
+#include <vector>
 
 namespace Input {
 namespace Type {
 
-using std::string;
+using namespace std;
 
 
 
@@ -118,6 +121,9 @@ public:
     TypeHash content_hash() const   override;
 
 
+    /// Implements @p TypeBase::finish_status.
+    FinishStatus finish_status() const override;
+
     /// Implements \p TypeBase::is_finished
     bool is_finished() const override;
 
@@ -128,7 +134,7 @@ public:
      */
     string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Selection"; }
+    string class_name() const override;
 
     /// Implements \p TypeBase::operator==  compare also Selection names.
     bool operator==(const TypeBase &other) const override;
@@ -177,8 +183,7 @@ public:
     inline unsigned int size() const;
 
     /// Finish declaration of the Selection type.
-    bool finish(bool is_generic = false) override
-        { ASSERT(data_->closed_)(this->type_name()).error(); return true; }
+    FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
 
     /// Implements \p TypeBase::is_closed
@@ -208,9 +213,7 @@ private:
     public:
 
     	/// Constructor.
-        SelectionData(const string &name)
-        : type_name_(name), closed_(false)
-        {}
+        SelectionData(const string &name);
 
         /// Inster new value to the Selection
         void add_value(const int value, const std::string &key,
@@ -238,6 +241,9 @@ private:
 
         /// Indicator of closed Selection.
         mutable bool closed_;
+
+        /// Indicator of finished Selection.
+        FinishStatus finish_status_;
     };
 
     /// Handle to actual Selection data.

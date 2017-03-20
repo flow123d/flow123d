@@ -10,6 +10,17 @@
 
 #include <flow_gtest.hh>
 
+
+#include <input/type_record.hh>
+
+// Test of correct includes in type_record.hh
+TEST(InputTypeRecord, includes) {
+	using namespace Input::Type;
+	Record rec = Record("EmptyRec", "description").close();
+	EXPECT_EQ( rec.class_name(), "Record");
+}
+
+
 #include <input/input_type.hh>
 #include <input/reader_to_storage.hh>
 
@@ -138,7 +149,7 @@ using namespace Input::Type;
 					 .close();
     sub_rec.finish();
 
-    EXPECT_EQ(3, sub_rec.auto_conversion_key_iter()->key_index );
+    EXPECT_EQ(4, sub_rec.auto_conversion_key_iter()->key_index );
     }
 
     {
@@ -243,8 +254,8 @@ using namespace Input::Type;
 			.declare_key("int_array", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		// simulate order and is_finished parameter of calling finish methods in lazy_finish
-		generic_rec.finish(true);
+		// simulate order and is_finished parameter of calling finish methods of IST
+		generic_rec.finish(FinishStatus::generic_);
 		rec.finish();
 	}
 
@@ -260,7 +271,7 @@ using namespace Input::Type;
 			.declare_key("int_array2", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		generic_rec.finish(true);
+		generic_rec.finish(FinishStatus::generic_);
 		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
 				"do not match type: 'array_of_Integer';" );
 	}
@@ -277,7 +288,7 @@ using namespace Input::Type;
 			.declare_key("int_array3", Instance(generic_rec, param_vec).close(), "key desc")
 			.close();
 
-		generic_rec.finish(true);
+		generic_rec.finish(FinishStatus::generic_);
 		EXPECT_THROW_WHAT( { rec.finish(); }, ExcWrongDefault,
 				"do not match type: 'array_of_Integer'" );
 	}
@@ -307,6 +318,8 @@ TEST(InputTypeRecord, iterating) {
     // methods begin() and end(), basic work with iterators
     Record::KeyIter it = output_record.begin();
     EXPECT_EQ( 0, it->key_index);
+    EXPECT_EQ("TYPE", it->key_);
+    ++it;
     EXPECT_EQ("file", it->key_);
     EXPECT_EQ("File for output stream.", it->description_);
     EXPECT_EQ(typeid(FileName) , typeid(*(it->type_)));
@@ -315,13 +328,13 @@ TEST(InputTypeRecord, iterating) {
     EXPECT_EQ( "data_description", it->key_);
     EXPECT_EQ( output_record.end(), it+1 );
     // method size()
-    EXPECT_EQ(5, output_record.size());
+    EXPECT_EQ(6, output_record.size());
     //method key_index
-    EXPECT_EQ(0,output_record.key_index("file"));
-    EXPECT_EQ(2,output_record.key_index("compression"));
+    EXPECT_EQ(1,output_record.key_index("file"));
+    EXPECT_EQ(3,output_record.key_index("compression"));
     EXPECT_THROW({output_record.key_index("x_file");}, Record::ExcRecordKeyNotFound );
     // method key_iterator
-    EXPECT_EQ(2,output_record.key_iterator("compression")->key_index);
+    EXPECT_EQ(3,output_record.key_iterator("compression")->key_index);
 
 
 }
@@ -391,7 +404,7 @@ using namespace Input::Type;
     EXPECT_FALSE(rec1.is_finished());
     EXPECT_FALSE(rec2.is_finished());
 
-    EXPECT_EQ(3, composite.size());
+    EXPECT_EQ(4, composite.size());
     EXPECT_EQ("a from rec1", composite.key_iterator("a")->description_);
     EXPECT_EQ("b from composite", composite.key_iterator("b")->description_);
     EXPECT_EQ("c from rec2", composite.key_iterator("c")->description_);

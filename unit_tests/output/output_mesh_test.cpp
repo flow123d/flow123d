@@ -8,6 +8,7 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include <mesh_constructor.hh>
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "mesh/mesh.h"
@@ -26,7 +27,7 @@
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
+FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 
@@ -37,7 +38,7 @@ TEST(OutputMesh, create_identical)
 
     // read mesh - simplset cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
@@ -45,13 +46,13 @@ TEST(OutputMesh, create_identical)
     output_mesh->create_identical_mesh();
     
     std::cout << "nodes: ";
-    output_mesh->nodes_->print_all(std::cout);
+    output_mesh->nodes_->print_ascii_all(std::cout);
     std::cout << endl;
     std::cout << "connectivity: ";
-    output_mesh->connectivity_->print_all(std::cout);
+    output_mesh->connectivity_->print_ascii_all(std::cout);
     std::cout << endl;
     std::cout << "offsets: ";
-    output_mesh->offsets_->print_all(std::cout);
+    output_mesh->offsets_->print_ascii_all(std::cout);
     std::cout << endl;
     
     EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
@@ -148,7 +149,7 @@ TEST(OutputMesh, write_on_output_mesh) {
 
     // read mesh - simplset cube from test1
     FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
     
@@ -174,7 +175,7 @@ TEST(OutputMesh, write_on_output_mesh) {
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData init_data(1, UnitSI::dimensionless());
+    FieldAlgoBaseInitData init_data("conc", 1, UnitSI::dimensionless());
     auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), init_data);
     
     // create field from FieldAlgorithmBase
@@ -213,7 +214,11 @@ const string input_om = R"INPUT(
 class TestOutputMesh : public testing::Test, public OutputMeshDiscontinuous {
 public:
     TestOutputMesh()
-    : OutputMeshDiscontinuous(mesh_, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+// <<<<<<< HEAD
+//     : OutputMeshDiscontinuous(mesh_, Input::ReaderToStorage( input_om, OutputMeshBase::get_input_type(), Input::FileFormat::format_JSON )
+// =======
+    : OutputMeshDiscontinuous(*mesh_, Input::ReaderToStorage( input_om, const_cast<Input::Type::Record &>(OutputMeshBase::get_input_type()), Input::FileFormat::format_JSON )
+// >>>>>>> master
                             .get_root_interface<Input::Record>())
     {
     }
@@ -334,13 +339,13 @@ public:
     {
     }
 
-    Mesh mesh_;
+    Mesh * mesh_;
 };
 
 
 TEST_F(TestOutputMesh, read_input) {
     EXPECT_EQ(this->max_level_, 2);
-    EXPECT_EQ(this->orig_mesh_, &(this->mesh_));
+    EXPECT_EQ(this->orig_mesh_, this->mesh_);
   
     Field<3,FieldValue<3>::Scalar> scalar_field;
     
@@ -433,7 +438,7 @@ TEST(OutputMesh, write_on_refined_mesh) {
     FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
     // read mesh - simplset cube from test1
-    Mesh* mesh = new Mesh();
+    Mesh* mesh = mesh_constructor();
     stringstream in(small_mesh.c_str());
     mesh->read_gmsh_from_stream(in);
     
@@ -457,7 +462,7 @@ TEST(OutputMesh, write_on_refined_mesh) {
     Input::Record in_rec=reader.get_root_interface<Input::Record>();
 
     // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData field_algo_init_data(1, UnitSI::one());
+    FieldAlgoBaseInitData field_algo_init_data("conc",1, UnitSI::one());
     auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), field_algo_init_data);
     
     // create field from FieldAlgorithmBase

@@ -21,6 +21,7 @@
 #include <boost/foreach.hpp>
 
 #include "field.hh"
+#include "field_algo_base.impl.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -224,7 +225,7 @@ void Field<spacedim, Value>::set_field(
 		const Input::AbstractRecord &a_rec,
 		double time)
 {
-	FieldAlgoBaseInitData init_data(n_comp(), units());
+	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
 	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
 }
 
@@ -268,38 +269,41 @@ bool Field<spacedim, Value>::set_time(const TimeStep &time_step, LimitSide limit
     	auto rh = data_->region_history_[reg.idx()];
 
     	// skip regions with no matching BC flag
-    	// skipping regions with empty history - no_check regions
-        if (reg.is_boundary() == is_bc() && !rh.empty() ) {
-        	double last_time_in_history = rh.front().first;
-        	unsigned int history_size=rh.size();
-        	unsigned int i_history;
-        	OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+    	if (reg.is_boundary() != is_bc()) continue;
 
-        	// set history index
-        	if ( time_step.gt(last_time_in_history) ) {
-        		// in smooth time_step
-        		i_history=0;
-        	} else {
-        		// time_step .eq. input_time; i.e. jump time
-        	    is_jump_time_=true;
-        		if (limit_side == LimitSide::right) {
-        			i_history=0;
-        		} else {
-        			i_history=1;
-        		}
-        	}
-        	i_history=min(i_history, history_size - 1);
-        	OLD_ASSERT(i_history >= 0, "Empty field history.");
-        	// possibly update field pointer
-        	auto new_ptr = rh.at(i_history).second;
-        	if (new_ptr != region_fields_[reg.idx()]) {
-        		region_fields_[reg.idx()]=new_ptr;
-        		set_time_result_ = TimeStatus::changed;
-        	}
-        	// let FieldBase implementation set the time
-    		if ( new_ptr->set_time(time_step) )  set_time_result_ = TimeStatus::changed;
+    	// Check regions with empty history, possibly set default.
+    	if ( rh.empty()) continue;
 
+        double last_time_in_history = rh.front().first;
+        unsigned int history_size=rh.size();
+        unsigned int i_history;
+        OLD_ASSERT(time_step.ge(last_time_in_history), "Setting field time back in history not fully supported yet!");
+
+        // set history index
+        if ( time_step.gt(last_time_in_history) ) {
+            // in smooth time_step
+            i_history=0;
+        } else {
+            // time_step .eq. input_time; i.e. jump time
+            is_jump_time_=true;
+            if (limit_side == LimitSide::right) {
+                i_history=0;
+            } else {
+                i_history=1;
+            }
         }
+        i_history=min(i_history, history_size - 1);
+        OLD_ASSERT(i_history >= 0, "Empty field history.");
+        // possibly update field pointer
+
+        auto new_ptr = rh.at(i_history).second;
+        if (new_ptr != region_fields_[reg.idx()]) {
+            region_fields_[reg.idx()]=new_ptr;
+            set_time_result_ = TimeStatus::changed;
+        }
+        // let FieldBase implementation set the time
+        if ( new_ptr->set_time(time_step) )  set_time_result_ = TimeStatus::changed;
+
     }
 
     return changed();
@@ -372,7 +376,8 @@ std::string Field<spacedim,Value>::get_value_attribute() const
     if (std::is_floating_point<typename Value::element_type>::value)
         type = "Double";
 
-    return fmt::format("{{ \"shape\": [ {}, {} ], \"type\": \"{}\" }}", nrows, ncols, type);
+    return fmt::format("{{ \"shape\": [ {}, {} ], \"type\": \"{}\", \"limit\": [ {}, {} ] }}",
+    					nrows, ncols, type, this->limits().first, this->limits().second);
 }
 
 
@@ -424,6 +429,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 						data_->region_history_[reg.idx()].push_front(
 								HistoryPoint(input_time, field_instance)
 						);
+						//DebugOut() << "Update history" << print_var(this->name()) <<print_var(reg.label()) << print_var(input_time);
 					}
 					break;
 				}
@@ -437,7 +443,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 template<int spacedim, class Value>
 void Field<spacedim,Value>::check_initialized_region_fields_() {
 	OLD_ASSERT(mesh(), "Null mesh pointer.");
-    if (shared_->is_fully_initialized_) return;
+    //if (shared_->is_fully_initialized_) return;
 
     // check there are no empty field pointers, collect regions to be initialized from default value
     RegionSet regions_to_init; // empty vector
@@ -475,7 +481,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-    	FieldAlgoBaseInitData init_data(n_comp(), units());
+    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
         auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
         field_ptr->set_mesh( mesh(), is_bc() );
         for(const Region &reg: regions_to_init) {
@@ -483,12 +489,12 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     		                .push_front(HistoryPoint( 0.0, field_ptr) );
     		region_list+=" "+reg.label();
         }
-        WarningOut().fmt("Using default value '{}' for part of the input field '{}' ('{}').\n"
-                "regions: {}\n",
+        WarningOut().fmt("Default value '{}' for field '{}' ('{}').\n"
+                "    on regions: {}\n",
                 input_default(), input_name(), name(), region_list);
 
     }
-    shared_->is_fully_initialized_ = true;
+    //shared_->is_fully_initialized_ = true;
 }
 
 
@@ -502,7 +508,7 @@ template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
 	if (rec.opt_val(field.input_name(), field_record)) {
-		FieldAlgoBaseInitData init_data(field.n_comp(), field.units());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
 		return FieldBaseType::function_factory(field_record, init_data );
 	}
 	else

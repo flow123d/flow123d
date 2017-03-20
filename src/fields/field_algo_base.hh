@@ -59,10 +59,18 @@ typedef enum  {
 
 /// Helper struct stores data for initizalize descentants of \p FieldAlgorithmBase.
 struct FieldAlgoBaseInitData {
-	FieldAlgoBaseInitData(unsigned int n_comp, const UnitSI &unit_si) : n_comp_(n_comp), unit_si_(unit_si) {}
+	/// Full constructor
+	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si, std::pair<double, double> limits)
+	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si), limits_(limits) {}
+	/// Simplified constructor, set limit values automatically (used in unit tests)
+	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si)
+	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si),
+	  limits_( std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max()) ) {}
 
+	std::string field_name_;
 	unsigned int n_comp_;
 	const UnitSI &unit_si_;
+	std::pair<double, double> limits_;
 };
 
 
@@ -105,9 +113,9 @@ public:
        static const Input::Type::Instance & get_input_type_instance( Input::Type::Selection value_selection=Input::Type::Selection() );
 
        /**
-        * Return Record for set user-defined derived unit SI.
+        * Returns auxiliary record with keys common to all field algorithms.
         */
-       static const Input::Type::Record & get_input_type_unit_si();
+       static const Input::Type::Record & get_field_algo_common_keys();
 
        /**
         * This static method gets accessor to abstract record with function input,

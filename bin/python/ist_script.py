@@ -18,29 +18,33 @@ Options:
                         generated/overwritten
   -f FORMAT, --format=FORMAT
                         'tex' or 'html' output
+  -d, --debug
+                        will result in pretty looking tex format (which is however invalid)
 
 """
 
-from __future__ import absolute_import
 
 import pathfix
 pathfix.append_to_path()
 
 import system.versions
-system.versions.require_version_2()
+system.versions.require_version_3()
 
-import os, sys, json
+import os
+import sys
+import json
 from optparse import OptionParser
 from utils.logger import Logger
 from ist.base import InputType
 from ist.utils.htmltree import htmltree
 from ist.nodes import TypeRecord, TypeAbstract, TypeSelection, TypeString, TypeDouble, TypeInteger, TypeBool, TypeArray, \
-    TypeParameter, TypeFilename
+    TypeParameter, TypeFilename, TypeTuple
 
 
 # all acceptable input_type values
 registered_nodes = {
     'Record': TypeRecord,
+    'Tuple': TypeTuple,
     'AbstractRecord': TypeAbstract,
     'Abstract': TypeAbstract,
     'Selection': TypeSelection,
@@ -63,6 +67,8 @@ def create_parser():
                       help="Absolute or relative path output file which will be generated/overwritten")
     parser.add_option("-f", "--format", dest="format", metavar="FORMAT", default="tex",
                       help="tex|html output format")
+    parser.add_option("-d", "--debug", dest="debug", action="store_true", default=False,
+                      help="will result in pretty looking tex format (which is however invalid)")
     parser.add_option("--log", dest="loglevel", metavar="LEVEL", default="warning",
                       help="Logging level default is %default, options are (debug, info, warning, error, critical)")
     parser.set_usage("""%prog [options]""")
@@ -74,19 +80,22 @@ def parse_args(parser):
     (options, args) = parser.parse_args()
 
     if options.input is None:
-        Logger.instance().warning("Error: No input file specified!")
         parser.print_help()
+        Logger.instance().error("No input file specified!")
         sys.exit(1)
 
     if options.output is None:
-        Logger.instance().warning("Error: No output file specified!")
         parser.print_help()
+        Logger.instance().error("No output file specified!")
         sys.exit(1)
 
     return options, args
 
 
 def main():
+    """
+    Run main program
+    """
     parser = create_parser()
     options, args = parse_args(parser)
 
@@ -95,7 +104,7 @@ def main():
     formatter = ISTFormatter()
 
     # read input json file
-    with file(options.input, 'r') as fp:
+    with open(options.input, 'r') as fp:
         json_data = json.load(fp)
         ist_info = {
             'version': json_data['version']['flow123d_version'] if 'version' in json_data else 'Input reference'
@@ -106,13 +115,13 @@ def main():
         items = list()
         for json_item in json_data:
             input_type = json_item['input_type'] if 'input_type' in json_item else None
-            if input_type in registered_nodes:
 
+            if input_type in registered_nodes:
                 item = registered_nodes[input_type]()
                 item.parse(json_item)
                 items.append(item)
             else:
-                Logger.instance().info(' - item type not supported: %s' % str(item))
+                Logger.instance().info(' - item type not supported: %s' % str(json_item))
 
     # if we have all items parsed we create references
     for item in items:
@@ -120,36 +129,41 @@ def main():
             if item.input_type == InputType.RECORD:
                 for key in getattr(item, 'keys', []):
                     if key.type.get_reference().input_type == InputType.ARRAY:
-                        key.type.get_reference().subtype.get_reference().add_ref(item)
+                        key.type.get_reference().subtype.get_reference().add_link(item)
                     else:
-                        key.type.get_reference().add_ref(item)
+                        key.type.get_reference().get_generic_root().add_link(item)
+
             if item.input_type == InputType.ABSTRACT_RECORD:
                 for imp in getattr(item, 'implementations', []):
-                    imp.get_reference().add_ref(item)
+                    imp.get_reference().add_link(item)
 
-    # sort items by type and name
-    items = sorted(items, key=lambda x: '{}{}'.format(x.input_type.value, x.name))
+    # disable sort for now (type and name) keep items order unchanged
+    # items = sorted(items, key=lambda x: '{}{}'.format(x.input_type.value, x.name))
 
     # convert to tex format
     if options.format.lower() in ('tex', 'latex'):
+        Logger.instance().info('-' * 80)
         Logger.instance().info('Formatting ist to tex format')
+        from ist.utils.texlist2 import TexList
+        TexList.PRETTY_FORMAT = options.debug
         formatter.json2latex(items, options.output, info=ist_info)
         if os.path.isfile(options.output):
-            print 'Ok: File "{:s}" created'.format(options.output)
+            print('Ok: File "{:s}" created'.format(options.output))
             sys.exit(0)
         else:
-            print 'Error: File "{:s}" does not exists'.format(options.output)
+            print('Error: File "{:s}" does not exists'.format(options.output))
             sys.exit(1)
 
     # convert to HTML format
     if options.format.lower() in ('html', 'html5', 'www', 'htm'):
+        Logger.instance().info('-' * 80)
         Logger.instance().info('Formatting ist to html format')
         formatter.json2html(items, options.output, info=ist_info)
         if os.path.isfile(options.output):
-            print 'Ok: File "{:s}" created'.format(options.output)
+            print('Ok: File "{:s}" created'.format(options.output))
             sys.exit(0)
         else:
-            print 'Error: File "{:s}" does not exists'.format(options.output)
+            print('Error: File "{:s}" does not exists'.format(options.output))
             sys.exit(1)
 
     if options.format.lower() in ('markdown', 'md'):
@@ -213,7 +227,7 @@ Full markdown specification can be found [here](https://github.com/adam-p/markdo
         '''
         o = htmltree()
         o.description(text)
-        print o.dump()
+        print(o.dump())
         sys.exit(0)
 
     Logger.instance().error("Error: Unsupported format '{:s}'".format(options.format))

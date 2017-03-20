@@ -20,10 +20,13 @@
 
 
 #include "input/input_type_forward.hh"
+#include "input/type_base.hh"
 #include "input/type_record.hh"
 #include "input/type_abstract.hh"
 #include <string>
 #include <ostream>
+#include <vector>
+#include <memory>
 
 
 
@@ -113,6 +116,8 @@ protected:
     void get_attr_and_param_data(const TypeBase *type, TypeBase::attribute_map &attr_map,
     		TypeBase::TypeHash &generic_type_hash, TypeBase::json_string &parameter_map_to_json);
 
+    template <class T>
+    void print_generic(ostream& stream, const TypeBase *type);
 
     /// Perform resolution according to actual @p type (using typeid) and call particular print_impl method.
     void print_base(ostream& stream, const TypeBase *type);

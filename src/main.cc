@@ -112,7 +112,7 @@ void Application::display_version() {
             + " flags: " + string(FLOW123D_COMPILER_FLAGS_);
 
 
-    MessageOut().fmt("This is Flow123d, version {} revision: {}\n",
+    MessageOut().fmt("This is Flow123d, version {} commit: {}\n",
             rev_num_data.version, rev_num_data.revision);
     MessageOut().fmt("Branch: {}\nBuild: {}\nFetch URL: {}\n",
 		 rev_num_data.branch, build, rev_num_data.url );
@@ -219,7 +219,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         FilePath(vm["input_format"].as<string>(), FilePath::output_file).open_stream(json_stream);
         // create the root Record
         it::Record root_type = get_input_type();
-        Input::Type::TypeBase::lazy_finish();
+        root_type.finish();
+        Input::Type::TypeBase::delete_unfinished_types();
         json_stream << Input::Type::OutputJSONMachine( root_type, this->get_rev_num_data() );
         json_stream.close();
         exit( exit_output );

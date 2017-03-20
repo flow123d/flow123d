@@ -45,6 +45,11 @@ string Parameter::type_name() const {
 }
 
 
+string Parameter::class_name() const {
+	return "Parameter";
+}
+
+
 TypeBase::TypeHash Parameter::content_hash() const {
 	TypeHash seed=0;
 	boost::hash_combine(seed, "Parameter");
@@ -70,9 +75,11 @@ TypeBase::MakeInstanceReturnType Parameter::make_instance(std::vector<ParameterP
 }
 
 
-bool Parameter::finish(bool is_generic) {
-	if (!is_generic) THROW( ExcParamaterInIst() << EI_Object(this->name_));
-	return true;
+FinishStatus Parameter::finish(FinishStatus finish_type) {
+	ASSERT(finish_type != FinishStatus::none_).error();
+
+	if (finish_type == FinishStatus::regular_) THROW( ExcParamaterInIst() << EI_Object(this->name_));
+	return finish_type;
 }
 
 
@@ -102,8 +109,8 @@ const Instance &Instance::close() const {
 }
 
 
-bool Instance::finish(bool is_generic) {
-	return generic_type_.finish(true);
+FinishStatus Instance::finish(FinishStatus finish_type) {
+	return generic_type_.finish(finish_type);
 }
 
 

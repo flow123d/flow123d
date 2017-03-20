@@ -25,6 +25,9 @@
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
 
+#include "config.h"
+#include <zlib.h>
+
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
 
@@ -37,11 +40,8 @@ const Record & OutputVTK::get_input_type() {
 		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("\"ascii\""),
 			"Variant of output stream file format.")
 		// The parallel or serial variant
-		.declare_key("parallel", Bool(), Default("false"),
-			"Parallel or serial version of file format.")
-		// Type of compression
-		.declare_key("compression", OutputVTK::get_input_type_compression(), Default("\"none\""),
-			"Compression used in output stream file format.")
+		//.declare_key("parallel", Bool(), Default("false"),
+		//	"Parallel or serial version of file format.")
 		.close();
 }
 
@@ -50,18 +50,12 @@ const Selection & OutputVTK::get_input_type_variant() {
     return Selection("VTK variant (ascii or binary)")
 		.add_value(OutputVTK::VARIANT_ASCII, "ascii",
 			"ASCII variant of VTK file format")
-		.add_value(OutputVTK::VARIANT_BINARY, "binary",
-			"Binary variant of VTK file format (not supported yet)")
-		.close();
-}
-
-
-const Selection & OutputVTK::get_input_type_compression() {
-    return Selection("Type of compression of VTK file format")
-		.add_value(OutputVTK::COMPRESSION_NONE, "none",
-			"Data in VTK file format are not compressed")
-		.add_value(OutputVTK::COMPRESSION_GZIP, "zlib",
-			"Data in VTK file format are compressed using zlib (not supported yet)")
+		.add_value(OutputVTK::VARIANT_BINARY_UNCOMPRESSED, "binary",
+			"Uncompressed appended binary XML VTK format without usage of base64 encoding of appended data.")
+#ifdef FLOW123D_HAVE_ZLIB
+		.add_value(OutputVTK::VARIANT_BINARY_ZLIB, "binary_zlib",
+			"Appended binary XML VTK format without usage of base64 encoding of appended data. Compressed with ZLib.")
+#endif // FLOW123D_HAVE_ZLIB
 		.close();
 }
 
@@ -85,6 +79,28 @@ OutputVTK::~OutputVTK()
 
 
 
+void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+{
+	OutputTime::init_from_input(equation_name, mesh, in_rec);
+
+    if(this->rank == 0) {
+        auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
+        variant_type_ = format_rec.val<VTKVariant>("variant");
+
+        this->fix_main_file_extension(".pvd");
+        try {
+            this->_base_filename.open_stream( this->_base_file );
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
+
+        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
+
+        this->make_subdirectory();
+        this->write_head();
+    }
+
+}
+
+
 
 int OutputVTK::write_data(void)
 {
@@ -96,17 +112,7 @@ int OutputVTK::write_data(void)
         return 0;
     }
 
-    if (! this->_base_file.is_open()) {
-        this->fix_main_file_extension(".pvd");
-        try {
-            this->_base_filename.open_stream( this->_base_file );
-        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
-
-        LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
-
-        this->make_subdirectory();
-        this->write_head();
-    }
+    ASSERT(this->_base_file.is_open())(this->_base_filename).error();
 
     ostringstream ss;
     ss << main_output_basename_ << "-"
@@ -173,7 +179,14 @@ void OutputVTK::write_vtk_vtu_head(void)
     file << "<?xml version=\"1.0\"?>" << endl;
     // TODO: test endianess of platform (this would be important, when raw
     // data will be saved to the VTK file)
-    file << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\">" << endl;
+    file << "<VTKFile type=\"UnstructuredGrid\" version=\"0.1\" byte_order=\"LittleEndian\"";
+    if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
+    	file << " header_type=\"UInt64\"";
+    }
+    if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_ZLIB ) {
+    	file << " compressor=\"vtkZLibDataCompressor\"";
+    }
+    file << ">" << endl;
     file << "<UnstructuredGrid>" << endl;
 }
 
@@ -219,11 +232,17 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data, std
 
 
 
-void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKValueType type)
+void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
 {
+    // names of types in DataArray section
+	static const std::vector<std::string> types = {
+        "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Float32", "Float64" };
+    // formats of DataArray section
+	static const std::vector<std::string> formats = { "ascii", "appended", "appended" };
+
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << vtk_value_type_map(type) << "\" ";
+    file    << "<DataArray type=\"" << types[output_data->vtk_type_] << "\" ";
     // possibly write name
     if( ! output_data->output_field_name.empty()) 
         file << "Name=\"" << output_data->output_field_name <<"\" ";
@@ -233,23 +252,103 @@ void OutputVTK::write_vtk_data_ascii(OutputTime::OutputDataPtr output_data, VTKV
         file
             << "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
     }
-    file    << "format=\"ascii\">"
-            << endl;
+    file    << "format=\"" << formats[this->variant_type_] << "\"";
 
-    /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
-
-    output_data->print_all(file);
-
-    file << "\n</DataArray>" << endl;
+    if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+    	// ascii output
+    	file << ">" << endl;
+    	file << std::fixed << std::setprecision(10); // Set precision to max
+    	output_data->print_ascii_all(file);
+    	file << "\n</DataArray>" << endl;
+    } else {
+    	// binary output is stored to appended_data_ stream
+    	double range_min, range_max;
+    	output_data->get_min_max_range(range_min, range_max);
+    	file    << " offset=\"" << appended_data_.tellp() << "\" ";
+    	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
+    	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_UNCOMPRESSED ) {
+    		output_data->print_binary_all( appended_data_ );
+    	} else { // ZLib compression
+    		stringstream uncompressed_data, compressed_data;
+    		output_data->print_binary_all( uncompressed_data, false );
+    		this->compress_data(uncompressed_data, compressed_data);
+    		appended_data_ << compressed_data.str();
+    	}
+    }
 
 }
 
 
-void OutputVTK::write_vtk_data_ascii(OutputDataFieldVec &output_data_vec)
+void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &compressed_stream) {
+    // size of block of compressed data.
+	static const size_t BUF_SIZE = 32 * 1024;
+
+	string uncompressed_string = uncompressed_stream.str();  // full uncompressed string
+	uLong uncompressed_size = uncompressed_string.size();    // size of uncompressed string
+	stringstream compressed_data;                            // helper stream stores blocks of compress data
+
+	uLong count_of_blocks = (uncompressed_size + BUF_SIZE - 1) / BUF_SIZE;
+	uLong last_block_size = (uncompressed_size % BUF_SIZE);
+	compressed_stream.write(reinterpret_cast<const char*>(&count_of_blocks), sizeof(unsigned long long int));
+	compressed_stream.write(reinterpret_cast<const char*>(&BUF_SIZE), sizeof(unsigned long long int));
+	compressed_stream.write(reinterpret_cast<const char*>(&last_block_size), sizeof(unsigned long long int));
+
+	for (uLong i=0; i<count_of_blocks; ++i) {
+		// get block of data for compression
+		std::string data_block = uncompressed_string.substr(i*BUF_SIZE, BUF_SIZE);
+		uLong data_block_size = data_block.size();
+
+		std::vector<uint8_t> buffer;
+		uint8_t temp_buffer[BUF_SIZE];
+
+		// set zlib object
+		z_stream strm;
+		strm.zalloc = 0;
+		strm.zfree = 0;
+		strm.next_in = reinterpret_cast<uint8_t *>(&data_block[0]);
+		strm.avail_in = data_block_size;
+		strm.next_out = temp_buffer;
+		strm.avail_out = BUF_SIZE;
+
+		// compression of data
+		deflateInit(&strm, Z_BEST_COMPRESSION);
+		while (strm.avail_in != 0) {
+			int res = deflate(&strm, Z_NO_FLUSH);
+			ASSERT_EQ(res, Z_OK).error();
+			if (strm.avail_out == 0) {
+				buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE);
+				strm.next_out = temp_buffer;
+				strm.avail_out = BUF_SIZE;
+			}
+		}
+		int deflate_res = Z_OK;
+		while (deflate_res == Z_OK) {
+			if (strm.avail_out == 0) {
+				buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE);
+				strm.next_out = temp_buffer;
+				strm.avail_out = BUF_SIZE;
+			}
+			deflate_res = deflate(&strm, Z_FINISH);
+		}
+		ASSERT_EQ(deflate_res, Z_STREAM_END).error();
+		buffer.insert(buffer.end(), temp_buffer, temp_buffer + BUF_SIZE - strm.avail_out);
+		deflateEnd(&strm);
+
+		// store compress data and its size to streams
+		std::string str(buffer.begin(), buffer.end());
+		uLong compressed_data_size = str.size();
+		compressed_stream.write(reinterpret_cast<const char*>(&compressed_data_size), sizeof(unsigned long long int));
+		compressed_data << str;
+	}
+	// push compress data to returned stream
+	compressed_stream << compressed_data.str();
+}
+
+
+void OutputVTK::write_vtk_field_data(OutputDataFieldVec &output_data_vec)
 {
     for(OutputDataPtr data :  output_data_vec)
-        write_vtk_data_ascii(data, VTK_FLOAT64);
+        write_vtk_data(data);
 }
 
 
@@ -293,10 +392,10 @@ void OutputVTK::write_vtk_node_data(void)
         file << ">" << endl;
 
         /* Write data on nodes */
-        this->write_vtk_data_ascii(output_data_vec_[NODE_DATA]);
+        this->write_vtk_field_data(output_data_vec_[NODE_DATA]);
 
         /* Write data in corners of elements */
-        this->write_vtk_data_ascii(output_data_vec_[CORNER_DATA]);
+        this->write_vtk_field_data(output_data_vec_[CORNER_DATA]);
 
         /* Write PointData end */
         file << "</PointData>" << endl;
@@ -317,7 +416,7 @@ void OutputVTK::write_vtk_element_data(void)
     file << ">" << endl;
 
     /* Write own data */
-    this->write_vtk_data_ascii(data_map);
+    this->write_vtk_field_data(data_map);
 
     /* Write PointData end */
     file << "</CellData>" << endl;
@@ -329,6 +428,13 @@ void OutputVTK::write_vtk_vtu_tail(void)
     ofstream &file = this->_data_file;
 
     file << "</UnstructuredGrid>" << endl;
+    if ( this->variant_type_ != VTKVariant::VARIANT_ASCII ) {
+    	// appended data of binary compressed output
+    	file << "<AppendedData encoding=\"raw\">" << endl;
+    	// appended data starts with '_' character
+    	file << "_" << appended_data_.str() << endl;
+    	file << "</AppendedData>" << endl;
+    }
     file << "</VTKFile>" << endl;
 }
 
@@ -339,6 +445,7 @@ void OutputVTK::write_vtk_vtu(void)
 
     /* Write header */
     this->write_vtk_vtu_head();
+
 
     // select which output mesh to use
     std::shared_ptr<OutputMeshBase> om;
@@ -355,17 +462,17 @@ void OutputVTK::write_vtk_vtu(void)
 
     /* Write VTK Geometry */
     file << "<Points>" << endl;
-        write_vtk_data_ascii(om->nodes_, VTK_FLOAT64 );
+        write_vtk_data(om->nodes_);
     file << "</Points>" << endl;
 
     
     /* Write VTK Topology */
     file << "<Cells>" << endl;
-        write_vtk_data_ascii(om->connectivity_, VTK_INT32 );
-        write_vtk_data_ascii(om->offsets_, VTK_INT32 );
+        write_vtk_data(om->connectivity_);
+        write_vtk_data(om->offsets_);
         auto types = std::make_shared<MeshData<unsigned int>>("types");
         fill_element_types_vector(types->data_, om);
-        write_vtk_data_ascii(types, VTK_UINT8 );
+        write_vtk_data(types);
     file << "</Cells>" << endl;
 
     /* Write VTK scalar and vector data on nodes to the file */
@@ -420,6 +527,8 @@ int OutputVTK::write_tail(void)
 
     return 1;
 }
+
+
 
 
 

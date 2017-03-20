@@ -60,7 +60,10 @@ const Record & RadioactiveDecay::get_input_type_single_decay() {
 
 const Record & RadioactiveDecay::get_input_type() {
     return Record("RadioactiveDecay", "A model of a radioactive decay and possibly of a decay chain.")
-		.derive_from( ReactionTerm::get_input_type() )
+        .derive_from( ReactionTerm::it_abstract_term() )
+        .derive_from( ReactionTerm::it_abstract_mobile_term() )
+        .derive_from( ReactionTerm::it_abstract_immobile_term() )
+        .derive_from( ReactionTerm::it_abstract_reaction() )
 		.declare_key("decays", Array( RadioactiveDecay::get_input_type_single_decay(), 1), Default::obligatory(),
 					"An array of radioactive decays.")
 		.declare_key("ode_solver", PadeApproximant::get_input_type(), Default("{}"),
