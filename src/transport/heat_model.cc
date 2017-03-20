@@ -168,21 +168,21 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=fluid_thermal_source
             .name("fluid_thermal_source")
-            .description("Thermal source density in fluid.")
+            .description("Density of thermal source in fluid.")
             .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_thermal_source
             .name("solid_thermal_source")
-            .description("Thermal source density in solid.")
+            .description("Density of thermal source in solid.")
             .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=fluid_heat_exchange_rate
             .name("fluid_heat_exchange_rate")
-            .description("Heat exchange rate in fluid.")
+            .description("Heat exchange rate of source in fluid.")
             .units( UnitSI().s(-1) )
             .input_default("0.0")
             .flags_add(in_rhs);
