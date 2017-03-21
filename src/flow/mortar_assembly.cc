@@ -143,7 +143,20 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         pressure_diff(slave_ac_, isec_measure);
     }
     if ( ! (slave_ac_.dim() == 2 && master_ac.dim() ==2 ) ) {
-        ASSERT( fabs(isec_sum - ele->measure()) < 1E-5)(isec_sum)(ele->measure()).warning("Wrong intersection area");
+        if( fabs(isec_sum - ele->measure()) > 1E-5) {
+            string out;
+            for(auto & isec : isec_list) {
+                slave_ac_.reinit(isec.second->bulk_ele_idx());
+                out += fmt::format(" {}", slave_ac_.full_iter()->id());
+            }
+
+            double diff = (isec_sum - ele->measure())/ele->measure();
+            WarningOut() << print_var(diff)
+                    << print_var(ele->id())
+                    << endl
+                    << out;
+
+        }
     }
     pressure_diff(master_ac, -isec_sum);
 
@@ -169,7 +182,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         }
         pressure_diff(master_ac, -isec_sum);
 
-        master_sigma = 10000 * m_conductivity/ isec_sum;
+        master_sigma = 100 * m_conductivity/ m_crossection / isec_sum;
 
         add_to_linsys(master_sigma);
     }
