@@ -128,8 +128,9 @@ const Input::Type::Record & ObservePoint::get_input_type() {
                 )
         .declare_key("snap_region", IT::String(), IT::Default("\"ALL\""),
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
-        .declare_key("n_search_levels", IT::Integer(0), IT::Default("1"),
-                "Maximum number of levels of the breadth first search used to find the observe element from the initial element. Value zero means to search only the initial element itself.")
+        .declare_key("max_element_distance", IT::Double(0.0),
+        		IT::Default::read_time("Default maximal distance is given by size of full size and count of elements."),
+                "Maximal distance of observe element from the initial point.")
         .close();
 }
 
@@ -137,7 +138,7 @@ ObservePoint::ObservePoint()
 {}
 
 
-ObservePoint::ObservePoint(Input::Record in_rec, unsigned int point_idx)
+ObservePoint::ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_idx)
 {
     in_rec_ = in_rec;
 
@@ -152,7 +153,9 @@ ObservePoint::ObservePoint(Input::Record in_rec, unsigned int point_idx)
 
     snap_region_name_ = in_rec.val<string>("snap_region");
 
-    max_levels_ =  in_rec_.val<unsigned int>("n_search_levels");
+    const BoundingBox &main_box = mesh.get_bih_tree().tree_box();
+    double default_max_dist = arma::max(main_box.max() - main_box.min()) / pow(mesh.n_elements(), 0.33);
+    max_distance_ = in_rec_.val<double>("max_element_distance", default_max_dist);
 }
 
 
@@ -223,7 +226,8 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // project point, add candidate to queue
         auto observe_data = point_projection(i_elm, elm);
-        candidate_queue.push(observe_data);
+        if (observe_data.distance_ <= max_distance_)
+        	candidate_queue.push(observe_data);
         closed_elements.insert(i_elm);
     }
 
@@ -247,7 +251,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					Element & neighbor_elm = mesh.element[i_node_ele];
 					auto observe_data = point_projection(i_node_ele, neighbor_elm);
-			        if (observe_data.distance_ < 2) // TODO use input parameter
+			        if (observe_data.distance_ <= max_distance_)
 			        	candidate_queue.push(observe_data);
 			        closed_elements.insert(i_node_ele);
 				}
@@ -255,7 +259,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     }
 
     if (! have_observe_element()) {
-        THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) << EI_NLevels(max_levels_) );
+        THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) );
     }
     snap( mesh );
 }
@@ -316,7 +320,7 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
     // in_rec is Output input record.
 
     for(auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
-        ObservePoint point(*it, points_.size());
+        ObservePoint point(*it, *mesh_, points_.size());
         point.find_observe_point(*mesh_);
         points_.push_back( point );
         observed_element_indices_.push_back(point.observe_data_.element_idx_);

@@ -55,10 +55,9 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcNoInitialPoint,
             << "Failed to find the element containing the initial observe point.\n");
     TYPEDEF_ERR_INFO(EI_RegionName, std::string);
-    TYPEDEF_ERR_INFO(EI_NLevels, unsigned int);
     DECLARE_INPUT_EXCEPTION(ExcNoObserveElement,
             << "Failed to find the observe element with snap region: " << EI_RegionName::qval
-            << " close to the initial observe point. Using maximal number of neighbour levels: " << EI_NLevels::val << "\n");
+            << " close to the initial observe point. Change maximal distance of observe element." << "\n");
 
     /// Helper enum specifies settings of update in point_projection method
     enum ProjectionCases {
@@ -76,7 +75,7 @@ protected:
     /**
      * Constructor. Read from input.
      */
-    ObservePoint(Input::Record in_rec, unsigned int point_idx);
+    ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_idx);
 
     /**
      * Update the observe element and the projection of the initial point on it.
@@ -136,9 +135,9 @@ protected:
     string snap_region_name_;
 
     /**
-     * Maximal number of observe element search levels.
+     * Maximal distance of observe element from input point.
      */
-    unsigned int max_levels_;
+    double max_distance_;
 
 	/// Input coordinates of the initial position of the observation point.
 	arma::vec3 input_point_;

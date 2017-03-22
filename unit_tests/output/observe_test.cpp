@@ -90,7 +90,7 @@ public:
         input_point_= arma::vec3(point_str);
         snap_dim_ = snap;
         snap_region_name_ = region_name;
-        max_levels_ =1;
+        max_distance_ = 2.0;
     }
 
     void check(Mesh &mesh, string local_str, string global_point_str, unsigned int i_elm) {
