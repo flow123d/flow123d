@@ -15,6 +15,7 @@ from scripts.serialization import PyPyResult, ResultHolderResult, RuntestTriplet
 from utils.counter import ProgressCounter
 from utils.events import Event
 from utils.globals import wait_for
+from scripts.core.returncode import RC, RC_NONE, RC_OK, RC_BROKEN
 # ----------------------------------------------
 
 
@@ -35,7 +36,7 @@ class ExtendedThread(threading.Thread):
         self.target = target
 
         self.state = ProcessState.NOT_STARTED
-        self._returncode = None
+        self._returncode = RC_NONE
 
         self.start_time = None
         self.end_time = None
@@ -48,10 +49,13 @@ class ExtendedThread(threading.Thread):
     def _run(self):
         if self.target:
             self.target()
-            self.returncode = 0
+            self.returncode = RC_OK
 
     @property
     def returncode(self):
+        """
+        :rtype: scripts.core.returncode.RC
+        """
         return self._returncode
 
     @property
@@ -65,7 +69,7 @@ class ExtendedThread(threading.Thread):
 
     @returncode.setter
     def returncode(self, value):
-        self._returncode = value
+        self._returncode = RC(value)
 
     def start(self):
         self.state = ProcessState.STARTED
@@ -92,7 +96,7 @@ class ExtendedThread(threading.Thread):
 
     def to_json(self):
         return dict(
-            returncode=self.returncode,
+            returncode=self.returncode(),
             name=self.name
         )
 
@@ -104,7 +108,7 @@ class ExtendedThread(threading.Thread):
         Return True if and only if returncode is 0
         :rtype: bool
         """
-        return self.returncode == 0
+        return self.returncode == RC_OK
 
     def with_error(self):
         """
@@ -122,7 +126,7 @@ class BrokenProcess(object):
     def __init__(self, exception=None):
         self.exception = exception
         self.pid = -1
-        self.returncode = 666
+        self.returncode = RC_BROKEN
 
     @staticmethod
     def is_running():
@@ -183,14 +187,14 @@ class MultiThreads(ExtendedThread):
     def returncode(self):
         # SKIPPED
         if not self.returncodes or set(self.returncodes.values()) == {None}:
-            return None
+            return RC_NONE
 
         # OK returncode
         if (set(self.returncodes.values()) - {None}) == {0}:
-            return 0
+            return RC_OK
 
         # ERROR returncode
-        return max(set(self.returncodes.values()) - {None, 0})
+        return RC(max(set(self.returncodes.values()) - {None, 0}))
 
     @property
     def total(self):
@@ -203,7 +207,7 @@ class MultiThreads(ExtendedThread):
         self.running += 1
 
     def on_thread_complete(self, thread):
-        self.returncodes[thread] = thread.returncode
+        self.returncodes[thread] = RC(thread.returncode)
         self.running -= 1
 
     # aliases
@@ -245,7 +249,7 @@ class SequentialThreads(MultiThreads):
             items.append(thread)
 
         return dict(
-            returncode=self.returncode,
+            returncode=self.returncode(),
             name=self.name,
             items=items
         )
@@ -370,7 +374,7 @@ class PyPy(ExtendedThread):
             Printer.all.err('Could not start command "{}": {}',
                             Command.to_string(self.executor.command),
                             self.executor.exception)
-            self.returncode = self.executor.returncode
+            self.returncode = RC(self.executor.returncode)
 
         # if process is not broken, propagate start event
         self.on_process_start(self)
@@ -381,11 +385,12 @@ class PyPy(ExtendedThread):
 
         # get return code
         rc = getattr(self.executor, 'returncode', None)
-        self.returncode = rc if self.custom_error is None or str(rc) == "0" else self.custom_error
+        self.returncode = RC(rc if self.custom_error is None or str(rc) == "0" else self.custom_error)
 
         # reverse return code if death test is set
         if self.case and self.case.death_test is not None:
-            self.returncode = self.case.death_test.reverse_return_code(self.returncode)
+            self.returncode = RC(self.case.death_test.reverse_return_code(self.returncode))
+            self.returncode.reversed = self.case.death_test.value != self.case.death_test.FALSE
 
         # propagate on_complete event
         self.on_process_complete(self)
@@ -394,7 +399,7 @@ class PyPy(ExtendedThread):
         import getpass
         import platform
         result = dict(
-            returncode=self.returncode,
+            returncode=self.returncode(),
             duration=self.duration,
             username=getpass.getuser(),
             hostname=platform.node(),
@@ -409,7 +414,7 @@ class PyPy(ExtendedThread):
     def to_json(self):
         if self.case:
             return dict(
-                returncode=self.returncode,
+                returncode=self.returncode(),
                 name=self.case.as_string,
                 case=self.case,
                 log=self.full_output
@@ -491,12 +496,12 @@ class ComparisonMultiThread(SequentialThreads):
         for thread in self.threads:
             items.append(dict(
                 name=thread.name,
-                returncode=thread.returncode,
+                returncode=thread.returncode(),
                 log=self.output,
             ))
 
         return dict(
-            returncode=self.returncode,
+            returncode=self.returncode(),
             name=self.name,
             log=self.output,
             tests=items,
@@ -525,7 +530,7 @@ class RuntestMultiThread(SequentialThreads):
     def to_json(self):
         return dict(
             type="test-case",
-            returncode=self.returncode,
+            returncode=self.returncode(),
             clean=self.clean,
             execution=self.pypy,
             compare=self.comp
@@ -548,9 +553,9 @@ class ResultHolder(object):
 
     @property
     def returncode(self):
-        rc = [None]
+        rc = [None] # TODO Python3 conversion
         for i in self.items:
-            rc.append(i.returncode)
+            rc.append(i.returncode())
         return max(rc)
 
     def singlify(self):
