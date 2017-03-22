@@ -20,6 +20,32 @@
 
 
 /**
+ * Helper class stores base data of ObservePoint and allows to evaluate
+ * the nearest point to input_point_.
+ */
+class ObservePointData {
+public:
+	/// Constructor
+	ObservePointData()
+	: distance_(numeric_limits<double>::infinity()) {};
+
+	/// Final element of the observe point. The index in the mesh.
+	unsigned int element_idx_;
+
+	/// Global coordinates of the observation point.
+	arma::vec3 global_coords_;
+
+	/// Local (barycentric) coordinates on the element.
+	arma::vec local_coords_;
+
+	/// Distance of found projection from the initial point.
+	/// If we find more candidates we pass in the closest one.
+	double distance_;
+
+};
+
+
+/**
  * Class representing single observe point, used internally by the class Observe.
  * Members: input_pos_, snap_dim_, snap_region_name_ are set in constructor. Should be checked before passed in.
  * Members: element_idx_, global_coords_, local_coords_ are derived, set in Observe::find_observe_points.
@@ -34,38 +60,9 @@ public:
             << "Failed to find the observe element with snap region: " << EI_RegionName::qval
             << " close to the initial observe point. Using maximal number of neighbour levels: " << EI_NLevels::val << "\n");
 
-    /// Helper enum specifies settings in point_projection method
+    /// Helper enum specifies settings of update in point_projection method
     enum ProjectionCases {
-    	clip_update, update_if_in_elem, no_update
-    };
-
-    struct ObserveData {
-    	/// Constructor
-    	ObserveData()
-    	: distance_(numeric_limits<double>::infinity()) {};
-
-        /// Input coordinates of the initial position of the observation point.
-        arma::vec3 input_point_;
-
-        /// Final element of the observe point. The index in the mesh.
-        unsigned int element_idx_;
-
-        /// Global coordinates of the observation point.
-        arma::vec3 global_coords_;
-
-        /// Local (barycentric) coordinates on the element.
-        arma::vec local_coords_;
-
-        /// Distance of found projection from the initial point.
-        /// If we find more candidates we pass in the closest one.
-        double distance_;
-
-        /**
-         * Snap to the center of the object of given dimension.
-         * Value 4 and greater means no snapping.
-         */
-        unsigned int snap_dim_;
-
+    	update, update_if_in_elem, no_update
     };
 
     static const Input::Type::Record & get_input_type();
@@ -80,6 +77,11 @@ protected:
      * Constructor. Read from input.
      */
     ObservePoint(Input::Record in_rec, unsigned int point_idx);
+
+    /**
+     * Update the observe element and the projection of the initial point on it.
+     */
+    void update_projection(ObservePointData candidate_data);
 
     /**
      * Returns true if we have already found any observe element.
@@ -114,13 +116,19 @@ protected:
     void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
     /// Project point to given element by dimension of this element.
-    bool point_projection(unsigned int i_elm, double &projection_min, Element &elm, ProjectionCases projection_case);
+    ObservePointData point_projection(unsigned int i_elm, Element &elm);
 
     /// Index in the input array.
     Input::Record in_rec_;
 
     /// Observation point name.
     std::string name_;
+
+	/**
+	 * Snap to the center of the object of given dimension.
+	 * Value 4 and greater means no snapping.
+	 */
+	unsigned int snap_dim_;
 
     /**
      * Region of the snapping element.
@@ -132,8 +140,11 @@ protected:
      */
     unsigned int max_levels_;
 
-    /// Helper struct stored data, that can be shared with projection handler class.
-    std::shared_ptr<ObserveData> observe_data_;
+	/// Input coordinates of the initial position of the observation point.
+	arma::vec3 input_point_;
+
+    /// Helper object stored projection data
+    ObservePointData observe_data_;
 
     /// Only Observe should use this class directly.
     friend class Observe;
