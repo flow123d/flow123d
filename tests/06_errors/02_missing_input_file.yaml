@@ -1,13 +1,14 @@
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: Test that transient problems requires time step (TimeGovernor record). Unsteady Darcy.
+  time: &anchor2
+    end_time: 0.5
+    max_dt: 0.01
+    min_dt: 0.01
+  description: Produce error - missing input mesh file
   mesh:
-    mesh_file: ../00_mesh/square_1x1_942el.msh
-  flow_equation: !Flow_Darcy_MH
-#    time: 
-#        end_time: 0.5
-#        max_dt: 0.01
-#        min_dt: 0.01
+    mesh_file: ../00_mesh/square_1x1_42el.msh
+  flow_equation: !Flow_Richards_LMH
+    output_specific:
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -34,6 +35,7 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance:
       cumulative: true
+    time: *anchor2
     output_stream: 
       file: ./test10.pvd
       format: !vtk

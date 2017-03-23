@@ -58,6 +58,7 @@ problem: !Coupling_Sequential
       times:
         - step: 36000
       observe_points:
-        - [ 0.05, 0, 0.01] #DH-15
+        - snap_region: .side
+          point: [ 0.05, 0, 0.01] #DH-15
 
 
