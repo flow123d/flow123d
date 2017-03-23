@@ -32,7 +32,6 @@
 #include "badiff.h"
 #include "fadiff.h"
 
-#include "darcy_flow_assembler.hh"
 #include "flow/assembly_lmh.hh"
 
 
