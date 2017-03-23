@@ -46,7 +46,9 @@ class YamlDeathTest(object):
             self.value = self.ALL
 
     def reverse_return_code(self, returncode):
-        # simple reversal
+        """
+        :type returncode: scripts.core.returncode.RC
+        """
         if self.value == self.TRUE:
             # do not change None return code (test was skipped)
             if returncode is None:

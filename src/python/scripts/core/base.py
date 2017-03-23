@@ -681,9 +681,9 @@ class TestPrinterStatus(object):
     }
 
     errors = {
-        'clean': '| could not clean directory',
-        'pypy':  '| error while running',
-        'comp':  '| wrong result: {sub_detail}'
+        'clean': '{sub_detail}',
+        'pypy':  '{sub_detail}',
+        'comp':  '{sub_detail}'
     }
 
     @classmethod
@@ -695,12 +695,41 @@ class TestPrinterStatus(object):
         """
         :type thread: scripts.core.threads.RuntestMultiThread
         """
+        if thread.comp.returncode.succeeded:
+            return ''
+
+        result = '| wrong result: '
         with Printer.all.with_level(3):
-            result = ''
             for t in thread.comp.threads:
                 if t.returncode != 0:
                     result += '\n{}[ WRONG ] in {}'.format(Printer.indent(), t.name)
         return result
+
+    @classmethod
+    def detail_pypy(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        if thread.pypy.returncode.succeeded:
+            if thread.pypy.returncode.reversed:
+                return '| OK death test failed'
+            return ''
+        elif thread.pypy.returncode.failed:
+            if thread.pypy.returncode.reversed:
+                return '| test did NOT failed but should have failed'
+            return '| error while execution'
+
+        # skipped
+        return ''
+
+    @classmethod
+    def detail_clean(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        if thread.clean.returncode.failed:
+            return '| could not clean directory'
+        return ''
 
 
 class RunnerFormatter(object):
@@ -721,10 +750,15 @@ class StatusPrinter(object):
         detail = ''
         for ti in ['clean', 'pypy', 'comp']:
             subthread = getattr(thread, ti)
-            if subthread.returncode not in (0, None):
-                if hasattr(formatter, 'detail_{}'.format(ti)):
-                    sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
-                detail = formatter.errors[ti].format(**locals())
+            subthread_rc = subthread.returncode
+            sub_detail = ''
+
+            if hasattr(formatter, 'detail_{}'.format(ti)):
+                sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
+            detail = formatter.errors[ti].format(**locals())
+
+            # break on the first error
+            if sub_detail:
                 break
 
         Printer.all.out(formatter.template.format(**locals()))
