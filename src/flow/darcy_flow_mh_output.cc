@@ -110,13 +110,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
-	dh = new DOFHandlerMultiDim(*mesh_);
-	dh->distribute_dofs(fe1, fe2, fe3);
-	corner_pressure.resize(dh->n_global_dofs());
-	VecCreateSeqWithArray(PETSC_COMM_SELF, 1, dh->n_global_dofs(), &(corner_pressure[0]), &vec_corner_pressure);
+	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	dh_->distribute_dofs(fe1, fe2, fe3);
+	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh, &map1, &map2, &map3, &vec_corner_pressure);
+	corner_ptr->set_fe_data(dh_, &map1, &map2, &map3, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
@@ -160,12 +159,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{
-    if (dh) {
-        chkerr(VecDestroy(&vec_corner_pressure));
-        delete dh;
-    }
-};
+{};
 
 
 
@@ -270,12 +264,12 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
+	unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
-		dh->get_dof_indices(ele, indices);
+		dh_->get_dof_indices(ele, indices);
 		FOR_ELEMENT_NODES(ele, i_node)
 		{
 			corner_pressure[indices[i_node]] = node_scalar[mesh_->node_vector.index(ele->node[i_node])];

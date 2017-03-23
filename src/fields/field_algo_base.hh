@@ -37,6 +37,7 @@
 #include "mesh/point.hh"
 #include "fields/field_values.hh"
 #include "fields/unit_si.hh"
+#include "fields/field_flag.hh"
 #include "tools/time_governor.hh"
 
 
@@ -60,17 +61,19 @@ typedef enum  {
 /// Helper struct stores data for initizalize descentants of \p FieldAlgorithmBase.
 struct FieldAlgoBaseInitData {
 	/// Full constructor
-	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si, std::pair<double, double> limits)
-	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si), limits_(limits) {}
+	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si, std::pair<double, double> limits, FieldFlag::Flags flags)
+	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si), limits_(limits), flags_(flags) {}
 	/// Simplified constructor, set limit values automatically (used in unit tests)
 	FieldAlgoBaseInitData(std::string field_name, unsigned int n_comp, const UnitSI &unit_si)
 	: field_name_(field_name), n_comp_(n_comp), unit_si_(unit_si),
-	  limits_( std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max()) ) {}
+	  limits_( std::make_pair(-std::numeric_limits<double>::max(), std::numeric_limits<double>::max()) ),
+	  flags_(FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output) {}
 
 	std::string field_name_;
 	unsigned int n_comp_;
 	const UnitSI &unit_si_;
 	std::pair<double, double> limits_;
+	FieldFlag::Flags flags_;
 };
 
 
