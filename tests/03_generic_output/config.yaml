@@ -5,4 +5,8 @@ common_config:
 test_cases:
 - files: 10_vtk_bin_output.yaml
   proc: [ 1 ]
+  check_rules:
+      - ndiff:
+            files: ["mass_balance.txt", "water_balance.txt"]       # higher abs tolerance for energy balance
+            
   

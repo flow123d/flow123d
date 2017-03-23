@@ -95,16 +95,16 @@ protected:
 	unsigned int computed_elm_boundary_;
 
 	/// 3D (tetrahedron) element, used for computing intersection
-	TTetrahedron tetrahedron_;
+	ngh::TTetrahedron tetrahedron_;
 
 	/// 2D (triangle) element, used for computing intersection
-	TTriangle triangle_;
+	ngh::TTriangle triangle_;
 
 	/// 1D (abscissa) element, used for computing intersection
-	TAbscissa abscissa_;
+	ngh::TAbscissa abscissa_;
 
 	/// 0D (point) element, used for computing intersection
-	TPoint point_;
+	ngh::TPoint point_;
 
 private:
     /// Registrar of class to factory

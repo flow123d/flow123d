@@ -26,6 +26,8 @@
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/intersectionLocal.h"
 
+namespace ngh {
+
 int IntersectionLocal::numberInstance = 0;
 
 int IntersectionLocal::generateId() {
@@ -105,3 +107,5 @@ IntersectionLocal::~IntersectionLocal() {
 		delete *i_point;
 	}
 }
+
+} //namespace ngh

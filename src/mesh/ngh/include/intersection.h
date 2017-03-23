@@ -26,6 +26,8 @@
 #include "tetrahedron.h"
 #include "intersectionLocal.h"
 
+namespace ngh {
+
 typedef enum Intersections{
         none,
         unknown,
@@ -80,4 +82,7 @@ template<class A, class B> bool QuickIntersectionTest(const A &a, const B &b);
 double Distance(const TBisector &, const TPoint &);
 double Distance(const TPlain &, const TPoint &);
 double Distance(const TPoint &, const TPoint &);
+
+} // namespace ngh
+
 #endif

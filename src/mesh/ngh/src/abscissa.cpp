@@ -21,6 +21,8 @@
 #include "mesh/ngh/include/mathfce.h"
 #include "stdio.h"
 
+namespace ngh {
+
 int TAbscissa::numberInstance = 0;
 
 int TAbscissa::generateId() {
@@ -122,3 +124,5 @@ bool TAbscissa::IsInner(const TPoint& P) const {
     	return false;
     }
 }
+
+} // namespace ngh

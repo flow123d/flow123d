@@ -19,7 +19,7 @@
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/element_impls.hh"
 
-
+namespace ngh {
 
 int TTriangle::numberInstance = 0;
 
@@ -226,3 +226,5 @@ bool TTriangle::IsInner(const TPoint& P) const {
 
     return true;
 }
+
+} // namespace ngh
