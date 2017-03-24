@@ -187,7 +187,7 @@ class MultiJob(object):
 
     def update(self):
         self.start_time = self.start_time or time.time()
-        output = subprocess.check_output(self.cls.update_command())
+        output = subprocess.check_output(self.cls.update_command()).decode()
         return [item.update_status(output) for item in self.items]
 
     def is_running(self):

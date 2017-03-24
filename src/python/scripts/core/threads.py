@@ -553,10 +553,10 @@ class ResultHolder(object):
 
     @property
     def returncode(self):
-        rc = [None] # TODO Python3 conversion
+        rc = [] # TODO Python3 conversion
         for i in self.items:
             rc.append(i.returncode())
-        return max(rc)
+        return RC_NONE if not rc else RC(max(rc))
 
     def singlify(self):
         return self.items[0] if len(self.items) == 1 else self

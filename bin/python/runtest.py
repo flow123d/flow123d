@@ -93,7 +93,8 @@ def create_parser():
 
     group = parser.add_argument_group('Special options', 'Options are debug features or machine specific options')
     argparser.Parser.add(group, '--root', help="""R|
-        Path to base directory of flow123d.
+        Path to base directory of flow123d. If not set value will be determined by python scripts
+        location.
     """)
     argparser.Parser.add(group, '--json', help="""R|
         Output result to json file.
