@@ -32,7 +32,6 @@
 #include "badiff.h"
 #include "fadiff.h"
 
-#include "darcy_flow_assembler.hh"
 #include "flow/assembly_lmh.hh"
 
 
@@ -238,7 +237,7 @@ void RichardsLMH::assembly_linear_system()
             schur0->start_add_assembly(); // finish allocation and create matrix
         }
         data_->time_step_ = time_->dt();
-        auto multidim_assembler = AssemblerLMH(data_);
+        auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
 
 
         schur0->mat_zero_entries();

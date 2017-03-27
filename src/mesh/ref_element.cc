@@ -25,7 +25,7 @@
 using namespace arma;
 using namespace std;
 
-template<unsigned int n>
+template<std::size_t n>
 std::vector< std::vector<unsigned int> > _array_to_vec( const IdxVector<n> array[], unsigned int m) {
     std::vector< std::vector<unsigned int> > vec(m);
     for(unsigned int i=0; i<m; i++)
@@ -56,12 +56,12 @@ template<> const IdxVector<2> RefElement<2>::line_nodes_[] = {
 };
 
 template<> const IdxVector<2> RefElement<3>::line_nodes_[] = {
-        {0,1},
-        {0,2},
-        {1,2},
-        {0,3},
-        {1,3},
-        {2,3}
+        {0,1},	//0
+        {0,2},  //1
+        {0,3},  //2 <-3 (fixed order)
+        {1,2},  //3 <-2
+        {1,3},  //4
+        {2,3}   //5
 };
 
 
@@ -76,16 +76,17 @@ template<> const IdxVector<2> RefElement<2>::node_lines_[] = {
      {2,1}
 };
 
-//TODO: what should be the order ??
+// Order clockwise looking over the vertex to center; smallest index first
 template<> const IdxVector<3> RefElement<3>::node_lines_[] = {
-     {0,1,3},
-     {0,2,4},
-     {1,2,5},
-     {3,4,5},
+     {0,1,2},
+     {0,4,3},
+     {1,3,5},
+     {2,5,4},
 };
 
 
-//TODO: what should be the order ??
+
+// Lexicographic order.
 template<> const IdxVector<3> RefElement<3>::side_nodes_[] = {
         { 0, 1, 2 },
         { 0, 1, 3 },
@@ -93,29 +94,30 @@ template<> const IdxVector<3> RefElement<3>::side_nodes_[] = {
         { 1, 2, 3 }
 };
 
-//TODO: what should be the order ??
+// Order clockwise, faces opposite to the lines from node_lines.
 template<> const IdxVector<3> RefElement<3>::node_sides_[] = {
-        { 0, 1, 2 },
-        { 0, 1, 3 },
-        { 0, 2, 3 },
-        { 1, 2, 3 }
+        { 2, 1, 0 },
+        { 3, 0, 1 },
+        { 3, 2, 0 },
+        { 3, 1, 2 }
 };
 
+// faces ordered clock wise with respect to edge shifted to center of tetrahedron
 template<> const IdxVector<2> RefElement<3>::line_sides_[] = {
      {0,1},
      {2,0},
-     {0,3},
      {1,2},
+     {0,3},
      {3,1},
      {2,3}
 };
 
 
 template<> const IdxVector<3> RefElement<3>::side_lines_[] = {
-        {0,1,2},
-        {0,3,4},
-        {1,3,5},
-        {2,4,5}
+        {0,1,3},
+        {0,2,4},
+        {1,2,5},
+        {3,4,5}
 };
 
 
@@ -144,22 +146,22 @@ template<> const IdxVector<3> RefElement<2>::topology_zeros_[] = {
 };
 
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
-   {(unsigned int)~(1 << 3) - ~(15),  //node 0
-    (unsigned int)~(1 << 2) - ~(15),  //node 1
-    (unsigned int)~(1 << 1) - ~(15),  //node 2
-    (unsigned int)~(1 << 0) - ~(15),  //node 3
+   {(1 << 1) | (1 << 2) | (1 << 3),  //node 0
+    (1 << 0) | (1 << 2) | (1 << 3),  //node 1
+    (1 << 0) | (1 << 1) | (1 << 3),  //node 2
+    (1 << 0) | (1 << 1) | (1 << 2),  //node 3
     0,
     0},
-   {(1 << 0) | (1 << 1),    //line 0
-    (1 << 0) | (1 << 2),    //line 1
-    (1 << 0) | (1 << 3),    //line 2
-    (1 << 1) | (1 << 2),    //line 3
-    (1 << 1) | (1 << 3),    //line 4
-    (1 << 2) | (1 << 3)},   //line 5
-   {1 << 0,    //side 0
-    1 << 1,    //side 1
-    1 << 2,    //side 2
-    1 << 3,    //side 3
+   {(1 << 2) | (1 << 3),    //line 0
+    (1 << 1) | (1 << 3),    //line 1
+    (1 << 1) | (1 << 2),    //line 2
+    (1 << 0) | (1 << 3),    //line 3
+    (1 << 0) | (1 << 2),    //line 4
+    (1 << 0) | (1 << 1)},   //line 5
+   {1 << 3,    //side 0
+    1 << 2,    //side 1
+    1 << 1,    //side 2
+    1 << 0,    //side 3
     0,
     0}
 };
@@ -261,7 +263,7 @@ template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElem
 template<unsigned int dim>
 vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
 {
-	OLD_ASSERT(nid < n_nodes, "Vertex number is out of range!");
+	ASSERT_LT_DBG(nid, n_nodes).error("Node number is out of range!");
 
 	vec::fixed<dim> p;
 	p.zeros();
@@ -276,7 +278,7 @@ vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
 template<unsigned int dim>
 vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
 {
-	OLD_ASSERT(nid < n_nodes, "Vertex number is out of range!");
+	ASSERT_LT_DBG(nid, n_nodes).error("Node number is out of range!");
 
     vec::fixed<dim+1> p;
     p.zeros();
@@ -297,16 +299,20 @@ auto RefElement<dim>::local_to_bary(const LocalPoint& lp) -> BaryPoint
 {
     ASSERT_EQ_DBG(lp.n_rows, dim);
     BaryPoint bp;
-    bp.rows(0, dim - 1) = lp;
-    bp( dim ) = 1.0 - arma::sum(lp);
+    bp.rows(1, dim ) = lp;
+    bp( 0 ) = 1.0 - arma::sum(lp);
     return bp;
+
+    // new armadillo
+    // return arma::join_col( arma::vec::fixed<1>( { 1.0 - arma::sum( local )} ), local);
+
 }
 
 template<unsigned int dim>
 auto RefElement<dim>::bary_to_local(const BaryPoint& bp) -> LocalPoint
 {
     ASSERT_EQ_DBG(bp.n_rows, dim+1);
-    LocalPoint lp = bp.rows(0, dim - 1);
+    LocalPoint lp = bp.rows(1, dim);
     return lp;
 }
 
@@ -320,7 +326,7 @@ inline unsigned int RefElement<dim>::oposite_node(unsigned int sid)
 template<unsigned int dim>
 unsigned int RefElement<dim>::normal_orientation(unsigned int sid)
 {
-    OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+    ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
 
     return sid % 2;
 }
@@ -329,7 +335,7 @@ unsigned int RefElement<dim>::normal_orientation(unsigned int sid)
 template<>
 vec::fixed<1> RefElement<1>::normal_vector(unsigned int sid)
 {
-	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+	ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
 
     return node_coords(sid) - node_coords(1-sid);
 }
@@ -337,7 +343,7 @@ vec::fixed<1> RefElement<1>::normal_vector(unsigned int sid)
 template<>
 vec::fixed<2> RefElement<2>::normal_vector(unsigned int sid)
 {
-	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+	ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
     vec::fixed<2> barycenter, bar_side, n, t;
 
     // tangent vector along line
@@ -359,7 +365,7 @@ vec::fixed<2> RefElement<2>::normal_vector(unsigned int sid)
 template<>
 vec::fixed<3> RefElement<3>::normal_vector(unsigned int sid)
 {
-	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+	ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
     vec::fixed<3> barycenter, bar_side, n, t1, t2;
 
     // tangent vectors of side
@@ -388,7 +394,7 @@ auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned
     for(unsigned int i=0; i < dim; i++) {
         unsigned int i_sub_node = (i+1)%dim;
 //         unsigned int i_bary = (dim + side_nodes_[i_face][i_sub_node])%(dim+1);
-        unsigned int i_bary = (dim + interact<0,dim-1>(i_face)[i_sub_node])%(dim+1);
+        unsigned int i_bary = (dim + interact_<0,dim-1>(i_face)[i_sub_node])%(dim+1);
         face_barycentric[i] = barycentric[ i_bary ];
     }
     return face_barycentric;
@@ -404,7 +410,7 @@ auto RefElement<dim>::barycentric_from_face(const FaceBaryPoint &face_barycentri
     for(unsigned int i_sub_coord=0; i_sub_coord<dim; i_sub_coord++) {
         unsigned int i_sub_node = (i_sub_coord+1)%dim;
 //         barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( side_nodes_[i_face][i_sub_node]);
-        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( interact<0,dim-1>(i_face)[i_sub_node]);
+        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( interact_<0,dim-1>(i_face)[i_sub_node]);
     }
     return barycentric;
 }
@@ -494,7 +500,7 @@ auto RefElement<dim>::centers_of_subelements(unsigned int sub_dim)->CentersList
 template<>
 double RefElement<1>::side_measure(unsigned int sid)
 {
-	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+    ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
 
     return 1;
 }
@@ -503,7 +509,7 @@ double RefElement<1>::side_measure(unsigned int sid)
 template<>
 double RefElement<2>::side_measure(unsigned int sid)
 {
-	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+    ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
 
     return norm(node_coords(line_nodes_[sid][1]) - node_coords(line_nodes_[sid][0]),2);
 }
@@ -512,7 +518,7 @@ double RefElement<2>::side_measure(unsigned int sid)
 template<>
 double RefElement<3>::side_measure(unsigned int sid)
 {
-	OLD_ASSERT(sid < n_sides, "Side number is out of range!");
+    ASSERT_LT_DBG(sid, n_sides).error("Side number is out of range!");
 
     return 0.5*norm(cross(node_coords(side_nodes_[sid][1]) - node_coords(side_nodes_[sid][0]),
             node_coords(side_nodes_[sid][2]) - node_coords(side_nodes_[sid][0])),2);

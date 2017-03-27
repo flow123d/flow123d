@@ -21,6 +21,8 @@
 #include "point.h"
 #include "triangle.h"
 
+namespace ngh {
+
 class TTetrahedron {
 private:
     static int numberInstance;
@@ -69,4 +71,7 @@ public:
         return TTetrahedron::numberInstance;
     }
 };
+
+} // namespace ngh
+
 #endif

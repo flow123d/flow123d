@@ -7,4 +7,4 @@ test_cases:
   proc: [ 1 ]
   check_rules:
       - ndiff:
-            files: ["*.txt"]
+            files: ["mass_balance.txt", "water_balance.txt"]       # higher abs tolerance for energy balance

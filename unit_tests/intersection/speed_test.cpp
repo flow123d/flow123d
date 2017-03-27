@@ -18,35 +18,53 @@
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
 
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/intersection.h"
+#include "input/reader_to_storage.hh"
+
+// #include "mesh/ngh/include/point.h"
+// #include "mesh/ngh/include/intersection.h"
 
 #include "intersection/inspect_elements.hh"
 #include "intersection/intersection_point_aux.hh"
-#include "intersection/intersection_aux.hh"
+// #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
+
+#include "compute_intersection_test.hh"
 
 #include <dirent.h>
 
 using namespace std;
-using namespace computeintersection;
 
 static const std::string profiler_file = "speed_test_profiler.log";
 static const unsigned int profiler_loop = 10;
+
+// Test input for mesh
+const string mesh_input = R"YAML(
+mesh_file: "NotUsed"
+intersection_search: BIHonly
+)YAML";
+// intersection_search: BIHsearch
+// intersection_search: BIHonly
+// intersection_search: BBsearch
+
+bool compare_il_idx(const ILpair &ilA,
+                    const ILpair &ilB)
+{
+    return ilA.first < ilB.first;
+}
 
 void compute_intersection(Mesh *mesh)
 {
     // compute intersection
     
-    InspectElements ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d23);
-//     ie.compute_intersections((computeintersection::IntersectionType)(computeintersection::IntersectionType::d23 | computeintersection::IntersectionType::d22));
+    MixedMeshIntersections ie(mesh);
+    ie.compute_intersections(IntersectionType::d23);
+//     ie.compute_intersections((IntersectionType)(IntersectionType::d23 | IntersectionType::d22));
 //     ie.print_mesh_to_file_13("output_intersection_speed_13");
 //     ie.print_mesh_to_file_23("output_intersection_speed_23");
     
-    xprintf(Msg,"N intersections 13(%d), 23(%d), 22(%d)\n",ie.intersection_storage13_.size(),
-                                                      ie.intersection_storage23_.size(),
-                                                      ie.intersection_storage22_.size());
+    MessageOut().fmt("N intersections 13({}), 23({}), 22({})\n",ie.intersection_storage13_.size(),
+                                                                ie.intersection_storage23_.size(),
+                                                                ie.intersection_storage22_.size());
     
     // write computed intersections
 //     for(unsigned int i = 0; i < ie.intersection_storage13_.size(); i++)
@@ -54,6 +72,17 @@ void compute_intersection(Mesh *mesh)
 //         cout << ie.intersection_storage13_[i];
 //     }
 //     cout << "----------------------------------------------------------------" << endl;
+    
+//     FOR_ELEMENTS(mesh, ele){
+//         if(ele->dim() == 2){
+//             int ele_idx = ele->index();
+//             auto vec = ie.intersection_map_[ele_idx];
+//             std::sort(vec.begin(), vec.end(), compare_il_idx);
+//             for(unsigned int i = 0; i < vec.size(); i++)
+//                 cout << "ele2d x ele3d:  " << ele_idx << " " << vec[i].first << "\n";
+//         }
+//     }
+    
 //     for(unsigned int i = 0; i < ie.intersection_storage23_.size(); i++)
 //     {
 //         cout << ie.intersection_storage23_[i];
@@ -65,37 +94,14 @@ void compute_intersection(Mesh *mesh)
 //     }
 }
 
-
-std::vector<string> read_filenames(string dir_name)
+string get_intersection_search_string(Mesh::IntersectionSearch is)
 {
-    std::vector<string> filenames;
-    
-    // read mesh file names
-    DIR *dir;
-    struct dirent *ent;
-    if ((dir = opendir (dir_name.c_str())) != NULL) {
-        // print all the files and directories within directory 
-        xprintf(Msg,"Testing mesh files: \n");
-        while ((ent = readdir (dir)) != NULL) {
-            string fname = ent->d_name;
-            // test extension ".msh"
-            if(fname.size() >= 4)
-            {
-                string ext = fname.substr(fname.size()-4);
-//                 xprintf(Msg,"%s\n",ext.c_str());
-                if(ext == ".msh"){
-                    filenames.push_back(ent->d_name);
-                    xprintf(Msg,"%s\n",ent->d_name);
-                }
-            }
-        }
-        closedir (dir);
-    } else {
-        ASSERT(0).error("Could not open directory with testing meshes.");
+    switch(is){
+        case 1: return "BIHsearch";
+        case 2: return "BIHonly";
+        case 3: return "BBsearch";
     }
-    
-    std::sort(filenames.begin(), filenames.end(), less<string>());
-    return filenames;
+    return "";
 }
 
 TEST(benchmark_meshes, all) {
@@ -103,35 +109,42 @@ TEST(benchmark_meshes, all) {
     
     // directory with testing meshes
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";
-    std::vector<string> filenames = read_filenames(dir_name);
+    std::vector<string> filenames;
+    read_files_from_dir(dir_name, "msh", filenames, false);
+    
     
     if(filenames.size() == 0)
     {
-        xprintf(Msg,"No benchmark meshes were found in directory: '%s'\n", dir_name.c_str());
+        WarningOut().fmt("No benchmark meshes were found in directory: '{}'\n", dir_name.c_str());
         EXPECT_EQ(1,1);
         return;
     }
     
-    DBGMSG("tolerances: %e\t%e\n", rounding_epsilon, geometry_epsilon);
+    MessageOut().fmt("tolerances: {}\t{}\n", rounding_epsilon, geometry_epsilon);
     Profiler::instance()->set_task_info("Speed test Inspect Elements Algorithm. "+filenames[0],2);
 
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s< filenames.size(); s++)
     {
-            xprintf(Msg,"Computing intersection on mesh: %s\n",filenames[s].c_str());
-            FilePath::set_io_dirs(".","","",".");
+            MessageOut().fmt("Computing intersection on mesh: {}\n",filenames[s].c_str());
+//             FilePath::set_io_dirs(".","","",".");
+            FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
             FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
             
-            Mesh mesh;
+            Input::ReaderToStorage input_reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_YAML );
+            auto rec = input_reader.get_root_interface<Input::Record>();
+            Mesh mesh( rec );
+            MessageOut() << "IntersectionSearch: " << get_intersection_search_string(mesh.get_intersection_search()) << "\n";
+//             Mesh mesh();
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
             reader.read_mesh(&mesh);
             mesh.setup_topology();
             
-            xprintf(Msg, "==============\n");
+            MessageOut() << "==============\n";
             for(unsigned int loop = 0; loop < profiler_loop; loop++)
                 compute_intersection(&mesh);
-            xprintf(Msg, "==============\n");
+            MessageOut() <<  "==============\n";
     }
     std::fstream fs;
     fs.open(profiler_file.c_str(), std::fstream::out /*| std::fstream::app*/);

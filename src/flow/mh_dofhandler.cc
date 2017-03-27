@@ -20,7 +20,7 @@
 #include "mesh/side_impl.hh"
 #include "system/sys_profiler.hh"
 
-#include "intersection/inspect_elements.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
 
 #include "fem/singularity.hh"
@@ -97,7 +97,6 @@ void MH_DofHandler::reinit(Mesh *mesh) {
 
 
 void MH_DofHandler::reinit(Mesh *mesh,
-                           shared_ptr< computeintersection::InspectElements > intersections,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma) {
     mesh_ = mesh;
@@ -115,7 +114,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
 //     // convert row_4_id arrays from separate numberings to global numbering of rows
 //     make_row_numberings();
     
-    create_enrichment(intersections,singularities_12d_, cross_section, sigma);
+    create_enrichment(singularities_12d_, cross_section, sigma);
     
     //HACK for a single processor
     unsigned int rows_starts = total_size();
@@ -431,8 +430,7 @@ void MH_DofHandler::update_standard_dofs()
 }
 
 
-void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectElements > intersections,
-                                      vector< SingularityPtr >& singularities,
+void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
                                       Field<3, FieldValue<3>::Scalar>& cross_section,
                                       Field<3, FieldValue<3>::Scalar>& sigma)
 {
@@ -440,8 +438,6 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     //TODO:
     //- count different types of intersections inside InspectElements to be able to allocate other objects
     //- differ 1d-2d intersections: one point intersection in plane versus in 3D
-    
-    ASSERT_PTR_DBG(intersections);
     
     singularities.clear();
     clear_node_aux();
@@ -454,7 +450,7 @@ void MH_DofHandler::create_enrichment(shared_ptr< computeintersection::InspectEl
     //TODO propose some allocation size for xfem data
     xfem_data.reserve(mesh_->n_elements()*0.3);
     
-    
+//     // TODO: use mesh_->mixed_mesh_intersections()    
 //     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
 //         auto ele_ac = mh_dh.accessor(i_loc);
 //         

@@ -26,7 +26,7 @@
 
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_assembly.hh"
-#include "flow/darcy_flow_assembler.hh"
+#include "darcy_flow_assembly_xfem.hh"
 #include "flow/darcy_flow_mh_output.hh"
 #include "flow/field_velocity.hh"
 
@@ -46,7 +46,8 @@
 #include "mesh/partitioning.hh"
 
 #include "coupling/balance.hh"
-
+#include "intersection/mixed_mesh_intersections.hh"
+#include "intersection/intersection_local.hh"
 
 namespace it = Input::Type;
 
@@ -113,13 +114,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
-	dh = new DOFHandlerMultiDim(*mesh_);
-	dh->distribute_dofs(fe1, fe2, fe3);
-	corner_pressure.resize(dh->n_global_dofs());
-	VecCreateSeqWithArray(PETSC_COMM_SELF, 1, dh->n_global_dofs(), &(corner_pressure[0]), &vec_corner_pressure);
+	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	dh_->distribute_dofs(fe1, fe2, fe3);
+	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh, &map1, &map2, &map3, &vec_corner_pressure);
+	corner_ptr->set_fe_data(dh_, &map1, &map2, &map3, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
@@ -175,12 +175,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{
-    if (dh) {
-        chkerr(VecDestroy(&vec_corner_pressure));
-        delete dh;
-    }
-};
+{};
 
 
 
@@ -270,37 +265,46 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     DBGCOUT("DarcyFlowMHOutput::make_element_vector\n");
     
     // create proper assembler
-    AssemblerBase* multidim_assembler;
-//     if(use_xfem)
+    AssemblyBase::MultidimAssembly multidim_assembler;
     if(darcy_flow->use_xfem && darcy_flow->mh_dh.enrich_velocity)
-        multidim_assembler = new AssemblerMHXFEM(darcy_flow->data_);
-    else 
-        multidim_assembler = new AssemblerMH(darcy_flow->data_);
+        multidim_assembler =  AssemblyBase::create< AssemblyMHXFEM >(darcy_flow->data_);
+    else
+        multidim_assembler =  AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
+        
+//     // create proper assembler
+//     AssemblerBase* multidim_assembler;
+// //     if(use_xfem)
+//     if(darcy_flow->use_xfem && darcy_flow->mh_dh.enrich_velocity)
+//         multidim_assembler = new AssemblerMHXFEM(darcy_flow->data_);
+//     else 
+//         multidim_assembler = new AssemblerMH(darcy_flow->data_);
     
 //     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
 
-        flux_in_center = multidim_assembler->make_element_vector(ele);
+//         flux_in_center = multidim_assembler->make_element_vector(ele);
+        unsigned int dim = ele->dim();
+        flux_in_center = multidim_assembler[dim-1]->make_element_vector(ele);
 
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
     }
     
-    delete multidim_assembler;
+//     delete multidim_assembler;
 }
 
 
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
+	unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
 	unsigned int indices[ndofs];
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
-		dh->get_dof_indices(ele, indices);
+		dh_->get_dof_indices(ele, indices);
 		FOR_ELEMENT_NODES(ele, i_node)
 		{
 			corner_pressure[indices[i_node]] = node_scalar[mesh_->node_vector.index(ele->node[i_node])];
@@ -658,8 +662,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     // mask 2d elements crossing 1d
     result.velocity_mask.resize(mesh_->n_elements(),0);
-    for(Intersection & isec : mesh_->intersections) {
-    	result.velocity_mask[ mesh_->element.index( isec.slave_iter() ) ]++;
+    for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
+        result.velocity_mask[ isec.bulk_ele_idx() ]++;
     }
 
     result.pressure_diff.resize( mesh_->n_elements() );

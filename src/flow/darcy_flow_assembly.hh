@@ -8,7 +8,6 @@
 #ifndef SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
-#include <memory>
 #include "mesh/mesh.h"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
@@ -17,15 +16,15 @@
 #include "quadrature/quadrature_lib.hh"
 #include "flow/mh_dofhandler.hh"
 
-
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
 #include "la/linsys_BDDC.hh"
 #include "la/schur.hh"
 
-#include "la/local_to_global_map.hh"
 #include "la/local_system.hh"
 
+#include "coupling/balance.hh"
+#include "flow/mortar_assembly.hh"
 
 
 class AssemblyBase
@@ -48,7 +47,7 @@ public:
 
     }
 
-    virtual LocalSystem & get_local_system() = 0;
+//     virtual LocalSystem & get_local_system() = 0;
     
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
@@ -74,7 +73,21 @@ protected:
 
 
 
+template <int dim>
+class NeighSideValues {
+private:
+    // assembly face integrals (BC)
+    MappingP1<dim+1,3> side_map_;
+    QGauss<dim> side_quad_;
+    FE_P_disc<0,dim+1,3> fe_p_disc_;
+public:
+    NeighSideValues<dim>()
+    :  side_quad_(1),
+       fe_side_values_(side_map_, side_quad_, fe_p_disc_, update_normal_vectors)
+    {}
+    FESideValues<dim+1,3> fe_side_values_;
 
+};
 
 
 
@@ -87,8 +100,6 @@ public:
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
-        side_quad_(1),
-        fe_side_values_(map_, side_quad_, fe_p_disc_, update_normal_vectors),
 
         velocity_interpolation_quad_(0), // veloctiy values in barycenter
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
@@ -105,17 +116,26 @@ public:
             loc_side_dofs[i] = i;
             loc_edge_dofs[i] = nsides + i + 1;
         }
+        //DebugOut() << print_var(this) << print_var(side_quad_.size());
+
+        if (ad_->mortar_method_ == DarcyMH::MortarP0) {
+            mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
+        } else if (ad_->mortar_method_ == DarcyMH::MortarP1) {
+            mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
+        }
+
     }
 
 
     ~AssemblyMH<dim>() override
     {}
 
-    LocalSystem& get_local_system() override
-        { return loc_system_;}
+//     LocalSystem& get_local_system() override
+//         { return loc_system_;}
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
+        ASSERT_EQ_DBG(ele_ac.dim(), dim);
         loc_system_.reset();
     
         set_dofs_and_bc(ele_ac);
@@ -124,17 +144,29 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        loc_system_.fix_diagonal();
+        
+
+        ad_->lin_sys->set_local_system(loc_system_);
+
+        assembly_dim_connections(ele_ac);
+
+        if (ad_->balance != nullptr)
+            add_fluxes_in_balance_matrix(ele_ac);
+
+        if (mortar_assembly)
+            mortar_assembly->assembly(ele_ac);
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
     {
+        ASSERT_LT_DBG(ele->dim(), 3);
+        //DebugOut() << "alv " << print_var(this);
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
         ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
-        fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
-        nv = fe_side_values_.normal_vector(0);
+        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
+        nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
                         2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
@@ -168,32 +200,9 @@ public:
 protected:
     static const unsigned int size()
     {
-        // sides, 1 for element, edges
+        // dofs: velocity, pressure, edge pressure
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
-
-//     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
-//         
-//         ASSERT_DBG(ele_ac.dim() == dim);
-//         
-//         //set global dof for element (pressure)
-//         loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
-//         
-//         //shortcuts
-//         const unsigned int nsides = ele_ac.n_sides();
-// //         LinSys *ls = ad_->lin_sys;
-//         
-//         Boundary *bcd;
-//         unsigned int side_row, edge_row;
-//         
-//         for (unsigned int i = 0; i < nsides; i++) {
-// 
-//             side_row = loc_side_dofs[i];    //local
-//             edge_row = loc_edge_dofs[i];    //local
-//             loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = ele_ac.side_row(i);    //global
-//             loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
-//         }
-//     }
     
     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
         
@@ -229,7 +238,7 @@ protected:
                     // homogeneous neumann
                 } else if ( type == DarcyMH::EqData::dirichlet ) {
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
-                    loc_system_.set_solution(edge_row,bc_pressure);
+                    loc_system_.set_solution(loc_edge_dofs[i],bc_pressure,-1);
                     dirichlet_edge[i] = 1;
                     
                 } else if ( type == DarcyMH::EqData::total_flux) {
@@ -237,13 +246,9 @@ protected:
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
                     double bc_pressure = ad_->bc_pressure.value(b_ele.centre(), b_ele);
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
-            
-//                     DBGCOUT(<< "[" << loc_system_.row_dofs[edge_row] << ", " << loc_system_.row_dofs[edge_row]
-//                             << "] mat: " << -bcd->element()->measure() * bc_sigma * cross_section
-//                             << " rhs: " << (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section
-//                             << "\n");
+                    
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
-                    loc_system_.set_value(edge_row, edge_row,
+                    loc_system_.add_value(edge_row, edge_row,
                                             -bcd->element()->measure() * bc_sigma * cross_section,
                                             (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
                 }
@@ -295,11 +300,11 @@ protected:
                         // Force Dirichlet type during the first iteration of the unsteady case.
                         if (switch_dirichlet || ad_->force_bc_switch ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                            loc_system_.set_solution(edge_row,bc_pressure);
+                            loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-                            loc_system_.set_value(edge_row, side_row, 1.0, side_flux);
+                            loc_system_.add_value(edge_row, side_flux);
                         }
 
                 } else if (type==DarcyMH::EqData::river) {
@@ -317,7 +322,7 @@ protected:
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                        loc_system_.set_value(edge_row, edge_row,
+                        loc_system_.add_value(edge_row, edge_row,
                                                 -bcd->element()->measure() * bc_sigma * cross_section,
                                                 bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                     } else {
@@ -325,18 +330,22 @@ protected:
                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         
-                        loc_system_.set_value(edge_row, side_row,
-                                                1.0,
-                                                bc_total_flux * bcd->element()->measure() * cross_section);
+                        loc_system_.add_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
                     }
                 } 
                 else {
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
             }
-            loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
-            loc_system_.set_mat_values({edge_row}, {side_row}, {1.0});
+            loc_system_.add_value(side_row, edge_row, 1.0);
+            loc_system_.add_value(edge_row, side_row, 1.0);
         }
+        
+//         DBGCOUT(<< "ele " << ele_ac.ele_global_idx() << ":  ");
+//         for (unsigned int i = 0; i < nsides; i++) cout << loc_system_.row_dofs[loc_side_dofs[i]] << "  ";
+//         cout << loc_system_.row_dofs[loc_ele_dof] << "  ";
+//         for (unsigned int i = 0; i < nsides; i++) cout << loc_system_.row_dofs[loc_edge_dofs[i]] << "  ";
+//         cout << "\n";
     }
         
      void assemble_sides(LocalElementAccessorBase<3> ele_ac) override
@@ -362,7 +371,7 @@ protected:
                 double rhs_val =
                         arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
                         * fe_values_.JxW(k);
-                loc_system_.add_value(i,i , 0.0, rhs_val);
+                loc_system_.add_value(i, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
@@ -371,7 +380,7 @@ protected:
                                         * fe_values_.shape_vector(j,k))
                         * scale * fe_values_.JxW(k);
                     
-                    loc_system_.add_value(i,j , mat_val, 0.0);
+                    loc_system_.add_value(i, j, mat_val);
                 }
             }
         
@@ -402,11 +411,9 @@ protected:
     void assemble_element(LocalElementAccessorBase<3> ele_ac){
         // set block B, B': element-side, side-element
         
-//         ls->mat_set_value(ele_row, ele_row, 0.0);         // maybe this should be in virtual block for schur preallocation
-        
         for(unsigned int side = 0; side < loc_side_dofs.size(); side++){
-            loc_system_.set_mat_values({loc_ele_dof}, {loc_side_dofs[side]}, {-1.0});
-            loc_system_.set_mat_values({loc_side_dofs[side]}, {loc_ele_dof}, {-1.0});
+            loc_system_.add_value(loc_ele_dof, loc_side_dofs[side], -1.0);
+            loc_system_.add_value(loc_side_dofs[side], loc_ele_dof, -1.0);
         }
         
         if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
@@ -416,16 +423,67 @@ protected:
         }
     }
     
+
+    void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
+        //D, E',E block: compatible connections: element-edge
+        int ele_row = ele_ac.ele_row();
+        int rows[2];
+        double local_vb[4]; // 2x2 matrix
+
+        Neighbour *ngh;
+
+        //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
+        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh= ele_ac.full_iter()->neigh_vb[i];
+            rows[0]=ele_row;
+            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+
+
+            assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
+
+            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
+
+            // update matrix for weights in BDDCML
+            if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
+               int ind = rows[1];
+               // there is -value on diagonal in block C!
+               double new_val = local_vb[0];
+               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
+            }
+        }
+    }
+
+    void add_fluxes_in_balance_matrix(LocalElementAccessorBase<3> ele_ac){
+
+        for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
+            Boundary* bcd = ele_ac.side(i)->cond();
+
+            if (bcd) {
+                /*
+                    DebugOut().fmt("add_flux: {} {} {} {}\n",
+                            ad_->mh_dh->el_ds->myp(),
+                            ele_ac.ele_global_idx(),
+                            ad_->local_boundary_index,
+                            ele_ac.side_row(i));
+                 */
+                ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
+                                                     {ele_ac.side_row(i)}, {1});
+                ++(ad_->local_boundary_index);
+            }
+        }
+    }
+
+
+
     // assembly volume integrals
     FE_RT0<dim,3> fe_rt_;
     MappingP1<dim,3> map_;
     QGauss<dim> quad_;
     FEValues<dim,3> fe_values_;
 
-    // assembly face integrals (BC)
-    QGauss<dim-1> side_quad_;
-    FE_P_disc<0,dim,3> fe_p_disc_;
-    FESideValues<dim,3> fe_side_values_;
+    NeighSideValues<dim<3?dim:2> ngh_values_;
 
     // Interpolation of velocity into barycenters
     QGauss<dim> velocity_interpolation_quad_;
@@ -439,6 +497,8 @@ protected:
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;
+
+    std::shared_ptr<MortarAssemblyBase> mortar_assembly;
 };
 
 

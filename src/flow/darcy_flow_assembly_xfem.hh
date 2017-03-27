@@ -62,8 +62,8 @@ public:
     ~AssemblyMHXFEM<dim>() override
     {}
 
-    LocalSystem& get_local_system() override
-        { return loc_system_;}
+//     LocalSystem& get_local_system() override
+//         { return loc_system_;}
     
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
@@ -93,7 +93,8 @@ public:
         if(ele_ac.is_enriched())
             loc_system_.get_matrix().print(cout, "matrix");
         
-        loc_system_.fix_diagonal();
+        ad_->lin_sys->set_local_system(loc_system_);
+        //loc_system_.fix_diagonal();
     }
 
     void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
@@ -255,7 +256,7 @@ protected:
 //                             << " rhs: " << (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section
 //                             << "\n");
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
-                    loc_system_.set_value(edge_row, edge_row,
+                    loc_system_.add_value(edge_row, edge_row,
                                             -bcd->element()->measure() * bc_sigma * cross_section,
                                             (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
                 }
@@ -311,7 +312,7 @@ protected:
                             dirichlet_edge[i] = 1;
                         } else {
                             //DebugOut()("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], side_flux, bc_flux);
-                            loc_system_.set_value(edge_row, side_row, 1.0, side_flux);
+                            loc_system_.add_value(edge_row, side_row, 1.0, side_flux);
                         }
 
                 } else if (type==DarcyMH::EqData::river) {
@@ -329,7 +330,7 @@ protected:
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
-                        loc_system_.set_value(edge_row, edge_row,
+                        loc_system_.add_value(edge_row, edge_row,
                                                 -bcd->element()->measure() * bc_sigma * cross_section,
                                                 bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                     } else {
@@ -337,7 +338,7 @@ protected:
                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         
-                        loc_system_.set_value(edge_row, side_row,
+                        loc_system_.add_value(edge_row, side_row,
                                                 1.0,
                                                 bc_total_flux * bcd->element()->measure() * cross_section);
                     }
@@ -346,8 +347,8 @@ protected:
                     xprintf(UsrErr, "BC type not supported.\n");
                 }
             }
-            loc_system_.set_mat_values({side_row}, {edge_row}, {1.0});
-            loc_system_.set_mat_values({edge_row}, {side_row}, {1.0});
+            loc_system_.add_value(side_row, edge_row, 1.0);
+            loc_system_.add_value(edge_row, side_row, 1.0);
             
             
             if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
@@ -432,8 +433,8 @@ protected:
         else 
         {
             for(unsigned int side = 0; side < ele_ac.n_sides(); side++){
-                loc_system_.set_mat_values({loc_ele_dof}, {loc_vel_dofs[side]}, {-1.0});
-                loc_system_.set_mat_values({loc_vel_dofs[side]}, {loc_ele_dof}, {-1.0});
+                loc_system_.add_value(loc_ele_dof, loc_vel_dofs[side], -1.0);
+                loc_system_.add_value(loc_vel_dofs[side], loc_ele_dof, -1.0);
             }
         }
         
@@ -685,7 +686,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
     
     //as long as pressure is not enriched and is P0
     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
-    double temp = 1.0;
+//     double temp = 1.0;
 //     int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
     
     int nvals = loc_vel_dofs.size();

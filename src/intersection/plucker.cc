@@ -1,7 +1,7 @@
 #include "plucker.hh"
 
 using namespace std;
-namespace computeintersection{
+
 
 
 double Plucker::operator*(const Plucker &b){
@@ -10,7 +10,7 @@ double Plucker::operator*(const Plucker &b){
 
 void Plucker::compute(const arma::vec3 &a,const arma::vec3 &b){
 	
-	coordinates_[0] = b[0] - a[0];
+    coordinates_[0] = b[0] - a[0];
 	coordinates_[1] = b[1] - a[1];
 	coordinates_[2] = b[2] - a[2];
 	coordinates_[3] = coordinates_[1]*a[2] - coordinates_[2]*a[1];
@@ -18,6 +18,10 @@ void Plucker::compute(const arma::vec3 &a,const arma::vec3 &b){
 	coordinates_[5] = coordinates_[0]*a[1] - coordinates_[1]*a[0];
 	computed_ = true;
 
+	scale_=0;
+	scale_ = std::max(  scale_, std::fabs(coordinates_[0]));
+	scale_ = std::max(  scale_, std::fabs(coordinates_[1]));
+	scale_ = std::max(  scale_, std::fabs(coordinates_[2]));
 };
 
 ostream& operator<<(ostream& os, const Plucker& p)
@@ -31,4 +35,4 @@ ostream& operator<<(ostream& os, const Plucker& p)
     return os;
 }
 
-} // END namespace_close
+

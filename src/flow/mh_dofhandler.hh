@@ -46,9 +46,7 @@ class LocalElementAccessorBase;
 
 class XFEMElementSingularData;
 template<unsigned int spacedim> class Singularity0D;
-namespace computeintersection{
-    class InspectElements;
-}
+
 
 /// temporary solution to provide access to results
 /// from DarcyFlowMH independent of mesh
@@ -122,7 +120,6 @@ public:
     typedef typename std::shared_ptr<Singularity0D<3>> SingularityPtr;
     
     void reinit(Mesh *mesh,
-                shared_ptr< computeintersection::InspectElements > intersections,
                 Field<3, FieldValue<3>::Scalar>& cross_section,
                 Field<3, FieldValue<3>::Scalar>& sigma);
     
@@ -147,8 +144,7 @@ public:
 protected:
     static const int empty_node_idx;
     
-    void create_enrichment(std::shared_ptr<computeintersection::InspectElements> intersections,
-                           std::vector<SingularityPtr> &singularities,
+    void create_enrichment(std::vector<SingularityPtr> &singularities,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
     
@@ -194,9 +190,16 @@ typedef unsigned int uint;
 template <int spacedim>
 class LocalElementAccessorBase {
 public:
-    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx)
+
+    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
     : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->element(ele_global_idx()))
     {}
+
+    void reinit( uint loc_ele_idx)
+    {
+        local_ele_idx_=loc_ele_idx;
+        ele=dh->mesh_->element(ele_global_idx());
+    }
 
     uint dim() {
         return ele->dim();

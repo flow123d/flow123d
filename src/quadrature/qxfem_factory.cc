@@ -359,8 +359,10 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
     // create new points on the simplex surface
     for(unsigned int e=0; e < n_new_nodes; e++)
     {
-        Point p = nodes[RefElement<dim>::template interact<0,1>(e)[0]]
-                  +nodes[RefElement<dim>::template interact<0,1>(e)[1]];
+//         Point p = nodes[RefElement<dim>::template interact<0,1>(e)[0]]
+//                   +nodes[RefElement<dim>::template interact<0,1>(e)[1]];
+        Point p = nodes[RefElement<dim>::interact(Interaction<0,1>(e))[0]]
+                  +nodes[RefElement<dim>::interact(Interaction<0,1>(e))[1]];
         nodes.push_back( p / 2.0);
         //nodes.back().print();
     }

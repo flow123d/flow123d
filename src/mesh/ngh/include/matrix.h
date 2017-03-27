@@ -20,6 +20,9 @@
 
 #include <iostream>
 
+
+namespace ngh {
+
 typedef enum {
     no_solution,
     one_solution,
@@ -71,5 +74,7 @@ public:
 };
 
 TNSolutions Gauss(const TMatrix&, TMVector*, const TMVector&);
+
+} //namespace ngh
 
 #endif

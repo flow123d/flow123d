@@ -242,10 +242,12 @@ template<unsigned int dim,unsigned int spacedim>
 void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
 		unsigned int sid)
 {
+    ASSERT_LT_DBG( sid, cell->n_sides());
+    ASSERT_EQ_DBG(dim, cell->dim());
     this->data.present_cell = &cell;
 
     unsigned int pid = cell->permutation_idx_[sid];
-
+    ASSERT_LT_DBG(pid, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,
                                  sid,

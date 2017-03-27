@@ -10,6 +10,7 @@
 
 #include "flow/darcy_flow_assembly.hh"
 #include "soil_models.hh"
+#include "coupling/balance.hh"
 
 #include "badiff.h"
 
@@ -47,7 +48,6 @@ class AssemblyLMH : public AssemblyMH<dim> {
 public:
 
     typedef std::shared_ptr<RichardsLMH::EqData> AssemblyDataPtr;
-    using AssemblyMH<dim>::loc_system_;
 
     AssemblyLMH(AssemblyDataPtr data)
     : AssemblyMH<dim>(data),
@@ -165,7 +165,7 @@ public:
 //                             << "] mat: " << -mass_diagonal/this->ad_->time_step_
 //                             << " rhs: " << -source_diagonal - mass_rhs
 //                             << "\n");
-                this->loc_system_.set_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
+                this->loc_system_.add_value(this->loc_edge_dofs[i], this->loc_edge_dofs[i],
                                             -mass_diagonal/this->ad_->time_step_,
                                             -source_diagonal - mass_rhs);
             }

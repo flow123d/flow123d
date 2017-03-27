@@ -196,7 +196,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
                 
                 // compute barycenter of the side ( = real generalized_support_point)
                 for (j = 0; j < RefElement<dim>::n_nodes_per_side; j++)
-                    real_point = real_point + ele->node[RefElement<dim>::template interact<0,1>(i)[j]]->point();
+                    real_point = real_point + ele->node[RefElement<dim>::interact(Interaction<0,1>(i))[j]]->point();
                 real_point = real_point / RefElement<dim>::n_nodes_per_side;
                 
 //                 real_point.print(cout,"real");

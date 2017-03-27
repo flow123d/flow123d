@@ -22,7 +22,6 @@
 
 #include "system/system.hh"
 
-namespace computeintersection{
 
 //forward declare
 template<unsigned int, unsigned int> class IntersectionPointAux;
@@ -43,8 +42,6 @@ class IntersectionAux{
     unsigned int component_element_idx_;
     /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
-    /// Index of the intersecting component.
-    unsigned int component_idx_;
     /// Flag for pathologic case.
     bool pathologic_;
     
@@ -54,8 +51,7 @@ public:
     IntersectionAux();
     /// Constructor taking in element indices.
     IntersectionAux(unsigned int component_element_idx,
-                    unsigned int bulk_element_idx,
-                    unsigned int component_idx = 0);
+                    unsigned int bulk_element_idx);
     /// Destructor.
     virtual ~IntersectionAux();
 
@@ -71,10 +67,10 @@ public:
     unsigned int size() const;              ///< Returns number of intersection points.
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
-    unsigned int component_idx() const;     ///< Returns index of component.
     unsigned int is_pathologic() const;      ///< Returns index of bulk element.
     
     /// Computes the relative measure of intersection object.
+    /// TODO: unifiy implementation with IntersectionLocalb
     double compute_measure();
     
     /// Friend output operator.
@@ -100,6 +96,7 @@ inline const IntersectionPointAux< dimA, dimB >& IntersectionAux<dimA,dimB>::ope
 {   ASSERT_DBG(index < i_points_.size());
     return i_points_[index]; }
 
+    
 template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::size() const
 {   return i_points_.size(); }
@@ -113,13 +110,8 @@ inline unsigned int IntersectionAux<dimA,dimB>::bulk_ele_idx() const
 {   return bulk_element_idx_; }
 
 template<unsigned int dimA, unsigned int dimB>
-inline unsigned int IntersectionAux<dimA,dimB>::component_idx() const
-{   return component_idx_; }
-
-template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::is_pathologic() const
 {   return pathologic_; }
 
 
-} // END NAMESPACE
 #endif /* INTERSECTIONAUX_H_ */

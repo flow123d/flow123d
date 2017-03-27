@@ -22,6 +22,8 @@
 
 #include "myvector.h"
 
+namespace ngh {
+
 class TVector;
 
 class TPoint {
@@ -65,5 +67,7 @@ public:
         return TPoint::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif

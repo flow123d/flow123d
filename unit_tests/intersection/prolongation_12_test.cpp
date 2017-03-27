@@ -1,3 +1,4 @@
+
 /*
  * intersection_area_test.cpp
  *
@@ -13,8 +14,9 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include "mesh_constructor.hh"
 
-#include "intersection/inspect_elements.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
@@ -22,7 +24,6 @@
 #include "compute_intersection_test.hh"
 
 using namespace std;
-using namespace computeintersection;
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
 void fill_12d_solution(std::vector<std::vector<arma::vec3>> &ils)
@@ -44,8 +45,8 @@ void fill_12d_solution(std::vector<std::vector<arma::vec3>> &ils)
 }
 
 /// auxiliary function for sorting intersection storage 13d
-bool compare_is12(const computeintersection::IntersectionLocal<1,2>& a,
-                  const computeintersection::IntersectionLocal<1,2>& b)
+bool compare_is12(const IntersectionLocal<1,2>& a,
+                  const IntersectionLocal<1,2>& b)
 {
     if (a.component_ele_idx() == b.component_ele_idx())
         return a.bulk_ele_idx() <= b.bulk_ele_idx();
@@ -56,8 +57,8 @@ bool compare_is12(const computeintersection::IntersectionLocal<1,2>& a,
 void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 {
     // compute intersection
-    InspectElements ie(mesh);
-    ie.compute_intersections(computeintersection::IntersectionType::d12_2);
+    MixedMeshIntersections ie(mesh);
+    ie.compute_intersections(IntersectionType::d12_2);
     //ie.print_mesh_to_file_13("output_intersection_13");
     
     MessageOut().fmt("N intersections {}\n",ie.intersection_storage12_.size());
@@ -73,8 +74,8 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 //         
 //         if( (elm->dim() == 1) && (ie.intersection_map_[elm->index()].size() > 0) )
 //         {
-//             computeintersection::IntersectionLocal<1,2>* il12 = 
-//                 static_cast<computeintersection::IntersectionLocal<1,2>*> (ie.intersection_map_[elm->index()][0].second);
+//             IntersectionLocal<1,2>* il12 = 
+//                 static_cast<IntersectionLocal<1,2>*> (ie.intersection_map_[elm->index()][0].second);
 //             if(il12 != nullptr)
 //             {
 // //                 DBGMSG("comp idx %d, bulk idx %d, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
@@ -85,7 +86,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 //     }
     
     //test solution
-    std::vector<computeintersection::IntersectionLocal<1,2>> ilc = ie.intersection_storage12_;
+    std::vector<IntersectionLocal<1,2>> ilc = ie.intersection_storage12_;
     
     // sort the storage, so it is the same for every algorithm (BIH, BB ...)
     // and we avoid creating the intersection map for exact IPs
@@ -111,7 +112,7 @@ TEST(intersection_prolongation_12d, all) {
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/prolong_meshes_12d/";
     std::vector<string> filenames;
     
-    read_files_form_dir(dir_name, "msh", filenames);
+    read_files_from_dir(dir_name, "msh", filenames);
         
     std::vector<std::vector<arma::vec3>> solution;
     fill_12d_solution(solution);
@@ -122,13 +123,13 @@ TEST(intersection_prolongation_12d, all) {
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
         FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
         
-        Mesh mesh;
+        Mesh *mesh = mesh_constructor();
         // read mesh with gmshreader
         GmshMeshReader reader(mesh_file);
-        reader.read_mesh(&mesh);
+        reader.read_mesh(mesh);
         
-        mesh.setup_topology();
+        mesh->setup_topology();
         
-        compute_intersection_12d(&mesh, solution[s]);
+        compute_intersection_12d(mesh, solution[s]);
     }
 }

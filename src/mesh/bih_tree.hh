@@ -97,7 +97,7 @@ protected:
     static const double size_reduce_factor;
 
     /// create bounding boxes of element
-    void element_boxes();
+    //void element_boxes();
 
     /// split tree node given by node_idx, distribute elements to child nodes
     void split_node(const BoundingBox &node_box, unsigned int node_idx);
@@ -116,12 +116,13 @@ protected:
 
     /// mesh
     Mesh* mesh_;
-	/// vector of mesh elements bounding boxes
-    std::vector<BoundingBox> elements_;
+	/// vector of mesh elements bounding boxes (from mesh)
+    std::vector<BoundingBox> &elements_;
+    /// Main bounding box. (from mesh)
+    BoundingBox &main_box_;
+
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
-    /// Main bounding box.
-    BoundingBox main_box_;
     /// Maximal number of elements stored in a leaf node of BIH tree.
     unsigned int leaf_size_limit;
     /// Maximal count of BIH tree levels
@@ -134,6 +135,7 @@ protected:
 
     // random generator
     std::mt19937	r_gen;
+
 
 };
 

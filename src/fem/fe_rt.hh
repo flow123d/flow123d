@@ -154,7 +154,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
     {
     	sp.fill(0);
     	for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; ++i)
-    		sp += RefElement<dim>::node_coords(RefElement<dim>::template interact<0,dim-1>(sid)[i]);
+    		sp += RefElement<dim>::node_coords(RefElement<dim>::interact(Interaction<0,dim-1>(sid))[i]);
     	sp /= RefElement<dim>::n_nodes_per_side;
     	generalized_support_points.push_back(sp);
     }

@@ -2,9 +2,10 @@
 #include <iostream>
 #include <armadillo>
 #include "system/system.hh"
+#include "mesh/ref_element.hh"
 
 using namespace std;
-namespace computeintersection {
+
 
 template<unsigned int N> void Simplex<N>::set_simplices(arma::vec3 **field_of_pointers_to_coordinates)
 {
@@ -23,20 +24,16 @@ template<unsigned int N> void Simplex<N>::set_simplices(arma::vec3 **field_of_po
     }
 }
 
-
+const static std::vector<unsigned int> face_edge = {0,0,1,2,1,2};
 template<> Simplex<1> &Simplex<3>::abscissa(unsigned int idx) {
     ASSERT_DBG(idx < 6);
 	/* we need the first sub-simplex for getting first three abscissas
 	*  the second sub-simplex for other two abscissas
 	*  the third sub-simplex for the last abscissa
 	*/
-	if (idx < 3) {
-		return simplices_[0][idx];
-	} else if (idx < 5) {
-		return simplices_[1][idx - 2];
-	} else {
-		return simplices_[2][2];
-	}
+
+    unsigned int face = RefElement<3>::interact(Interaction<2,1>(idx))[0];
+    return simplices_[face][face_edge[idx]];
 }
 
 
@@ -90,4 +87,4 @@ template ostream& operator<< <1>(ostream &os, const Simplex<1>& s);
 template ostream& operator<< <2>(ostream &os, const Simplex<2>& s); 
 template ostream& operator<< <3>(ostream &os, const Simplex<3>& s); 
 
-} // END namespace_close
+

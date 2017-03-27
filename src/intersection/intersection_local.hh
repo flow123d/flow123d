@@ -24,7 +24,6 @@
 #include <mesh/mesh_types.hh>
 #include "system/system.hh"
 
-namespace computeintersection{
 
     
 //forwward declare
@@ -35,6 +34,7 @@ template<unsigned int, unsigned int> class IntersectionPoint;
 template<unsigned int, unsigned int> class IntersectionLocal;
 template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionLocal<dimA,dimB>& il);
 template<unsigned int dimA, unsigned int dimB> std::ostream& operator<<(std::ostream& os, const IntersectionPoint<dimA,dimB>& ip);
+
 
 
 /** @brief Common base for intersection object.
@@ -53,21 +53,23 @@ protected:
     unsigned int component_element_idx_;
     /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
-    /// Index of the intersecting component.
-    unsigned int component_idx_;
 
 public:
-    IntersectionLocalBase(){}
+    IntersectionLocalBase();
     /// Constructor taking in element indices.
     IntersectionLocalBase(unsigned int component_element_idx,
-                          unsigned int bulk_element_idx,
-                          unsigned int component_idx);
-    ~IntersectionLocalBase(){}
+                          unsigned int bulk_element_idx);
+    ~IntersectionLocalBase();
     
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
-    unsigned int component_idx() const;     ///< Returns index of component.
+
+    virtual double compute_measure() const =0;
 };
+
+/// First = element index, Second = pointer to intersection object.
+typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
+
 
 
 inline unsigned int IntersectionLocalBase::component_ele_idx() const
@@ -75,9 +77,6 @@ inline unsigned int IntersectionLocalBase::component_ele_idx() const
 
 inline unsigned int IntersectionLocalBase::bulk_ele_idx() const
 {   return bulk_element_idx_; }
-
-inline unsigned int IntersectionLocalBase::component_idx() const
-{   return component_idx_; }
 
 
 
@@ -119,8 +118,9 @@ public:
     //@}
     
     /// Computes the relative measure of intersection object.
-    double compute_measure();
+    double compute_measure() const override;
     
+
     /// Friend output operator.
     friend std::ostream& operator<< <>(std::ostream& os, const IntersectionLocal<dimA,dimB>& intersection);
 };
@@ -150,7 +150,8 @@ inline unsigned int IntersectionLocal<dimA,dimB>::size() const
 /** @brief Class represents an intersection point of simplex<N> and simplex<M>.
  * It contains barycentric coordinates of the point on both simplices.
  */
-template<unsigned int dimA, unsigned int dimB> class IntersectionPoint {
+template<unsigned int dimA, unsigned int dimB>
+class IntersectionPoint {
     
     arma::vec::fixed<dimA> comp_coords_; ///< Local coordinates of an IP on simplex<dimA>.
     arma::vec::fixed<dimB> bulk_coords_; ///< Local coordinates of an IP on simplex<dimB>.
@@ -178,7 +179,11 @@ public:
     const arma::vec::fixed<dimB> &bulk_coords() const;
     //@}
     
-    /// Computes the real coordinates.
+    /**
+     * Computes the real coordinates.
+     * comp_ele is component element
+     */
+
     arma::vec3 coords(ElementFullIter comp_ele) const;
     
     /// Friend output operator.
@@ -196,5 +201,6 @@ template<unsigned int dimA, unsigned int dimB>
 const arma::vec::fixed< dimB  >& IntersectionPoint<dimA,dimB>::bulk_coords() const
 {   return bulk_coords_; }
 
-} // END NAMESPACE
+
+
 #endif /* INTERSECTION_LOCAL_H_ */

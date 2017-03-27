@@ -5,13 +5,16 @@
  *      Author: viktor
  */
 
+// #include "mesh/elements.h"
+#include "mesh/mesh.h"
 #include "intersection_point_aux.hh"
 #include "mesh/ref_element.hh"
-#include "mesh/elements.h"
+// #include "mesh/elements.h"   //TODO what is the best way of include to use ElementFullIter ?
+#include "mesh/mesh.h"
 #include "system/system.hh"
 
 using namespace std;
-namespace computeintersection{
+
 
 template<unsigned int N, unsigned int M>
 void IntersectionPointAux<N,M>::clear()
@@ -19,7 +22,7 @@ void IntersectionPointAux<N,M>::clear()
     local_bcoords_B_.zeros();
     idx_A_ = 0;
     idx_B_ = 0;
-    orientation_ = 1;
+    orientation_ = IntersectionResult::none;
     dim_A_ = N;
     dim_B_ = M;
 }
@@ -52,7 +55,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
+IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
     ASSERT_DBG(M>1 && M<4);
     
     local_bcoords_A_ = IP.local_bcoords_A();
@@ -69,16 +72,25 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-1> &IP,
     local_bcoords_B_.rows(1,M) = local_bcoords_B_.rows(0,M-1);
     local_bcoords_B_[0] = bb;
     
-    idx_A_ = IP.idx_A();
-    idx_B_ = idx_B;
-    orientation_ = IP.orientation();
     dim_A_ = IP.dim_A();
+    idx_A_ = IP.idx_A();
+    orientation_ = IP.orientation();
+
+    /**
+     * TODO: set correct topology on B. Currently this is done ad hoc after call of this constructor.
+     * Problem, dim_B_ can not be used as template parameter. Can we have some variant of interact without
+     * template?
+     */
+    //dim_B_ = IP.dim_B();
+    //idx_B_ =RefElement<M>::interact(Interaction<dim_B_, M-1>(IP.idx_B()));
+
     dim_B_ = M-1;
+    idx_B_ = idx_B;
 };
 
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
+IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2> &IP, unsigned int idx_B){
     ASSERT_DBG(M == 3);
 
     local_bcoords_A_ = IP.local_bcoords_A();
@@ -102,7 +114,7 @@ IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<N,M-2> &IP,
 };
 
 template<unsigned int N, unsigned int M>
-IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects()
+IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
 {
     IntersectionPointAux<M,N> IP;
     IP.set_coordinates(local_bcoords_B_,local_bcoords_A_);
@@ -125,12 +137,15 @@ arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementFullIter ele) co
     return c;
 }
  
-
+/*
 template<> bool IntersectionPointAux<2,3>::operator<(const IntersectionPointAux<2,3> &ip) const{
 	return local_bcoords_A_[1] < ip.local_bcoords_A()[1] ||     // compare by x coordinate
            (local_bcoords_A_[1] == ip.local_bcoords_A()[1] &&   // in case of tie
            local_bcoords_A_[2] < ip.local_bcoords_A()[2]);      // compare by y coordinate
 };
+*/
+
+
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPointAux< N,M >& s)
 {
@@ -138,7 +153,7 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     s.local_bcoords_A_.print(os);
     os << "Local coords on element B(id=" << s.idx_B_ << ", dim=" << s.dim_B_ << ")" << endl;
     s.local_bcoords_B_.print(os);
-    os << "Orientation: " << s.orientation_ << " Patological: " << s.is_pathologic() << endl;
+    os << "Orientation: " << int(s.orientation_) << " Patological: " << s.is_pathologic() << endl;
     return os;
 }
 
@@ -158,7 +173,7 @@ template ostream& operator<< <3,1>(ostream &os, const IntersectionPointAux<3,1>&
 template ostream& operator<< <2,3>(ostream &os, const IntersectionPointAux<2,3>& s);
 template ostream& operator<< <3,2>(ostream &os, const IntersectionPointAux<3,2>& s);
 
-} // END namespace
+
 
 
 

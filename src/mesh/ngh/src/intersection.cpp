@@ -29,6 +29,8 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
 void GetIntersection(const TBisector & B1, const TBisector &B2,
         TPosition &pos, double &t1, double &t2) {
     TNSolutions ns;
@@ -151,7 +153,7 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2, IntersectionLocal
     GetIntersection(A1, A2, pos, t1, t2);
     if ( pos == intersecting ) {
         // test t1 je (0-eps,1+eps) a t2 je z (0-eps,1+eps)
-    	if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon)) || (t2 > (0 - epsilon)) || (t2 < (1 + epsilon))) {
+    	if ((t1 > (0 - epsilon)) && (t1 < (1 + epsilon)) && (t2 > (0 - epsilon)) && (t2 < (1 + epsilon))) {
     		insec=new IntersectionLocal(IntersectionLocal::point);
     		vector<double> loc_coord_1(1,t1);
     		vector<double> loc_coord_2(1,t2);
@@ -277,7 +279,7 @@ void GetIntersection(const TAbscissa &A, const TBisector &B, IntersectionLocal *
     GetIntersection(A, B, pos, t1, t2);
     if ( pos == intersecting ) {
         // test t1 je (0-eps,1+eps)
-        if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon))) {
+        if ((t1 > (0 - epsilon)) && (t1 < (1 + epsilon))) {
         	insec=new IntersectionLocal(IntersectionLocal::point);
         	vector<double> loc_coord_1(1,t1);
         	vector<double> loc_coord_2(1,t2); //t2 na Bisectoru B
@@ -804,7 +806,7 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
     if (insec_tmp->get_type() == IntersectionLocal::point) {
     	if (insec_tmp->get_point(0) != NULL) {
     		double t1 = insec_tmp->get_point(0)->el1_coord()[0];
-    		if (t1 < 0 - epsilon || t1 > 1 + epsilon) {
+    		if (t1 < (0 - epsilon) || t1 > (1 + epsilon)) {
     		    delete insec_tmp;
     			insec = NULL;
     		} else {
@@ -1122,3 +1124,4 @@ template<class A, class B> bool QuickIntersectionTest(const A &a, const B &b) {
     return true;
 }
 
+} // namespace ngh

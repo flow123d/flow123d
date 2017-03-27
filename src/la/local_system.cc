@@ -2,12 +2,37 @@
 #include "local_system.hh"
 
 #include <armadillo>
-#include "system/global_defs.h"
+#include "system/sys_vector.hh"
+
+
+LocalSystem::LocalSystem()
+{}
+
 
 LocalSystem::LocalSystem(unsigned int nrows, unsigned int ncols)
-: matrix(nrows, ncols), rhs(nrows)
+: row_dofs(nrows),
+  col_dofs(ncols),
+  matrix(nrows, ncols),
+  rhs(nrows),
+  elim_rows(nrows),
+  elim_cols(ncols),
+  solution_rows(nrows),
+  solution_cols(ncols),
+  diag_rows(nrows)
 {
     reset();
+}
+
+void LocalSystem::set_size(unsigned int nrows, unsigned int ncols) {
+    row_dofs.set_size(nrows);
+    col_dofs.set_size(ncols);
+    matrix.set_size(nrows, ncols);
+    rhs.set_size(nrows);
+    elim_rows.set_size(nrows);
+    elim_cols.set_size(ncols);
+    solution_rows.set_size(nrows);
+    solution_cols.set_size(ncols);
+    diag_rows.set_size(nrows);
 }
 
 
@@ -17,270 +42,158 @@ void LocalSystem::reset()
     matrix.zeros();
     rhs.zeros();
     // drop all dirichlet values
-    loc_solution_rows.clear();
-    loc_solution.clear();
-    // reset global degrees of freedom vectors
-    row_dofs.resize(matrix.n_rows,0);
-    col_dofs.resize(matrix.n_cols,0);
+    n_elim_rows=n_elim_cols=0;
 }
+
 
 void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
 {
-    // zeros in local system
-    matrix.zeros(nrows, ncols);
-    rhs.zeros(nrows);
-    // drop all dirichlet values
-    loc_solution_rows.clear();
-    loc_solution.clear();
-    // reset global degrees of freedom vectors
-    row_dofs.resize(nrows,0);
-    col_dofs.resize(ncols,0);
+    matrix.set_size(nrows, ncols);
+    rhs.set_size(nrows);
+    row_dofs.resize(matrix.n_rows);
+    col_dofs.resize(matrix.n_cols);
+    reset();
 }
 
 
 
-void LocalSystem::set_solution(unsigned int loc_row, double solution)
+void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
 {
-    ASSERT_DBG(loc_row < matrix.n_rows);
-    loc_solution_rows.push_back(loc_row);
-    loc_solution.push_back(solution);
+    set_size(rdofs.n_rows, cdofs.n_rows);
+    reset();
+    row_dofs = rdofs;
+    col_dofs = cdofs;
 }
 
 
-void LocalSystem::fix_diagonal()
+
+void LocalSystem::set_solution(unsigned int loc_dof, double solution, double diag)
 {
-    // correction of dirichlet diagonal entry
-    for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-        unsigned int sol_row = loc_solution_rows[i];
-        for(unsigned int col = 0; col < matrix.n_cols; col++) {
-//                     DBGCOUT(<< "row " << row_dofs[sol_row] << "  col " << col_dofs[col] << "\n");
-            // look for diagonal entry
-            if (row_dofs[sol_row] == col_dofs[col]) {
-//                 DBGCOUT(<< "sol_row=" << sol_row << " col=" << col << " v=" << loc_solution[i] << "\n");
-                double new_diagonal = fabs(matrix(sol_row,col));
-                if (new_diagonal == 0.0) {
-                    if (matrix.is_square()) {
-                        new_diagonal = arma::sum( abs(matrix.diag())) / matrix.n_rows;
-                    } else {
-                        new_diagonal = arma::accu( abs(matrix) ) / matrix.n_elem;
-                    }
-                }
-                matrix(sol_row,col) = new_diagonal;
-                rhs(sol_row) = new_diagonal * loc_solution[i];
+    // check that dofs are same
+    //ASSERT_DBG( arma::all(row_dofs == col_dofs) );
+    set_solution_row(loc_dof, solution, diag);
+    set_solution_col(loc_dof, solution);
+}
+
+void LocalSystem::set_solution_row(uint loc_row, double solution, double diag) {
+    elim_rows[n_elim_rows]=loc_row;
+    solution_rows[n_elim_rows] = solution;
+    diag_rows[n_elim_rows] = diag;
+    n_elim_rows++;
+}
+
+void LocalSystem::set_solution_col(uint loc_col, double solution) {
+    elim_cols[n_elim_cols]=loc_col;
+    solution_cols[n_elim_cols] = solution;
+    n_elim_cols++;
+}
+
+/*
+
+void LocalSystem::set_solution(const DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag) {
+    ASSERT_EQ_DBG(loc_rows.n_rows(), solution)
+    set_solution_rows(loc_rows, solution, diag);
+    set_solution_cols()
+}
+void LocalSystem::set_solution_rows(DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag);
+void LocalSystem::set_solution_cols(DofVec & loc_cols, const arma::vec &solution);
+
+*/
+
+void LocalSystem::eliminate_solution()
+{
+    if (! n_elim_rows &&  ! n_elim_cols ) return;
+    
+    //DebugOut().fmt("elim rows: {} elim_cols: {}", n_elim_rows, n_elim_cols);
+    
+    arma::mat tmp_mat = matrix;
+    arma::vec tmp_rhs = rhs;
+    
+    unsigned int ic, ir, row, col;
+
+    // eliminate columns
+    for(ic=0; ic < n_elim_cols; ic++) {
+        col = elim_cols[ic];
+        tmp_rhs -= solution_cols[ic] * tmp_mat.col( col );
+        tmp_mat.col( col ).zeros();
+    }
+
+    // eliminate rows
+    for(ir=0; ir < n_elim_rows; ir++) {
+        row = elim_rows[ir];
+        tmp_rhs( row ) = 0.0;
+        tmp_mat.row( row ).zeros();
+
+        // fix global diagonal
+        for(ic=0; ic < n_elim_cols; ic++) {
+            col = elim_cols[ic];
+            if (row_dofs[row] == col_dofs[col]) {
+                ASSERT_DBG(fabs(solution_rows[ir] - solution_cols[ic]) <1e-12 );
+                // if preferred value is not set, then try using matrix value
+                double new_diagonal = matrix(row, col);
+
+                if (diag_rows[ir] != 0.0)    // if preferred value is set
+                    new_diagonal = diag_rows[ir];
+                else if(new_diagonal == 0.0)      // if an assembled value is not available
+                    new_diagonal = 1.0;
+                //                     double new_diagonal = fabs(matrix(sol_row,col));
+                //                     if (new_diagonal == 0.0) {
+                //                         if (matrix.is_square()) {
+                //                             new_diagonal = arma::sum( abs(matrix.diag())) / matrix.n_rows;
+                //                         } else {
+                //                             new_diagonal = arma::accu( abs(matrix) ) / matrix.n_elem;
+                //                         }
+                //                     }
+                tmp_mat(row,col) = new_diagonal;
+                tmp_rhs(row) = new_diagonal * solution_rows[ir];
+
             }
         }
     }
+
+    matrix = tmp_mat;
+    rhs = tmp_rhs;
+    n_elim_cols=n_elim_rows=0;
+
+    //DebugOut() << matrix;
+    //DebugOut() << rhs;
+
+
 }
 
-
-// void LocalSystem::set_mat_value(unsigned int row, unsigned int col, double mat_val)
-// {
-//     ASSERT_DBG(row < matrix.n_rows);
-//     ASSERT_DBG(col < matrix.n_cols);
-//     
-//     bool eliminate_row = false;
-//     
-//     double tmp_mat = mat_val;
-//     double tmp_rhs = 0;
-//     
-//     for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-//         if(loc_solution_rows[i] == col){
-//             tmp_mat = 0.0;
-//             tmp_rhs -= mat_val * loc_solution[i];
-//         }
-//         if(loc_solution_rows[i] == row){ eliminate_row = true; }
-//     }
-//     
-//     if(! eliminate_row){
-//         matrix(row, col) = tmp_mat;
-//         rhs(row) += tmp_rhs;
-//     }
-// }
-
-
-void LocalSystem::set_mat_values(const std::vector< unsigned int >& rows, 
-                                 const std::vector< unsigned int >& cols,
-                                 const arma::mat& loc_matrix)
-{
-    ASSERT_DBG(loc_matrix.n_rows <= matrix.n_rows);
-    ASSERT_DBG(loc_matrix.n_cols <= matrix.n_cols);
-    
-    arma::mat tmp_mat = loc_matrix;
-    arma::vec tmp_rhs = arma::zeros<arma::vec>(loc_matrix.n_rows);
-    
-//     DBGCOUT("lrow\n");
-    for(auto& sol : loc_solution_rows)
-        for(unsigned int l_row = 0; l_row < rows.size(); l_row++)
-            if (rows[l_row] == sol) {
-                tmp_mat.row(l_row).zeros();
-            }
-    
-//     DBGCOUT("lcol\n");
-    for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-        for(unsigned int l_col = 0; l_col < cols.size(); l_col++)
-            if (cols[l_col] == loc_solution_rows[i]) {
-                tmp_rhs -= loc_matrix.col(l_col) * loc_solution[i];
-                tmp_mat.col(l_col).zeros();
-            }
-    }
-    
-//     DBGCOUT("set mat and rhs\n");
-//     DBGCOUT(<< "tmp\n" << tmp_mat);
-    matrix.submat(arma::uvec(rows), arma::uvec(cols)) = tmp_mat;
-    rhs.elem(arma::uvec(rows)) += tmp_rhs;
-}
-
-
-
-void LocalSystem::set_value(unsigned int row, unsigned int col, double mat_val, double rhs_val)
-{
-//     DBGCOUT(<< "row " << row << "  col " << col << "\n");
-    ASSERT_DBG(row < matrix.n_rows);
-    ASSERT_DBG(col < matrix.n_cols);
-    
-    bool eliminate_row = false;
-    
-    double tmp_mat = mat_val;
-    double tmp_rhs = rhs_val;
-    
-    for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-        if(loc_solution_rows[i] == col){
-            tmp_mat = 0.0;
-            tmp_rhs -= mat_val * loc_solution[i];
-        }
-        if(loc_solution_rows[i] == row){ eliminate_row = true; }
-    }
-    
-    if(! eliminate_row){
-        matrix(row, col) = tmp_mat;
-        rhs(row) = tmp_rhs;
-    }
-}
 
 void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, double rhs_val)
 {
-//             DBGCOUT(<< "row " << row_dof << "  col " << col_dof << "\n");
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
     
-    bool eliminate_row = false;
-    
-    double tmp_mat = mat_val;
-    double tmp_rhs = rhs_val;
-    
-    for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-        if(loc_solution_rows[i] == col){
-            tmp_mat = 0.0;
-            tmp_rhs -= mat_val * loc_solution[i];
-        }
-        if(loc_solution_rows[i] == row){ eliminate_row = true; }
-    }
-    
-    if(! eliminate_row){
-        matrix(row, col) += tmp_mat;
-        rhs(row) += tmp_rhs;
-    }
+    matrix(row, col) += mat_val;
+    rhs(row) += rhs_val;
 }
 
-void LocalSystem::set_values(const std::vector< unsigned int >& rows,
-                             const std::vector< unsigned int >& cols,
-                             const arma::mat& loc_matrix,
-                             const arma::vec& loc_rhs)
+void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
 {
-    ASSERT_DBG(loc_matrix.n_rows <= matrix.n_rows);
-    ASSERT_DBG(loc_matrix.n_cols <= matrix.n_cols);
+    ASSERT_DBG(row < matrix.n_rows);
+    ASSERT_DBG(col < matrix.n_cols);
     
-    arma::mat tmp_mat = loc_matrix;
-    arma::vec tmp_rhs = loc_rhs;
+    matrix(row, col) += mat_val;
+}
+
+void LocalSystem::add_value(unsigned int row, double rhs_val)
+{
+    ASSERT_DBG(row < matrix.n_rows);
     
-//     DBGCOUT("lrow\n");
-    for(auto& sol : loc_solution_rows)
-        for(unsigned int l_row = 0; l_row < rows.size(); l_row++)
-            if (rows[l_row] == sol) {
-                tmp_rhs(l_row) = 0.0;
-                tmp_mat.row(l_row).zeros();
-            }
-    
-//     DBGCOUT("lcol\n");
-    for(unsigned int i=0; i < loc_solution_rows.size(); i++){
-        for(unsigned int l_col = 0; l_col < cols.size(); l_col++)
-            if (cols[l_col] == loc_solution_rows[i]) {
-                tmp_rhs -= loc_matrix.col(l_col) * loc_solution[i];
-                tmp_mat.col(l_col).zeros();
-            }
-    }
-    
-//     DBGCOUT("set mat and rhs\n");
-//     DBGCOUT(<< "tmp\n" << tmp_mat);
-    matrix.submat(arma::uvec(rows), arma::uvec(cols)) = tmp_mat;
-    rhs.elem(arma::uvec(rows)) = tmp_rhs;
+    rhs(row) += rhs_val;
 }
 
 
-void LocalSystem::set_values(std::vector< int >& rows, std::vector< int >& cols,
-                             const arma::mat& loc_matrix, const arma::vec& loc_rhs,
-                             const arma::vec& row_solution, const arma::vec& col_solution)
-{
-    ASSERT_DBG(loc_matrix.n_rows <= matrix.n_rows);
-    ASSERT_DBG(loc_matrix.n_cols <= matrix.n_cols);
-    
-    arma::mat tmp = loc_matrix;
-    arma::vec tmp_rhs = loc_rhs;
-    bool negative_row = false;
-    bool negative_col = false;
+void LocalSystem::set_matrix(arma::mat m) {
+    ASSERT_EQ_DBG(matrix.n_rows, m.n_rows);
+    ASSERT_EQ_DBG(matrix.n_cols, m.n_cols);
+    matrix = m;
+}
 
-//             DBGCOUT(<< "tmp\n" << tmp);
-//             DBGCOUT("lrow\n");
-    for(unsigned int l_row = 0; l_row < rows.size(); l_row++)
-        if (rows[l_row] < 0) {
-            tmp_rhs(l_row)=0.0;
-            tmp.row(l_row).zeros();
-            negative_row=true;
-        }
-
-//             DBGCOUT("lcol\n");
-    for(unsigned int l_col = 0; l_col < cols.size(); l_col++)
-        if (cols[l_col] < 0) {
-            tmp_rhs -= loc_matrix.col(l_col) * col_solution[l_col];
-            tmp.col(l_col).zeros();
-            negative_col=true;
-        }
-        
-//             DBGCOUT("main\n");
-        
-    if (negative_row && negative_col) {
-        // look for diagonal entry
-        for(unsigned int l_row = 0; l_row < rows.size(); l_row++)
-            if (rows[l_row] < 0)
-                for(unsigned int l_col = 0; l_col < cols.size(); l_col++)
-                    if (cols[l_col] < 0 && row_dofs[-rows[l_row]] == col_dofs[-cols[l_col]]) {
-//                                 DBGCOUT(<< "lrow=" << l_row << " lcol=" << l_col << "\n");
-                        double new_diagonal = fabs(loc_matrix.at(l_row,l_col));
-                        if (new_diagonal == 0.0) {
-                            if (loc_matrix.is_square()) {
-                                new_diagonal = arma::sum( abs(loc_matrix.diag())) / loc_matrix.n_rows;
-                            } else {
-                                new_diagonal = arma::accu( abs(loc_matrix) ) / loc_matrix.n_elem;
-                            }
-                        }
-//                                 tmp.at(l_col, l_row) = new_diagonal;
-                        tmp.at(l_row, l_col) = new_diagonal;
-                        tmp_rhs(l_row) = new_diagonal * row_solution[l_row];
-                    }
-
-    }
-
-    if (negative_row)
-        for(int &row : rows) row=abs(row);
-
-    if (negative_col)
-        for(int &col : cols) col=abs(col);
-
-    
-//             DBGCOUT( << "row_dofs:\n" << arma::conv_to<arma::uvec>::from(row_dofs));
-//             DBGCOUT( << "matrix:\n" << matrix);
-//             DBGCOUT("set mat and rhs\n");
-//             DBGCOUT(<< "tmp\n" << tmp);
-    matrix.submat(arma::conv_to<arma::uvec>::from(rows), arma::conv_to<arma::uvec>::from(cols)) = tmp;
-    rhs.elem(arma::conv_to<arma::uvec>::from(rows)) = tmp_rhs;
+void LocalSystem::set_rhs(arma::vec r) {
+    ASSERT_EQ_DBG(matrix.n_rows, r.n_rows);
+    rhs = r;
 }

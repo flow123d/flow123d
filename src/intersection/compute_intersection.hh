@@ -38,8 +38,7 @@
 #include "simplex.hh"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
-
-namespace computeintersection {
+#include "intersection/intersection_point_aux.hh"
 
 // forward declare
 template<class A, class B> class ComputeIntersection;
@@ -64,6 +63,7 @@ static const double plucker_empty = std::numeric_limits<double>::infinity();
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
+
     /// Default constructor. Use when this is NOT final intersection object.
 	ComputeIntersection();
     /** @brief Constructor, sets abscissa and triangle object.
@@ -79,24 +79,20 @@ public:
      * If some of the Plucker products are zero:
      * 1 zero product -> IP is on the triangle side
      * 2 zero products -> IP is at the vertex of triangle (there is no other IP)
-     * 3 zero products: 
-     *      -> IP is at the vertex of triangle but the line is parallel to opossite triangle side
-     *      -> triangle side is part of the line (and otherwise)     
+     * 3 zero products: -> line and triangle are coplanar
+     * 
      * IP is intersection of triangle and whole line (bisector).
-     * @param IP12s - input/output vector of IPs. If IP found, it is pushed back.
-     * @param compute_zeros_plucker_products - if true, resolve pathologic cases (zero Plucker products), 
-     * otherwise ignore. E.g. in 2d-3d is false when looking for tetrahedron edges X triangle intersection
-     * (these would be found before in triangle line X tetrahedron intersection).
-     * @return true, if intersection is found; false otherwise
+     * @param IP12s - input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
+     * @return Orientation flag (0,1 sign of product if get intersection, 2 - three zero products (degenerated),
+     * 3 - no intersection
      * 
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	bool compute(std::vector<IntersectionPointAux<1,2>> &IP12s, bool compute_zeros_plucker_products);
+	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
-     * TODO: as in 1d-3d check the topology after interpolation
-     * @param IP12s input/output vector of IPs. If IP found, it is pushed back.
+     * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
      * @return number of intersection points found
      */
     unsigned int compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
@@ -185,15 +181,18 @@ private:
      */
     bool compute_plucker(IntersectionPointAux<1,2> &IP, const arma::vec3 &local);
     
-    /** Computes intersection of abscissa and triangle side for zero Plucker product - pathologic case.
+    /** Computes intersection of abscissa and triangle side in degenerate case (all products are zero).
+     * Inspects also topology.
      * @param side_idx is the local index of the triangle side
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_pathologic(unsigned int side_idx, IntersectionPointAux<1,2> &IP);
+    bool compute_degenerate(unsigned int side_idx, IntersectionPointAux<1,2> &IP);
     
     /// Flag 'computed'; is true if intersection has been computed already.
     bool computed_;
+    ///
+    double scale_line_, scale_triangle_;
     
 	Simplex<1> *abscissa_;
 	Simplex<2> *triangle_;
@@ -246,10 +245,9 @@ public:
      * Computes CIs (side vs triangle) in following order: [A0_B, A1_B, A2_B, B0_A, B1_A, B2_A].
      * During cycle determine topology information and set computed flags accordingly.
      * @param intersection final 2D-2D intersection object (output)
-     * @param prolongation_table unused (give empty vector), is here due to template compatibility with other classes
      * @return number of intersection points found
      */
-    unsigned int compute(IntersectionAux<2,2> &intersection, std::vector<unsigned int> &prolongation_table);
+    unsigned int compute(IntersectionAux<2,2> &intersection);
     
      /// @name Setters and Getters
     //@{
@@ -336,6 +334,7 @@ private:
 template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
 
 public:
+    typedef IntersectionPointAux<1,3> IPAux;
 
 	/// Default constructor. Use when this is NOT final intersection object.
     ComputeIntersection();
@@ -363,16 +362,15 @@ public:
      * @param IP13d vector of intersection points (output)
      * @return number of intersection points found
      */
-    unsigned int compute(std::vector<IntersectionPointAux<1,3>> &IP13s);
+    unsigned int compute(std::vector<IPAux> &IP13s);
     
     /** @brief Computes final 1D-3D intersection.
      * Computes IPs and check if any of them are pathologic to set the resulting object also pathologic.
      * Calls @p compute function inside.
      * @param intersection final 1D-3D intersection object (output)
-     * @param prolongation_table unused (give empty vector), is here due to template compatibility with other classes
      * @return number of intersection points found
      */
-    unsigned int compute(IntersectionAux<1,3> &intersection, std::vector<unsigned int> &prolongation_table);
+    unsigned int compute(IntersectionAux<1,3> &intersection);
     
      /// @name Setters and Getters
     //@{ 
@@ -434,7 +432,7 @@ private:
     /** @brief After interpolation, the topology information in tetrahedron must be updated.
      * @param ip intersection point to be corrected
      */
-    void correct_tetrahedron_ip_topology(IntersectionPointAux<1,3> &ip);
+    void correct_tetrahedron_ip_topology(double t, unsigned int i, std::vector<IPAux> &ip);
     
     /// Pointer to plucker coordinates of abscissa.
     Plucker* plucker_coordinates_abscissa_;
@@ -459,6 +457,11 @@ private:
  */
 template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
 public:
+    typedef IntersectionPointAux<1,2> IPAux12;
+    typedef IntersectionPointAux<1,3> IPAux13;
+    typedef IntersectionPointAux<2,3> IPAux23;
+
+
     /** @brief Default constructor, creates empty object.
      * Resizes vectors for Plucker coordinates and products.
      */
@@ -485,11 +488,12 @@ public:
      * Finally, tracing algorithm is called to sort the intersection points to
      * create convex polygon.
      * @param intersection final 2D-3D intersection object (output)
-     * @param prolongation_table auxiliary vector that is filled in tracing algorithm of polygon.
      *          It is then used further in prolongation decision routines.
      * @return number of intersection points found
      */
-    void compute(IntersectionAux<2,3> &intersection, std::vector<unsigned int> &prolongation_table);
+    void compute(IntersectionAux<2,3> &intersection);
+
+
 
     /// Prints out the Plucker coordinates of triangle sides and tetrahedron edges.
     void print_plucker_coordinates(std::ostream &os);
@@ -497,6 +501,17 @@ public:
     void print_plucker_coordinates_tree(std::ostream &os);
 
 private:
+    // S3 n-face pair (for edge-triangle phase)
+    typedef std::array<uint, 2> FacePair;
+
+
+    const unsigned int no_idx;
+    // TODO rename s4 to s3, s3 to s2
+    std::vector<unsigned int> s3_dim_starts; // get global index of n-face i of dimension d: s4_dim_starts[d]+i
+    std::vector<unsigned int> s2_dim_starts;  // same for n-faces of S2
+
+    std::vector<IPAux12> IP12s_;
+    std::vector<IPAux23> IP23_list; //, degenerate_ips;
 
     /// Vector of Plucker coordinates for triangle side.
     std::vector<Plucker *> plucker_coordinates_triangle_;
@@ -510,9 +525,29 @@ private:
     ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];
     /// Compute 1D-2D intersection objects [6]
     ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
+
+
+    // successors of IPs
+    std::vector<unsigned int> IP_next;
+    // successors of n-face objects
+    // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
+    std::vector<unsigned int> object_next;
+
+
+    bool ips_topology_equal(const IPAux23 &first, const IPAux23 &second);
+    bool obj_have_back_link(unsigned int i_obj);
+    auto edge_faces(uint i_edge) -> FacePair;
+    auto vertex_faces(uint i_vtx) -> FacePair;
+
+
+    inline bool have_backlink(uint i_obj);
+    /**
+     * Set links: obj_before -> IP -> obj_after
+     * if obj_after have null successor, set obj_after -> IP (backlink)
+     */
+    inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip);
 };
 
-} // END namespace_close
 
 
 #endif  // COMPUTE_INTERSECTION_H_
