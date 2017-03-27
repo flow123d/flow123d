@@ -56,7 +56,9 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 
 
 GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
-{}
+{
+    if(current_cache_ != nullptr) delete current_cache_;
+}
 
 
 
@@ -191,6 +193,14 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
                         node_id, id, tok_.position_msg().c_str());
                 ele->node[ni] = node;
                 ++tok_;
+            }
+            
+            // check that tetrahedron element is numbered correctly and is not degenerated
+            if(ele->dim() == 3)
+            {
+                double jac = ele->tetrahedron_jacobian();
+                if( ! (jac > 0) )
+                    WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
             }
         }
 

@@ -44,7 +44,8 @@
 #include "mesh/partitioning.hh"
 
 #include "coupling/balance.hh"
-
+#include "intersection/mixed_mesh_intersections.hh"
+#include "intersection/intersection_local.hh"
 
 namespace it = Input::Type;
 
@@ -626,8 +627,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     // mask 2d elements crossing 1d
     result.velocity_mask.resize(mesh_->n_elements(),0);
-    for(Intersection & isec : mesh_->intersections) {
-    	result.velocity_mask[ mesh_->element.index( isec.slave_iter() ) ]++;
+    for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
+        result.velocity_mask[ isec.bulk_ele_idx() ]++;
     }
 
     result.pressure_diff.resize( mesh_->n_elements() );

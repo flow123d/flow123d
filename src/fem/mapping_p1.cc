@@ -226,6 +226,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
             {
                 ijac = pinv(jac);
             }
+            ASSERT_LE_DBG(q.size(), fv_data.inverse_jacobians.size());
             for (unsigned int i=0; i<q.size(); i++)
                 fv_data.inverse_jacobians[i] = ijac;
 

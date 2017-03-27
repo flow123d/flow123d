@@ -24,6 +24,7 @@
 
 using namespace std;
 
+namespace ngh {
 
 //class IntersectionPoint - two vectors of local coords
 class IntersectionPoint {
@@ -88,5 +89,7 @@ private:
 
     int generateId();
 };
+
+} // namespace ngh
 
 #endif /* IntersectionLocalH */

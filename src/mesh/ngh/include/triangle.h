@@ -25,6 +25,7 @@
 #include "mesh/bounding_box.hh"
 //#include "mesh/elements.h"
 
+namespace ngh {
 
 
 class TTriangle {
@@ -79,6 +80,8 @@ public:
         return TTriangle::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif
 

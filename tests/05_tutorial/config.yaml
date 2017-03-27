@@ -8,3 +8,9 @@ test_cases:
 - files: 07_heat.yaml
   proc: [ 1 ]
   time_limit: 60
+  check_rules:
+      - ndiff:
+            files: ["energy_balance.txt"]       # higher abs tolerance for energy balance
+            a_tol: 2.5e4
+      - ndiff:
+            files: ["(?!^energy_balance.txt$)*"] # default tolerance for all except energy balance
