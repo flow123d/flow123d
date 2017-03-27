@@ -59,11 +59,6 @@ public:
             << "Failed to find the observe element with snap region: " << EI_RegionName::qval
             << " close to the initial observe point. Change maximal distance of observe element." << "\n");
 
-    /// Helper enum specifies settings of update in point_projection method
-    enum ProjectionCases {
-    	update, update_if_in_elem, no_update
-    };
-
     static const Input::Type::Record & get_input_type();
 
 protected:

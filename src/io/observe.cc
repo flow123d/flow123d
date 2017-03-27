@@ -213,7 +213,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
 
     const BIHTree &bih_tree=mesh.get_bih_tree();
-    vector<unsigned int> candidate_list, process_list;
+    vector<unsigned int> candidate_list;
     std::unordered_set<unsigned int> closed_elements(1023);
     std::priority_queue< ObservePointData, std::vector<ObservePointData>, CompareByDist > candidate_queue;
 
