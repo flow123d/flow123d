@@ -223,8 +223,7 @@ TEST(ObservePoint, find_observe_point) {
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
 
     auto obs2 = TestObservePoint("0 0 1.001", 4, "ALL");
-    EXPECT_THROW_WHAT( { obs2.check(*mesh,"", "0 0 1", 2); }, ObservePoint::ExcNoObserveElement,
-    		"Failed to find the observe element with snap region");
+    obs2.check(*mesh,"0.5005 0", "0.001 0.001 1", 2);
 }
 
 

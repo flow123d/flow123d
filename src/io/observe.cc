@@ -218,7 +218,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     std::priority_queue< ObservePointData, std::vector<ObservePointData>, CompareByDist > candidate_queue;
 
     // search for the initial element
-    bih_tree.find_point(input_point_, candidate_list);
+    bih_tree.find_point(input_point_, candidate_list, true);
 
     for (unsigned int i_candidate=0; i_candidate<candidate_list.size(); ++i_candidate) {
         unsigned int i_elm=candidate_list[i_candidate];

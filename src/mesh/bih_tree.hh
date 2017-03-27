@@ -70,17 +70,19 @@ public:
 	 * Gets elements which can have intersection with bounding box
 	 *
 	 * @param boundingBox Bounding box which is tested if has intersection
-	 * @param searchedElements vector of ids of suspect elements
+	 * @param result_list vector of ids of suspect elements
+	 * @param full_list put to result_list all suspect elements found in leaf node or add only those that has intersection with boundingBox
 	 */
-    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list) const;
+    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list, bool full_list = false) const;
 
 	/**
 	 * Gets elements which can have intersection with point
 	 *
 	 * @param point Point which is tested if has intersection
-	 * @param searchedElements vector of ids of suspect elements
+	 * @param result_list vector of ids of suspect elements
+	 * @param full_list put to result_list all suspect elements found in leaf node or add only those that has intersection with point
 	 */
-    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const;
+    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list, bool full_list = false) const;
 
     /**
      * Get vector of mesh elements bounding boxes
