@@ -260,10 +260,10 @@ DarcyMH::EqData::EqData()
 //=============================================================================
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
+    output_object(nullptr),
     solution(nullptr),
     schur0(nullptr),
-    data_changed_(false),
-    output_object(nullptr)
+    data_changed_(false)
 {
 
     START_TIMER("Darcy constructor");

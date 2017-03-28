@@ -44,8 +44,9 @@ Element::Element()
   n_neighs_vb(0),
   neigh_vb(NULL),
 
-  dim_(0),
-  xfem_data(nullptr)
+  xfem_data(nullptr),
+  
+  dim_(0)
 {
 }
 
