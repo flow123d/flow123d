@@ -24,13 +24,14 @@ using namespace std;
 
 void compute_intersection(Mesh *mesh)
 {
-
     // compute intersection
-    MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(IntersectionType(IntersectionType::d23
-                                            | IntersectionType::d22));
+//     MixedMeshIntersections ie(mesh);
+//     ie.compute_intersections(IntersectionType(IntersectionType::d23
+//                                             | IntersectionType::d22));
+
+    mesh->mixed_intersections();
     
-    double total_length = ie.measure_22();
+    double total_length = mesh->mixed_intersections().measure_22();
     cout << "total_length = " << total_length << endl;
     
     // write computed intersections
@@ -54,7 +55,12 @@ TEST(intersection_prolongation_23d, all) {
     
     Mesh *mesh = mesh_constructor();
     ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
-    
-    compute_intersection(mesh);
+    if (!in.is_open()) {
+        string out = "failed to open " + mesh_file.filename() + "\n";
+        ASSERT(in.is_open()).error(out);
+    }
+    else{
+        mesh->read_gmsh_from_stream(in);
+        compute_intersection(mesh);
+    }
 }
