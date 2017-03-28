@@ -160,18 +160,6 @@ ObservePoint::ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_
 
 
 
-void ObservePoint::update_projection(ObservePointData candidate_data)
-{
-    if (candidate_data.distance_ < observe_data_.distance_) {
-    	observe_data_.distance_ = candidate_data.distance_;
-        observe_data_.element_idx_ = candidate_data.element_idx_;
-        observe_data_.local_coords_ = candidate_data.local_coords_;
-        observe_data_.global_coords_ = candidate_data.global_coords_;
-    }
-}
-
-
-
 bool ObservePoint::have_observe_element() {
     return observe_data_.distance_ < numeric_limits<double>::infinity();
 }
@@ -239,10 +227,15 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         unsigned int i_elm=candidate_data.element_idx_;
         Element & elm = mesh.element[i_elm];
 
-        // test if candidate is in region and update_projection
+        // test if candidate is in region and update projection
         if (elm.region().is_in_region_set(region_set)) {
-        	update_projection(candidate_data);
-            if (have_observe_element()) break;
+            ASSERT_LE(candidate_data.distance_, observe_data_.distance_).error();
+
+			observe_data_.distance_ = candidate_data.distance_;
+			observe_data_.element_idx_ = candidate_data.element_idx_;
+			observe_data_.local_coords_ = candidate_data.local_coords_;
+			observe_data_.global_coords_ = candidate_data.global_coords_;
+            break;
         }
 
         // add candidates to queue

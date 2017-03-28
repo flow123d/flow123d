@@ -73,11 +73,6 @@ protected:
     ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_idx);
 
     /**
-     * Update the observe element and the projection of the initial point on it.
-     */
-    void update_projection(ObservePointData candidate_data);
-
-    /**
      * Returns true if we have already found any observe element.
      */
     bool have_observe_element();
