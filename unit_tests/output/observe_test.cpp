@@ -90,7 +90,7 @@ public:
         input_point_= arma::vec3(point_str);
         snap_dim_ = snap;
         snap_region_name_ = region_name;
-        max_distance_ = 2.0;
+        max_search_radius_ = 0.1;
     }
 
     void check(Mesh &mesh, string local_str, string global_point_str, unsigned int i_elm) {
@@ -243,7 +243,7 @@ TEST(Observe, all) {
         .get_root_interface<Input::Record>();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_constructor();
+    Mesh *mesh = mesh_constructor( "{ mesh_file=\"\", global_observe_search_radius=1.0 }" );
     ifstream in(string(mesh_file).c_str());
     mesh->read_gmsh_from_stream(in);
 

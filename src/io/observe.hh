@@ -127,7 +127,7 @@ protected:
     /**
      * Maximal distance of observe element from input point.
      */
-    double max_distance_;
+    double max_search_radius_;
 
 	/// Input coordinates of the initial position of the observation point.
 	arma::vec3 input_point_;

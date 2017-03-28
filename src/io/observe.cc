@@ -128,9 +128,9 @@ const Input::Type::Record & ObservePoint::get_input_type() {
                 )
         .declare_key("snap_region", IT::String(), IT::Default("\"ALL\""),
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
-        .declare_key("max_element_distance", IT::Double(0.0),
-        		IT::Default::read_time("Default maximal distance is given by size of full size and count of elements."),
-                "Maximal distance of observe element from the initial point.")
+        .declare_key("search_radius", IT::Double(1E-6),
+        		IT::Default::read_time("Maximal distance of observe point from Mesh relative to its size (bounding box). "),
+                "Global value is define in Mesh by the key global_observe_search_radius.")
         .close();
 }
 
@@ -154,8 +154,8 @@ ObservePoint::ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_
     snap_region_name_ = in_rec.val<string>("snap_region");
 
     const BoundingBox &main_box = mesh.get_bih_tree().tree_box();
-    double default_max_dist = arma::max(main_box.max() - main_box.min()) / pow(mesh.n_elements(), 0.33);
-    max_distance_ = in_rec_.val<double>("max_element_distance", default_max_dist);
+    double max_mesh_size = arma::max(main_box.max() - main_box.min());
+    max_search_radius_ = in_rec_.val<double>("search_radius", mesh.global_observe_radius()) * max_mesh_size;
 }
 
 
@@ -214,7 +214,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // project point, add candidate to queue
         auto observe_data = point_projection(i_elm, elm);
-        if (observe_data.distance_ <= max_distance_)
+        if (observe_data.distance_ <= max_search_radius_)
         	candidate_queue.push(observe_data);
         closed_elements.insert(i_elm);
     }
@@ -244,7 +244,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					Element & neighbor_elm = mesh.element[i_node_ele];
 					auto observe_data = point_projection(i_node_ele, neighbor_elm);
-			        if (observe_data.distance_ <= max_distance_)
+			        if (observe_data.distance_ <= max_search_radius_)
 			        	candidate_queue.push(observe_data);
 			        closed_elements.insert(i_node_ele);
 				}
