@@ -808,15 +808,15 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
 
 void InspectElementsAlgorithm22::create_component_numbering()
 {
-    component_idx_.resize(mesh->n_elements(),-1);
+    component_idx_.resize(mesh->n_elements(),unset_comp);
     component_counter_ = 0;
     
     // prolongation queue in the component mesh.
     std::queue<unsigned int> queue;
-    
+
     FOR_ELEMENTS(mesh, ele) {
         if (ele->dim() == 2 &&
-            component_idx_[ele->index()] == (unsigned int)-1
+            component_idx_[ele->index()] == unset_comp
         ){
             // start component
             queue.push(ele->index());
@@ -845,12 +845,16 @@ void InspectElementsAlgorithm22::create_component_numbering()
 void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue)
 {
     ASSERT(ele->dim() == 2);
+//     DBGCOUT(<<"PROLONGATE\n");
     for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
         Edge* edg = ele->side(sid)->edge();
         
         for(int j=0; j < edg->n_sides;j++) {
             ElementFullIter neigh = edg->side(j)->element();
-            if (neigh != ele && component_idx_[neigh->index()] == (unsigned int)-1){
+            if (neigh != ele && component_idx_[neigh->index()] == unset_comp){
+//                 DBGVAR(neigh->index()); DBGVAR(component_idx_[neigh->index()]);
+                //avoid adding multiply the same element into queue
+                component_idx_[neigh->index()] = component_counter_;
                 queue.push(neigh->index());
             }
         }
