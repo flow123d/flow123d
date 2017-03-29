@@ -116,10 +116,10 @@
  *                                                         3        [0,0,1]    
  * 
  * barycentric coordinates of nodes:
- * 0        [0,1]              0        [0,0,1]            0        [0,0,0,1]
- * 1        [1,0]              1        [1,0,0]            1        [1,0,0,0]
- *                             2        [0,1,0]            2        [0,1,0,0]
- *                                                         3        [0,0,1,0]
+ * 0        [1,0]              0        [1,0,0]            0        [1,0,0,0]
+ * 1        [0,1]              1        [0,1,0]            1        [0,1,0,0]
+ *                             2        [0,0,1]            2        [0,0,1,0]
+ *                                                         3        [0,0,0,1]
  */
 
 /** Auxilliary class representing vector of indices (unsigned int).
@@ -302,14 +302,14 @@ public:
     /**
      * For given barycentric coordinates on the ref element returns barycentric coordinates
      * on the ref. element of given face. Assumes that the input point is on the face.
-     * Barycentric order: (local_coords, complanatory)
+     * Barycentric order: (complanatory, local_coords )
      */
     static FaceBaryPoint barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face);
 
     /**
      * For given barycentric coordinates on the face returns barycentric coordinates
      * on the ref. element.
-     * Barycentric order: (local_coords, complanatory)
+     * Barycentric order: (complanatory, local_coords )
      */
     static BaryPoint barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face);
 
@@ -420,12 +420,12 @@ arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
         
         if(subdim == 2)
         for(unsigned int i = 0; i < subdim+1; i++){
-            unsigned int i_sub_node = (i+1)%dim;
-            bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[i_sub_node]);
+            //unsigned int i_sub_node = (i+1)%dim;
+            bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[i]);
         }       
         else if(subdim == 1)
         for(unsigned int i = 0; i < subdim+1; i++){
-            bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[1-i]);
+            bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[i]);
         }
     
         return bary_c;
