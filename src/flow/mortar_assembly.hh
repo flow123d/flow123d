@@ -45,6 +45,7 @@ struct IsecData {
     arma::uvec dofs;
     unsigned int dim;
     double delta;
+    double ele_z_coord_;
     arma::uvec dirichlet_dofs;
     arma::vec dirichlet_sol;
     unsigned int n_dirichlet;
@@ -67,9 +68,11 @@ private:
 
     /// Row matrices to compute element pressure as average of boundary pressures
     std::vector< arma::mat > tensor_average_;
+    std::vector< arma::vec > col_average_;
     IntersectionQuadratureP0 quadrature_;
     arma::mat product_;
     LocalElementAccessorBase<3> slave_ac_;
+
 };
 
 

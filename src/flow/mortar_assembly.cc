@@ -15,10 +15,12 @@
 P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
 : MortarAssemblyBase(data),
   tensor_average_(16),
+  col_average_(4),
   quadrature_(*(data->mesh)),
   slave_ac_(data->mh_dh)
 {
     isec_data_list.reserve(30);
+
 
     for(uint row_dim=0; row_dim<4; row_dim ++)
         for(uint col_dim=0; col_dim<4; col_dim ++) {
@@ -28,6 +30,7 @@ P0_CouplingAssembler::P0_CouplingAssembler(AssemblyDataPtr data)
             col_avg.fill(1.0 / (col_dim+1));
             arma::mat avg = row_avg * col_avg.t(); // tensor product
             tensor_average(row_dim, col_dim) = avg;
+            col_average_[row_dim] = row_avg;
         }
 }
 
@@ -42,9 +45,11 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
     i_data.dirichlet_dofs.resize(ele_ac.n_sides());
     i_data.dirichlet_sol.resize(ele_ac.n_sides());
     i_data.n_dirichlet=0;
+    i_data.ele_z_coord_=ele_ac.centre()[2];
 
     for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
         i_data.dofs[i_side]=ele_ac.edge_row(i_side);
+        //i_data.z_sides[i_side]=ele_ac.side(i_side)->centre()[2];
         //DebugOut().fmt("edge: {} {}", i_side, ele_ac.edge_row(i_side));
         Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
         if (bcd) {
@@ -206,6 +211,8 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
              for(uint i=0; i< col_ele.n_dirichlet; i++) loc_system_.set_solution_col(col_ele.dirichlet_dofs[i], col_ele.dirichlet_sol[i]);
              //ASSERT( arma::norm(product_,2) == 0.0 );
              loc_system_.set_matrix(product_);
+             // Must have z-coords for every side, can not use averaging vector
+             loc_system_.set_rhs( -s * col_average_[row_ele.dim] * col_ele.ele_z_coord_ );
              loc_system_.eliminate_solution();
 
              data_->lin_sys->set_local_system(loc_system_);
