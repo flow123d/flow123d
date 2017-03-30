@@ -72,7 +72,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<IntersectionPoint<1,
     Simplex<2> tria = create_simplex<2>(mesh->element(0));
     
     IntersectionAux<1,2> is(1, 0);
-    ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria);
+    ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria, mesh);
     CI.compute_final(is.points());
     
     IntersectionLocal<1,2> ilc(is);

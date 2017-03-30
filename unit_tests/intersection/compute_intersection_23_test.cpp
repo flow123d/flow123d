@@ -99,6 +99,7 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.5, 0.2, 0.3}
                 }});
 
+
     // no intersection
     c.push_back({ "90_n", {
                 }});
@@ -187,13 +188,32 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.5, 0.5, 0},
                 {0, 0.25, 0.25},
                 {0, 0, 1}}});
+
+    // Tests close to tolerances.
+
+    // Works fine. But have slight difference in area compared to NGH (~1e-14)
+    // Can be used as starting point to a test for margin between degenerate and regular cases.
     /*
-    c.push_back({ "27_s", {
+    c.push_back({ "60_p", {
+                {0, 0.25, 0.25},
+                {0.25, 0, 0},
+                {0, 0, 0}
+                }});
+
+
+    c.push_back({ "61_p", {
+                {0, 0.25, 0.25},
+                {0.25, 0, 0},
+                {0, 0, 0}
+                }});
+/*
+    c.push_back({ "62_p", {
                 {0, 0.25, 0.25},
                 {0.25, 0, 0},
                 {0, 0, 0}
                 }});
 */
+
 }
 
 /// auxiliary function for sorting intersection point according to x,y local coordinates of component triangle
@@ -220,7 +240,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     Simplex<3> tetra = create_simplex<3>(mesh->element(tetra_ele_idx));
     
     IntersectionAux<2,3> is;
-    ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra);
+    ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra, mesh);
     CI.init();
     CI.compute(is);
     

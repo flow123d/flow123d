@@ -93,7 +93,7 @@ void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
     Simplex<3> tetra = create_simplex<3>(mesh->element(0));
     
     IntersectionAux<1,3> is;
-    ComputeIntersection< Simplex<1>, Simplex<3>> CI(line, tetra);
+    ComputeIntersection< Simplex<1>, Simplex<3>> CI(line, tetra, mesh);
     CI.init();
     CI.compute(is);
     

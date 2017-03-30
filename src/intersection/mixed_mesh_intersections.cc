@@ -392,7 +392,8 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
     }
-    append_to_index(intersection_storage22_);
+    DebugOut() << print_var(intersection_storage22_.size());
+    //append_to_index(intersection_storage22_);
 
 
     if(d & IntersectionType::d12_3){

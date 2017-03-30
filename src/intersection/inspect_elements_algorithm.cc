@@ -93,7 +93,7 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
 {
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
-    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB, mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -303,7 +303,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
+                    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB, mesh);
                     CI.init();
                     CI.compute(is);
                     END_TIMER("Compute intersection");
@@ -647,7 +647,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     
     START_TIMER("Compute intersection");
-    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB, mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -795,7 +795,7 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     
     IntersectionAux<2,2> is(eleA->index(), eleB->index());
     
-    ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB);
+    ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB, mesh);
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
@@ -918,7 +918,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
                 
                 IntersectionAux<1,2> is(eleA_idx, eleB_idx);
                 
-                ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
+                ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB, mesh);
                 unsigned int n_local_intersection = CI.compute_final(is.points());
     
                 if(n_local_intersection > 0)
@@ -1009,7 +1009,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(simplexA, simplexB, mesh);
                     CI.compute_final(is.points());
                     END_TIMER("Compute intersection");
                     
