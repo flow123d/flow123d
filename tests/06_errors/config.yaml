@@ -6,7 +6,10 @@ common_config:
 test_cases:
 - files: 01_unsteady.yaml
   death_test: true
+# produce ASSERT: Missing the key 'time'.
 - files: 02_unsteady_LMH.yaml
   death_test: true
+# produce FilePath::ExcFileOpen - missing input mesh file
 - files: 03_missing_observe_fields.yaml
   death_test: true
+# produce ObservePoint::ExcNoObserveElement
