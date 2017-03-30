@@ -119,7 +119,7 @@ class ModuleRuntest(ScriptModule):
             runtest_command,
 
             python=sys.executable,
-            script=pkgutil.get_loader('runtest').filename,
+            script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
