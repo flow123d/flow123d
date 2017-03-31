@@ -18,6 +18,42 @@
 #include "fields/field_common.hh"
 
 /****************************************************************************
+ *  Implementation of FieldInitMessages
+ */
+
+FieldInitMessages::FieldInitMessages()
+{}
+
+FieldInitMessages & FieldInitMessages::get_instance() {
+	static FieldInitMessages instance;
+	return instance;
+}
+
+void FieldInitMessages::add_message(std::string default_value, std::string field_input_name, std::string field_name,
+		std::string region_list) {
+	messages_data_.push_back( MessageData(default_value, field_input_name, field_name, region_list) );
+}
+
+bool FieldInitMessages::print_message_table(ostream& stream) {
+	if (messages_data_.size() == 0) return false;
+
+	stream << endl << "-------------------------------- Used default values of Fields: --------------------------------" << endl;
+	stream << std::setfill(' ') << " Field name" << setw(26) << "" << "Default value" << setw(7) << "" << "Apply on regions" << endl;
+	for (std::vector<MessageData>::iterator it = messages_data_.begin(); it < messages_data_.end(); ++it) {
+		stringstream ss;
+		ss << it->field_input_name_ << " (" << it->field_name_ << ")";
+		stream << " " << std::left << setw(35) << ss.str() << "" << " "
+			   << setw(18) << it->default_value_ << "" << " " << it->region_list_ << endl;
+	}
+	stream << "------------------------------------------------------------------------------------------------" << endl << endl;
+
+	messages_data_.clear();
+	return true;
+}
+
+
+
+/****************************************************************************
  *  Implementation of FieldCommon
  */
 

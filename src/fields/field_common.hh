@@ -52,6 +52,45 @@ enum class LimitSide {
 
 
 /**
+ * Helper class store data and allow printout of field initialization warnings.
+ */
+class FieldInitMessages {
+public:
+	/// Store data of one initialization message.
+	struct MessageData {
+		/// Constructor
+		MessageData(std::string default_value, std::string field_input_name, std::string field_name, std::string region_list)
+		: default_value_(default_value), field_input_name_(field_input_name), field_name_(field_name), region_list_(region_list) {};
+
+		std::string default_value_;        ///< Default value of the field.
+		std::string field_input_name_;     ///< Parameter input_name_ of the field.
+		std::string field_name_;           ///< Parameter name_ of the field.
+		std::string region_list_;          ///< List of regions separated by comma.
+	};
+
+    /// Return singleton instance of class.
+    static FieldInitMessages & get_instance();
+
+    /// Add new record of initialization message.
+    void add_message(std::string default_value, std::string field_input_name, std::string field_name, std::string region_list);
+
+    /**
+     * Print stored messages to table.
+     *
+     * Return true if messages_data_ vector is nonempty and clear its.
+     */
+    bool print_message_table(ostream& stream);
+
+private:
+	/// Constructor
+	FieldInitMessages();
+
+	/// Vector of data of initialization messages.
+	std::vector<MessageData> messages_data_;
+};
+
+
+/**
  * @brief Common abstract parent of all Field<...> classes.
  *
  * We need common ancestor in order to keep a list of all fields in one EqData object and allow
