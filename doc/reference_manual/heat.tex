@@ -65,7 +65,7 @@ Use diffusive\_flux, $T_D$ and $\sigma_R^T$.
 Denoting $T_{d+1}$, $T_d$ the temperature in $\Omega_{d+1}$ and $\Omega_d$, respectively, the communication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by the quantity
 \begin{equation}
   \label{e:inter_dim_flux_heat}
-  q^T_{d+1,d} = \sigma^T_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\Lambda_d:\n\otimes\n ( T_{d+1} - T_d) + \begin{cases} \varrho_l c_l q^l_{d+1,d} T_{d+1} & \mbox{ if }q^l_{d+1,d}\ge 0,\\\varrho_l c_l q^l_{d+1,d} \frac{\tilde s_d}{\tilde s_{d+1}} T_d & \mbox{ if } q^l_{d+1,d}<0,\end{cases}
+  q^T_{d+1,d} = \sigma^T_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\Lambda_d:\n\otimes\n ( T_{d+1} - T_d) + \varrho_l c_l q^l_{d+1,d}\begin{cases} T_{d+1} & \mbox{ if }q^l_{d+1,d}\ge 0,\\ T_d & \mbox{ if } q^l_{d+1,d}<0,\end{cases}
 \end{equation}
 where
 \begin{itemize}
