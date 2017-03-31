@@ -45,7 +45,7 @@ public:
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
 		arma::vec::fixed<dim+1> projection = mapping_.project_point(input_point, elm_map);
 		projection = mapping_.clip_to_element(projection);
-		projection[elm.dim()] = 1.0; // use last coordinates for translation
+		projection[0] = 1.0; // use first coordinates for translation
 
 		ObservePointData data;
 		data.element_idx_ = i_elm;
@@ -76,7 +76,7 @@ public:
 		}
 
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
-		observe_data.global_coords_ =  elm_map * arma::join_cols(observe_data.local_coords_, arma::ones(1));
+		observe_data.global_coords_ =  elm_map * arma::join_cols(arma::ones(1), observe_data.local_coords_);
 	}
 
 private:
