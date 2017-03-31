@@ -343,6 +343,11 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ(1.0, bc_value(0) );
     EXPECT_DOUBLE_EQ(11.0, bc_value(1) );
     EXPECT_DOUBLE_EQ(21.0, bc_value(2) );
+
+    std::stringstream ss;
+    if ( FieldInitMessages::get_instance().print_message_table(ss) ) {
+        WarningOut() << ss.str();
+    }
 }
 
 
