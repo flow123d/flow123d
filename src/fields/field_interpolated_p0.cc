@@ -36,7 +36,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type()
 {
-    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field interpolated from external mesh data and piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
