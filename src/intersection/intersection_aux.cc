@@ -5,6 +5,7 @@
 
 #include "intersection_aux.hh"
 #include "intersection_point_aux.hh"
+#include "mesh/ref_element.hh"
 
 
 template<unsigned int dimA, unsigned int dimB>
@@ -22,6 +23,46 @@ template<unsigned int dimA, unsigned int dimB>
 IntersectionAux<dimA,dimB>::~IntersectionAux()
 {}
 
+template<>
+unsigned int IntersectionAux<2,3>::ips_on_single_object() const
+{
+    const uint invalid_face = -1;
+    if(size() < 3) return invalid_face;
+    
+    //test if all IPs lie in a single face of tetrahedron
+    vector<unsigned int> face_counter(RefElement<3>::n_sides, 0);
+    
+    for(const IntersectionPointAux<2,3>& ipf : i_points_) {
+        switch(ipf.dim_B()){
+            case 0: {
+                for(uint i=0; i<RefElement<3>::n_sides_per_node; i++)
+                    face_counter[RefElement<3>::interact(Interaction<2,0>(ipf.idx_B()))[i]]++;
+                break;
+            }
+            case 1: {
+                for(uint i=0; i<RefElement<3>::n_sides_per_line; i++)
+                    face_counter[RefElement<3>::interact(Interaction<2,1>(ipf.idx_B()))[i]]++;
+                break;
+            }
+            case 2:
+                face_counter[ipf.idx_B()]++;
+                break;
+            case 3: 
+                return invalid_face;    // cannot be on face
+                break;
+            default: ASSERT(0)(ipf.dim_B());
+        }
+    }
+    
+    for(uint f=0; f< RefElement<3>::n_sides; f++){
+        if(face_counter[f] == size()){ // all IPs lie in a single face
+            DBGCOUT(<< "all IPs in face: " << f <<"\n");
+            return f;
+        }
+    }
+    //should never reach
+    return invalid_face;
+}
 
 
 // 1D-3D

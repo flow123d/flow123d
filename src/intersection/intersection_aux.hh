@@ -70,6 +70,9 @@ public:
     /// TODO: unifiy implementation with IntersectionLocalb
     double compute_measure();
     
+    /// Returns idx of face when all IPs lie on it.
+    unsigned int ips_on_single_object() const;
+    
     /// Friend output operator.
     template<unsigned int dimAA, unsigned int dimBB>
     friend std::ostream& operator<<(std::ostream& os, const IntersectionAux<dimAA,dimBB>& intersection);
