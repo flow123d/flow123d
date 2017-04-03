@@ -277,17 +277,26 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
     }
 }
 
-template<>
-void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cell,
-                            unsigned int sid,
-                            const Quadrature<0> &q,
-                            MappingInternalData &data,
-                            FEValuesData<0,3> &fv_data)
-{}
+template<unsigned int dim, unsigned int spacedim>
+arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const
+{
+    arma::mat::fixed<3, dim> A=map.cols(0, dim-1);
+    arma::mat::fixed<dim, dim> AtA = A.t()*A;
+    arma::vec::fixed<dim> Atb = A.t()*(point - map.col(dim));
+    arma::vec::fixed<dim+1> bary_coord;
+    bary_coord.rows(0, dim - 1) = solve(AtA, Atb);
+    bary_coord( dim ) = 1.0 - arma::sum( bary_coord.rows(0,dim-1) );
+
+    return bary_coord;
+}
+
+template<unsigned int dim, unsigned int spacedim>
+arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::clip_to_element(arma::vec::fixed<dim+1> &barycentric) {
+    return RefElement<dim>::clip(barycentric);
+}
 
 
 
-template class MappingP1<0,3>;
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
 template class MappingP1<3,3>;

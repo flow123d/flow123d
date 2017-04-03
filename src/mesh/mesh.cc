@@ -90,6 +90,9 @@ const IT::Record & Mesh::get_input_type() {
 	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
+		.declare_key("global_observe_search_radius", IT::Double(1E-6), IT::Default("1E-3"),
+					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
+					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
 		.close();
 }
 
@@ -789,6 +792,10 @@ const BIHTree &Mesh::get_bih_tree() {
     if (! this->bih_tree_)
         bih_tree_ = std::make_shared<BIHTree>(this);
     return *bih_tree_;
+}
+
+double Mesh::global_observe_radius() const {
+	return in_record_.val<double>("global_observe_search_radius");
 }
 
 //-----------------------------------------------------------------------------
