@@ -387,7 +387,7 @@ auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned
     for(unsigned int i=0; i < dim; i++) {
 //        unsigned int i_sub_node = (i+1)%dim;
 //         unsigned int i_bary = (dim + side_nodes_[i_face][i_sub_node])%(dim+1);
-        unsigned int i_bary = (dim + interact_<0,dim-1>(i_face)[i])%(dim+1);
+        unsigned int i_bary = interact_<0,dim-1>(i_face)[i];
         face_barycentric[i] = barycentric[ i_bary ];
     }
     return face_barycentric;
@@ -438,7 +438,7 @@ auto RefElement<dim>::clip(const BaryPoint &barycentric) -> BaryPoint
             // index of barycentric coord that is constant on the face i_side
             // as we use barycentric coords starting with local coordinates:
             // TODO: rather work only with local coords and/or with canonical barycentric coords
-            unsigned int i_side = (2*dim - i_bary)%(dim +1);
+            unsigned int i_side = (dim - i_bary);
             // project to face
             arma::vec projection_to_face(dim+1);
             //barycentric.print(cout, "input");
