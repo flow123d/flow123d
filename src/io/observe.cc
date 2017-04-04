@@ -128,7 +128,7 @@ const Input::Type::Record & ObservePoint::get_input_type() {
                 )
         .declare_key("snap_region", IT::String(), IT::Default("\"ALL\""),
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
-        .declare_key("search_radius", IT::Double(1E-6),
+        .declare_key("search_radius", IT::Double(0.0),
         		IT::Default::read_time("Maximal distance of observe point from Mesh relative to its size (bounding box). "),
                 "Global value is define in Mesh by the key global_observe_search_radius.")
         .close();
