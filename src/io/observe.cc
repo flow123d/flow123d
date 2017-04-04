@@ -49,7 +49,7 @@ public:
 
 		ObservePointData data;
 		data.element_idx_ = i_elm;
-		data.local_coords_ = projection.rows(0, elm.dim()-1);
+		data.local_coords_ = projection.rows(1, elm.dim());
 		data.global_coords_ = elm_map*projection;
 		data.distance_ = arma::norm(data.global_coords_ - input_point, 2);
 
