@@ -418,15 +418,9 @@ arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
         ASSERT_LT_DBG(subdim, dim).error("Dimension mismatch!");
         arma::mat::fixed<dim+1,subdim+1> bary_c;
         
-        if(subdim == 2)
         for(unsigned int i = 0; i < subdim+1; i++){
-            //unsigned int i_sub_node = (i+1)%dim;
             bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[i]);
         }       
-        else if(subdim == 1)
-        for(unsigned int i = 0; i < subdim+1; i++){
-            bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[i]);
-        }
     
         return bary_c;
 };
