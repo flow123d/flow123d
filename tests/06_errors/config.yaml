@@ -6,9 +6,17 @@ common_config:
 test_cases:
 - files: 01_unsteady.yaml
   death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]  # file must exists in ref_out folder!
+        substr: "Missing the key 'time', obligatory for the transient problems."
+    - regex:
+        files: [job_output.log]  # same file can be checked several times
+        regex: "Program [Ee]rror: Violated assert!"
+
 # produce ASSERT: Missing the key 'time'.
 - files: 02_unsteady_LMH.yaml
-  death_test: true
+  death_test: false
 # produce FilePath::ExcFileOpen - missing input mesh file
 - files: 03_missing_observe_fields.yaml
   death_test: true
