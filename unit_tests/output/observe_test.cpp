@@ -223,7 +223,7 @@ TEST(ObservePoint, find_observe_point) {
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
 
     auto obs2 = TestObservePoint("0 0 1.001", 4, "ALL");
-    obs2.check(*mesh,"0.5005 0", "0.001 0.001 1", 2);
+    obs2.check(*mesh,"0 0 0.5", "0 0 1", 8);
 }
 
 
