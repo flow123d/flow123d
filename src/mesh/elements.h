@@ -118,54 +118,6 @@ public:
      return BoundingBox(this->vertex_list());
     }
 
-	/**
-	 * Map from reference element to global coord system.
-	 * Matrix(3, dim()+1), last column is the translation vector.
-	 *
-	 * Temporary, this should be provided be a separate finite element mapping class.
-	 */
-	inline arma::mat element_map() const
-	{
-		arma::vec3 &v0 = node[0]->point();
-		arma::mat A(3, dim()+1);
-
-		for(unsigned int i=0; i < dim(); i++ ) {
-			A.col(i) = node[i+1]->point() - v0;
-		}
-		A.col(dim()) = v0;
-		return A;
-	}
-
-	/**
-	 * Project given point to the barycentic coordinates.
-	 * Result vector have dimension dim()+1. Local coordinates are the first.
-	 * Last is 1-...
-	 */
-	arma::vec project_point(const arma::vec3 &point, const arma::mat &map) const;
-
-
-	/**
-	 * Project a point and create the map as well.
-	 */
-	inline arma::vec project_point(const arma::vec3 &point) {
-		return project_point(point, this->element_map() );
-	}
-
-	/**
-	 * Clip a point given by barycentric cocordinates to the element.
-	 * If the point is out of the element the closest point
-	 * projection to the element surface is used.
-	 */
-	inline arma::vec clip_to_element(arma::vec &barycentric) {
-	   switch (dim()) {
-				case 1: return RefElement<1>::clip(barycentric);
-				case 2: return RefElement<2>::clip(barycentric);
-				case 3: return RefElement<3>::clip(barycentric);
-				default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
-		}
-		return barycentric; // should never happen
-	}
-
     /**
      * Return list of element vertices.
      */
