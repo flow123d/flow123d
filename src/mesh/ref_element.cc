@@ -398,14 +398,7 @@ template<unsigned int dim>
 auto RefElement<dim>::barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face) -> BaryPoint
 {
     ASSERT_EQ_DBG(face_barycentric.n_rows, dim);
-    BaryPoint barycentric;
-    barycentric.zeros();
-    for(unsigned int i_sub_coord=0; i_sub_coord<dim; i_sub_coord++) {
-//        unsigned int i_sub_node = (i_sub_coord+1)%dim;
-//         barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( side_nodes_[i_face][i_sub_node]);
-        barycentric+=face_barycentric(i_sub_coord)*node_barycentric_coords( interact_<0,dim-1>(i_face)[i_sub_coord]);
-    }
-    return barycentric;
+    return RefElement<dim>::interpolate<dim-1>(face_barycentric, i_face);
 }
 
 template<>
