@@ -570,6 +570,14 @@ void DarcyMH::prepare_new_time_step()
 void DarcyMH::postprocess() 
 {
     START_TIMER("postprocess");
+
+    auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+        auto ele_ac = mh_dh.accessor(i_loc);
+        unsigned int dim = ele_ac.dim();
+        multidim_assembler[dim-1]->fix_velocity(ele_ac);
+    }
+
     //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel

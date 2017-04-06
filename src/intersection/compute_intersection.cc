@@ -1116,14 +1116,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             // fix order of IPs
             unsigned int ip = (side_cycle_orientation[_i_side] + _ip) % IP13s.size();
 
-            DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
+            //DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
 
             // convert from 13 to 23 IP
             IPAux13 &IP = IP13s[ip];
             IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
             IntersectionPointAux<3,2> IP32(IP31, i_side);    // interpolation uses local_bcoords_B and given idx_B
             IPAux23 IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
-            DebugOut() << IP;
+            //DebugOut() << IP;
 
             // Tracking info
             unsigned int tetra_object = s3_dim_starts[IP23.dim_B()] + IP23.idx_B();
@@ -1198,7 +1198,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
 	    std::vector<IPAux12> IP12_local;
 	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local);
-	    DebugOut() << print_var(tetra_edge) << print_var(int(result));
+	    //DebugOut() << print_var(tetra_edge) << print_var(int(result));
 	    if (result < IntersectionResult::degenerate) {
 	        ASSERT_DBG(IP12_local.size() ==1);
 	        IP12s_.push_back(IP12_local[0]);
