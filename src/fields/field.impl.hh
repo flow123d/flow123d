@@ -490,9 +490,6 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
     		region_list+=" "+reg.label();
         }
         FieldCommon::messages_data_.push_back( MessageData(input_default(), input_name(), name(), region_list) );
-        WarningOut().fmt("Default value '{}' for field '{}' ('{}').\n"
-                "    on regions: {}\n",
-                input_default(), input_name(), name(), region_list);
 
     }
     //shared_->is_fully_initialized_ = true;

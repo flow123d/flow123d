@@ -480,6 +480,10 @@ void ConvectionTransport::zero_time_step()
 
 	data_.mark_input_times(*time_);
 	data_.set_time(time_->step(), LimitSide::right);
+	std::stringstream ss; // print warning message with table of uninitialized fields
+	if ( FieldCommon::print_message_table(ss) ) {
+		WarningOut() << ss.str();
+	}
 
     set_initial_condition();
     create_mass_matrix();

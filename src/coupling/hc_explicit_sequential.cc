@@ -143,6 +143,10 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Need explicit template types here, since reference is used (automatically passing by value)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
     water->initialize();
+    std::stringstream ss; // print warning message with table of uninitialized fields
+    if ( FieldCommon::print_message_table(ss) ) {
+        WarningOut() << ss.str();
+    }
 
     RegionSet bulk_set = mesh->region_db().get_region_set("BULK");
     water_content_saturated_ = water->data().field("water_content_saturated");

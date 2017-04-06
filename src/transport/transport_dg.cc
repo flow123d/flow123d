@@ -416,6 +416,10 @@ void TransportDG<Model>::zero_time_step()
 	START_TIMER(Model::ModelEqData::name());
 	data_.mark_input_times( *(Model::time_) );
 	data_.set_time(Model::time_->step(), LimitSide::left);
+	std::stringstream ss; // print warning message with table of uninitialized fields
+	if ( FieldCommon::print_message_table(ss) ) {
+		WarningOut() << ss.str();
+	}
 
 
     // set initial conditions
