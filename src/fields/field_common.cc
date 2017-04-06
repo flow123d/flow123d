@@ -91,15 +91,15 @@ void FieldCommon::mark_input_times(const TimeGovernor &tg) {
 bool FieldCommon::print_message_table(ostream& stream) {
 	if (FieldCommon::messages_data_.size() == 0) return false;
 
-	stream << endl << "-------------------------------- Used default values of Fields: --------------------------------" << endl;
-	stream << std::setfill(' ') << " Field name" << setw(26) << "" << "Default value" << setw(7) << "" << "Apply on regions" << endl;
+	stream << endl << std::setfill('-') << setw(40) << "" << " Used default values of Fields: " << setw(40) << "" << endl;
+	stream << std::setfill(' ') << " Field name" << setw(41) << "" << "Default value" << setw(7) << "" << "Apply on regions" << endl;
 	for (std::vector<MessageData>::iterator it = FieldCommon::messages_data_.begin(); it < FieldCommon::messages_data_.end(); ++it) {
 		stringstream ss;
 		ss << it->field_input_name_ << " (" << it->field_name_ << ")";
-		stream << " " << std::left << setw(35) << ss.str() << "" << " "
+		stream << " " << std::left << setw(50) << ss.str() << "" << " "
 			   << setw(18) << it->default_value_ << "" << " " << it->region_list_ << endl;
 	}
-	stream << "------------------------------------------------------------------------------------------------" << endl << endl;
+	stream << std::setfill('-') << setw(112) << "" << endl << endl;
 
 	FieldCommon::messages_data_.clear();
 	return true;
