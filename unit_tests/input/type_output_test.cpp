@@ -6,10 +6,8 @@
 
 #include <flow_gtest.hh>
 
-#include "input/type_base.hh"
+#include "input/input_type.hh"
 #include "input/type_output.hh"
-#include "input/type_generic.hh"
-#include "input/type_tuple.hh"
 
 // Set version of program and other base data. Simulate data got from rev_num.h.
 Input::Type::RevNumData get_rev_num_data() {
@@ -183,13 +181,11 @@ TEST(OutputTypeAbstract, ad_hoc_abstract_test) {
     	.close();
 
     Record d_rec = Record("D_Record", "Test record.")
-		.declare_key("TYPE", String(), Default("\"D_Record\""), "Type of problem")
     	.declare_key("d_val", Integer(), Default("1"), "")
     	.declare_key("pause", Bool(), Default("false"), "")
     	.close();
 
     Record e_rec = Record("E_Record", "Test record.")
-    	.declare_key("TYPE", String(), Default("\"E_Record\""), "Type of problem")
     	.declare_key("e_val", String(), Default("\"Some value\""), "")
     	.declare_key("pause", Bool(), Default("false"), "")
     	.close();

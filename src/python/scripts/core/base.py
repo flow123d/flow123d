@@ -122,7 +122,10 @@ class _Printer(object):
         return not self.level & self.__class__.level
 
     def _write(self, str):
-        sys.stdout.write(str)
+        try:
+            sys.stdout.write(str)
+        except UnicodeEncodeError as e:
+            print(str.encode('utf-8'))
 
         if self.__class__.log_file:
             with open(self.__class__.log_file, "a+") as fp:
@@ -605,13 +608,13 @@ class IO(object):
         :rtype : str or None
         """
         if name and Paths.exists(name):
-            with open(name, mode) as fp:
+            with open(name, mode, encoding='utf-8', errors='replace') as fp:
                 return fp.read()
 
     @classmethod
     def write(cls, name, string, mode='w'):
         Paths.ensure_path(name)
-        with open(name, mode) as fp:
+        with open(name, mode, encoding='utf-8', errors='replace') as fp:
             fp.write(string)
         return True
 
@@ -674,12 +677,13 @@ class TestPrinterStatus(object):
         '0':    'passed',
         'None': 'skipped',
         '-1':   'skipped',
+        '100':  'death',
     }
 
     errors = {
-        'clean': '| could not clean directory',
-        'pypy':  '| error while running',
-        'comp':  '| wrong result: {sub_detail}'
+        'clean': '{sub_detail}',
+        'pypy':  '{sub_detail}',
+        'comp':  '{sub_detail}'
     }
 
     @classmethod
@@ -691,12 +695,41 @@ class TestPrinterStatus(object):
         """
         :type thread: scripts.core.threads.RuntestMultiThread
         """
+        if thread.comp.returncode.succeeded:
+            return ''
+
+        result = '| wrong result: '
         with Printer.all.with_level(3):
-            result = ''
             for t in thread.comp.threads:
                 if t.returncode != 0:
                     result += '\n{}[ WRONG ] in {}'.format(Printer.indent(), t.name)
         return result
+
+    @classmethod
+    def detail_pypy(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        if thread.pypy.returncode.succeeded:
+            if thread.pypy.returncode.reversed:
+                return '| OK death test failed'
+            return ''
+        elif thread.pypy.returncode.failed:
+            if thread.pypy.returncode.reversed:
+                return '| test did NOT failed but should have failed'
+            return '| error while execution'
+
+        # skipped
+        return ''
+
+    @classmethod
+    def detail_clean(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        if thread.clean.returncode.failed:
+            return '| could not clean directory'
+        return ''
 
 
 class RunnerFormatter(object):
@@ -717,10 +750,15 @@ class StatusPrinter(object):
         detail = ''
         for ti in ['clean', 'pypy', 'comp']:
             subthread = getattr(thread, ti)
-            if subthread.returncode not in (0, None):
-                if hasattr(formatter, 'detail_{}'.format(ti)):
-                    sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
-                detail = formatter.errors[ti].format(**locals())
+            subthread_rc = subthread.returncode
+            sub_detail = ''
+
+            if hasattr(formatter, 'detail_{}'.format(ti)):
+                sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
+            detail = formatter.errors[ti].format(**locals())
+
+            # break on the first error
+            if sub_detail:
                 break
 
         Printer.all.out(formatter.template.format(**locals()))

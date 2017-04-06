@@ -9,13 +9,14 @@ from scripts.core.base import Paths, PathFilters
 class AbstractRun(object):
     """
     Abstract class which prepares command list for PyPy class
-    :type case : scripts.config.yaml_config.ConfigCase
+    :type case : scripts.yamlc.yaml_config.ConfigCase
     """
 
     def __init__(self, case):
         self.case = case
         self.mpi = False
         self.valgrind = False
+        self.massif = False
 
     def get_command(self, args=None):
         result = self._get_command() if not args else self._get_command() + args
@@ -28,9 +29,15 @@ class AbstractRun(object):
         ]
 
     def _get_valgrind(self):
-        return [
-            'valgrind',
-        ]
+        if self.massif:
+            return [
+                'valgrind', '--tool=massif', '--massif-out-file={}'.format(self.case.fs.valgrind_out)
+            ]
+        if self.valgrind:
+            return [
+                'valgrind',
+            ]
+        return []
 
     def _get_flow123d(self):
         return [
@@ -46,7 +53,7 @@ class AbstractRun(object):
         if self.mpi:
             result.extend(self._get_mpi())
 
-        if self.valgrind:
+        if self.valgrind or self.massif:
             result.extend(self._get_valgrind())
 
         result.extend(self._get_flow123d())
@@ -66,7 +73,7 @@ class AbstractRun(object):
         # filter files and make them absolute again
         files = Paths.match(files, filters)
         files = [Paths.join(self.case.fs.ref_output, f) for f in files]
-        return zip(files, self._get_mirror_files(files))
+        return list(zip(files, self._get_mirror_files(files)))
 
     def _get_mirror_files(self, paths):
         return [

@@ -7,7 +7,7 @@ import importlib
 # ----------------------------------------------
 import scripts.comparisons.modules as modules
 from scripts.core.base import Paths, Printer
-from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread, MultiThreads
+from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.prescriptions import AbstractRun
 from scripts.yamlc import REF_OUTPUT_DIR
@@ -42,11 +42,18 @@ class LocalRun(AbstractRun):
 
         pypy.limit_monitor.set_limits(self.case)
         pypy.end_monitor.deactivate()
-        pypy.start_monitor.format = 'Running: {}'.format(self.case)
+
+        cmd = pypy.escaped_command.replace(Paths.flow123d_root()+'/', '') if self.progress else pypy.escaped_command
+        pypy.start_monitor.format = 'Running: {}\n{}'.format(self.case, cmd)
 
         pypy.progress = self.progress
         pypy.executor.output = OutputMode.file_write(self.case.fs.job_output)
         pypy.full_output = pypy.executor.output.filename
+
+        if self.massif:
+            import scripts.prescriptions.modules.valgrind as valgrind
+            pypy.on_process_complete += valgrind.massif_hook
+
         return pypy
 
     def create_comparisons(self):
@@ -54,7 +61,7 @@ class LocalRun(AbstractRun):
         comparisons.thread_name_property = True
 
         for check_rule in self.case.check_rules:
-            method = str(check_rule.keys()[0])
+            method = str(list(check_rule.keys())[0])
             module = self.get_module(method)
             comp_data = check_rule[method]
             if not module:

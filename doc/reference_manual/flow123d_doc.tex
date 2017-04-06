@@ -172,7 +172,9 @@ Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Jan Hyb\v s
 {\bf Acknowledgement}
 
 \vspace{3ex}
-\noindent This work was supported by S\'URAO within project Decovalex 2015, SO2013-077.
+\noindent This work was supported by S\'URAO within the project Decovalex 2015, SO2013-077 and by the TA\v CR project no. TA04020506: 
+"Softwarov\'e n\'astroje pro simulaci a anal\'yzu proces\r u v geosf\'e\v re".
+\noindent 
 \pagebreak
 \noindent
 
@@ -239,6 +241,7 @@ generated. It mirrors directly the code and describes whole structure of the mai
 of input records, their structure and default values are supplied there and bidirectional links to the user 
 guide are provided.
 
+The document is interactive. The blue text marks the links in the document. The magenta text marks the web links.
 
 \section{Installing Flow123d}
 Software Flow123d requires tool \href{https://www.docker.com}{Docker}. 
@@ -250,46 +253,109 @@ The installation process imports docker image into your machine and personalize 
 instructions for the Linux and the Windows operating systems are provided in the next two sections.
 
 \subsection{Installing Flow123d on Linux}
-Download the Linux installation package archive \verb'Flow123d-<version>-linux-install.tar.gz' and extract it to any folder.
-the command
+The installation is done under regular user, who must be in the group 'docker'.
+Download the Linux installation package archive \verb'Flow123d-<version>-linux-install.tar.gz' and extract it to any folder:
 \begin{verbatim}
-  > tar -xzf Flow123d-<version>-linux-install.tar.gz 
+  > tar -xzf flow123d_<version>_linux_install.tar.gz 
 \end{verbatim}
-This will create a directory \verb'Flow123d-<version>-linux-install'. In next step, navigate to \verb'Flow123d-<version>-linux-install' directory
+This will create a directory \verb'Flow123d-<version>'. In next step, navigate to \verb'Flow123d-<version>' directory
 and execute the \verb'install.sh' script:
 \begin{verbatim}
-  > cd Flow123d-<version>-linux-install
+  > cd flow123d_2.1.0
   > ./install.sh
-  Importing docker image 'flow/v2.0.0'
-  Modifying docker image 'flow/v2.0.0'
+  Importing docker image 'flow123d/v2.1.0'
+  Modifying docker image 'flow123d/v2.1.0'
   ...
 \end{verbatim}
 Install script will first import image into your system and then personalise this image for the current user. The script will also print
-additional information during personalisation process. Whole process may take several minutes (depending on your machine performance).
+additional information during personalization process. Whole process may take several minutes (depending on your machine performance).
 
 
 \subsection{Installing Flow123d on Windows}
 On the Windows systems we require Powershell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
-It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions in 
-\href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft tutorial}.
+It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions at
+\href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft pages}.
 
 Make sure \verb'powershell' command is in the system PATH. 
 \href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{Powershell executable location}
- is determined by Windows version, but generally it is \\\verb'%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe'. To add
- this location to system PATH variable follow instructions \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft tutorial}.
+ is specific to the particular Windows version, but usual location is:
+ \begin{verbatim}
+    %SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe  
+ \end{verbatim}
+ To add this location to the system PATH variable follow the instructions at
+ \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft pages}.
 
-To install Flow123d on Windows, first download the Windows installation package archive \verb'Flow123d-2.1.0-windows-install.zip' and extract it to any folder.
-Navigate to directory \verb'Flow123d-<version>-windows-install' and execute the \verb'install.bat' file.
-Executing \verb'install.bat' will start an installation process which will:
+Other requirement is to have virtualization enabled. Typically, virtualization is enabled by default but in some
+cases you need to enable virtualization in BIOS or UEFI. For more detail see 
+\href{https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled}{Virtualization must be enabled} in Docker manual.
+
+To install Flow123d on Windows, first download the Windows installation package archive \verb'flow123d_2.1.0_windows_install.zip' and extract it to any folder.
+The directory \verb'flow123d_2.1.0' will be created. You can rename it or move it elsewhere before you start installation, but not later. 
+This directory will become the root directory of the Flow123d installation. 
+
+Navigate to the Flow123d root directory and execute \verb'install.bat'. Depending on your system settings you may be asked to allow 
+execution of the installation script by pressing \verb'R'. This starts the instalation consisting of following two steps:
 \begin{enumerate}
-	\item Install \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} to your system.
-	If your system did not contain Docker Toolbox before, you need to run installation again (since system path variable was modified new shell is required).
-	\item Import downloaded Flow123d image into your docker environment.
-	\item Modify the imported image to provide better integration with your system.
+	\item Installation of the \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} is performed unless it is installed already. 
+	First you have to agree with execution of the setup 'DockerToolbox-1.12.2.exe' and then
+	confirm installation of the Docker with the 'next' button. You can confirm or modify destination location of the Docker Toolbox in the next dialog.
+        Then you are asked about Docker components to install. Docker Toolbox system uses virtual environment software 
+        \href{https://www.virtualbox.org/}{VirtualBox} which is installed along with Docker Toolbox as well as other necessary components.
+        Default configuration of components is acceptable, however you can uncheck 
+        \emph{'Docker Compose for Windows'} and \emph{'Kinematic for Windows'}, while keeping \emph{'VirtualBox'} and \emph{'Git for Windows'} that are essential,
+        see the dialog in Figure \ref{fig:DockerComponents} (left). Next dialog selects additional tasks, you can uncheck \emph{'Create a desktop shortcut'} as 
+        depicted in Figure \ref{fig:DockerComponents} (right)
+        \begin{figure}
+          \center  
+          \includegraphics[width=0.45\textwidth]{\fig/DockerComponents.png}%
+          \hspace{2ex}
+          \includegraphics[width=0.45\textwidth]{\fig/DockerTasks.png}
+          \caption{{\bf Left:} The minimal set of Docker components to select during the install.\\
+                   {\bf Right:} Possible choice of additional Docker tasks.} 
+          \label{fig:DockerComponents}
+        \end{figure}
+	After installation of the Docker Toolbox you need to run \verb'install.bat' (since system path variable was modified new shell is required). 
+	\item Second step is customization of the Docker environment. The downloaded Flow123d image is imported into your docker environment 
+	and further modified to provide better integration with your system.
+	You will be asked several times to allow changes to the \emph{'VirtualBox Interface'}, do not hesitate to confirm any dialog containing 'Oracle'.
+		
+	Since flow123d run in the Docker container we must set a mapping of the Windows directories to the directories in the Docker container. 
+	By default we setup such mapping for the home directory \verb'C:/Users' which is mapped to \verb'/c/Users'. 
+	
+	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other disk for mapping 
+	(recursively). The question is repeated allowing to add more custom mappings one by one. To mount other disks please enter only letter 
+	of a disk you want to mount such as \verb'd'.
+	If you agree to mount disk, virtual machine will be stopped 
+	(this may take several seconds). Example of adding two disks can be following:
+	\begin{verbatim}
+		Do you wish to add other mounts? [y/N] y
+		
+		Stopping default to perform changes in virtual machine
+		Enter letter of disk you want to mount (e.g. d): f
+		Mounting path "f:" -> "/f/"
+		Do you wish to add other mounts? [y/N] y
+		
+		Enter letter of disk you want to mount (e.g. d): g
+		Mounting path "g:\" -> "/g/"
+		Do you wish to add other mounts? [y/N] n
+	\end{verbatim}
+	
+	\textbf{Note:}
+	\textit{Mounting process does not copy or move any files. This process only grants permission to the virtual machine to work with files under mounted location.}
 \end{enumerate}
 
-Docker Toolbox system uses virtual environment software \href{https://www.virtualbox.org/}{VirtualBox} which 
-is installed along with Docker Toolbox.
+In order to uninstall Flow123d you can run the \verb'uninstall.bat' script. This script removes Flow123d 
+and uninstall Docker Toolbox (after confirmation), but keep Git and VirtualBox installed. These can be uninstalled manually. 
+Moreover the configuration directories \verb'.docker' and \verb'VirtualBox' in your home directory are preserved. These can be deleted manually as well. 
+
+
+
+
+\subsection{Reinstalling Flow123d}
+\label{duplicit-image}
+If you are installing same version of Flow123d again, you will be prompted whether to remove previous version or not. 
+It is recommended to confirm deletion for both images \verb'flow123d/v<version>' and \verb'flow123d/v<version>:user'.
+
 
 \section{Running Flow123d}
 
@@ -302,6 +368,15 @@ Directory \verb'bin' contains:
 	\item \verb'fterm.sh' \\
 	 Script will invoke shell inside docker container and mount your home directory.
 	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
+	 
+	\textbf{Note:} On some systems, shell's font is extremely small, you can change this behaviour by right-clicking on window bar and selecting 
+	\verb'default' or (\verb'vychozi' in Czech) see \autoref{fig:TerminalFont}.
+	 \begin{figure}
+		 \center
+		 \includegraphics[width=1\textwidth]{\fig/TerminalFont.png}
+		 \caption{Changing default font family and font size}
+		 \label{fig:TerminalFont}
+	 \end{figure}
 
 	\item \verb'flow123d.sh' \\
 	 Script will run Flow123d inside docker container and mount your home  directory.
@@ -365,6 +440,41 @@ Directory \verb'bin' contains two \verb'bat' files:
 \textbf{Note:}
 \textit{Docker Engine daemon has only limited access to your Windows file system. Docker Machine tries to auto-share your}
 \verb'C:\Users' \textit{directory. Directories outside this directory will not be automatically mounted.} 
+
+\subsection{Setting memory of virtual machine}
+The virtual machine (VM) used for running the Docker with Flow123d inside claims predefined portion of the RAM 
+of the host system to be used as the RAM of the guest Docker system. Unfortunately the default size of this memory is
+quite small, e.g. 1GB on a 4GB machine. About 500MB is taken by the Docker kernel leaving just 500MB for Flow123d.
+This is may be enough just for the small problems with thousands of elements. In order to treat realistic problems one have to 
+enlarge the RAM size of the guest system. This can be easily done as follows:
+
+
+ 
+\begin{enumerate}
+ \item Start \verb'Oracle VM VirtualBox' either by a shortcut on your desktop or through the start menu. 
+ A medium size window appears with the list of existing virtual machines 
+ on the left. The docker VM is named 'default'.
+ \item Next step is to power off the VM \verb'default' if it is running. 
+ Following the left Figure \ref{fig:vm_ram_setup}, use the right-click on the VM and select \verb'Close' (Zav\v r\' it) and 
+ \verb'Power Off' (Vypnout). Confirm the turn off of the VM machine. 
+ \item Final step is setting the size of RAM of the VM. Follow the right Figure \ref{fig}. 
+ Select the VM \verb'default', click on \verb'Settings' (Nastave\' i) and select \verb'System' in the left column.
+ On the tab \verb'Motherboard' (Z\' akladn\' i deska) you find a slide to select the size of the RAM. You can select sizes  
+ in the orange or even red range since the memory is only reserved not actually used, however setting it to close to the 
+ whole RAM size of the host allows the applications, i.e. Flow123d, running on the VM to compete for RAM with applications on the host system.
+ \item The VM is restarted automatically at the next start of the Flow123d or the fterm.
+\end{enumerate}
+
+
+\begin{figure}
+    \center  
+    \includegraphics[width=0.45\textwidth]{\fig/VBMachineTurnOff.png}
+    \hspace{2ex}
+    \includegraphics[width=0.45\textwidth]{\fig/VBMachineSetMem.png}
+    \caption{{\bf Left:} Power off the virtual machine.
+             {\bf Right:} Setting RAM size of the virtual machine.} 
+    \label{fig:vm_ram_setup}
+\end{figure}
 
 \subsection{Flow123d arguments}
 When you are inside docker container, you have access to entire file system. Flow123d is installed in 

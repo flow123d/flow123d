@@ -18,15 +18,24 @@
 #ifndef TYPE_ABSTRACT_HH_
 #define TYPE_ABSTRACT_HH_
 
-#include "system/exceptions.hh"
-
 #include "type_base.hh"
-#include "type_selection.hh"
+#include "type_record.hh"
+
+#include <string>
+#include <vector>
+#include <memory>
 
 
 namespace Input {
 namespace Type {
 
+
+using namespace std;
+
+
+class Selection;
+class AdHocAbstract;
+class OutputBase;
 
 
 /**
@@ -52,7 +61,6 @@ namespace Type {
  */
 class Abstract : public TypeBase {
 	friend class OutputBase;
-	//friend class Record;
 	friend class AdHocAbstract;
 
 protected:
@@ -63,14 +71,7 @@ protected:
     class ChildData {
     public:
     	/// Constructor
-        ChildData(const string &name, const string &description)
-        : selection_of_childs( std::make_shared<Selection> (name + "_TYPE_selection") ),
-		  description_(description),
-		  type_name_(name),
-		  finish_status_(FinishStatus::none_),
-		  closed_(false),
-		  selection_default_(Default::obligatory())
-        {}
+        ChildData(const string &name, const string &description);
 
         /**
          * @brief Selection composed from names of derived Records.
@@ -154,7 +155,7 @@ public:
      */
     Abstract &allow_auto_conversion(const string &type_default);
 
-    /// Can be used to close the Abstract for further declarations of keys.
+    /// Close the Abstract and add its to type repository (see @p TypeRepository::add_type).
     Abstract &close();
 
     /**
@@ -170,8 +171,7 @@ public:
     /**
      *  @brief Finish declaration of the Abstract type.
      *
-     *  Set Abstract as parent of derived Records (for mechanism of
-     *  set parent and descendant see \p Record::derive_from)
+     *  Checks if Abstract is closed and completes Abstract (check default descendant, parameters of generic types etc).
      */
     FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
@@ -207,7 +207,7 @@ public:
      */
     virtual string type_name() const override;
     /// Override @p Type::TypeBase::class_name.
-    string class_name() const override { return "Abstract"; }
+    string class_name() const override;
 
     /**
      * @brief Container-like access to the descendants of the Abstract.
@@ -226,36 +226,12 @@ public:
     /**
      * @brief Add inherited Record.
      *
-     * This method is used primarily in combination with registration variable. @see Input::Factory
+     * Do not use this method for set Record as descendant! For this case should be used \p Record::derive_from
+     * method in generating function of Record.
      *
-     * Example of usage:
-	 @code
-		 class SomeBase
-		 {
-		 public:
-    		/// the specification of input abstract record
-    		static const Input::Type::Abstract & get_input_type();
-			...
-		 }
-
-		 class SomeDescendant : public SomeBase
-		 {
-		 public:
-    		/// the specification of input record
-    		static const Input::Type::Record & get_input_type();
-			...
-		 private:
-			/// registers class to factory
-			static const int reg;
-		 }
-
-		 /// implementation of registration variable
-		 const int SomeDescendant::reg =
-			 Input::register_class< SomeDescendant >("SomeDescendant") +
-			 SomeBase::get_input_type().add_child(SomeDescendant::get_input_type());
-	 @endcode
+     * This method is used primarily for registration of Record during its closing.
      */
-    int add_child(const Record &subrec);
+    int add_child(Record &subrec);
 
     // Get default value of selection_of_childs
     Default &get_selection_default() const;
@@ -304,7 +280,7 @@ public:
 	TypeHash content_hash() const   override;
 
     /// Override @p Type::TypeBase::class_name.
-	string class_name() const override { return "AdHocAbstract"; }
+	string class_name() const override;
 
 
     /**
@@ -316,7 +292,7 @@ public:
 	FinishStatus finish(FinishStatus finish_type = FinishStatus::regular_) override;
 
     /// Add inherited Record.
-    AdHocAbstract &add_child(const Record &subrec);
+    AdHocAbstract &add_child(Record &subrec);
 
 protected:
     /// Reference to ancestor Abstract

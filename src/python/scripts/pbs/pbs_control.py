@@ -24,7 +24,7 @@ def insert_jobs(jobs, pbs_module):
             Printer.console.dyn('Starting jobs {:02d} of {:02d}', job_id, total)
             Printer.batched.out('Starting jobs {:02d} of {:02d}', job_id, total)
 
-            output = subprocess.check_output(qsub_command)
+            output = subprocess.check_output(qsub_command).decode()
             job = pbs_module.ModuleJob.create(output, pbs_run.case)
             job.full_name = "Case {}".format(pbs_run.case)
             multijob.add(job)

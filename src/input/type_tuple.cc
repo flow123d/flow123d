@@ -35,7 +35,9 @@ Tuple::Tuple(const Tuple & other)
 
 
 Tuple::Tuple(const string & type_name_in, const string & description)
-: Record(type_name_in, description) {}
+{
+	this->data_ = std::make_shared<RecordData>(type_name_in, description);
+}
 
 
 TypeBase::TypeHash Tuple::content_hash() const
@@ -44,6 +46,11 @@ TypeBase::TypeHash Tuple::content_hash() const
     boost::hash_combine(seed, "Tuple");
     data_->content_hash(seed);
     return seed;
+}
+
+
+string Tuple::class_name() const {
+	return "Tuple";
 }
 
 

@@ -161,7 +161,7 @@ set(CMAKE_FORTRAN_FLAGS_${CMAKE_BUILD_TYPE} "")
 if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")        
       execute_process(
           COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations")
 
       # is cygwin env?
       if (CYGWIN)
@@ -343,7 +343,7 @@ set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
 set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
  
-set(Boost_DEBUG TRUE)
+# set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
 # components of boost in our own build, if we hint BOOST_ROOT of our build to the
 # first find_package.
@@ -510,6 +510,27 @@ message(STATUS "YamlCpp_INCLUDE_DIR = ${YamlCpp_INCLUDE_DIR}")
 message(STATUS "=======================================================\n\n")
 
 
+#################################################################################
+#  ZLIB_FOUND - set to true if the library is found
+message(STATUS "=======================================================")
+message(STATUS "====== ZLIB-CORE ======================================")
+message(STATUS "=======================================================")
+message(STATUS "Zlib_ROOT_HINT = ${Zlib_ROOT_HINT}")
+
+find_package(Zlib)
+
+# use zlib compression of VTK files
+if(Zlib_FOUND)
+    flow_define(HAVE_ZLIB)
+endif()
+
+message(STATUS "-------------------------------------------------------")
+message(STATUS "Zlib_FOUND = ${Zlib_FOUND}")
+message(STATUS "Zlib_LIBRARY = ${Zlib_LIBRARY}")
+message(STATUS "Zlib_INCLUDE_DIR = ${Zlib_INCLUDE_DIR}")
+message(STATUS "=======================================================\n\n")
+
+
 ####################################################################################
 # PYTHON
 message(STATUS "=======================================================")
@@ -554,8 +575,9 @@ if(USE_PYTHON)
 endif()
 
 # find python 
-find_package(PythonInterp 2.7 REQUIRED)
-find_package(PythonLibs 2.7   REQUIRED)
+set(Python_ADDITIONAL_VERSIONS 3.4) # for cmake version 2.8
+find_package(PythonInterp 3.4 REQUIRED)
+find_package(PythonLibs   3.4 REQUIRED)
 # TODO: remove dependency on python
 include_directories(${PYTHON_INCLUDE_DIRS})
 
@@ -629,6 +651,7 @@ include_directories(
     ${MPI_CXX_INCLUDE_PATH}
     ${YamlCpp_INCLUDE_DIR}
     ${PugiXml_INCLUDE_DIR}
+    ${Zlib_INCLUDE_DIR}
     ${CMAKE_BINARY_DIR}/src/dealii/include    # deal generates config.h
     ${CMAKE_SOURCE_DIR}/src/dealii/include
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
@@ -849,6 +872,7 @@ message(STATUS "Armadillo:  ${ARMADILLO_LIBRARIES}")
 message(STATUS "Python:     ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "PugiXml:    ${PugiXml_LIBRARY}")
+message(STATUS "ZLib:       ${Zlib_LIBRARY}")
 message(STATUS "===========================================")
 
 

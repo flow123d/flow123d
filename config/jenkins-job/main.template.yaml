@@ -344,19 +344,22 @@
       - shell: |
           rm -rf publish
           mkdir -p publish
+          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} clean-tests
+          
           make -C flow123d/bin/docker/package \
                 CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
                 DOCKER_TOOLBOX_PATH=/home/builder/jenkins/static/DockerToolbox-1.12.2.exe \
+                FLOW_GIT_HASH=${{GIT_COMMIT:0:6}} \
                 create-packages
           make -C flow123d/bin/docker/package \
                 CID=${{DOCKER_PID}} \
                 DESTINATION=$(pwd)/publish \
                 remove-unwanted
-          # copy out docs
-          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
-          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
-          docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          # copy out docs, now done in makefile script in docker-config repo
+          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
+          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
+          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
     publishers:
       - cifs: 
           site: 'flow123d@intec'
@@ -404,6 +407,8 @@
               - master
               - 2.0.0
               - 2.1.0
+              - 2.1.2
+              - 3.0.0_dev
           basedir: flow123d
           browser: githubweb
           browser-url: https://github.com/flow123d/flow123d/

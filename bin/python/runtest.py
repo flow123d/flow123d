@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-from __future__ import absolute_import
 import pathfix
 pathfix.init()
 # ----------------------------------------------
@@ -28,6 +27,9 @@ def create_parser():
     argparser.Parser.add(group, '--valgrind, -v', nargs='?', default=False, help="""R|
         Run tests under valgrind, with python suppression with optional argument
         <valgrind args> passed to the valgrind. (In PBS mode this arguments is ignored.)?
+    """)
+    argparser.Parser.add(group, '--massif', action='store_true', default=False, help="""R|
+        If set will print valgrind massif memory allocation stats.
     """)
     argparser.Parser.add(group, '--parallel, -p', default=1, type=int, help="""R|
         Run at most N jobs in parallel.
@@ -91,7 +93,8 @@ def create_parser():
 
     group = parser.add_argument_group('Special options', 'Options are debug features or machine specific options')
     argparser.Parser.add(group, '--root', help="""R|
-        Path to base directory of flow123d.
+        Path to base directory of flow123d. If not set value will be determined by python scripts
+        location.
     """)
     argparser.Parser.add(group, '--json', help="""R|
         Output result to json file.
@@ -159,11 +162,9 @@ if __name__ == '__main__':
     # run work
     with Timer.app_timer:
         BinExecutor.register_sigint()
-        returncode = do_work(arg_options)
+        returncode, debug = do_work(arg_options)
 
     # run work
-    returncode = returncode.returncode if type(returncode) is not int else returncode
-
     if arg_options.death:
         if returncode == 0:
             Printer.all.err('Command did exit with 0 but should not (--death flag was set)!')
@@ -172,6 +173,6 @@ if __name__ == '__main__':
             Printer.all.suc('Command did not with 0 (--death flag was set)')
             sys.exit(0)
     else:
-        sys.exit(returncode)
+        sys.exit(returncode())
 
 

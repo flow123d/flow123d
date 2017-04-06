@@ -10,9 +10,17 @@
 
 #include <flow_gtest.hh>
 
+#include <input/type_abstract.hh>
+
+// Test of correct includes in type_abstract.hh
+TEST(InputTypeAbstract, includes) {
+	using namespace Input::Type;
+	Abstract a_rec = Abstract("EqBase","Base of equation records.");
+	EXPECT_EQ( a_rec.class_name(), "Abstract");
+}
+
+
 #include <input/input_type.hh>
-
-
 
 /**
  * Test Abstract.
@@ -104,8 +112,8 @@ namespace IT=Input::Type;
 class AdHocDataTest : public testing::Test {
 public:
 	static IT::Record & get_rec();
-	static const IT::Record & get_in_rec1();
-	static const IT::Record & get_in_rec2();
+	static IT::Record & get_in_rec1();
+	static IT::Record & get_in_rec2();
 	static const IT::Abstract & get_ancestor();
 	static const IT::AdHocAbstract & get_adhoc_1();
 	static const IT::AdHocAbstract & get_adhoc_2();
@@ -118,9 +126,8 @@ protected:
 };
 
 
-const IT::Record & AdHocDataTest::get_in_rec1() {
+IT::Record & AdHocDataTest::get_in_rec1() {
 	return IT::Record("Record 1","")
-		.declare_key("TYPE", IT::String(), IT::Default("\"Record 1\""), "")
 		.declare_key("val_1", IT::Integer(0), "value 1" )
 		.close();
 }
@@ -152,9 +159,8 @@ const IT::Abstract & AdHocDataTest::get_ancestor() {
 	return IT::Abstract("Ancestor","Base of equation records.").close();
 }
 
-const IT::Record & AdHocDataTest::get_in_rec2() {
+IT::Record & AdHocDataTest::get_in_rec2() {
 	return IT::Record("Record 2","")
-		.declare_key("TYPE", IT::String(), IT::Default("\"Record 2\""), "")
 		.declare_key("val_2", IT::Integer(0), "value 2" )
 		.close();
 }
@@ -174,5 +180,5 @@ using namespace Input::Type;
 	EXPECT_EQ( 2, AdHocDataTest::get_in_rec2().size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_1().child_size());
 	EXPECT_EQ( 2, AdHocDataTest::get_adhoc_2().child_size());
-	EXPECT_EQ( 2, AdHocDataTest::get_rec().size());
+	EXPECT_EQ( 3, AdHocDataTest::get_rec().size());
 }

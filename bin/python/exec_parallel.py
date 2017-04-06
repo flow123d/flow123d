@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
-from __future__ import absolute_import
 import pathfix
 pathfix.init()
 # ----------------------------------------------
@@ -113,8 +112,7 @@ if __name__ == '__main__':
     # Paths.init(os.getcwd())
 
     # run work
-    returncode = do_work(arg_options)
-    returncode = returncode.returncode if type(returncode) is not int else returncode
+    returncode, debug = do_work(arg_options)
 
     if arg_options.death:
         if returncode == 0:
@@ -124,4 +122,4 @@ if __name__ == '__main__':
             Printer.all.suc('Command did not with 0 (--death flag was set)')
             sys.exit(0)
     else:
-        sys.exit(returncode)
+        sys.exit(returncode())

@@ -84,6 +84,7 @@ class ModuleRuntest(ScriptModule):
         local_run = LocalRun(case)
         local_run.mpi = case.proc > 1
         local_run.progress = self.progress
+        local_run.massif = self.arg_options.massif
 
         # on demand we do not clean dirs or run comparisons
         no_clean = self.arg_options.no_clean
@@ -118,7 +119,7 @@ class ModuleRuntest(ScriptModule):
             runtest_command,
 
             python=sys.executable,
-            script=pkgutil.get_loader('runtest').filename,
+            script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
@@ -138,7 +139,7 @@ class ModuleRuntest(ScriptModule):
         jobs = list()
         """ :type: list[(str, PBSModule)] """
 
-        for yaml_file, yaml_config in self.configs.files.items():
+        for yaml_file, yaml_config in list(self.configs.files.items()):
             for case in yaml_config.get_one(yaml_file):
                 pbs_run = pbs_module.Module(case)
                 pbs_run.queue = self.arg_options.get('queue', True)
@@ -174,7 +175,7 @@ class ModuleRuntest(ScriptModule):
         runner = ParallelThreads(self.arg_options.parallel)
         runner.stop_on_error = not self.arg_options.keep_going
 
-        for yaml_file, yaml_config in self.configs.files.items():
+        for yaml_file, yaml_config in list(self.configs.files.items()):
             for case in yaml_config.get_one(yaml_file):
                 # create main process which first clean output dir
                 # and then execute test following with comparisons
@@ -199,8 +200,7 @@ class ModuleRuntest(ScriptModule):
 
         with Printer.all.with_level(1):
             for thread in runner.threads:
-                multithread = thread
-                """ :type: RuntestMultiThread """
+                multithread = thread  # type: RuntestMultiThread
                 StatusPrinter.print_test_result(multithread)
             Printer.all.sep()
             StatusPrinter.print_runner_stat(runner)
@@ -282,7 +282,7 @@ def do_work(arg_options=None, debug=False):
     :type arg_options: utils.argparser.RuntestArgs
     """
     module = ModuleRuntest(arg_options)
-    result = module.run(debug)
+    result = module.run(debug)  # type: ParallelThreads
 
     # pickle out result on demand
     if arg_options.dump:
@@ -290,4 +290,5 @@ def do_work(arg_options=None, debug=False):
             import pickle
             pickle.dump(result.dump(), open(arg_options.dump, 'wb'))
         except: pass
-    return result
+
+    return result.returncode, result

@@ -486,14 +486,14 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
-		unsigned int elem_idx,
+		unsigned int boundary_idx,
 		const vector<int> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt elem_array[1] = { int(be_offset_+elem_idx) };
+	PetscInt elem_array[1] = { int(be_offset_+boundary_idx) };
 	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
 			elem_array,
@@ -536,14 +536,14 @@ void Balance::add_mass_vec_value(unsigned int quantity_idx,
 
 
 void Balance::add_flux_vec_value(unsigned int quantity_idx,
-		unsigned int elem_idx,
+		unsigned int boundary_idx,
 		double value)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
     chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
-			be_offset_+elem_idx,
+			be_offset_+boundary_idx,
 			value,
 			ADD_VALUES));
 }
