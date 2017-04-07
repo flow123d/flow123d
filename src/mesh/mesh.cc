@@ -759,7 +759,9 @@ void Mesh::check_and_finish()
 	region_db_.check_regions();
 
 	if ( in_record_.val<bool>("print_regions") ) {
-		region_db_.print_region_table(cout);
+		stringstream ss;
+		region_db_.print_region_table(ss);
+		MessageOut() << ss.str();
 	}
 }
 
