@@ -144,7 +144,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
     water->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
-    if ( FieldCommon::print_message_table(ss) ) {
+    if ( FieldCommon::print_message_table(ss, "HC explicit sequential") ) {
         WarningOut() << ss.str();
     }
 

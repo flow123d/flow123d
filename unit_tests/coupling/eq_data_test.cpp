@@ -345,7 +345,7 @@ TEST_F(SomeEquation, values) {
     EXPECT_DOUBLE_EQ(21.0, bc_value(2) );
 
     std::stringstream ss;
-    if ( FieldCommon::print_message_table(ss) ) {
+    if ( FieldCommon::print_message_table(ss, "test") ) {
         WarningOut() << ss.str();
     }
 }

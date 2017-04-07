@@ -354,7 +354,7 @@ void SorptionBase::zero_time_step()
   
   data_->set_time(time_->step(), LimitSide::right);
   std::stringstream ss; // print warning message with table of uninitialized fields
-  if ( FieldCommon::print_message_table(ss) ) {
+  if ( FieldCommon::print_message_table(ss, "sorption") ) {
       WarningOut() << ss.str();
   }
   set_initial_condition();

@@ -430,7 +430,7 @@ public:
      *
      * Return true if messages_data_ vector is nonempty and clear its.
      */
-    static bool print_message_table(ostream& stream);
+    static bool print_message_table(ostream& stream, std::string equation_name);
 
     /**
      * Virtual destructor.
