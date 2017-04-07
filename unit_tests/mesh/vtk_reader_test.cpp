@@ -16,61 +16,57 @@
 #include "mesh/msh_vtkreader.hh"
 
 
-class VtkMeshReaderTest : public VtkMeshReader {
-public:
-	VtkMeshReaderTest(const FilePath &file_name)
-	: VtkMeshReader(file_name) {}
+class VtkMeshReaderTest : public testing::Test, public VtkMeshReader {
+protected:
+	virtual void SetUp() {
+	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	    FilePath vtu_file("output/test_output_vtk_ascii_ref.vtu", FilePath::input_file);
 
-	VtkMeshReaderTest(std::istream &in)
-	: VtkMeshReader(in) {}
+	    parse_result_ = doc_.load_file( ((std::string)vtu_file).c_str() );
+	    read_nodes_elms_count();
+	}
+
+	virtual void TearDown() {}
 
 	std::string get_parse_result() {
 		std::stringstream ss; ss << this->parse_result_.description();
 		return ss.str();
 	}
-
-	pugi::xml_document & get_xml_doc() {
-		return this->doc_;
-	}
 };
 
 
 // simple test of short xml input, check functionality of pugixml
-TEST(VTKReader, read_simple_xml) {
+TEST(PugiXml, read_simple_xml) {
 	std::stringstream ss;
 	ss << "<mesh name='sphere'>\n";
 	ss << "<bounds>0 0 1 1</bounds>\n";
 	ss << "</mesh>\n";
 
-	VtkMeshReaderTest vtk_reader( ss );
+	pugi::xml_document doc;
+    pugi::xml_parse_result parse_result = doc.load(ss);
 
-	std::stringstream mesh_name; mesh_name << vtk_reader.get_xml_doc().child("mesh").attribute("name").value();
-	std::stringstream mesh_bounds; mesh_bounds << vtk_reader.get_xml_doc().child("mesh").child("bounds").child_value();
+    std::stringstream result_desc; result_desc << parse_result.description();
+	std::stringstream mesh_name; mesh_name << doc.child("mesh").attribute("name").value();
+	std::stringstream mesh_bounds; mesh_bounds << doc.child("mesh").child("bounds").child_value();
 
-	EXPECT_EQ( "No error", vtk_reader.get_parse_result() );
+	EXPECT_EQ( "No error", result_desc.str() );
 	EXPECT_EQ( "sphere",   mesh_name.str() );
 	EXPECT_EQ( "0 0 1 1",  mesh_bounds.str() );
 }
 
 
 // test of reading of VTU file
-TEST(VTKReader, read_xml_file) {
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+TEST_F(VtkMeshReaderTest, read_xml_file) {
 
-    FilePath vtu_file("output/test_output_vtk_ascii_ref.vtu", FilePath::input_file);
-
-    VtkMeshReaderTest vtk_reader( vtu_file );
-    EXPECT_EQ( "No error", vtk_reader.get_parse_result() );
+    EXPECT_EQ( "No error", this->get_parse_result() );
 
     // get inner tag with VTU data
-    pugi::xml_node piece_node = vtk_reader.get_xml_doc().child("VTKFile").child("UnstructuredGrid").child("Piece");
+    pugi::xml_node piece_node = doc_.child("VTKFile").child("UnstructuredGrid").child("Piece");
 
     {
     	// test of attributes
-		std::stringstream points; points << piece_node.attribute("NumberOfPoints").value();
-		std::stringstream cells; cells << piece_node.attribute("NumberOfCells").value();
-		EXPECT_EQ( "8",  points.str() );
-		EXPECT_EQ( "6",  cells.str() );
+		EXPECT_EQ( 8, this->n_nodes() );
+		EXPECT_EQ( 6, this->n_elements() );
     }
 
     {
