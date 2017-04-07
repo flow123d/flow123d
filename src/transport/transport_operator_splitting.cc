@@ -172,11 +172,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     balance_ = make_shared<Balance>("mass", mesh_);
     balance_->init_from_input(in_rec.val<Input::Record>("balance"), this->time());
 
-    if (balance_)
-    {
-  	  balance_->units(UnitSI().kg(1));
-  	  convection->set_balance_object(balance_);
-    }
+    balance_->units(UnitSI().kg(1));
+    convection->set_balance_object(balance_);
 
 	convection->initialize(); //
 
@@ -299,7 +296,7 @@ void TransportOperatorSplitting::update_solution() {
 	    convection->update_solution();
         
 
-	    if (balance_ != nullptr && balance_->cumulative())
+	    if (balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
 
@@ -327,7 +324,7 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-	    if (balance_ != nullptr && balance_->cumulative())
+	    if (balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
 

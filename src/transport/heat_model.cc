@@ -261,24 +261,18 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
     balance_ = std::make_shared<Balance>("energy", mesh_);
     balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    if (balance_)
-    {
-    	subst_idx = {balance_->add_quantity("energy")};
-    	balance_->units(UnitSI().m(2).kg().s(-2));
-    }
+    subst_idx = {balance_->add_quantity("energy")};
+    balance_->units(UnitSI().m(2).kg().s(-2));
 }
 
 
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
-	if (balance_ != nullptr)
-	{
-	    if (balance_->is_current(time_->step())) {
-            calculate_instant_balance();
-            balance_->output(time_->t());
-	    }
-	}
+    if (balance_->is_current(time_->step())) {
+        calculate_instant_balance();
+        balance_->output(time_->t());
+    }
 }
 
 
