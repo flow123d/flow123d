@@ -17,12 +17,15 @@
  */
 
 
+#include <iostream>
+#include "boost/lexical_cast.hpp"
 #include "msh_vtkreader.hh"
 
 
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 {
 	parse_result_ = doc_.load_file( ((std::string)file_name).c_str() );
+	read_nodes_elms_count();
 }
 
 
@@ -30,5 +33,15 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 VtkMeshReader::VtkMeshReader(std::istream &in)
 {
 	parse_result_ = doc_.load(in);
+	read_nodes_elms_count();
+}
+
+
+
+void VtkMeshReader::read_nodes_elms_count()
+{
+	pugi::xml_node piece_node = doc_.child("VTKFile").child("UnstructuredGrid").child("Piece");
+	n_nodes_ = boost::lexical_cast<unsigned int>( piece_node.attribute("NumberOfPoints").value() );
+	n_elements_ = boost::lexical_cast<unsigned int>( piece_node.attribute("NumberOfCells").value() );
 }
 

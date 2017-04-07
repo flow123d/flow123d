@@ -40,9 +40,32 @@ public:
      */
 	VtkMeshReader(std::istream &in);
 
+	/// Return count of nodes
+	inline unsigned int n_nodes() const {
+		return n_nodes_;
+	}
+
+	/// Return count of elements
+	inline unsigned int n_elements() const {
+		return n_elements_;
+	}
+
 protected:
+	/// Empty constructor only for tests.
+	VtkMeshReader() {}
+
+	/// Set count of nodes and elements.
+	void read_nodes_elms_count();
+
 	pugi::xml_document doc_;
     pugi::xml_parse_result parse_result_;
+
+    /// count of nodes
+    unsigned int n_nodes_;
+
+    /// count of elements
+    unsigned int n_elements_;
+
 };
 
 #endif	/* MSH_VTK_READER_HH */
