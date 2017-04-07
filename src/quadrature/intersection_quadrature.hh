@@ -156,7 +156,10 @@ public:
     : mesh_(mesh)
     {}
 
-    inline void reinit(const IntersectionLocalBase *isec)
+    /**
+     * Reinit quadrature measure. Returns true if quadrature is close to zero.
+     */
+    inline bool reinit(const IntersectionLocalBase *isec)
     {
         slave_idx_ = isec->bulk_ele_idx();
         ElementFullIter ele = mesh_.element(isec->component_ele_idx());
@@ -167,13 +170,17 @@ public:
 
             arma::vec3 diff = (*il)[0].coords(ele) - (*il)[1].coords(ele);
             measure_= arma::norm(diff, 2);
+            if (measure_ < 1e-10) return false;
         } else {
             // We can save some multiplications moving measure of the master element into
             // common scale coefficient. However then the meaning of measure_ depends on the case.
 
             // multiply by jacobian of transform to real element.
-            measure_= isec->compute_measure() * ele->measure() * ele->dim();
+            double rel_measure = isec->compute_measure();
+            if (rel_measure < 1e-10) return false;
+            measure_=  rel_measure * ele->measure() * ele->dim();
         }
+        return true;
     }
 
 

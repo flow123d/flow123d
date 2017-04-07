@@ -137,9 +137,10 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
     double isec_sum = 0.0;
     uint i = 0;
     for(; i < isec_list.size(); ++i) {
-        quadrature_.reinit(isec_list[i].second);
+        bool non_zero = quadrature_.reinit(isec_list[i].second);
         slave_ac_.reinit( quadrature_.slave_idx() );
         if (slave_ac_.dim() == master_ac.dim()) break;
+        if (! non_zero) continue; // skip quadratures close to zero
 
         double cs = data_->cross_section.value(slave_ac_.full_iter()->centre(), slave_ac_.full_iter()->element_accessor());
         double isec_measure = quadrature_.measure();
