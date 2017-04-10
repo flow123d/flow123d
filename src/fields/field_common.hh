@@ -74,11 +74,10 @@ public:
 	/// Store data of one initialization message.
 	struct MessageData {
 		/// Constructor
-		MessageData(std::string default_value, std::string field_input_name, std::string field_name, std::string region_list)
-		: default_value_(default_value), field_input_name_(field_input_name), field_name_(field_name), region_list_(region_list) {};
+		MessageData(std::string default_value, std::string field_name, std::string region_list)
+		: default_value_(default_value), field_name_(field_name), region_list_(region_list) {};
 
 		std::string default_value_;        ///< Default value of the field.
-		std::string field_input_name_;     ///< Parameter input_name_ of the field.
 		std::string field_name_;           ///< Parameter name_ of the field.
 		std::string region_list_;          ///< List of regions separated by comma.
 	};
