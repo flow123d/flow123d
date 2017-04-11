@@ -225,6 +225,10 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
+                
+    *this += subdomain.name("subdomain")
+      .units( UnitSI::dimensionless() )
+      .flags(FieldFlag::equation_external_output);
 
 
     // add all input fields to the output list
@@ -250,6 +254,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
+    data_.subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
     // DG variant and order
@@ -330,16 +335,23 @@ void TransportDG<Model>::initialize()
     // set time marks for writing the output
     data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
 
+    // equation default PETSc solver options
+    std::string petsc_default_opts;
+    if (feo->dh()->distr()->np() == 1)
+      petsc_default_opts = "-ksp_type bcgs -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    else
+      petsc_default_opts = "-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
+    
     // allocate matrix and vector structures
     ls    = new LinSys*[Model::n_substances()];
     ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
 
-    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
     }
@@ -1196,7 +1208,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(Model::n_substances()));
-	vector<double> csection_lower(qsize), csection_higher(qsize), por_lower(qsize), por_higher(qsize);
+	vector<double> csection_lower(qsize), csection_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
 
@@ -1236,8 +1248,6 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
-		data_.porosity.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), por_lower);
-		data_.porosity.value_list(fe_values_vb.point_list(), cell->element_accessor(), por_higher);
 
 		for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 		{
@@ -1260,12 +1270,11 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
 
 				double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
-				double por_lower_over_higher = por_lower[k]/por_higher[k];
 
-				comm_flux[0][0] =  (sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
-				comm_flux[0][1] = -(sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
-				comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-				comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
 
 				for (int n=0; n<2; n++)
 				{
