@@ -45,11 +45,11 @@ public:
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
 		arma::vec::fixed<dim+1> projection = mapping_.project_point(input_point, elm_map);
 		projection = mapping_.clip_to_element(projection);
-		projection[elm.dim()] = 1.0; // use last coordinates for translation
+		projection[0] = 1.0; // use first coordinates for translation
 
 		ObservePointData data;
 		data.element_idx_ = i_elm;
-		data.local_coords_ = projection.rows(0, elm.dim()-1);
+		data.local_coords_ = projection.rows(1, elm.dim());
 		data.global_coords_ = elm_map*projection;
 		data.distance_ = arma::norm(data.global_coords_ - input_point, 2);
 
@@ -76,7 +76,7 @@ public:
 		}
 
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
-		observe_data.global_coords_ =  elm_map * arma::join_cols(observe_data.local_coords_, arma::ones(1));
+		observe_data.global_coords_ =  elm_map * arma::join_cols(arma::ones(1), observe_data.local_coords_);
 	}
 
 private:
@@ -128,7 +128,7 @@ const Input::Type::Record & ObservePoint::get_input_type() {
                 )
         .declare_key("snap_region", IT::String(), IT::Default("\"ALL\""),
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
-        .declare_key("search_radius", IT::Double(1E-6),
+        .declare_key("search_radius", IT::Double(0.0),
         		IT::Default::read_time("Maximal distance of observe point from Mesh relative to its size (bounding box). "),
                 "Global value is define in Mesh by the key global_observe_search_radius.")
         .close();

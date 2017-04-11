@@ -280,12 +280,12 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim+1> MappingP1<dim,spacedim>::project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const
 {
-    arma::mat::fixed<3, dim> A=map.cols(0, dim-1);
+    arma::mat::fixed<3, dim> A=map.cols(1, dim);
     arma::mat::fixed<dim, dim> AtA = A.t()*A;
-    arma::vec::fixed<dim> Atb = A.t()*(point - map.col(dim));
+    arma::vec::fixed<dim> Atb = A.t()*(point - map.col(0));
     arma::vec::fixed<dim+1> bary_coord;
-    bary_coord.rows(0, dim - 1) = solve(AtA, Atb);
-    bary_coord( dim ) = 1.0 - arma::sum( bary_coord.rows(0,dim-1) );
+    bary_coord.rows(1, dim) = solve(AtA, Atb);
+    bary_coord( 0 ) = 1.0 - arma::sum( bary_coord.rows(1,dim) );
 
     return bary_coord;
 }

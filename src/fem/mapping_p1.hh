@@ -117,10 +117,11 @@ public:
         arma::vec3 &v0 = elm.node[0]->point();
         arma::mat::fixed<3, dim+1> A;
 
-        for(unsigned int i=0; i < dim; i++ ) {
-            A.col(i) = elm.node[i+1]->point() - v0;
+        A.col(0) = v0;
+        for(unsigned int i=1; i <= dim; i++ ) {
+            A.col(i) = elm.node[i]->point() - v0;
         }
-        A.col(dim) = v0;
+
         return A;
     }
 
