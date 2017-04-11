@@ -166,7 +166,7 @@ public:
     /**
      * Calculate instant quantities at output times.
      */
-    void calculate_instant_balance() override;
+    void balance_output() override;
 
 
     /**

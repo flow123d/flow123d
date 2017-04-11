@@ -201,7 +201,7 @@ public:
 
     void calculate_cumulative_balance();
 
-    void calculate_instant_balance();
+    void balance_output() override;
 
 	const Vec &get_solution(unsigned int sbi)
 	{ return ls[sbi]->get_solution(); }
@@ -327,9 +327,9 @@ private:
 	 * @param porosity  Porosities.
 	 * @param cross_cut Cross-cuts of higher dimension.
 	 */
-	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
-			double Dm, double alphaL, double alphaT, double porosity,
-			double cross_cut);
+// 	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
+// 			double Dm, double alphaL, double alphaT, double porosity,
+// 			double cross_cut);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.

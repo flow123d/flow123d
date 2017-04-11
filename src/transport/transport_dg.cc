@@ -426,9 +426,7 @@ void TransportDG<Model>::zero_time_step()
     // after preallocation we assemble the matrices and vectors required for mass balance
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     {
-        Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution());
-        Model::balance_->calculate_source(Model::subst_idx[sbi], ls[sbi]->get_solution());
-        Model::balance_->calculate_flux(Model::subst_idx[sbi], ls[sbi]->get_solution());
+        Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
 
         // add sources due to sorption
         vector<double> masses(Model::mesh_->region_db().bulk_size());
@@ -670,8 +668,7 @@ void TransportDG<Model>::calculate_cumulative_balance()
     {
     	for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     	{
-    		Model::balance_->calculate_cumulative_sources(Model::subst_idx[sbi], ls[sbi]->get_solution(), Model::time_->dt());
-    		Model::balance_->calculate_cumulative_fluxes(Model::subst_idx[sbi], ls[sbi]->get_solution(), Model::time_->dt());
+    		Model::balance_->calculate_cumulative(Model::subst_idx[sbi], ls[sbi]->get_solution());
 
     		// add sources due to sorption
     		vector<double> masses(Model::mesh_->region_db().bulk_size());
@@ -690,14 +687,11 @@ void TransportDG<Model>::calculate_cumulative_balance()
 
 
 template<class Model>
-void TransportDG<Model>::calculate_instant_balance()
+void TransportDG<Model>::balance_output()
 {
     for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-    {
-        Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution());
-        Model::balance_->calculate_source(Model::subst_idx[sbi], ls[sbi]->get_solution());
-        Model::balance_->calculate_flux(Model::subst_idx[sbi], ls[sbi]->get_solution());
-    }
+        Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
+    Model::balance_->output();
 }
 
 

@@ -238,13 +238,9 @@ void TransportOperatorSplitting::output_data(){
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream()->write_time_frame();
 
-        if (balance_ != nullptr && balance_->is_current( time_->step() ) )
-        {
-        	START_TIMER("TOS-balance");
-        	convection->calculate_instant_balance();
-        	balance_->output(time_->t());
-        	END_TIMER("TOS-balance");
-        }
+        START_TIMER("TOS-balance");
+        convection->balance_output();
+        END_TIMER("TOS-balance");
 
         END_TIMER("TOS-output data");
 }

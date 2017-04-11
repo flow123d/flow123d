@@ -601,19 +601,9 @@ void DarcyMH::output_data() {
 
 
     START_TIMER("Darcy balance output");
-    if (balance_->cumulative() && time_->tlevel() > 0)
-    {
-        balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
-        balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
-    }
-
-    if ( balance_->is_current( time().step()) )
-    {
-        balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
-        balance_->calculate_source(water_balance_idx_, schur0->get_solution());
-        balance_->calculate_flux(water_balance_idx_, schur0->get_solution());
-        balance_->output(time_->t());
-    }
+    balance_->calculate_cumulative(water_balance_idx_, schur0->get_solution());
+    balance_->calculate_instant(water_balance_idx_, schur0->get_solution());
+    balance_->output();
 }
 
 

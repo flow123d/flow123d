@@ -99,9 +99,9 @@ public:
     virtual void calculate_cumulative_balance() = 0;
 
     /**
-     * Calculate instant quantities at output times.
+     * Calculate instant quantities and write them to output file.
      */
-    virtual void calculate_instant_balance() = 0;
+    virtual void balance_output() = 0;
 
     /// Calculate the array of concentrations per element (for reactions).
     virtual void calculate_concentration_matrix() = 0;

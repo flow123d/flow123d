@@ -478,8 +478,6 @@ void ConvectionTransport::zero_time_step()
     compute_concentration_sources();
     set_boundary_conditions();
 
-    calculate_instant_balance();
-
     // write initial condition
 	output_data();
 }
@@ -841,21 +839,16 @@ int *ConvectionTransport::get_row_4_el(){
 void ConvectionTransport::calculate_cumulative_balance()
 {
 	for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-	{
-		balance_->calculate_cumulative_sources(sbi, vpconc[sbi], time_->dt());
-		balance_->calculate_cumulative_fluxes(sbi, vpconc[sbi], time_->dt());
-	}
+		balance_->calculate_cumulative(sbi, vpconc[sbi]);
 }
 
 
-void ConvectionTransport::calculate_instant_balance()
+void ConvectionTransport::balance_output()
 {
 	for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-	{
-		balance_->calculate_mass(sbi, vconc[sbi]);
-		balance_->calculate_source(sbi, vconc[sbi]);
-		balance_->calculate_flux(sbi, vconc[sbi]);
-	}
+		balance_->calculate_instant(sbi, vconc[sbi]);
+    
+    balance_->output();
 }
 
 
