@@ -261,33 +261,6 @@ template<> const std::vector< std::vector< std::vector<unsigned int> > > RefElem
 
 
 template<unsigned int dim>
-vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
-{
-	ASSERT_LT_DBG(nid, n_nodes).error("Node number is out of range!");
-
-	vec::fixed<dim> p;
-	p.zeros();
-
-    if (nid > 0)
-        p(nid-1) = 1;
-
-	return p;
-}
-
-
-template<unsigned int dim>
-vec::fixed<dim+1> RefElement<dim>::node_barycentric_coords(unsigned int nid)
-{
-	ASSERT_LT_DBG(nid, n_nodes).error("Node number is out of range!");
-
-    vec::fixed<dim+1> p;
-    p.zeros();
-    p(nid) = 1;
-
-    return p;
-}
-
-template<unsigned int dim>
 auto RefElement<dim>::local_to_bary(const LocalPoint& lp) -> BaryPoint
 {
     ASSERT_EQ_DBG(lp.n_rows, dim);
@@ -394,13 +367,6 @@ auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned
 }
 
 
-template<unsigned int dim>
-auto RefElement<dim>::barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face) -> BaryPoint
-{
-    ASSERT_EQ_DBG(face_barycentric.n_rows, dim);
-    return RefElement<dim>::interpolate<dim-1>(face_barycentric, i_face);
-}
-
 template<>
 auto RefElement<0>::clip(const BaryPoint &barycentric) -> BaryPoint
 {
@@ -446,7 +412,7 @@ auto RefElement<dim>::clip(const BaryPoint &barycentric) -> BaryPoint
             //bary_on_face.print(cout, "b on f");
             auto sub_clip = RefElement<dim-1>::clip(bary_on_face);
             //sub_clip.print(cout, "sub clip");
-            return barycentric_from_face(sub_clip, i_side);
+            return interpolate<dim-1>(sub_clip, i_side);
         }
     }
     return barycentric;

@@ -178,13 +178,6 @@ public:
 	 */
 	static LocalPoint node_coords(unsigned int nid);
     
-    /**
-     * Return barycentric coordinates of given node.
-     * @see the class documentation @p RefElement
-     * @param nid Node number.
-     */
-	static BaryPoint node_barycentric_coords(unsigned int nid);
-    
 	/**
 	 * Compute normal vector to a given side.
 	 * @param sid Side number.
@@ -306,13 +299,6 @@ public:
      */
     static FaceBaryPoint barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face);
 
-    /**
-     * For given barycentric coordinates on the face returns barycentric coordinates
-     * on the ref. element.
-     * Barycentric order: (complanatory, local_coords )
-     */
-    static BaryPoint barycentric_from_face(const FaceBaryPoint &face_barycentric, unsigned int i_face);
-
 
     typedef const std::vector<LocalPoint> & CentersList;
     static CentersList centers_of_subelements(unsigned int sub_dim);
@@ -413,17 +399,35 @@ private:
 /************************* template implementation ****************************/
 
 template<unsigned int dim>
-template<unsigned int subdim> 
+template<unsigned int subdim> inline
 arma::mat::fixed<dim+1,subdim+1> RefElement<dim>::bary_coords(unsigned int sid){
         ASSERT_LT_DBG(subdim, dim).error("Dimension mismatch!");
         arma::mat::fixed<dim+1,subdim+1> bary_c;
         
         for(unsigned int i = 0; i < subdim+1; i++){
-            bary_c.col(i) = node_barycentric_coords(interact_<0,subdim>(sid)[i]);
+        	unsigned int nid = interact_<0,subdim>(sid)[i];
+            bary_c.col(i).zeros();
+            bary_c.col(i)(nid) = 1;
         }       
     
         return bary_c;
 };
+
+
+template<unsigned int dim> inline
+arma::vec::fixed<dim> RefElement<dim>::node_coords(unsigned int nid)
+{
+	ASSERT_LT_DBG(nid, n_nodes).error("Node number is out of range!");
+
+	arma::vec::fixed<dim> p;
+	p.zeros();
+
+    if (nid > 0)
+        p(nid-1) = 1;
+
+	return p;
+}
+
 
 template<unsigned int dim>
 template<unsigned int subdim> 
