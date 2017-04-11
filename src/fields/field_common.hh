@@ -71,7 +71,18 @@ public:
 
 
 
-    /**
+	/// Store data of one initialization message.
+	struct MessageData {
+		/// Constructor
+		MessageData(std::string default_value, std::string field_name, std::string region_list)
+		: default_value_(default_value), field_name_(field_name), region_list_(region_list) {};
+
+		std::string default_value_;        ///< Default value of the field.
+		std::string field_name_;           ///< Parameter name_ of the field.
+		std::string region_list_;          ///< List of regions separated by comma.
+	};
+
+	/**
      *  Set name of the field. In fact there are two attributes set by this method.
      *
      *  The first is name used to identify the field as part of a FieldSet or MultiField objects.
@@ -414,6 +425,13 @@ public:
     }
 
     /**
+     * Print stored messages to table.
+     *
+     * Return true if messages_data_ vector is nonempty and clear its.
+     */
+    static bool print_message_table(ostream& stream, std::string equation_name);
+
+    /**
      * Virtual destructor.
      */
     virtual ~FieldCommon();
@@ -591,7 +609,10 @@ protected:
     /// Field flags. Default setting is "an equation input field, that can read from user input, and can be written to output"
     FieldFlag::Flags   flags_ = FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output;
 
-    /**
+	/// Vector of data of initialization messages.
+	static std::vector<MessageData> messages_data_;
+
+	/**
      * Stream output operator
      */
     friend std::ostream &operator<<(std::ostream &stream, const FieldCommon &field) {
