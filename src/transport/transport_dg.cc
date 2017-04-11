@@ -335,16 +335,23 @@ void TransportDG<Model>::initialize()
     // set time marks for writing the output
     data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
 
+    // equation default PETSc solver options
+    std::string petsc_default_opts;
+    if (feo->dh()->distr()->np() == 1)
+      petsc_default_opts = "-ksp_type bcgs -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    else
+      petsc_default_opts = "-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
+    
     // allocate matrix and vector structures
     ls    = new LinSys*[Model::n_substances()];
     ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
 
-    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
     }

@@ -53,8 +53,9 @@ const it::Record & LinSys_PETSC::get_input_type() {
 const int LinSys_PETSC::registrar = LinSys_PETSC::get_input_type().size();
 
 
-LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
+LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds, const std::string &params)
         : LinSys( rows_ds ),
+          params_(params),
           init_guess_nonzero(false),
           matrix_(0)
 {
@@ -66,7 +67,6 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
     VecDuplicate(rhs_, &residual_);
 
-    params_ = "";
     matrix_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
     matrix_changed_ = true;
@@ -342,7 +342,7 @@ int LinSys_PETSC::solve()
            //petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     	   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
@@ -438,7 +438,10 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 	LinSys::set_from_input( in_rec );
 
 	// PETSC specific parameters
-	params_ = in_rec.val<string>("options");
+    // If parameters are specified in input file, they are used,
+    // otherwise keep settings provided in constructor of LinSys_PETSC.
+    std::string user_params = in_rec.val<string>("options");
+	if (user_params != "") params_ = user_params;
 }
 
 
