@@ -656,6 +656,12 @@ void TransportDG<Model>::output_data()
     data_.output_fields.output(this->time().step());
 
 	Model::output_data();
+    
+    START_TIMER("TOS-balance");
+    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+      Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
+    Model::balance_->output();
+    END_TIMER("TOS-balance");
 
     END_TIMER("DG-OUTPUT");
 }
@@ -683,15 +689,6 @@ void TransportDG<Model>::calculate_cumulative_balance()
     		sorption_sources[sbi] = mass - total_mass;
     	}
     }
-}
-
-
-template<class Model>
-void TransportDG<Model>::balance_output()
-{
-    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-        Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
-    Model::balance_->output();
 }
 
 

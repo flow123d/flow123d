@@ -269,7 +269,6 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
-    balance_output();
 }
 
 

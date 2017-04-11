@@ -248,8 +248,6 @@ protected:
 
 	virtual void calculate_cumulative_balance() = 0;
 
-	virtual void balance_output() = 0;
-
 	/// Indicator of change in advection vector field.
 	bool flux_changed;
 

@@ -643,7 +643,8 @@ void ConvectionTransport::update_solution() {
       END_TIMER("mat mult");
     }
     
-    calculate_cumulative_balance();
+    for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
+      balance_->calculate_cumulative(sbi, vpconc[sbi]);
     
     END_TIMER("convection-one step");
 }
@@ -836,22 +837,6 @@ int *ConvectionTransport::get_row_4_el(){
 
 
 
-void ConvectionTransport::calculate_cumulative_balance()
-{
-	for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-		balance_->calculate_cumulative(sbi, vpconc[sbi]);
-}
-
-
-void ConvectionTransport::balance_output()
-{
-	for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-		balance_->calculate_instant(sbi, vconc[sbi]);
-    
-    balance_->output();
-}
-
-
 void ConvectionTransport::output_data() {
 
     data_.output_fields.set_time(time().step(), LimitSide::right);
@@ -860,6 +845,12 @@ void ConvectionTransport::output_data() {
     //}
 
 	data_.output_fields.output(time().step());
+    
+    START_TIMER("TOS-balance");
+    for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
+      balance_->calculate_instant(sbi, vconc[sbi]);
+    balance_->output();
+    END_TIMER("TOS-balance");
 }
 
 void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)

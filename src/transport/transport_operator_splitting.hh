@@ -92,17 +92,6 @@ public:
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
-    /**
-     * Calculate quantities necessary for cumulative balance (over time).
-     * This method is called at each (sub)iteration of the time loop.
-     */
-    virtual void calculate_cumulative_balance() = 0;
-
-    /**
-     * Calculate instant quantities and write them to output file.
-     */
-    virtual void balance_output() = 0;
-
     /// Calculate the array of concentrations per element (for reactions).
     virtual void calculate_concentration_matrix() = 0;
 

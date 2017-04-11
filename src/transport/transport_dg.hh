@@ -201,8 +201,6 @@ public:
 
     void calculate_cumulative_balance();
 
-    void balance_output() override;
-
 	const Vec &get_solution(unsigned int sbi)
 	{ return ls[sbi]->get_solution(); }
 

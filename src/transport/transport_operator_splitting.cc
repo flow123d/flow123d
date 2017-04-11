@@ -238,10 +238,6 @@ void TransportOperatorSplitting::output_data(){
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream()->write_time_frame();
 
-        START_TIMER("TOS-balance");
-        convection->balance_output();
-        END_TIMER("TOS-balance");
-
         END_TIMER("TOS-output data");
 }
 
@@ -250,8 +246,12 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
-    if(reaction) reaction->zero_time_step();
-    output_data();
+    if(reaction)
+    {
+      reaction->zero_time_step();
+      reaction->output_data(); // do not perform write_time_frame
+    }
+    convection->output_stream()->write_time_frame();
 
 }
 
