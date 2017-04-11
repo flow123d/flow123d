@@ -162,10 +162,12 @@ public:
     arma::vec map_to_master(const arma::vec &point) const;
     arma::vec map_to_slave(const arma::vec &point) const;
     double intersection_true_size() const;
+
+    ElementFullIter master, slave; // master lower dimension
+
 private:
     /// dimenze pruniku
     unsigned int dim;
-    ElementFullIter master, slave; // master lower dimension
 
     /// matrix part of linear transform from reference element of intersection to reference element of master or slave
     arma::Mat<double> master_map, slave_map;
