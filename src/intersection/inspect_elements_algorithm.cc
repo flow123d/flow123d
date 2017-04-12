@@ -851,10 +851,6 @@ void InspectElementsAlgorithm22::create_component_numbering()
 //     }
 }
 
-//     DBGCOUT(<<"PROLONGATE\n");
-//                 DBGVAR(neigh->index()); DBGVAR(component_idx_[neigh->index()]);
-                //avoid adding multiply the same element into queue
-                component_idx_[neigh->index()] = component_counter_;
 
 
 

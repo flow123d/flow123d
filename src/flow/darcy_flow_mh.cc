@@ -361,7 +361,7 @@ void DarcyMH::initialize() {
     // initialization of balance object
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
-    data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");
+    water_balance_idx_ = balance_->add_quantity("water_volume");
     balance_->allocate(mh_dh.rows_ds->lsize(), 1);
     balance_->units(UnitSI().m(3));
 
