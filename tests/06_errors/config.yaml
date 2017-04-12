@@ -4,7 +4,73 @@ common_config:
   memory_limit: 500
 
 test_cases:
-- files: 01_unsteady.yaml
+- files: 01_input_invalid_format.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]  # file must exists in ref_out folder!
+        substr: "ERROR yaml-cpp"
+    - regex:
+        files: [job_output.log]  # same file can be checked several times
+        regex: "[Ee]rror at line 29, column 11: end of map flow not found"
+
+- files: 02_input_missing_file.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Program Error: Can not open file"
+
+- files: 03_input_invalid_data_type.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "The value should be 'YAML real', but we found"
+
+- files: 04_input_invalid_array_size.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Do not fit the size 4 of the Array"
+        
+- files: 05_input_value_out_of_bounds.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Value out of bounds."
+
+- files: 06_input_missing_obligatory_key.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Missing obligatory key 'mesh_file'"
+
+- files: 07_input_wrong_selection_value.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Wrong value 'FieldInterpolatedP1' of the Selection"
+
+- files: 08_input_missing_abstract_descendant.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "Can not determine type of the Abstract."
+
+- files: 09_input_unknown_region_set.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "User Error: Operation with unknown region set"
+
+- files: 10_assert_missing_time_key.yaml
   death_test: true
   check_rules:
     - regex:
@@ -13,11 +79,3 @@ test_cases:
     - regex:
         files: [job_output.log]  # same file can be checked several times
         regex: "Program [Ee]rror: Violated assert!"
-
-# produce ASSERT: Missing the key 'time'.
-- files: 02_unsteady_LMH.yaml
-  death_test: false
-# produce FilePath::ExcFileOpen - missing input mesh file
-- files: 03_missing_observe_fields.yaml
-  death_test: true
-# produce ObservePoint::ExcNoObserveElement
