@@ -243,13 +243,13 @@ void RichardsLMH::assembly_linear_system()
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
 
-        balance_->start_source_assembly(water_balance_idx_);
-        balance_->start_mass_assembly(water_balance_idx_);
+        balance_->start_source_assembly(data_->water_balance_idx);
+        balance_->start_mass_assembly(data_->water_balance_idx);
 
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
-        balance_->finish_source_assembly(water_balance_idx_);
-        balance_->finish_mass_assembly(water_balance_idx_);
+        balance_->finish_source_assembly(data_->water_balance_idx);
+        balance_->finish_mass_assembly(data_->water_balance_idx);
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
