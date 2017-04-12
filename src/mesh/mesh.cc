@@ -87,9 +87,12 @@ const IT::Record & Mesh::get_input_type() {
 				"- .BOUNDARY (all boundary regions)\n"
 				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
-	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
+	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
+		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
+					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
+					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
 		.close();
 }
 
@@ -759,7 +762,9 @@ void Mesh::check_and_finish()
 	region_db_.check_regions();
 
 	if ( in_record_.val<bool>("print_regions") ) {
-		region_db_.print_region_table(cout);
+		stringstream ss;
+		region_db_.print_region_table(ss);
+		MessageOut() << ss.str();
 	}
 }
 
@@ -789,6 +794,10 @@ const BIHTree &Mesh::get_bih_tree() {
     if (! this->bih_tree_)
         bih_tree_ = std::make_shared<BIHTree>(this);
     return *bih_tree_;
+}
+
+double Mesh::global_observe_radius() const {
+	return in_record_.val<double>("global_observe_search_radius");
 }
 
 //-----------------------------------------------------------------------------

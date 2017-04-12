@@ -33,6 +33,7 @@ class ConfigCase(object):
         self.tags = set(o.get(yamlc.TAG_TAGS, None))
         self.check_rules = o.get(yamlc.TAG_CHECK_RULES, None)
         self.input = o.get(yamlc.TAG_INPUTS)
+        self.death_test = yamlc.YamlDeathTest(o.get(yamlc.TAG_DEATH_TEST))
         self.config = config
 
         if self.config:

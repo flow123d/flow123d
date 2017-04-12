@@ -373,6 +373,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     
     if(d & (IntersectionType::d13 | IntersectionType::d12_3)){
         START_TIMER("Intersections 1D-3D");
+//         DebugOut() << "Intersection Algorithm d13\n";
         compute_intersections<1>(algorithm13_,intersection_storage13_);
         END_TIMER("Intersections 1D-3D");
     }
@@ -381,6 +382,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     
     if(d & (IntersectionType::d23 | IntersectionType::d22 | IntersectionType::d12_3)){
         START_TIMER("Intersections 2D-3D");
+//         DebugOut() << "Intersection Algorithm d23\n";
         compute_intersections<2>(algorithm23_,intersection_storage23_);
         END_TIMER("Intersections 2D-3D");
     }
@@ -389,6 +391,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     if(d & IntersectionType::d22){
         START_TIMER("Intersections 2D-2D");
+//         DebugOut() << "Intersection Algorithm d22\n";
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
     }
@@ -398,6 +401,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     if(d & IntersectionType::d12_3){
         START_TIMER("Intersections 1D-2D (3)");
+//         DebugOut() << "Intersection Algorithm d12_3\n";
         compute_intersections_12(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (3)");
 
@@ -405,12 +409,14 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     if(d & IntersectionType::d12_2){
         START_TIMER("Intersections 1D-2D (2)");
+//         DebugOut() << "Intersection Algorithm d12_2\n";
         compute_intersections_12_2(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (2)");
     }
 
     if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
         intersection_storage12_.clear();
+//         DebugOut() << "Intersection Algorithm d12_ngh\n";
         compute_intersections_12_ngh_plane(intersection_storage12_);
     }
 

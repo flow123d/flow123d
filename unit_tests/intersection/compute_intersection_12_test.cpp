@@ -27,7 +27,7 @@ using namespace std;
 void fill_12d_solution(std::vector<IntersectionLocal<1,2>> &ils)
 {
     ils.clear();
-    ils.resize(10);
+    ils.resize(11);
     // ips[0] is empty
     ils[1].points() = {IntersectionPoint<1,2>({0}, {0, 0})};
     ils[2].points() = {IntersectionPoint<1,2>({1}, {0, 0})};
@@ -40,6 +40,7 @@ void fill_12d_solution(std::vector<IntersectionLocal<1,2>> &ils)
     ils[8].points() = {IntersectionPoint<1,2>({0}, {0, 0}),
                        IntersectionPoint<1,2>({1}, {1, 0})};
     //ils[9] is empty
+    //ils[10] is empty
 }
 
 

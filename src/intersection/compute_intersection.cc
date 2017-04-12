@@ -386,27 +386,24 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     
     // standard case with a single intersection corner
     if(result < IntersectionResult::degenerate){
+//         DBGCOUT(<< "12d plucker case\n");
         ASSERT_EQ_DBG(1, IP12s.size());
         IntersectionPointAux<1,2> &IP = IP12s.back();
         
-        // possibly cut the line
+        // check the IP whether it is on abscissa
         arma::vec2 theta;
         double t = IP.local_bcoords_A()[1];
-        double tol = rounding_epsilon*scale_line_;
-        if(t >= -tol && t <= 1+tol){
-                // possibly set abscissa vertex {0,1}
-                if( fabs(t) <= tol)       { theta = {1,0}; IP.set_topology_A(0,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
-                else if(fabs(1-t) <= tol) { theta = {0,1}; IP.set_topology_A(1,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
-                // IP found
+        // t is already checked for vertex position with tolerance in compute_plucker
+        if(t < 0 || t > 1) { 
+//             DBGCOUT(<< "remove IP\n"); 
+            IP12s.pop_back(); // IP outside => remove
         }
-        else IP12s.pop_back(); // IP outside => remove
-        
         return IP12s.size();
     }
     else{
         ASSERT_DBG(result == IntersectionResult::degenerate);
 
-        DBGCOUT(<< "12 degenerate case, all products are zero\n");
+//         DBGCOUT(<< "12d degenerate case, all products are zero\n");
        
         // 3 zero products: abscissa and triangle are coplanar
         for(unsigned int i = 0; i < 3;i++){

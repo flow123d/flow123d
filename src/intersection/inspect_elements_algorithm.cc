@@ -808,12 +808,12 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
 
 void InspectElementsAlgorithm22::create_component_numbering()
 {
-    component_idx_.resize(mesh->n_elements(),-1);
+    component_idx_.resize(mesh->n_elements(),unset_comp);
     component_counter_ = 0;
     
     // prolongation queue in the component mesh.
     std::queue<unsigned int> queue;
-    
+
     FOR_ELEMENTS(mesh, ele) {
         if (ele->dim() == 2 &&
             component_idx_[ele->index()] == (unsigned int)-1)
@@ -851,6 +851,10 @@ void InspectElementsAlgorithm22::create_component_numbering()
 //     }
 }
 
+//     DBGCOUT(<<"PROLONGATE\n");
+//                 DBGVAR(neigh->index()); DBGVAR(component_idx_[neigh->index()]);
+                //avoid adding multiply the same element into queue
+                component_idx_[neigh->index()] = component_counter_;
 
 
 

@@ -9,8 +9,13 @@ test_cases:
   proc: [ 1 ]
   time_limit: 60
   check_rules:
-      - ndiff:
-            files: ["energy_balance.txt"]       # higher abs tolerance for energy balance
-            a_tol: 2.5e4
-      - ndiff:
-            files: ["(?!^energy_balance.txt$)*"] # default tolerance for all except energy balance
+    - ndiff:
+        files: [ "energy_balance.txt" ]
+        r_tol: 1e-3
+        a_tol: 1e4
+    - ndiff:
+        # default tolerance for all except energy, usage of wild chars 
+	# files: ["(?!^energy_balance.txt$)*"] 
+        files: [ "*.msh", "water_balance.txt" ]
+        r_tol: 1e-3
+        a_tol: 1e-6

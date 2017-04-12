@@ -403,7 +403,7 @@ DOFHandlerMultiDim::~DOFHandlerMultiDim()
 	for (ElementFullIter elem=mesh_->element.begin(); elem!=mesh_->element.end(); ++elem)
 		if (object_dofs[elem.index()] != NULL)
 		{
-			for (unsigned int j=0; j<elem->dim(); j++)
+			for (unsigned int j=0; j<=elem->dim(); j++)
 				if (object_dofs[elem.index()][j] != NULL)
 					delete[] object_dofs[elem.index()][j];
 

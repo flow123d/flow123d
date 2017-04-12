@@ -57,5 +57,7 @@ def do_work(arg_options, debug=False):
     :type debug: bool
     :type arg_options: utils.argparser.ExecWithLimitArgs
     """
-    module = ModuleExecWithLimit(arg_options)
-    return module.run(debug)
+    module = ModuleExecWithLimit(arg_options)  # type: ParallelThreads
+    result = module.run(debug)
+
+    return result.returncode, result

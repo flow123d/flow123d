@@ -361,12 +361,9 @@ void DarcyMH::initialize() {
     // initialization of balance object
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
-    if (balance_)
-    {
-        data_-> water_balance_idx = water_balance_idx_ = balance_->add_quantity("water_volume");
-        balance_->allocate(mh_dh.rows_ds->lsize(), 1);
-        balance_->units(UnitSI().m(3));
-    }
+    data_-> water_balance_idx_ = water_balance_idx_ = balance_->add_quantity("water_volume");
+    balance_->allocate(mh_dh.rows_ds->lsize(), 1);
+    balance_->units(UnitSI().m(3));
 
 
     data_->balance = balance_;
@@ -608,23 +605,10 @@ void DarcyMH::output_data() {
 	this->output_object->output();
 
 
-	if (balance_ != nullptr)
-	{
-	    START_TIMER("Darcy balance output");
-		if (balance_->cumulative() && time_->tlevel() > 0)
-		{
-			balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
-			balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
-		}
-
-		if ( balance_->is_current( time().step()) )
-		{
-			balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
-			balance_->calculate_source(water_balance_idx_, schur0->get_solution());
-			balance_->calculate_flux(water_balance_idx_, schur0->get_solution());
-			balance_->output(time_->t());
-		}
-	}
+    START_TIMER("Darcy balance output");
+    balance_->calculate_cumulative(water_balance_idx_, schur0->get_solution());
+    balance_->calculate_instant(water_balance_idx_, schur0->get_solution());
+    balance_->output();
 }
 
 
@@ -673,8 +657,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
-    if (balance_ != nullptr)
-        balance_->start_flux_assembly(water_balance_idx_);
+
+    balance_->start_flux_assembly(water_balance_idx_);
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
@@ -685,8 +669,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
         assembler[dim-1]->assemble(ele_ac);
     }    
     
-    if (balance_ != nullptr)
-        balance_->finish_flux_assembly(water_balance_idx_);
+
+    balance_->finish_flux_assembly(water_balance_idx_);
 
 }
 
@@ -797,8 +781,7 @@ void DarcyMH::allocate_mh_matrix()
 void DarcyMH::assembly_source_term()
 {
     START_TIMER("assembly source term");
-    if (balance_ != nullptr)
-    	balance_->start_source_assembly(water_balance_idx_);
+   	balance_->start_source_assembly(water_balance_idx_);
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
@@ -810,12 +793,10 @@ void DarcyMH::assembly_source_term()
                 data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
-        if (balance_ != nullptr)
-        	balance_->add_source_vec_values(water_balance_idx_, ele_ac.region().bulk_idx(), {(int) ele_ac.ele_row()}, {source});
+        balance_->add_source_vec_values(water_balance_idx_, ele_ac.region().bulk_idx(), {(int) ele_ac.ele_row()}, {source});
     }
 
-    if (balance_ != nullptr)
-    	balance_->finish_source_assembly(water_balance_idx_);
+    balance_->finish_source_assembly(water_balance_idx_);
 }
 
 
@@ -962,7 +943,7 @@ void DarcyMH::assembly_linear_system() {
 	    	setup_time_term();
 	    	modify_system();
 	    }
-	    else if (balance_ != nullptr)
+	    else
 	    {
 	    	balance_->start_mass_assembly(water_balance_idx_);
 	    	balance_->finish_mass_assembly(water_balance_idx_);
@@ -1327,8 +1308,7 @@ void DarcyMH::setup_time_term() {
 
     DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 
-    if (balance_ != nullptr)
-    	balance_->start_mass_assembly(water_balance_idx_);
+   	balance_->start_mass_assembly(water_balance_idx_);
 
     //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
     for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
@@ -1341,9 +1321,8 @@ void DarcyMH::setup_time_term() {
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
         //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
-        if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_,
-        	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
+       	balance_->add_mass_matrix_values(water_balance_idx_,
+       	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
@@ -1351,8 +1330,7 @@ void DarcyMH::setup_time_term() {
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
 
-    if (balance_ != nullptr)
-    	balance_->finish_mass_assembly(water_balance_idx_);
+    balance_->finish_mass_assembly(water_balance_idx_);
 }
 
 void DarcyMH::modify_system() {

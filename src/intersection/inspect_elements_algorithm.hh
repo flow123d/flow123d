@@ -206,6 +206,7 @@ public:
     
 private:
     unsigned int component_counter_;
+    const unsigned int unset_comp = (unsigned int)(-1);
     
     /// Stores temporarily 2D-2D intersections.
     std::vector<IntersectionAux<2,2>> intersectionaux_storage22_;
