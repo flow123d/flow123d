@@ -121,7 +121,7 @@ Transport of substances is considered also on interfaces of physical domains wit
 Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1}$ and $\Omega_d$, respectively, the comunication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by the quantity
 \begin{equation}
   \label{e:inter_dim_flux}
-  q^c_{d+1,d} = \sigma^c_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\th_d\D_d:\n\otimes\n ( c_{d+1} - c_d) + \begin{cases}q^l_{d+1,d} c_{d+1} & \mbox{ if }q^l_{d+1,d}\ge 0,\\q^l_{d+1,d} \frac{\th_d}{\th_{d+1}} c_d & \mbox{ if }q^l_{d+1,d}<0,\end{cases}
+  q^c_{d+1,d} = \sigma^c_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\th_d\D_d:\n\otimes\n ( c_{d+1} - c_d) + q^l_{d+1,d}\begin{cases} c_{d+1} & \mbox{ if }q^l_{d+1,d}\ge 0,\\ c_d & \mbox{ if }q^l_{d+1,d}<0,\end{cases}
 \end{equation}
 where
 \begin{itemize}

@@ -34,6 +34,14 @@ class ScriptModule(object):
         Paths.format = PathFormat.ABSOLUTE
         if self.arg_options.root:
             Paths.init(self.arg_options.root)
+            Printer.all.out(
+                '[INFO]    | Forcing Flow123d root location to "{}"\n'
+                '            Flow123d binary is:               "{}"',
+                self.arg_options.root,
+                Paths.flow123d()
+            )
+            Printer.all.sep()
+
 
     def _check_arguments(self):
         pass

@@ -88,6 +88,9 @@ private:
     /// Get version of program and other base data from rev_num.h and store them to map
     Input::Type::RevNumData get_rev_num_data();
 
+    /// Main Flow123d problem
+    HC_ExplicitSequential *problem_;
+
     /// filename of main input file
     string main_input_filename_;
 
