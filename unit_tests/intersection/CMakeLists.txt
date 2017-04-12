@@ -22,7 +22,8 @@
 #
 
 
-
+set(libs system_lib)
+add_test_directory("${libs}")
 
 
 
