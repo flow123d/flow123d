@@ -36,7 +36,7 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    LinSys_PETSC(const  Distribution * rows_ds);
+    LinSys_PETSC(const  Distribution * rows_ds, const std::string &params = "");
 
     /**
      * Copy constructor.

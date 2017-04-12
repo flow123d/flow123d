@@ -140,6 +140,7 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Integer> region_id;
+        Field<3, FieldValue<3>::Integer> subdomain;
 
         EquationOutput output_fields;
 
@@ -201,8 +202,6 @@ public:
 	void initialize() override;
 
     void calculate_cumulative_balance();
-
-    void calculate_instant_balance();
 
 	const Vec &get_solution(unsigned int sbi)
 	{ return ls[sbi]->get_solution(); }
@@ -328,9 +327,9 @@ private:
 	 * @param porosity  Porosities.
 	 * @param cross_cut Cross-cuts of higher dimension.
 	 */
-	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
-			double Dm, double alphaL, double alphaT, double porosity,
-			double cross_cut);
+// 	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
+// 			double Dm, double alphaL, double alphaT, double porosity,
+// 			double cross_cut);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.

@@ -205,7 +205,7 @@ def do_work(arg_options=None, debug=False):
     :type arg_options: utils.argparser.ExecParallelArgs
     """
     module = ModuleExecParallel(arg_options)
-    result = module.run(debug)
+    result = module.run(debug)  # type: ParallelThreads
 
     # pickle out result on demand
     if arg_options.dump:
@@ -214,4 +214,5 @@ def do_work(arg_options=None, debug=False):
             pickle.dump(result.dump(), open(arg_options.dump, 'wb'))
         except:
             pass # TODO implement dump in pbs mode
-    return result
+
+    return result.returncode, result
