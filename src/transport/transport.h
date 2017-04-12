@@ -159,18 +159,6 @@ public:
 	{ return subst_idx; }
 
     /**
-     * Calculate quantities necessary for cumulative balance (over time).
-     * This method is called at each (sub)iteration of the time loop.
-     */
-    void calculate_cumulative_balance() override;
-
-    /**
-     * Calculate instant quantities at output times.
-     */
-    void calculate_instant_balance() override;
-
-
-    /**
      * @brief Write computed fields.
      */
     virtual void output_data() override;
