@@ -221,7 +221,7 @@ private:
     void create_component_numbering();
     
     /// Auxiliary function for front-advancing alg. for component numbering.
-    void prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue);
+    //void prolongate22(const ElementFullIter& ele, std::queue<unsigned int>& queue);
     
     friend class MixedMeshIntersections;
 };

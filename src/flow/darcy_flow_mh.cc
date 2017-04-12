@@ -178,6 +178,8 @@ const int DarcyMH::registrar =
 
 DarcyMH::EqData::EqData()
 {
+    mortar_method_=NoMortar;
+
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
 
