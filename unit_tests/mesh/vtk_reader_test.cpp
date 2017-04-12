@@ -60,9 +60,6 @@ TEST_F(VtkMeshReaderTest, read_xml_file) {
 
     EXPECT_EQ( "No error", this->get_parse_result() );
 
-    // get inner tag with VTU data
-    pugi::xml_node piece_node = doc_.child("VTKFile").child("UnstructuredGrid").child("Piece");
-
     {
     	// test of attributes
 		EXPECT_EQ( 8, this->n_nodes() );
@@ -71,17 +68,17 @@ TEST_F(VtkMeshReaderTest, read_xml_file) {
 
     {
     	// test of Points data section
-    	pugi::xml_node points_data_node = piece_node.child("Points").child("DataArray");
-    	std::stringstream type; type << points_data_node.attribute("type").value();
-    	std::stringstream value; value << points_data_node.child_value();
-    	EXPECT_EQ( "Float64", type.str() );
-    	EXPECT_EQ( "\n1",     value.str().substr(0,2) );
+    	auto data_attr = this->get_data_array_attr(DataSections::points);
+    	EXPECT_EQ( DataType::float64, data_attr.type_ );
+    	EXPECT_EQ( DataFormat::ascii, data_attr.format_ );
+    	EXPECT_EQ( 3, data_attr.n_components_ );
     }
 
     {
     	// test of connectivity data array
-    	pugi::xml_node cells_data_node = piece_node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity");
-    	std::stringstream value; value << cells_data_node.child_value();
-    	EXPECT_EQ( "\n2 6 0 1 2 6 1 7 2 6 7 5 2 6 5 4 2 6 4 3 2 6 3 0 \n", value.str() );
+    	auto data_attr = this->get_data_array_attr(DataSections::cells, "connectivity");
+    	EXPECT_EQ( DataType::uint32, data_attr.type_ );
+    	EXPECT_EQ( DataFormat::ascii, data_attr.format_ );
+    	EXPECT_EQ( 1, data_attr.n_components_ );
     }
 }
