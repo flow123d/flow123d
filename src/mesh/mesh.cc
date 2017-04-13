@@ -67,7 +67,7 @@ const IT::Record & Mesh::get_input_type() {
 				"- .BOUNDARY (all boundary regions)\n"
 				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
-	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
+	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
 		.close();
 }
 
@@ -151,6 +151,7 @@ Mesh::~Mesh() {
         if (ele->edge_idx_) delete[] ele->edge_idx_;
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+        if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
     for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
@@ -759,7 +760,9 @@ void Mesh::check_and_finish()
 	region_db_.check_regions();
 
 	if ( in_record_.val<bool>("print_regions") ) {
-		region_db_.print_region_table(cout);
+		stringstream ss;
+		region_db_.print_region_table(ss);
+		MessageOut() << ss.str();
 	}
 }
 
