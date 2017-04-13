@@ -26,7 +26,7 @@
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 {
 	parse_result_ = doc_.load_file( ((std::string)file_name).c_str() );
-	read_nodes_elms_count();
+	read_base_vtk_attributes();
 }
 
 
@@ -34,18 +34,20 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 VtkMeshReader::VtkMeshReader(std::istream &in)
 {
 	parse_result_ = doc_.load(in);
-	read_nodes_elms_count();
+	read_base_vtk_attributes();
 }
 
 
 
-void VtkMeshReader::read_nodes_elms_count()
+void VtkMeshReader::read_base_vtk_attributes()
 {
 	pugi::xml_node node = doc_.child("VTKFile");
+	// flag of compressed data
 	std::string compressor = node.attribute("compressor").as_string();
 	compressed_ = (compressor == "vtkZLibDataCompressor");
+	// header type of appended data
 	header_type_ = node.attribute("header_type").as_string();
-
+	// size of node and element vectors
 	node = node.child("UnstructuredGrid").child("Piece");
 	n_nodes_ = node.attribute("NumberOfPoints").as_uint();
 	n_elements_ = node.attribute("NumberOfCells").as_uint();

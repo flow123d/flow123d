@@ -89,7 +89,7 @@ protected:
 	VtkMeshReader() {}
 
 	/// Set count of nodes and elements.
-	void read_nodes_elms_count();
+	void read_base_vtk_attributes();
 
 	pugi::xml_document doc_;
     pugi::xml_parse_result parse_result_;
