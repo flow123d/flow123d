@@ -12,7 +12,7 @@ test_cases:
     - ndiff:
         files: [ "energy_balance.txt" ]
         r_tol: 1e-3
-        a_tol: 1e4
+        a_tol: 1e5
     - ndiff:
         # default tolerance for all except energy, usage of wild chars 
         # files: ["(?!^energy_balance.txt$)*"] 
