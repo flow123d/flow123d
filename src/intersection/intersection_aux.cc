@@ -12,7 +12,8 @@ template<unsigned int dimA, unsigned int dimB>
 IntersectionAux<dimA,dimB>::IntersectionAux(unsigned int component_element_idx,
                                             unsigned int bulk_element_idx)
 : component_element_idx_(component_element_idx), 
-  bulk_element_idx_(bulk_element_idx)
+  bulk_element_idx_(bulk_element_idx),
+  n_duplicities_(0)
 {}
 
 template<unsigned int dimA, unsigned int dimB>
@@ -23,29 +24,38 @@ template<unsigned int dimA, unsigned int dimB>
 IntersectionAux<dimA,dimB>::~IntersectionAux()
 {}
 
-template<>
-unsigned int IntersectionAux<2,3>::ips_on_single_object() const
+
+template<unsigned int dimA, unsigned int dimB>
+unsigned int IntersectionAux<dimA,dimB>::ips_on_single_object() const
 {
     const uint invalid_face = -1;
-    if(size() < 3) return invalid_face;
+    if(size() < dimB) return invalid_face;
+    
+    ASSERT_DBG((dimA == 1 && dimB == 2) || (dimA == 2 && dimB == 3));
     
     //test if all IPs lie in a single face of tetrahedron
-    vector<unsigned int> face_counter(RefElement<3>::n_sides, 0);
+    vector<unsigned int> face_counter(RefElement<dimB>::n_sides, 0);
     
-    for(const IntersectionPointAux<2,3>& ipf : i_points_) {
+    for(const IntersectionPointAux<dimA,dimB>& ipf : i_points_) {
         switch(ipf.dim_B()){
             case 0: {
-                for(uint i=0; i<RefElement<3>::n_sides_per_node; i++)
-                    face_counter[RefElement<3>::interact(Interaction<2,0>(ipf.idx_B()))[i]]++;
+                for(uint i=0; i<RefElement<dimB>::n_sides_per_node; i++)
+                    face_counter[RefElement<dimB>::interact(Interaction<dimA,0>(ipf.idx_B()))[i]]++;
                 break;
             }
             case 1: {
-                for(uint i=0; i<RefElement<3>::n_sides_per_line; i++)
-                    face_counter[RefElement<3>::interact(Interaction<2,1>(ipf.idx_B()))[i]]++;
+                if(dimB == 3)
+                    for(uint i=0; i<RefElement<dimB>::n_sides_per_line; i++)
+                        face_counter[RefElement<dimB>::interact(Interaction<dimA,1>(ipf.idx_B()))[i]]++;
+                else
+                    face_counter[ipf.idx_B()]++;
                 break;
             }
             case 2:
-                face_counter[ipf.idx_B()]++;
+                if(dimB == 3)
+                    face_counter[ipf.idx_B()]++;
+                else 
+                    return invalid_face;    // cannot be on face
                 break;
             case 3: 
                 return invalid_face;    // cannot be on face
@@ -54,7 +64,7 @@ unsigned int IntersectionAux<2,3>::ips_on_single_object() const
         }
     }
     
-    for(uint f=0; f< RefElement<3>::n_sides; f++){
+    for(uint f=0; f< RefElement<dimB>::n_sides; f++){
         if(face_counter[f] == size()){ // all IPs lie in a single face
             DBGCOUT(<< "all IPs in face: " << f <<"\n");
             return f;

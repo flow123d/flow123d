@@ -543,11 +543,37 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& comp_ele,
                                                         const ElementFullIter& bulk_ele,
-                                                        IntersectionAux<dim,3> is)
+                                                        IntersectionAux<dim,3>& is)
 {
     //DebugOut() << "DECIDE\n";
     // number of IPs that are at vertices of component element (counter used for closing element)
     unsigned int n_ip_vertices = 0;
+    
+    if(dim == 2){
+        unsigned int sid = is.ips_on_single_object();
+        if(sid < (unsigned int)(-1)){
+            //TODO: we are unable to combine cases A and B in 1d-2d
+            // CASE A: compatible vb neighboring
+//             DBGVAR(comp_ele->id());
+//             DBGVAR(bulk_ele->id());
+            if(comp_ele->n_neighs_vb > 1){
+                //set n_neighs_vb duplicities
+                is.set_duplicities(comp_ele->n_neighs_vb);
+//                 DBGCOUT(<< "vb neigh: N = " << is.duplicities() << "\n");
+                //possibly copy intersection object
+            }
+            // CASE B: incompatible neighboring with lower dim element
+            else {
+                Edge* edg = bulk_ele->side(sid)->edge();
+                if(edg->n_sides > 1){
+                    //set n_sides duplicities
+                    is.set_duplicities(edg->n_sides);
+//                     DBGCOUT(<< "incomp. neigh: N = " << is.duplicities() << "\n");
+                    //possibly copy intersection object
+                }
+            }
+        }
+    }
     
     for(const IntersectionPointAux<dim,3> &IP : is.points()) {
         

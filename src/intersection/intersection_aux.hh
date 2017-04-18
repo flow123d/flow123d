@@ -42,6 +42,8 @@ class IntersectionAux{
     unsigned int component_element_idx_;
     /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
+    /// Number of duplicit intersections.
+    unsigned int n_duplicities_;
     
 public:
 
@@ -72,6 +74,9 @@ public:
     
     /// Returns idx of face when all IPs lie on it.
     unsigned int ips_on_single_object() const;
+    
+    unsigned int duplicities();
+    void set_duplicities(unsigned int n_duplicities);
     
     /// Friend output operator.
     template<unsigned int dimAA, unsigned int dimBB>
@@ -109,5 +114,12 @@ template<unsigned int dimA, unsigned int dimB>
 inline unsigned int IntersectionAux<dimA,dimB>::bulk_ele_idx() const
 {   return bulk_element_idx_; }
 
+template<unsigned int dimA, unsigned int dimB>
+inline unsigned int IntersectionAux<dimA,dimB>::duplicities()
+{   return n_duplicities_;}
+
+template<unsigned int dimA, unsigned int dimB>
+inline void IntersectionAux<dimA,dimB>::set_duplicities(unsigned int n_duplicities)
+{   n_duplicities_ = n_duplicities; }
 
 #endif /* INTERSECTIONAUX_H_ */

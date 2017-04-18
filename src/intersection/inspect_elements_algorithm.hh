@@ -168,7 +168,7 @@ private:
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
     void prolongation_decide(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele, 
-                             IntersectionAux<dim,3> is);
+                             IntersectionAux<dim,3>& is);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
