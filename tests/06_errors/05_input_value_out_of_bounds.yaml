@@ -9,24 +9,15 @@ problem: !Coupling_Sequential
       linear_solver: !Petsc
         a_tol: 1e-07
     input_fields:
-      - region: .IMPLICIT_BOUNDARY
+      - region: ALL
         bc_type: dirichlet
-        bc_piezo_head: !FieldInterpolatedP0
-          gmsh_file: ref_out/05_interpolation_large_cube/large_cube.msh
-          field_name: piezo_head_p0
-      - region: BULK
-        anisotropy: 1
-        sigma: 0.5
+### ERROR value out of bounds
     n_schurs: 3
     output:
       fields:
         - piezo_head_p0
-        - pressure_p0
-        - pressure_p1
-        - velocity_p0
     balance: {}
     output_stream: 
       file: ./small_cube.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

@@ -7,26 +7,16 @@ problem: !Coupling_Sequential
     output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
+### ERROR invalid double value of a_tol
         a_tol: nano
     input_fields:
-      - region: .IMPLICIT_BOUNDARY
+      - region: ALL
         bc_type: dirichlet
-        bc_piezo_head: !FieldInterpolatedP0
-          gmsh_file: ref_out/05_interpolation_large_cube/large_cube.msh
-          field_name: piezo_head_p0
-      - region: BULK
-        anisotropy: 1
-        sigma: 0.5
     n_schurs: 2
     output:
       fields:
-        - piezo_head_p0
         - pressure_p0
-        - pressure_p1
-        - velocity_p0
-    balance: {}
     output_stream: 
       file: ./small_cube.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

@@ -12,7 +12,7 @@ test_cases:
         substr: "ERROR yaml-cpp"
     - regex:
         files: [job_output.log]  # same file can be checked several times
-        regex: "[Ee]rror at line 29, column 11: end of map flow not found"
+        regex: "[Ee]rror at line 13, column 11: end of map flow not found"
 
 - files: 02_input_missing_file.yaml
   death_test: true
