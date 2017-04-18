@@ -120,10 +120,10 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(Inters
 //     DBGMSG("Plucker product sum = %f\n",w[0]+w[1]+w[2]);
 //     local_triangle = local_triangle / (w[0]+w[1]+w[2]);
 //     double w_sum = local[0] + local[1] + local[2];
-//     DBGMSG("Plucker product sum = %e %e %e\n",w_sum, 1-rounding_epsilonX, 1+rounding_epsilonX);
+//     DBGMSG("Plucker product sum = %e %e %e\n",w_sum, 1-rounding_epsilon, 1+rounding_epsilon);
     
     //assert inaccurate barycentric coordinates
-    ASSERT_DBG(fabs(1.0 - local[0] - local[1] - local[2]) < rounding_epsilon)(local[0]+local[1]+local[2])
+    ASSERT_DBG(fabs(1.0 - local[0] - local[1] - local[2]) < geometry_epsilon)(local[0]+local[1]+local[2])
             (local[0])(local[1])(local[2]);
 
 
@@ -164,8 +164,8 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(Inters
     
 
     // possibly set abscissa vertex {0,1}
-    if( fabs(t) <= rounding_epsilon)       { t = 0; IP.set_topology_A(0,0);}
-    else if(fabs(1-t) <= rounding_epsilon) { t = 1; IP.set_topology_A(1,0);}
+    if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
+    else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_A(1,0);}
     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
 //     // possibly set abscissa vertex {0,1}
 //     if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
@@ -237,7 +237,7 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
     }
 //     DBGVAR(maximum);
     //abscissa is parallel to triangle side
-    if(std::abs(maximum) <= std::sqrt(rounding_epsilon)) return false;
+    if(std::abs(maximum) <= std::sqrt(geometry_epsilon)) return false;
 
     // map maximum index in {-UxV} to i,j of subdeterminants
     //              i j
@@ -262,7 +262,7 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
     // if IP is inside of triangle side
     if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
 
-        IP.set_orientation(IntersectionResult::degenerate);  // set orientation as a pathologic case ( > 1)
+        IP.set_result(IntersectionResult::degenerate);  // set orientation as a pathologic case ( > 1)
         // possibly set abscissa vertex {0,1}
         if( fabs(s) <= geometry_epsilon)       { s = 0; IP.set_topology_A(0,0);}
         else if(fabs(1-s) <= geometry_epsilon) { s = 1; IP.set_topology_A(1,0);}
@@ -313,13 +313,13 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
     //DebugOut() << print_var(scale_line_);
     //DebugOut() << print_var(scale_triangle_);
      
-    double scaled_epsilon = rounding_epsilon*scale_line_*scale_triangle_*scale_triangle_;
+    double scaled_epsilon = geometry_epsilon*scale_line_*scale_triangle_*scale_triangle_;
     if(std::fabs(w_sum) > scaled_epsilon) {
         w = w / w_sum;
         for (unsigned int i=0; i < 3; i++) {
             //DebugOut() << print_var(i) << print_var(w[i]);
-            if (w[i] > rounding_epsilon) n_positive++;
-            else if ( w[i] > -rounding_epsilon) zero_idx_sum+=i;
+            if (w[i] > geometry_epsilon) n_positive++;
+            else if ( w[i] > -geometry_epsilon) zero_idx_sum+=i;
             else n_negative++;
         }
 
@@ -367,7 +367,7 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
 
         IntersectionResult result = signed_plucker_product(non_zero_idx) > 0 ?
                 IntersectionResult::positive : IntersectionResult::negative;
-        IP.set_orientation(result);
+        IP.set_result(result);
 
         IP12s.push_back(IP);
         return result;
@@ -412,7 +412,7 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
                 if (compute_degenerate(i,IP))
                 {
                     double t = IP.local_bcoords_A()[1];
-                    double tol = rounding_epsilon*scale_line_;
+                    double tol = geometry_epsilon*scale_line_;
                     if(t >= -tol && t <= 1+tol)
                     {
                         if(IP12s.size() > 0)
@@ -1203,7 +1203,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	        ASSERT_DBG(IP12_local.size() ==0);
 	        // make dummy intersection
 	        IP12s_.push_back(IPAux12());
-	        IP12s_.back().set_orientation(result);
+	        IP12s_.back().set_result(result);
 	    }
 	}
 	vector<uint> processed_edge(6, 0);
@@ -1215,7 +1215,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 
 	        double edge_coord = IP12.local_bcoords_A()[0];
 	        // skip no intersection and degenerate intersections
-	        if ( edge_coord > 1 || edge_coord < 0 || int(IP12.orientation()) >= 2 ) continue;
+	        if ( edge_coord > 1 || edge_coord < 0 || int(IP12.result()) >= 2 ) continue;
             //DebugOut() << print_var(tetra_edge) << IP12;
 
 	        uint edge_dim = IP12.dim_A();
@@ -1329,7 +1329,7 @@ bool ComputeIntersection<Simplex<2>, Simplex<3>>::ips_topology_equal(const IPAux
 auto ComputeIntersection<Simplex<2>, Simplex<3>>::edge_faces(uint i_edge)-> FacePair
 {
     auto &line_faces=RefElement<3>::interact(Interaction<2,1>(i_edge));
-    unsigned int ip_ori = (unsigned int)(IP12s_[i_edge].orientation());
+    unsigned int ip_ori = (unsigned int)(IP12s_[i_edge].result());
     ASSERT_DBG(ip_ori < 2); // no degenerate case
 
     // RefElement returns edge faces in clockwise order (edge pointing to us)
@@ -1346,7 +1346,7 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
     n_ori.fill(0);
     sum_idx.fill(0);
     for(unsigned int ie=0; ie <3; ie++) {
-        unsigned int edge_ip_ori = (unsigned int)(IP12s_[ vtx_edges[ie]].orientation());
+        unsigned int edge_ip_ori = (unsigned int)(IP12s_[ vtx_edges[ie]].result());
         if (RefElement<3>::interact(Interaction<0,1>(vtx_edges[ie]))[0] != i_vertex
             && edge_ip_ori!= int(IntersectionResult::degenerate) )
             edge_ip_ori = (edge_ip_ori +1)%2;

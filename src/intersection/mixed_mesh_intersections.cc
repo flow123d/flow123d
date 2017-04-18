@@ -178,7 +178,6 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
     
     FOR_ELEMENTS(mesh, elm) {
         unsigned int idx = elm->index(); 
-        unsigned int bulk_idx;
         
         if(elm->dim() == dim)
         {
