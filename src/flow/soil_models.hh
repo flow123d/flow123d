@@ -79,7 +79,7 @@ public:
 
     typedef SoilModelBase::DiffDouble DiffDouble;
 
-    SoilModelImplBase(double cut_fraction);
+    SoilModelImplBase(double cut_fraction = 0.999);
 
     void reset(SoilData data) override;
 

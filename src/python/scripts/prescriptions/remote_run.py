@@ -5,7 +5,7 @@ from scripts.prescriptions import AbstractRun
 
 
 runtest_command = """
-"$$python$$" "$$script$$" "$$yaml$$" $$limits$$ --dump "$$dump_output$$" --log $$log_file$$ --batch -- $$args$$
+"$$python$$" "$$script$$" "$$yaml$$" $$limits$$ --dump "$$dump_output$$" --log $$log_file$$ $$random_output_dir$$ --batch -- $$args$$
 """.strip()
 
 exec_parallel_command = """
