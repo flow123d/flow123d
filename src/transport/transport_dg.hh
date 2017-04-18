@@ -439,6 +439,9 @@ private:
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
 	Vec *mass_vec;
+    
+    /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
+    Vec *ret_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
@@ -475,8 +478,8 @@ private:
 	vector<double> mm_coef;
 	/// Retardation coefficient due to sorption.
 	vector<vector<double> > ret_coef;
-	/// Temporary values of source increments
-	vector<double> sorption_sources;
+	/// Temporary values of increments due to retardation (e.g. sorption)
+    vector<double> ret_sources, ret_sources_prev;
 	/// Advection coefficients.
 	vector<vector<arma::vec3> > ad_coef;
 	/// Diffusion coefficients.
