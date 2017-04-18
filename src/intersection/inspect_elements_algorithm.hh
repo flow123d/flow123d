@@ -206,6 +206,7 @@ public:
     
 private:
     unsigned int component_counter_;
+    const unsigned int unset_comp = (unsigned int)(-1);
     
     /// Stores temporarily 2D-2D intersections.
     std::vector<IntersectionAux<2,2>> intersectionaux_storage22_;
@@ -221,7 +222,7 @@ private:
     void create_component_numbering();
     
     /// Auxiliary function for front-advancing alg. for component numbering.
-    void prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue);
+    //void prolongate22(const ElementFullIter& ele, std::queue<unsigned int>& queue);
     
     friend class MixedMeshIntersections;
 };

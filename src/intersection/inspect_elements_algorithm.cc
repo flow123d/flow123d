@@ -808,25 +808,34 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
 
 void InspectElementsAlgorithm22::create_component_numbering()
 {
-    component_idx_.resize(mesh->n_elements(),-1);
+    component_idx_.resize(mesh->n_elements(),unset_comp);
     component_counter_ = 0;
     
     // prolongation queue in the component mesh.
     std::queue<unsigned int> queue;
-    
+
     FOR_ELEMENTS(mesh, ele) {
         if (ele->dim() == 2 &&
-            component_idx_[ele->index()] == (unsigned int)-1
-        ){
+            component_idx_[ele->index()] == (unsigned int)-1)
+        {
             // start component
             queue.push(ele->index());
-//             DBGCOUT(<< "start component at ele " << ele->index() << "\n");
             
             while(!queue.empty()){
                 unsigned int ele_idx = queue.front();
-                component_idx_[ele_idx] = component_counter_;
                 queue.pop();
-                prolongate(mesh->element(ele_idx), queue);
+                const ElementFullIter& ele = mesh->element(ele_idx);
+                for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
+                    Edge* edg = ele->side(sid)->edge();
+
+                    for(int j=0; j < edg->n_sides;j++) {
+                        uint neigh_idx = edg->side(j)->element()->index();
+                        if (component_idx_[neigh_idx] == (unsigned int)-1) {
+                            component_idx_[neigh_idx] = component_counter_;
+                            queue.push(neigh_idx);
+                        }
+                    }
+                }
             }
             component_counter_++;
         }
@@ -842,20 +851,6 @@ void InspectElementsAlgorithm22::create_component_numbering()
 //     }
 }
 
-void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue)
-{
-    ASSERT(ele->dim() == 2);
-    for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
-        Edge* edg = ele->side(sid)->edge();
-        
-        for(int j=0; j < edg->n_sides;j++) {
-            ElementFullIter neigh = edg->side(j)->element();
-            if (neigh != ele && component_idx_[neigh->index()] == (unsigned int)-1){
-                queue.push(neigh->index());
-            }
-        }
-    }
-}
 
 
 

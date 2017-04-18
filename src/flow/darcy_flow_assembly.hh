@@ -48,7 +48,7 @@ public:
     }
 
 //     virtual LocalSystem & get_local_system() = 0;
-    
+    virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
@@ -133,6 +133,12 @@ public:
 //     LocalSystem& get_local_system() override
 //         { return loc_system_;}
     
+    void fix_velocity(LocalElementAccessorBase<3> ele_ac) override
+    {
+        if (mortar_assembly)
+            mortar_assembly->fix_velocity(ele_ac);
+    }
+
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);

@@ -27,6 +27,7 @@
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 #include "io/equation_output.hh"
+#include "fem/mapping_p1.hh"
 
 class Distribution;
 class OutputTime;
@@ -59,7 +60,7 @@ public:
 	inline Quadrature<dim> *q();
 
 	template<unsigned int dim>
-	inline Mapping<dim,3> *mapping();
+	inline MappingP1<dim,3> *mapping();
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
@@ -82,10 +83,9 @@ private:
 	Quadrature<3> *q3_;
 
 	/// Auxiliary mappings of reference elements.
-	Mapping<0,3> *map0_;
-	Mapping<1,3> *map1_;
-	Mapping<2,3> *map2_;
-	Mapping<3,3> *map3_;
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -140,6 +140,7 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
         Field<3, FieldValue<3>::Integer> region_id;
+        Field<3, FieldValue<3>::Integer> subdomain;
 
         EquationOutput output_fields;
 
@@ -201,8 +202,6 @@ public:
 	void initialize() override;
 
     void calculate_cumulative_balance();
-
-    void calculate_instant_balance();
 
 	const Vec &get_solution(unsigned int sbi)
 	{ return ls[sbi]->get_solution(); }
@@ -328,9 +327,9 @@ private:
 	 * @param porosity  Porosities.
 	 * @param cross_cut Cross-cuts of higher dimension.
 	 */
-	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
-			double Dm, double alphaL, double alphaT, double porosity,
-			double cross_cut);
+// 	void calculate_dispersivity_tensor(arma::mat33 &K, const arma::vec3 &velocity,
+// 			double Dm, double alphaL, double alphaT, double porosity,
+// 			double cross_cut);
 
 	/**
 	 * @brief Sets up some parameters of the DG method for two sides of an edge.

@@ -45,8 +45,7 @@ if __name__ == '__main__':
     arg_options = argparser.Parser.parse_exec_with_limit(parser)
 
     # run work
-    returncode = do_work(arg_options)
-    returncode = returncode.returncode if type(returncode) is not int else returncode
+    returncode, debug = do_work(arg_options)
 
     if arg_options.death:
         if returncode == 0:
@@ -56,4 +55,4 @@ if __name__ == '__main__':
             Printer.all.suc('Command did not with 0 (--death flag was set)')
             sys.exit(0)
     else:
-        sys.exit(returncode)
+        sys.exit(returncode())

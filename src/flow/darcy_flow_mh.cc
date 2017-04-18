@@ -178,6 +178,8 @@ const int DarcyMH::registrar =
 
 DarcyMH::EqData::EqData()
 {
+    mortar_method_=NoMortar;
+
     ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
     	anisotropy.units( UnitSI::dimensionless() );
 
@@ -359,12 +361,9 @@ void DarcyMH::initialize() {
     // initialization of balance object
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
-    if (balance_)
-    {
-        data_-> water_balance_idx = water_balance_idx_ = balance_->add_quantity("water_volume");
-        balance_->allocate(mh_dh.rows_ds->lsize(), 1);
-        balance_->units(UnitSI().m(3));
-    }
+    data_->water_balance_idx = balance_->add_quantity("water_volume");
+    balance_->allocate(mh_dh.rows_ds->lsize(), 1);
+    balance_->units(UnitSI().m(3));
 
 
     data_->balance = balance_;
@@ -570,6 +569,14 @@ void DarcyMH::prepare_new_time_step()
 void DarcyMH::postprocess() 
 {
     START_TIMER("postprocess");
+
+    auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+        auto ele_ac = mh_dh.accessor(i_loc);
+        unsigned int dim = ele_ac.dim();
+        multidim_assembler[dim-1]->fix_velocity(ele_ac);
+    }
+
     //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel
@@ -598,23 +605,10 @@ void DarcyMH::output_data() {
 	this->output_object->output();
 
 
-	if (balance_ != nullptr)
-	{
-	    START_TIMER("Darcy balance output");
-		if (balance_->cumulative() && time_->tlevel() > 0)
-		{
-			balance_->calculate_cumulative_sources(water_balance_idx_, schur0->get_solution(), time_->dt());
-			balance_->calculate_cumulative_fluxes(water_balance_idx_, schur0->get_solution(), time_->dt());
-		}
-
-		if ( balance_->is_current( time().step()) )
-		{
-			balance_->calculate_mass(water_balance_idx_, schur0->get_solution());
-			balance_->calculate_source(water_balance_idx_, schur0->get_solution());
-			balance_->calculate_flux(water_balance_idx_, schur0->get_solution());
-			balance_->output(time_->t());
-		}
-	}
+    START_TIMER("Darcy balance output");
+    balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
+    balance_->calculate_instant(data_->water_balance_idx, schur0->get_solution());
+    balance_->output();
 }
 
 
@@ -663,8 +657,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
     
-    if (balance_ != nullptr)
-        balance_->start_flux_assembly(water_balance_idx_);
+
+    balance_->start_flux_assembly(data_->water_balance_idx);
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
@@ -675,8 +669,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
         assembler[dim-1]->assemble(ele_ac);
     }    
     
-    if (balance_ != nullptr)
-        balance_->finish_flux_assembly(water_balance_idx_);
+
+    balance_->finish_flux_assembly(data_->water_balance_idx);
 
 }
 
@@ -690,8 +684,8 @@ void DarcyMH::allocate_mh_matrix()
     LinSys *ls = schur0;
    
 
-    int tmp_rows[200];
-    int local_dofs[200];
+
+    int local_dofs[10];
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
@@ -718,6 +712,9 @@ void DarcyMH::allocate_mh_matrix()
         ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
         
 
+        std::vector<int> tmp_rows;
+        tmp_rows.reserve(200);
+
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
         for (unsigned int i = 0; i < n_neighs; i++) {
@@ -725,17 +722,17 @@ void DarcyMH::allocate_mh_matrix()
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
-            tmp_rows[i] = neigh_edge_row;
+            tmp_rows.push_back(neigh_edge_row);
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
 
         // allocate always also for schur 2
-        ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows, zeros); // (edges, ele)  x (neigh edges)
-        ls->mat_set_values(n_neighs, tmp_rows, nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
-        ls->mat_set_values(n_neighs, tmp_rows, n_neighs, tmp_rows, zeros);  // (neigh edges) x (neigh edges)
+        ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
+        ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
+        ls->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
 
+        tmp_rows.clear();
 
-        unsigned int i_rows=0;
         if (data_->mortar_method_ != NoMortar) {
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
             for(auto &isec : isec_list ) {
@@ -743,7 +740,7 @@ void DarcyMH::allocate_mh_matrix()
                 Element &slave_ele = mesh_->element[local->bulk_ele_idx()];
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
                 for(unsigned int i_side=0; i_side < slave_ele.n_sides(); i_side++) {
-                    tmp_rows[i_rows++] = mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ];
+                    tmp_rows.push_back( mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ] );
                     //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
                 }
             }
@@ -753,9 +750,9 @@ void DarcyMH::allocate_mh_matrix()
             DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
         }*/
 
-        ls->mat_set_values(nsides, edge_rows, i_rows, tmp_rows, zeros);   // master edges x neigh edges
-        ls->mat_set_values(i_rows, tmp_rows, nsides, edge_rows, zeros);   // neigh edges  x master edges
-        ls->mat_set_values(i_rows, tmp_rows, i_rows, tmp_rows, zeros);  // neigh edges  x neigh edges
+        ls->mat_set_values(nsides, edge_rows, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x neigh edges
+        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), nsides, edge_rows, zeros);   // neigh edges  x master edges
+        ls->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // neigh edges  x neigh edges
 
     }
 /*
@@ -784,8 +781,7 @@ void DarcyMH::allocate_mh_matrix()
 void DarcyMH::assembly_source_term()
 {
     START_TIMER("assembly source term");
-    if (balance_ != nullptr)
-    	balance_->start_source_assembly(water_balance_idx_);
+   	balance_->start_source_assembly(data_->water_balance_idx);
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
@@ -797,12 +793,10 @@ void DarcyMH::assembly_source_term()
                 data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
-        if (balance_ != nullptr)
-        	balance_->add_source_vec_values(water_balance_idx_, ele_ac.region().bulk_idx(), {(int) ele_ac.ele_row()}, {source});
+        balance_->add_source_vec_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(int) ele_ac.ele_row()}, {source});
     }
 
-    if (balance_ != nullptr)
-    	balance_->finish_source_assembly(water_balance_idx_);
+    balance_->finish_source_assembly(data_->water_balance_idx);
 }
 
 
@@ -949,10 +943,10 @@ void DarcyMH::assembly_linear_system() {
 	    	setup_time_term();
 	    	modify_system();
 	    }
-	    else if (balance_ != nullptr)
+	    else
 	    {
-	    	balance_->start_mass_assembly(water_balance_idx_);
-	    	balance_->finish_mass_assembly(water_balance_idx_);
+	    	balance_->start_mass_assembly(data_->water_balance_idx);
+	    	balance_->finish_mass_assembly(data_->water_balance_idx);
 	    }
 	    END_TIMER("full assembly");
 	} else {
@@ -1314,8 +1308,7 @@ void DarcyMH::setup_time_term() {
 
     DebugOut().fmt("Setup with dt: {}\n", time_->dt());
 
-    if (balance_ != nullptr)
-    	balance_->start_mass_assembly(water_balance_idx_);
+   	balance_->start_mass_assembly(data_->water_balance_idx);
 
     //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
     for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
@@ -1328,9 +1321,8 @@ void DarcyMH::setup_time_term() {
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
         //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
-        if (balance_ != nullptr)
-        	balance_->add_mass_matrix_values(water_balance_idx_,
-        	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
+       	balance_->add_mass_matrix_values(data_->water_balance_idx,
+       	        ele_ac.region().bulk_idx(), { int(ele_ac.ele_row()) }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
@@ -1338,8 +1330,7 @@ void DarcyMH::setup_time_term() {
     solution_changed_for_scatter=true;
     schur0->set_matrix_changed();
 
-    if (balance_ != nullptr)
-    	balance_->finish_mass_assembly(water_balance_idx_);
+    balance_->finish_mass_assembly(data_->water_balance_idx);
 }
 
 void DarcyMH::modify_system() {

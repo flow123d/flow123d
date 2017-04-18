@@ -12,6 +12,7 @@ problem: !Coupling_Sequential
           - 1d_upper
           - 1d_lower
           - 1d_left_branch
+    global_observe_search_radius: 0.1
 
   flow_equation: !Flow_Darcy_MH
     output_specific:

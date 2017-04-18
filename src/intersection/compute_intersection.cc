@@ -386,27 +386,24 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     
     // standard case with a single intersection corner
     if(result < IntersectionResult::degenerate){
+//         DBGCOUT(<< "12d plucker case\n");
         ASSERT_EQ_DBG(1, IP12s.size());
         IntersectionPointAux<1,2> &IP = IP12s.back();
         
-        // possibly cut the line
+        // check the IP whether it is on abscissa
         arma::vec2 theta;
         double t = IP.local_bcoords_A()[1];
-        double tol = rounding_epsilon*scale_line_;
-        if(t >= -tol && t <= 1+tol){
-                // possibly set abscissa vertex {0,1}
-                if( fabs(t) <= tol)       { theta = {1,0}; IP.set_topology_A(0,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
-                else if(fabs(1-t) <= tol) { theta = {0,1}; IP.set_topology_A(1,0); IP.set_coordinates(theta, IP.local_bcoords_B());}
-                // IP found
+        // t is already checked for vertex position with tolerance in compute_plucker
+        if(t < 0 || t > 1) { 
+//             DBGCOUT(<< "remove IP\n"); 
+            IP12s.pop_back(); // IP outside => remove
         }
-        else IP12s.pop_back(); // IP outside => remove
-        
         return IP12s.size();
     }
     else{
         ASSERT_DBG(result == IntersectionResult::degenerate);
 
-        DBGCOUT(<< "12 degenerate case, all products are zero\n");
+//         DBGCOUT(<< "12d degenerate case, all products are zero\n");
        
         // 3 zero products: abscissa and triangle are coplanar
         for(unsigned int i = 0; i < 3;i++){
@@ -1116,14 +1113,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             // fix order of IPs
             unsigned int ip = (side_cycle_orientation[_i_side] + _ip) % IP13s.size();
 
-            DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
+            //DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
 
             // convert from 13 to 23 IP
             IPAux13 &IP = IP13s[ip];
             IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
             IntersectionPointAux<3,2> IP32(IP31, i_side);    // interpolation uses local_bcoords_B and given idx_B
             IPAux23 IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
-            DebugOut() << IP;
+            //DebugOut() << IP;
 
             // Tracking info
             unsigned int tetra_object = s3_dim_starts[IP23.dim_B()] + IP23.idx_B();
@@ -1198,7 +1195,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
 	    std::vector<IPAux12> IP12_local;
 	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local);
-	    DebugOut() << print_var(tetra_edge) << print_var(int(result));
+	    //DebugOut() << print_var(tetra_edge) << print_var(int(result));
 	    if (result < IntersectionResult::degenerate) {
 	        ASSERT_DBG(IP12_local.size() ==1);
 	        IP12s_.push_back(IP12_local[0]);

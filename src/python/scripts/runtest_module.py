@@ -119,7 +119,7 @@ class ModuleRuntest(ScriptModule):
             runtest_command,
 
             python=sys.executable,
-            script=pkgutil.get_loader('runtest').filename,
+            script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
             limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
@@ -200,8 +200,7 @@ class ModuleRuntest(ScriptModule):
 
         with Printer.all.with_level(1):
             for thread in runner.threads:
-                multithread = thread
-                """ :type: RuntestMultiThread """
+                multithread = thread  # type: RuntestMultiThread
                 StatusPrinter.print_test_result(multithread)
             Printer.all.sep()
             StatusPrinter.print_runner_stat(runner)
@@ -283,7 +282,7 @@ def do_work(arg_options=None, debug=False):
     :type arg_options: utils.argparser.RuntestArgs
     """
     module = ModuleRuntest(arg_options)
-    result = module.run(debug)
+    result = module.run(debug)  # type: ParallelThreads
 
     # pickle out result on demand
     if arg_options.dump:
@@ -291,4 +290,5 @@ def do_work(arg_options=None, debug=False):
             import pickle
             pickle.dump(result.dump(), open(arg_options.dump, 'wb'))
         except: pass
-    return result
+
+    return result.returncode, result

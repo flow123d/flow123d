@@ -42,6 +42,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
     i_data.dim= ele_ac.dim();
     i_data.delta = delta;
     i_data.dofs.resize(ele_ac.n_sides());
+    i_data.vel_dofs.resize(ele_ac.n_sides());
     i_data.dirichlet_dofs.resize(ele_ac.n_sides());
     i_data.dirichlet_sol.resize(ele_ac.n_sides());
     i_data.n_dirichlet=0;
@@ -49,6 +50,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
 
     for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
         i_data.dofs[i_side]=ele_ac.edge_row(i_side);
+        i_data.vel_dofs[i_side] = ele_ac.side_row(i_side);
         //i_data.z_sides[i_side]=ele_ac.side(i_side)->centre()[2];
         //DebugOut().fmt("edge: {} {}", i_side, ele_ac.edge_row(i_side));
         Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
@@ -135,9 +137,10 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
     double isec_sum = 0.0;
     uint i = 0;
     for(; i < isec_list.size(); ++i) {
-        quadrature_.reinit(isec_list[i].second);
+        bool non_zero = quadrature_.reinit(isec_list[i].second);
         slave_ac_.reinit( quadrature_.slave_idx() );
         if (slave_ac_.dim() == master_ac.dim()) break;
+        if (! non_zero) continue; // skip quadratures close to zero
 
         double cs = data_->cross_section.value(slave_ac_.full_iter()->centre(), slave_ac_.full_iter()->element_accessor());
         double isec_measure = quadrature_.measure();
@@ -174,6 +177,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
 
 
     // 2d-2d
+    //DebugOut() << "2d-2d";
     if (i < isec_list.size()) {
         isec_data_list.clear();
         isec_sum = 0.0;
@@ -202,6 +206,7 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
 
 
              double s =  -scale * row_ele.delta * col_ele.delta;
+             //DebugOut().fmt("s: {} {} {} {}", s, scale, row_ele.delta, col_ele.delta);
              product_ = s * tensor_average(row_ele.dim, col_ele.dim);
 
              loc_system_.reset(row_ele.dofs, col_ele.dofs);
@@ -215,9 +220,28 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
              loc_system_.set_rhs( -s * col_average_[row_ele.dim] * col_ele.ele_z_coord_ );
              loc_system_.eliminate_solution();
 
-             data_->lin_sys->set_local_system(loc_system_);
+             if (fix_velocity_flag) {
+                 this->fix_velocity_local(row_ele, col_ele);
+             } else {
+                 data_->lin_sys->set_local_system(loc_system_);
+             }
          }
      }
+}
+
+
+void P0_CouplingAssembler::fix_velocity_local(const IsecData &row_ele, const IsecData & col_ele)
+{
+
+    uint n_rows = row_ele.vel_dofs.n_rows;
+    uint n_cols = col_ele.dofs.n_rows;
+    arma::vec pressure(n_cols);
+    arma::vec add_velocity(n_rows);
+    double * solution = data_->lin_sys->get_solution_array();
+    for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = solution[col_ele.dofs[icol]];
+    add_velocity =  loc_system_.get_matrix() * pressure - loc_system_.get_rhs();
+    //DebugOut() << "fix_velocity\n" << pressure << add_velocity;
+    for(uint irow=0; irow < n_rows; irow++ ) solution[row_ele.vel_dofs[irow]] += add_velocity[irow] ;
 }
 
 void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet)

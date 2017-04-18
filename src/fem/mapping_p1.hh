@@ -21,6 +21,7 @@
 #define MAPPING_P1_HH_
 
 #include "fem/mapping.hh"
+#include "mesh/elements.h"
 
 
 /**
@@ -104,6 +105,39 @@ public:
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
+
+    /**
+     * Map from reference element to global coord system.
+     * Matrix(3, dim+1), last column is the translation vector.
+     */
+    arma::mat::fixed<3, dim+1> element_map(Element &elm) const
+    {
+    	ASSERT_EQ(elm.dim(), dim).error();
+
+        arma::vec3 &v0 = elm.node[0]->point();
+        arma::mat::fixed<3, dim+1> A;
+
+        A.col(0) = v0;
+        for(unsigned int i=1; i <= dim; i++ ) {
+            A.col(i) = elm.node[i]->point() - v0;
+        }
+
+        return A;
+    }
+
+    /**
+     * Project given point to the barycentic coordinates.
+     * Result vector have dimension dim()+1. Local coordinates are the first.
+     * Last is 1-...
+     */
+    arma::vec::fixed<dim+1> project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const;
+
+    /**
+     * Clip a point given by barycentric cocordinates to the element.
+     * If the point is out of the element the closest point
+     * projection to the element surface is used.
+     */
+    arma::vec::fixed<dim+1> clip_to_element(arma::vec::fixed<dim+1> &barycentric);
 
 private:
 

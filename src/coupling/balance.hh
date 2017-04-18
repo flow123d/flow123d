@@ -194,8 +194,8 @@ public:
 			unsigned int max_dofs_per_boundary);
 
 
-    /// Returns true if the given time step is marked for the balance output.
-    bool is_current(const TimeStep &step);
+    /// Returns true if the current time step is marked for the balance output.
+    bool is_current();
 
 	/**
 	 * This method must be called before assembling the matrix for computing mass.
@@ -251,12 +251,19 @@ public:
 	/**
 	 * Adds elements into matrix for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param elem_idx      Local index of boundary edge.
+	 * @param boundary_idx  Local index of boundary edge.
 	 * @param dof_indices   Dof indices to be added.
 	 * @param values        Values to be added.
+     * 
+     * The order of local boundary edges is given by traversing
+     * the local elements and their sides.
+     * 
+     * TODO: Think of less error-prone way of finding the local
+     * boundary index for a given Boundary object. It can be 
+     * possibly done when we will have a boundary mesh.
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
-			unsigned int elem_idx,
+			unsigned int boundary_idx,
 			const std::vector<int> &dof_indices,
 			const std::vector<double> &values);
 
@@ -285,11 +292,13 @@ public:
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
-	 * @param elem_idx      Local index of boundary edge.
+	 * @param boundary_idx  Local index of boundary edge.
 	 * @param value         Value to be added.
+     * 
+     * For determining the local boundary index see @ref add_flux_matrix_values.
 	 */
 	void add_flux_vec_value(unsigned int quantity_idx,
-			unsigned int elem_idx,
+			unsigned int boundary_idx,
 			double value);
 
 	/**
@@ -337,26 +346,12 @@ public:
 	/**
 	 * Updates cumulative quantities for balance.
 	 * This method can be called in substeps even if no output is generated.
-	 * It calculates the sum of source over time interval.
+	 * It calculates the sum of source and sum of (incoming) flux over time interval.
 	 * @param quantity_idx  Index of quantity.
 	 * @param solution      Solution vector.
-	 * @param dt            Actual time step.
 	 */
-	void calculate_cumulative_sources(unsigned int quantity_idx,
-			const Vec &solution,
-			double dt);
-
-	/**
-	 * Updates cumulative quantities for balance.
-	 * This method can be called in substeps even if no output is generated.
-	 * It calculates the sum of (incoming) flux over time interval.
-	 * @param quantity_idx  Index of quantity.
-	 * @param solution      Solution vector.
-	 * @param dt            Actual time step.
-	 */
-	void calculate_cumulative_fluxes(unsigned int quantity_idx,
-			const Vec &solution,
-			double dt);
+	void calculate_cumulative(unsigned int quantity_idx,
+			const Vec &solution);
 
 	/**
 	 * Calculates actual mass and save it to given vector.
@@ -369,33 +364,14 @@ public:
 			vector<double> &output_array);
 
 	/**
-	 * Calculates actual mass and save it to internal vector.
+	 * Calculates actual mass, incoming flux and source.
 	 * @param quantity_idx  Index of quantity.
 	 * @param solution      Solution vector.
 	 */
-	void calculate_mass(unsigned int quantity_idx,
-			const Vec &solution)
-	{
-		calculate_mass(quantity_idx, solution, masses_[quantity_idx]);
-	}
-
-	/**
-	 * Calculates actual (incoming) flux.
-	 * @param quantity_idx  Index of quantity.
-	 * @param solution      Solution vector.
-	 */
-	void calculate_flux(unsigned int quantity_idx,
+	void calculate_instant(unsigned int quantity_idx,
 			const Vec &solution);
 
-	/**
-	 * Calculates actual source.
-	 * @param quantity_idx  Index of quantity.
-	 * @param solution      Solution vector.
-	 */
-	void calculate_source(unsigned int quantity_idx,
-			const Vec &solution);
-
-	/**
+    /**
 	* Adds provided values to the cumulative sources.
 	* @param quantity_idx Index of quantity.
 	* @param sources Sources per region.
@@ -404,7 +380,7 @@ public:
 	void add_cumulative_source(unsigned int quantity_idx, double source);
 
 	/// Perform output to file for given time instant.
-	void output(double time);
+	void output();
 
 private:
 	/// Size of column in output (used if delimiter is space)
@@ -532,9 +508,6 @@ private:
     std::vector<double> increment_fluxes_;
     std::vector<double> increment_sources_;
 
-	/// initial time
-	double initial_time_;
-
 	/// time of last calculated balance
 	double last_time_;
 
@@ -572,7 +545,7 @@ private:
     /// Record for current balance
     Input::Record input_record_;
 
-
+    const TimeGovernor *time_;
 
 
 };

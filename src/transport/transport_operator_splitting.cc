@@ -172,11 +172,8 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
     balance_ = make_shared<Balance>("mass", mesh_);
     balance_->init_from_input(in_rec.val<Input::Record>("balance"), this->time());
 
-    if (balance_)
-    {
-  	  balance_->units(UnitSI().kg(1));
-  	  convection->set_balance_object(balance_);
-    }
+    balance_->units(UnitSI().kg(1));
+    convection->set_balance_object(balance_);
 
 	convection->initialize(); //
 
@@ -241,14 +238,6 @@ void TransportOperatorSplitting::output_data(){
         if(reaction) reaction->output_data(); // do not perform write_time_frame
         convection->output_stream()->write_time_frame();
 
-        if (balance_ != nullptr && balance_->is_current( time_->step() ) )
-        {
-        	START_TIMER("TOS-balance");
-        	convection->calculate_instant_balance();
-        	balance_->output(time_->t());
-        	END_TIMER("TOS-balance");
-        }
-
         END_TIMER("TOS-output data");
 }
 
@@ -257,8 +246,12 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
-    if(reaction) reaction->zero_time_step();
-    output_data();
+    if(reaction)
+    {
+      reaction->zero_time_step();
+      reaction->output_data(); // do not perform write_time_frame
+    }
+    convection->output_stream()->write_time_frame();
 
 }
 
@@ -299,7 +292,7 @@ void TransportOperatorSplitting::update_solution() {
 	    convection->update_solution();
         
 
-	    if (balance_ != nullptr && balance_->cumulative())
+	    if (balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
 
@@ -327,7 +320,7 @@ void TransportOperatorSplitting::update_solution() {
 
 
 
-	    if (balance_ != nullptr && balance_->cumulative())
+	    if (balance_->cumulative())
 	    {
 	    	START_TIMER("TOS-balance");
 

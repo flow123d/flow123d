@@ -305,6 +305,9 @@ public:
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
 
+    /// Maximal distance of observe point from Mesh relative to its size
+    double global_observe_radius() const;
+
 
 protected:
 

@@ -93,7 +93,8 @@ def create_parser():
 
     group = parser.add_argument_group('Special options', 'Options are debug features or machine specific options')
     argparser.Parser.add(group, '--root', help="""R|
-        Path to base directory of flow123d.
+        Path to base directory of flow123d. If not set value will be determined by python scripts
+        location.
     """)
     argparser.Parser.add(group, '--json', help="""R|
         Output result to json file.
@@ -161,11 +162,9 @@ if __name__ == '__main__':
     # run work
     with Timer.app_timer:
         BinExecutor.register_sigint()
-        returncode = do_work(arg_options)
+        returncode, debug = do_work(arg_options)
 
     # run work
-    returncode = returncode.returncode if type(returncode) is not int else returncode
-
     if arg_options.death:
         if returncode == 0:
             Printer.all.err('Command did exit with 0 but should not (--death flag was set)!')
@@ -174,6 +173,6 @@ if __name__ == '__main__':
             Printer.all.suc('Command did not with 0 (--death flag was set)')
             sys.exit(0)
     else:
-        sys.exit(returncode)
+        sys.exit(returncode())
 
 
