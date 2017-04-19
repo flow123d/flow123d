@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "system/system.hh"
 
 
 class ElementDataCacheBase {
@@ -66,7 +67,7 @@ public:
 
 	/// Return vector of element data for get component.
 	ComponentDataPtr get_component_data(unsigned int component_idx) {
-		OLD_ASSERT(component_idx < data_.size(), "Index of component is out of range.\n");
+		ASSERT_LT(component_idx, data_.size()).error("Index of component is out of range.\n");
 		return data_[component_idx];
 	}
 
