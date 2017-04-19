@@ -36,7 +36,7 @@ using namespace std;
 
 
 GmshMeshReader::GmshMeshReader(const FilePath &file_name)
-: tok_(file_name)
+: BaseMeshReader(), tok_(file_name)
 {
 	current_cache_ = new ElementDataCacheBase();
     tok_.set_comment_pattern( "#");
@@ -46,7 +46,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 
 
 GmshMeshReader::GmshMeshReader(std::istream &in)
-: tok_(in)
+: BaseMeshReader(), tok_(in)
 {
 	current_cache_ = new ElementDataCacheBase();
     tok_.set_comment_pattern( "#");
@@ -445,10 +445,10 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
 
 
 // explicit instantiation of template methods
-#define READER_GET_ELEMENT_DATA(TYPE) \
+#define GMSH_READER_GET_ELEMENT_DATA(TYPE) \
 template typename ElementDataCache<TYPE>::ComponentDataPtr GmshMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
 	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
 
-READER_GET_ELEMENT_DATA(int);
-READER_GET_ELEMENT_DATA(unsigned int);
-READER_GET_ELEMENT_DATA(double);
+GMSH_READER_GET_ELEMENT_DATA(int);
+GMSH_READER_GET_ELEMENT_DATA(unsigned int);
+GMSH_READER_GET_ELEMENT_DATA(double);

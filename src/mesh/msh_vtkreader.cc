@@ -24,6 +24,7 @@
 
 
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
+: BaseMeshReader()
 {
 	parse_result_ = doc_.load_file( ((std::string)file_name).c_str() );
 	read_base_vtk_attributes();
@@ -32,10 +33,16 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 
 
 VtkMeshReader::VtkMeshReader(std::istream &in)
+: BaseMeshReader()
 {
 	parse_result_ = doc_.load(in);
 	read_base_vtk_attributes();
 }
+
+
+
+void VtkMeshReader::read_mesh(Mesh* mesh)
+{}
 
 
 
@@ -98,3 +105,23 @@ VtkMeshReader::DataType VtkMeshReader::get_data_type(std::string type_str, bool 
     }
 
 }
+
+
+
+template<typename T>
+typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( std::string field_name, double time,
+		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
+{
+	return static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(component_idx);
+}
+
+
+
+// explicit instantiation of template methods
+#define VTK_READER_GET_ELEMENT_DATA(TYPE) \
+template typename ElementDataCache<TYPE>::ComponentDataPtr VtkMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
+	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
+
+VTK_READER_GET_ELEMENT_DATA(int);
+VTK_READER_GET_ELEMENT_DATA(unsigned int);
+VTK_READER_GET_ELEMENT_DATA(double);

@@ -28,6 +28,7 @@
 #include "system/tokenizer.hh"
 #include "mesh/region.hh"
 #include "mesh/element_data_cache.hh"
+#include "mesh/msh_basereader.hh"
 #include "input/input_exception.hh"
 
 class Mesh;
@@ -72,7 +73,7 @@ struct GMSH_DataHeader {
 };
 
 
-class GmshMeshReader {
+class GmshMeshReader : public BaseMeshReader {
 public:
 	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
 	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
@@ -123,8 +124,10 @@ public:
     /**
      *  Reads @p mesh from the GMSH file.
      *  Input of the mesh allows changing regions within the input CON file.
+     *
+     *  Implements @p BaseMeshReader::read_mesh.
      */
-    void read_mesh(Mesh* mesh);
+    void read_mesh(Mesh* mesh) override;
 
     /**
      * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
@@ -135,26 +138,19 @@ public:
     void read_physical_names(Mesh * mesh);
 
     /**
-     *  Reads ElementData sections of opened GMSH file. The file is serached for the \\$ElementData section with header
-     *  that match the given @p search_header (same field_name, time of the next section is the first greater then
-     *  that given in the @p search_header). If such section has not been yet read, we read the data section into
-     *  raw buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into
-     *  indexes to the raw buffer. The buffer must have size at least @p search_header.n_components * @p search_header.n_entities.
-     *  Indexes in the map must be smaller then @p search_header.n_entities.
-     *  If the @p data buffer is updated we set search_header.actual to true.
+     *  Reads ElementData sections of opened GMSH file. The file is searched for the \\$ElementData section with header
+     *  that match the given @p field_name and @p time of the next section is the first greater then that given in input
+     *  parameters). If such section has not been yet read, we read the data section into raw buffer @p data. The map
+     *  @p id_to_idx is used to convert IDs that marks individual input rows/entities into indexes to the raw buffer.
+     *  The buffer must have size at least @p n_components * @p n_entities. Indexes in the map must be smaller then
+     *  @p n_entities.
+     *  If the @p data buffer is updated we set actual to true.
      *
      *  Possible optimizations:
      *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
      *  and just check that they comes in in correct order.
      *
-     *  @param field_name field name
-     *  @param time searched time
-     *  @param n_entities count of entities (elements)
-     *  @param n_components count of components (size of returned data is given by n_entities*n_components)
-     *  @param actual Set to rue if the stream position is just after the header,
-     *                set to false either before first header is found or at EOF
-     *  @param el_ids vector of ids of elements
-     *  @param component_idx component index of MultiField
+     *  Implements @p BaseMeshReader::get_element_data.
      */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
@@ -188,8 +184,6 @@ private:
     Tokenizer tok_;
     /// Table with data of ElementData headers
     HeaderTable header_table_;
-    /// Cache with last read element data
-    ElementDataCacheBase *current_cache_;
 };
 
 #endif	/* _GMSHMESHREADER_H */

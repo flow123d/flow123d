@@ -23,9 +23,10 @@
 #include <istream>
 #include <pugixml.hpp>
 
+#include "mesh/msh_basereader.hh"
 #include "system/file_path.hh"
 
-class VtkMeshReader {
+class VtkMeshReader : public BaseMeshReader {
 public:
 	/// Possible data sections in UnstructuredGrid - Piece node.
 	enum DataSections {
@@ -64,7 +65,14 @@ public:
      */
 	VtkMeshReader(std::istream &in);
 
-	/**
+    /**
+     *  Reads @p mesh from the VTK file.
+     *
+     *  Implements @p BaseMeshReader::read_mesh.
+     */
+    void read_mesh(Mesh* mesh) override;
+
+    /**
 	 * Get XML node in UnstructuredGrid part of VTK file.
 	 * @param data_section    Section where node is located.
 	 * @param data_array_name Attribute "Name" of DataArray tag (not used for Point section)
@@ -80,6 +88,15 @@ public:
 	inline unsigned int n_elements() const {
 		return n_elements_;
 	}
+
+    /**
+     *  Reads ElementData sections of opened VTK file.
+     *
+     *  Implements @p BaseMeshReader::get_element_data.
+     */
+    template<typename T>
+    typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
+    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
 protected:
 	/// Get DataType by value of string
