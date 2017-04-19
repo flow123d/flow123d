@@ -24,6 +24,9 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
+
 int TPolygon::numberInstance = 0;
 
 int TPolygon::generateId() {
@@ -178,3 +181,4 @@ void TPolygon::ComputeArea() {
     return;
 }
 
+} // namespace ngh

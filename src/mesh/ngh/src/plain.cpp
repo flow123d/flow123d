@@ -20,6 +20,7 @@
 #include "mesh/ngh/include/intersection.h"
 
 using namespace mathfce;
+namespace ngh {
 
 int TPlain::numberInstance = 0;
 
@@ -158,3 +159,4 @@ void TPlain::SetPoints(const TPoint &P1, const TPoint &P2, const TPoint &P3) {
     Compute();
 }
 
+} //namespace ngh

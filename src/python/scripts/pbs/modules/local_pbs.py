@@ -2,29 +2,16 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 import re
-import os
+import sys
+import pkgutil
 
 from scripts.pbs.job import Job, JobState
 from scripts.prescriptions.remote_run import PBSModule
 
 
 def determine_mock_location():
-    # if script are copied out
-    path = os.path.abspath(os.path.join(
-            os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
-            '..', '..', '..', '..', '..',
-            'unit_tests', 'test_scripts', 'extras', 'pbs_mock.py'))
-    if os.path.exists(path):
-        return path
+    return pkgutil.find_loader('local_pbs_server').path
 
-    # if script is still in repo
-    path = os.path.abspath(os.path.join(
-        os.path.dirname(os.path.realpath(os.path.abspath(__file__))),
-        '..', '..', '..', '..',
-        'tests', 'test_scripts', 'extras', 'pbs_mock.py'))
-
-    if os.path.exists(path):
-        return path
 
 class Module(PBSModule):
     """
@@ -39,7 +26,7 @@ class Module(PBSModule):
 
     def get_pbs_command(self, pbs_script_filename):
         return [
-            "python",
+            sys.executable,
             Module.mock,
             'qsub',
             '-o', self.case.fs.pbs_output,

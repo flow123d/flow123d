@@ -407,7 +407,7 @@ Region RegionDB::find_by_dimid(DimIDIter it_id, unsigned int id, const std::stri
 }
 
 void RegionDB::print_region_table(ostream& stream) const {
-	OLD_ASSERT(closed_, "RegionDB not closed yet.\n");
+	ASSERT(closed_).error("RegionDB not closed yet.\n");
 
 	// stratified regions by type
 	std::vector<std::string> boundaries, bulks, sets;
@@ -424,7 +424,7 @@ void RegionDB::print_region_table(ostream& stream) const {
 	}
 
 	// print table
-	stream << endl << "----------- Table of all regions: -----------";
+	stream << "----------- Table of all regions: -----------";
 	if (boundaries.size()) {
 		stream << endl << " - Boundary elementary regions -" << endl;
 		stream << std::setfill(' ') << "name" << setw(14) << "" << setw(6) << "id" << " dim" << endl; // table header

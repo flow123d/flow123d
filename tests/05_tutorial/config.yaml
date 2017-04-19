@@ -8,3 +8,14 @@ test_cases:
 - files: 07_heat.yaml
   proc: [ 1 ]
   time_limit: 60
+  check_rules:
+    - ndiff:
+        files: [ "energy_balance.txt" ]
+        r_tol: 1e-3
+        a_tol: 1e5
+    - ndiff:
+        # default tolerance for all except energy, usage of wild chars 
+        # files: ["(?!^energy_balance.txt$)*"] 
+        files: [ "*.msh", "water_balance.txt" ]
+        r_tol: 1e-3
+        a_tol: 1e-6

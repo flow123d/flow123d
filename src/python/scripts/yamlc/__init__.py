@@ -27,20 +27,45 @@ from scripts.core.base import Paths
 
 """
 
-DEFAULTS = dict(
-    proc=[1],
-    inputs=['input'],
-    time_limit=30,
-    memory_limit=400,
-    tags=[],
-    check_rules=[
-        {
-            'ndiff': {
-                'files': ['*']
-            }
-        }
-    ]
-)
+
+class YamlDeathTest(object):
+    TRUE = True
+    ANY = 1
+    ALL = 2
+    FALSE = False
+
+    def __init__(self, value):
+
+        if value == self.TRUE:
+            self.value = self.TRUE
+        elif value == self.FALSE:
+            self.value = self.FALSE
+        elif str(value).lower() == 'any':
+            self.value = self.ANY
+        elif str(value).lower() == 'all':
+            self.value = self.ALL
+
+    def reverse_return_code(self, returncode):
+        """
+        :type returncode: scripts.core.returncode.RC
+        """
+        if self.value == self.TRUE:
+            # do not change None return code (test was skipped)
+            if returncode is None:
+                return None
+
+            # on success return code 100 indicating manual death_error value
+            if returncode == 0:
+                return 100
+
+            # otherwise return 0
+            return 0
+
+        # no reversal
+        if self.value == self.FALSE:
+            return returncode
+
+        raise NotImplementedError("Value %s is not implemented yet" % str(self.value))
 
 TAG_FILES = 'files'
 TAG_PROC = 'proc'
@@ -50,11 +75,29 @@ TAG_TEST_CASES = 'test_cases'
 TAG_CHECK_RULES = 'check_rules'
 TAG_TAGS = 'tags'
 TAG_INPUTS = 'inputs'
+TAG_DEATH_TEST = 'death_test'
 REF_OUTPUT_DIR = 'ref_out'
 TEST_RESULTS = 'test_results'
 
 YAML = '.yaml'
 CONFIG_YAML = 'config.yaml'
+
+
+DEFAULTS = {
+    TAG_PROC:           [1],
+    TAG_INPUTS:         ['input'],
+    TAG_TIME_LIMIT:     30,
+    TAG_MEMORY_LIMIT:   400,
+    TAG_DEATH_TEST:     YamlDeathTest.FALSE,
+    TAG_TAGS:           [],
+    TAG_CHECK_RULES: [
+        {
+            'ndiff': {
+                'files': ['*']
+            }
+        }
+    ]
+}
 
 
 class ConfigCaseFiles(object):

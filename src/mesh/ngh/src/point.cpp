@@ -23,6 +23,9 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
+
 int TPoint::numberInstance = 0;
 
 int TPoint::generateId() {
@@ -135,3 +138,5 @@ std::ostream & operator <<(std::ostream& stream, const TPoint& P) {
     stream << "[" << P.x << " " << P.y << " " << P.z << "]";
     return stream;
 }
+
+} //namespace ngh

@@ -77,6 +77,7 @@ it::Record & Application::get_input_type() {
 
 Application::Application( int argc,  char ** argv)
 : ApplicationBase(argc, argv),
+  problem_(nullptr),
   main_input_filename_(""),
   //passed_argc_(0),
   //passed_argv_(0),
@@ -340,12 +341,10 @@ void Application::run() {
 
         if (i_problem.type() == HC_ExplicitSequential::get_input_type() ) {
 
-            HC_ExplicitSequential *problem = new HC_ExplicitSequential(i_problem);
+            problem_ = new HC_ExplicitSequential(i_problem);
 
             // run simulation
-            problem->run_simulation();
-
-            delete problem;
+            problem_->run_simulation();
         } else {
             xprintf(UsrErr,"Problem type not implemented.");
         }
@@ -367,6 +366,8 @@ void Application::after_run() {
 
 
 Application::~Application() {
+	if (problem_) delete problem_;
+
 	// remove balance output files in YAML format if "yaml_balance" option is not set
 	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
 		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );

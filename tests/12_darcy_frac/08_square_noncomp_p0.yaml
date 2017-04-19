@@ -15,7 +15,7 @@ problem: !Coupling_Sequential
     input_fields:
       - region: 1d
         conductivity: 1
-        sigma: 100
+        sigma: 25
       - region: 2d
         conductivity: 5
       - region: .1d
@@ -28,7 +28,6 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
         - velocity_diff
         - pressure_diff

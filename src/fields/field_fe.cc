@@ -66,9 +66,9 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		Mapping<1,3> *map1,
-		Mapping<2,3> *map2,
-		Mapping<3,3> *map3,
+		MappingP1<1,3> *map1,
+		MappingP1<2,3> *map2,
+		MappingP1<3,3> *map3,
 		VectorSeqDouble *data)
 {
     dh_ = dh;
@@ -240,16 +240,24 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
 			ElementFullIter elm = source_mesh->element( *it );
-			arma::mat map = elm->element_map();
-			arma::vec projection = elm->project_point(ele->centre(), map);
-			if (projection.min() >= -BoundingBox::epsilon) {
-				// projection in element
-				arma::vec3 projection_point = map.col(elm->dim()) + map.cols(0, elm->dim()-1) * projection.rows(0, elm->dim()-1);
-				if ( arma::norm(projection_point - ele->centre(), "inf") < 2*BoundingBox::epsilon ) {
-					// point on the element
-					sum_val[elm->dim()] += (*data_vec)[*it];
-					++elem_count[elm->dim()];
-				}
+			bool contains=false;
+			switch (elm->dim()) {
+			case 1:
+				contains = value_handler1_.contains_point(ele->centre(), *elm);
+				break;
+			case 2:
+				contains = value_handler2_.contains_point(ele->centre(), *elm);
+				break;
+			case 3:
+				contains = value_handler3_.contains_point(ele->centre(), *elm);
+				break;
+			default:
+				ASSERT(false).error("Invalid element dimension!");
+			}
+			if (contains) {
+				// projection point in element
+				sum_val[elm->dim()] += (*data_vec)[*it];
+				++elem_count[elm->dim()];
 			}
 		}
 		unsigned int dim = ele->dim();

@@ -22,6 +22,8 @@
 #include "triangle.h"
 #include <vector>
 
+namespace ngh {
+
 #define FOR_POL_VERTECES(i,j)     \
 	for((j)=(i)->verteces.begin();(j)!=(i)->verteces.end();(j)++)
 
@@ -72,6 +74,8 @@ public:
         return TPolygon::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif
 

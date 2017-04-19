@@ -13,8 +13,8 @@ WORK_IMAGE=flow123d/f123d_docker
 get_dev_dir() 
 {
     curr_dir=`pwd`
-    project_dir="${curr_dir#${WORKDIR}}"
-    project_dir="${project_dir#/}"
+    project_dir="${curr_dir#${WORKDIR}}"    # relative to 'workspace'
+    project_dir="${project_dir#/}"          
     project_dir="${project_dir%%/*}"
 }
 
@@ -55,7 +55,7 @@ make_work_image ()
         curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o .git-completion.bash
         cp_to_docker .git-completion.bash .
         
-        # add bashrc, the prompt in particular
+        # add bashrc, the prompt in particular        
         cp_to_docker $WORKDIR/_bashrc_docker .bashrc
                 
         # add pmake script
@@ -92,8 +92,8 @@ then
     docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash -c "$D_HOME/bin/pmake" $@ 
 else
     # interactive
-    make_work_image
-    docker run --rm -it -v "${WORKDIR}":"${WORKDIR}"  -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash
+    make_work_image    
+    docker run --rm -it -v "${WORKDIR}":"${WORKDIR}"  -w `pwd` -u $U_ID:$G_ID $WORK_IMAGE bash
 fi
 
 
