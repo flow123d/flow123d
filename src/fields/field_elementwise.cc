@@ -120,18 +120,12 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    GMSH_DataHeader search_header;
-    search_header.actual=false;
-    search_header.field_name=field_name_;
-    search_header.n_components=n_components_;
-    search_header.n_entities=n_entities_;
-    search_header.time=time.end();
-
-
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
+    bool actual_header_data = false;
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
+    		field_name_, time.end(), n_entities_, n_components_, actual_header_data,
     		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     this->scale_and_check_limits();
-    return search_header.actual;
+    return actual_header_data;
 }
 
 

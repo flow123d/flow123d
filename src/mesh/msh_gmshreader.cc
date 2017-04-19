@@ -291,13 +291,14 @@ void GmshMeshReader::read_data_header(GMSH_DataHeader &head) {
 
 
 template<typename T>
-typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data( GMSH_DataHeader &search_header,
-		std::vector<int> const & el_ids, unsigned int component_idx)
+typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data( std::string field_name, double time,
+		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
 {
     using namespace boost;
+    //
 
-    GMSH_DataHeader actual_header = find_header(search_header.time, search_header.field_name);
-    if ( !current_cache_->is_actual(actual_header.time, search_header.field_name) ) {
+    GMSH_DataHeader actual_header = find_header(time, field_name);
+    if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
 
 	    unsigned int id, idx, i_row;
 	    unsigned int n_read = 0;
@@ -305,13 +306,13 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    vector<int>::const_iterator id_iter = el_ids.begin();
 
 	    // check that the header is valid, try to correct
-	    if (actual_header.n_entities != search_header.n_entities) {
+	    if (actual_header.n_entities != n_entities) {
 	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
-	                tok_.f_name(), search_header.field_name, actual_header.time, actual_header.n_entities, search_header.n_entities);
-	        // actual_header.n_entities=search_header.n_entities;
+	                tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
+	        // actual_header.n_entities=n_entities;
 	    }
 
-	    if (search_header.n_components == 1) {
+	    if (n_components == 1) {
 	    	// read for MultiField to 'n_comp' vectors
 	    	// or for Field if ElementData contains only one value
 	    	size_of_cache = actual_header.n_components;
@@ -319,10 +320,10 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    else {
 	    	// read for Field if more values is stored to one vector
 	    	size_of_cache = 1;
-	    	if (actual_header.n_components != search_header.n_components) {
+	    	if (actual_header.n_components != n_components) {
 	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-		                tok_.f_name(), search_header.field_name, actual_header.time, actual_header.n_components, search_header.n_components);
-		        actual_header.n_components=search_header.n_components;
+		                tok_.f_name(), field_name, actual_header.time, actual_header.n_components, n_components);
+		        actual_header.n_components=n_components;
 	    	}
 	    }
 
@@ -330,7 +331,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
 	    for (unsigned int i=0; i<size_of_cache; ++i) {
 			typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
-			row_vec->resize(search_header.n_components*search_header.n_entities);
+			row_vec->resize(n_components*n_entities);
 			data_cache[i] = row_vec;
 	    }
 
@@ -349,15 +350,15 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	            }
 	            if (id_iter == el_ids.end()) {
 	            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
-	                        tok_.f_name(), search_header.field_name, actual_header.time, id);
+	                        tok_.f_name(), field_name, actual_header.time, id);
 	                break;
 	            }
 	            // save data from the line if ID was found
 	            if (*id_iter == (int)id) {
 	            	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
-	            		idx = (id_iter - el_ids.begin()) * search_header.n_components;
+	            		idx = (id_iter - el_ids.begin()) * n_components;
 	            		std::vector<T> &vec = *( data_cache[i_vec].get() );
-	            		for (unsigned int i_col=0; i_col < search_header.n_components; ++i_col, ++idx) {
+	            		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
 	            			vec[idx] = lexical_cast<T>(*tok_);
 	            			++tok_;
 	            		}
@@ -375,7 +376,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    LogOut().fmt("time: {}; {} entities of field {} read.\n",
 	    		actual_header.time, n_read, actual_header.field_name);
 
-	    search_header.actual = true; // use input header to indicate modification of @p data buffer
+	    actual = true; // use input header to indicate modification of @p data buffer
 
 	    // set new cache
 	    delete current_cache_;
@@ -445,8 +446,8 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
 
 // explicit instantiation of template methods
 #define READER_GET_ELEMENT_DATA(TYPE) \
-template typename ElementDataCache<TYPE>::ComponentDataPtr GmshMeshReader::get_element_data<TYPE>(GMSH_DataHeader &search_header, \
-	std::vector<int> const & el_ids, unsigned int component_idx)
+template typename ElementDataCache<TYPE>::ComponentDataPtr GmshMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
+	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
 
 READER_GET_ELEMENT_DATA(int);
 READER_GET_ELEMENT_DATA(unsigned int);

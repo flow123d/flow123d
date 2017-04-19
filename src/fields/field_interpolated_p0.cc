@@ -100,19 +100,14 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
-    GMSH_DataHeader search_header;
-    search_header.actual = false;
-    search_header.field_name = field_name_;
-    search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-    search_header.n_entities = source_mesh_->element.size();
-    search_header.time = time.end();
-    
+    bool actual_header_data = false;
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(search_header,
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(
+    		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), actual_header_data,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     this->scale_data();
 
-    return search_header.actual;
+    return actual_header_data;
 }
 
 

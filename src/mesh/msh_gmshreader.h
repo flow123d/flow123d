@@ -55,9 +55,6 @@ class FilePath;
 */
 
 struct GMSH_DataHeader {
-    /// True if the stream position is just after the header.
-    /// False either before first header is found or at EOF.
-    bool actual;
     std::string field_name;
     /// Currently ont used
     std::string interpolation_scheme;
@@ -149,10 +146,19 @@ public:
      *  Possible optimizations:
      *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
      *  and just check that they comes in in correct order.
+     *
+     *  @param field_name field name
+     *  @param time searched time
+     *  @param n_entities count of entities (elements)
+     *  @param n_components count of components (size of returned data is given by n_entities*n_components)
+     *  @param actual Set to rue if the stream position is just after the header,
+     *                set to false either before first header is found or at EOF
+     *  @param el_ids vector of ids of elements
+     *  @param component_idx component index of MultiField
      */
     template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( GMSH_DataHeader &search_header,
-    		std::vector<int> const & el_ids, unsigned int component_idx);
+    typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
+    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
 private:
     /**
