@@ -548,7 +548,9 @@ private:
      * if obj_after have null successor, set obj_after -> IP (backlink)
      */
     inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip);
-
+    
+    const std::vector<std::vector<arma::uvec>> on_faces;
+    std::vector<std::vector<arma::uvec>> _on_faces();
 
     IntersectionAux< 2 , 3  >* intersection_;
     Mesh *mesh_;

@@ -550,9 +550,10 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
     unsigned int n_ip_vertices = 0;
     
     if(dim == 2){
-        unsigned int sid = is.ips_on_single_object();
-        if(sid < (unsigned int)(-1)){
-            //TODO: we are unable to combine cases A and B in 1d-2d
+        // check whether all IPs lie in the face
+        unsigned int sid = is.ips_in_face();
+        if(sid < RefElement<3>::count<2>()){
+            //NOTE: we are unable to combine cases A and B in 1d-2d
             // CASE A: compatible vb neighboring
 //             DBGVAR(comp_ele->id());
 //             DBGVAR(bulk_ele->id());

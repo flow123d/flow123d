@@ -13,7 +13,6 @@
 
 using namespace std;
 
-
 /*************************************************************************************************************
  *                                  COMPUTE INTERSECTION FOR:             1D AND 2D
  ************************************************************************************************************/
@@ -950,7 +949,8 @@ ComputeIntersection<Simplex<2>, Simplex<3>>::ComputeIntersection()
 : no_idx(100),
 s3_dim_starts({0, 4, 10, 14}), // vertices, edges, faces, volume
 s2_dim_starts({15, 18, 21}),   // vertices, sides, surface
-object_next(22, no_idx)        // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
+object_next(22, no_idx),       // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
+on_faces(_on_faces())
  {
 
     plucker_coordinates_triangle_.resize(3, nullptr);
@@ -1284,6 +1284,9 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     unsigned int ip_init=0;
     for(unsigned int i=0; i< IP23_list.size(); i++) if (! have_predecessor[i]) ip_init=i;
 
+    arma::uvec::fixed<RefElement<3>::n_sides> ips_face_counter; 
+    ips_face_counter.zeros();
+    
     // regular case, merge duplicit IPs
     unsigned int ip=ip_init;
     ASSERT_EQ_DBG(IP_next.size(), IP23_list.size());
@@ -1301,20 +1304,29 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
         ASSERT_LT_DBG(ip, IP_next.size());
 
         if ( ! ips_topology_equal(intersection.points().back(), IP23_list[ip]) ) {
+            IPAux23 &IP = IP23_list[ip];
             //DebugOut() << print_var(ip) << IP23_list[ip];
-            intersection.points().push_back(IP23_list[ip]);
+            intersection.points().push_back(IP);
+            if(IP.dim_B() < 3)
+                ips_face_counter += on_faces[IP.dim_B()][IP.idx_B()];
         }
-
-
     }
-
+    
     if (intersection.points().size() == 1) return;
 
     if (ips_topology_equal(intersection.points().back(), IP23_list[ip_init]) )
         intersection.points().pop_back();
+    
+    if (intersection.points().size() > 2){
+        for(uint i=0; i< ips_face_counter.n_elem; i++){
+            if(ips_face_counter(i) >= intersection.points().size()){ // all IPs lie in a single face
+//                 DBGCOUT(<< "all IPs in face: " << i <<"\n");
+//                 ips_face_counter.print("face_counter");
+                intersection.set_ips_in_face(i);
+            }
+        }
+    }
 }
-
-
 
 
 bool ComputeIntersection<Simplex<2>, Simplex<3>>::ips_topology_equal(const IPAux23 &first, const IPAux23 &second)
@@ -1413,6 +1425,38 @@ auto ComputeIntersection<Simplex<2>, Simplex<3>>::vertex_faces(uint i_vertex)-> 
             return { s3_dim_starts[0]+i_vertex, s3_dim_starts[0]+i_vertex};
         }
     }
+}
+
+
+std::vector<std::vector<arma::uvec>> ComputeIntersection<Simplex<2>, Simplex<3>>::_on_faces()
+{
+    std::vector<std::vector<arma::uvec>> on_faces;
+    
+    on_faces.resize(3);
+    arma::uvec::fixed<RefElement<3>::n_sides> v; v.zeros();
+    
+    on_faces[0].resize(RefElement<3>::n_nodes, v);
+    for(uint i=0; i<RefElement<3>::n_nodes; i++)
+        for(uint j=0; j<RefElement<3>::n_sides_per_node; j++)
+            on_faces[0][i](RefElement<3>::interact(Interaction<2,0>(i))[j]) = 1;
+        
+    on_faces[1].resize(RefElement<3>::n_lines, v);
+    for(uint i=0; i<RefElement<3>::n_lines; i++)
+        for(uint j=0; j<RefElement<3>::n_sides_per_line; j++)
+            on_faces[1][i](RefElement<3>::interact(Interaction<2,1>(i))[j]) = 1;
+    
+    on_faces[2].resize(RefElement<3>::n_sides, v);
+    for(uint i=0; i<RefElement<3>::n_sides; i++)
+        on_faces[2][i](i) = 1;
+            
+//     DBGCOUT("Print on_faces:\n");
+//     for(uint d=0; d<on_faces.size(); d++)
+//         for(uint i=0; i<on_faces[d].size(); i++){
+//             for(uint j=0; j<on_faces[d][i].n_elem; j++)
+//                 cout << on_faces[d][i](j) << " ";
+//             cout << endl;
+//         }
+    return on_faces;
 }
 
 
