@@ -401,36 +401,40 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     }
     else{
         ASSERT_DBG(result == IntersectionResult::degenerate);
-
 //         DBGCOUT(<< "12d degenerate case, all products are zero\n");
-       
-        // 3 zero products: abscissa and triangle are coplanar
-        for(unsigned int i = 0; i < 3;i++){
-//                 DBGCOUT( << "side [" << i << "]\n");
-                IntersectionPointAux<1,2> IP;
-                if (compute_degenerate(i,IP))
-                {
-                    double t = IP.local_bcoords_A()[1];
-                    double tol = geometry_epsilon*scale_line_;
-                    if(t >= -tol && t <= 1+tol)
-                    {
-                        if(IP12s.size() > 0)
-                        {
-                            // if the IP has been found already
-                            if(IP12s.back().local_bcoords_A()[1] == t)
-                                continue;
-                            
-                            // sort the IPs in the direction of the abscissa
-                            if(IP12s.back().local_bcoords_A()[1] > t)
-                                std::swap(IP12s.back(),IP);
-                        }
-                        IP12s.push_back(IP);
-                    }
-                }
-        }
-        return IP12s.size();
+        return compute_final_in_plane(IP12s);
     }
 }
+
+unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final_in_plane(
+                                                    vector< IntersectionPointAux< 1, 2 > >& IP12s)
+{
+   for(unsigned int i = 0; i < 3;i++){
+//                 DBGCOUT( << "side [" << i << "]\n");
+        IntersectionPointAux<1,2> IP;
+        if (compute_degenerate(i,IP))
+        {
+            double t = IP.local_bcoords_A()[1];
+            double tol = geometry_epsilon*scale_line_;
+            if(t >= -tol && t <= 1+tol)
+            {
+                if(IP12s.size() > 0)
+                {
+                    // if the IP has been found already
+                    if(IP12s.back().local_bcoords_A()[1] == t)
+                        continue;
+                    
+                    // sort the IPs in the direction of the abscissa
+                    if(IP12s.back().local_bcoords_A()[1] > t)
+                        std::swap(IP12s.back(),IP);
+                }
+                IP12s.push_back(IP);
+            }
+        }
+    }
+    return IP12s.size(); 
+}
+
 
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::print_plucker_coordinates(std::ostream &os){
@@ -761,18 +765,7 @@ void ComputeIntersection<Simplex<1>, Simplex<3>>::set_data(Simplex< 1 >& absciss
 
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAux< 1, 3 >& intersection)
 {
-    
-    unsigned int count = compute(intersection.i_points_);
-    
-    // set if pathologic!!
-    /*
-    for(IntersectionPointAux<1,3> &p : intersection.i_points_){
-        if(p.is_pathologic()) intersection.pathologic_ = true;
-        break;
-    }*/
-    
-    return count;
-    
+    return compute(intersection.i_points_);
 }
 
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){

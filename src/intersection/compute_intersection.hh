@@ -98,6 +98,13 @@ public:
      */
     unsigned int compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
     
+    /** Computes final 1d-2d intersection, supposing situation in 2d plane (only degenerate case).
+     * (Use when this is the resulting dimension object).
+     * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
+     * @return number of intersection points found
+     */
+    unsigned int compute_final_in_plane(std::vector<IntersectionPointAux<1,2>> &IP12s);
+    
     /// @name Setters and Getters
     //@{ 
     /** @brief Sets the abscissa and triangle.
