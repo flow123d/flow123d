@@ -887,10 +887,11 @@ InspectElementsAlgorithm12::InspectElementsAlgorithm12(Mesh* input_mesh)
 {}
 
 
-void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<ILpair>>& intersection_map,
-                                                       std::vector<IntersectionLocal<1,2>> &storage)
+void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vector<ILpair>>& intersection_map,
+                                                         std::vector<IntersectionLocal<1,2>> &storage)
 {
     //DebugOut() << "Intersections 1d-2d\n";
+    intersectionaux_storage12_.clear();
     ASSERT(storage.size() == 0);
     
     FOR_ELEMENTS(mesh, ele) {
@@ -962,7 +963,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
     }
     }
     
-    MessageOut() << "2D-2D: number of intersections = " << storage.size() << "\n";
+    MessageOut() << "1D-2D [3]: number of intersections = " << storage.size() << "\n";
     // just dbg output
 //     for(IntersectionLocal<1,2> &is : storage)
 //     {
@@ -1002,7 +1003,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
 {
     //DebugOut() << "Intersections 1d-2d (2-bihtree)\n";
-    
+    intersectionaux_storage12_.clear();
     START_TIMER("Element iteration");
     
     FOR_ELEMENTS(mesh, elm) {
@@ -1045,6 +1046,49 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
     }
 
     END_TIMER("Element iteration");
+}
+
+void InspectElementsAlgorithm12::compute_intersections_1(const BIHTree& bih)
+{
+    //DebugOut() << "Intersections 1d-2d (2-bihtree) in 2D plane.\n";
+    intersectionaux_storage12_.clear();
+    START_TIMER("Element iteration");
+    
+    FOR_ELEMENTS(mesh, elm) {
+        unsigned int component_ele_idx = elm->index();
+        
+        if (elm->dim() == 1)                                    // is component element
+            //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
+        {   
+            update_simplex(elm, simplexA); // update component simplex
+            std::vector<unsigned int> candidate_list;
+            bih.find_bounding_box(bih.ele_bounding_box(component_ele_idx), candidate_list);
+            
+            START_TIMER("Bounding box element iteration");
+            
+            // Go through all element which bounding box intersects the component element bounding box
+            for(unsigned int bulk_ele_idx : candidate_list) {
+                ElementFullIter ele_2D = mesh->element(bulk_ele_idx);
+                
+                if (ele_2D->dim() == 2) { 
+                    update_simplex(ele_2D, simplexB); // update triangle
+                    
+                    IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
+                    START_TIMER("Compute intersection");
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(simplexA, simplexB, mesh);
+                    CI.compute_final_in_plane(is.points());
+                    END_TIMER("Compute intersection");
+                    
+                    if(is.points().size() > 0) {
+                        intersectionaux_storage12_.push_back(is);
+                    }
+                }
+            }
+            END_TIMER("Bounding box element iteration");
+        }
+    }
+    END_TIMER("Element iteration");
+    MessageOut() << "1D-2D [1]: number of intersections = " << intersectionaux_storage12_.size() << "\n";
 }
 
 // Declaration of specializations implemented in cpp:

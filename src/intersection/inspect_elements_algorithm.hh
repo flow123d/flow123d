@@ -259,13 +259,19 @@ public:
      * @param intersection_map_ map of intersections where 1D-3D and 2D-3D must be already computed
      * @param storage vector of intersection objects 1D-2D
      */
-    void compute_intersections(std::vector<std::vector<ILpair>> &intersection_map,
+    void compute_intersections_3(std::vector<std::vector<ILpair>> &intersection_map,
                                std::vector<IntersectionLocal<1,2>> &storage);
     
     /** @brief Runs the algorithm (2): compute 1D-2D intersection in 3D ambient space
      * BIH is used to find intersection candidates.
      */
     void compute_intersections_2(const BIHTree& bih);
+    
+    /** @brief Runs the algorithm (1): compute 1D-2D intersection in 2D plane.
+     * BIH is used to find intersection candidates.
+     */
+    void compute_intersections_1(const BIHTree& bih);
+    
 private: 
     /// Stores temporarily 1D-2D intersections.
     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;

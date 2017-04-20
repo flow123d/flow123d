@@ -123,7 +123,8 @@ private:
     template<unsigned int dim> void compute_intersections(InspectElementsAlgorithm<dim> &iea,
                                                           std::vector<IntersectionLocal<dim,3>> &storage);
     void compute_intersections_22(std::vector<IntersectionLocal<2,2>> &storage);
-    void compute_intersections_12(std::vector<IntersectionLocal<1,2>> &storage);
+    void compute_intersections_12_3(std::vector<IntersectionLocal<1,2>> &storage);
+    void compute_intersections_12_1(std::vector<IntersectionLocal<1,2>> &storage);
     void compute_intersections_12_2(std::vector<IntersectionLocal<1,2>> &storage);
     void compute_intersections_12_ngh_plane(std::vector< IntersectionLocal< 1, 2 > >& storage);
 };
