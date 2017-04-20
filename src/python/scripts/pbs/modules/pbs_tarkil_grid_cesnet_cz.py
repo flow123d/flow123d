@@ -71,8 +71,6 @@ class Module(PBSModule):
             limit.value = limit.value.format(**locals())
             command.extend(limit())
         command.append(pbs_script_filename)
-        print(command)
-        exit(0)
 
         return command
 
