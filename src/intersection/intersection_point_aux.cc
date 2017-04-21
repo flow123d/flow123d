@@ -56,12 +56,26 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1
      * TODO: set correct topology on B. Currently this is done ad hoc after call of this constructor.
      * Problem, dim_B_ can not be used as template parameter. Can we have some variant of interact without
      * template?
+     * TODO: done below, but try getting rid of the switch
      */
     //dim_B_ = IP.dim_B();
     //idx_B_ =RefElement<M>::interact(Interaction<dim_B_, M-1>(IP.idx_B()));
-
-    dim_B_ = M-1;
+    
+    dim_B_ = IP.dim_B();
     idx_B_ = idx_B;
+    
+    // possibly correct topology n-face index
+    if(dim_B_ < M-1){
+        switch(dim_B_){
+            case 0: idx_B_ = RefElement<M>::interact(Interaction<0, M-1>(idx_B))[IP.idx_B()]; 
+                    break;
+            case 1: idx_B_ = RefElement<M>::interact(Interaction<1, M-1>(idx_B))[IP.idx_B()];
+                    break;
+            default: idx_B_ = idx_B;
+        }
+    }
+//     dim_B_ = M-1;
+//     idx_B_ = idx_B;
 };
 
 

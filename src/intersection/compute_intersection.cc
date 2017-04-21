@@ -579,44 +579,40 @@ unsigned int ComputeIntersection<Simplex<2>, Simplex<2>>::compute(IntersectionAu
                     //switch back to keep order of triangles [A,B]
                     IP22 = IP22.switch_objects();
             
-                    if( IP.dim_A() == 0 ) // if IP is vertex of triangle
+                    if( IP22.dim_A() == 0 ) // if IP is vertex of triangle
                     {
 //                         DBGCOUT("set_node A\n");
                         // we are on line of the triangle A, and IP.idx_A contains local node of the line
                         // we know vertex index
-                        unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
-                        IP22.set_topology_A(node, 0);
                         
                         // set flag on all sides of tetrahedron connected by the node
                         for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
-                            CI12[RefElement<2>::interact(Interaction<1,0>(node))[s]].set_computed();
+                            CI12[RefElement<2>::interact(Interaction<1,0>(IP22.idx_A()))[s]].set_computed();
                     }
-                    if( IP.dim_B() == 0 ) // if IP is vertex of triangle
+                    if( IP22.dim_B() == 0 ) // if IP is vertex of triangle
                     {
 //                         DBGCOUT("set_node B\n");
                         // set flag on both sides of triangle connected by the node
                         for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
-                            CI12[3 + RefElement<2>::interact(Interaction<1,0>(IP.idx_B()))[s]].set_computed();
+                            CI12[3 + RefElement<2>::interact(Interaction<1,0>(IP22.idx_B()))[s]].set_computed();
                     }
-                    else if( IP.dim_B() == 1 ) // if IP is vertex of triangle
+                    else if( IP22.dim_B() == 1 ) // if IP is vertex of triangle
                     {
 //                         DBGCOUT("set line B\n");
                         // set flag on both sides of triangle connected by the node
-                        CI12[3 + IP.idx_B()].set_computed();
+                        CI12[3 + IP22.idx_B()].set_computed();
                     }
                 }
-                else if( IP.dim_A() == 0 ) // if IP is vertex of triangle B (triangles switched!!!  A <-> B)
+                else if( IP22.dim_B() == 0 ) // if IP is vertex of triangle B (triangles switched!!!  A <-> B)
                 {
                     //we do not need to look back to triangle A, because if IP was at vertex, we would know already
 //                     DBGCOUT("set_node B\n");
                     // we are on line of the triangle, and IP.idx_A contains local node of the line
                     // we know vertex index
-                    unsigned int node = RefElement<2>::interact(Interaction<0,1>(triangle_side))[IP.idx_A()];
-                    IP22.set_topology_B(node, 0);
                     
                     // set flag on both sides of triangle connected by the node
                     for(unsigned int s=0; s < RefElement<2>::n_sides_per_node; s++)
-                        CI12[3 + RefElement<2>::interact(Interaction<1,0>(node))[s]].set_computed();
+                        CI12[3 + RefElement<2>::interact(Interaction<1,0>(IP22.idx_B()))[s]].set_computed();
                 }
 //                 DBGCOUT( << IP22);
                 ip_coutner++;
@@ -784,26 +780,18 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
 		if (int(result) < int(IntersectionResult::degenerate) ) {
 		    ASSERT_EQ_DBG(1, IP12s.size());
-            IntersectionPointAux<1,2> &IP = IP12s.back();   // shortcut
-            IntersectionPointAux<1,3> IP13(IP, face);
-        
+            IntersectionPointAux<1,3> IP13(IP12s.back(), face);
+            
             // set the 'computed' flag on the connected sides by IP
-            if(IP.dim_B() == 0) // IP is vertex of triangle
+            if(IP13.dim_B() == 0) // IP is vertex of triangle
             {
-                // map side (triangle) node index to tetrahedron node index
-                unsigned int node = RefElement<3>::interact(Interaction<0,2>(face))[IP.idx_B()];
-                IP13.set_topology_B(node, IP.dim_B());
                 // set flag on all sides of tetrahedron connected by the node
-                for(unsigned int node_face : RefElement<3>::interact(Interaction<2,0>(node)))
+                for(unsigned int node_face : RefElement<3>::interact(Interaction<2,0>(IP13.idx_B())))
                     CI12[node_face].set_computed();
-                // set topology data for object B (tetrahedron) - node
-
             }
-            else if(IP.dim_B() == 1) // IP is on edge of triangle
+            else if(IP13.dim_B() == 1) // IP is on edge of triangle
             {
-                unsigned int edge = RefElement<3>::interact(Interaction<1,2>(face))[IP.idx_B()];
-                IP13.set_topology_B(edge, IP.dim_B());
-                for(unsigned int edge_face : RefElement<3>::interact(Interaction<2,1>(edge)))
+                for(unsigned int edge_face : RefElement<3>::interact(Interaction<2,1>(IP13.idx_B())))
                     CI12[edge_face].set_computed();
             }
 
@@ -1083,7 +1071,6 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     unsigned int object_before_ip, object_after_ip;
 
     //unsigned int last_triangle_vertex=30; // no vertex at last IP
-    unsigned int current_triangle_vertex;
 
 	// pass through the ccwise oriented sides in ccwise oriented order
 	// How to make this in independent way?
@@ -1109,8 +1096,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             //DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
 
             // convert from 13 to 23 IP
-            IPAux13 &IP = IP13s[ip];
-            IntersectionPointAux<3,1> IP31 = IP.switch_objects();   // switch idx_A and idx_B and coords
+            IntersectionPointAux<3,1> IP31 = IP13s[ip].switch_objects();   // switch idx_A and idx_B and coords
             IntersectionPointAux<3,2> IP32(IP31, i_side);    // interpolation uses local_bcoords_B and given idx_B
             IPAux23 IP23 = IP32.switch_objects(); // switch idx_A and idx_B and coords back
             //DebugOut() << IP;
@@ -1119,37 +1105,26 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             unsigned int tetra_object = s3_dim_starts[IP23.dim_B()] + IP23.idx_B();
             unsigned int side_object = s2_dim_starts[1] + i_side;
 
-
             object_before_ip = tetra_object;
             object_after_ip = side_object;
 
 
             // IP is vertex of triangle,
-            if( IP.dim_A() == 0 )
+            if( IP23.dim_A() == 0 && IP23.dim_B() == 3)
             {
                 // we are on line of the triangle, and IP.idx_A contains local node of the line
                 // E-E, we know vertex index
-
-                // ?? This should be done in interpolation
-
-                current_triangle_vertex=RefElement<2>::interact(Interaction<0,1>(i_side))[IP.idx_A()];
-                //ASSERT_EQ_DBG(IP23.idx_A(), current_triangle_vertex);
-                IP23.set_topology_A(current_triangle_vertex, 0);
-
-                // This should be set only if IP.dim_B() == 3
-                if (IP.dim_B() == 3)
-                    object_before_ip = s2_dim_starts[0]+current_triangle_vertex;
-
+                object_before_ip = s2_dim_starts[0]+IP23.idx_A();
             }// else current_triangle_vertex=3+IP23_list.size(); // no vertex, and unique
 
             // side of triangle touching  S3, in vertex or in edge
             if (IP13s.size() == 1 ) {
-                if (IP.dim_B() == 0) {
+                if (IP23.dim_B() == 0) {
                     continue; // skip, S3 vertices are better detected in phase 2
                 }
-                if (IP.dim_A() == 0) { // vertex of triangle
+                if (IP23.dim_A() == 0) { // vertex of triangle
                     object_before_ip = tetra_object;
-                    object_after_ip = s2_dim_starts[0]+current_triangle_vertex;
+                    object_after_ip = s2_dim_starts[0]+IP23.idx_A();
 
                     // source vertex of the side vector (oriented CCwise)
                     //if ( (IP.idx_A()+side_cycle_orientation[_i_side])%2 == 0)
@@ -1158,7 +1133,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
                     // touch in edge
 
                     //continue;
-                    ASSERT_EQ_DBG(IP.dim_B(), 1);
+                    ASSERT_EQ_DBG(IP23.dim_B(), 1);
                     edge_touch[IP23.idx_B()]=true;
                     std::swap(object_before_ip, object_after_ip);
                 }
