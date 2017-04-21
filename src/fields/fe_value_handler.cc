@@ -20,6 +20,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/bounding_box.hh"
+#include "fem/fe_values_views.hh"
 
 
 /**
@@ -31,6 +32,7 @@
 template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
 public:
+
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
@@ -59,7 +61,8 @@ class FEShapeHandler<1, elemdim, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
-		return fe_val.shape_vector(i_dof, i_qp);
+        static FEValuesExtractors::Vector vec(0);
+		return fe_val[vec].value(i_dof, i_qp);
 	}
 };
 

@@ -178,16 +178,16 @@ public:
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
-     * @brief Variant of basis_value() for vectorial finite elements.
+     * @brief Calculates the value of the @p comp-th component of
+     * the @p i-th raw basis function at the
+     * point @p p on the reference element (for vector-valued FE).
      *
-     * Calculates the value @p i-th vector-valued raw basis function
-     * at the point @p p on the reference element.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @param i    Number of the basis function.
+     * @param p    Point of evaluation.
+     * @param comp Number of vector component.
      */
-    virtual arma::vec::fixed<dim> basis_vector(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+    virtual double basis_value_component(const unsigned int i,
+            const arma::vec::fixed<dim> &p, const unsigned int comp) const = 0;
 
     /**
      * @brief Calculates the gradient of the @p i-th raw basis function at the
@@ -203,17 +203,16 @@ public:
             const arma::vec::fixed<dim> &p) const = 0;
 
     /**
-     * @brief Variant of basis_grad() for vectorial finite elements.
+     * @brief Calculates the @p comp-th component of the gradient
+     * of the @p i-th raw basis function at the point @p p on the
+     * reference element (for vector-valued FE).
      *
-     * Calculates the gradient of the @p i-th vector-valued raw basis
-     * function at the point @p p on the reference element. The gradient
-     * components are relative to the reference cell coordinate system.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @param i    Number of the basis function.
+     * @param p    Point of evaluation.
+     * @param comp Number of vector component.
      */
-    virtual arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+    virtual arma::vec::fixed<dim> basis_grad_component(const unsigned int i,
+            const arma::vec::fixed<dim> &p, const unsigned int comp) const = 0;
 
     /**
      * @brief Initializes the @p node_matrix for computing the coefficients
@@ -263,12 +262,33 @@ public:
     };
 
     /**
-     * @brief Indicates whether the finite element function space is scalar
-     * or vectorial.
+     * @brief Indicates whether the basis functions have one or more
+     * nonzero components (scalar FE spaces are always primitive).
      */
-    const bool is_scalar() const {
-        return is_scalar_fe;
+    inline const bool is_primitive() const {
+        return is_primitive_;
     };
+
+    /// Returns numer of components of the basis function.    
+    inline unsigned int n_components() const {
+      return n_components_;
+    }
+    
+    /**
+     * @brief Returns the component index for vector valued finite elements.
+     * @param sys_idx Index of shape function.
+     */
+    unsigned int system_to_component_index(unsigned sys_idx) const {
+      return component_indices_[sys_idx];
+    }
+    
+    /**
+     * @brief Returns the mask of nonzero components for given basis function.
+     * @param sys_idx Index of basis function.
+     */
+    const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const {
+      return nonzero_components_[sys_idx];
+    }
 
     /**
      * @brief Returns either the generalized support points (if they are defined)
@@ -316,9 +336,18 @@ protected:
     unsigned int order;
 
     /**
-     * @brief Indicator of scalar versus vectorial finite element.
+     * @brief Primitive FE is using componentwise shape functions,
+     * i.e. only one component is nonzero for each shape function.
      */
-    bool is_scalar_fe;
+    bool is_primitive_;
+    
+    /// Number of components of shape functions.
+    unsigned int n_components_;
+    
+    /// Indices of nonzero components of shape functions (for primitive FE).
+    std::vector<unsigned int> component_indices_;
+    
+    std::vector<std::vector<bool> > nonzero_components_;
 
     /**
      * @brief Matrix that determines the coefficients of the raw basis

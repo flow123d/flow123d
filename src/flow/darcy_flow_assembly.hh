@@ -13,6 +13,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "flow/mh_dofhandler.hh"
 
@@ -99,7 +100,7 @@ public:
     : quad_(3),
         fe_values_(map_, quad_, fe_rt_,
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
-
+        vec_(0),
 
         velocity_interpolation_quad_(0), // veloctiy values in barycenter
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
@@ -196,7 +197,7 @@ public:
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
             flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
-                        * velocity_interpolation_fv_.shape_vector(li,0);
+                        * velocity_interpolation_fv_[vec_].value(li,0);
         }
 
         flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
@@ -375,15 +376,15 @@ protected:
         for (unsigned int k=0; k<qsize; k++)
             for (unsigned int i=0; i<ndofs; i++){
                 double rhs_val =
-                        arma::dot(gravity_vec,fe_values_.shape_vector(i,k))
+                        arma::dot(gravity_vec,fe_values_[vec_].value(i,k))
                         * fe_values_.JxW(k);
                 loc_system_.add_value(i, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
-                        arma::dot(fe_values_.shape_vector(i,k), //TODO: compute anisotropy before
+                        arma::dot(fe_values_[vec_].value(i,k), //TODO: compute anisotropy before
                                     (ad_->anisotropy.value(ele_ac.centre(), ele_ac.element_accessor() )).i()
-                                        * fe_values_.shape_vector(j,k))
+                                        * fe_values_[vec_].value(j,k))
                         * scale * fe_values_.JxW(k);
                     
                     loc_system_.add_value(i, j, mat_val);
@@ -488,6 +489,7 @@ protected:
     MappingP1<dim,3> map_;
     QGauss<dim> quad_;
     FEValues<dim,3> fe_values_;
+    FEValuesExtractors::Vector vec_;
 
     NeighSideValues<dim<3?dim:2> ngh_values_;
 

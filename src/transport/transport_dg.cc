@@ -143,7 +143,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	fe_rt1_ = new FE_RT0<1,3>;
 	fe_rt2_ = new FE_RT0<2,3>;
 	fe_rt3_ = new FE_RT0<3,3>;
-
+    
 	q0_ = new QGauss<0>(q_order);
 	q1_ = new QGauss<1>(q_order);
 	q2_ = new QGauss<2>(q_order);
@@ -1440,7 +1440,9 @@ void TransportDG<Model>::set_boundary_conditions()
 
 template<class Model>
 template<unsigned int dim>
-void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv)
+void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, 
+                                            vector<arma::vec3> &velocity, 
+                                            FEValuesBase<dim,3> &fv)
 {
 	OLD_ASSERT(cell->dim() == dim, "Element dimension mismatch!");
 
@@ -1450,7 +1452,8 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
     {
         velocity[k].zeros();
         for (unsigned int sid=0; sid<cell->n_sides(); sid++)
-            velocity[k] += fv.shape_vector(sid,k) * Model::mh_dh->side_flux( *(cell->side(sid)) );
+          for (unsigned int c=0; c<3; ++c)
+            velocity[k][c] += fv.shape_value_component(sid,k,c) * Model::mh_dh->side_flux( *(cell->side(sid)) );
     }
 }
 

@@ -38,7 +38,7 @@ using namespace std;
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, bool is_scalar)
+void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, unsigned int n_comp)
 {
     update_flags = flags;
 
@@ -58,26 +58,12 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
     if (update_flags & update_values)
     {
-        if (is_scalar)
-        {
-            shape_values.resize(size);
-        }
-        else
-        {
-            shape_vectors.resize(size);
-        }
+        shape_values.resize(size, vector<double>(n_comp));
     }
 
     if (update_flags & update_gradients)
     {
-        if (is_scalar)
-        {
-            shape_gradients.resize(size);
-        }
-        else
-        {
-            shape_grad_vectors.resize(size);
-        }
+        shape_gradients.resize(size, vector<arma::vec>(n_comp));
     }
 
     if (update_flags & update_quadrature_points)
@@ -88,6 +74,17 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 }
 
 
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::ViewsCache::resize(FEValuesBase<dim,spacedim> &fv, unsigned int size)
+{
+  scalars.clear();
+  vectors.clear();
+  for (unsigned int i=0; i<size; ++i)
+  {
+    scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv, i));
+    vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv, i));
+  }
+}
 
 
 
@@ -119,7 +116,11 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     fe = &_fe;
 
     // add flags required by the finite element or mapping
-    data.allocate(quadrature->size(), update_each(_flags), fe->is_scalar());
+    data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*fe->n_components());
+    
+    n_components_ = fe->n_components();
+    
+    views_cache_.resize(*this, fe->n_components());
 }
 
 

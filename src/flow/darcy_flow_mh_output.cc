@@ -37,6 +37,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
@@ -495,6 +496,7 @@ void l2_diff_local(ElementFullIter &ele,
 
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
+    FEValuesExtractors::Vector vec_(0);
     
     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
@@ -555,7 +557,7 @@ void l2_diff_local(ElementFullIter &ele,
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * fv_rt.shape_vector(i_shape, i_point)
+                              * fv_rt[vec_].value(i_shape, i_point)
                               / cross;
         }
 

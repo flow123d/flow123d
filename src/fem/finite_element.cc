@@ -39,7 +39,6 @@ template<unsigned int dim, unsigned int spacedim>
 void FiniteElement<dim,spacedim>::init()
 {
     number_of_dofs = 0;
-    is_scalar_fe = true;
     for (unsigned int i = 0; i <= dim; i++)
     {
         number_of_single_dofs[i] = 0;
@@ -47,6 +46,11 @@ void FiniteElement<dim,spacedim>::init()
         number_of_triples[i] = 0;
         number_of_sextuples[i] = 0;
     }
+    
+    is_primitive_ = true;
+    n_components_ = 1;
+    component_indices_.resize(number_of_dofs, 0);
+    nonzero_components_.resize(number_of_dofs, { true });
 }
 
 template<unsigned int dim, unsigned int spacedim> inline
@@ -144,7 +148,8 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     if (fv_data.update_flags & update_values)
     {
         for (unsigned int i = 0; i < q.size(); i++)
-            fv_data.shape_values[i] = data.basis_values[i];
+            for (unsigned int c = 0; c < n_dofs(); c++)
+                fv_data.shape_values[i][c] = data.basis_values[i][c];
     }
 
     // shape gradients
@@ -152,7 +157,9 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     {
         for (unsigned int i = 0; i < q.size(); i++)
         {
-            fv_data.shape_gradients[i] = data.basis_grads[i] * fv_data.inverse_jacobians[i];
+            arma::mat grads = trans(data.basis_grads[i] * fv_data.inverse_jacobians[i]);
+            for (unsigned int c = 0; c < n_dofs(); c++)
+                fv_data.shape_gradients[i][c] = grads.col(c);
         }
     }
 }

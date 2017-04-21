@@ -173,12 +173,16 @@ public:
     /**
      * @brief The vector variant of basis_value must be implemented but may not be used.
      */
-    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value_component(const unsigned int i,
+                                 const arma::vec::fixed<dim> &p,
+                                 const unsigned int comp) const;
 
     /**
      * @brief The vector variant of basis_grad must be implemented but may not be used.
      */
-    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad_component(const unsigned int i, 
+                                               const arma::vec::fixed<dim> &p,
+                                               const unsigned int comp) const;
 
     virtual ~FE_P();
 
@@ -231,12 +235,16 @@ public:
     /**
      * @brief The vector variant of basis_value must be implemented but may not be used.
      */
-    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value_component(const unsigned int i,
+                                 const arma::vec::fixed<dim> &p,
+                                 const unsigned int comp) const;
 
     /**
      * @brief The vector variant of basis_grad must be implemented but may not be used.
      */
-    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad_component(const unsigned int i, 
+                                               const arma::vec::fixed<dim> &p,
+                                               const unsigned int comp) const;
 
     /// Destructor
     virtual ~FE_P_disc();
@@ -373,15 +381,21 @@ arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FE_P<degree,dim,spacedim>::basis_value_component(const unsigned int i, 
+                                                        const arma::vec::fixed<dim> &p,
+                                                        const unsigned int comp) const
 {
-	OLD_ASSERT(false, "basis_vector() may not be called for scalar finite element.");
+	OLD_ASSERT(false, "basis_value_component() may not be called for scalar finite element.");
+    return 0;
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad_component(const unsigned int i, 
+                                                                      const arma::vec::fixed<dim> &p, 
+                                                                      const unsigned int comp) const
 {
-	OLD_ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
+	OLD_ASSERT(false, "basis_grad_component() may not be called for scalar finite element.");
+    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -435,17 +449,21 @@ arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned 
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FE_P_disc<degree,dim,spacedim>::basis_value_component(const unsigned int i, 
+                                                        const arma::vec::fixed<dim> &p,
+                                                        const unsigned int comp) const
 {
-	OLD_ASSERT(false, "basis_vector() may not be called for scalar finite element.");
-    return arma::vec::fixed<dim>();
+    OLD_ASSERT(false, "basis_value_component() may not be called for scalar finite element.");
+    return 0;
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad_component(const unsigned int i, 
+                                                                      const arma::vec::fixed<dim> &p, 
+                                                                      const unsigned int comp) const
 {
-	OLD_ASSERT(false, "basis_grad_vector() may not be called for scalar finite element.");
-    return arma::mat::fixed<dim,dim>();
+    OLD_ASSERT(false, "basis_grad_component() may not be called for scalar finite element.");
+    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -461,74 +479,6 @@ FE_P_disc<degree,dim,spacedim>::~FE_P_disc()
 
 
 
-
-
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-
-/****** Template specializations ******/
-
-/*** 1D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,1>::DofDistribution();
-
-// P1 linear element
-template<>
-DofDistribution<1,1>::DofDistribution();
-
-// P2 quadratic element
-template<>
-DofDistribution<2,1>::DofDistribution();
-
-// P3 cubic element
-template<>
-DofDistribution<3,1>::DofDistribution();
-
-
-/*** 2D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,2>::DofDistribution();
-
-
-// P1 linear element
-template<>
-DofDistribution<1,2>::DofDistribution();
-
-// P2 quadratic element
-template<>
-DofDistribution<2,2>::DofDistribution();
-
-// P3 cubic element
-template<>
-DofDistribution<3,2>::DofDistribution();
-
-
-
-/*** 3D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,3>::DofDistribution();
-
-
-// P1 linear element
-template<>
-DofDistribution<1,3>::DofDistribution();
-
-
-// P2 quadratic element
-template<>
-DofDistribution<2,3>::DofDistribution();
-
-// P3 cubic element
-template<>
-DofDistribution<3,3>::DofDistribution();
-
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 
 
