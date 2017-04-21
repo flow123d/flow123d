@@ -86,11 +86,16 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
 
-    idx_A_ = IP.idx_A();
-    idx_B_ = idx_B;
-    result_ = IP.result();
     dim_A_ = IP.dim_A();
-    dim_B_ = M-2;
+    idx_A_ = IP.idx_A();
+    result_ = IP.result();
+    
+    // only case is M=3, so we can do:
+    dim_B_ = IP.dim_B();
+    if(dim_B_ == 0)
+        idx_B_ = RefElement<3>::interact(Interaction<0,1>(idx_B))[IP.idx_B()];
+    else
+        idx_B_ = idx_B;
 };
 
 template<unsigned int N, unsigned int M>

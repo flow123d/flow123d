@@ -1179,33 +1179,29 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++) {
 	    if (! processed_edge[tetra_edge]) {
 	        IPAux12 &IP12 = IP12s_[tetra_edge];
-
-
+            
+            //TODO create and use function from 1d2d, remove IP12
 	        double edge_coord = IP12.local_bcoords_A()[0];
 	        // skip no intersection and degenerate intersections
 	        if ( edge_coord > 1 || edge_coord < 0 || int(IP12.result()) >= 2 ) continue;
             //DebugOut() << print_var(tetra_edge) << IP12;
 
-	        uint edge_dim = IP12.dim_A();
-	        uint i_edge = tetra_edge;
+            IPAux23 IP23(IP12s_[tetra_edge].switch_objects(), tetra_edge);
+            
+            const uint edge_dim = IP23.dim_B();
+            const uint i_edge = IP23.idx_B();
 	        ASSERT_LT_DBG(edge_dim, 2);
 
-	        if ( edge_dim == 1) {
-	            face_pair = edge_faces(i_edge);
-	        } else { // edge_dim == 0
-	            // i_edge is a vertex index in this case
-	            i_edge = RefElement<3>::interact(Interaction<0,1>(tetra_edge))[IP12.idx_A()];
-	            //DebugOut() << print_var(tetra_edge) << print_var(i_edge);
-	            face_pair = vertex_faces(i_edge);
-	            // mark edges coincident with the vertex
+            if ( edge_dim == 0) {
+                face_pair = vertex_faces(i_edge);
+                // mark edges coincident with the vertex
                 for( uint ie : RefElement<3>::interact(Interaction<1,0>(i_edge)) )
                     processed_edge[ie] = 1;
-
-	        }
+            }
+            else
+                face_pair = edge_faces(i_edge);
+                
             //DebugOut() << print_var(face_pair[0])<< print_var(face_pair[1]);
-
-            IPAux23 IP23(IP12.switch_objects(), tetra_edge);
-            IP23.set_topology_B(i_edge, edge_dim);
 
             IP23_list.push_back(IP23);
             unsigned int ip_idx = IP23_list.size()-1;
@@ -1213,7 +1209,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             unsigned int s3_object = s3_dim_starts[edge_dim] + i_edge;
 
             //DebugOut() << print_var(edge_touch[i_edge]) << print_var(have_backlink(s3_object));
-	        if (IP12.dim_B() < 2
+	        if (IP23.dim_A() < 2
 	                && (! edge_touch[i_edge])
 	                && object_next[s3_object] != no_idx) { // boundary of S2, these ICs are duplicate
 
