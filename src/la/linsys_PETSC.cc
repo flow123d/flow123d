@@ -53,8 +53,9 @@ const it::Record & LinSys_PETSC::get_input_type() {
 const int LinSys_PETSC::registrar = LinSys_PETSC::get_input_type().size();
 
 
-LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
+LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds, const std::string &params)
         : LinSys( rows_ds ),
+          params_(params),
           init_guess_nonzero(false),
           matrix_(0)
 {
@@ -66,7 +67,6 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
     VecDuplicate(rhs_, &residual_);
 
-    params_ = "";
     matrix_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
     matrix_changed_ = true;
@@ -443,7 +443,10 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 	LinSys::set_from_input( in_rec );
 
 	// PETSC specific parameters
-	params_ = in_rec.val<string>("options");
+    // If parameters are specified in input file, they are used,
+    // otherwise keep settings provided in constructor of LinSys_PETSC.
+    std::string user_params = in_rec.val<string>("options");
+	if (user_params != "") params_ = user_params;
 }
 
 

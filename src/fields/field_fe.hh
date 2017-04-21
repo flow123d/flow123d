@@ -64,9 +64,9 @@ public:
      * @param data Vector of dof values.
      */
     void set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-    		Mapping<1,3> *map1,
-    		Mapping<2,3> *map2,
-    		Mapping<3,3> *map3,
+    		MappingP1<1,3> *map1,
+    		MappingP1<2,3> *map2,
+    		MappingP1<3,3> *map3,
 			VectorSeqDouble *data);
 
     /**

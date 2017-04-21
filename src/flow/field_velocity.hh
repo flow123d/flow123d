@@ -66,7 +66,8 @@ public:
     }
     
     void update_quad(ElementFullIter ele, const Point &p){
-        arma::vec unit_p = ele->project_point(p);
+        MappingP1<2,3> map;
+        arma::vec unit_p = map_.project_point(p,map.element_map(*ele));
         quad_.resize(1);
         quad_.set_point(0, RefElement<dim>::bary_to_local(unit_p));
         quad_.set_real_point(0,p);

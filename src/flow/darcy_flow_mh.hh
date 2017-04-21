@@ -328,8 +328,6 @@ protected:
 
 
     std::shared_ptr<Balance> balance_;
-    /// index of water balance within the Balance object.
-    unsigned int water_balance_idx_;
 
     DarcyFlowMHOutput *output_object;
 

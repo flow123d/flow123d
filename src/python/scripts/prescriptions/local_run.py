@@ -42,7 +42,9 @@ class LocalRun(AbstractRun):
 
         pypy.limit_monitor.set_limits(self.case)
         pypy.end_monitor.deactivate()
-        pypy.start_monitor.format = 'Running: {}'.format(self.case)
+
+        cmd = pypy.escaped_command.replace(Paths.flow123d_root()+'/', '') if self.progress else pypy.escaped_command
+        pypy.start_monitor.format = 'Running: {}\n{}'.format(self.case, cmd)
 
         pypy.progress = self.progress
         pypy.executor.output = OutputMode.file_write(self.case.fs.job_output)

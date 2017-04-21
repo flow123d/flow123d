@@ -124,6 +124,10 @@ public:
         return arma::vec({0,0,0});
     }
     
+    void fix_velocity(LocalElementAccessorBase<3> ele_ac){
+        ASSERT_DBG(0).error("Not implemented!");
+    }
+    
     arma::vec3 make_element_vector(ElementFullIter ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
@@ -770,7 +774,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         qside_xfem.resize(qside.size());
         for(unsigned int q=0; q < qside.size(); q++){
             //TODO: use mapping for quad from side to element
-            arma::vec unit_p = ele->project_point(fv_side->point(q));
+            arma::vec unit_p = map_.project_point(fv_side->point(q),map_.element_map(*ele));//ele->project_point(fv_side->point(q));
             qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
             qside_xfem.set_real_point(q,fv_side->point(q));
 //             fv_side->point(q).print(cout, "side point");

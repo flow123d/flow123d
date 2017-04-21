@@ -20,9 +20,10 @@
 
 #include "fields/vec_seq_double.hh"
 #include "fields/field_values.hh"
-#include "fem/mapping.hh"
+#include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
 #include "mesh/point.hh"
+#include <armadillo>
 
 
 /// Initialization structure of FEValueHandler class.
@@ -51,9 +52,9 @@ public:
 	FEValueHandler();
 
 	/// Initialize data members
-	void initialize(FEValueInitData init_data, Mapping<elemdim,3> *map = nullptr);
+	void initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map = nullptr);
 	/// Return mapping object
-	inline Mapping<elemdim,3> *get_mapping() {
+	inline MappingP1<elemdim,3> *get_mapping() {
 		return map_;
 	}
     /// Returns one value in one given point.
@@ -61,6 +62,8 @@ public:
     /// Returns std::vector of scalar values in several points at once.
     void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
+    /// Test if element contains given point.
+    bool contains_point(arma::vec point, Element &elm);
 
     /// Destructor.
 	~FEValueHandler();
@@ -74,12 +77,8 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
-    /**
-     * Mapping object.
-     *
-     * For correct functionality must be created proper descendant of Mapping class.
-     */
-    Mapping<elemdim,3> *map_;
+    /// Mapping object.
+    MappingP1<elemdim,3> *map_;
 };
 
 

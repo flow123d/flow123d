@@ -41,6 +41,7 @@
 #include "intersection/intersection_point_aux.hh"
 
 // forward declare
+class Mesh;
 template<class A, class B> class ComputeIntersection;
 class Plucker;
 template<unsigned int, unsigned int> class IntersectionAux;
@@ -70,7 +71,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-	ComputeIntersection(Simplex<1> &abscissa, Simplex<2> &triangle);
+	ComputeIntersection(Simplex<1> &abscissa, Simplex<2> &triangle, Mesh *mesh);
 	~ComputeIntersection();
     
     /** @brief Computes intersection points of line and triangle.
@@ -203,6 +204,7 @@ private:
 	std::vector<Plucker *> plucker_coordinates_triangle_;
     /// Pointers to Plucker products of abscissa and triangle side.
 	std::vector<double *> plucker_products_;
+
 };
 
 
@@ -233,7 +235,7 @@ public:
     /** @brief Constructor, sets both triangle objects.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(Simplex<2> &triaA,Simplex<2> &triaB);
+    ComputeIntersection(Simplex<2> &triaA,Simplex<2> &triaB, Mesh *mesh);
     ~ComputeIntersection();
     
     /** @brief Initializes lower dimensional objects.
@@ -342,7 +344,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-	ComputeIntersection(Simplex<1> &abscissa,Simplex<3> &tetrahedron);
+	ComputeIntersection(Simplex<1> &abscissa,Simplex<3> &tetrahedron, Mesh *mesh);
 	~ComputeIntersection();
 	
     /** @brief Initializes lower dimensional objects.
@@ -472,7 +474,7 @@ public:
      * @param triangle intersecting triangle object
      * @param tetrahedron intersecting tetrahedron object
      */
-    ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron);
+    ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron, Mesh *mesh);
     ~ComputeIntersection();
 
     /** @brief Initializes lower dimensional objects.
@@ -546,6 +548,10 @@ private:
      * if obj_after have null successor, set obj_after -> IP (backlink)
      */
     inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip);
+
+
+    IntersectionAux< 2 , 3  >* intersection_;
+    Mesh *mesh_;
 };
 
 

@@ -219,21 +219,5 @@ BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
 }
 
 
-arma::vec Element::project_point(const arma::vec3 &point, const arma::mat &map) const
-{
-
-    if (dim() == 0) return arma::ones(1);
-
-    arma::mat A=map.cols(0, dim()-1);
-    arma::mat AtA = A.t()*A;
-    arma::vec Atb = A.t()*(point - map.col(dim()));
-    arma::vec bary_coord(dim()+1);
-    bary_coord.rows(0, dim() - 1) = solve(AtA, Atb);
-    bary_coord( dim() ) = 1.0 - arma::sum( bary_coord.rows(0,dim()-1) );
-
-    return bary_coord;
-}
-
-
 //-----------------------------------------------------------------------------
 // vim: set cindent:

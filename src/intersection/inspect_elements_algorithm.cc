@@ -93,7 +93,7 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(unsigned int component_el
 {
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
-    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB, mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -303,7 +303,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
+                    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB, mesh);
                     CI.init();
                     CI.compute(is);
                     END_TIMER("Compute intersection");
@@ -647,7 +647,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     
     START_TIMER("Compute intersection");
-    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB);
+    ComputeIntersection<Simplex<dim>, Simplex<3>> CI(simplexA, simplexB, mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -795,7 +795,7 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIt
     
     IntersectionAux<2,2> is(eleA->index(), eleB->index());
     
-    ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB);
+    ComputeIntersection< Simplex<2>, Simplex<2>> CI(simplexA, simplexB, mesh);
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
@@ -816,17 +816,26 @@ void InspectElementsAlgorithm22::create_component_numbering()
 
     FOR_ELEMENTS(mesh, ele) {
         if (ele->dim() == 2 &&
-            component_idx_[ele->index()] == unset_comp
-        ){
+            component_idx_[ele->index()] == (unsigned int)-1)
+        {
             // start component
             queue.push(ele->index());
-//             DBGCOUT(<< "start component at ele " << ele->index() << "\n");
             
             while(!queue.empty()){
                 unsigned int ele_idx = queue.front();
-                component_idx_[ele_idx] = component_counter_;
                 queue.pop();
-                prolongate(mesh->element(ele_idx), queue);
+                const ElementFullIter& ele = mesh->element(ele_idx);
+                for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
+                    Edge* edg = ele->side(sid)->edge();
+
+                    for(int j=0; j < edg->n_sides;j++) {
+                        uint neigh_idx = edg->side(j)->element()->index();
+                        if (component_idx_[neigh_idx] == (unsigned int)-1) {
+                            component_idx_[neigh_idx] = component_counter_;
+                            queue.push(neigh_idx);
+                        }
+                    }
+                }
             }
             component_counter_++;
         }
@@ -842,24 +851,6 @@ void InspectElementsAlgorithm22::create_component_numbering()
 //     }
 }
 
-void InspectElementsAlgorithm22::prolongate(const ElementFullIter& ele, std::queue<unsigned int>& queue)
-{
-    ASSERT(ele->dim() == 2);
-//     DBGCOUT(<<"PROLONGATE\n");
-    for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
-        Edge* edg = ele->side(sid)->edge();
-        
-        for(int j=0; j < edg->n_sides;j++) {
-            ElementFullIter neigh = edg->side(j)->element();
-            if (neigh != ele && component_idx_[neigh->index()] == unset_comp){
-//                 DBGVAR(neigh->index()); DBGVAR(component_idx_[neigh->index()]);
-                //avoid adding multiply the same element into queue
-                component_idx_[neigh->index()] = component_counter_;
-                queue.push(neigh->index());
-            }
-        }
-    }
-}
 
 
 
@@ -922,7 +913,7 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
                 
                 IntersectionAux<1,2> is(eleA_idx, eleB_idx);
                 
-                ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
+                ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB, mesh);
                 unsigned int n_local_intersection = CI.compute_final(is.points());
     
                 if(n_local_intersection > 0)
@@ -1013,7 +1004,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
+                    ComputeIntersection<Simplex<1>, Simplex<2>> CI(simplexA, simplexB, mesh);
                     CI.compute_final(is.points());
                     END_TIMER("Compute intersection");
                     

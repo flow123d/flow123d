@@ -199,7 +199,7 @@ void compute_intersection<1,2>(Simplex<1>& eleA,
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         IntersectionAux<1,2> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-        ComputeIntersection<Simplex<1>, Simplex<2>> CI(eleA, eleB);
+        ComputeIntersection<Simplex<1>, Simplex<2>> CI(eleA, eleB, mesh);
         END_TIMER("CI create");
         START_TIMER("CI compute");
         CI.compute_final(is.points());
@@ -230,7 +230,7 @@ void compute_intersection(Simplex<dimA>& eleA,
     if(bbA.intersect(bbB)) {   
         START_TIMER("CI create");
         IntersectionAux<dimA,dimB> is(0, 1, 0); //component_ele_idx, bulk_ele_idx, component_idx
-        ComputeIntersection<Simplex<dimA>, Simplex<dimB>> CI(eleA, eleB);
+        ComputeIntersection<Simplex<dimA>, Simplex<dimB>> CI(eleA, eleB, mesh);
         CI.init();
         END_TIMER("CI create");
         START_TIMER("CI compute");

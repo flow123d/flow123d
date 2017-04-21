@@ -21,7 +21,7 @@ using namespace std;
 template <class Model>
 void water_content(Model m, double head, double wc, double cap) {
     fadbad::B<double> x_phead(head);
-    fadbad::B<double> evaluated = m.water_content(x_phead);
+    fadbad::B<double> evaluated = m.water_content_diff(x_phead);
     evaluated.diff(0,1);
     double water_content = evaluated.x();
     double capacity = x_phead.d(0);
@@ -37,7 +37,7 @@ void conductivity(Model m, double head, double cond, double d_cond) {
     //double d_conductivity = 0;
 
     fadbad::B<double> x_phead(head);
-    fadbad::B<double> evaluated( m.conductivity(x_phead) );
+    fadbad::B<double> evaluated( m.conductivity_diff(x_phead) );
     evaluated.diff(0,1);
     double conductivity_ = evaluated.val();
     double d_conductivity = x_phead.d(0);

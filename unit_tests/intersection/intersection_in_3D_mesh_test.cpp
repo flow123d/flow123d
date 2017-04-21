@@ -10,6 +10,7 @@
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
 #include "mesh/msh_gmshreader.h"
+#include <mesh/accessors.hh>
 #include "mesh_constructor.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
@@ -39,6 +40,27 @@ void compute_intersection(Mesh *mesh)
 //     {
 //         cout << ie.intersection_storage12_[i];
 //     }
+    
+//     ElementFullIter t1 = mesh->element.begin();
+//     for(uint i=0; i<4; i++){
+//         Edge * e = t1->side(i)->edge();
+//         for(uint s=0; s < e->n_sides; s++)
+//             DBGCOUT(<< "side " << i << "  elements over edge[" << e->side(s)->edge_idx() << "]:  "
+//                     << e->side(s)->element()->index() << "\n");
+//     }
+//     
+//     DBGVAR(mesh->n_vb_neighbours());
+//     ++t1;
+//     ++t1;
+//     unsigned int n_neighs = t1->n_neighs_vb;
+//     DBGVAR(n_neighs);
+//         for (unsigned int i = 0; i < n_neighs; i++) {
+//             Neighbour *ngh = t1->neigh_vb[i];
+//             DBGCOUT(<< "   ngh: " << ngh->edge_idx() << "\n");
+//             ngh->edge_idx();
+//         }
+//     mesh->element[1];
+//     mesh->element[2];
 }
 
 
@@ -46,9 +68,11 @@ TEST(intersection_prolongation_23d, all) {
     
 //     // directory with testing meshes
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
-    string dir_name = "intersection/2d-2d/";
+    string dir_name = "intersection/";
     
-    string filename = dir_name + "cube_2f_incomp.msh";
+//     string filename = dir_name + "cube_frac_nc23_small.msh";
+    string filename = "../tests/00_mesh/square_2x2_frac_nc_small.msh";
+    
 
     MessageOut() << "Computing intersection on mesh: " << filename << "\n";
     FilePath mesh_file(filename, FilePath::input_file);

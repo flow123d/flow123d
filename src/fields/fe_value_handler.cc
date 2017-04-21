@@ -19,6 +19,7 @@
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
+#include "mesh/bounding_box.hh"
 
 
 /**
@@ -73,7 +74,7 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, Mapping<elemdim,3> *map)
+void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
 	ASSERT(dof_indices == nullptr).error("Multiple initialization.");
 
@@ -134,6 +135,16 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
 	}
+}
+
+
+template <int elemdim, int spacedim, class Value>
+bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, Element &elm)
+{
+	ASSERT_PTR(map_).error();
+
+	arma::vec projection = map_->project_point(point, map_->element_map(elm));
+	return (projection.min() >= -BoundingBox::epsilon);
 }
 
 

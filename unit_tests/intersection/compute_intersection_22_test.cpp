@@ -97,7 +97,7 @@ void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
                triaB = create_simplex<2>(mesh->element(1));
     
     IntersectionAux<2,2> is;
-    ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA, triaB);
+    ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA, triaB, mesh);
     CI.init();
     CI.compute(is);
     

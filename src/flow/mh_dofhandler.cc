@@ -25,6 +25,7 @@
 
 #include "fem/singularity.hh"
 #include "fem/xfem_element_data.hh"
+#include <fem/mapping_p1.hh>
 
 const int MH_DofHandler::empty_node_idx = -1;
 
@@ -560,7 +561,8 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     ElementFullIter ele2d(mesh_->element.begin());
     for(; ele2d != mesh_->element.end(); ++ele2d){
         if(ele2d->dim() == 2){
-            arma::vec p = ele2d->project_point(center);
+            MappingP1<2,3> map;
+            arma::vec p = map.project_point(center,map.element_map(*ele2d));
             if(p[0]>=0.0 && p[0]<=1.0 &&
                p[1]>=0.0 && p[1]<=1.0 &&
                p[2]>=0.0 && p[2]<=1.0)

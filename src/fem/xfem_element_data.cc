@@ -2,6 +2,7 @@
 #include "singularity.hh"
 
 #include <armadillo>
+#include "mapping_p1.hh"
 
 using namespace std;
 
@@ -54,7 +55,8 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
 //     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
     sing_quads_.resize(n_enrichments());
     
-    arma::mat proj = ele->element_map();
+    MappingP1<2,3> map;
+    arma::mat proj = map.element_map(*ele);
     
     std::map<unsigned int, arma::vec> unit_points_inside;
     
@@ -68,7 +70,7 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
 //         DBGCOUT(<< "test q_points\n");
         for(unsigned int q=0; q < n_qpoints; q++){
             const Space<3>::Point & p = sing->q_points()[q];
-            arma::vec unit_p = ele->project_point(p, proj);
+            arma::vec unit_p = map.project_point(p, proj);
             
 //             if(ele->index() == 42){
 //                 sing->q_points()[q].print(cout,"real_p");
