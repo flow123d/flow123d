@@ -156,16 +156,16 @@ public:
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
     		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
-private:
+protected:
     /**
      * private method for reading of nodes
      */
-    void read_nodes(Mesh*);
+    void read_nodes(Mesh*) override;
     /**
      *  Method for reading of elements.
      *  Input of the mesh allows changing regions within the input CON file.
      */
-    void read_elements(Mesh*);
+    void read_elements(Mesh*) override;
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */

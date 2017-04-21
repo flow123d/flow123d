@@ -33,23 +33,23 @@ public:
 	    points, cells, cell_data
 	};
 
-	/// Type of data formats - ascii or appended.
+	/// Type of data formats - ascii, binary or compressed with zLib.
 	enum DataFormat {
-	    ascii, appended
+	    ascii, binary_uncompressed, binary_zlib
 	};
 
-	/// Type of VTK data (only supported formats!)
+	/// Type of VTK data (value 'undefined' for empty value)
 	enum DataType {
-	    uint32, uint64, float64
+	    int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, undefined
 	};
 
 	/// Attributes of DataArray section
 	struct DataArrayAttributes {
 		std::string name_;          ///< Name of DataArray
-		DataType type_;             ///< Type (only UInt32, UInt64 and Float64 are supported)
+		DataType type_;             ///< Type of data
 		unsigned int n_components_; ///< NumberOfComponents (default value is 1)
-		DataFormat format_;         ///< Format (ascii or appended)
 		unsigned int offset_;       ///< Offset of data (only for appended format)
+		std::string tag_value_;     ///< String value of tag (only for ascii format)
 	};
 
 	/**
@@ -58,12 +58,8 @@ public:
      */
 	VtkMeshReader(const FilePath &file_name);
 
-    /**
-     * Construct the VTK format reader from given input stream.
-     * The input stream should be correctly opened. To get correct information about
-     * line numbers there should be no previous reading from the stream.
-     */
-	VtkMeshReader(std::istream &in);
+	/// Destructor
+	~VtkMeshReader();
 
     /**
      *  Reads @p mesh from the VTK file.
@@ -99,14 +95,42 @@ public:
     		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
 protected:
-	/// Get DataType by value of string
-	DataType get_data_type(std::string type_str, bool only_integral = false);
-
 	/// Empty constructor only for tests.
 	VtkMeshReader() {}
 
+	/// Get DataType by value of string
+	DataType get_data_type(std::string type_str);
+
+	/// Return size of value of data_type.
+	unsigned int type_value_size(DataType data_type);
+
+	/// Parse ascii data to vector and return its.
+	template<typename T>
+	std::vector<T> parse_ascii_data(unsigned int data_size, std::string data_str);
+
+	/// Parse binary data to vector and return its.
+	template<typename T>
+	std::vector<T> parse_binary_data(unsigned int data_pos, VtkMeshReader::DataType value_type);
+
+	/// Uncompress and parse binary compressed data to vector and return its.
+	template<typename T>
+	std::vector<T> parse_compressed_data(unsigned int data_pos, VtkMeshReader::DataType value_type);
+
 	/// Set count of nodes and elements.
 	void read_base_vtk_attributes();
+
+	/// Set @p appended_stream_ for reading AppendedData and find its position in input file
+	void set_appended_stream(const FilePath &file_name);
+
+    /**
+     * private method for reading of nodes
+     */
+    void read_nodes(Mesh*) override;
+
+    /**
+     *  Method for reading of elements.
+     */
+    void read_elements(Mesh*) override;
 
 	pugi::xml_document doc_;
     pugi::xml_parse_result parse_result_;
@@ -117,11 +141,17 @@ protected:
     /// count of elements
     unsigned int n_elements_;
 
-    /// header type of VTK file
-    std::string header_type_;
+    /// header type of VTK file (only for appended data)
+    DataType header_type_;
 
-    /// compressed data of AppendedData section
-    bool compressed_;
+    /// variants of data format (ascii, appended, compressed appended)
+    DataFormat data_format_;
+
+    /// input stream allow read appended data, used only if this tag exists
+    std::istream *appended_stream_;
+
+    /// position of appended data in file, used only if this tag exists
+    unsigned int appended_pos_;
 
 };
 

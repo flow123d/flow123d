@@ -18,25 +18,65 @@
 
 
 #include <iostream>
+#include <vector>
 #include "boost/lexical_cast.hpp"
+#include "boost/algorithm/string.hpp"
+
 #include "msh_vtkreader.hh"
+#include "msh_gmshreader.h" // TODO move exception to base class and remove
+#include "system/tokenizer.hh"
 #include "system/system.hh"
 
+#include "config.h"
+#include <zlib.h>
 
+
+/*******************************************************************
+ * Helper methods
+ */
+template<typename T>
+T read_binary_value(std::istream &data_stream)
+{
+	T val;
+	data_stream.read(reinterpret_cast<char *>(&val), sizeof(val));
+	return val;
+}
+
+
+uint64_t read_header_type(VtkMeshReader::DataType data_header_type, std::istream &data_stream)
+{
+	if (data_header_type == VtkMeshReader::DataType::uint64)
+		return read_binary_value<uint64_t>(data_stream);
+	else if (data_header_type == VtkMeshReader::DataType::uint32)
+		return (uint64_t)read_binary_value<unsigned int>(data_stream);
+	else {
+		ASSERT(false).error("Unsupported header_type!\n");
+		return 0;
+	}
+}
+
+
+/*******************************************************************
+ * implementation of VtkMeshReader
+ */
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 : BaseMeshReader()
 {
 	parse_result_ = doc_.load_file( ((std::string)file_name).c_str() );
 	read_base_vtk_attributes();
+	// data of appended tag
+	if (header_type_==DataType::undefined) { // no AppendedData tag
+		appended_pos_ = 0;
+	} else {
+		set_appended_stream(file_name);
+	}
 }
 
 
 
-VtkMeshReader::VtkMeshReader(std::istream &in)
-: BaseMeshReader()
+VtkMeshReader::~VtkMeshReader()
 {
-	parse_result_ = doc_.load(in);
-	read_base_vtk_attributes();
+	if (appended_pos_>0) delete appended_stream_;
 }
 
 
@@ -49,15 +89,44 @@ void VtkMeshReader::read_mesh(Mesh* mesh)
 void VtkMeshReader::read_base_vtk_attributes()
 {
 	pugi::xml_node node = doc_.child("VTKFile");
-	// flag of compressed data
-	std::string compressor = node.attribute("compressor").as_string();
-	compressed_ = (compressor == "vtkZLibDataCompressor");
 	// header type of appended data
-	header_type_ = node.attribute("header_type").as_string();
+	header_type_ = this->get_data_type( node.attribute("header_type").as_string() );
+	// data format
+	if (header_type_ == DataType::undefined) {
+		data_format_ = DataFormat::ascii;
+	} else {
+		std::string compressor = node.attribute("compressor").as_string();
+		if (compressor == "vtkZLibDataCompressor")
+			data_format_ = DataFormat::binary_zlib;
+		else
+			data_format_ = DataFormat::binary_uncompressed;
+	}
 	// size of node and element vectors
-	node = node.child("UnstructuredGrid").child("Piece");
-	n_nodes_ = node.attribute("NumberOfPoints").as_uint();
-	n_elements_ = node.attribute("NumberOfCells").as_uint();
+	pugi::xml_node piece_node = node.child("UnstructuredGrid").child("Piece");
+	n_nodes_ = piece_node.attribute("NumberOfPoints").as_uint();
+	n_elements_ = piece_node.attribute("NumberOfCells").as_uint();
+}
+
+
+
+void VtkMeshReader::set_appended_stream(const FilePath &file_name) {
+	appended_stream_ = new std::ifstream( (std::string)file_name );
+
+	{
+		Tokenizer tok(file_name);
+		if (! tok.skip_to("AppendedData"))
+			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section("AppendedData") << GmshMeshReader::EI_GMSHFile(tok.f_name()) );
+		else {
+			appended_pos_ = tok.get_position().file_position_;
+		}
+	}
+
+	char c;
+	appended_stream_->seekg(appended_pos_);
+	do {
+		appended_stream_->get(c);
+	} while (c!='_');
+	appended_pos_ = appended_stream_->tellg();
 }
 
 
@@ -80,30 +149,96 @@ VtkMeshReader::DataArrayAttributes VtkMeshReader::get_data_array_attr(DataSectio
     attributes.n_components_ = node.attribute("NumberOfComponents").as_uint(1);
     std::string format = node.attribute("format").as_string();
     if (format=="appended") {
-        attributes.format_ = DataFormat::appended;
+        ASSERT(data_format_ != DataFormat::ascii)(data_array_name).error("Invalid format of DataArray!");
+        attributes.offset_ = node.attribute("offset").as_uint();
     } else if (format=="ascii") {
-        attributes.format_ = DataFormat::ascii;
+    	ASSERT(data_format_ == DataFormat::ascii)(data_array_name).error("Invalid format of DataArray!");
+        attributes.tag_value_ = node.child_value();
+        boost::algorithm::trim(attributes.tag_value_);
     } else {
         ASSERT(false).error("Unsupported or missing VTK format.");
     }
-    attributes.offset_ = node.attribute("offset").as_uint();
     return attributes;
 }
 
 
 
-VtkMeshReader::DataType VtkMeshReader::get_data_type(std::string type_str, bool only_integral) {
-    if (type_str=="UInt32") {
-        return DataType::uint32;
-    } else if (type_str=="UInt64") {
-    	return DataType::uint64;
-    } else if (type_str=="Float64" && !only_integral) {
-    	return DataType::float64;
+VtkMeshReader::DataType VtkMeshReader::get_data_type(std::string type_str) {
+    // names of types in DataArray section
+	static const std::map<std::string, DataType> types = {
+			{"Int8",    DataType::int8},
+			{"UInt8",   DataType::uint8},
+			{"Int16",   DataType::int16},
+			{"UInt16",  DataType::uint16},
+			{"Int32",   DataType::int32},
+			{"UInt32",  DataType::uint32},
+			{"Int64",   DataType::int64},
+			{"UInt64",  DataType::uint64},
+			{"Float32", DataType::float32},
+			{"Float64", DataType::float64},
+			{"",        DataType::undefined}
+	};
+
+	std::map<std::string, DataType>::const_iterator it = types.find(type_str);
+	if (it != types.end()) {
+	    return it->second;
     } else {
-        ASSERT(false).error("Unsupported or missing VTK data type.");
+        ASSERT(false).error("Unsupported VTK data type.");
         return DataType::uint32;
     }
 
+}
+
+
+
+unsigned int VtkMeshReader::type_value_size(VtkMeshReader::DataType data_type)
+{
+	static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, 0 };
+
+	return sizes[data_type];
+}
+
+
+
+void VtkMeshReader::read_nodes(Mesh* mesh)
+{
+	std::vector<double> nodes_data;
+	auto data_attr = this->get_data_array_attr(DataSections::points);
+	switch (data_format_) {
+		case DataFormat::ascii: {
+			nodes_data = parse_ascii_data<double>( this->n_nodes_*data_attr.n_components_ , data_attr.tag_value_ );
+			break;
+		}
+		case DataFormat::binary_uncompressed: {
+			ASSERT_PTR(appended_stream_).error();
+			nodes_data = parse_binary_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
+			break;
+		}
+		/*case DataFormat::binary_zlib: {
+			ASSERT_PTR(appended_stream_).error();
+			nodes_data = parse_compressed_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
+			break;
+		}*/
+		default: {
+			ASSERT(false).error(); // should not happen
+			break;
+		}
+	}
+
+	mesh->node_vector.reserve(this->n_nodes_);
+	for (unsigned int i=0, ivec=0; i<this->n_nodes_; ++i) {
+        NodeFullIter node = mesh->node_vector.add_item(i);
+        node->point()(0)=nodes_data[ivec]; ++ivec;
+        node->point()(1)=nodes_data[ivec]; ++ivec;
+        node->point()(2)=nodes_data[ivec]; ++ivec;
+	}
+}
+
+
+
+void VtkMeshReader::read_elements(Mesh* mesh)
+{
+	// read mesh elements
 }
 
 
@@ -116,12 +251,113 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 }
 
 
+template<typename T>
+std::vector<T> VtkMeshReader::parse_ascii_data(unsigned int data_size, std::string data_str)
+{
+	std::vector<T> data;
+	data.reserve(data_size);
+
+	std::istringstream istr(data_str);
+	Tokenizer tok(istr);
+	tok.next_line();
+	for (unsigned int i = 0; i < data_size; ++i) {
+		data.push_back( boost::lexical_cast<T> (*tok) ); ++tok;
+	}
+
+	//for (unsigned int i = 0; i < data_size; ++i) std::cout << data[i] << " ";
+	//std::cout << std::endl;
+
+	return data;
+}
+
+
+template<typename T>
+std::vector<T> VtkMeshReader::parse_binary_data(unsigned int data_pos, VtkMeshReader::DataType value_type)
+{
+	std::vector<T> data;
+	appended_stream_->seekg(data_pos);
+	uint64_t data_size = read_header_type(header_type_, *appended_stream_) / type_value_size(value_type);
+	data.reserve(data_size);
+	for (unsigned int i = 0; i < data_size; ++i) {
+		data.push_back( read_binary_value<T>(*appended_stream_) );
+	}
+
+	//for (unsigned int i = 0; i < data_size; ++i) std::cout << data[i] << " ";
+	//std::cout << std::endl;
+
+	return data;
+}
+
+
+template<typename T>
+std::vector<T> VtkMeshReader::parse_compressed_data(unsigned int data_pos, VtkMeshReader::DataType value_type)
+{
+    // size of block of compressed data.
+	static const size_t BUF_SIZE = 32 * 1024;
+
+	appended_stream_->seekg(data_pos);
+	uint64_t n_blocks = read_header_type(header_type_, *appended_stream_);
+	uint64_t u_size = read_header_type(header_type_, *appended_stream_);
+	uint64_t p_size = read_header_type(header_type_, *appended_stream_);
+
+	std::vector<uint64_t> block_sizes;
+	block_sizes.reserve(n_blocks);
+	for (uint64_t i = 0; i < n_blocks; ++i) {
+		block_sizes.push_back( read_header_type(header_type_, *appended_stream_) );
+	}
+
+	for (uint64_t i = 0; i < n_blocks; ++i) {
+		uint64_t data_block_size = block_sizes[i];
+		char data_block[BUF_SIZE];
+		appended_stream_->read(data_block, data_block_size);
+
+		//std::vector<uint8_t> buffer;
+		char buffer[BUF_SIZE];
+
+		// set zlib object
+		z_stream strm;
+		strm.zalloc = 0;
+		strm.zfree = 0;
+		strm.next_in = (Bytef *)data_block;
+		strm.avail_in = data_block_size;
+		strm.next_out = (Bytef *)buffer;
+		strm.avail_out = p_size;
+
+		// decompression of data
+		inflateInit(&strm);
+		inflate(&strm, Z_NO_FLUSH);
+		inflateEnd(&strm);
+
+		// store compress data and its size to streams
+		std::string str(buffer);
+		std::cout << "decompressed: " << str.size() << std::endl;
+	}
+
+	std::vector<T> data;
+	/*data.reserve(data_size);
+	for (unsigned int i = 0; i < data_size; ++i) {
+		data.push_back( read_binary_value<T>(data_stream) );
+	}*/
+
+	//for (unsigned int i = 0; i < data_size; ++i) std::cout << data[i] << " ";
+	//std::cout << std::endl;
+
+	return data;
+}
+
+
 
 // explicit instantiation of template methods
 #define VTK_READER_GET_ELEMENT_DATA(TYPE) \
 template typename ElementDataCache<TYPE>::ComponentDataPtr VtkMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
-	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
+	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx); \
+template std::vector<TYPE> VtkMeshReader::parse_ascii_data<TYPE>(unsigned int data_size, std::string data_str); \
+template std::vector<TYPE> VtkMeshReader::parse_binary_data<TYPE>(unsigned int data_pos, VtkMeshReader::DataType value_type); \
+template std::vector<TYPE> VtkMeshReader::parse_compressed_data<TYPE>(unsigned int data_pos, VtkMeshReader::DataType value_type); \
+template TYPE read_binary_value<TYPE>(std::istream &data_stream)
 
 VTK_READER_GET_ELEMENT_DATA(int);
 VTK_READER_GET_ELEMENT_DATA(unsigned int);
 VTK_READER_GET_ELEMENT_DATA(double);
+
+template uint64_t read_binary_value<uint64_t>(std::istream &data_stream);
