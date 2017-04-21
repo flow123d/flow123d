@@ -17,8 +17,6 @@
  *
  * TODO: in 2d-2d and 1d-2d check that the intersection candidate has been already computed
  *      during algorithm, not when moving to storage..
- * TODO: fix component numbering - component number is increasing weirdly...we get more components than expected
- *      then it does not work in 2d-2d
  *
  */
 #ifndef INSPECT_ELEMENTS_H_
@@ -38,13 +36,13 @@ template<unsigned int N, unsigned int M> class IntersectionLocal;
 enum IntersectionType
 {
     none = 0,
-    d12 = 0x0001,
     d13 = 0x0002,
     d23 = 0x0004,
     d22 = 0x0008,
     d12_1 = 0x0010, // different algorithms for 12
     d12_2 = 0x0020,
     d12_3 = 0x0040,
+    d12 = 0x00F0,   // automatically choose 12 alg.
     all = 0xFFFF
 };
 

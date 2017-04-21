@@ -48,7 +48,8 @@ TEST(intersection_prolongation_23d, all) {
     FilePath::set_dirs(UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = "intersection/2d-2d/";
     
-    string filename = dir_name + "cube_2f_incomp.msh";
+//     string filename = dir_name + "cube_2f_incomp.msh";
+    string filename = "../tests/00_mesh/square_2x2_frac_nc.msh";
 
     MessageOut() << "Computing intersection on mesh: " << filename << "\n";
     FilePath mesh_file(filename, FilePath::input_file);

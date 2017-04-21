@@ -246,11 +246,9 @@ void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal<
 
 void MixedMeshIntersections::compute_intersections_12_3(vector< IntersectionLocal< 1, 2 > >& storage)
 {
-    START_TIMER("Intersection algorithm");
     storage.reserve(intersection_storage13_.size());
     algorithm12_.compute_intersections_3(element_intersections_, storage);
     storage.shrink_to_fit();
-    END_TIMER("Intersection algorithm");
     
 //     START_TIMER("Intersection into storage");
 //     storage.reserve(algorithm12_.intersectionaux_storage12_.size());
@@ -289,9 +287,7 @@ void MixedMeshIntersections::compute_intersections_12_3(vector< IntersectionLoca
 
 void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
 {
-    START_TIMER("Intersection algorithm");
     algorithm12_.compute_intersections_2(mesh->get_bih_tree());
-    END_TIMER("Intersection algorithm");
 //     DBGVAR(algorithm12_.intersectionaux_storage12_.size());
     
     START_TIMER("Intersection into storage");
@@ -311,9 +307,7 @@ void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLoca
 
 void MixedMeshIntersections::compute_intersections_12_1(vector< IntersectionLocal< 1, 2 > >& storage)
 {
-    START_TIMER("Intersection algorithm");
     algorithm12_.compute_intersections_1(mesh->get_bih_tree());
-    END_TIMER("Intersection algorithm");
 //     DBGVAR(algorithm12_.intersectionaux_storage12_.size());
     
     START_TIMER("Intersection into storage");
@@ -380,7 +374,7 @@ void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< Intersec
             }
         }
     }
-    MessageOut() << "1D-2D [1]: number of intersections = " << storage.size() << "\n";
+    MessageOut() << "1D-2D [1-ngh]: number of intersections = " << storage.size() << "\n";
 }
 
 
@@ -388,7 +382,11 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 {
     element_intersections_.resize(mesh->n_elements());
     
-    bool mesh_in_2d_only = true;
+    // check whether the mesh is in plane only
+    bool mesh_in_2d_only = false;
+    auto bb = mesh->get_bih_tree().tree_box();
+    for(uint axis = 0; axis < bb.dimension; axis++)
+        if(bb.size(axis) < geometry_epsilon) mesh_in_2d_only = true;
     
     if(d & (IntersectionType::d13 | IntersectionType::d12_3)){
         START_TIMER("Intersections 1D-3D");
@@ -414,31 +412,29 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         compute_intersections_22(intersection_storage22_);
         END_TIMER("Intersections 2D-2D");
     }
-//     DebugOut() << print_var(intersection_storage22_.size());
-    //append_to_index(intersection_storage22_);
-
 
     if( mesh_in_2d_only &&
         (d & IntersectionType::d12_1)){
-        START_TIMER("Intersections 1D-2D (3)");
-//         DebugOut() << "Intersection Algorithm d12_3\n";
+        START_TIMER("Intersections 1D-2D (1)");
+        DebugOut() << "Intersection Algorithm d12_1\n";
         compute_intersections_12_1(intersection_storage12_);
-        END_TIMER("Intersections 1D-2D (3)");
+        END_TIMER("Intersections 1D-2D (1)");
     }
     // make sence only if some intersections in 3D are computed
     // TODO: this does NOT compute 1d-2d outside 3d bulk
+    // NOTE: create input record in mesh to decide, whether compute also outside (means to call alg. 2)
     else if( ! intersection_storage13_.empty() &&
              ! intersection_storage23_.empty() &&
              (d & IntersectionType::d12_3)){
         START_TIMER("Intersections 1D-2D (3)");
-//         DebugOut() << "Intersection Algorithm d12_3\n";
+        DebugOut() << "Intersection Algorithm d12_3\n";
         compute_intersections_12_3(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (3)");
     }
     // otherwise compute 1d-2d in the most general case
     else if(d & IntersectionType::d12_2){
         START_TIMER("Intersections 1D-2D (2)");
-//         DebugOut() << "Intersection Algorithm d12_2\n";
+        DebugOut() << "Intersection Algorithm d12_2\n";
         compute_intersections_12_2(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (2)");
     }
