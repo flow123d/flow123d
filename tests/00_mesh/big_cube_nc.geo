@@ -1,3 +1,6 @@
+// Big cube with diagonal fractures.
+// Noncompatible both 2d-3d and 2d-2d
+
 size=10000; // 10km
 
 h1=0.4*size; // step on 1D fracture

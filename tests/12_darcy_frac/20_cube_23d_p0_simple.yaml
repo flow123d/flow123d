@@ -11,6 +11,7 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/cube_23d_nc_extrude.msh
   flow_equation: !Flow_Darcy_MH
+    gravity: [0,0,0]
 #    output_specific:
 #      compute_errors: true
     nonlinear_solver:
@@ -29,7 +30,7 @@ problem: !Coupling_Sequential
         conductivity: 3
       - region: .3d_bottom_top
         bc_type: dirichlet
-        bc_pressure: 0
+        bc_piezo_head: 0
       - region: [.IMPLICIT_BOUNDARY, .2d]
         bc_type: total_flux
         bc_flux: 0.0
@@ -45,6 +46,5 @@ problem: !Coupling_Sequential
     balance: {}
     output_stream: 
       format: !vtk
-
         variant: ascii
 
