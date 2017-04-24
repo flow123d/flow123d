@@ -64,7 +64,8 @@ static const double plucker_empty = std::numeric_limits<double>::infinity();
  */
 template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
 public:
-
+    typedef IntersectionPointAux<1,2> IPAux12;
+    
     /// Default constructor. Use when this is NOT final intersection object.
 	ComputeIntersection();
     /** @brief Constructor, sets abscissa and triangle object.
@@ -90,20 +91,20 @@ public:
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s);
+	IntersectionResult compute(std::vector<IPAux12> &IP12s);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
      * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
      * @return number of intersection points found
      */
-    unsigned int compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
+    unsigned int compute_final(std::vector<IPAux12> &IP12s);
     
     /** Computes final 1d-2d intersection, supposing situation in 2d plane (only degenerate case).
      * (Use when this is the resulting dimension object).
      * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
      * @return number of intersection points found
      */
-    unsigned int compute_final_in_plane(std::vector<IntersectionPointAux<1,2>> &IP12s);
+    unsigned int compute_final_in_plane(std::vector<IPAux12> &IP12s);
     
     /// @name Setters and Getters
     //@{ 
@@ -161,6 +162,14 @@ public:
     
 	//@}
 
+	/** Checks the position of IP on abscissa, possibly changes topology to end points. 
+     * Returns -2, -1, 0, 1, 2; -1.
+     * 0 - inside abscissa
+     * -2, 2 - outside of abscissa
+     * -1, 1 - end points
+     */
+	int check_abscissa_topology(IPAux12& IP);
+	
     /// Prints out all the Plucker coordinates.
 	void print_plucker_coordinates(std::ostream &os);
 
@@ -187,7 +196,7 @@ private:
      * @param local local coordinates of IP (got from Plucker products)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_plucker(IntersectionPointAux<1,2> &IP, const arma::vec3 &local);
+    bool compute_plucker(IPAux12 &IP, const arma::vec3 &local);
     
     /** Computes intersection of abscissa and triangle side in degenerate case (all products are zero).
      * Inspects also topology.
@@ -195,7 +204,7 @@ private:
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_degenerate(unsigned int side_idx, IntersectionPointAux<1,2> &IP);
+    bool compute_degenerate(unsigned int side_idx, IPAux12 &IP);
     
     /// Flag 'computed'; is true if intersection has been computed already.
     bool computed_;

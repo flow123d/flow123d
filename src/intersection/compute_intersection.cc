@@ -103,7 +103,34 @@ void ComputeIntersection<Simplex<1>, Simplex<2>>::set_data(Simplex< 1 >& absciss
 	clear_all();
 };
 
-bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IntersectionPointAux< 1, 2 >& IP, const arma::vec3& local)
+int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::check_abscissa_topology(IPAux12& IP)
+{
+    //FIXME: compute somewhere else both for plucker and degenerate case
+    scale_line_=plucker_coordinates_abscissa_->scale();
+    double tol = geometry_epsilon * scale_line_;
+    
+    double t = RefElement<1>::bary_to_local(IP.local_bcoords_A())(0);
+    
+    int sign = (t < tol ? -2 : (t > 1+tol ? +2 : 0) );  // outside or inside
+    if (std::abs(t) <= tol){ // left end
+        sign = -1;
+        IP.set_topology_A(0,0);
+    }
+    else if (std::abs(1-t) <= tol){ // right end
+        sign = +1;
+        IP.set_topology_A(1,0);
+    }
+    
+//     // possibly set abscissa vertex {0,1}
+//     if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
+//     else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_A(1,0);}
+//     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
+
+    return sign;
+}
+
+
+bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IPAux12& IP, const arma::vec3& local)
 {
     // compute local barycentric coordinates of IP: see formula (3) on pg. 12 in BP VF
     // local alfa = w2/sum; local beta = w1/sum; => local barycentric coordinates in the triangle
@@ -166,19 +193,17 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(Inters
     if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
     else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_A(1,0);}
     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
-//     // possibly set abscissa vertex {0,1}
-//     if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
-//     else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_A(1,0);}
-//     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
-    
+
     arma::vec2 local_abscissa = {1-t, t};
+    
+//     check_abscissa_topology(IP);
 
     IP.set_coordinates(local_abscissa,local_triangle);
     return true;
 }
 
 bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int side,
-                                                                    IntersectionPointAux<1,2>& IP)
+                                                                    IPAux12& IP)
 {
 //      DBGMSG("PluckerProduct[%d]: %f\n",side, *plucker_products_[side]);
     
@@ -289,7 +314,7 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
 }
 
 
-IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IntersectionPointAux<1,2>> &IP12s)
+IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IPAux12> &IP12s)
 {
     ASSERT_EQ_DBG(0, IP12s.size());
     compute_plucker_products();
@@ -345,7 +370,7 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
 
     // test whether any plucker products is non-zero
     if (n_positive > 0) {
-        IntersectionPointAux<1,2> IP;
+        IPAux12 IP;
         
         compute_plucker(IP, w);
         // edge of triangle
@@ -376,7 +401,7 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
     }
 };
 
-unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector< IntersectionPointAux< 1, 2 > >& IP12s)
+unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector<IPAux12>& IP12s)
 {
     IntersectionResult result = compute(IP12s);
 //     DBGVAR((int)result);
@@ -387,7 +412,7 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     if(result < IntersectionResult::degenerate){
 //         DBGCOUT(<< "12d plucker case\n");
         ASSERT_EQ_DBG(1, IP12s.size());
-        IntersectionPointAux<1,2> &IP = IP12s.back();
+        IPAux12 &IP = IP12s.back();
         
         // check the IP whether it is on abscissa
         arma::vec2 theta;
@@ -407,11 +432,11 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
 }
 
 unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final_in_plane(
-                                                    vector< IntersectionPointAux< 1, 2 > >& IP12s)
+                                                    vector<IPAux12>& IP12s)
 {
    for(unsigned int i = 0; i < 3;i++){
 //                 DBGCOUT( << "side [" << i << "]\n");
-        IntersectionPointAux<1,2> IP;
+        IPAux12 IP;
         if (compute_degenerate(i,IP))
         {
             double t = IP.local_bcoords_A()[1];
@@ -812,7 +837,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
 
 	} else {
 	    ASSERT_EQ_DBG(2, IP13s.size());
-        // order IPs according to the lline parameter
+        // order IPs according to the line parameter
         if(IP13s[0].local_bcoords_A()[1] > IP13s[1].local_bcoords_A()[1])
             std::swap(IP13s[0], IP13s[1]);
         double t[2];
