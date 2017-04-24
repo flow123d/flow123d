@@ -1267,7 +1267,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
         if ((ip == no_idx)) break;
         ASSERT_LT_DBG(ip, IP_next.size());
 
-        if ( ! ips_topology_equal(intersection.points().back(), IP23_list[ip]) ) {
+        if ( ! IP23_list[ip].topology_equal(intersection.points().back()) ) {
             IPAux23 &IP = IP23_list[ip];
             //DebugOut() << print_var(ip) << IP23_list[ip];
             intersection.points().push_back(IP);
@@ -1278,7 +1278,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     
     if (intersection.points().size() == 1) return;
 
-    if (ips_topology_equal(intersection.points().back(), IP23_list[ip_init]) )
+    if (IP23_list[ip_init].topology_equal(intersection.points().back()) )
         intersection.points().pop_back();
     
     if (intersection.points().size() > 2){
@@ -1290,16 +1290,6 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             }
         }
     }
-}
-
-
-bool ComputeIntersection<Simplex<2>, Simplex<3>>::ips_topology_equal(const IPAux23 &first, const IPAux23 &second)
-{
-    return
-            first.dim_A() == second.dim_A() &&
-            first.dim_B() == second.dim_B() &&
-            first.idx_A() == second.idx_A() &&
-            first.idx_B() == second.idx_B();
 }
 
 auto ComputeIntersection<Simplex<2>, Simplex<3>>::edge_faces(uint i_edge)-> FacePair

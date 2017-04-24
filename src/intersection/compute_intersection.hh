@@ -542,8 +542,6 @@ private:
     // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
     std::vector<unsigned int> object_next;
 
-
-    bool ips_topology_equal(const IPAux23 &first, const IPAux23 &second);
     bool obj_have_back_link(unsigned int i_obj);
     auto edge_faces(uint i_edge) -> FacePair;
     auto vertex_faces(uint i_vtx) -> FacePair;

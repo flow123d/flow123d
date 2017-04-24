@@ -130,6 +130,16 @@ template<> bool IntersectionPointAux<2,3>::operator<(const IntersectionPointAux<
 };
 */
 
+template<unsigned int N, unsigned int M>
+bool IntersectionPointAux<N,M>::topology_equal(const IntersectionPointAux<N,M> &other) const
+{
+    return
+            dim_A_ == other.dim_A() &&
+            dim_B_ == other.dim_B() &&
+            idx_A_ == other.idx_A() &&
+            idx_B_ == other.idx_B();
+}
+
 
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPointAux< N,M >& s)
