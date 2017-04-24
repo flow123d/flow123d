@@ -22,33 +22,41 @@
 
 using namespace std;
 
+typedef std::vector<IntersectionPoint<1,2>> TestCaseIPs;
+typedef std::pair<std::string, TestCaseIPs> TestCaseResult ;
 
-/// Create results for the meshes in directory 'simple_meshes_12d'.
-void fill_12d_solution(std::vector<IntersectionLocal<1,2>> &ils)
+/// Create results for the meshes in directory 'prolong_meshes_13d'.
+void fill_solution(std::vector< TestCaseResult> &c)
 {
-    ils.clear();
-    ils.resize(11);
-    // ips[0] is empty
-    ils[1].points() = {IntersectionPoint<1,2>({0}, {0, 0})};
-    ils[2].points() = {IntersectionPoint<1,2>({1}, {0, 0})};
-    ils[3].points() = {IntersectionPoint<1,2>({0.5}, {0, 0})};
-    ils[4].points() = {IntersectionPoint<1,2>({0.5}, {0, 0})};
-    ils[5].points() = {IntersectionPoint<1,2>({0.5}, {0.5, 0})};
-    ils[6].points() = {IntersectionPoint<1,2>({0.5}, {0.25, 0.25})};
-    ils[7].points() = {IntersectionPoint<1,2>({1./3}, {0.2, 0}),
-                       IntersectionPoint<1,2>({2./3}, {0, 0.4})};
-    ils[8].points() = {IntersectionPoint<1,2>({0}, {0, 0}),
-                       IntersectionPoint<1,2>({1}, {1, 0})};
-    //ils[9] is empty
-    //ils[10] is empty
+    // degenerate cases
+    c.push_back({ "00_d", {}});
+    c.push_back({ "01_d", {IntersectionPoint<1,2>({0}, {0, 0})}});
+    c.push_back({ "02_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
+    c.push_back({ "03_d", {IntersectionPoint<1,2>({0.5}, {0, 0})}});
+    
+    // degenerate cases with 2 IPs
+    c.push_back({ "10_d", {IntersectionPoint<1,2>({0}, {0, 0}),
+                           IntersectionPoint<1,2>({1}, {1, 0})}});
+    c.push_back({ "11_d", {IntersectionPoint<1,2>({1./3}, {0.2, 0}),
+                           IntersectionPoint<1,2>({2./3}, {0, 0.4})}});
+    
+    // in 3D ambient space
+    // special cases
+    c.push_back({ "30_s", {IntersectionPoint<1,2>({0.5}, {0, 0})}});
+    c.push_back({ "31_s", {IntersectionPoint<1,2>({0.5}, {0.5, 0})}});
+    c.push_back({ "32_s", {}});
+    
+    // regular cases
+    c.push_back({ "50_r", {}});
+    c.push_back({ "51_r", {IntersectionPoint<1,2>({0.5}, {0.25, 0.25})}});
 }
 
 
-///Permutes triangle coordinates of IP<1,2> according to given permutation.
-std::vector<IntersectionPoint<1,2>> permute_coords(std::vector<IntersectionPoint<1,2>> ips, 
-                                                                        const std::vector<unsigned int> &permute)
+/// Permutes triangle coordinates of IP<1,2> according to given permutation.
+std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips, 
+                                                   const std::vector<unsigned int> &permute)
 {
-    std::vector<IntersectionPoint<1,2>> new_points(ips.size());
+    TestCaseIPs new_points(ips.size());
     for(unsigned int i = 0; i < ips.size(); i++)
     {
         arma::vec3 new_coords;
@@ -67,7 +75,7 @@ std::vector<IntersectionPoint<1,2>> permute_coords(std::vector<IntersectionPoint
     return new_points;
 }
 
-void compute_intersection_12d(Mesh *mesh, const std::vector<IntersectionPoint<1,2>> &ips)
+void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips)
 {
     Simplex<1> line = create_simplex<1>(mesh->element(1));
     Simplex<2> tria = create_simplex<2>(mesh->element(0));
@@ -87,7 +95,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<IntersectionPoint<1,
 //     }
 
     
-    EXPECT_EQ(ipc.size(), ips.size());
+    EXPECT_EQ(ips.size(), ipc.size());
     
     for(unsigned int i=0; i < ipc.size(); i++)
     {
@@ -103,38 +111,42 @@ TEST(intersections_12d, all) {
     // directory with testing meshes
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_12d/";
-    std::vector<string> filenames;
+
+    std::vector<TestCaseResult> solution_coords;
+    fill_solution(solution_coords);
     
-    read_files_from_dir(dir_name, "msh", filenames);
-    
-    std::vector<IntersectionLocal<1,2>> solution;
-    fill_12d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
-    for(unsigned int s=0; s< filenames.size(); s++)
+    unsigned int i_file=0;
+    for(auto &test_case : solution_coords)
     {
-        const unsigned int np = permutations_triangle.size();
+        string file_name=test_case.first+"_line_triangle.msh";
+        TestCaseIPs &case_ips=test_case.second;
+
+        FilePath mesh_file(dir_name + file_name, FilePath::input_file);
+        ASSERT(mesh_file.exists())(dir_name+file_name);
         
-        for(unsigned int p=0; p<np; p++)
-        {
-            MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+        const unsigned int np = permutations_triangle.size();
+        for(unsigned int p=0; p<np; p++){
+            MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## triangle permutation: #{}\n",
+                                i_file,  file_name, p);
             
             Mesh *mesh = mesh_constructor();
             // read mesh with gmshreader
             GmshMeshReader reader(mesh_file);
             reader.read_mesh(mesh);
-        
+            
             // permute nodes:
             FOR_ELEMENTS(mesh,ele)
             {
                 if(ele->dim() == 2)
-                    permute_triangle(ele, p);
+                    permute_triangle(ele,p);
             }
-            
             mesh->setup_topology();
             
-            compute_intersection_12d(mesh, permute_coords(solution[s].points(), permutations_triangle[p]));
+//                 compare_with_ngh(mesh);
+            compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]));
         }
+        i_file++;
     }
 }
