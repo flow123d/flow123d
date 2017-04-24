@@ -75,33 +75,35 @@ std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips,
     return new_points;
 }
 
-void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips)
+
+void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerate)
 {
     Simplex<1> line = create_simplex<1>(mesh->element(1));
     Simplex<2> tria = create_simplex<2>(mesh->element(0));
     
     IntersectionAux<1,2> is(1, 0);
     ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria, mesh);
-    CI.compute_final(is.points());
+    if(degenerate)
+        CI.compute_final_in_plane(is.points());
+    else
+        CI.compute_final(is.points());
     
     IntersectionLocal<1,2> ilc(is);
     
+    auto ipc = ilc.points();
 //     DebugOut() << ilc;
     
-    auto ipc = ilc.points();
 //     for(IntersectionPoint<1,2> &ip: ipc)
 //     {
 //         ip.coords(mesh->element(1)).print(DebugOut(),"ip");
 //     }
 
-    
     EXPECT_EQ(ips.size(), ipc.size());
-    
     for(unsigned int i=0; i < ipc.size(); i++)
     {
         MessageOut().fmt("---------- check IP[{}] ----------\n",i);
-        EXPECT_ARMA_EQ(ipc[i].comp_coords(), ips[i].comp_coords());
-        EXPECT_ARMA_EQ(ipc[i].bulk_coords(), ips[i].bulk_coords());
+        EXPECT_ARMA_EQ(ips[i].comp_coords(), ipc[i].comp_coords());
+        EXPECT_ARMA_EQ(ips[i].bulk_coords(), ipc[i].bulk_coords());
     }
 }
 
@@ -122,6 +124,8 @@ TEST(intersections_12d, all) {
     {
         string file_name=test_case.first+"_line_triangle.msh";
         TestCaseIPs &case_ips=test_case.second;
+        
+        bool degenerate = test_case.first.at(3) == 'd';
 
         FilePath mesh_file(dir_name + file_name, FilePath::input_file);
         ASSERT(mesh_file.exists())(dir_name+file_name);
@@ -145,7 +149,10 @@ TEST(intersections_12d, all) {
             mesh->setup_topology();
             
 //                 compare_with_ngh(mesh);
-            compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]));
+            // compute both ways
+            if(degenerate) compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), false);
+            
+            compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), degenerate);
         }
         i_file++;
     }
