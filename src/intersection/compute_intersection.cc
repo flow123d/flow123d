@@ -121,11 +121,6 @@ int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::check_abscissa_topology
         IP.set_topology_A(1,0);
     }
     
-//     // possibly set abscissa vertex {0,1}
-//     if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
-//     else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_A(1,0);}
-//     else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
-
     return sign;
 }
 
@@ -179,26 +174,19 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IPAux1
     //DebugOut() << "lineB: " << (*abscissa_)[1].point_coordinates();
     double t =  (-(*abscissa_)[0].point_coordinates()[i] + isect_coord_i)/max;
     //DebugOut() << print_var(t) << print_var(isect_coord_i) << print_var(max);
-        
+    arma::vec2 local_abscissa = {1-t, t};
+    
     /*
     DBGMSG("Coordinates: line; local and global triangle\n");
     theta.print();
     local_triangle.print();
     global_triangle.print();
     */
+
+    IP.set_topology_A(0, 1);
     IP.set_topology_B(0, 2);
-    
-
-    // possibly set abscissa vertex {0,1}
-    if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_A(0,0);}
-    else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_A(1,0);}
-    else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
-
-    arma::vec2 local_abscissa = {1-t, t};
-    
-//     check_abscissa_topology(IP);
-
     IP.set_coordinates(local_abscissa,local_triangle);
+    
     return true;
 }
 
@@ -412,15 +400,10 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     if(result < IntersectionResult::degenerate){
 //         DBGCOUT(<< "12d plucker case\n");
         
-        //TODO: Simplify and use check function
-        // check the IP whether it is on abscissa
-        arma::vec2 theta;
-        double t = IP.local_bcoords_A()[1];
-        // t is already checked for vertex position with tolerance in compute_plucker
-        if(t < 0 || t > 1) { 
-//             DBGCOUT(<< "remove IP\n"); 
-            return 0;
-        }
+        int sign = check_abscissa_topology(IP);
+//         DBGVAR(sign);
+        if(std::abs(sign) > 1) return 0;
+        
         IP12s.push_back(IP);
         return IP12s.size();
     }
@@ -791,6 +774,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAu
 
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IPAux> &IP13s){
 	ASSERT_EQ_DBG(0, IP13s.size());
+    std::vector<int> sign;
 
    // loop over faces of tetrahedron
 	for(unsigned int face = 0; face < RefElement<3>::n_sides && IP13s.size() < 2; face++){
@@ -802,7 +786,12 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IP
         //DebugOut() << print_var(face) << print_var(int(result)) << "1d-3d";
 
 		if (int(result) < int(IntersectionResult::degenerate) ) {
+            // fix topology of A (abscissa) in IP12 and save sign
+            sign.push_back(CI12[face].check_abscissa_topology(IP12));
+            
             IPAux IP13(IP12, face);
+            //DebugOut() << IP13;
+            IP13s.push_back(IP13);
             
             // set the 'computed' flag on the connected sides by IP
             if(IP13.dim_B() == 0) // IP is vertex of triangle
@@ -816,58 +805,45 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IP
                 for(unsigned int edge_face : RefElement<3>::interact(Interaction<2,1>(IP13.idx_B())))
                     CI12[edge_face].set_computed();
             }
-
-            //DebugOut() << IP13;
-            IP13s.push_back(IP13);
 		}
 	}
 	if (IP13s.size() == 0) return IP13s.size();
 
 	// in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
 	if(IP13s.size() == 1){
-		double f_theta = IP13s[0].local_bcoords_A()[1];
-		// TODO: move this test to separate function of 12 intersection
-        // no tolerance needed - it was already compared and normalized in 1d-2d
-		if(f_theta > 1 || f_theta < 0){
-			IP13s.pop_back();
-		}
-
-	} else {
-	    ASSERT_EQ_DBG(2, IP13s.size());
-        // order IPs according to the line parameter
-        if(IP13s[0].local_bcoords_A()[1] > IP13s[1].local_bcoords_A()[1])
-            std::swap(IP13s[0], IP13s[1]);
-        double t[2];
-        int sign[2];
-        int ip_sign[] = {-2, +2}; // states to cut
-        for( unsigned int ip=0; ip<2; ip++) {
-            t[ip] = IP13s[ip].local_bcoords_A()[1];
-
-            // TODO move this into 12d intersection, possibly with results -2, -1, 0, 1, 2; -1,1 for position on end points
-            sign[ip] = (t[ip] < 0 ? -2 : (t[ip] > 1 ? +2 : 0) );
-            if (t[ip] == 0) sign[ip] = -1;
-            if (t[ip] == 1) sign[ip] = +1;
-
-            // cut every IP to its end of the line segment
-            if (sign[ip] == ip_sign[ip]) {
-                t[ip]=ip;
-                sign[ip] /=2; // -2 to -1; +2 to +1
-                correct_tetrahedron_ip_topology(t[ip], ip, IP13s);
-            }
-            if (sign[ip] == -1)  IP13s[ip].set_topology_A(0, 0);
-            if (sign[ip] == +1)  IP13s[ip].set_topology_A(1, 0);
+        if(std::abs(sign[0]) > 1) IP13s.pop_back(); // outside abscissa
+        return IP13s.size();
+	}
+    
+    // 2 IPs CASE:
+    ASSERT_EQ_DBG(2, IP13s.size());
+    
+    // intersection outside of abscissa => NO intersection
+    if (sign[0] == sign[1] && std::abs(sign[0]) > 1) {
+        IP13s.clear();
+        return 0;
+    }
+    
+    // order IPs according to the abscissa parameter
+    if(IP13s[0].local_bcoords_A()[1] > IP13s[1].local_bcoords_A()[1]){
+        std::swap(IP13s[0], IP13s[1]);
+        std::swap(sign[0], sign[1]);
+    }
+    
+    // possibly cut IPs to abscissa ends and interpolate tetrahedron bcoords
+    const int ip_sign[] = {-2, +2}; // states to cut
+    for( unsigned int ip=0; ip<2; ip++) {
+        // cut every IP to its end of the abscissa
+        if (sign[ip] == ip_sign[ip]) {
+            sign[ip] /=2; // -2 to -1; +2 to +1
+            correct_tetrahedron_ip_topology(double(ip), ip, IP13s);
+            IP13s[ip].set_topology_A(ip, 0);
         }
+    }
 
-        // intersection outside of abscissa => NO intersection
-        if (t[1] < t[0]) {
-            IP13s.clear();
-            return IP13s.size();
-        }
-
-        // if IPs are the same, then throw the second one away
-        if(t[0] == t[1]) {
-            IP13s.pop_back();
-        }
+    // if IPs are the same, then throw the second one away
+    if(IP13s[0].local_bcoords_A()[1] == IP13s[1].local_bcoords_A()[1]) {
+        IP13s.pop_back();
     }
 
     return IP13s.size();
@@ -1115,7 +1091,7 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
             // fix order of IPs
             unsigned int ip = (side_cycle_orientation[_i_side] + _ip) % IP13s.size();
 
-            //DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
+//             DebugOut().fmt("rside: {} cside: {} rip: {} cip: {}", _i_side, i_side, _ip, ip);
 
             // convert from 13 to 23 IP
             IntersectionPointAux<3,1> IP31 = IP13s[ip].switch_objects();   // switch idx_A and idx_B and coords
@@ -1180,12 +1156,16 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     //   treated right
 
 
+    //TODO: cannot the two cycles be merged in one now?
+    // and instead of processed_edge use CI12[tetra_edge].set_computed();
+    // and I think we don't have to generate dummy IP12s
+    // so we don't have to have IP12s vector here
     IP12s_.clear();
     // S3 Edge - S2 intersections; collect all signs, make dummy intersections
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
         IPAux12 IP12;
 	    IntersectionResult result = CI12[tetra_edge].compute(IP12);
-	    //DebugOut() << print_var(tetra_edge) << print_var(int(result));
+// 	    DebugOut() << print_var(tetra_edge) << print_var(int(result));
         // in degenerate case: IP12 is empty with degenerate result
         IP12s_.push_back(IP12);
 	}
@@ -1193,14 +1173,14 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
 	FacePair face_pair;
 	for(unsigned int tetra_edge = 0; tetra_edge < 6;tetra_edge++) {
 	    if (! processed_edge[tetra_edge]) {
+//             DBGVAR(tetra_edge);
 	        IPAux12 &IP12 = IP12s_[tetra_edge];
+            if(IP12.result() >= IntersectionResult::degenerate) continue;
             
-            //TODO create and use function from 1d2d, remove IP12
-	        double edge_coord = IP12.local_bcoords_A()[0];
-	        // skip no intersection and degenerate intersections
-	        if ( edge_coord > 1 || edge_coord < 0 || int(IP12.result()) >= 2 ) continue;
-            //DebugOut() << print_var(tetra_edge) << IP12;
-
+            int sign = CI12[tetra_edge].check_abscissa_topology(IP12);
+//             DBGVAR(sign);
+            if(std::abs(sign) > 1) continue;
+            
             IPAux23 IP23(IP12s_[tetra_edge].switch_objects(), tetra_edge);
             
             const uint edge_dim = IP23.dim_B();
