@@ -394,6 +394,8 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IPAux12 
         return result;
 
     } else {
+        ASSERT_DBG(IP.topology_equal(IPAux12()));   // check empty IP (none)
+        IP.set_result(IntersectionResult::degenerate);  // set deg. result
         return IntersectionResult::degenerate;
     }
 };
@@ -787,7 +789,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAu
     return compute(intersection.i_points_);
 }
 
-unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){
+unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IPAux> &IP13s){
 	ASSERT_EQ_DBG(0, IP13s.size());
 
    // loop over faces of tetrahedron
@@ -800,7 +802,7 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<In
         //DebugOut() << print_var(face) << print_var(int(result)) << "1d-3d";
 
 		if (int(result) < int(IntersectionResult::degenerate) ) {
-            IntersectionPointAux<1,3> IP13(IP12, face);
+            IPAux IP13(IP12, face);
             
             // set the 'computed' flag on the connected sides by IP
             if(IP13.dim_B() == 0) // IP is vertex of triangle
@@ -1184,14 +1186,8 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
         IPAux12 IP12;
 	    IntersectionResult result = CI12[tetra_edge].compute(IP12);
 	    //DebugOut() << print_var(tetra_edge) << print_var(int(result));
-	    if (result < IntersectionResult::degenerate) {
-	        IP12s_.push_back(IP12);
-	    } else {
-            //TODO: Simplify - check that degenerate case return empty IP
-	        // make dummy intersection
-	        IP12s_.push_back(IPAux12());
-	        IP12s_.back().set_result(result);
-	    }
+        // in degenerate case: IP12 is empty with degenerate result
+        IP12s_.push_back(IP12);
 	}
 	vector<uint> processed_edge(6, 0);
 	FacePair face_pair;
