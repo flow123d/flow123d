@@ -314,9 +314,8 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
 }
 
 
-IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vector<IPAux12> &IP12s)
+IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IPAux12 &IP)
 {
-    ASSERT_EQ_DBG(0, IP12s.size());
     compute_plucker_products();
     computed_ = true;
 
@@ -370,7 +369,6 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
 
     // test whether any plucker products is non-zero
     if (n_positive > 0) {
-        IPAux12 IP;
         
         compute_plucker(IP, w);
         // edge of triangle
@@ -393,7 +391,6 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
                 IntersectionResult::positive : IntersectionResult::negative;
         IP.set_result(result);
 
-        IP12s.push_back(IP);
         return result;
 
     } else {
@@ -403,7 +400,8 @@ IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(std::vec
 
 unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(vector<IPAux12>& IP12s)
 {
-    IntersectionResult result = compute(IP12s);
+    IPAux12 IP;
+    IntersectionResult result = compute(IP);
 //     DBGVAR((int)result);
     // skip empty cases
     if(result == IntersectionResult::none) return 0;
@@ -411,17 +409,17 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     // standard case with a single intersection corner
     if(result < IntersectionResult::degenerate){
 //         DBGCOUT(<< "12d plucker case\n");
-        ASSERT_EQ_DBG(1, IP12s.size());
-        IPAux12 &IP = IP12s.back();
         
+        //TODO: Simplify and use check function
         // check the IP whether it is on abscissa
         arma::vec2 theta;
         double t = IP.local_bcoords_A()[1];
         // t is already checked for vertex position with tolerance in compute_plucker
         if(t < 0 || t > 1) { 
 //             DBGCOUT(<< "remove IP\n"); 
-            IP12s.pop_back(); // IP outside => remove
+            return 0;
         }
+        IP12s.push_back(IP);
         return IP12s.size();
     }
     else{
@@ -790,22 +788,19 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(IntersectionAu
 }
 
 unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IntersectionPointAux<1,3>> &IP13s){
-
-	std::vector<IntersectionPointAux<1,2>> IP12s;
 	ASSERT_EQ_DBG(0, IP13s.size());
 
    // loop over faces of tetrahedron
 	for(unsigned int face = 0; face < RefElement<3>::n_sides && IP13s.size() < 2; face++){
-	    IP12s.clear();
-
-
+        
 		if  (CI12[face].is_computed()) continue;
-	    IntersectionResult result = CI12[face].compute(IP12s);
+        
+        IntersectionPointAux<1,2> IP12;
+	    IntersectionResult result = CI12[face].compute(IP12);
         //DebugOut() << print_var(face) << print_var(int(result)) << "1d-3d";
 
 		if (int(result) < int(IntersectionResult::degenerate) ) {
-		    ASSERT_EQ_DBG(1, IP12s.size());
-            IntersectionPointAux<1,3> IP13(IP12s.back(), face);
+            IntersectionPointAux<1,3> IP13(IP12, face);
             
             // set the 'computed' flag on the connected sides by IP
             if(IP13.dim_B() == 0) // IP is vertex of triangle
@@ -1186,14 +1181,13 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::compute(IntersectionAux< 2 , 3
     IP12s_.clear();
     // S3 Edge - S2 intersections; collect all signs, make dummy intersections
 	for(unsigned int tetra_edge = 0; tetra_edge < 6; tetra_edge++) {
-	    std::vector<IPAux12> IP12_local;
-	    IntersectionResult result = CI12[tetra_edge].compute(IP12_local);
+        IPAux12 IP12;
+	    IntersectionResult result = CI12[tetra_edge].compute(IP12);
 	    //DebugOut() << print_var(tetra_edge) << print_var(int(result));
 	    if (result < IntersectionResult::degenerate) {
-	        ASSERT_DBG(IP12_local.size() ==1);
-	        IP12s_.push_back(IP12_local[0]);
+	        IP12s_.push_back(IP12);
 	    } else {
-	        ASSERT_DBG(IP12_local.size() ==0);
+            //TODO: Simplify - check that degenerate case return empty IP
 	        // make dummy intersection
 	        IP12s_.push_back(IPAux12());
 	        IP12s_.back().set_result(result);
