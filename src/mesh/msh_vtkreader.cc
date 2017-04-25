@@ -110,9 +110,10 @@ void VtkMeshReader::read_base_vtk_attributes()
 
 
 void VtkMeshReader::set_appended_stream(const FilePath &file_name) {
+	// open ifstream for find position
 	appended_stream_ = new std::ifstream( (std::string)file_name );
-
 	{
+		// find line by tokenizer
 		Tokenizer tok(file_name);
 		if (! tok.skip_to("AppendedData"))
 			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section("AppendedData") << GmshMeshReader::EI_GMSHFile(tok.f_name()) );
@@ -121,12 +122,17 @@ void VtkMeshReader::set_appended_stream(const FilePath &file_name) {
 		}
 	}
 
+	// find exact position of appended data (starts with '_')
 	char c;
 	appended_stream_->seekg(appended_pos_);
 	do {
 		appended_stream_->get(c);
 	} while (c!='_');
 	appended_pos_ = appended_stream_->tellg();
+	delete appended_stream_; // close stream
+
+	// open stream in binary mode
+	appended_stream_ = new std::ifstream( (std::string)file_name, std::ios_base::in | std::ios_base::binary );
 }
 
 
@@ -214,11 +220,11 @@ void VtkMeshReader::read_nodes(Mesh* mesh)
 			nodes_data = parse_binary_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
 			break;
 		}
-		/*case DataFormat::binary_zlib: {
+		case DataFormat::binary_zlib: {
 			ASSERT_PTR(appended_stream_).error();
 			nodes_data = parse_compressed_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
 			break;
-		}*/
+		}
 		default: {
 			ASSERT(false).error(); // should not happen
 			break;
@@ -264,9 +270,6 @@ std::vector<T> VtkMeshReader::parse_ascii_data(unsigned int data_size, std::stri
 		data.push_back( boost::lexical_cast<T> (*tok) ); ++tok;
 	}
 
-	//for (unsigned int i = 0; i < data_size; ++i) std::cout << data[i] << " ";
-	//std::cout << std::endl;
-
 	return data;
 }
 
@@ -282,9 +285,6 @@ std::vector<T> VtkMeshReader::parse_binary_data(unsigned int data_pos, VtkMeshRe
 		data.push_back( read_binary_value<T>(*appended_stream_) );
 	}
 
-	//for (unsigned int i = 0; i < data_size; ++i) std::cout << data[i] << " ";
-	//std::cout << std::endl;
-
 	return data;
 }
 
@@ -292,9 +292,6 @@ std::vector<T> VtkMeshReader::parse_binary_data(unsigned int data_pos, VtkMeshRe
 template<typename T>
 std::vector<T> VtkMeshReader::parse_compressed_data(unsigned int data_pos, VtkMeshReader::DataType value_type)
 {
-    // size of block of compressed data.
-	static const size_t BUF_SIZE = 32 * 1024;
-
 	appended_stream_->seekg(data_pos);
 	uint64_t n_blocks = read_header_type(header_type_, *appended_stream_);
 	uint64_t u_size = read_header_type(header_type_, *appended_stream_);
@@ -306,41 +303,42 @@ std::vector<T> VtkMeshReader::parse_compressed_data(unsigned int data_pos, VtkMe
 		block_sizes.push_back( read_header_type(header_type_, *appended_stream_) );
 	}
 
+	stringstream decompressed_data;
+	uint64_t decompressed_data_size = 0;
 	for (uint64_t i = 0; i < n_blocks; ++i) {
-		uint64_t data_block_size = block_sizes[i];
-		char data_block[BUF_SIZE];
-		appended_stream_->read(data_block, data_block_size);
+		uint64_t decompressed_block_size = (i==n_blocks-1 && p_size>0) ? p_size : u_size;
+		uint64_t compressed_block_size = block_sizes[i];
 
-		//std::vector<uint8_t> buffer;
-		char buffer[BUF_SIZE];
+		std::vector<char> data_block(compressed_block_size);
+		appended_stream_->read(&data_block[0], compressed_block_size);
+
+		std::vector<char> buffer(decompressed_block_size);
 
 		// set zlib object
 		z_stream strm;
 		strm.zalloc = 0;
 		strm.zfree = 0;
-		strm.next_in = (Bytef *)data_block;
-		strm.avail_in = data_block_size;
-		strm.next_out = (Bytef *)buffer;
-		strm.avail_out = p_size;
+		strm.next_in = (Bytef *)(&data_block[0]);
+		strm.avail_in = compressed_block_size;
+		strm.next_out = (Bytef *)(&buffer[0]);
+		strm.avail_out = decompressed_block_size;
 
 		// decompression of data
 		inflateInit(&strm);
 		inflate(&strm, Z_NO_FLUSH);
 		inflateEnd(&strm);
 
-		// store compress data and its size to streams
-		std::string str(buffer);
-		std::cout << "decompressed: " << str.size() << std::endl;
+		// store decompressed data to stream
+		decompressed_data << std::string(buffer.begin(), buffer.end());
+		decompressed_data_size += decompressed_block_size;
 	}
 
 	std::vector<T> data;
-	/*data.reserve(data_size);
+	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
+	data.reserve(data_size);
 	for (unsigned int i = 0; i < data_size; ++i) {
-		data.push_back( read_binary_value<T>(data_stream) );
-	}*/
-
-	//for (unsigned int i = 0; i < data_size; ++i) std::cout << data[i] << " ";
-	//std::cout << std::endl;
+		data.push_back( read_binary_value<T>(decompressed_data) );
+	}
 
 	return data;
 }

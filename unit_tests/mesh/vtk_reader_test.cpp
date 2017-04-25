@@ -121,7 +121,7 @@ TEST_F(VtkMeshReaderTest, read_binary_vtu) {
 }
 
 
-/*TEST_F(VtkMeshReaderTest, read_compressed_vtu) {
+TEST_F(VtkMeshReaderTest, read_compressed_vtu) {
 	read_input_file("output/test_output_vtk_zlib_ref.vtu");
 
     {
@@ -142,7 +142,7 @@ TEST_F(VtkMeshReaderTest, read_binary_vtu) {
     	// test of connectivity data array
     	auto data_attr = this->get_data_array_attr(DataSections::cells, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type_ );
-    	EXPECT_EQ( DataFormat::binary_uncompressed, data_format_ );
+    	EXPECT_EQ( DataFormat::binary_zlib, data_format_ );
     	EXPECT_EQ( 1, data_attr.n_components_ );
     }
-}*/
+}
