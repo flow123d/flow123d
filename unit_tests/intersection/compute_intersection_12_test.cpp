@@ -32,13 +32,22 @@ void fill_solution(std::vector< TestCaseResult> &c)
     c.push_back({ "00_d", {}});
     c.push_back({ "01_d", {IntersectionPoint<1,2>({0}, {0, 0})}});
     c.push_back({ "02_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
-    c.push_back({ "03_d", {IntersectionPoint<1,2>({0.5}, {0, 0})}});
+    c.push_back({ "03_d", {IntersectionPoint<1,2>({1./3}, {0, 0})}});
+    c.push_back({ "04_d", {IntersectionPoint<1,2>({1}, {0, 0.2})}});
+    c.push_back({ "05_d", {IntersectionPoint<1,2>({0}, {0.5, 0.5})}});
+    c.push_back({ "06_d", {IntersectionPoint<1,2>({2./3}, {0, 1})}});
     
     // degenerate cases with 2 IPs
     c.push_back({ "10_d", {IntersectionPoint<1,2>({0}, {0, 0}),
                            IntersectionPoint<1,2>({1}, {1, 0})}});
     c.push_back({ "11_d", {IntersectionPoint<1,2>({1./3}, {0.2, 0}),
                            IntersectionPoint<1,2>({2./3}, {0, 0.4})}});
+    c.push_back({ "12_d", {IntersectionPoint<1,2>({0}, {0.5, 0}),
+                           IntersectionPoint<1,2>({2./3}, {1, 0})}});
+    c.push_back({ "13_d", {IntersectionPoint<1,2>({0}, {0, 0.3}),
+                           IntersectionPoint<1,2>({1}, {0.5, 0.3})}});
+    c.push_back({ "14_d", {IntersectionPoint<1,2>({0}, {0.2, 0.1}),
+                           IntersectionPoint<1,2>({1}, {0.4, 0.2})}});
     
     // in 3D ambient space
     // special cases
@@ -91,7 +100,7 @@ void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerat
     IntersectionLocal<1,2> ilc(is);
     
     auto ipc = ilc.points();
-//     DebugOut() << ilc;
+    DebugOut() << ilc;
     
 //     for(IntersectionPoint<1,2> &ip: ipc)
 //     {
@@ -131,6 +140,7 @@ TEST(intersections_12d, all) {
         ASSERT(mesh_file.exists())(dir_name+file_name);
         
         const unsigned int np = permutations_triangle.size();
+//         const unsigned int np = 1;
         for(unsigned int p=0; p<np; p++){
             MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## triangle permutation: #{}\n",
                                 i_file,  file_name, p);

@@ -206,6 +206,11 @@ private:
      */
     bool compute_degenerate(unsigned int side_idx, IPAux12 &IP);
     
+    /** @brief After interpolation, the topology information in tetrahedron must be updated.
+     * @param ip intersection point to be corrected
+     */
+    void correct_triangle_ip_topology(double t, unsigned int i, std::vector<IPAux12> &ip);
+    
     /// Flag 'computed'; is true if intersection has been computed already.
     bool computed_;
     ///

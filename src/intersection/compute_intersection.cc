@@ -190,117 +190,6 @@ bool ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_plucker(IPAux1
     return true;
 }
 
-bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int side,
-                                                                    IPAux12& IP)
-{
-//      DBGMSG("PluckerProduct[%d]: %f\n",side, *plucker_products_[side]);
-    
-    // We solve following equation for parameters s,t:
-    /* A + sU = C + tV = intersection point
-     * sU - tV = C - A
-     * 
-     * which is by components:
-     * (u1  -v1) (s) = (c1-a1)
-     * (u2  -v2) (t) = (c2-a2)
-     * (u3  -v3)     = (c3-a3)
-     * 
-     * these are 3 equations for variables s,t
-     * see (4.3) on pg. 19 in DP VF
-     * 
-     * We will solve this using Crammer's rule for the maximal subdeterminant det_ij of the matrix.
-     * s = detX_ij / det_ij
-     * t = detY_ij / det_ij
-     */
-    
-    // starting point of abscissa
-    arma::vec3 A = (*abscissa_)[0].point_coordinates();
-    // direction vector of abscissa
-    arma::vec3 U = plucker_coordinates_abscissa_->get_u_vector();
-    // vertex of triangle side
-    arma::vec3 C = (*triangle_)[side][side%2].point_coordinates();
-    // direction vector of triangle side
-    arma::vec3 V = plucker_coordinates_triangle_[side]->get_u_vector();
-    // right hand side
-    arma::vec3 K = C - A;
-    // subdeterminants det_ij of the system equal minus normal vector to common plane of U and V
-    // det_12 =  (-UxV)[1]
-    // det_13 = -(-UxV)[2]
-    // det_23 =  (-UxV)[3]
-    arma::vec3 Det = -arma::cross(U,V);
-    
-    
-//     A.print("A");
-//     U.print("U");
-//     C.print("C");
-//     V.print("V");
-//     K.print("K");
-//     Det.print();
-//     cout <<endl;
-
-    unsigned int max_index = 0;
-    double maximum = fabs(Det[0]);
-    if(fabs((double)Det[1]) > maximum){
-        maximum = fabs(Det[1]);
-        max_index = 1;
-    }
-    if(fabs((double)Det[2]) > maximum){
-        maximum = fabs(Det[2]);
-        max_index = 2;
-    }
-//     DBGVAR(maximum);
-    //abscissa is parallel to triangle side
-    if(std::abs(maximum) <= std::sqrt(geometry_epsilon)) return false;
-
-    // map maximum index in {-UxV} to i,j of subdeterminants
-    //              i j
-    // max_index 0: 1 2
-    //           1: 2 0  (switch  due to sign change)
-    //           2: 0 1
-    unsigned int i = (max_index+1)%3,
-                 j = (max_index+2)%3;
-                 
-    double DetX = -K[i]*V[j] + K[j]*V[i];
-    double DetY = -K[i]*U[j] + K[j]*U[i];
-
-    double s = DetX/Det[max_index];   //parameter on abscissa
-    double t = DetY/Det[max_index];   //parameter on triangle side
-
-    // change sign according to side orientation
-    if(RefElement<2>::normal_orientation(side)) t=-t;
-
-//     DBGVAR(s);
-//     DBGVAR(t);
-
-    // if IP is inside of triangle side
-    if(t >= -geometry_epsilon && t <= 1+geometry_epsilon){
-
-        IP.set_result(IntersectionResult::degenerate);  // set orientation as a pathologic case ( > 1)
-        // possibly set abscissa vertex {0,1}
-        if( fabs(s) <= geometry_epsilon)       { s = 0; IP.set_topology_A(0,0);}
-        else if(fabs(1-s) <= geometry_epsilon) { s = 1; IP.set_topology_A(1,0);}
-        else                         {        IP.set_topology_A(0,1);}   // no vertex, line 0, dim = 1
-        
-        // possibly set triangle vertex {0,1,2}
-        if( fabs(t) <= geometry_epsilon)       { t = 0; IP.set_topology_B(RefElement<2>::interact(Interaction<0,1>(side))[RefElement<2>::normal_orientation(side)],0);}
-        else if(fabs(1-t) <= geometry_epsilon) { t = 1; IP.set_topology_B(RefElement<2>::interact(Interaction<0,1>(side))[1-RefElement<2>::normal_orientation(side)],0);}
-        else                         {        IP.set_topology_B(side,1);}   // no vertex, side side, dim = 1
-        
-        arma::vec2 local_abscissa({1-s, s});
-        arma::vec3 local_triangle({0,0,0});
-
-        // set local triangle barycentric coordinates according to nodes of the triangle side:
-        local_triangle[RefElement<2>::interact(Interaction<0,1>(side))[RefElement<2>::normal_orientation(side)]] = 1 - t;
-        local_triangle[RefElement<2>::interact(Interaction<0,1>(side))[1-RefElement<2>::normal_orientation(side)]] = t;
-//      local_abscissa.print();
-//      local_triangle.print();
-        
-        IP.set_coordinates(local_abscissa,local_triangle);
-        return true; // IP found
-    }
-    
-    return false;   // IP NOT found
-}
-
 
 IntersectionResult ComputeIntersection<Simplex<1>, Simplex<2>>::compute(IPAux12 &IP)
 {
@@ -414,35 +303,223 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final(
     }
 }
 
+
+bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int side,
+                                                                    IPAux12& IP)
+{
+//      DBGMSG("PluckerProduct[%d]: %f\n",side, *plucker_products_[side]);
+    
+    // We solve following equation for parameters s,t:
+    /* A + sU = C + tV = intersection point
+     * sU - tV = C - A
+     * 
+     * which is by components:
+     * (u1  -v1) (s) = (c1-a1)
+     * (u2  -v2) (t) = (c2-a2)
+     * (u3  -v3)     = (c3-a3)
+     * 
+     * these are 3 equations for variables s,t
+     * see (4.3) on pg. 19 in DP VF
+     * 
+     * We will solve this using Crammer's rule for the maximal subdeterminant det_ij of the matrix.
+     * s = detX_ij / det_ij
+     * t = detY_ij / det_ij
+     */
+    
+    // starting point of abscissa
+    arma::vec3 A = (*abscissa_)[0].point_coordinates();
+    // direction vector of abscissa
+    arma::vec3 U = plucker_coordinates_abscissa_->get_u_vector();
+    // vertex of triangle side
+    arma::vec3 C = (*triangle_)[side][side%2].point_coordinates();
+    // direction vector of triangle side
+    arma::vec3 V = plucker_coordinates_triangle_[side]->get_u_vector();
+    // right hand side
+    arma::vec3 K = C - A;
+    // subdeterminants det_ij of the system equal minus normal vector to common plane of U and V
+    // det_12 =  (-UxV)[1]
+    // det_13 = -(-UxV)[2]
+    // det_23 =  (-UxV)[3]
+    arma::vec3 Det = -arma::cross(U,V);
+    
+    
+//     A.print("A");
+//     U.print("U");
+//     C.print("C");
+//     V.print("V");
+//     K.print("K");
+//     Det.print();
+//     cout <<endl;
+
+    unsigned int max_index = 0;
+    double maximum = fabs(Det[0]);
+    if(fabs((double)Det[1]) > maximum){
+        maximum = fabs(Det[1]);
+        max_index = 1;
+    }
+    if(fabs((double)Det[2]) > maximum){
+        maximum = fabs(Det[2]);
+        max_index = 2;
+    }
+//     DBGVAR(maximum);
+    //abscissa is parallel to triangle side
+    if(std::abs(maximum) <= std::sqrt(geometry_epsilon)) return false;
+
+    // map maximum index in {-UxV} to i,j of subdeterminants
+    //              i j
+    // max_index 0: 1 2
+    //           1: 2 0  (switch  due to sign change)
+    //           2: 0 1
+    unsigned int i = (max_index+1)%3,
+                 j = (max_index+2)%3;
+                 
+    double DetX = -K[i]*V[j] + K[j]*V[i];
+    double DetY = -K[i]*U[j] + K[j]*U[i];
+
+    double s = DetX/Det[max_index];   //parameter on abscissa
+    double t = DetY/Det[max_index];   //parameter on triangle side
+
+    // change sign according to side orientation
+    if(RefElement<2>::normal_orientation(side)) t=-t;
+
+//     DBGVAR(s);
+//     DBGVAR(t);
+
+    //FIXME: correct tolerance with scale; compute scale without plucker coords
+    double tol = geometry_epsilon;
+    // if IP is inside of triangle side
+    if(t >= -tol && t <= 1+tol){
+
+        IP.set_result(IntersectionResult::degenerate);  // set orientation as a pathologic case ( > 1)
+        
+        // possibly set triangle vertex {0,1,2}
+        if( fabs(t) <= tol)       { IP.set_topology_B(RefElement<2>::interact(Interaction<0,1>(side))[RefElement<2>::normal_orientation(side)],0);}
+        else if(fabs(1-t) <= tol) { IP.set_topology_B(RefElement<2>::interact(Interaction<0,1>(side))[1-RefElement<2>::normal_orientation(side)],0);}
+        else                      { IP.set_topology_B(side,1);}   // no vertex, side side, dim = 1
+        
+        arma::vec2 local_abscissa({1-s, s});
+        arma::vec3 local_triangle({0,0,0});
+
+        // set local triangle barycentric coordinates according to nodes of the triangle side:
+        local_triangle[RefElement<2>::interact(Interaction<0,1>(side))[RefElement<2>::normal_orientation(side)]] = 1 - t;
+        local_triangle[RefElement<2>::interact(Interaction<0,1>(side))[1-RefElement<2>::normal_orientation(side)]] = t;
+//      local_abscissa.print();
+//      local_triangle.print();
+        
+        IP.set_coordinates(local_abscissa,local_triangle);
+        return true; // IP found
+    }
+    
+    return false;   // IP NOT found
+}
+
+
 unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final_in_plane(
                                                     vector<IPAux12>& IP12s)
 {
-   for(unsigned int i = 0; i < 3;i++){
+    std::vector<int> sign;
+   
+    for(unsigned int i = 0; i < 3;i++){
 //                 DBGCOUT( << "side [" << i << "]\n");
+        if(IP12s.size() == 2) break;
+        
         IPAux12 IP;
         if (compute_degenerate(i,IP))
         {
-            double t = IP.local_bcoords_A()[1];
-            double tol = geometry_epsilon*scale_line_;
-            if(t >= -tol && t <= 1+tol)
-            {
-                if(IP12s.size() > 0)
-                {
-                    // if the IP has been found already
-                    if(IP12s.back().local_bcoords_A()[1] == t)
-                        continue;
-                    
-                    // sort the IPs in the direction of the abscissa
-                    if(IP12s.back().local_bcoords_A()[1] > t)
-                        std::swap(IP12s.back(),IP);
-                }
-                IP12s.push_back(IP);
-            }
+            if(IP12s.size() > 0 &&
+               IP12s.back().local_bcoords_A()[1] == IP.local_bcoords_A()[1])
+                continue;
+            
+            sign.push_back(check_abscissa_topology(IP));
+            IP12s.push_back(IP);
         }
     }
+    if(IP12s.size() == 0) return IP12s.size();
+
+    // in the case, that line goes through vertex, but outside tetrahedron (touching vertex)
+    if(IP12s.size() == 1){
+        if(std::abs(sign[0]) > 1) IP12s.pop_back(); // outside abscissa
+        return IP12s.size();
+    }
+    
+    // 2 IPs CASE:
+    ASSERT_EQ_DBG(2, IP12s.size());
+    
+//     DBGVAR(sign[0]);
+//     DebugOut() << IP12s[0];
+//     DBGVAR(sign[1]);
+//     DebugOut() << IP12s[1];
+    
+    // intersection outside of abscissa => NO intersection
+    if (sign[0] == sign[1] && std::abs(sign[0]) > 1) {
+        IP12s.clear();
+        return 0;
+    }
+    
+    // order IPs according to the abscissa parameter
+    if(IP12s[0].local_bcoords_A()[1] > IP12s[1].local_bcoords_A()[1]){
+        std::swap(IP12s[0], IP12s[1]);
+        std::swap(sign[0], sign[1]);
+    }
+    
+    // possibly cut IPs to abscissa ends and interpolate tetrahedron bcoords
+    const int ip_sign[] = {-2, +2}; // states to cut
+    for( unsigned int ip=0; ip<2; ip++) {
+        // cut every IP to its end of the abscissa
+        if (sign[ip] == ip_sign[ip]) {
+            sign[ip] /=2; // -2 to -1; +2 to +1
+            correct_triangle_ip_topology(double(ip), ip, IP12s);
+            IP12s[ip].set_topology_A(ip, 0);
+        }
+    }
+
+    // if IPs are the same, then throw the second one away
+    if(IP12s[0].local_bcoords_A()[1] == IP12s[1].local_bcoords_A()[1]) {
+        IP12s.pop_back();
+    }
+    
     return IP12s.size(); 
 }
 
+void ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::correct_triangle_ip_topology(
+        double t, unsigned int ip, std::vector<IPAux12> &ips)
+{
+    arma::vec3 local_tria = RefElement<2>::line_barycentric_interpolation(
+                                ips[0].local_bcoords_B(), ips[1].local_bcoords_B(),
+                                ips[0].local_bcoords_A()[1], ips[1].local_bcoords_A()[1], t);
+    arma::vec2 local_abscissa({1 - t, t});    // abscissa local barycentric coords
+    ips[ip].set_coordinates(local_abscissa, local_tria);
+
+    // create mask for zeros in barycentric coordinates
+    // coords (*,*,*,*) -> byte bitwise xxxx
+    // only least significant one byte used from the integer
+    unsigned int zeros = 0;
+    unsigned int n_zeros = 0;
+    for(char i=0; i < 3; i++){
+        if(std::fabs(ips[ip].local_bcoords_B()[i]) < geometry_epsilon)
+        {
+            zeros = zeros | (1 << i);
+            n_zeros++;
+        }
+    }
+    
+    /**
+     * TODO:
+     * 1. Try to avoid setting topology from coords. Try to use just topology information.
+     * 2. If can not be done. Use interact method to setup a map mapping 16 possible zeros positions to appropriate topology,
+     *    remove topology_idx from RefElement.
+     */
+
+    switch(n_zeros)
+    {
+        default: ips[ip].set_topology_B(0,2);  //inside tetrahedon
+                 break;
+        case 1: ips[ip].set_topology_B(RefElement<2>::topology_idx<1>(zeros),2);
+                break;
+        case 2: ips[ip].set_topology_B(RefElement<2>::topology_idx<0>(zeros),1);
+                break;
+    }
+};
 
 
 void ComputeIntersection<Simplex<1>, Simplex<2>>::print_plucker_coordinates(std::ostream &os){
