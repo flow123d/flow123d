@@ -137,12 +137,12 @@ template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_sid
 
 
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[] = {
-   {(1 << 0) | (1 << 1),  //node 0
+   {(1 << 1) | (1 << 2),  //node 0
     (1 << 0) | (1 << 2),  //node 1
-    (1 << 1) | (1 << 2)}, //node 2
-   {(1 << 0),  //line 0
+    (1 << 0) | (1 << 1)}, //node 2
+   {(1 << 2),  //line 0
     (1 << 1),  //line 1
-    (1 << 2)}  //line 2
+    (1 << 0)}  //line 2
 };
 
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {

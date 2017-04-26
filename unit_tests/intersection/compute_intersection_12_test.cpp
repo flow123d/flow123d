@@ -48,6 +48,10 @@ void fill_solution(std::vector< TestCaseResult> &c)
                            IntersectionPoint<1,2>({1}, {0.5, 0.3})}});
     c.push_back({ "14_d", {IntersectionPoint<1,2>({0}, {0.2, 0.1}),
                            IntersectionPoint<1,2>({1}, {0.4, 0.2})}});
+    c.push_back({ "15_d", {IntersectionPoint<1,2>({0}, {0, 0}),
+                           IntersectionPoint<1,2>({2./3}, {0.8, 0.2})}});
+    c.push_back({ "16_d", {IntersectionPoint<1,2>({0}, {0, 0}),
+                           IntersectionPoint<1,2>({2./3}, {0.8, 0.2})}});
     
     // in 3D ambient space
     // special cases
@@ -100,7 +104,7 @@ void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerat
     IntersectionLocal<1,2> ilc(is);
     
     auto ipc = ilc.points();
-    DebugOut() << ilc;
+//     DebugOut() << ilc;
     
 //     for(IntersectionPoint<1,2> &ip: ipc)
 //     {

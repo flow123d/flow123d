@@ -420,17 +420,17 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final_
     std::vector<int> sign;
    
     for(unsigned int i = 0; i < 3;i++){
-//                 DBGCOUT( << "side [" << i << "]\n");
+//         DBGCOUT( << "side [" << i << "]\n");
         if(IP12s.size() == 2) break;
         
         IPAux12 IP;
         if (compute_degenerate(i,IP))
         {
-            if(IP12s.size() > 0 &&
-               IP12s.back().local_bcoords_A()[1] == IP.local_bcoords_A()[1])
-                continue;
+            uint s = check_abscissa_topology(IP);
+            // check whether we have found the same IP (e.g. vertex case)
+            if(IP12s.size() > 0 && IP.topology_equal(IP12s.back())) continue;
             
-            sign.push_back(check_abscissa_topology(IP));
+            sign.push_back(s);
             IP12s.push_back(IP);
         }
     }
@@ -474,7 +474,7 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final_
     }
 
     // if IPs are the same, then throw the second one away
-    if(IP12s[0].local_bcoords_A()[1] == IP12s[1].local_bcoords_A()[1]) {
+    if(IP12s[0].topology_equal(IP12s[1])){
         IP12s.pop_back();
     }
     
@@ -490,6 +490,7 @@ void ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::correct_triangle_ip_to
     arma::vec2 local_abscissa({1 - t, t});    // abscissa local barycentric coords
     ips[ip].set_coordinates(local_abscissa, local_tria);
 
+    
     // create mask for zeros in barycentric coordinates
     // coords (*,*,*,*) -> byte bitwise xxxx
     // only least significant one byte used from the integer
@@ -514,9 +515,9 @@ void ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::correct_triangle_ip_to
     {
         default: ips[ip].set_topology_B(0,2);  //inside tetrahedon
                  break;
-        case 1: ips[ip].set_topology_B(RefElement<2>::topology_idx<1>(zeros),2);
+        case 1: ips[ip].set_topology_B(RefElement<2>::topology_idx<1>(zeros),1);
                 break;
-        case 2: ips[ip].set_topology_B(RefElement<2>::topology_idx<0>(zeros),1);
+        case 2: ips[ip].set_topology_B(RefElement<2>::topology_idx<0>(zeros),0);
                 break;
     }
 };
@@ -919,10 +920,10 @@ unsigned int ComputeIntersection<Simplex<1>, Simplex<3>>::compute(std::vector<IP
     }
 
     // if IPs are the same, then throw the second one away
-    if(IP13s[0].local_bcoords_A()[1] == IP13s[1].local_bcoords_A()[1]) {
+    if(IP13s[0].topology_equal(IP13s[1])){
         IP13s.pop_back();
     }
-
+    
     return IP13s.size();
 };
 
