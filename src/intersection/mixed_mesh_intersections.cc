@@ -413,11 +413,10 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         END_TIMER("Intersections 2D-2D");
     }
 
-    if( mesh_in_2d_only &&
-        (d & IntersectionType::d12_1)){
+    if( mesh_in_2d_only){
         START_TIMER("Intersections 1D-2D (1)");
-        DebugOut() << "Intersection Algorithm d12_1\n";
-        compute_intersections_12_1(intersection_storage12_);
+        if(d & IntersectionType::d12_1) compute_intersections_12_1(intersection_storage12_);
+        else if(d & IntersectionType::d12_ngh) compute_intersections_12_ngh_plane(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (1)");
     }
     // make sence only if some intersections in 3D are computed
@@ -438,14 +437,6 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
         compute_intersections_12_2(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (2)");
     }
-
-//     if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
-//         intersection_storage12_.clear();
-// //         DebugOut() << "Intersection Algorithm d12_ngh\n";
-//         compute_intersections_12_ngh_plane(intersection_storage12_);
-//     }
-
-
 
     //ASSERT_EQ(intersection_storage13_.size(), 0);
     //ASSERT_EQ(intersection_storage23_.size(), 0);
