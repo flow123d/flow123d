@@ -363,7 +363,9 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
     }
 //     DBGVAR(maximum);
     //abscissa is parallel to triangle side
-    if(std::abs(maximum) <= std::sqrt(geometry_epsilon)) return false;
+    //TODO What tolerance should we use here and why?
+//     if(std::abs(maximum) <= std::sqrt(geometry_epsilon)) return false;
+    if(std::abs(maximum) <= geometry_epsilon) return false;
 
     // map maximum index in {-UxV} to i,j of subdeterminants
     //              i j
@@ -385,7 +387,7 @@ bool ComputeIntersection<Simplex<1>,Simplex<2>>::compute_degenerate(unsigned int
 //     DBGVAR(s);
 //     DBGVAR(t);
 
-    //FIXME: correct tolerance with scale; compute scale without plucker coords
+    //TODO correct tolerance with scale; compute scale without plucker coords
     double tol = geometry_epsilon;
     // if IP is inside of triangle side
     if(t >= -tol && t <= 1+tol){
@@ -427,6 +429,7 @@ unsigned int ComputeIntersection< Simplex< 1  >, Simplex< 2  > >::compute_final_
         if (compute_degenerate(i,IP))
         {
             uint s = check_abscissa_topology(IP);
+//             cout << IP;
             // check whether we have found the same IP (e.g. vertex case)
             if(IP12s.size() > 0 && IP.topology_equal(IP12s.back())) continue;
             
