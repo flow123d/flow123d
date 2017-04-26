@@ -81,11 +81,6 @@ VtkMeshReader::~VtkMeshReader()
 
 
 
-void VtkMeshReader::read_mesh(Mesh* mesh)
-{}
-
-
-
 void VtkMeshReader::read_base_vtk_attributes()
 {
 	pugi::xml_node node = doc_.child("VTKFile");
@@ -202,49 +197,6 @@ unsigned int VtkMeshReader::type_value_size(VtkMeshReader::DataType data_type)
 	static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, 0 };
 
 	return sizes[data_type];
-}
-
-
-
-void VtkMeshReader::read_nodes(Mesh* mesh)
-{
-	std::vector<double> nodes_data;
-	auto data_attr = this->get_data_array_attr(DataSections::points);
-	switch (data_format_) {
-		case DataFormat::ascii: {
-			nodes_data = parse_ascii_data<double>( this->n_nodes_*data_attr.n_components_ , data_attr.tag_value_ );
-			break;
-		}
-		case DataFormat::binary_uncompressed: {
-			ASSERT_PTR(appended_stream_).error();
-			nodes_data = parse_binary_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
-			break;
-		}
-		case DataFormat::binary_zlib: {
-			ASSERT_PTR(appended_stream_).error();
-			nodes_data = parse_compressed_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
-			break;
-		}
-		default: {
-			ASSERT(false).error(); // should not happen
-			break;
-		}
-	}
-
-	mesh->node_vector.reserve(this->n_nodes_);
-	for (unsigned int i=0, ivec=0; i<this->n_nodes_; ++i) {
-        NodeFullIter node = mesh->node_vector.add_item(i);
-        node->point()(0)=nodes_data[ivec]; ++ivec;
-        node->point()(1)=nodes_data[ivec]; ++ivec;
-        node->point()(2)=nodes_data[ivec]; ++ivec;
-	}
-}
-
-
-
-void VtkMeshReader::read_elements(Mesh* mesh)
-{
-	// read mesh elements
 }
 
 

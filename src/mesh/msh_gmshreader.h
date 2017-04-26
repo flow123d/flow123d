@@ -127,7 +127,7 @@ public:
      *
      *  Implements @p BaseMeshReader::read_mesh.
      */
-    void read_mesh(Mesh* mesh) override;
+    void read_mesh(Mesh* mesh);
 
     /**
      * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
@@ -160,12 +160,12 @@ protected:
     /**
      * private method for reading of nodes
      */
-    void read_nodes(Mesh*) override;
+    void read_nodes(Mesh*);
     /**
      *  Method for reading of elements.
      *  Input of the mesh allows changing regions within the input CON file.
      */
-    void read_elements(Mesh*) override;
+    void read_elements(Mesh*);
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */

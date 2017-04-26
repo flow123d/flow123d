@@ -41,11 +41,6 @@ public:
 	BaseMeshReader() {}
 
     /**
-     * Reads @p mesh from input file.
-     */
-    virtual void read_mesh(Mesh* mesh) =0;
-
-    /**
 	 * Reads element data of opened mesh file specified by parameters.
 	 *
      * @param field_name field name
@@ -63,12 +58,6 @@ public:
     { ASSERT(false).error("Method get_element_data must be implement in descendant."); }
 
 protected:
-    /// private method for reading of nodes
-    virtual void read_nodes(Mesh*) =0;
-
-    /// Method for reading of elements.
-    virtual void read_elements(Mesh*) =0;
-
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;
 

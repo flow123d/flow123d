@@ -62,13 +62,6 @@ public:
 	~VtkMeshReader();
 
     /**
-     *  Reads @p mesh from the VTK file.
-     *
-     *  Implements @p BaseMeshReader::read_mesh.
-     */
-    void read_mesh(Mesh* mesh) override;
-
-    /**
 	 * Get XML node in UnstructuredGrid part of VTK file.
 	 * @param data_section    Section where node is located.
 	 * @param data_array_name Attribute "Name" of DataArray tag (not used for Point section)
@@ -121,16 +114,6 @@ protected:
 
 	/// Set @p appended_stream_ for reading AppendedData and find its position in input file
 	void set_appended_stream(const FilePath &file_name);
-
-    /**
-     * private method for reading of nodes
-     */
-    void read_nodes(Mesh*) override;
-
-    /**
-     *  Method for reading of elements.
-     */
-    void read_elements(Mesh*) override;
 
 	pugi::xml_document doc_;
     pugi::xml_parse_result parse_result_;

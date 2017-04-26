@@ -41,6 +41,40 @@ protected:
 		std::stringstream ss; ss << this->parse_result_.description();
 		return ss.str();
 	}
+
+	void read_nodes(Mesh* mesh)
+	{
+		std::vector<double> nodes_data;
+		auto data_attr = this->get_data_array_attr(DataSections::points);
+		switch (data_format_) {
+			case DataFormat::ascii: {
+				nodes_data = parse_ascii_data<double>( this->n_nodes_*data_attr.n_components_ , data_attr.tag_value_ );
+				break;
+			}
+			case DataFormat::binary_uncompressed: {
+				ASSERT_PTR(appended_stream_).error();
+				nodes_data = parse_binary_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
+				break;
+			}
+			case DataFormat::binary_zlib: {
+				ASSERT_PTR(appended_stream_).error();
+				nodes_data = parse_compressed_data<double>( appended_pos_+data_attr.offset_, data_attr.type_);
+				break;
+			}
+			default: {
+				ASSERT(false).error(); // should not happen
+				break;
+			}
+		}
+
+		mesh->node_vector.reserve(this->n_nodes_);
+		for (unsigned int i=0, ivec=0; i<this->n_nodes_; ++i) {
+	        NodeFullIter node = mesh->node_vector.add_item(i);
+	        node->point()(0)=nodes_data[ivec]; ++ivec;
+	        node->point()(1)=nodes_data[ivec]; ++ivec;
+	        node->point()(2)=nodes_data[ivec]; ++ivec;
+		}
+	}
 };
 
 
