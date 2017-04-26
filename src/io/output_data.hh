@@ -10,6 +10,7 @@
 
 #include "io/output_data_base.hh"
 #include "system/asserts.hh"
+#include "mesh/element_data_cache.hh"
 #include <type_traits>
 
 
@@ -21,7 +22,7 @@ class FieldCommon;
  *
  */
 template <class Value>
-class OutputData : public OutputDataBase {
+class OutputData : public OutputDataBase, public ElementDataCache<typename Value::element_type> {
 public:
     typedef typename Value::element_type ElemType;
 
@@ -94,24 +95,18 @@ private:
     template <class Func>
     void operate(unsigned int idx, const Value &val, const Func& func) {
         ASSERT_LT_DBG(idx, this->n_values);
-        ElemType *ptr = this->data_ + idx*this->n_elem_;
+        std::vector<ElemType> &vec = *( this->data_[0].get() );
+        unsigned int vec_idx = idx*this->n_elem_;
         for(unsigned int i_row = 0; i_row < this->n_rows; i_row++) {
             for(unsigned int i_col = 0; i_col < this->n_cols; i_col++) {
                 if (i_row < val.n_rows() && i_col < val.n_cols())
-                    func(*ptr, val(i_row, i_col));
+                    func(vec[vec_idx], val(i_row, i_col));
                 else
-                    func(*ptr, 0);
-                ptr++;
+                    func(vec[vec_idx], 0);
+                vec_idx++;
             }
         }
     };
-
-
-    /**
-     * Computed data values for output stored as continuous buffer of their data elements.
-     * One data value has @p n_elem data elements (of type double, int or unsigned int).
-     */
-    ElemType *data_;
 
 
     /**
