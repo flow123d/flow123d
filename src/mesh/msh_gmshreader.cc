@@ -328,12 +328,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    }
 
 	    // create vector of shared_ptr for cache
-	    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
-	    for (unsigned int i=0; i<size_of_cache; ++i) {
-			typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
-			row_vec->resize(n_components*n_entities);
-			data_cache[i] = row_vec;
-	    }
+	    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
 
 	    // read @p data buffer as we have correct header with already passed time
 	    // we assume that @p data buffer is big enough

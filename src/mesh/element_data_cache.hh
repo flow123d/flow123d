@@ -71,7 +71,21 @@ public:
 		return data_[component_idx];
 	}
 
+	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size) {
+	    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
+	    for (unsigned int i=0; i<size_of_cache; ++i) {
+			typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
+			row_vec->resize(row_vec_size);
+			data_cache[i] = row_vec;
+	    }
+
+	    return data_cache;
+	}
+
 protected:
+	/// Empty constructor accessible only for descendants.
+	ElementDataCache()
+	{}
 	/**
 	 * Table of element data.
 	 *
