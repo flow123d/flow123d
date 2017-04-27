@@ -94,7 +94,7 @@ class ModuleJob(Job):
     @classmethod
     def update_command(cls):
         cls.username = cls.username or getpass.getuser()
-        return ['qstat', '-u', cls.username]
+        return ['qstat', '-xu', cls.username]
 
     @classmethod
     def create(cls, command_output, case):
