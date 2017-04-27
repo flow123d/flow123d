@@ -97,17 +97,20 @@ protected:
 	/// Return size of value of data_type.
 	unsigned int type_value_size(DataType data_type);
 
-	/// Parse ascii data to vector and return its.
+	/// Parse ascii data to data cache and return its.
 	template<typename T>
-	std::vector<T> parse_ascii_data(unsigned int data_size, std::string data_str);
+	typename ElementDataCache<T>::CacheData parse_ascii_data(unsigned int size_of_cache, unsigned int n_components,
+			unsigned int n_entities, std::string data_str);
 
-	/// Parse binary data to vector and return its.
+	/// Parse binary data to data cache and return its.
 	template<typename T>
-	std::vector<T> parse_binary_data(unsigned int data_pos, VtkMeshReader::DataType value_type);
+	typename ElementDataCache<T>::CacheData parse_binary_data(unsigned int size_of_cache, unsigned int n_components,
+			unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type);
 
-	/// Uncompress and parse binary compressed data to vector and return its.
+	/// Uncompress and parse binary compressed data to data cache and return its.
 	template<typename T>
-	std::vector<T> parse_compressed_data(unsigned int data_pos, VtkMeshReader::DataType value_type);
+	typename ElementDataCache<T>::CacheData parse_compressed_data(unsigned int size_of_cache, unsigned int n_components,
+			unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type);
 
 	/// Set count of nodes and elements.
 	void read_base_vtk_attributes();
@@ -129,6 +132,9 @@ protected:
 
     /// variants of data format (ascii, appended, compressed appended)
     DataFormat data_format_;
+
+    /// File name (for better error messages)
+    std::string f_name_;
 
     /// input stream allow read appended data, used only if this tag exists
     std::istream *appended_stream_;
