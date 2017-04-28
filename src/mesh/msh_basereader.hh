@@ -58,6 +58,11 @@ public:
     { ASSERT(false).error("Method get_element_data must be implement in descendant."); }
 
 protected:
+    /**
+     * Reads table of data headers specific for each descendants.
+     */
+    virtual void make_header_table()=0;
+
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;
 

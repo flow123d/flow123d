@@ -30,6 +30,7 @@ protected:
 	    FilePath vtu_file(file_name, FilePath::input_file);
 	    parse_result_ = doc_.load_file( ((std::string)vtu_file).c_str() );
 	    this->read_base_vtk_attributes();
+	    this->make_header_table();
 		// data of appended tag
 		if (this->header_type_==DataType::undefined) { // no AppendedData tag
 			appended_pos_ = 0;
@@ -46,21 +47,21 @@ protected:
 	void read_nodes(Mesh* mesh)
 	{
 		typename ElementDataCache<double>::CacheData nodes_cache;
-		auto data_attr = this->get_data_array_attr(DataSections::points);
+		auto data_attr = this->find_header(0.0, "Points");
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				nodes_cache = parse_ascii_data<double>( 1, data_attr.n_components_, this->n_nodes_, data_attr.tag_value_ );
+				nodes_cache = parse_ascii_data<double>( 1, data_attr.n_components, this->n_nodes_, data_attr.tag_value_ );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(appended_stream_).error();
-				nodes_cache = parse_binary_data<double>( 1, data_attr.n_components_, this->n_nodes_, appended_pos_+data_attr.offset_,
+				nodes_cache = parse_binary_data<double>( 1, data_attr.n_components, this->n_nodes_, appended_pos_+data_attr.offset_,
 						data_attr.type_ );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(appended_stream_).error();
-				nodes_cache = parse_compressed_data<double>( 1, data_attr.n_components_, this->n_nodes_, appended_pos_+data_attr.offset_,
+				nodes_cache = parse_compressed_data<double>( 1, data_attr.n_components, this->n_nodes_, appended_pos_+data_attr.offset_,
 						data_attr.type_);
 				break;
 			}
@@ -124,10 +125,10 @@ TEST_F(VtkMeshReaderTest, read_ascii_vtu) {
 
     {
     	// test of connectivity data array
-    	auto data_attr = this->get_data_array_attr(DataSections::cells, "connectivity");
+    	auto data_attr = this->find_header(0.0, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type_ );
     	EXPECT_EQ( DataFormat::ascii, data_format_ );
-    	EXPECT_EQ( 1, data_attr.n_components_ );
+    	EXPECT_EQ( 1, data_attr.n_components );
     }
 }
 
@@ -151,10 +152,10 @@ TEST_F(VtkMeshReaderTest, read_binary_vtu) {
 
     {
     	// test of connectivity data array
-    	auto data_attr = this->get_data_array_attr(DataSections::cells, "connectivity");
+    	auto data_attr = this->find_header(0.0, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type_ );
     	EXPECT_EQ( DataFormat::binary_uncompressed, data_format_ );
-    	EXPECT_EQ( 1, data_attr.n_components_ );
+    	EXPECT_EQ( 1, data_attr.n_components );
     }
 
     std::vector<int> el_ids;
@@ -208,9 +209,9 @@ TEST_F(VtkMeshReaderTest, read_compressed_vtu) {
 
     {
     	// test of connectivity data array
-    	auto data_attr = this->get_data_array_attr(DataSections::cells, "connectivity");
+    	auto data_attr = this->find_header(0.0, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type_ );
     	EXPECT_EQ( DataFormat::binary_zlib, data_format_ );
-    	EXPECT_EQ( 1, data_attr.n_components_ );
+    	EXPECT_EQ( 1, data_attr.n_components );
     }
 }

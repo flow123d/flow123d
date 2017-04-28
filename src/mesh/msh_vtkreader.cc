@@ -65,6 +65,7 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 	current_cache_ = new ElementDataCacheBase();
 	parse_result_ = doc_.load_file( ((std::string)file_name).c_str() );
 	read_base_vtk_attributes();
+	make_header_table();
 	// data of appended tag
 	if (header_type_==DataType::undefined) { // no AppendedData tag
 		appended_pos_ = 0;
@@ -133,35 +134,59 @@ void VtkMeshReader::set_appended_stream(const FilePath &file_name) {
 }
 
 
-
-VtkMeshReader::DataArrayAttributes VtkMeshReader::get_data_array_attr(DataSections data_section, std::string data_array_name)
+VtkMeshReader::DataArrayAttributes VtkMeshReader::create_header(pugi::xml_node node)
 {
-    static std::vector<std::string> section_names = {"Points", "Cells", "CellData"};
-
-    pugi::xml_node node = doc_.child("VTKFile").child("UnstructuredGrid").child("Piece");
-    if (data_section == DataSections::points) {
-    	node = node.child("Points").child("DataArray");
-    } else {
-    	ASSERT(data_array_name!="").error("Empty Name attribute of DataArray!\n");
-    	node = node.child( section_names[data_section].c_str() ).find_child_by_attribute("DataArray", "Name", data_array_name.c_str());
-    }
-
     DataArrayAttributes attributes;
-    attributes.name_ = node.attribute("name").as_string();
+    attributes.field_name = node.attribute("Name").as_string();
     attributes.type_ = this->get_data_type( node.attribute("type").as_string() );
-    attributes.n_components_ = node.attribute("NumberOfComponents").as_uint(1);
+    attributes.n_components = node.attribute("NumberOfComponents").as_uint(1);
     std::string format = node.attribute("format").as_string();
     if (format=="appended") {
-        ASSERT(data_format_ != DataFormat::ascii)(data_array_name).error("Invalid format of DataArray!");
+        ASSERT(data_format_ != DataFormat::ascii)(attributes.field_name).error("Invalid format of DataArray!");
         attributes.offset_ = node.attribute("offset").as_uint();
     } else if (format=="ascii") {
-    	ASSERT(data_format_ == DataFormat::ascii)(data_array_name).error("Invalid format of DataArray!");
+    	ASSERT(data_format_ == DataFormat::ascii)(attributes.field_name).error("Invalid format of DataArray!");
         attributes.tag_value_ = node.child_value();
         boost::algorithm::trim(attributes.tag_value_);
     } else {
         ASSERT(false).error("Unsupported or missing VTK format.");
     }
+
     return attributes;
+}
+
+
+void VtkMeshReader::make_header_table()
+{
+	pugi::xml_node node = doc_.child("VTKFile").child("UnstructuredGrid").child("Piece");
+
+	header_table_.clear();
+
+	// create headers of Points and Cells DataArrays
+	header_table_["Points"] = create_header( node.child("Points").child("DataArray") );
+	header_table_["connectivity"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity") );
+	header_table_["offsets"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets") );
+	header_table_["types"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types") );
+
+	node = node.child("CellData");
+	for (pugi::xml_node subnode = node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+		auto header = create_header( subnode );
+		header_table_[header.field_name] = header;
+	}
+
+}
+
+
+VtkMeshReader::DataArrayAttributes VtkMeshReader::find_header(double time, std::string field_name)
+{
+	HeaderTable::iterator table_it = header_table_.find(field_name);
+
+	if (table_it == header_table_.end()) {
+		// no data found
+        THROW( GmshMeshReader::ExcFieldNameNotFound() << GmshMeshReader::EI_FieldName(field_name) << GmshMeshReader::EI_GMSHFile(f_name_));
+	}
+
+	return table_it->second;
 }
 
 
@@ -207,7 +232,7 @@ template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( std::string field_name, double time,
 		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
 {
-	DataArrayAttributes data_attr = this->get_data_array_attr(DataSections::cell_data, field_name);
+	DataArrayAttributes data_attr = this->find_header(time, field_name);
 	if ( !current_cache_->is_actual(time, field_name) ) {
     	unsigned int size_of_cache; // count of vectors stored in cache
 
@@ -221,15 +246,15 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 	    if (n_components == 1) {
 	    	// read for MultiField to 'n_comp' vectors
 	    	// or for Field if ElementData contains only one value
-	    	size_of_cache = data_attr.n_components_;
+	    	size_of_cache = data_attr.n_components;
 	    }
 	    else {
 	    	// read for Field if more values is stored to one vector
 	    	size_of_cache = 1;
-	    	if (data_attr.n_components_ != n_components) {
+	    	if (data_attr.n_components != n_components) {
 	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}'.\nWrong number of components: {}, using {} instead.\n",
-	    				f_name_, field_name, data_attr.n_components_, n_components);
-	    		data_attr.n_components_=n_components;
+	    				f_name_, field_name, data_attr.n_components, n_components);
+	    		data_attr.n_components=n_components;
 	    	}
 	    }
 

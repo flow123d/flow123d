@@ -173,7 +173,7 @@ protected:
     /**
      * Reads table of ElementData headers from the tokenizer file.
      */
-    void make_header_table();
+    void make_header_table() override;
     /**
      * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
      */

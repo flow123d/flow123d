@@ -45,12 +45,19 @@ public:
 
 	/// Attributes of DataArray section
 	struct DataArrayAttributes {
-		std::string name_;          ///< Name of DataArray
+		std::string field_name;     ///< Name of DataArray
 		DataType type_;             ///< Type of data
-		unsigned int n_components_; ///< NumberOfComponents (default value is 1)
+		unsigned int n_components;  ///< NumberOfComponents (default value is 1)
 		unsigned int offset_;       ///< Offset of data (only for appended format)
 		std::string tag_value_;     ///< String value of tag (only for ascii format)
 	};
+
+	/**
+	 * Map of DataArray sections in VTK file.
+	 *
+	 * For each field_name contains DataArrayAttributes.
+	 */
+	typedef typename std::map< std::string, DataArrayAttributes > HeaderTable;
 
 	/**
      * Construct the VTK format reader from given filename.
@@ -66,7 +73,7 @@ public:
 	 * @param data_section    Section where node is located.
 	 * @param data_array_name Attribute "Name" of DataArray tag (not used for Point section)
 	 */
-	DataArrayAttributes get_data_array_attr(DataSections data_section, std::string data_array_name = "");
+	DataArrayAttributes find_header(double time, std::string field_name);
 
 	/// Return count of nodes
 	inline unsigned int n_nodes() const {
@@ -91,7 +98,13 @@ protected:
 	/// Empty constructor only for tests.
 	VtkMeshReader() {}
 
-	/// Get DataType by value of string
+    /// Reads table of DataArray headers through pugixml interface
+    void make_header_table() override;
+
+    /// Helper method that create DataArray header of given xml node (used from \p make_header_table)
+    DataArrayAttributes create_header(pugi::xml_node node);
+
+    /// Get DataType by value of string
 	DataType get_data_type(std::string type_str);
 
 	/// Return size of value of data_type.
@@ -132,6 +145,9 @@ protected:
 
     /// variants of data format (ascii, appended, compressed appended)
     DataFormat data_format_;
+
+    /// Table with data of DataArray headers
+    HeaderTable header_table_;
 
     /// File name (for better error messages)
     std::string f_name_;
