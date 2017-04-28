@@ -21,7 +21,7 @@ class JobState(object):
     Class JobState is enum for job states
     """
 
-    COMPLETED = 'C'
+    COMPLETED = 'F'
     EXITING = 'E'
     HELD = 'H'
     QUEUED = 'Q'
