@@ -21,6 +21,7 @@ class VtkMeshReaderTest : public testing::Test, public VtkMeshReader {
 protected:
 	virtual void SetUp() {
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+	    this->current_cache_ = new ElementDataCacheBase();
 	}
 
 	virtual void TearDown() {}
@@ -155,6 +156,36 @@ TEST_F(VtkMeshReaderTest, read_binary_vtu) {
     	EXPECT_EQ( DataFormat::binary_uncompressed, data_format_ );
     	EXPECT_EQ( 1, data_attr.n_components_ );
     }
+
+    std::vector<int> el_ids;
+    unsigned int i, j;
+    for (i=0; i<6; ++i) el_ids.push_back(i);
+
+
+    // read data by components for MultiField
+    bool actual_data = false;
+    for (i=0; i<3; ++i) {
+        typename ElementDataCache<double>::ComponentDataPtr multifield_data =
+        		this->get_element_data<double>("vector_field", 0.0, 6, 1, actual_data, el_ids, i);
+    	std::vector<double> &vec = *( multifield_data.get() );
+    	EXPECT_EQ(6, vec.size());
+    	for (j=0; j<vec.size(); j++) {
+    		EXPECT_DOUBLE_EQ( 0.5*(i+1), vec[j] );
+    	}
+    }
+
+    // read data to one vector for Field
+    actual_data=false;
+    {
+    	typename ElementDataCache<double>::ComponentDataPtr field_data =
+        		this->get_element_data<double>("vector_field", 1.0, 6, 3, actual_data, el_ids, 0);
+    	std::vector<double> &vec = *( field_data.get() );
+    	EXPECT_EQ(18, vec.size());
+    	for (j=0; j<vec.size(); j++) {
+    		EXPECT_DOUBLE_EQ( 0.5*(j%3+1), vec[j] );
+    	}
+    }
+
 }
 
 

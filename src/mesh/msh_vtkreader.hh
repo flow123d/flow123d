@@ -142,6 +142,9 @@ protected:
     /// position of appended data in file, used only if this tag exists
     unsigned int appended_pos_;
 
+    /// store count of read entities
+    unsigned int n_read_;
+
 };
 
 #endif	/* MSH_VTK_READER_HH */
