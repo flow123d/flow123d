@@ -69,9 +69,9 @@ public:
 	~VtkMeshReader();
 
     /**
-	 * Get XML node in UnstructuredGrid part of VTK file.
-	 * @param data_section    Section where node is located.
-	 * @param data_array_name Attribute "Name" of DataArray tag (not used for Point section)
+	 * Find header of DataArray section of VTK file given by field_name.
+	 *
+	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
 	 */
 	DataArrayAttributes find_header(double time, std::string field_name);
 
