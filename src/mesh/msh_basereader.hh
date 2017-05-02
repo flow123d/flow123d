@@ -22,10 +22,12 @@
 
 #include <string>
 #include <vector>
+#include <istream>
 
 #include "mesh/element_data_cache.hh"
 #include "mesh/mesh.h"
 #include "system/system.hh"
+#include "system/tokenizer.hh"
 
 
 /**
@@ -38,7 +40,14 @@
 class BaseMeshReader {
 public:
 	/// Constructor
-	BaseMeshReader() {}
+	BaseMeshReader(const FilePath &file_name)
+	: tok_(file_name) {
+		current_cache_ = new ElementDataCacheBase();
+	}
+
+	/// Constructor
+	BaseMeshReader(std::istream &in)
+	: tok_(in) {}
 
     /**
 	 * Reads element data of opened mesh file specified by parameters.
@@ -66,6 +75,8 @@ protected:
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;
 
+    /// Tokenizer used for reading ASCII file format.
+    Tokenizer tok_;
 };
 
 #endif	/* MSH_BASE_READER_HH */

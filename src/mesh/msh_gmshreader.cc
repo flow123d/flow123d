@@ -36,9 +36,8 @@ using namespace std;
 
 
 GmshMeshReader::GmshMeshReader(const FilePath &file_name)
-: BaseMeshReader(), tok_(file_name)
+: BaseMeshReader(file_name)
 {
-	current_cache_ = new ElementDataCacheBase();
     tok_.set_comment_pattern( "#");
     make_header_table();
 }
@@ -46,9 +45,8 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 
 
 GmshMeshReader::GmshMeshReader(std::istream &in)
-: BaseMeshReader(), tok_(in)
+: BaseMeshReader(in)
 {
-	current_cache_ = new ElementDataCacheBase();
     tok_.set_comment_pattern( "#");
     make_header_table();
 }

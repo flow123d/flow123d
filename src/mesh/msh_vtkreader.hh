@@ -94,9 +94,6 @@ public:
     		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
 protected:
-	/// Empty constructor only for tests.
-	VtkMeshReader() {}
-
     /// Reads table of DataArray headers through pugixml interface
     void make_header_table() override;
 

@@ -20,12 +20,10 @@
 #define	_GMSHMESHREADER_H
 
 #include <string>
-#include <istream>
 #include <vector>
 #include <map>
 
 
-#include "system/tokenizer.hh"
 #include "mesh/region.hh"
 #include "mesh/element_data_cache.hh"
 #include "mesh/msh_basereader.hh"
@@ -180,8 +178,6 @@ protected:
     GMSH_DataHeader & find_header(double time, std::string field_name);
 
 
-    /// Tokenizer used for reading ASCII GMSH file format.
-    Tokenizer tok_;
     /// Table with data of ElementData headers
     HeaderTable header_table_;
 };

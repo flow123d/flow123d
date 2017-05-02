@@ -23,7 +23,6 @@
 
 #include "msh_vtkreader.hh"
 #include "msh_gmshreader.h" // TODO move exception to base class and remove
-#include "system/tokenizer.hh"
 #include "system/system.hh"
 
 #include "config.h"
@@ -59,9 +58,8 @@ uint64_t read_header_type(VtkMeshReader::DataType data_header_type, std::istream
  * implementation of VtkMeshReader
  */
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
-: BaseMeshReader()
+: BaseMeshReader(file_name)
 {
-	current_cache_ = new ElementDataCacheBase();
 	f_name_ = (std::string)file_name;
 	make_header_table();
 }
@@ -102,11 +100,11 @@ unsigned int VtkMeshReader::get_appended_position() {
 
 	{
 		// find line by tokenizer
-		Tokenizer tok( FilePath(f_name_, FilePath::input_file) );
-		if (! tok.skip_to("AppendedData"))
+		tok_.set_position( Tokenizer::Position() );
+		if (! tok_.skip_to("AppendedData"))
 			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section("AppendedData") << GmshMeshReader::EI_GMSHFile(f_name_) );
 		else {
-			appended_pos = tok.get_position().file_position_;
+			appended_pos = tok_.get_position().file_position_;
 		}
 	}
 
@@ -139,14 +137,14 @@ VtkMeshReader::DataArrayAttributes VtkMeshReader::create_header(pugi::xml_node n
     } else if (format=="ascii") {
     	ASSERT(data_format_ == DataFormat::ascii)(attributes.field_name).error("Invalid format of DataArray!");
 
-    	Tokenizer tok( FilePath(f_name_, FilePath::input_file) );
+    	tok_.set_position( Tokenizer::Position() );
     	bool is_point = (attributes.field_name=="");
     	std::string found_str = (is_point) ? "<Points>" : "Name=\"" + attributes.field_name + "\"";
-		if (! tok.skip_to(found_str))
+		if (! tok_.skip_to(found_str))
 			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section(attributes.field_name) << GmshMeshReader::EI_GMSHFile(f_name_) );
 		else {
-			if (is_point) tok.skip_to("DataArray");
-			attributes.offset_ = tok.get_position().file_position_;
+			if (is_point) tok_.skip_to("DataArray");
+			attributes.offset_ = tok_.get_position().file_position_;
 		}
     } else {
         ASSERT(false).error("Unsupported or missing VTK format.");
@@ -321,16 +319,15 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_ascii_data(unsigned
 
     typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
 
-	Tokenizer tok( FilePath(f_name_, FilePath::input_file ) );
-	tok.set_position( Tokenizer::Position(data_pos, 0, 0) );
-	tok.next_line();
+	tok_.set_position( Tokenizer::Position(data_pos, 0, 0) );
+	tok_.next_line();
 	for (i_row = 0; i_row < n_entities; ++i_row) {
     	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
     		idx = i_row * n_components;
     		std::vector<T> &vec = *( data_cache[i_vec].get() );
     		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-    			vec[idx] = boost::lexical_cast<T>(*tok);
-    			++tok;
+    			vec[idx] = boost::lexical_cast<T>(*tok_);
+    			++tok_;
     		}
     	}
         n_read_++;
