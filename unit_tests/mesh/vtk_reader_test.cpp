@@ -28,15 +28,10 @@ protected:
 
 	void read_input_file(const std::string &file_name) {
 	    FilePath vtu_file(file_name, FilePath::input_file);
-	    parse_result_ = doc_.load_file( ((std::string)vtu_file).c_str() );
+	    f_name_ = (std::string)vtu_file;
+	    parse_result_ = doc_.load_file( f_name_.c_str() );
 	    this->read_base_vtk_attributes();
 	    this->make_header_table();
-		// data of appended tag
-		if (this->header_type_==DataType::undefined) { // no AppendedData tag
-			appended_pos_ = 0;
-		} else {
-			this->set_appended_stream(vtu_file);
-		}
 	}
 
 	std::string get_parse_result() {
@@ -50,18 +45,18 @@ protected:
 		auto data_attr = this->find_header(0.0, "Points");
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				nodes_cache = parse_ascii_data<double>( 1, data_attr.n_components, this->n_nodes_, data_attr.tag_value_ );
+				nodes_cache = parse_ascii_data<double>( 1, data_attr.n_components, this->n_nodes_, data_attr.offset_ );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
-				ASSERT_PTR(appended_stream_).error();
-				nodes_cache = parse_binary_data<double>( 1, data_attr.n_components, this->n_nodes_, appended_pos_+data_attr.offset_,
+				ASSERT_PTR(data_stream_).error();
+				nodes_cache = parse_binary_data<double>( 1, data_attr.n_components, this->n_nodes_, data_attr.offset_,
 						data_attr.type_ );
 				break;
 			}
 			case DataFormat::binary_zlib: {
-				ASSERT_PTR(appended_stream_).error();
-				nodes_cache = parse_compressed_data<double>( 1, data_attr.n_components, this->n_nodes_, appended_pos_+data_attr.offset_,
+				ASSERT_PTR(data_stream_).error();
+				nodes_cache = parse_compressed_data<double>( 1, data_attr.n_components, this->n_nodes_, data_attr.offset_,
 						data_attr.type_);
 				break;
 			}

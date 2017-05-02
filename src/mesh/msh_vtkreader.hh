@@ -48,8 +48,7 @@ public:
 		std::string field_name;     ///< Name of DataArray
 		DataType type_;             ///< Type of data
 		unsigned int n_components;  ///< NumberOfComponents (default value is 1)
-		unsigned int offset_;       ///< Offset of data (only for appended format)
-		std::string tag_value_;     ///< String value of tag (only for ascii format)
+		unsigned int offset_;       ///< Offset of data
 	};
 
 	/**
@@ -102,7 +101,7 @@ protected:
     void make_header_table() override;
 
     /// Helper method that create DataArray header of given xml node (used from \p make_header_table)
-    DataArrayAttributes create_header(pugi::xml_node node);
+    DataArrayAttributes create_header(pugi::xml_node node, unsigned int appended_pos);
 
     /// Get DataType by value of string
 	DataType get_data_type(std::string type_str);
@@ -113,7 +112,7 @@ protected:
 	/// Parse ascii data to data cache and return its.
 	template<typename T>
 	typename ElementDataCache<T>::CacheData parse_ascii_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, std::string data_str);
+			unsigned int n_entities, unsigned int data_pos);
 
 	/// Parse binary data to data cache and return its.
 	template<typename T>
@@ -128,8 +127,8 @@ protected:
 	/// Set count of nodes and elements.
 	void read_base_vtk_attributes();
 
-	/// Set @p appended_stream_ for reading AppendedData and find its position in input file
-	void set_appended_stream(const FilePath &file_name);
+	/// Get position of AppendedData tag in VTK file
+	unsigned int get_appended_position();
 
 	pugi::xml_document doc_;
     pugi::xml_parse_result parse_result_;
@@ -153,10 +152,7 @@ protected:
     std::string f_name_;
 
     /// input stream allow read appended data, used only if this tag exists
-    std::istream *appended_stream_;
-
-    /// position of appended data in file, used only if this tag exists
-    unsigned int appended_pos_;
+    std::istream *data_stream_;
 
     /// store count of read entities
     unsigned int n_read_;
