@@ -125,13 +125,10 @@ protected:
 			unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type);
 
 	/// Set count of nodes and elements.
-	void read_base_vtk_attributes();
+	void read_base_vtk_attributes(pugi::xml_node vtk_node);
 
 	/// Get position of AppendedData tag in VTK file
 	unsigned int get_appended_position();
-
-	pugi::xml_document doc_;
-    pugi::xml_parse_result parse_result_;
 
     /// count of nodes
     unsigned int n_nodes_;

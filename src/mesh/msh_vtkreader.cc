@@ -63,8 +63,6 @@ VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 {
 	current_cache_ = new ElementDataCacheBase();
 	f_name_ = (std::string)file_name;
-	parse_result_ = doc_.load_file( f_name_.c_str() );
-	read_base_vtk_attributes();
 	make_header_table();
 }
 
@@ -77,23 +75,22 @@ VtkMeshReader::~VtkMeshReader()
 
 
 
-void VtkMeshReader::read_base_vtk_attributes()
+void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node)
 {
-	pugi::xml_node node = doc_.child("VTKFile");
 	// header type of appended data
-	header_type_ = this->get_data_type( node.attribute("header_type").as_string() );
+	header_type_ = this->get_data_type( vtk_node.attribute("header_type").as_string() );
 	// data format
 	if (header_type_ == DataType::undefined) {
 		data_format_ = DataFormat::ascii;
 	} else {
-		std::string compressor = node.attribute("compressor").as_string();
+		std::string compressor = vtk_node.attribute("compressor").as_string();
 		if (compressor == "vtkZLibDataCompressor")
 			data_format_ = DataFormat::binary_zlib;
 		else
 			data_format_ = DataFormat::binary_uncompressed;
 	}
 	// size of node and element vectors
-	pugi::xml_node piece_node = node.child("UnstructuredGrid").child("Piece");
+	pugi::xml_node piece_node = vtk_node.child("UnstructuredGrid").child("Piece");
 	n_nodes_ = piece_node.attribute("NumberOfPoints").as_uint();
 	n_elements_ = piece_node.attribute("NumberOfCells").as_uint();
 }
@@ -161,6 +158,10 @@ VtkMeshReader::DataArrayAttributes VtkMeshReader::create_header(pugi::xml_node n
 
 void VtkMeshReader::make_header_table()
 {
+	pugi::xml_document doc;
+	doc.load_file( f_name_.c_str() );
+	this->read_base_vtk_attributes( doc.child("VTKFile") );
+
 	// open ifstream for find position
 	data_stream_ = new std::ifstream( f_name_);
 
@@ -172,7 +173,7 @@ void VtkMeshReader::make_header_table()
 		appended_pos = get_appended_position();
 	}
 
-	pugi::xml_node node = doc_.child("VTKFile").child("UnstructuredGrid").child("Piece");
+	pugi::xml_node node = doc.child("VTKFile").child("UnstructuredGrid").child("Piece");
 
 	header_table_.clear();
 

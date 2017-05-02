@@ -29,14 +29,7 @@ protected:
 	void read_input_file(const std::string &file_name) {
 	    FilePath vtu_file(file_name, FilePath::input_file);
 	    f_name_ = (std::string)vtu_file;
-	    parse_result_ = doc_.load_file( f_name_.c_str() );
-	    this->read_base_vtk_attributes();
 	    this->make_header_table();
-	}
-
-	std::string get_parse_result() {
-		std::stringstream ss; ss << this->parse_result_.description();
-		return ss.str();
 	}
 
 	void read_nodes(Mesh* mesh)
@@ -101,8 +94,6 @@ TEST(PugiXml, read_simple_xml) {
 // test of reading of VTU file
 TEST_F(VtkMeshReaderTest, read_ascii_vtu) {
 	read_input_file("output/test_output_vtk_ascii_ref.vtu");
-
-    EXPECT_EQ( "No error", this->get_parse_result() );
 
     {
     	// test of attributes
