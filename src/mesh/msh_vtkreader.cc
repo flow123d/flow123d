@@ -41,11 +41,11 @@ T read_binary_value(std::istream &data_stream)
 }
 
 
-uint64_t read_header_type(VtkMeshReader::DataType data_header_type, std::istream &data_stream)
+uint64_t read_header_type(DataType data_header_type, std::istream &data_stream)
 {
-	if (data_header_type == VtkMeshReader::DataType::uint64)
+	if (data_header_type == DataType::uint64)
 		return read_binary_value<uint64_t>(data_stream);
-	else if (data_header_type == VtkMeshReader::DataType::uint32)
+	else if (data_header_type == DataType::uint32)
 		return (uint64_t)read_binary_value<unsigned int>(data_stream);
 	else {
 		ASSERT(false).error("Unsupported header_type!\n");
@@ -60,7 +60,6 @@ uint64_t read_header_type(VtkMeshReader::DataType data_header_type, std::istream
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 : BaseMeshReader(file_name)
 {
-	f_name_ = (std::string)file_name;
 	make_header_table();
 }
 
@@ -73,7 +72,7 @@ VtkMeshReader::~VtkMeshReader()
 
 
 
-void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node)
+void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements)
 {
 	// header type of appended data
 	header_type_ = this->get_data_type( vtk_node.attribute("header_type").as_string() );
@@ -89,84 +88,89 @@ void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node)
 	}
 	// size of node and element vectors
 	pugi::xml_node piece_node = vtk_node.child("UnstructuredGrid").child("Piece");
-	n_nodes_ = piece_node.attribute("NumberOfPoints").as_uint();
-	n_elements_ = piece_node.attribute("NumberOfCells").as_uint();
+	n_nodes = piece_node.attribute("NumberOfPoints").as_uint();
+	n_elements = piece_node.attribute("NumberOfCells").as_uint();
 }
 
 
 
-unsigned int VtkMeshReader::get_appended_position() {
-	unsigned int appended_pos=0;
+Tokenizer::Position VtkMeshReader::get_appended_position() {
+	Tokenizer::Position appended_pos;
 
 	{
 		// find line by tokenizer
 		tok_.set_position( Tokenizer::Position() );
 		if (! tok_.skip_to("AppendedData"))
-			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section("AppendedData") << GmshMeshReader::EI_GMSHFile(f_name_) );
+			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section("AppendedData") << GmshMeshReader::EI_GMSHFile(tok_.f_name()) );
 		else {
-			appended_pos = tok_.get_position().file_position_;
+			appended_pos = tok_.get_position();
 		}
 	}
 
 	// find exact position of appended data (starts with '_')
 	char c;
-	data_stream_->seekg(appended_pos);
+	data_stream_->seekg(appended_pos.file_position_);
 	do {
 		data_stream_->get(c);
 	} while (c!='_');
-	appended_pos = data_stream_->tellg();
+	appended_pos.file_position_ = data_stream_->tellg();
+	appended_pos.line_counter_++;
 	delete data_stream_; // close stream
 
 	// reopen stream in binary mode
-	data_stream_ = new std::ifstream( f_name_, std::ios_base::in | std::ios_base::binary );
+	data_stream_ = new std::ifstream( tok_.f_name(), std::ios_base::in | std::ios_base::binary );
 
 	return appended_pos;
 }
 
 
-VtkMeshReader::DataArrayAttributes VtkMeshReader::create_header(pugi::xml_node node, unsigned int appended_pos)
+MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos)
 {
-    DataArrayAttributes attributes;
-    attributes.field_name = node.attribute("Name").as_string();
-    attributes.type_ = this->get_data_type( node.attribute("type").as_string() );
-    attributes.n_components = node.attribute("NumberOfComponents").as_uint(1);
+	MeshDataHeader header;
+    header.field_name = node.attribute("Name").as_string();
+    header.type = this->get_data_type( node.attribute("type").as_string() );
+    header.n_components = node.attribute("NumberOfComponents").as_uint(1);
+    header.n_entities = n_entities;
     std::string format = node.attribute("format").as_string();
     if (format=="appended") {
-        ASSERT(data_format_ != DataFormat::ascii)(attributes.field_name).error("Invalid format of DataArray!");
-        attributes.offset_ = node.attribute("offset").as_uint() + appended_pos;
+        ASSERT(data_format_ != DataFormat::ascii)(header.field_name).error("Invalid format of DataArray!");
+        std::streampos file_pos = pos.file_position_;
+        file_pos += node.attribute("offset").as_uint();
+        header.position = Tokenizer::Position( file_pos, pos.line_counter_, pos.line_position_ );
     } else if (format=="ascii") {
-    	ASSERT(data_format_ == DataFormat::ascii)(attributes.field_name).error("Invalid format of DataArray!");
+    	ASSERT(data_format_ == DataFormat::ascii)(header.field_name).error("Invalid format of DataArray!");
 
     	tok_.set_position( Tokenizer::Position() );
-    	bool is_point = (attributes.field_name=="");
-    	std::string found_str = (is_point) ? "<Points>" : "Name=\"" + attributes.field_name + "\"";
+    	bool is_point = (header.field_name=="");
+    	std::string found_str = (is_point) ? "<Points>" : "Name=\"" + header.field_name + "\"";
 		if (! tok_.skip_to(found_str))
-			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section(attributes.field_name) << GmshMeshReader::EI_GMSHFile(f_name_) );
+			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section(header.field_name) << GmshMeshReader::EI_GMSHFile(tok_.f_name()) );
 		else {
 			if (is_point) tok_.skip_to("DataArray");
-			attributes.offset_ = tok_.get_position().file_position_;
+			header.position = tok_.get_position();
 		}
     } else {
         ASSERT(false).error("Unsupported or missing VTK format.");
     }
 
-    return attributes;
+    return header;
 }
 
 
 void VtkMeshReader::make_header_table()
 {
 	pugi::xml_document doc;
-	doc.load_file( f_name_.c_str() );
-	this->read_base_vtk_attributes( doc.child("VTKFile") );
+	doc.load_file( tok_.f_name().c_str() );
+	unsigned int n_nodes, n_elements;
+	this->read_base_vtk_attributes( doc.child("VTKFile"), n_nodes, n_elements );
 
 	// open ifstream for find position
-	data_stream_ = new std::ifstream( f_name_);
+	data_stream_ = new std::ifstream( tok_.f_name() );
 
 	// data of appended tag
-	unsigned int appended_pos;
-	if (header_type_==DataType::undefined) { // no AppendedData tag
-		appended_pos = 0;
+	Tokenizer::Position appended_pos;
+	if (header_type_==DataType::undefined) {
+		// no AppendedData tag
 	} else {
 		appended_pos = get_appended_position();
 	}
@@ -176,26 +180,29 @@ void VtkMeshReader::make_header_table()
 	header_table_.clear();
 
 	// create headers of Points and Cells DataArrays
-	header_table_["Points"] = create_header( node.child("Points").child("DataArray"), appended_pos );
-	header_table_["connectivity"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"), appended_pos );
-	header_table_["offsets"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"), appended_pos );
-	header_table_["types"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), appended_pos );
+	header_table_["Points"] = create_header( node.child("Points").child("DataArray"), n_nodes, appended_pos );
+	header_table_["connectivity"]
+			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"), n_elements, appended_pos );
+	header_table_["offsets"]
+			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"), n_elements, appended_pos );
+	header_table_["types"]
+			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements, appended_pos );
 
 	node = node.child("CellData");
 	for (pugi::xml_node subnode = node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, appended_pos );
+		auto header = create_header( subnode, n_elements, appended_pos );
 		header_table_[header.field_name] = header;
 	}
 }
 
 
-VtkMeshReader::DataArrayAttributes VtkMeshReader::find_header(double time, std::string field_name)
+MeshDataHeader & VtkMeshReader::find_header(double time, std::string field_name)
 {
 	HeaderTable::iterator table_it = header_table_.find(field_name);
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        THROW( GmshMeshReader::ExcFieldNameNotFound() << GmshMeshReader::EI_FieldName(field_name) << GmshMeshReader::EI_GMSHFile(f_name_));
+        THROW( GmshMeshReader::ExcFieldNameNotFound() << GmshMeshReader::EI_FieldName(field_name) << GmshMeshReader::EI_GMSHFile(tok_.f_name()));
 	}
 
 	return table_it->second;
@@ -203,7 +210,7 @@ VtkMeshReader::DataArrayAttributes VtkMeshReader::find_header(double time, std::
 
 
 
-VtkMeshReader::DataType VtkMeshReader::get_data_type(std::string type_str) {
+DataType VtkMeshReader::get_data_type(std::string type_str) {
     // names of types in DataArray section
 	static const std::map<std::string, DataType> types = {
 			{"Int8",    DataType::int8},
@@ -231,7 +238,7 @@ VtkMeshReader::DataType VtkMeshReader::get_data_type(std::string type_str) {
 
 
 
-unsigned int VtkMeshReader::type_value_size(VtkMeshReader::DataType data_type)
+unsigned int VtkMeshReader::type_value_size(DataType data_type)
 {
 	static const std::vector<unsigned int> sizes = { 1, 1, 2, 2, 4, 4, 8, 8, 4, 8, 0 };
 
@@ -244,29 +251,29 @@ template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( std::string field_name, double time,
 		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
 {
-	DataArrayAttributes data_attr = this->find_header(time, field_name);
-	if ( !current_cache_->is_actual(time, field_name) ) {
+	MeshDataHeader actual_header = this->find_header(time, field_name);
+	if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
     	unsigned int size_of_cache; // count of vectors stored in cache
 
 	    // check that the header is valid, try to correct
-	    if (this->n_elements_ != n_entities) {
-	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}'.\nWrong number of entities: {}, using {} instead.\n",
-	                f_name_, field_name, this->n_elements_, n_entities);
+	    if (actual_header.n_entities != n_entities) {
+	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
+	    			tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
 	        // actual_header.n_entities=n_entities;
 	    }
 
 	    if (n_components == 1) {
 	    	// read for MultiField to 'n_comp' vectors
 	    	// or for Field if ElementData contains only one value
-	    	size_of_cache = data_attr.n_components;
+	    	size_of_cache = actual_header.n_components;
 	    }
 	    else {
 	    	// read for Field if more values is stored to one vector
 	    	size_of_cache = 1;
-	    	if (data_attr.n_components != n_components) {
-	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}'.\nWrong number of components: {}, using {} instead.\n",
-	    				f_name_, field_name, data_attr.n_components, n_components);
-	    		data_attr.n_components=n_components;
+	    	if (actual_header.n_components != n_components) {
+	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
+	    				tok_.f_name(), field_name, actual_header.time, actual_header.n_components, n_components);
+	    		actual_header.n_components=n_components;
 	    	}
 	    }
 
@@ -274,19 +281,19 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 	    typename ElementDataCache<T>::CacheData data_cache;
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				data_cache = parse_ascii_data<T>( size_of_cache, n_components, this->n_elements_, data_attr.offset_ );
+				data_cache = parse_ascii_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				data_cache = parse_binary_data<T>( size_of_cache, n_components, this->n_elements_, data_attr.offset_,
-						data_attr.type_ );
+				data_cache = parse_binary_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
+						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				data_cache = parse_compressed_data<T>( size_of_cache, n_components, this->n_elements_, data_attr.offset_,
-						data_attr.type_);
+				data_cache = parse_compressed_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
+						actual_header.type);
 				break;
 			}
 			default: {
@@ -312,14 +319,14 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 
 template<typename T>
 typename ElementDataCache<T>::CacheData VtkMeshReader::parse_ascii_data(unsigned int size_of_cache, unsigned int n_components,
-		unsigned int n_entities, unsigned int data_pos)
+		unsigned int n_entities, Tokenizer::Position pos)
 {
     unsigned int idx, i_row;
     n_read_ = 0;
 
     typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
 
-	tok_.set_position( Tokenizer::Position(data_pos, 0, 0) );
+	tok_.set_position( pos );
 	tok_.next_line();
 	for (i_row = 0; i_row < n_entities; ++i_row) {
     	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
@@ -339,13 +346,13 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_ascii_data(unsigned
 
 template<typename T>
 typename ElementDataCache<T>::CacheData VtkMeshReader::parse_binary_data(unsigned int size_of_cache, unsigned int n_components,
-		unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type)
+		unsigned int n_entities, Tokenizer::Position pos, DataType value_type)
 {
     unsigned int idx, i_row;
     n_read_ = 0;
 
     typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
-    data_stream_->seekg(data_pos);
+    data_stream_->seekg(pos.file_position_);
 	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
 
@@ -366,9 +373,9 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_binary_data(unsigne
 
 template<typename T>
 typename ElementDataCache<T>::CacheData VtkMeshReader::parse_compressed_data(unsigned int size_of_cache, unsigned int n_components,
-		unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type)
+		unsigned int n_entities, Tokenizer::Position pos, DataType value_type)
 {
-	data_stream_->seekg(data_pos);
+	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
 	uint64_t u_size = read_header_type(header_type_, *data_stream_);
 	uint64_t p_size = read_header_type(header_type_, *data_stream_);
@@ -437,11 +444,11 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_compressed_data(uns
 template typename ElementDataCache<TYPE>::ComponentDataPtr VtkMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
 	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx); \
 template typename ElementDataCache<TYPE>::CacheData VtkMeshReader::parse_ascii_data<TYPE>(unsigned int size_of_cache, \
-	unsigned int n_components, unsigned int n_entities, unsigned int data_pos); \
+	unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos); \
 template typename ElementDataCache<TYPE>::CacheData VtkMeshReader::parse_binary_data<TYPE>(unsigned int size_of_cache, \
-	unsigned int n_components, unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type); \
+	unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos, DataType value_type); \
 template typename ElementDataCache<TYPE>::CacheData VtkMeshReader::parse_compressed_data<TYPE>(unsigned int size_of_cache, \
-	unsigned int n_components, unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type); \
+	unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos, DataType value_type); \
 template TYPE read_binary_value<TYPE>(std::istream &data_stream)
 
 VTK_READER_GET_ELEMENT_DATA(int);

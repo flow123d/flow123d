@@ -38,25 +38,12 @@ public:
 	    ascii, binary_uncompressed, binary_zlib
 	};
 
-	/// Type of VTK data (value 'undefined' for empty value)
-	enum DataType {
-	    int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, undefined
-	};
-
-	/// Attributes of DataArray section
-	struct DataArrayAttributes {
-		std::string field_name;     ///< Name of DataArray
-		DataType type_;             ///< Type of data
-		unsigned int n_components;  ///< NumberOfComponents (default value is 1)
-		unsigned int offset_;       ///< Offset of data
-	};
-
 	/**
 	 * Map of DataArray sections in VTK file.
 	 *
-	 * For each field_name contains DataArrayAttributes.
+	 * For each field_name contains MeshDataHeader.
 	 */
-	typedef typename std::map< std::string, DataArrayAttributes > HeaderTable;
+	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
 
 	/**
      * Construct the VTK format reader from given filename.
@@ -68,23 +55,6 @@ public:
 	~VtkMeshReader();
 
     /**
-	 * Find header of DataArray section of VTK file given by field_name.
-	 *
-	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
-	 */
-	DataArrayAttributes find_header(double time, std::string field_name);
-
-	/// Return count of nodes
-	inline unsigned int n_nodes() const {
-		return n_nodes_;
-	}
-
-	/// Return count of elements
-	inline unsigned int n_elements() const {
-		return n_elements_;
-	}
-
-    /**
      *  Reads ElementData sections of opened VTK file.
      *
      *  Implements @p BaseMeshReader::get_element_data.
@@ -94,11 +64,18 @@ public:
     		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
 protected:
+    /**
+	 * Find header of DataArray section of VTK file given by field_name.
+	 *
+	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
+	 */
+	MeshDataHeader & find_header(double time, std::string field_name) override;
+
     /// Reads table of DataArray headers through pugixml interface
     void make_header_table() override;
 
     /// Helper method that create DataArray header of given xml node (used from \p make_header_table)
-    DataArrayAttributes create_header(pugi::xml_node node, unsigned int appended_pos);
+    MeshDataHeader create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos);
 
     /// Get DataType by value of string
 	DataType get_data_type(std::string type_str);
@@ -109,29 +86,23 @@ protected:
 	/// Parse ascii data to data cache and return its.
 	template<typename T>
 	typename ElementDataCache<T>::CacheData parse_ascii_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, unsigned int data_pos);
+			unsigned int n_entities, Tokenizer::Position pos);
 
 	/// Parse binary data to data cache and return its.
 	template<typename T>
 	typename ElementDataCache<T>::CacheData parse_binary_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type);
+			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
 
 	/// Uncompress and parse binary compressed data to data cache and return its.
 	template<typename T>
 	typename ElementDataCache<T>::CacheData parse_compressed_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, unsigned int data_pos, VtkMeshReader::DataType value_type);
+			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
 
-	/// Set count of nodes and elements.
-	void read_base_vtk_attributes(pugi::xml_node vtk_node);
+	/// Set base attributes of VTK and get count of nodes and elements.
+	void read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements);
 
 	/// Get position of AppendedData tag in VTK file
-	unsigned int get_appended_position();
-
-    /// count of nodes
-    unsigned int n_nodes_;
-
-    /// count of elements
-    unsigned int n_elements_;
+	Tokenizer::Position get_appended_position();
 
     /// header type of VTK file (only for appended data)
     DataType header_type_;
@@ -141,9 +112,6 @@ protected:
 
     /// Table with data of DataArray headers
     HeaderTable header_table_;
-
-    /// File name (for better error messages)
-    std::string f_name_;
 
     /// input stream allow read appended data, used only if this tag exists
     std::istream *data_stream_;

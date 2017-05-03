@@ -30,6 +30,53 @@
 #include "system/tokenizer.hh"
 
 
+
+/// Types of VTK data (value 'undefined' for empty value)
+enum DataType {
+	int8, uint8, int16, uint16, int32, uint32, int64, uint64, float32, float64, undefined
+};
+
+
+/***********************************
+ * Structure to store the information from a header of \\$ElementData (GMSH file) or DataArray (VTK file) section.
+ *
+ * Format of GMSH ASCII data sections
+ *
+   number-of-string-tags (== 2)
+     field_name
+     interpolation_scheme_name
+   number-of-real-tags (==1)
+     time_of_dataset
+   number-of-integer-tags
+     time_step_index (starting from zero)
+     number_of_field_components (1, 3, or 9 - i.e. 3d scalar, vector or tensor data)
+     number_of entities (nodes or elements)
+     partition_index (0 == no partition, not clear if GMSH support reading different partition from different files)
+   elm-number value ...
+*
+*/
+struct MeshDataHeader {
+    /// Name of field
+	std::string field_name;
+    /// Currently d'ont used
+    std::string interpolation_scheme;
+    /// Time of field data (used only for GMSH reader)
+    double time;
+    /// Currently d'ont used
+    unsigned int time_index;
+    /// Number of values on one row
+    unsigned int n_components;
+    /// Number of rows
+    unsigned int n_entities;
+    /// Currently d'ont used
+    unsigned int partition_index;
+    /// Position of data in mesh file
+    Tokenizer::Position position;
+    /// Type of data (used only for VTK reader)
+    DataType type;
+};
+
+
 /**
  * Abstract parent of mesh readers.
  *
@@ -67,6 +114,11 @@ public:
     { ASSERT(false).error("Method get_element_data must be implement in descendant."); }
 
 protected:
+    /**
+	 * Find data header for given time and field.
+	 */
+	virtual MeshDataHeader & find_header(double time, std::string field_name)=0;
+
     /**
      * Reads table of data headers specific for each descendants.
      */

@@ -232,7 +232,7 @@ void GmshMeshReader::read_physical_names(Mesh * mesh) {
 
 // Is assumed to be called just after tok.skip_to("..")
 // reads the header from the tokenizer @p tok and return it as the second parameter
-void GmshMeshReader::read_data_header(GMSH_DataHeader &head) {
+void GmshMeshReader::read_data_header(MeshDataHeader &head) {
     using namespace boost;
     try {
         // string tags
@@ -295,7 +295,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
     using namespace boost;
     //
 
-    GMSH_DataHeader actual_header = find_header(time, field_name);
+    MeshDataHeader actual_header = find_header(time, field_name);
     if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
 
 	    unsigned int id, idx, i_row;
@@ -385,14 +385,14 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 void GmshMeshReader::make_header_table()
 {
 	header_table_.clear();
-	GMSH_DataHeader header;
+	MeshDataHeader header;
 	while ( !tok_.eof() ) {
         if ( tok_.skip_to("$ElementData") ) {
             read_data_header(header);
             HeaderTable::iterator it = header_table_.find(header.field_name);
 
             if (it == header_table_.end()) {  // field doesn't exists, insert new vector to map
-            	std::vector<GMSH_DataHeader> vec;
+            	std::vector<MeshDataHeader> vec;
             	vec.push_back(header);
             	header_table_[header.field_name]=vec;
             } else if ( header.time <= it->second.back().time ) { // time is in wrong order. can't be add
@@ -409,7 +409,7 @@ void GmshMeshReader::make_header_table()
 
 
 
-GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
+MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
 {
 	HeaderTable::iterator table_it = header_table_.find(field_name);
 
@@ -418,11 +418,11 @@ GMSH_DataHeader &  GmshMeshReader::find_header(double time, std::string field_na
         THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_GMSHFile(tok_.f_name()));
 	}
 
-	auto comp = [](double t, const GMSH_DataHeader &a) {
+	auto comp = [](double t, const MeshDataHeader &a) {
 		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
 	};
 
-	std::vector<GMSH_DataHeader>::iterator headers_it = std::upper_bound(table_it->second.begin(),
+	std::vector<MeshDataHeader>::iterator headers_it = std::upper_bound(table_it->second.begin(),
 			table_it->second.end(),
 			time,
 			comp);

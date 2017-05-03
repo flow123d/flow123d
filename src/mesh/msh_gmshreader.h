@@ -34,43 +34,6 @@ class FilePath;
 
 
 
-/***********************************
- * Structure to store the information from a header of \\$ElementData section.
- *
- * Format of GMSH ASCII data sections
- *
-   number-of-string-tags (== 2)
-     field_name
-     interpolation_scheme_name
-   number-of-real-tags (==1)
-     time_of_dataset
-   number-of-integer-tags
-     time_step_index (starting from zero)
-     number_of_field_components (1, 3, or 9 - i.e. 3d scalar, vector or tensor data)
-     number_of entities (nodes or elements)
-     partition_index (0 == no partition, not clear if GMSH support reading different partition from different files)
-   elm-number value ...
-*
-*/
-
-struct GMSH_DataHeader {
-    std::string field_name;
-    /// Currently ont used
-    std::string interpolation_scheme;
-    double time;
-    /// Currently ont used
-    unsigned int time_index;
-    /// Number of values on one row
-    unsigned int n_components;
-    /// Number of rows
-    unsigned int n_entities;
-    /// ?? Currently ont used
-    unsigned int partition_index;
-    /// Position of data in mesh file
-    Tokenizer::Position position;
-};
-
-
 class GmshMeshReader : public BaseMeshReader {
 public:
 	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
@@ -97,10 +60,10 @@ public:
 	/**
 	 * Map of ElementData sections in GMSH file.
 	 *
-	 * For each field_name contains vector of GMSH_DataHeader.
+	 * For each field_name contains vector of MeshDataHeader.
 	 * Headers are sorted by time in ascending order.
 	 */
-	typedef typename std::map< std::string, std::vector<GMSH_DataHeader> > HeaderTable;
+	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
 
     /**
      * Construct the GMSH format reader from given filename.
@@ -167,7 +130,7 @@ protected:
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */
-    void read_data_header(GMSH_DataHeader &head);
+    void read_data_header(MeshDataHeader &head);
     /**
      * Reads table of ElementData headers from the tokenizer file.
      */
@@ -175,7 +138,7 @@ protected:
     /**
      * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
      */
-    GMSH_DataHeader & find_header(double time, std::string field_name);
+    MeshDataHeader & find_header(double time, std::string field_name) override;
 
 
     /// Table with data of ElementData headers
