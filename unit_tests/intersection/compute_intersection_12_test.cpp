@@ -91,11 +91,8 @@ std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips,
 
 void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerate)
 {
-    Simplex<1> line = create_simplex<1>(mesh->element(1));
-    Simplex<2> tria = create_simplex<2>(mesh->element(0));
-    
     IntersectionAux<1,2> is(1, 0);
-    ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria, mesh);
+    ComputeIntersection<1,2> CI(mesh->element(1), mesh->element(0), mesh);
     if(degenerate)
         CI.compute_final_in_plane(is.points());
     else

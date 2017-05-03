@@ -40,17 +40,17 @@ TEST(simplex, all) {
     EXPECT_EQ(Point0[0],s3d.abscissa(1)[0].point_coordinates()[0]);
     
     
-    arma::vec3 a,b; 
-    a[0]=-1; a[1]=2; a[2]=3; 
-    b[0]=4; b[1]=-5; b[2]=6;
+    Node n1(-1, 2, 3);
+    Node n2(4, -5, 6);
     
-    Plucker pc1, pc2(a,b), pc3(pc2);
+    Plucker pc1, pc2(&n1,&n2), pc3(pc2);
     MessageOut() << pc1 << "\n" << pc2 << "\n" << pc3 << endl;
     
     EXPECT_FALSE(pc1.is_computed());
-    EXPECT_TRUE(pc2.is_computed());
-    EXPECT_TRUE(pc3.is_computed());
+    EXPECT_FALSE(pc2.is_computed());
+    EXPECT_FALSE(pc3.is_computed());
     
+    pc2.compute();
     // test coordinates getters
     EXPECT_EQ(pc2[4], pc2.get_plucker_coords()[4]);
     EXPECT_EQ(-27, pc2[3]);
@@ -64,7 +64,7 @@ TEST(simplex, all) {
     pc3.clear();
     EXPECT_FALSE(pc3.is_computed());
     
-    pc1.compute(a,b);
+    pc1 = Plucker(&n1,&n2, true);
     EXPECT_TRUE(pc2.is_computed());
     MessageOut() << pc1 << endl;
     

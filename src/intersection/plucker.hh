@@ -20,8 +20,7 @@
 #include <armadillo>
 #include <iostream>
 #include "system/system.hh"
-
-
+#include "mesh/nodes.hh"
 
 #ifndef _PLUCKER_H
 #define _PLUCKER_H
@@ -41,8 +40,6 @@
  * coordinates data are filled after calling method "compute"
  * a flag "computed" is for comparison if coordinates data are filled
  *
- * question: is compute() used from outside ? 
- * answer: Yes
  */
 class Plucker{
 private:
@@ -50,19 +47,25 @@ private:
 	arma::vec6 coordinates_; ///< Plucker coordinates.
 	double scale_;
 	bool computed_;          ///< True, if Plucker coordinates are computed; false otherwise.
+	Node* points_[2];
 
 public:
     /** Default constructor.
-     * Plucker coordinates are not computed.
+     * Creates empty object, cannot call compute later!
      */
 	Plucker();
-	/** @brief Creates Plucker coordinates of a line AB.
+	/** @brief Creates Plucker coordinates object for a line AB.
+     * Does NOT compute Plucker coordinates.
+     * Does set end points and computes direction vector.
 	 * @param a - A point from AB line
 	 * @param b - B point from AB line
 	 */
-	Plucker(const arma::vec3 &a, const arma::vec3 &b);
-	/// Copy constructor.
-	Plucker(const Plucker &p);
+    Plucker(Node* a, Node* b);
+    /** @brief The same as above constructor,
+     * but can compute Pl. coordinates immediately if @p compute_pc.
+     */
+    Plucker(Node* a, Node* b, bool compute_pc);
+    
     /// Destructor.
 	~Plucker(){};
 
@@ -80,12 +83,13 @@ public:
 
     /// Return true if Plucker coordinates have been computed already.
 	bool is_computed() const;
+    
+    /// Gets coordinates of point.
+    arma::vec3 point(unsigned int idx) const;
 
     /** @brief Compute Plucker coordinates and set computed to true.
-     * @param a A point from AB line
-     * @param b B point from AB line (order of points determines orientation!)
      */
-	void compute(const arma::vec3 &a, const arma::vec3 &b);
+    void compute();
 
 	/// Gets directional vector U.
 	arma::vec3 get_u_vector() const;
@@ -104,17 +108,6 @@ public:
 std::ostream& operator<<(std::ostream& os, const Plucker& p);
 
 /****************** inline implementation *****************************/
-inline Plucker::Plucker()
-{   computed_ = false; }
-
-inline Plucker::Plucker(const arma::vec3 &a,const arma::vec3 &b)
-{   compute(a, b);
-    computed_ = true; }
-
-inline Plucker::Plucker(const Plucker &p)
-{   coordinates_ = p.get_plucker_coords();
-    computed_ = p.is_computed(); }
-
 inline double Plucker::operator[](const unsigned int index) const
 {   ASSERT_DBG(computed_);
     return coordinates_[index]; }
@@ -125,8 +118,11 @@ inline void Plucker::clear()
 inline bool Plucker::is_computed() const
 {   return computed_; }
 
+inline arma::vec3 Plucker::point(unsigned int idx) const
+{   return points_[idx]->point(); }
+
 inline arma::vec3 Plucker::get_u_vector() const
-{   ASSERT_DBG(computed_);
+{   //ASSERT_DBG(computed_);
     return coordinates_(arma::span(0,2)); }
 
 inline arma::vec3 Plucker::get_ua_vector() const

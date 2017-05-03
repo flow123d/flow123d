@@ -25,7 +25,7 @@
 
 //forward declare
 template<unsigned int, unsigned int> class IntersectionPointAux;
-template<typename U, typename V> class ComputeIntersection;
+template<unsigned int, unsigned int> class ComputeIntersection;
 
 /** @brief Internal auxiliary class representing intersection object of simplex<dimA> and simplex<dimB>.
  * 
@@ -84,7 +84,7 @@ public:
     template<unsigned int dimAA, unsigned int dimBB>
     friend std::ostream& operator<<(std::ostream& os, const IntersectionAux<dimAA,dimBB>& intersection);
     
-    template<typename U, typename V>
+    template<unsigned int, unsigned int>
     friend class ComputeIntersection;
 };
 

@@ -17,7 +17,7 @@
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
 
-#include "../../src/intersection/mixed_mesh_intersections.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/compute_intersection.hh"
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_aux.hh"
@@ -236,11 +236,11 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     // fixed element indices in the tests
     unsigned int triangle_ele_idx = 0,
                  tetra_ele_idx = 1;
-    Simplex<2> triangle = create_simplex<2>(mesh->element(triangle_ele_idx));
-    Simplex<3> tetra = create_simplex<3>(mesh->element(tetra_ele_idx));
     
     IntersectionAux<2,3> is;
-    ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra, mesh);
+    ComputeIntersection<2,3> CI(mesh->element(triangle_ele_idx),
+                                mesh->element(tetra_ele_idx),
+                                mesh);
     CI.init();
     CI.compute(is);
     
