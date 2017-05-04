@@ -39,7 +39,7 @@ List of all changes in user interface and major internal changes.
 
 
 ### New features
-* FiledTimeFunction - field constant in space and interpolated in time from a table of values.
+* FieldTimeFunction - field constant in space and interpolated in time from a table of values.
 * Unit conversion for fields.
 * Support for binary VTK output.
 * Checks for field limits.

@@ -117,7 +117,7 @@ public:
     unsigned int size() const;              ///< Returns number of intersection points.
     //@}
     
-    /// Computes the relative measure of intersection object.
+    /// Computes the relative measure of intersection object. On master element.
     double compute_measure() const override;
     
 

@@ -49,6 +49,9 @@ public:
      */
     LocalSystem(unsigned int nrows, unsigned int ncols);
     
+    void set_dofs(const DofVec &rdofs, const DofVec &cdofs);
+
+
     /// Resets the matrix, RHS, dofs to zero and clears solution settings
     void reset();
     
@@ -61,8 +64,8 @@ public:
      */
     void reset(const DofVec &row_dofs, const DofVec &col_dofs);
 
-    const arma::mat& get_matrix() {return matrix;}
-    const arma::vec& get_rhs() {return rhs;}
+    arma::mat& get_matrix() {return matrix;}
+    arma::vec& get_rhs() {return rhs;}
     
     /** @brief Set the position and value of known solution. E.g. Dirichlet boundary condition.
      * 

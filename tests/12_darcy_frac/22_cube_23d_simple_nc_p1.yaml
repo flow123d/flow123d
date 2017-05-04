@@ -5,7 +5,7 @@ problem: !Coupling_Sequential
   # Prescribed constant (zero) pressure on faces parallel to fracture and given source F on the fracture.
   # For given 3d conductivity C and 2d-3d transition coef. S we have:
   # 3d pressure at fracture: P1 = F/2/C  ( = 4)
-  # 2d pressure on fracture: P2 = F/2/C + F/8  ( = 7 )
+  # 2d pressure on fracture: P2 = F/2/C + F/sigma/4  ( = 4 + 1.5 )
   
   # Wrong balance data?
   mesh:
@@ -19,7 +19,7 @@ problem: !Coupling_Sequential
         r_tol: 1.0e-10
         a_tol: 1.0e-10
     n_schurs: 2
-    mortar_method: P0
+    mortar_method: P1
     input_fields:
       - region: 2d
         conductivity: 1
@@ -30,7 +30,12 @@ problem: !Coupling_Sequential
         conductivity: 3
       - region: .3d_bottom_top
         bc_type: dirichlet
-        bc_piezo_head: 0
+        bc_pressure: 0
+
+#      - region: .2d
+#        bc_type: dirichlet
+#        bc_pressure: 2
+        
       - region: [.IMPLICIT_BOUNDARY, .2d]
         bc_type: total_flux
         bc_flux: 0.0

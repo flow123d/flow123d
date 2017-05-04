@@ -65,10 +65,10 @@ struct IsecData {
 class P0_CouplingAssembler :public MortarAssemblyBase {
 public:
     P0_CouplingAssembler(AssemblyDataPtr data);
-    void assembly(LocalElementAccessorBase<3> ele_ac);
-    void pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta);
-    void fix_velocity_local(const IsecData & row_ele, const IsecData &col_ele);
+    void assembly(LocalElementAccessorBase<3> ele_ac) override;
 private:
+    void fix_velocity_local(const IsecData & row_ele, const IsecData &col_ele);
+    void pressure_diff(LocalElementAccessorBase<3> ele_ac, double delta);
     inline arma::mat & tensor_average(unsigned int row_dim, unsigned int col_dim) {
         return tensor_average_[4*row_dim + col_dim];
     }
@@ -90,22 +90,31 @@ private:
 
 class P1_CouplingAssembler :public MortarAssemblyBase {
 public:
-    P1_CouplingAssembler(AssemblyDataPtr data)
-: MortarAssemblyBase(data),
-      rhs(5),
-      dofs(5),
-      dirichlet(5)
-    {
-        rhs.zeros();
-    }
-
-    void assembly(LocalElementAccessorBase<3> ele_ac);
-    void add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, vector<int> &dofs, vector<double> &dirichlet);
+    P1_CouplingAssembler(AssemblyDataPtr data);
+    void assembly(LocalElementAccessorBase<3> ele_ac) override;
 private:
+    void add_sides(LocalElementAccessorBase<3> ele_ac, unsigned int shift, arma::uvec &dofs);
 
-    arma::vec rhs;
-    vector<int> dofs;
-    vector<double> dirichlet;
+    template<uint qdim, uint master_dim, uint slave_dim>
+    inline void isec_assembly(
+            double master_sigma,
+            const IntersectionLocal<master_dim, slave_dim> &il,
+            std::array<uint, qdim+1 > subdiv);
+
+    LocalElementAccessorBase<3> slave_ac_;
+    LocalElementAccessorBase<3> master_ac_;
+
+
+    /**
+     * For every element dimension a transition matrix from the P1e base to
+     * the P1 base in the space of linear polynomials.
+     * P1e base have support points in side centers,
+     * P1 basis have support points in vertices (corresponds to P1_disc FE)
+     */
+    arma::mat P1_for_P1e[4];
+    double master_jac;
+
+
 };
 
 

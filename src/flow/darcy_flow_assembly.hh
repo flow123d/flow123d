@@ -438,7 +438,7 @@ protected:
 
         Neighbour *ngh;
 
-        //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
+        //DebugOut().fmt("cc: ele: {} n_ngh: {} ", ele_ac.ele_global_idx(), ele_ac.full_iter()->n_neighs_vb);
         for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure

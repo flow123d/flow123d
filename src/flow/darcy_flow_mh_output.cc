@@ -63,7 +63,8 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
-                        "Output file with raw data form MH module.")
+                        "Output file with raw data form MH module. This is done only for output times "
+                        "containing both velocity and pressure output.")
         .close();
 }
 

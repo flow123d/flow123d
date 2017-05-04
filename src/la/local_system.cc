@@ -35,6 +35,13 @@ void LocalSystem::set_size(unsigned int nrows, unsigned int ncols) {
     diag_rows.set_size(nrows);
 }
 
+void LocalSystem::set_dofs(const DofVec &rdofs, const DofVec &cdofs) {
+    ASSERT_EQ_DBG(matrix.n_rows, rdofs.n_rows);
+    ASSERT_EQ_DBG(matrix.n_cols, cdofs.n_rows);
+    row_dofs = rdofs;
+    col_dofs = cdofs;
+}
+
 
 void LocalSystem::reset()
 {
@@ -48,10 +55,11 @@ void LocalSystem::reset()
 
 void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
 {
-    matrix.set_size(nrows, ncols);
-    rhs.set_size(nrows);
-    row_dofs.resize(matrix.n_rows);
-    col_dofs.resize(matrix.n_cols);
+    set_size(nrows, ncols);
+    //matrix.set_size(nrows, ncols);
+    //rhs.set_size(nrows);
+    //row_dofs.resize(matrix.n_rows);
+    //col_dofs.resize(matrix.n_cols);
     reset();
 }
 
