@@ -83,8 +83,7 @@ protected:
 	/// Return size of value of data_type.
 	unsigned int type_value_size(DataType data_type);
 
-	/// Parse ascii data to data cache and return its.
-	template<typename T>
+	/// Parse ascii data to data cache
 	void parse_ascii_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos);
 
 	/// Parse binary data to data cache and return its.

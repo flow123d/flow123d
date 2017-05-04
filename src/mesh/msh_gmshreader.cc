@@ -298,7 +298,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
     MeshDataHeader actual_header = find_header(time, field_name);
     if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
 
-	    unsigned int id, idx, i_row;
+	    unsigned int id, i_row;
 	    unsigned int n_read = 0;
     	unsigned int size_of_cache; // count of vectors stored in cache
 	    vector<int>::const_iterator id_iter = el_ids.begin();
@@ -350,14 +350,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	            }
 	            // save data from the line if ID was found
 	            if (*id_iter == (int)id) {
-	            	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
-	            		idx = (id_iter - el_ids.begin()) * n_components;
-	            		std::vector<T> &vec = *( static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(i_vec).get() );
-	            		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-	            			vec[idx] = lexical_cast<T>(*tok_);
-	            			++tok_;
-	            		}
-	            	}
+	            	current_cache_->read_ascii_data(tok_, n_components, (id_iter - el_ids.begin()) );
 	                n_read++;
 	            }
 	            // skip the line if ID on the line  < actual ID in the map el_ids

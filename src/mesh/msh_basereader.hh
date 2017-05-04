@@ -89,7 +89,7 @@ public:
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name)
 	: tok_(file_name) {
-		current_cache_ = new ElementDataCacheBase();
+		current_cache_ = new ElementDataCache<double>();
 	}
 
 	/// Constructor

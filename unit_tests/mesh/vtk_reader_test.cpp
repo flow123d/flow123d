@@ -40,7 +40,7 @@ public:
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data<double>( 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data( 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {

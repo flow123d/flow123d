@@ -21,7 +21,9 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include "boost/lexical_cast.hpp"
 #include "system/system.hh"
+#include "system/tokenizer.hh"
 
 
 class ElementDataCacheBase {
@@ -30,6 +32,9 @@ public:
 	ElementDataCacheBase()
 	: time_(-std::numeric_limits<double>::infinity()),
 	  quantity_name_("") {}
+
+	/// Destructor
+	virtual ~ElementDataCacheBase() {}
 
 	/// Getter for time of cache
 	double get_time()
@@ -44,6 +49,8 @@ public:
 		return (time_ == time) && (quantity_name_ == quantity_name);
 	}
 
+	virtual void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row)=0;
+
 protected:
 	/// time step stored in cache
 	double time_;
@@ -57,6 +64,10 @@ class ElementDataCache : public ElementDataCacheBase {
 public:
 	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
 	typedef std::vector< ComponentDataPtr > CacheData;
+
+	/// Default constructor
+	ElementDataCache()
+	: ElementDataCacheBase() {}
 
 	/// Constructor.
 	ElementDataCache(double time, std::string quantity_name, CacheData data)
@@ -82,10 +93,19 @@ public:
 	    return data_cache;
 	}
 
+	void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override {
+		unsigned int idx;
+    	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
+    		idx = i_row * n_components;
+    		std::vector<T> &vec = *( data_[i_vec].get() );
+    		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
+    			vec[idx] = boost::lexical_cast<T>(*tok);
+    			++tok;
+    		}
+    	}
+	}
+
 protected:
-	/// Empty constructor accessible only for descendants.
-	ElementDataCache()
-	{}
 	/**
 	 * Table of element data.
 	 *
