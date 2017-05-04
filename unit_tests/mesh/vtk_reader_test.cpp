@@ -30,23 +30,29 @@ public:
 
 	void read_nodes(Mesh* mesh)
 	{
-		typename ElementDataCache<double>::CacheData nodes_cache;
-		auto data_attr = this->find_header(0.0, "Points");
+		auto actual_header = this->find_header(0.0, "Points");
+
+		// set new cache
+	    delete current_cache_;
+	    typename ElementDataCache<double>::CacheData data_cache
+			= ElementDataCache<double>::create_data_cache(1, actual_header.n_components*actual_header.n_entities);
+	    current_cache_ = new ElementDataCache<double>(actual_header.time, actual_header.field_name, data_cache);
+
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				nodes_cache = parse_ascii_data<double>( 1, data_attr.n_components, data_attr.n_entities, data_attr.position );
+				parse_ascii_data<double>( 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				nodes_cache = parse_binary_data<double>( 1, data_attr.n_components, data_attr.n_entities, data_attr.position,
-						data_attr.type );
+				parse_binary_data<double>( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				nodes_cache = parse_compressed_data<double>( 1, data_attr.n_components, data_attr.n_entities, data_attr.position,
-						data_attr.type);
+				parse_compressed_data<double>( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+						actual_header.type);
 				break;
 			}
 			default: {
@@ -55,9 +61,9 @@ public:
 			}
 		}
 
-		mesh->node_vector.reserve(data_attr.n_entities);
-		std::vector<double> &vect = *(nodes_cache[0]).get();
-		for (unsigned int i=0, ivec=0; i<data_attr.n_entities; ++i) {
+		mesh->node_vector.reserve(actual_header.n_entities);
+		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache_)->get_component_data(0).get() );
+		for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
 	        NodeFullIter node = mesh->node_vector.add_item(i);
 	        node->point()(0)=vect[ivec]; ++ivec;
 	        node->point()(1)=vect[ivec]; ++ivec;

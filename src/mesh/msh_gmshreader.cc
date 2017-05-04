@@ -325,8 +325,10 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    	}
 	    }
 
-	    // create vector of shared_ptr for cache
+	    // set new cache
+	    delete current_cache_;
 	    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
+	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
 
 	    // read @p data buffer as we have correct header with already passed time
 	    // we assume that @p data buffer is big enough
@@ -350,7 +352,7 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	            if (*id_iter == (int)id) {
 	            	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
 	            		idx = (id_iter - el_ids.begin()) * n_components;
-	            		std::vector<T> &vec = *( data_cache[i_vec].get() );
+	            		std::vector<T> &vec = *( static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(i_vec).get() );
 	            		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
 	            			vec[idx] = lexical_cast<T>(*tok_);
 	            			++tok_;
@@ -370,10 +372,6 @@ typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data(
 	    		actual_header.time, n_read, actual_header.field_name);
 
 	    actual = true; // use input header to indicate modification of @p data buffer
-
-	    // set new cache
-	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
 	}
 
     if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;

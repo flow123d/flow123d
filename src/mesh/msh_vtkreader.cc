@@ -252,7 +252,7 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
 {
 	MeshDataHeader actual_header = this->find_header(time, field_name);
-	if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
+	if ( !current_cache_->is_actual(time, field_name) ) {
     	unsigned int size_of_cache; // count of vectors stored in cache
 
 	    // check that the header is valid, try to correct
@@ -277,22 +277,25 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 	    	}
 	    }
 
-	    // create vector of shared_ptr for cache
-	    typename ElementDataCache<T>::CacheData data_cache;
-		switch (data_format_) {
+	    // set new cache
+	    delete current_cache_;
+	    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
+	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
+
+	    switch (data_format_) {
 			case DataFormat::ascii: {
-				data_cache = parse_ascii_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				data_cache = parse_binary_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
+				parse_binary_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				data_cache = parse_compressed_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
+				parse_compressed_data<T>( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type);
 				break;
 			}
@@ -307,9 +310,6 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 
 	    actual = true; // use input header to indicate modification of @p data buffer
 
-	    // set new cache
-	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<T>(time, field_name, data_cache);
 	}
 
 	if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
@@ -318,20 +318,18 @@ typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( 
 
 
 template<typename T>
-typename ElementDataCache<T>::CacheData VtkMeshReader::parse_ascii_data(unsigned int size_of_cache, unsigned int n_components,
-		unsigned int n_entities, Tokenizer::Position pos)
+void VtkMeshReader::parse_ascii_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities,
+		Tokenizer::Position pos)
 {
     unsigned int idx, i_row;
     n_read_ = 0;
-
-    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
 
 	tok_.set_position( pos );
 	tok_.next_line();
 	for (i_row = 0; i_row < n_entities; ++i_row) {
     	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
     		idx = i_row * n_components;
-    		std::vector<T> &vec = *( data_cache[i_vec].get() );
+    		std::vector<T> &vec = *( static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(i_vec).get() );
     		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
     			vec[idx] = boost::lexical_cast<T>(*tok_);
     			++tok_;
@@ -339,19 +337,16 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_ascii_data(unsigned
     	}
         n_read_++;
 	}
-
-	return data_cache;
 }
 
 
 template<typename T>
-typename ElementDataCache<T>::CacheData VtkMeshReader::parse_binary_data(unsigned int size_of_cache, unsigned int n_components,
-		unsigned int n_entities, Tokenizer::Position pos, DataType value_type)
+void VtkMeshReader::parse_binary_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities,
+		Tokenizer::Position pos, DataType value_type)
 {
     unsigned int idx, i_row;
     n_read_ = 0;
 
-    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
     data_stream_->seekg(pos.file_position_);
 	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
@@ -359,21 +354,19 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_binary_data(unsigne
 	for (i_row = 0; i_row < n_entities; ++i_row) {
     	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
     		idx = i_row * n_components;
-    		std::vector<T> &vec = *( data_cache[i_vec].get() );
+    		std::vector<T> &vec = *( static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(i_vec).get() );
     		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
     			vec[idx] = read_binary_value<T>(*data_stream_);
     		}
     	}
         n_read_++;
 	}
-
-	return data_cache;
 }
 
 
 template<typename T>
-typename ElementDataCache<T>::CacheData VtkMeshReader::parse_compressed_data(unsigned int size_of_cache, unsigned int n_components,
-		unsigned int n_entities, Tokenizer::Position pos, DataType value_type)
+void VtkMeshReader::parse_compressed_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities,
+		Tokenizer::Position pos, DataType value_type)
 {
 	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
@@ -419,22 +412,19 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_compressed_data(uns
     unsigned int idx, i_row;
     n_read_ = 0;
 
-    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
 	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
 
 	for (i_row = 0; i_row < n_entities; ++i_row) {
     	for (unsigned int i_vec=0; i_vec<size_of_cache; ++i_vec) {
     		idx = i_row * n_components;
-    		std::vector<T> &vec = *( data_cache[i_vec].get() );
+    		std::vector<T> &vec = *( static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(i_vec).get() );
     		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
     			vec[idx] = read_binary_value<T>(decompressed_data);
     		}
     	}
         n_read_++;
 	}
-
-	return data_cache;
 }
 
 
@@ -443,12 +433,12 @@ typename ElementDataCache<T>::CacheData VtkMeshReader::parse_compressed_data(uns
 #define VTK_READER_GET_ELEMENT_DATA(TYPE) \
 template typename ElementDataCache<TYPE>::ComponentDataPtr VtkMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
 	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx); \
-template typename ElementDataCache<TYPE>::CacheData VtkMeshReader::parse_ascii_data<TYPE>(unsigned int size_of_cache, \
-	unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos); \
-template typename ElementDataCache<TYPE>::CacheData VtkMeshReader::parse_binary_data<TYPE>(unsigned int size_of_cache, \
-	unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos, DataType value_type); \
-template typename ElementDataCache<TYPE>::CacheData VtkMeshReader::parse_compressed_data<TYPE>(unsigned int size_of_cache, \
-	unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos, DataType value_type); \
+template void VtkMeshReader::parse_ascii_data<TYPE>(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, \
+	Tokenizer::Position pos); \
+template void VtkMeshReader::parse_binary_data<TYPE>(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, \
+	Tokenizer::Position pos, DataType value_type); \
+template void VtkMeshReader::parse_compressed_data<TYPE>(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, \
+	Tokenizer::Position pos, DataType value_type); \
 template TYPE read_binary_value<TYPE>(std::istream &data_stream)
 
 VTK_READER_GET_ELEMENT_DATA(int);

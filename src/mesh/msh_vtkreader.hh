@@ -85,18 +85,17 @@ protected:
 
 	/// Parse ascii data to data cache and return its.
 	template<typename T>
-	typename ElementDataCache<T>::CacheData parse_ascii_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos);
+	void parse_ascii_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos);
 
 	/// Parse binary data to data cache and return its.
 	template<typename T>
-	typename ElementDataCache<T>::CacheData parse_binary_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
+	void parse_binary_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos,
+			DataType value_type);
 
 	/// Uncompress and parse binary compressed data to data cache and return its.
 	template<typename T>
-	typename ElementDataCache<T>::CacheData parse_compressed_data(unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
+	void parse_compressed_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos,
+			DataType value_type);
 
 	/// Set base attributes of VTK and get count of nodes and elements.
 	void read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements);
