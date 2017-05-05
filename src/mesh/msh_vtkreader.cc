@@ -128,6 +128,7 @@ MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
+    header.time = 0.0;
     header.type = this->get_data_type( node.attribute("type").as_string() );
     header.n_components = node.attribute("NumberOfComponents").as_uint(1);
     header.n_entities = n_entities;
