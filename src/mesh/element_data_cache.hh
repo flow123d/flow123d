@@ -49,7 +49,15 @@ public:
 		return (time_ == time) && (quantity_name_ == quantity_name);
 	}
 
+	/**
+	 * Read ascii data of given \p i_row from tokenizer
+	 */
 	virtual void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row)=0;
+
+	/**
+	 * Read binary data of given \p i_row from data stream
+	 */
+	virtual void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row)=0;
 
 protected:
 	/// time step stored in cache
@@ -82,6 +90,9 @@ public:
 		return data_[component_idx];
 	}
 
+	/**
+	 * Create data cache with given count of columns (\p size_of_cache) and rows (\p row_vec_size).
+	 */
 	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size) {
 	    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
 	    for (unsigned int i=0; i<size_of_cache; ++i) {
@@ -93,6 +104,7 @@ public:
 	    return data_cache;
 	}
 
+	/// Implements @p ElementDataCacheBase::read_ascii_data.
 	void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override {
 		unsigned int idx;
     	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
@@ -101,6 +113,18 @@ public:
     		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
     			vec[idx] = boost::lexical_cast<T>(*tok);
     			++tok;
+    		}
+    	}
+	}
+
+	/// Implements @p ElementDataCacheBase::read_binary_data.
+	void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override {
+		unsigned int idx;
+    	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
+    		idx = i_row * n_components;
+    		std::vector<T> &vec = *( data_[i_vec].get() );
+    		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
+    			data_stream.read(reinterpret_cast<char *>(&vec[idx]), sizeof(T));
     		}
     	}
 	}

@@ -45,13 +45,13 @@ public:
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				parse_binary_data<double>( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_binary_data( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				parse_compressed_data<double>( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_compressed_data( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type);
 				break;
 			}

@@ -86,13 +86,11 @@ protected:
 	/// Parse ascii data to data cache
 	void parse_ascii_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos);
 
-	/// Parse binary data to data cache and return its.
-	template<typename T>
+	/// Parse binary data to data cache
 	void parse_binary_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos,
 			DataType value_type);
 
-	/// Uncompress and parse binary compressed data to data cache and return its.
-	template<typename T>
+	/// Uncompress and parse binary compressed data to data cache
 	void parse_compressed_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities, Tokenizer::Position pos,
 			DataType value_type);
 
