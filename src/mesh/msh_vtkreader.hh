@@ -54,15 +54,6 @@ public:
 	/// Destructor
 	~VtkMeshReader();
 
-    /**
-     *  Reads ElementData sections of opened VTK file.
-     *
-     *  Implements @p BaseMeshReader::get_element_data.
-     */
-    template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
-
 protected:
     /**
 	 * Find header of DataArray section of VTK file given by field_name.
@@ -99,6 +90,12 @@ protected:
 
 	/// Get position of AppendedData tag in VTK file
 	Tokenizer::Position get_appended_position();
+
+    /**
+     * Implements @p BaseMeshReader::read_element_data.
+     */
+    void read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
+        		std::vector<int> const & el_ids) override;
 
     /// header type of VTK file (only for appended data)
     DataType header_type_;

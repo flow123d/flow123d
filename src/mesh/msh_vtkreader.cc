@@ -247,73 +247,33 @@ unsigned int VtkMeshReader::type_value_size(DataType data_type)
 
 
 
-template<typename T>
-typename ElementDataCache<T>::ComponentDataPtr VtkMeshReader::get_element_data( std::string field_name, double time,
-		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
-{
-	MeshDataHeader actual_header = this->find_header(time, field_name);
-	if ( !current_cache_->is_actual(time, field_name) ) {
-    	unsigned int size_of_cache; // count of vectors stored in cache
-
-	    // check that the header is valid, try to correct
-	    if (actual_header.n_entities != n_entities) {
-	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
-	    			tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
-	        // actual_header.n_entities=n_entities;
-	    }
-
-	    if (n_components == 1) {
-	    	// read for MultiField to 'n_comp' vectors
-	    	// or for Field if ElementData contains only one value
-	    	size_of_cache = actual_header.n_components;
-	    }
-	    else {
-	    	// read for Field if more values is stored to one vector
-	    	size_of_cache = 1;
-	    	if (actual_header.n_components != n_components) {
-	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-	    				tok_.f_name(), field_name, actual_header.time, actual_header.n_components, n_components);
-	    		actual_header.n_components=n_components;
-	    	}
-	    }
-
-	    // set new cache
-	    delete current_cache_;
-	    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
-	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
-
-	    switch (data_format_) {
-			case DataFormat::ascii: {
-				parse_ascii_data( size_of_cache, n_components, actual_header.n_entities, actual_header.position );
-				break;
-			}
-			case DataFormat::binary_uncompressed: {
-				ASSERT_PTR(data_stream_).error();
-				parse_binary_data( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
-						actual_header.type );
-				break;
-			}
-			case DataFormat::binary_zlib: {
-				ASSERT_PTR(data_stream_).error();
-				parse_compressed_data( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
-						actual_header.type);
-				break;
-			}
-			default: {
-				ASSERT(false).error(); // should not happen
-				break;
-			}
+void VtkMeshReader::read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
+		std::vector<int> const & el_ids) {
+    switch (data_format_) {
+		case DataFormat::ascii: {
+			parse_ascii_data( size_of_cache, n_components, actual_header.n_entities, actual_header.position );
+			break;
 		}
-
-	    LogOut().fmt("time: {}; {} entities of field {} read.\n",
-	    		time, n_read_, field_name);
-
-	    actual = true; // use input header to indicate modification of @p data buffer
-
+		case DataFormat::binary_uncompressed: {
+			ASSERT_PTR(data_stream_).error();
+			parse_binary_data( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
+					actual_header.type );
+			break;
+		}
+		case DataFormat::binary_zlib: {
+			ASSERT_PTR(data_stream_).error();
+			parse_compressed_data( size_of_cache, n_components, actual_header.n_entities, actual_header.position,
+					actual_header.type);
+			break;
+		}
+		default: {
+			ASSERT(false).error(); // should not happen
+			break;
+		}
 	}
 
-	if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
-	return static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(component_idx);
+    LogOut().fmt("time: {}; {} entities of field {} read.\n",
+    		actual_header.time, n_read_, actual_header.field_name);
 }
 
 
@@ -334,14 +294,13 @@ void VtkMeshReader::parse_ascii_data(unsigned int size_of_cache, unsigned int n_
 void VtkMeshReader::parse_binary_data(unsigned int size_of_cache, unsigned int n_components, unsigned int n_entities,
 		Tokenizer::Position pos, DataType value_type)
 {
-    unsigned int idx, i_row;
     n_read_ = 0;
 
     data_stream_->seekg(pos.file_position_);
 	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
 
-	for (i_row = 0; i_row < n_entities; ++i_row) {
+	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		current_cache_->read_binary_data(*data_stream_, n_components, i_row);
         n_read_++;
 	}
@@ -392,13 +351,12 @@ void VtkMeshReader::parse_compressed_data(unsigned int size_of_cache, unsigned i
 		decompressed_data_size += decompressed_block_size;
 	}
 
-    unsigned int idx, i_row;
     n_read_ = 0;
 
 	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
 
-	for (i_row = 0; i_row < n_entities; ++i_row) {
+	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
 		current_cache_->read_binary_data(decompressed_data, n_components, i_row);
         n_read_++;
 	}
@@ -408,8 +366,6 @@ void VtkMeshReader::parse_compressed_data(unsigned int size_of_cache, unsigned i
 
 // explicit instantiation of template methods
 #define VTK_READER_GET_ELEMENT_DATA(TYPE) \
-template typename ElementDataCache<TYPE>::ComponentDataPtr VtkMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
-	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx); \
 template TYPE read_binary_value<TYPE>(std::istream &data_stream)
 
 VTK_READER_GET_ELEMENT_DATA(int);

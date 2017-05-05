@@ -175,6 +175,7 @@ target_link_libraries(tools_lib
 # mesh_lib
 add_library(mesh_lib 
     mesh/region.cc
+    mesh/msh_basereader.cc
     mesh/msh_gmshreader.cc
     mesh/msh_vtkreader.cc
     mesh/boundaries.cc

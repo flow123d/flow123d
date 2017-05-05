@@ -98,25 +98,6 @@ public:
      */
     void read_physical_names(Mesh * mesh);
 
-    /**
-     *  Reads ElementData sections of opened GMSH file. The file is searched for the \\$ElementData section with header
-     *  that match the given @p field_name and @p time of the next section is the first greater then that given in input
-     *  parameters). If such section has not been yet read, we read the data section into raw buffer @p data. The map
-     *  @p id_to_idx is used to convert IDs that marks individual input rows/entities into indexes to the raw buffer.
-     *  The buffer must have size at least @p n_components * @p n_entities. Indexes in the map must be smaller then
-     *  @p n_entities.
-     *  If the @p data buffer is updated we set actual to true.
-     *
-     *  Possible optimizations:
-     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
-     *  and just check that they comes in in correct order.
-     *
-     *  Implements @p BaseMeshReader::get_element_data.
-     */
-    template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
-
 protected:
     /**
      * private method for reading of nodes
@@ -139,6 +120,11 @@ protected:
      * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
      */
     MeshDataHeader & find_header(double time, std::string field_name) override;
+    /**
+     * Implements @p BaseMeshReader::read_element_data.
+     */
+    void read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
+        		std::vector<int> const & el_ids) override;
 
 
     /// Table with data of ElementData headers

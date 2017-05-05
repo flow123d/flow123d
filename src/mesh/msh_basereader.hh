@@ -87,31 +87,36 @@ struct MeshDataHeader {
 class BaseMeshReader {
 public:
 	/// Constructor
-	BaseMeshReader(const FilePath &file_name)
-	: tok_(file_name) {
-		current_cache_ = new ElementDataCache<double>();
-	}
+	BaseMeshReader(const FilePath &file_name);
 
 	/// Constructor
-	BaseMeshReader(std::istream &in)
-	: tok_(in) {}
+	BaseMeshReader(std::istream &in);
 
     /**
-	 * Reads element data of opened mesh file specified by parameters.
-	 *
-     * @param field_name field name
-     * @param time searched time
-     * @param n_entities count of entities (elements)
-     * @param n_components count of components (size of returned data is given by n_entities*n_components)
-     * @param actual Set to rue if the stream position is just after the header,
-     *               set to false either before first header is found or at EOF
-     * @param el_ids vector of ids of elements
-     * @param component_idx component index of MultiField
+     *  Reads ElementData sections of opened mesh file. The file is searched for the \\$ElementData (GMSH) or DataArray
+     *  (VTK) section with header that match the given @p field_name and @p time of the next section is the first greater
+     *  then that given in input parameters). If such section has not been yet read, we read the data section into raw
+     *  buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into indexes
+     *  to the raw buffer. The buffer must have size at least @p n_components * @p n_entities. Indexes in the map must be
+     *  smaller then @p n_entities.
+     *  If the @p data buffer is updated we set actual to true.
+     *
+     *  Possible optimizations:
+     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
+     *  and just check that they comes in in correct order.
+     *
+     *  @param field_name field name
+     *  @param time searched time
+     *  @param n_entities count of entities (elements)
+     *  @param n_components count of components (size of returned data is given by n_entities*n_components)
+     *  @param actual Set to rue if the stream position is just after the header,
+     *                set to false either before first header is found or at EOF
+     *  @param el_ids vector of ids of elements
+     *  @param component_idx component index of MultiField
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
-    { ASSERT(false).error("Method get_element_data must be implement in descendant."); }
+    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
 protected:
     /**
@@ -123,6 +128,12 @@ protected:
      * Reads table of data headers specific for each descendants.
      */
     virtual void make_header_table()=0;
+
+    /**
+     * Read element data to data cache
+     */
+    virtual void read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
+    		std::vector<int> const & el_ids)=0;
 
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;

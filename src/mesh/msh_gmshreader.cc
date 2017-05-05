@@ -288,87 +288,45 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 
-template<typename T>
-typename ElementDataCache<T>::ComponentDataPtr GmshMeshReader::get_element_data( std::string field_name, double time,
-		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
-{
-    using namespace boost;
-    //
+void GmshMeshReader::read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
+		std::vector<int> const & el_ids) {
+    unsigned int id, i_row;
+    unsigned int n_read = 0;
+    vector<int>::const_iterator id_iter = el_ids.begin();
 
-    MeshDataHeader actual_header = find_header(time, field_name);
-    if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
+    // read @p data buffer as we have correct header with already passed time
+    // we assume that @p data buffer is big enough
+    tok_.set_position(actual_header.position);
 
-	    unsigned int id, i_row;
-	    unsigned int n_read = 0;
-    	unsigned int size_of_cache; // count of vectors stored in cache
-	    vector<int>::const_iterator id_iter = el_ids.begin();
+    // read data
+    for (i_row = 0; i_row < actual_header.n_entities; ++i_row)
+        try {
+            tok_.next_line();
+            id = boost::lexical_cast<unsigned int>(*tok_); ++tok_;
+            //skip_element = false;
+            while (id_iter != el_ids.end() && *id_iter < (int)id) {
+                ++id_iter; // skip initialization of some rows in data if ID is missing
+            }
+            if (id_iter == el_ids.end()) {
+            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
+                        tok_.f_name(), actual_header.field_name, actual_header.time, id);
+                break;
+            }
+            // save data from the line if ID was found
+            if (*id_iter == (int)id) {
+            	current_cache_->read_ascii_data(tok_, n_components, (id_iter - el_ids.begin()) );
+                n_read++;
+            }
+            // skip the line if ID on the line  < actual ID in the map el_ids
+        } catch (boost::bad_lexical_cast &) {
+        	THROW(ExcWrongFormat() << EI_Type("$ElementData line") << EI_TokenizerMsg(tok_.position_msg())
+        			<< EI_GMSHFile(tok_.f_name()) );
+        }
+    // possibly skip remaining lines after break
+    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
 
-	    // check that the header is valid, try to correct
-	    if (actual_header.n_entities != n_entities) {
-	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
-	                tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
-	        // actual_header.n_entities=n_entities;
-	    }
-
-	    if (n_components == 1) {
-	    	// read for MultiField to 'n_comp' vectors
-	    	// or for Field if ElementData contains only one value
-	    	size_of_cache = actual_header.n_components;
-	    }
-	    else {
-	    	// read for Field if more values is stored to one vector
-	    	size_of_cache = 1;
-	    	if (actual_header.n_components != n_components) {
-	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-		                tok_.f_name(), field_name, actual_header.time, actual_header.n_components, n_components);
-		        actual_header.n_components=n_components;
-	    	}
-	    }
-
-	    // set new cache
-	    delete current_cache_;
-	    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
-	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
-
-	    // read @p data buffer as we have correct header with already passed time
-	    // we assume that @p data buffer is big enough
-	    tok_.set_position(actual_header.position);
-
-	    // read data
-	    for (i_row = 0; i_row < actual_header.n_entities; ++i_row)
-	        try {
-	            tok_.next_line();
-	            id = lexical_cast<unsigned int>(*tok_); ++tok_;
-	            //skip_element = false;
-	            while (id_iter != el_ids.end() && *id_iter < (int)id) {
-	                ++id_iter; // skip initialization of some rows in data if ID is missing
-	            }
-	            if (id_iter == el_ids.end()) {
-	            	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nData ID {} not found or is not in order. Skipping rest of data.\n",
-	                        tok_.f_name(), field_name, actual_header.time, id);
-	                break;
-	            }
-	            // save data from the line if ID was found
-	            if (*id_iter == (int)id) {
-	            	current_cache_->read_ascii_data(tok_, n_components, (id_iter - el_ids.begin()) );
-	                n_read++;
-	            }
-	            // skip the line if ID on the line  < actual ID in the map el_ids
-	        } catch (bad_lexical_cast &) {
-	        	THROW(ExcWrongFormat() << EI_Type("$ElementData line") << EI_TokenizerMsg(tok_.position_msg())
-	        			<< EI_GMSHFile(tok_.f_name()) );
-	        }
-	    // possibly skip remaining lines after break
-	    while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
-
-	    LogOut().fmt("time: {}; {} entities of field {} read.\n",
-	    		actual_header.time, n_read, actual_header.field_name);
-
-	    actual = true; // use input header to indicate modification of @p data buffer
-	}
-
-    if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
-	return static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(component_idx);
+    LogOut().fmt("time: {}; {} entities of field {} read.\n",
+    		actual_header.time, n_read, actual_header.field_name);
 }
 
 
@@ -426,13 +384,3 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 	--headers_it;
 	return *headers_it;
 }
-
-
-// explicit instantiation of template methods
-#define GMSH_READER_GET_ELEMENT_DATA(TYPE) \
-template typename ElementDataCache<TYPE>::ComponentDataPtr GmshMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
-	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx)
-
-GMSH_READER_GET_ELEMENT_DATA(int);
-GMSH_READER_GET_ELEMENT_DATA(unsigned int);
-GMSH_READER_GET_ELEMENT_DATA(double);
