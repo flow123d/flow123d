@@ -29,13 +29,23 @@ typedef std::pair<std::string, TestCaseIPs> TestCaseResult ;
 void fill_solution(std::vector< TestCaseResult> &c)
 {
     // degenerate cases
+    // no IP
     c.push_back({ "00_d", {}});
+
+    // 1 IP, A node, T node
     c.push_back({ "01_d", {IntersectionPoint<1,2>({0}, {0, 0})}});
     c.push_back({ "02_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
-    c.push_back({ "03_d", {IntersectionPoint<1,2>({1./3}, {0, 0})}});
+    c.push_back({ "03_d", {IntersectionPoint<1,2>({1}, {0, 0})}});
+    
+    // 1 IP, A node, T side
     c.push_back({ "04_d", {IntersectionPoint<1,2>({1}, {0, 0.2})}});
     c.push_back({ "05_d", {IntersectionPoint<1,2>({0}, {0.5, 0.5})}});
-    c.push_back({ "06_d", {IntersectionPoint<1,2>({2./3}, {0, 1})}});
+    c.push_back({ "06_d", {IntersectionPoint<1,2>({1}, {0, 0.2})}});
+    
+    // 1 IP, inside A, T node
+    c.push_back({ "07_d", {IntersectionPoint<1,2>({2./3}, {0, 1})}});
+    c.push_back({ "08_d", {IntersectionPoint<1,2>({1./3}, {0, 0})}});
+    
     
     // degenerate cases with 2 IPs
     c.push_back({ "10_d", {IntersectionPoint<1,2>({0}, {0, 0}),
