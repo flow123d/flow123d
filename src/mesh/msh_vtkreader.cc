@@ -365,11 +365,5 @@ void VtkMeshReader::parse_compressed_data(unsigned int size_of_cache, unsigned i
 
 
 // explicit instantiation of template methods
-#define VTK_READER_GET_ELEMENT_DATA(TYPE) \
-template TYPE read_binary_value<TYPE>(std::istream &data_stream)
-
-VTK_READER_GET_ELEMENT_DATA(int);
-VTK_READER_GET_ELEMENT_DATA(unsigned int);
-VTK_READER_GET_ELEMENT_DATA(double);
-
+template unsigned int read_binary_value<unsigned int>(std::istream &data_stream);
 template uint64_t read_binary_value<uint64_t>(std::istream &data_stream);
