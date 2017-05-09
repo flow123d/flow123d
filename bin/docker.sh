@@ -90,6 +90,10 @@ then
     shift
     make_work_image
     docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash -c "$D_HOME/bin/pmake" $@ 
+elif [ "$1" == "flow123d" ]
+then
+    shift
+    docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w `pwd` -u $U_ID:$G_ID $WORK_IMAGE bash -c "${WORKDIR}/${project_dir}/bin/flow123d $*" 
 else
     # interactive
     make_work_image    
