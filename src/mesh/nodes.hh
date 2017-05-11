@@ -20,6 +20,7 @@
 
 #include "system/global_defs.h"
 #include "mesh/mesh_types.hh"
+#include "mesh/bounding_box.hh"
 #include <armadillo>
 
 
@@ -77,6 +78,16 @@ public:
     inline arma::vec3 operator-(const Node &n2) const
     {
         return ( this->point() - n2.point() );
+    }
+
+    /**
+     * Compare coordinates of two nodes.
+     */
+    inline bool operator==(const Node &n2) const
+    {
+        return fabs(this->getX()-n2.getX()) < BoundingBox::epsilon
+        	&& fabs(this->getY()-n2.getY()) < BoundingBox::epsilon
+			&& fabs(this->getZ()-n2.getZ()) < BoundingBox::epsilon;
     }
 
 
