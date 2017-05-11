@@ -54,6 +54,14 @@ public:
 	/// Destructor
 	~VtkMeshReader();
 
+	/**
+	 * Check if nodes and elements of VTK mesh is compatible with \p mesh.
+	 *
+	 *  - to all nodes of VTK mesh must exists one and only one nodes in second mesh
+	 *  - the same must occur for elements
+	 *  - method fill vector \p vtk_to_gmsh_element_map_
+	 *  - it is necessary to call this method before calling \p get_element_data
+	 */
 	void check_compatible_mesh(Mesh &mesh);
 
 protected:
@@ -94,6 +102,12 @@ protected:
 	/// Get position of AppendedData tag in VTK file
 	Tokenizer::Position get_appended_position();
 
+	/// Override @p BaseMeshReader::check_test_compatible_mesh.
+	inline void check_test_compatible_mesh() override {
+		ASSERT_GT(vtk_to_gmsh_element_map_.size(), 0)
+				.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
+	}
+
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
@@ -116,7 +130,7 @@ protected:
     unsigned int n_read_;
 
     /// get ids of elements in GMSH source mesh
-    std::vector<int> vtk_to_gmsh_elemenet_map_;
+    std::vector<int> vtk_to_gmsh_element_map_;
 
 };
 

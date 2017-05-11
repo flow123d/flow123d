@@ -288,7 +288,7 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
 	tok_.set_position( pos );
 	tok_.next_line();
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_ascii_data(tok_, n_components, i_row);
+		data_cache.read_ascii_data(tok_, n_components, vtk_to_gmsh_element_map_[i_row]);
         n_read_++;
 	}
 }
@@ -304,7 +304,7 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(*data_stream_, n_components, i_row);
+		data_cache.read_binary_data(*data_stream_, n_components, vtk_to_gmsh_element_map_[i_row]);
         n_read_++;
 	}
 }
@@ -360,7 +360,7 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 	ASSERT_EQ(size_of_cache*n_components*n_entities, data_size).error();
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(decompressed_data, n_components, i_row);
+		data_cache.read_binary_data(decompressed_data, n_components, vtk_to_gmsh_element_map_[i_row]);
         n_read_++;
 	}
 }
@@ -381,7 +381,10 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         MeshDataHeader point_header = this->find_header(0.0, "Points");
         ASSERT_EQ(3, point_header.n_components).error();
         node_ids.resize(point_header.n_entities);
-        for (unsigned int i=0; i<point_header.n_entities; ++i) el_ids.push_back(i);
+        for (unsigned int i=0; i<point_header.n_entities; ++i) {
+        	el_ids.push_back(i);
+        	vtk_to_gmsh_element_map_.push_back(i);
+        }
 
         typename ElementDataCache<double>::CacheData data_cache
             = ElementDataCache<double>::create_data_cache(1, point_header.n_components*point_header.n_entities);
@@ -418,8 +421,10 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 
     {   // get offset DataArray
         MeshDataHeader offset_header = this->find_header(0.0, "offsets");
-        node_ids.resize(offset_header.n_entities);
-        for (unsigned int i=0; i<offset_header.n_entities; ++i) el_ids.push_back(i);
+        for (unsigned int i=el_ids.size(); i<offset_header.n_entities; ++i) {
+        	el_ids.push_back(i);
+        	vtk_to_gmsh_element_map_.push_back(i);
+        }
 
         typename ElementDataCache<unsigned int>::CacheData data_cache
             = ElementDataCache<unsigned int>::create_data_cache(1, offset_header.n_components*offset_header.n_entities);
@@ -433,6 +438,10 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     {   // read elements
         MeshDataHeader con_header = this->find_header(0.0, "connectivity");
         con_header.n_entities = offsets[offsets.size()-1];
+        for (unsigned int i=el_ids.size(); i<con_header.n_entities; ++i) {
+        	el_ids.push_back(i);
+        	vtk_to_gmsh_element_map_.push_back(i);
+        }
 
         typename ElementDataCache<unsigned int>::CacheData data_cache
     		= ElementDataCache<unsigned int>::create_data_cache(1, con_header.n_components*con_header.n_entities);
@@ -442,7 +451,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         std::vector<unsigned int> &vec = *( data_cache[0] );
         vector<unsigned int> node_list;
         vector<unsigned int> result_list;
-        vtk_to_gmsh_elemenet_map_.resize(offsets.size());
+        vtk_to_gmsh_element_map_.clear();
+        vtk_to_gmsh_element_map_.resize(offsets.size());
         unsigned int i_con = 0; // iterate trough connectivity data
         for (unsigned int i=0; i<offsets.size(); ++i) {
             for ( ; i_con<offsets[i]; ++i_con ) {
@@ -450,7 +460,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             }
             mesh.intersect_element_lists(node_list, result_list);
             ASSERT_EQ(result_list.size(), 1).error("Incompatible meshes, intersect_element_lists must produce one element.");
-            vtk_to_gmsh_elemenet_map_[i] = result_list[0];
+            vtk_to_gmsh_element_map_[i] = result_list[0];
             node_list.clear();
         }
 

@@ -33,6 +33,8 @@ BaseMeshReader::BaseMeshReader(std::istream &in)
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( std::string field_name, double time,
 		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx) {
+	this->check_test_compatible_mesh();
+
     MeshDataHeader actual_header = this->find_header(time, field_name);
     if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
     	unsigned int size_of_cache; // count of vectors stored in cache

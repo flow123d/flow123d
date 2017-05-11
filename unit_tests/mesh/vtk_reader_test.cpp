@@ -5,9 +5,10 @@
  *      Author: jb
  */
 
+#define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 
-#include <flow_gtest.hh>
+#include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
 #include <string>
@@ -15,6 +16,7 @@
 #include <pugixml.hpp>
 
 #include "mesh/msh_vtkreader.hh"
+#include "mesh/msh_gmshreader.h"
 #include "system/tokenizer.hh"
 
 
@@ -31,6 +33,9 @@ public:
 	void read_nodes(Mesh* mesh)
 	{
 		auto actual_header = this->find_header(0.0, "Points");
+
+		vtk_to_gmsh_element_map_.resize(actual_header.n_entities);
+		for (unsigned int i=0; i<vtk_to_gmsh_element_map_.size(); ++i) vtk_to_gmsh_element_map_[i]=i;
 
 		// set new cache
 	    delete current_cache_;
@@ -69,6 +74,8 @@ public:
 	        node->point()(1)=vect[ivec]; ++ivec;
 	        node->point()(2)=vect[ivec]; ++ivec;
 		}
+
+		vtk_to_gmsh_element_map_.clear();
 	}
 
 	MeshDataHeader & find_header(double time, std::string field_name) {
@@ -142,6 +149,14 @@ TEST(VtkReaderTest, read_binary_vtu) {
     	EXPECT_EQ( VtkMeshReader::DataFormat::binary_uncompressed, reader.get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
+    }
+
+    {
+        FilePath mesh_file("fields/simplest_cube_3d.msh", FilePath::input_file);
+        Mesh *mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_3d.msh\"}");
+        mesh->init_from_input();
+        reader.check_compatible_mesh(*mesh);
+        delete mesh;
     }
 
     std::vector<int> el_ids;
