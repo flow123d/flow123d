@@ -40,18 +40,18 @@ public:
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data( 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data( *current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				parse_binary_data( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_binary_data( *current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				parse_compressed_data( 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_compressed_data(* current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type);
 				break;
 			}

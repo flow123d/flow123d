@@ -288,8 +288,8 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
-		std::vector<int> const & el_ids) {
+void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
+		unsigned int n_components, std::vector<int> const & el_ids) {
     unsigned int id, i_row;
     unsigned int n_read = 0;
     vector<int>::const_iterator id_iter = el_ids.begin();
@@ -314,7 +314,7 @@ void GmshMeshReader::read_element_data(MeshDataHeader actual_header, unsigned in
             }
             // save data from the line if ID was found
             if (*id_iter == (int)id) {
-            	current_cache_->read_ascii_data(tok_, n_components, (id_iter - el_ids.begin()) );
+            	data_cache.read_ascii_data(tok_, n_components, (id_iter - el_ids.begin()) );
                 n_read++;
             }
             // skip the line if ID on the line  < actual ID in the map el_ids

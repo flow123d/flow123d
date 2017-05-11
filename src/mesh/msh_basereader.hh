@@ -132,8 +132,8 @@ protected:
     /**
      * Read element data to data cache
      */
-    virtual void read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
-    		std::vector<int> const & el_ids)=0;
+    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
+    		unsigned int n_components, std::vector<int> const & el_ids)=0;
 
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;

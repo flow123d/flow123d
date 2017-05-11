@@ -123,8 +123,8 @@ protected:
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(MeshDataHeader actual_header, unsigned int size_of_cache, unsigned int n_components,
-        		std::vector<int> const & el_ids) override;
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
+    		unsigned int n_components, std::vector<int> const & el_ids) override;
 
 
     /// Table with data of ElementData headers
