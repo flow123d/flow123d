@@ -62,7 +62,7 @@ public:
 	 *  - method fill vector \p vtk_to_gmsh_element_map_
 	 *  - it is necessary to call this method before calling \p get_element_data
 	 */
-	void check_compatible_mesh(Mesh &mesh);
+	void check_compatible_mesh(Mesh &mesh) override;
 
 protected:
     /**

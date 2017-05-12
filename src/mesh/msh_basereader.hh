@@ -118,6 +118,11 @@ public:
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
     		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
 
+    /**
+     * Check if nodes and elements of reader mesh is compatible with \p mesh.
+     */
+    virtual void check_compatible_mesh(Mesh &mesh)=0;
+
 protected:
     /**
 	 * Find data header for given time and field.

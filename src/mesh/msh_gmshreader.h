@@ -98,6 +98,13 @@ public:
      */
     void read_physical_names(Mesh * mesh);
 
+    /**
+     * Empty method for GMSH reader now.
+     *
+     * Implements @p BaseMeshReader::check_compatible_mesh.
+     */
+    void check_compatible_mesh(Mesh &mesh) override;
+
 protected:
     /**
      * private method for reading of nodes

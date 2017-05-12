@@ -384,3 +384,6 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 	--headers_it;
 	return *headers_it;
 }
+
+void GmshMeshReader::check_compatible_mesh(Mesh &mesh)
+{}
