@@ -191,7 +191,6 @@ add_library(mesh_lib
     
     mesh/bounding_box.cc
     mesh/bih_tree.cc
-    mesh/reader_instances.cc
     
     mesh/ngh/src/abscissa.cpp
     mesh/ngh/src/bisector.cpp
@@ -239,6 +238,8 @@ target_link_libraries(fem_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
+    io/reader_instances.cc
+
     io/output_data.cc
     io/output_time.cc
     io/output_vtk.cc

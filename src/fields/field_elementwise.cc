@@ -21,7 +21,7 @@
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "mesh/msh_gmshreader.h"
-#include "mesh/reader_instances.hh"
+#include "io/reader_instances.hh"
 
 /// Implementation.
 

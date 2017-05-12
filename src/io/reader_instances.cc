@@ -15,7 +15,7 @@
  * @brief   
  */
 
-#include "mesh/reader_instances.hh"
+#include "io/reader_instances.hh"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/msh_vtkreader.hh"
 

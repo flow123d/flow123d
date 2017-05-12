@@ -21,7 +21,7 @@
 #include "system/system.hh"
 #include "mesh/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
-#include "mesh/reader_instances.hh"
+#include "io/reader_instances.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
