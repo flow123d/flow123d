@@ -132,6 +132,11 @@ public:
      * values at @p unit_support_points.
      */
     std::vector<arma::vec::fixed<dim> > unit_support_points;
+    
+    
+private:
+  
+    void init();
 
 };
 
@@ -155,7 +160,7 @@ class FE_P : public FiniteElement<dim,spacedim>
 public:
     /// Constructor.
     FE_P();
-
+    
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.
      * @param i Number of the basis function.
@@ -217,7 +222,7 @@ public:
 
     /// Constructor.
     FE_P_disc();
-
+    
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.
      * @param i Number of the basis function.
@@ -342,8 +347,9 @@ const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 FE_P<degree,dim,spacedim>::FE_P()
+  : FiniteElement<dim,spacedim>()
 {
-    this->init();
+//     this->init();
 
     for (int i=0; i<=dim; i++)
     {
@@ -362,7 +368,9 @@ FE_P<degree,dim,spacedim>::FE_P()
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
     order = degree;
-
+    
+    this->setup_components();
+    
     this->compute_node_matrix();
 }
 
@@ -430,6 +438,8 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
     order = degree;
+    
+    this->setup_components();
 
     this->compute_node_matrix();
 }

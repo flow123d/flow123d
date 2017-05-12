@@ -63,7 +63,7 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
     if (update_flags & update_gradients)
     {
-        shape_gradients.resize(size, vector<arma::vec>(n_comp));
+        shape_gradients.resize(size, vector<arma::vec::fixed<spacedim> >(n_comp));
     }
 
     if (update_flags & update_quadrature_points)

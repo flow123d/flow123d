@@ -20,6 +20,7 @@
 #define FE_SYSTEM_HH_
 
 #include <vector>
+#include <memory>
 
 // #include "system/global_defs.h"
 // #include "system/system.hh"
@@ -41,25 +42,27 @@ class FESystem : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
+    using FiniteElement<dim,spacedim>::generalized_support_points;
     using FiniteElement<dim,spacedim>::order;
 
 public:
-    /// Constructor.
-    FESystem(std::vector<const FiniteElement<dim,spacedim> &> fe);
+    
+    /// Constructor. FESystem created from vector of FE with given multiplicities.
+    FESystem(FiniteElement<dim,spacedim> *fe, unsigned int n);
 
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
 
     /**
      * @brief Returns the gradient of the @p ith basis function at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
 
     /**
      * @brief The vector variant of basis_value must be implemented but may not be used.
@@ -93,8 +96,12 @@ private:
     unsigned int basis_index;
     unsigned int component_offset;
   };
+  
+  /// FESystem created from vector of FE.
+  void initialize();
+  
 
-  std::vector<const FiniteElement<dim,spacedim> &> fe_;
+  std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe_;
   std::vector<DofComponentData> fe_dof_indices_;
   
 };

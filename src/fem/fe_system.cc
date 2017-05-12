@@ -17,43 +17,67 @@
  */
 
 #include "fem/fe_system.hh"
+#include "system/global_defs.h"
 
+using namespace std;
+
+
+
+template<unsigned int dim,unsigned int spacedim>
+std::vector<FiniteElement<dim,spacedim> > expand_fe_vector(const std::vector<std::pair<FiniteElement<dim,spacedim>, unsigned int> > &fe)
+{
+  std::vector<FiniteElement<dim,spacedim> > finite_elements;
+  
+  for (auto fe_pair : fe)
+    for (unsigned int i=0; i<fe_pair.second; i++)
+      finite_elements.push_back(fe_pair.first);
+
+  return finite_elements;
+}
 
 
 
 template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::FESystem(std::vector<const FiniteElement<dim,spacedim> &> finite_elements)
-  : fe_(finite_elements)
+FESystem<dim,spacedim>::FESystem(FiniteElement<dim,spacedim> *fe, unsigned int n)
+  : FiniteElement<dim,spacedim>()
 {
-  this->init();
+  std::shared_ptr<FiniteElement<dim,spacedim> > fe_ptr(fe);
+  fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(n, fe_ptr);
+  initialize();
+}
 
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FESystem<dim,spacedim>::initialize()
+{
   this->is_primitive_ = false;
   
   unsigned int fe_index = 0;
   unsigned int comp_offset = 0;
   for (auto fe : fe_)
   {
-    number_of_dofs += fe.n_dofs();
-    this->n_components_ += fe.n_components();
+    number_of_dofs += fe->n_dofs();
+    this->n_components_ += fe->n_components();
 
     for (int i=0; i<=dim; ++i)
     {
-      number_of_single_dofs[i] += fe.n_object_dofs(i, DOF_SINGLE);
-      number_of_pairs[i] += fe.n_object_dofs(i, DOF_PAIR);
-      number_of_triples[i] += fe.n_object_dofs(i, DOF_TRIPLE);
-      number_of_sextuples[i] += fe.n_object_dofs(i, DOF_SEXTUPLE);
+      number_of_single_dofs[i] += fe->n_object_dofs(i, DOF_SINGLE);
+      number_of_pairs[i] += fe->n_object_dofs(i, DOF_PAIR);
+      number_of_triples[i] += fe->n_object_dofs(i, DOF_TRIPLE);
+      number_of_sextuples[i] += fe->n_object_dofs(i, DOF_SEXTUPLE);
     }
 
-    for (int i=0; i<fe.generalized_support_points().size(); i++)
-        this->generalized_support_points.push_back(fe.get_generalized_support_points()[i]);
+    for (int i=0; i<fe->get_generalized_support_points().size(); i++)
+        generalized_support_points.push_back(fe->get_generalized_support_points()[i]);
 
-    if (fe.polynomial_order() > order) order = fe.polynomial_order();
+    if (fe->polynomial_order() > order) order = fe->polynomial_order();
     
-    for (int i=0; i<fe.n_dofs(); ++i)
+    for (int i=0; i<fe->n_dofs(); ++i)
       fe_dof_indices_.push_back(DofComponentData(fe_index, i, comp_offset));
     
     fe_index++;
-    comp_offset += fe.n_components();
+    comp_offset += fe->n_components();
   }
   
   if (this->is_primitive_)
@@ -61,7 +85,7 @@ FESystem<dim,spacedim>::FESystem(std::vector<const FiniteElement<dim,spacedim> &
     double dof_index = 0;
     for (auto fe : fe_)
     {
-      for (int i=0; i<fe.n_dofs(); ++i)
+      for (int i=0; i<fe->n_dofs(); ++i)
         this->component_indices_.push_back(fe_dof_indices_[dof_index++].fe_index);
     }
   } else {
@@ -69,31 +93,34 @@ FESystem<dim,spacedim>::FESystem(std::vector<const FiniteElement<dim,spacedim> &
     comp_offset = 0;
     for (auto fe : fe_)
     {
-      for (int i=0; i<fe.n_dofs(); ++i)
+      for (int i=0; i<fe->n_dofs(); ++i)
       {
         std::vector<bool> nonzeros(this->n_components_, false);
-        std::copy_n(fe.get_nonzero_components(fe_dof_indices_[dof_index++].basis_index), fe.n_components(), &nonzeros[comp_offset]);
+        for (unsigned int c=0; c<fe->n_components(); c++)\
+          nonzeros[comp_offset+c] = fe->get_nonzero_components(fe_dof_indices_[dof_index++].basis_index)[c];
         this->nonzero_components_.push_back(nonzeros);
       }
-      comp_offset += fe.n_components();
+      comp_offset += fe->n_components();
     }
   }
 
-  this->compute_node_matrix();
+  compute_node_matrix();
 }
+
+
 
 template<unsigned int dim, unsigned int spacedim>
 double FESystem<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-  return fe_[fe_dof_indices_[i].first].basis_value(fe_dof_indices_[i].second, p);
+  return fe_[fe_dof_indices_[i].fe_index]->basis_value(fe_dof_indices_[i].basis_index, p);
 }
 
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-  return fe_[fe_dof_indices_[i].first].basis_grad(fe_dof_indices_[i].second, p);
+  return fe_[fe_dof_indices_[i].fe_index]->basis_grad(fe_dof_indices_[i].basis_index, p);
 }
 
 template<unsigned int dim, unsigned int spacedim>
@@ -104,8 +131,8 @@ double FESystem<dim,spacedim>::basis_value_component(const unsigned int i,
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
   
   if (comp-fe_dof_indices_[i].component_offset >= 0 && 
-      comp-fe_dof_indices_[i].component_offset < fe_[fe_dof_indices_[i].fe_index].n_components())
-    return fe_[fe_dof_indices_[i].fe_index].basis_value_component(fe_dof_indices_[i].basis_index, p, comp-fe_dof_indices_[i].component_offset);
+      comp-fe_dof_indices_[i].component_offset < fe_[fe_dof_indices_[i].fe_index]->n_components())
+    return fe_[fe_dof_indices_[i].fe_index]->basis_value_component(fe_dof_indices_[i].basis_index, p, comp-fe_dof_indices_[i].component_offset);
   
   return 0;
 }
@@ -118,10 +145,10 @@ arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad_component(const unsigne
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
   
   if (comp-fe_dof_indices_[i].component_offset >= 0 && 
-      comp-fe_dof_indices_[i].component_offset < fe_[fe_dof_indices_[i].fe_index].n_components())
-    return fe_[fe_dof_indices_[i].fe_index].basis_grad_component(fe_dof_indices_[i].basis_index, p, comp-fe_dof_indices_[i].component_offset);
+      comp-fe_dof_indices_[i].component_offset < fe_[fe_dof_indices_[i].fe_index]->n_components())
+    return fe_[fe_dof_indices_[i].fe_index]->basis_grad_component(fe_dof_indices_[i].basis_index, p, comp-fe_dof_indices_[i].component_offset);
   
-  return 0;
+//   return 0;
 }
 
 template<unsigned int dim, unsigned int spacedim>
@@ -134,10 +161,10 @@ void FESystem<dim,spacedim>::compute_node_matrix()
   unsigned int offset = 0;
   for (unsigned int i = 0; i < fe_.size(); i++)
   {
-    this->node_matrix.submat(offset, offset, offset+fe_[i].n_dofs(), offset+fe_[i].n_dofs())
-      = fe_[i].node_matrix;
+    this->node_matrix.submat(offset, offset, offset+fe_[i]->n_dofs()-1, offset+fe_[i]->n_dofs()-1)
+      = fe_[i]->node_matrix;
       
-    offset += fe_[i].n_dofs();
+    offset += fe_[i]->n_dofs();
   }
 }
 
@@ -150,7 +177,9 @@ FESystem<dim,spacedim>::~FESystem()
 
 
 
-
+template class FESystem<1,3>;
+template class FESystem<2,3>;
+template class FESystem<3,3>;
 
 
 

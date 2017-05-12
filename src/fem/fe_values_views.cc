@@ -54,8 +54,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::grad(un
 {
   arma::mat::fixed<spacedim,spacedim> g;
   for (unsigned int c=0; c<spacedim; ++c)
-    g.row(c) = fe_values_.shape_grad_component(function_no, point_no, first_vector_component_+c);
-  return g;
+    g.col(c) = fe_values_.shape_grad_component(function_no, point_no, first_vector_component_+c);
+  return g.t();
 }
 
 template<unsigned int dim, unsigned int spacedim>

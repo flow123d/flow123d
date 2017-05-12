@@ -98,7 +98,7 @@ public:
      *
      * Each row of the matrix contains the gradient of one shape function.
      */
-    std::vector<std::vector<arma::vec> > shape_gradients;
+    std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients;
 
 //     /**
 //      * @brief Shape functions (for vectorial finite elements) evaluated at

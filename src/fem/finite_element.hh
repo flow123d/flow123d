@@ -27,6 +27,7 @@
 
 
 
+template<unsigned int dim, unsigned int spacedim> class FESystem;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 template<unsigned int dim> class Quadrature;
 
@@ -144,12 +145,14 @@ public:
      * @brief Constructor.
      */
     FiniteElement();
-
+    
     /**
      * @brief Clears all internal structures.
      */
     void init();
-
+    
+    void setup_components();
+    
     /**
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
@@ -175,7 +178,7 @@ public:
      * @param p Point of evaluation.
      */
     virtual double basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+            const arma::vec::fixed<dim> &p) const {};
 
     /**
      * @brief Calculates the value of the @p comp-th component of
@@ -187,7 +190,7 @@ public:
      * @param comp Number of vector component.
      */
     virtual double basis_value_component(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp) const {};
 
     /**
      * @brief Calculates the gradient of the @p i-th raw basis function at the
@@ -200,7 +203,7 @@ public:
      * @param p Point of evaluation.
      */
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+            const arma::vec::fixed<dim> &p) const {};
 
     /**
      * @brief Calculates the @p comp-th component of the gradient
@@ -212,7 +215,7 @@ public:
      * @param comp Number of vector component.
      */
     virtual arma::vec::fixed<dim> basis_grad_component(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp) const {};
 
     /**
      * @brief Initializes the @p node_matrix for computing the coefficients
@@ -374,6 +377,9 @@ protected:
      * as @p generalized_support_points.
      */
     std::vector<arma::vec::fixed<dim> > generalized_support_points;
+    
+    
+    friend class FESystem<dim,spacedim>;
 };
 
 

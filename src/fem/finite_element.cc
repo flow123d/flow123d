@@ -49,9 +49,16 @@ void FiniteElement<dim,spacedim>::init()
     
     is_primitive_ = true;
     n_components_ = 1;
-    component_indices_.resize(number_of_dofs, 0);
-    nonzero_components_.resize(number_of_dofs, { true });
 }
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FiniteElement<dim,spacedim>::setup_components()
+{
+  component_indices_.resize(number_of_dofs, 0);
+  nonzero_components_.resize(number_of_dofs, { true });
+}
+
 
 template<unsigned int dim, unsigned int spacedim> inline
 const unsigned int FiniteElement<dim,spacedim>::n_dofs() const
