@@ -2,7 +2,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test25 - Steady flow with xfem singular connection 1D-2D
   mesh:
-    mesh_file: ./input/triangle_const_4.msh
+    mesh_file: ./input/triangle_const_5.msh
     #regions:
       #- !From_Elements
         #name: source
@@ -34,8 +34,8 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          #value: 0 + (100-0)/log(0.03/10) * log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const dir problem
-          value: (0 - 100)/(1/(0.03*1)-log(0.03/10))*log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const sigma problem
+          value: 0 + (100-0)/log(0.03/10) * log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const dir problem
+          #value: (0 - 100)/(1/(0.03*1)-log(0.03/10))*log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const sigma problem
           # value: -100/(1/(0.03*1)-log(0.03/10))*log(((x-0.3)^2+(y-0.3)^2)^0.5 / 10) 
       #- region: .well_top
         #bc_type: dirichlet

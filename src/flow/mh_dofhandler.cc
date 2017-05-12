@@ -583,7 +583,8 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     singularities.push_back(sing);
 
     //TODO: suggest proper enrichment radius
-    double enr_radius = 1.3*std::sqrt(ele2d->measure());
+//     double enr_radius = 1.3*std::sqrt(ele2d->measure());
+    double enr_radius = 1.5;
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
 
