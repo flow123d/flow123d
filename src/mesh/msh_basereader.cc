@@ -63,8 +63,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 
 	    // set new cache
 	    delete current_cache_;
-	    typename ElementDataCache<T>::CacheData data_cache = ElementDataCache<T>::create_data_cache(size_of_cache, n_components*n_entities);
-	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, data_cache);
+	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, size_of_cache, n_components*n_entities);
 
 	    this->read_element_data(*current_cache_, actual_header, size_of_cache, n_components, el_ids);
 	    actual = true; // use input header to indicate modification of @p data buffer

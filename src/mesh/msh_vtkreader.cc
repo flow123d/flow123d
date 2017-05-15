@@ -368,7 +368,6 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
 void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 {
-    ElementDataCacheBase *tmp_cache;
     std::vector<int> el_ids;
     std::vector<unsigned int> node_ids; // allow mapping ids of nodes from VTK mesh to GMSH
     std::vector<unsigned int> offsets; // value of offset section in VTK file
@@ -386,13 +385,12 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	vtk_to_gmsh_element_map_.push_back(i);
         }
 
-        typename ElementDataCache<double>::CacheData data_cache
-            = ElementDataCache<double>::create_data_cache(1, point_header.n_components*point_header.n_entities);
-        tmp_cache = new ElementDataCache<double>(point_header.time, point_header.field_name, data_cache);
+        ElementDataCache<double> node_cache(point_header.time, point_header.field_name, 1,
+        		point_header.n_components*point_header.n_entities);
 
         // check compatible nodes
-        this->read_element_data(*tmp_cache, point_header, 1, point_header.n_components, el_ids);
-        std::vector<double> &vec = *( data_cache[0] );
+        this->read_element_data(node_cache, point_header, 1, point_header.n_components, el_ids);
+        std::vector<double> &vec = *(node_cache.get_component_data(0) );
         ASSERT_EQ(vec.size(), point_header.n_components*point_header.n_entities).error();
         for (unsigned int i=0; i<point_header.n_entities; ++i) {
             Node node(vec[3*i], vec[3*i+1], vec[3*i+2]);
@@ -416,7 +414,6 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             searched_elements.clear();
         }
 
-        delete tmp_cache;
     }
 
     {   // get offset DataArray
@@ -426,13 +423,11 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	vtk_to_gmsh_element_map_.push_back(i);
         }
 
-        typename ElementDataCache<unsigned int>::CacheData data_cache
-            = ElementDataCache<unsigned int>::create_data_cache(1, offset_header.n_components*offset_header.n_entities);
-        tmp_cache = new ElementDataCache<unsigned int>(offset_header.time, offset_header.field_name, data_cache);
-        this->read_element_data(*tmp_cache, offset_header, 1, offset_header.n_components, el_ids);
+        ElementDataCache<unsigned int> offset_cache(offset_header.time, offset_header.field_name, 1,
+        		offset_header.n_components*offset_header.n_entities);
+        this->read_element_data(offset_cache, offset_header, 1, offset_header.n_components, el_ids);
 
-        offsets = *( data_cache[0] );
-        delete tmp_cache;
+        offsets = *(offset_cache.get_component_data(0) );
     }
 
     {   // read elements
@@ -443,12 +438,11 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	vtk_to_gmsh_element_map_.push_back(i);
         }
 
-        typename ElementDataCache<unsigned int>::CacheData data_cache
-    		= ElementDataCache<unsigned int>::create_data_cache(1, con_header.n_components*con_header.n_entities);
-        tmp_cache = new ElementDataCache<unsigned int>(con_header.time, con_header.field_name, data_cache);
-        this->read_element_data(*tmp_cache, con_header, 1, con_header.n_components, el_ids);
+        ElementDataCache<unsigned int> con_cache(con_header.time, con_header.field_name, 1,
+        		con_header.n_components*con_header.n_entities);
+        this->read_element_data(con_cache, con_header, 1, con_header.n_components, el_ids);
 
-        std::vector<unsigned int> &vec = *( data_cache[0] );
+        std::vector<unsigned int> &vec = *(con_cache.get_component_data(0) );
         vector<unsigned int> node_list;
         vector<unsigned int> result_list;
         vtk_to_gmsh_element_map_.clear();
@@ -463,8 +457,6 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             vtk_to_gmsh_element_map_[i] = result_list[0];
             node_list.clear();
         }
-
-        delete tmp_cache;
     }
 
 }

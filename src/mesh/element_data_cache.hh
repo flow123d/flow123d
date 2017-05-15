@@ -78,10 +78,10 @@ public:
 	: ElementDataCacheBase() {}
 
 	/// Constructor.
-	ElementDataCache(double time, std::string quantity_name, CacheData data)
-	: data_(data) {
+	ElementDataCache(double time, std::string quantity_name, unsigned int size_of_cache, unsigned int row_vec_size) {
 		this->time_ = time;
 		this->quantity_name_ = quantity_name;
+		this->data_ = create_data_cache(size_of_cache, row_vec_size);
 	}
 
 	/// Return vector of element data for get component.
