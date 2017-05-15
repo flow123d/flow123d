@@ -114,6 +114,17 @@ protected:
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
     		unsigned int n_components, std::vector<int> const & el_ids) override;
 
+    /**
+     * Compare two points representing by armadillo vector.
+     *
+     *  - used in \p check_compatible_mesh method
+     *  - calculate with \p point_tolerance parameter
+     */
+    bool compare_points(arma::vec3 &p1, arma::vec3 &p2);
+
+    /// Tolerance during comparison point data with GMSH nodes.
+    static const double point_tolerance;
+
     /// header type of VTK file (only for appended data)
     DataType header_type_;
 
