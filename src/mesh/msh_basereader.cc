@@ -43,7 +43,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    if (actual_header.n_entities != n_entities) {
 	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
 	                tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
-	        // actual_header.n_entities=n_entities;
+	        actual_header.n_entities=n_entities;
 	    }
 
 	    if (n_components == 1) {
@@ -63,7 +63,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 
 	    // set new cache
 	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<T>(actual_header.time, actual_header.field_name, size_of_cache, n_components*n_entities);
+	    current_cache_ = new ElementDataCache<T>(actual_header, size_of_cache, n_components*n_entities);
 
 	    this->read_element_data(*current_cache_, actual_header, size_of_cache, n_components, el_ids);
 	    actual = true; // use input header to indicate modification of @p data buffer

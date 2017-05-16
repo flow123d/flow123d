@@ -21,7 +21,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include "boost/lexical_cast.hpp"
 #include "system/system.hh"
 #include "system/tokenizer.hh"
 
@@ -67,6 +66,10 @@ protected:
 };
 
 
+
+struct MeshDataHeader;
+
+
 template <typename T>
 class ElementDataCache : public ElementDataCacheBase {
 public:
@@ -74,60 +77,30 @@ public:
 	typedef std::vector< ComponentDataPtr > CacheData;
 
 	/// Default constructor
-	ElementDataCache()
-	: ElementDataCacheBase() {}
+	ElementDataCache();
 
-	/// Constructor.
-	ElementDataCache(double time, std::string quantity_name, unsigned int size_of_cache, unsigned int row_vec_size) {
-		this->time_ = time;
-		this->quantity_name_ = quantity_name;
-		this->data_ = create_data_cache(size_of_cache, row_vec_size);
-	}
+	/**
+	 * Constructor.
+	 *
+	 * @param data_header   Set data members time_ and quantity_name_
+	 * @param size_of_cache Count of columns of data cache
+	 * @param row_vec_size  Count of rows of data cache
+	 */
+	ElementDataCache(MeshDataHeader data_header, unsigned int size_of_cache, unsigned int row_vec_size);
 
 	/// Return vector of element data for get component.
-	ComponentDataPtr get_component_data(unsigned int component_idx) {
-		ASSERT_LT(component_idx, data_.size()).error("Index of component is out of range.\n");
-		return data_[component_idx];
-	}
+	ComponentDataPtr get_component_data(unsigned int component_idx);
 
 	/**
 	 * Create data cache with given count of columns (\p size_of_cache) and rows (\p row_vec_size).
 	 */
-	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size) {
-	    typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
-	    for (unsigned int i=0; i<size_of_cache; ++i) {
-			typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
-			row_vec->resize(row_vec_size);
-			data_cache[i] = row_vec;
-	    }
-
-	    return data_cache;
-	}
+	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size);
 
 	/// Implements @p ElementDataCacheBase::read_ascii_data.
-	void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override {
-		unsigned int idx;
-    	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
-    		idx = i_row * n_components;
-    		std::vector<T> &vec = *( data_[i_vec].get() );
-    		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-    			vec[idx] = boost::lexical_cast<T>(*tok);
-    			++tok;
-    		}
-    	}
-	}
+	void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override;
 
 	/// Implements @p ElementDataCacheBase::read_binary_data.
-	void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override {
-		unsigned int idx;
-    	for (unsigned int i_vec=0; i_vec<data_.size(); ++i_vec) {
-    		idx = i_row * n_components;
-    		std::vector<T> &vec = *( data_[i_vec].get() );
-    		for (unsigned int i_col=0; i_col < n_components; ++i_col, ++idx) {
-    			data_stream.read(reinterpret_cast<char *>(&vec[idx]), sizeof(T));
-    		}
-    	}
-	}
+	void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override;
 
 protected:
 	/**

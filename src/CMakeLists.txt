@@ -178,6 +178,7 @@ add_library(mesh_lib
     mesh/msh_basereader.cc
     mesh/msh_gmshreader.cc
     mesh/msh_vtkreader.cc
+    mesh/element_data_cache.cc
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc

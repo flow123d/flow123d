@@ -393,8 +393,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         }
 
         // create temporary data cache
-        ElementDataCache<double> node_cache(point_header.time, point_header.field_name, 1,
-        		point_header.n_components*point_header.n_entities);
+        ElementDataCache<double> node_cache(point_header, 1, point_header.n_components*point_header.n_entities);
 
         // check compatible nodes, to each VTK point must exist only one GMSH node
         this->read_element_data(node_cache, point_header, 1, point_header.n_components, el_ids);
@@ -431,8 +430,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	vtk_to_gmsh_element_map_.push_back(i);
         }
 
-        ElementDataCache<unsigned int> offset_cache(offset_header.time, offset_header.field_name, 1,
-        		offset_header.n_components*offset_header.n_entities);
+        ElementDataCache<unsigned int> offset_cache(offset_header, 1, offset_header.n_components*offset_header.n_entities);
         this->read_element_data(offset_cache, offset_header, 1, offset_header.n_components, el_ids);
 
         offsets_vec = *(offset_cache.get_component_data(0) );
@@ -449,8 +447,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	vtk_to_gmsh_element_map_.push_back(i);
         }
 
-        ElementDataCache<unsigned int> con_cache(con_header.time, con_header.field_name, 1,
-        		con_header.n_components*con_header.n_entities);
+        ElementDataCache<unsigned int> con_cache(con_header, 1, con_header.n_components*con_header.n_entities);
         this->read_element_data(con_cache, con_header, 1, con_header.n_components, el_ids);
 
         std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );

@@ -39,8 +39,7 @@ public:
 
 		// set new cache
 	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<double>(actual_header.time, actual_header.field_name, 1,
-	    		actual_header.n_components*actual_header.n_entities);
+	    current_cache_ = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
