@@ -43,7 +43,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    if (actual_header.n_entities != n_entities) {
 	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
 	                tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
-	        actual_header.n_entities=n_entities;
+	        // actual_header.n_entities=n_entities;
 	    }
 
 	    if (n_components == 1) {
