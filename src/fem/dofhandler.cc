@@ -359,19 +359,19 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
             break;
         }
         
-        for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
-        {
-          switch (node_status[nid]) {
-            case VALID_NODE:
+        switch (node_status[nid]) {
+          case VALID_NODE:
+            for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
               node_dofs[node_dof_starts[nid]+i] = next_free_dof++;
-              node_status[nid] = ASSIGNED_NODE;
-              break;
-            case INVALID_NODE:
+            node_status[nid] = ASSIGNED_NODE;
+            break;
+          case INVALID_NODE:
+            for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
               node_dofs[node_dof_starts[nid]+i] = INVALID_NODE;
-              break;
-          }
-          dof_indices.push_back(node_dofs[node_dof_starts[nid]+i]);
+            break;
         }
+        for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
+          dof_indices.push_back(node_dofs[node_dof_starts[nid]+i]);
       }
       
       // add dofs owned only by the element
