@@ -89,7 +89,6 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
 	ASSERT(reader_file_ == FilePath()).error("Multiple call of init_from_input.");
     reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-    ReaderInstances::instance()->get_reader(reader_file_);
 
     field_name_ = rec.val<std::string>("field_name");
 }
@@ -149,6 +148,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     	data_->resize(n_entities_ * n_components_);
     }
 
+    ReaderInstances::instance()->get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 
 
