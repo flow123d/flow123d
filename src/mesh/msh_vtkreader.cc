@@ -452,20 +452,27 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 
         std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );
         vector<unsigned int> node_list;
-        vector<unsigned int> result_list;
+        vector<unsigned int> candidate_list; // returned by intersect_element_lists
+        vector<unsigned int> result_list; // list of elements with same dimension as vtk element
         vtk_to_gmsh_element_map_.clear();
         vtk_to_gmsh_element_map_.resize(offsets_vec.size());
         // iterate trough connectivity data, to each VTK cell must exist only one GMSH element
         // fill vtk_to_gmsh_element_map_ vector
-        unsigned int i_con = 0;
+        unsigned int i_con = 0, last_offset=0, dim;
         for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element
+        	dim = offsets_vec[i] - last_offset - 1; // dimension of vtk element
             for ( ; i_con<offsets_vec[i]; ++i_con ) { // iterate trough all nodes of any element
                 node_list.push_back( node_ids[connectivity_vec[i_con]] );
             }
-            mesh.intersect_element_lists(node_list, result_list);
+            mesh.intersect_element_lists(node_list, candidate_list);
+            for (auto i_elm : candidate_list) {
+            	if ( mesh.element( i_elm )->dim() == dim ) result_list.push_back(i_elm);
+            }
             ASSERT_EQ(result_list.size(), 1).error("Incompatible meshes, intersect_element_lists must produce one element.");
             vtk_to_gmsh_element_map_[i] = result_list[0];
             node_list.clear();
+            result_list.clear();
+            last_offset = offsets_vec[i];
         }
     }
 
