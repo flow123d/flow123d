@@ -149,6 +149,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     	data_->resize(n_entities_ * n_components_);
     }
 
+    if ( reader_file_ == FilePath() ) return;
     ReaderInstances::instance()->get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 

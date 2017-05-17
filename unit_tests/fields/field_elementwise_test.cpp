@@ -292,7 +292,7 @@ TEST_F(FieldElementwiseTest, vtk_tensor) {
 }
 
 
-/*TEST_F(FieldElementwiseTest, scalar_enum) {
+TEST_F(FieldElementwiseTest, scalar_enum) {
     EnumField field;
     field.set_mesh(mesh,false);
 
@@ -325,5 +325,5 @@ TEST_F(FieldElementwiseTest, bc_scalar_enum) {
 		//EXPECT_EQ( 14+j, field.value(point,mesh->element_accessor(4,true)) );
 		//EXPECT_EQ( 15+j, field.value(point,mesh->element_accessor(5,true)) );
     }
-}*/
+}
 
