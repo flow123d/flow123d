@@ -80,6 +80,8 @@
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
+class MeshTree;
+
 
 class BoundarySegment {
 public:
@@ -304,6 +306,8 @@ public:
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
+    
+    MeshTree *tree;
 
     /// Maximal distance of observe point from Mesh relative to its size
     double global_observe_radius() const;

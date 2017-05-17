@@ -182,6 +182,7 @@ add_library(mesh_lib
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
+    mesh/mesh_tree.cc
     mesh/mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
@@ -228,6 +229,7 @@ target_link_libraries(mesh_lib
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
     quadrature/intersection_quadrature.cc
+    fem/discrete_space.cc
     fem/dofhandler.cc
     fem/finite_element.cc
     fem/fe_p.cc

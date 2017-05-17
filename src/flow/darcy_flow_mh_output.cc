@@ -111,8 +111,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
+    ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe1, &fe2, &fe3);
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	dh_->distribute_dofs(fe1, fe2, fe3);
+	dh_->distribute_dofs(ds);
+    dh_->create_sequential();
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
@@ -266,7 +268,7 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
+	unsigned int ndofs = dh_->max_elem_dofs();
 	unsigned int indices[ndofs];
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
