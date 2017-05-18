@@ -36,21 +36,10 @@ class FilePath;
 
 class GmshMeshReader : public BaseMeshReader {
 public:
-	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
 	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
-	TYPEDEF_ERR_INFO(EI_Time, double);
-	TYPEDEF_ERR_INFO(EI_Type, std::string);
-	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
 	TYPEDEF_ERR_INFO(EI_Section, std::string);
 	TYPEDEF_ERR_INFO(EI_ElementId, int);
 	TYPEDEF_ERR_INFO(EI_ElementType, int);
-	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
-			<< "No data for field: "<< EI_FieldName::qval
-			<< " and time: "<< EI_Time::val
-			<< " in the input file: "<< EI_GMSHFile::qval);
-	DECLARE_EXCEPTION(ExcWrongFormat,
-			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
-			<< "in the input file: " << EI_GMSHFile::qval);
 	DECLARE_EXCEPTION(ExcMissingSection,
 			<< "Missing section " << EI_Section::qval << " in the GMSH input file: " << EI_GMSHFile::qval);
 	DECLARE_EXCEPTION(ExcUnsupportedType,
@@ -132,6 +121,11 @@ protected:
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
     		unsigned int n_components, std::vector<int> const & el_ids) override;
+
+    /// Implements @p BaseMeshReader::data_section_name.
+    std::string data_section_name() override {
+    	return "$ElementData";
+    }
 
 
     /// Table with data of ElementData headers

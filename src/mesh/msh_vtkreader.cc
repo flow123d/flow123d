@@ -22,7 +22,6 @@
 #include "boost/lexical_cast.hpp"
 
 #include "msh_vtkreader.hh"
-#include "msh_gmshreader.h" // TODO move exception to base class and remove
 #include "system/system.hh"
 #include "mesh/bih_tree.hh"
 
@@ -49,7 +48,7 @@ uint64_t read_header_type(DataType data_header_type, std::istream &data_stream)
 	else if (data_header_type == DataType::uint32)
 		return (uint64_t)read_binary_value<unsigned int>(data_stream);
 	else {
-		ASSERT(false).error("Unsupported header_type!\n");
+		ASSERT(false).error("Unsupported header_type!\n"); //should not happen
 		return 0;
 	}
 }
@@ -78,12 +77,21 @@ VtkMeshReader::~VtkMeshReader()
 
 void VtkMeshReader::read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements)
 {
-	// header type of appended data
-	header_type_ = this->get_data_type( vtk_node.attribute("header_type").as_string() );
+    try {
+    	// header type of appended data
+    	header_type_ = this->get_data_type( vtk_node.attribute("header_type").as_string() );
+    } catch(ExcWrongType &e) {
+    	e << EI_SectionTypeName("base parameter header_type");
+    }
 	// data format
 	if (header_type_ == DataType::undefined) {
 		data_format_ = DataFormat::ascii;
 	} else {
+		if (header_type_!=DataType::uint64 && header_type_!=DataType::uint32) {
+			// Allowable values of header type are only 'UInt64' or 'UInt32'
+			THROW( ExcWrongType() << EI_ErrMessage("Forbidden") << EI_SectionTypeName("base parameter header_type")
+					<< EI_VTKFile(tok_.f_name()));
+		}
 		std::string compressor = vtk_node.attribute("compressor").as_string();
 		if (compressor == "vtkZLibDataCompressor")
 			data_format_ = DataFormat::binary_zlib;
@@ -105,7 +113,7 @@ Tokenizer::Position VtkMeshReader::get_appended_position() {
 		// find line by tokenizer
 		tok_.set_position( Tokenizer::Position() );
 		if (! tok_.skip_to("AppendedData"))
-			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section("AppendedData") << GmshMeshReader::EI_GMSHFile(tok_.f_name()) );
+			THROW(ExcMissingTag() << EI_TagType("tag") << EI_TagName("AppendedData") << EI_VTKFile(tok_.f_name()) );
 		else {
 			appended_pos = tok_.get_position();
 		}
@@ -133,29 +141,35 @@ MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
     header.time = 0.0;
-    header.type = this->get_data_type( node.attribute("type").as_string() );
+    try {
+        header.type = this->get_data_type( node.attribute("type").as_string() );
+    } catch(ExcWrongType &e) {
+        e << EI_SectionTypeName("DataArray " + header.field_name);
+    }
     header.n_components = node.attribute("NumberOfComponents").as_uint(1);
     header.n_entities = n_entities;
     std::string format = node.attribute("format").as_string();
     if (format=="appended") {
-        ASSERT(data_format_ != DataFormat::ascii)(header.field_name).error("Invalid format of DataArray!");
+    	if (data_format_ == DataFormat::ascii)
+    		THROW(ExcInvalidFormat() << EI_FieldName(header.field_name) << EI_ExpectedFormat("ascii") << EI_VTKFile(tok_.f_name()) );
         std::streampos file_pos = pos.file_position_;
         file_pos += node.attribute("offset").as_uint();
         header.position = Tokenizer::Position( file_pos, pos.line_counter_, pos.line_position_ );
     } else if (format=="ascii") {
-    	ASSERT(data_format_ == DataFormat::ascii)(header.field_name).error("Invalid format of DataArray!");
+    	if (data_format_ != DataFormat::ascii)
+    		THROW(ExcInvalidFormat() << EI_FieldName(header.field_name) << EI_ExpectedFormat("appended") << EI_VTKFile(tok_.f_name()) );
 
     	tok_.set_position( Tokenizer::Position() );
     	bool is_point = (header.field_name=="");
     	std::string found_str = (is_point) ? "<Points>" : "Name=\"" + header.field_name + "\"";
 		if (! tok_.skip_to(found_str))
-			THROW(GmshMeshReader::ExcMissingSection() << GmshMeshReader::EI_Section(header.field_name) << GmshMeshReader::EI_GMSHFile(tok_.f_name()) );
+			THROW(ExcMissingTag() << EI_TagType("DataArray tag") << EI_TagName(header.field_name) << EI_VTKFile(tok_.f_name()) );
 		else {
 			if (is_point) tok_.skip_to("DataArray");
 			header.position = tok_.get_position();
 		}
     } else {
-        ASSERT(false).error("Unsupported or missing VTK format.");
+    	THROW(ExcUnknownFormat() << EI_FieldName(header.field_name) << EI_VTKFile(tok_.f_name()) );
     }
 
     return header;
@@ -208,7 +222,7 @@ MeshDataHeader & VtkMeshReader::find_header(double time, std::string field_name)
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        THROW( GmshMeshReader::ExcFieldNameNotFound() << GmshMeshReader::EI_FieldName(field_name) << GmshMeshReader::EI_GMSHFile(tok_.f_name()));
+        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_MeshFile(tok_.f_name()));
 	}
 
 	return table_it->second;
@@ -236,7 +250,7 @@ DataType VtkMeshReader::get_data_type(std::string type_str) {
 	if (it != types.end()) {
 	    return it->second;
     } else {
-        ASSERT(false).error("Unsupported VTK data type.");
+    	THROW( ExcWrongType() << EI_ErrMessage("Unknown") << EI_VTKFile(tok_.f_name()));
         return DataType::uint32;
     }
 
@@ -289,10 +303,15 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
     n_read_ = 0;
 
 	tok_.set_position( pos );
-	tok_.next_line();
-	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_ascii_data(tok_, n_components, vtk_to_gmsh_element_map_[i_row]);
-        n_read_++;
+    try {
+    	tok_.next_line();
+    	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
+    		data_cache.read_ascii_data(tok_, n_components, vtk_to_gmsh_element_map_[i_row]);
+            n_read_++;
+    	}
+	} catch (boost::bad_lexical_cast &) {
+		THROW(ExcWrongFormat() << EI_Type("DataArray tag") << EI_TokenizerMsg(tok_.position_msg())
+				<< EI_MeshFile(tok_.f_name()) );
 	}
 }
 
@@ -411,11 +430,16 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                     if ( compare_points(ele->node[i_node]->point(), point) ) {
                     	i_elm_node = mesh.node_vector.index(ele->node[i_node]);
                         if (found_i_node == -1) found_i_node = i_elm_node;
-                        else ASSERT_EQ(found_i_node, (int)i_elm_node).error("Incompatible meshes, duplicate nodes found in GMSH file.");
+                        else if (found_i_node != i_elm_node) {
+                        	THROW( ExcIncompatibleMesh() << EI_ErrMessage("duplicate nodes found in GMSH file")
+                        			<< EI_VTKFile(tok_.f_name()));
+                        }
                     }
                 }
             }
-            ASSERT_GE(found_i_node, 0).error("Incompatible meshes, no node found in GMSH file.");
+            if (found_i_node == -1) {
+            	THROW( ExcIncompatibleMesh() << EI_ErrMessage("no node found in GMSH file") << EI_VTKFile(tok_.f_name()));
+            }
             node_ids[i] = (unsigned int)found_i_node;
             searched_elements.clear();
         }
@@ -468,7 +492,10 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             for (auto i_elm : candidate_list) {
             	if ( mesh.element( i_elm )->dim() == dim ) result_list.push_back(i_elm);
             }
-            ASSERT_EQ(result_list.size(), 1).error("Incompatible meshes, intersect_element_lists must produce one element.");
+            if (result_list.size() != 1) {
+            	THROW( ExcIncompatibleMesh() << EI_ErrMessage("intersect_element_lists must produce one element")
+            			<< EI_VTKFile(tok_.f_name()));
+            }
             vtk_to_gmsh_element_map_[i] = result_list[0];
             node_list.clear();
             result_list.clear();

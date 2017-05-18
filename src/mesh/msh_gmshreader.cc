@@ -94,7 +94,7 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
         }
 
     } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
     MessageOut().fmt("... {} nodes read. \n", mesh->node_vector.size());
 }
@@ -193,7 +193,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
         }
 
     } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
     mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
@@ -225,7 +225,7 @@ void GmshMeshReader::read_physical_names(Mesh * mesh) {
         }
 
     } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 }
 
@@ -282,7 +282,7 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
         for(;n_int>0;n_int--) tok_.next_line(false);
         head.position = tok_.get_position();
     } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("$ElementData header") << EI_TokenizerMsg(tok_.position_msg()) << EI_GMSHFile(tok_.f_name()) );
+    	THROW(ExcWrongFormat() << EI_Type("$ElementData header") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 }
 
@@ -320,7 +320,7 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
             // skip the line if ID on the line  < actual ID in the map el_ids
         } catch (boost::bad_lexical_cast &) {
         	THROW(ExcWrongFormat() << EI_Type("$ElementData line") << EI_TokenizerMsg(tok_.position_msg())
-        			<< EI_GMSHFile(tok_.f_name()) );
+        			<< EI_MeshFile(tok_.f_name()) );
         }
     // possibly skip remaining lines after break
     while (i_row < actual_header.n_entities) tok_.next_line(false), ++i_row;
@@ -364,7 +364,7 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_GMSHFile(tok_.f_name()));
+        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_MeshFile(tok_.f_name()));
 	}
 
 	auto comp = [](double t, const MeshDataHeader &a) {
@@ -378,7 +378,7 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 
 	if (headers_it == table_it->second.begin()) {
 		THROW( ExcFieldNameNotFound() << EI_FieldName(field_name)
-				                      << EI_GMSHFile(tok_.f_name()) << EI_Time(time));
+				                      << EI_MeshFile(tok_.f_name()) << EI_Time(time));
 	}
 
 	--headers_it;

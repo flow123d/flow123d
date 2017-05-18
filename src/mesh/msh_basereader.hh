@@ -86,6 +86,19 @@ struct MeshDataHeader {
  */
 class BaseMeshReader {
 public:
+	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
+	TYPEDEF_ERR_INFO(EI_Time, double);
+	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
+	TYPEDEF_ERR_INFO(EI_Type, std::string);
+	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
+			<< "No data for field: "<< EI_FieldName::qval
+			<< " and time: "<< EI_Time::val
+			<< " in the input file: "<< EI_MeshFile::qval);
+	DECLARE_EXCEPTION(ExcWrongFormat,
+			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
+			<< "in the input file: " << EI_MeshFile::qval);
+
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name);
 
@@ -146,6 +159,9 @@ protected:
      * This method has effect only for VTK reader.
      */
     virtual inline void check_test_compatible_mesh() {}
+
+    /// Return name of field data section specify for type of mesh file.
+    virtual std::string data_section_name()=0;
 
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;

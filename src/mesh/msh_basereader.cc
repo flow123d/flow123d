@@ -41,8 +41,8 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 
 	    // check that the header is valid, try to correct
 	    if (actual_header.n_entities != n_entities) {
-	    	WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
-	                tok_.f_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
+	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
+	                tok_.f_name(), data_section_name(), field_name, actual_header.time, actual_header.n_entities, n_entities);
 	        // actual_header.n_entities=n_entities;
 	    }
 
@@ -55,8 +55,8 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    	// read for Field if more values is stored to one vector
 	    	size_of_cache = 1;
 	    	if (actual_header.n_components != n_components) {
-	    		WarningOut().fmt("In file '{}', '$ElementData' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-		                tok_.f_name(), field_name, actual_header.time, actual_header.n_components, n_components);
+	    		WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
+		                tok_.f_name(), data_section_name(), field_name, actual_header.time, actual_header.n_components, n_components);
 		        actual_header.n_components=n_components;
 	    	}
 	    }

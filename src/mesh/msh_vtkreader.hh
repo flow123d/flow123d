@@ -28,6 +28,24 @@
 
 class VtkMeshReader : public BaseMeshReader {
 public:
+	TYPEDEF_ERR_INFO(EI_VTKFile, std::string);
+	TYPEDEF_ERR_INFO(EI_ExpectedFormat, std::string);
+	TYPEDEF_ERR_INFO(EI_ErrMessage, std::string);
+	TYPEDEF_ERR_INFO(EI_SectionTypeName, std::string);
+	TYPEDEF_ERR_INFO(EI_TagType, std::string);
+	TYPEDEF_ERR_INFO(EI_TagName, std::string);
+	DECLARE_EXCEPTION(ExcInvalidFormat,
+			<< "Invalid format of DataArray " << EI_FieldName::val << ", expected " << EI_ExpectedFormat::val << "\n"
+			<< "in the input file: " << EI_VTKFile::qval);
+	DECLARE_EXCEPTION(ExcUnknownFormat,
+			<< "Unsupported or missing format of DataArray " << EI_FieldName::val << "\n" << "in the input file: " << EI_VTKFile::qval);
+	DECLARE_EXCEPTION(ExcWrongType,
+			<< EI_ErrMessage::val << " data type of " << EI_SectionTypeName::val << "\n" << "in the input file: " << EI_VTKFile::qval);
+	DECLARE_EXCEPTION(ExcIncompatibleMesh,
+			<< "Incompatible meshes, " << EI_ErrMessage::val << "\n" << "for VTK input file: " << EI_VTKFile::qval);
+	DECLARE_EXCEPTION(ExcMissingTag,
+			<< "Missing " << EI_TagType::val << " " << EI_TagName::val << "\n" << " in the input file: " << EI_VTKFile::qval);
+
 	/// Possible data sections in UnstructuredGrid - Piece node.
 	enum DataSections {
 	    points, cells, cell_data
@@ -121,6 +139,11 @@ protected:
      *  - calculate with \p point_tolerance parameter
      */
     bool compare_points(arma::vec3 &p1, arma::vec3 &p2);
+
+    /// Implements @p BaseMeshReader::data_section_name.
+    std::string data_section_name() override {
+    	return "DataArray";
+    }
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;
