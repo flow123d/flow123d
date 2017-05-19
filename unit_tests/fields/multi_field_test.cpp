@@ -86,7 +86,7 @@ formula_field_base: !FieldFormula
   value: x
 
 elementwise_field: !FieldElementwise
-  mesh_data_file: ../fields/simplest_cube_data.msh
+  gmsh_file: ../fields/simplest_cube_data.msh
   field_name: vector_fixed
 interpolated_p0_field: !FieldInterpolatedP0
   gmsh_file: ../fields/simplest_cube_3d.msh
