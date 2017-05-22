@@ -34,7 +34,7 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           porosity: !FieldElementwise
-            gmsh_file: ./03_field_time_function.vtu
+            gmsh_file: ./03_field_descriptors-000000.vtu
             field_name: porosity
         - region: bulk
           init_conc: 0
