@@ -225,6 +225,10 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
     *this += region_id.name("region_id")
     	        .units( UnitSI::dimensionless())
     	        .flags(FieldFlag::equation_external_output);
+                
+    *this += subdomain.name("subdomain")
+      .units( UnitSI::dimensionless() )
+      .flags(FieldFlag::equation_external_output);
 
 
     // add all input fields to the output list
@@ -250,6 +254,7 @@ TransportDG<Model>::TransportDG(Mesh & init_mesh, const Input::Record in_rec)
     // Set up physical parameters.
     data_.set_mesh(init_mesh);
     data_.region_id = GenericField<3>::region_id(*Model::mesh_);
+    data_.subdomain = GenericField<3>::subdomain(*Model::mesh_);
 
 
     // DG variant and order
@@ -281,7 +286,8 @@ void TransportDG<Model>::initialize()
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     mm_coef.resize(qsize);
     ret_coef.resize(Model::n_substances());
-    sorption_sources.resize(Model::n_substances());
+    ret_sources.resize(Model::n_substances());
+    ret_sources_prev.resize(Model::n_substances());
     ad_coef.resize(Model::n_substances());
     dif_coef.resize(Model::n_substances());
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -330,18 +336,28 @@ void TransportDG<Model>::initialize()
     // set time marks for writing the output
     data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
 
+    // equation default PETSc solver options
+    std::string petsc_default_opts;
+    if (feo->dh()->distr()->np() == 1)
+      petsc_default_opts = "-ksp_type bcgs -pc_type ilu -pc_factor_levels 2 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    else
+      petsc_default_opts = "-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
+    
     // allocate matrix and vector structures
     ls    = new LinSys*[Model::n_substances()];
     ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
+    ret_vec = new Vec[Model::n_substances()];
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	ls[sbi]->set_solution(NULL);
 
-    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr());
+    	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
+        
+        VecDuplicate(ls[sbi]->get_solution(), &ret_vec[sbi]);
     }
     stiffness_matrix = new Mat[Model::n_substances()];
     mass_matrix = new Mat[Model::n_substances()];
@@ -350,11 +366,8 @@ void TransportDG<Model>::initialize()
 
 
     // initialization of balance object
-    if (Model::balance_ != nullptr)
-    {
-	    Model::balance_->allocate(feo->dh()->distr()->lsize(),
-	    		max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
-    }
+    Model::balance_->allocate(feo->dh()->distr()->lsize(),
+            max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
 
 }
 
@@ -378,6 +391,7 @@ TransportDG<Model>::~TransportDG()
             MatDestroy(&mass_matrix[i]);
             VecDestroy(&rhs[i]);
             VecDestroy(&mass_vec[i]);
+            VecDestroy(&ret_vec[i]);
         }
         delete[] ls;
         delete[] solution_elem_;
@@ -386,6 +400,7 @@ TransportDG<Model>::~TransportDG()
         delete[] mass_matrix;
         delete[] rhs;
         delete[] mass_vec;
+        delete[] ret_vec;
         delete feo;
 
     }
@@ -416,6 +431,10 @@ void TransportDG<Model>::zero_time_step()
 	START_TIMER(Model::ModelEqData::name());
 	data_.mark_input_times( *(Model::time_) );
 	data_.set_time(Model::time_->step(), LimitSide::left);
+	std::stringstream ss; // print warning message with table of uninitialized fields
+	if ( FieldCommon::print_message_table(ss, "transport DG") ) {
+		WarningOut() << ss.str();
+	}
 
 
     // set initial conditions
@@ -427,23 +446,12 @@ void TransportDG<Model>::zero_time_step()
     if (!allocation_done) preallocate();
 
     // after preallocation we assemble the matrices and vectors required for mass balance
-    if (Model::balance_ != nullptr)
+    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     {
-		for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-		{
-			Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution());
-			Model::balance_->calculate_source(Model::subst_idx[sbi], ls[sbi]->get_solution());
-			Model::balance_->calculate_flux(Model::subst_idx[sbi], ls[sbi]->get_solution());
+        Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
 
-			// add sources due to sorption
-			vector<double> masses(Model::mesh_->region_db().bulk_size());
-			double mass = 0;
-			Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution(), masses);
-			for (auto reg_mass : masses)
-				mass += reg_mass;
-
-			sorption_sources[sbi] = mass;
-		}
+        // add sources due to sorption
+        ret_sources_prev[sbi] = 0;
     }
 
     output_data();
@@ -464,11 +472,17 @@ void TransportDG<Model>::preallocate()
 		// preallocate mass matrix
 		ls_dt[i]->start_allocation();
 		mass_matrix[i] = NULL;
+        VecZeroEntries(ret_vec[i]);
 	}
 	assemble_stiffness_matrix();
 	assemble_mass_matrix();
 	set_sources();
 	set_boundary_conditions();
+    for (unsigned int i=0; i<Model::n_substances(); i++)
+    {
+      VecAssemblyBegin(ret_vec[i]);
+      VecAssemblyEnd(ret_vec[i]);
+    }
 
 	allocation_done = true;
 }
@@ -494,22 +508,19 @@ void TransportDG<Model>::update_solution()
         {
             ls_dt[i]->start_add_assembly();
             ls_dt[i]->mat_zero_entries();
+            VecZeroEntries(ret_vec[i]);
         }
         assemble_mass_matrix();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             ls_dt[i]->finish_assembly();
+            VecAssemblyBegin(ret_vec[i]);
+            VecAssemblyEnd(ret_vec[i]);
             // construct mass_vec for initial time
             if (mass_matrix[i] == NULL)
             {
                 VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
                 MatMult(*(ls_dt[i]->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
-                if (Model::balance_ != nullptr && Model::balance_->cumulative())
-                {
-                    double total_mass = 0;
-                    VecSum(mass_vec[i], &total_mass);
-                    sorption_sources[i] -= total_mass;
-                }
                 MatConvert(*( ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
             }
             else
@@ -561,7 +572,7 @@ void TransportDG<Model>::update_solution()
     		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}
     }
-
+    
     Model::flux_changed = false;
 
 
@@ -664,6 +675,12 @@ void TransportDG<Model>::output_data()
     data_.output_fields.output(this->time().step());
 
 	Model::output_data();
+    
+    START_TIMER("TOS-balance");
+    for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
+      Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
+    Model::balance_->output();
+    END_TIMER("TOS-balance");
 
     END_TIMER("DG-OUTPUT");
 }
@@ -672,39 +689,17 @@ void TransportDG<Model>::output_data()
 template<class Model>
 void TransportDG<Model>::calculate_cumulative_balance()
 {
-    if (Model::balance_ != nullptr && Model::balance_->cumulative())
+    if (Model::balance_->cumulative())
     {
     	for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
     	{
-    		Model::balance_->calculate_cumulative_sources(Model::subst_idx[sbi], ls[sbi]->get_solution(), Model::time_->dt());
-    		Model::balance_->calculate_cumulative_fluxes(Model::subst_idx[sbi], ls[sbi]->get_solution(), Model::time_->dt());
+    		Model::balance_->calculate_cumulative(Model::subst_idx[sbi], ls[sbi]->get_solution());
 
-    		// add sources due to sorption
-    		vector<double> masses(Model::mesh_->region_db().bulk_size());
-    		double mass = 0;
-    		Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution(), masses);
-    		for (auto reg_mass : masses)
-    			mass += reg_mass;
-    		double total_mass = 0;
-    		VecSum(mass_vec[sbi], &total_mass);
+            // update source increment due to retardation
+            VecDot(ret_vec[sbi], ls[sbi]->get_solution(), &ret_sources[sbi]);
 
-    		Model::balance_->add_cumulative_source(Model::subst_idx[sbi], mass-total_mass-sorption_sources[sbi]);
-    		sorption_sources[sbi] = mass - total_mass;
-    	}
-    }
-}
-
-
-template<class Model>
-void TransportDG<Model>::calculate_instant_balance()
-{
-    if (Model::balance_ != nullptr)
-    {
-    	for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
-    	{
-    		Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution());
-			Model::balance_->calculate_source(Model::subst_idx[sbi], ls[sbi]->get_solution());
-			Model::balance_->calculate_flux(Model::subst_idx[sbi], ls[sbi]->get_solution());
+            Model::balance_->add_cumulative_source(Model::subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
+            ret_sources_prev[sbi] = ret_sources[sbi];
     	}
     }
 }
@@ -714,13 +709,11 @@ template<class Model>
 void TransportDG<Model>::assemble_mass_matrix()
 {
   START_TIMER("assemble_mass");
-  	if (Model::balance_ != nullptr)
-  		Model::balance_->start_mass_assembly(Model::subst_idx);
+  	Model::balance_->start_mass_assembly(Model::subst_idx);
 	assemble_mass_matrix<1>();
 	assemble_mass_matrix<2>();
 	assemble_mass_matrix<3>();
-	if (Model::balance_ != nullptr)
-		Model::balance_->finish_mass_assembly(Model::subst_idx);
+	Model::balance_->finish_mass_assembly(Model::subst_idx);
   END_TIMER("assemble_mass");
 }
 
@@ -731,7 +724,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<int> dof_indices(ndofs);
-    PetscScalar local_mass_matrix[ndofs*ndofs];
+    PetscScalar local_mass_matrix[ndofs*ndofs], local_retardation_balance_vector[ndofs];
     vector<PetscScalar> local_mass_balance_vector(ndofs);
 
     // assemble integral over elements
@@ -760,18 +753,20 @@ void TransportDG<Model>::assemble_mass_matrix()
                 }
             }
 
-            if (Model::balance_ != nullptr)
+            for (unsigned int i=0; i<ndofs; i++)
             {
-                for (unsigned int i=0; i<ndofs; i++)
-                {
-                        local_mass_balance_vector[i] = 0;
-                        for (unsigned int k=0; k<qsize; k++)
-                            local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
-                }
+                    local_mass_balance_vector[i] = 0;
+                    local_retardation_balance_vector[i] = 0;
+                    for (unsigned int k=0; k<qsize; k++)
+                    {
+                        local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                        local_retardation_balance_vector[i] -= ret_coef[sbi][k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                    }
             }
             
             Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
 			ls_dt[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
+            VecSetValues(ret_vec[sbi], ndofs, &(dof_indices[0]), local_retardation_balance_vector, ADD_VALUES);
         }
     }
 }
@@ -870,13 +865,11 @@ template<class Model>
 void TransportDG<Model>::set_sources()
 {
   START_TIMER("assemble_sources");
-    if (Model::balance_ != nullptr)
-    	Model::balance_->start_source_assembly(Model::subst_idx);
+    Model::balance_->start_source_assembly(Model::subst_idx);
 	set_sources<1>();
 	set_sources<2>();
 	set_sources<3>();
-	if (Model::balance_ != nullptr)
-		Model::balance_->finish_source_assembly(Model::subst_idx);
+	Model::balance_->finish_source_assembly(Model::subst_idx);
   END_TIMER("assemble_sources");
 }
 
@@ -923,18 +916,15 @@ void TransportDG<Model>::set_sources()
         	}
         	ls[sbi]->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
 
-        	if (Model::balance_ != nullptr)
-        	{
-        		for (unsigned int i=0; i<ndofs; i++)
-        		{
-        			for (unsigned int k=0; k<qsize; k++)
-        				local_source_balance_vector[i] -= sources_sigma[k][sbi]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+            for (unsigned int i=0; i<ndofs; i++)
+            {
+                for (unsigned int k=0; k<qsize; k++)
+                    local_source_balance_vector[i] -= sources_sigma[k][sbi]*fe_values.shape_value(i,k)*fe_values.JxW(k);
 
-        			local_source_balance_rhs[i] += local_rhs[i];
-        		}
-        		Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_vector);
-        		Model::balance_->add_source_vec_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
-        	}
+                local_source_balance_rhs[i] += local_rhs[i];
+            }
+            Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_vector);
+            Model::balance_->add_source_vec_values(Model::subst_idx[sbi], cell->region().bulk_idx(), dof_indices, local_source_balance_rhs);
         }
     }
 }
@@ -1196,7 +1186,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     unsigned int side_dof_indices[2*ndofs], n_dofs[2];
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(Model::n_substances()));
-	vector<double> csection_lower(qsize), csection_higher(qsize), por_lower(qsize), por_higher(qsize);
+	vector<double> csection_lower(qsize), csection_higher(qsize);
     PetscScalar local_matrix[4*ndofs*ndofs];
     double comm_flux[2][2];
 
@@ -1236,8 +1226,6 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
 		data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 		data_.fracture_sigma.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
-		data_.porosity.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), por_lower);
-		data_.porosity.value_list(fe_values_vb.point_list(), cell->element_accessor(), por_higher);
 
 		for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 		{
@@ -1260,12 +1248,11 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 				        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
 
 				double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
-				double por_lower_over_higher = por_lower[k]/por_higher[k];
 
-				comm_flux[0][0] =  (sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
-				comm_flux[0][1] = -(sigma-min(0.,transport_flux*por_lower_over_higher))*fv_sb[0]->JxW(k);
-				comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-				comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+ 				comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
 
 				for (int n=0; n<2; n++)
 				{
@@ -1293,13 +1280,11 @@ template<class Model>
 void TransportDG<Model>::set_boundary_conditions()
 {
   START_TIMER("assemble_bc");
-    if (Model::balance_ != nullptr)
-    	Model::balance_->start_flux_assembly(Model::subst_idx);
+    Model::balance_->start_flux_assembly(Model::subst_idx);
 	set_boundary_conditions<1>();
 	set_boundary_conditions<2>();
 	set_boundary_conditions<3>();
-	if (Model::balance_ != nullptr)
-		Model::balance_->finish_flux_assembly(Model::subst_idx);
+	Model::balance_->finish_flux_assembly(Model::subst_idx);
   END_TIMER("assemble_bc");
 }
 
@@ -1381,9 +1366,8 @@ void TransportDG<Model>::set_boundary_conditions()
 						for (unsigned int i=0; i<ndofs; i++)
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
-					if (Model::balance_ != nullptr)
-						for (unsigned int i=0; i<ndofs; i++)
-							local_flux_balance_rhs -= local_rhs[i];
+                    for (unsigned int i=0; i<ndofs; i++)
+                        local_flux_balance_rhs -= local_rhs[i];
 				}
 				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
 				{
@@ -1395,21 +1379,18 @@ void TransportDG<Model>::set_boundary_conditions()
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k)
 									+ arma::dot(bc_grad,fe_values_side.shape_grad(i,k));
 					}
-					if (Model::balance_ != nullptr)
-					{
-						for (unsigned int k=0; k<qsize; k++)
-						{
-							for (unsigned int i=0; i<ndofs; i++)
-							{
-								local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
-										- arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
-										+ gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
-							}
-						}
-						if (Model::time_->tlevel() > 0)
-							for (unsigned int i=0; i<ndofs; i++)
-								local_flux_balance_rhs -= local_rhs[i];
-					}
+                    for (unsigned int k=0; k<qsize; k++)
+                    {
+                        for (unsigned int i=0; i<ndofs; i++)
+                        {
+                            local_flux_balance_vector[i] += (arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
+                                    - arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))
+                                    + gamma[sbi][side->cond_idx()]*fe_values_side.shape_value(i,k))*fe_values_side.JxW(k);
+                        }
+                    }
+                    if (Model::time_->tlevel() > 0)
+                        for (unsigned int i=0; i<ndofs; i++)
+                            local_flux_balance_rhs -= local_rhs[i];
 				}
 				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
 				{
@@ -1421,15 +1402,12 @@ void TransportDG<Model>::set_boundary_conditions()
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
 
-					if (Model::balance_ != nullptr)
-					{
-						for (unsigned int i=0; i<ndofs; i++)
-						{
-							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += csection[k]*bc_sigma[k]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							local_flux_balance_rhs -= local_rhs[i];
-						}
-					}
+                    for (unsigned int i=0; i<ndofs; i++)
+                    {
+                        for (unsigned int k=0; k<qsize; k++)
+                            local_flux_balance_vector[i] += csection[k]*bc_sigma[k]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+                        local_flux_balance_rhs -= local_rhs[i];
+                    }
 				}
 				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
 				{
@@ -1441,34 +1419,25 @@ void TransportDG<Model>::set_boundary_conditions()
 							local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
 					}
 
-					if (Model::balance_ != nullptr)
-					{
-						for (unsigned int i=0; i<ndofs; i++)
-						{
-							for (unsigned int k=0; k<qsize; k++)
-								local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-							local_flux_balance_rhs -= local_rhs[i];
-						}
-					}
+                    for (unsigned int i=0; i<ndofs; i++)
+                    {
+                        for (unsigned int k=0; k<qsize; k++)
+                            local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+                        local_flux_balance_rhs -= local_rhs[i];
+                    }
 				}
 				else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
 				{
-					if (Model::balance_ != nullptr)
-					{
-						for (unsigned int k=0; k<qsize; k++)
-						{
-							for (unsigned int i=0; i<ndofs; i++)
-								local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-						}
-					}
+                    for (unsigned int k=0; k<qsize; k++)
+                    {
+                        for (unsigned int i=0; i<ndofs; i++)
+                            local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
+                    }
 				}
 				ls[sbi]->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
 
-				if (Model::balance_ != nullptr)
-				{
-					Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
-					Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], loc_b, local_flux_balance_rhs);
-				}
+                Model::balance_->add_flux_matrix_values(Model::subst_idx[sbi], loc_b, side_dof_indices, local_flux_balance_vector);
+                Model::balance_->add_flux_vec_value(Model::subst_idx[sbi], loc_b, local_flux_balance_rhs);
 			}
 			++loc_b;
         }

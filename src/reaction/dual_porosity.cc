@@ -248,6 +248,10 @@ void DualPorosity::zero_time_step()
   }
   
   data_.set_time(time_->step(0), LimitSide::right);
+  std::stringstream ss; // print warning message with table of uninitialized fields
+  if ( FieldCommon::print_message_table(ss, "dual porosity") ) {
+      WarningOut() << ss.str();
+  }
   set_initial_condition();
   
   // write initial condition

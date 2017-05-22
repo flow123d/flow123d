@@ -43,7 +43,7 @@
 
 #include "mesh/partitioning.hh"
 
-#include "coupling/balance.hh"
+// #include "coupling/balance.hh"
 
 
 namespace it = Input::Type;
@@ -238,7 +238,8 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
         ele_pressure[i_ele] = sol[ soi + i_ele];
-        ele_piezo_head[i_ele] = sol[soi + i_ele ] + ele->centre()[Mesh::z_coord];
+        ele_piezo_head[i_ele] = sol[soi + i_ele ]
+          - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));
     }
 }
 

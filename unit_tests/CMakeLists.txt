@@ -177,6 +177,7 @@ add_subdirectory("mesh")
 add_subdirectory("coupling")
 add_subdirectory("output")
 add_subdirectory("dealii")
+add_subdirectory("intersection")
 
 
 #################################################################################################

@@ -253,7 +253,6 @@ TEST(Region, read_regions_from_yaml) {
 	mesh->check_and_finish();
 
 	const RegionDB & region_db = mesh->region_db();
-	region_db.print_region_table(cout);
 
 	EXPECT_EQ( 1, region_db.get_region_set("3D front rename").size() );
 	EXPECT_EQ(40, region_db.get_region_set("3D front rename")[0].id() );

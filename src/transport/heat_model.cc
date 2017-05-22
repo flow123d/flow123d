@@ -169,21 +169,21 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=fluid_thermal_source
             .name("fluid_thermal_source")
-            .description("Thermal source density in fluid.")
+            .description("Density of thermal source in fluid.")
             .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=solid_thermal_source
             .name("solid_thermal_source")
-            .description("Thermal source density in solid.")
+            .description("Density of thermal source in solid.")
             .units( UnitSI::W() * UnitSI().m(-3) )
             .input_default("0.0")
             .flags_add(in_rhs);
 
     *this+=fluid_heat_exchange_rate
             .name("fluid_heat_exchange_rate")
-            .description("Heat exchange rate in fluid.")
+            .description("Heat exchange rate of source in fluid.")
             .units( UnitSI().s(-1) )
             .input_default("0.0")
             .flags_add(in_rhs);
@@ -261,24 +261,14 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
     balance_ = std::make_shared<Balance>("energy", mesh_);
     balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    if (balance_)
-    {
-    	subst_idx = {balance_->add_quantity("energy")};
-    	balance_->units(UnitSI().m(2).kg().s(-2));
-    }
+    subst_idx = {balance_->add_quantity("energy")};
+    balance_->units(UnitSI().m(2).kg().s(-2));
 }
 
 
 void HeatTransferModel::output_data()
 {
 	output_stream_->write_time_frame();
-	if (balance_ != nullptr)
-	{
-	    if (balance_->is_current(time_->step())) {
-            calculate_instant_balance();
-            balance_->output(time_->t());
-	    }
-	}
 }
 
 

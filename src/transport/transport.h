@@ -86,6 +86,7 @@ public:
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
 
 		Field<3, FieldValue<3>::Integer> region_id;
+        Field<3, FieldValue<3>::Integer> subdomain;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
 
@@ -156,18 +157,6 @@ public:
 
     const vector<unsigned int> &get_subst_idx() override
 	{ return subst_idx; }
-
-    /**
-     * Calculate quantities necessary for cumulative balance (over time).
-     * This method is called at each (sub)iteration of the time loop.
-     */
-    void calculate_cumulative_balance() override;
-
-    /**
-     * Calculate instant quantities at output times.
-     */
-    void calculate_instant_balance() override;
-
 
     /**
      * @brief Write computed fields.

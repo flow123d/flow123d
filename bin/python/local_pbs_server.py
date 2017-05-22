@@ -27,17 +27,19 @@ class Qstat(object):
 
     def execute(self):
         if self.output == '-':
-            process = subprocess.Popen(['bash', self.script])
+            os.chmod(self.script, 0o777)
+            process = subprocess.Popen([self.script])
             self.set_status('r')
             process.wait()
-            self.set_status('c')
+            self.set_status('f')
         else:
             with open(self.output, 'w') as fp:
                 print(open(self.script, 'r').read())
-                process = subprocess.Popen(['bash', self.script], stderr=subprocess.STDOUT, stdout=fp)
+                os.chmod(self.script, 0o777)
+                process = subprocess.Popen([self.script], stderr=subprocess.STDOUT, stdout=fp)
                 self.set_status('r')
                 process.wait()
-                self.set_status('c')
+                self.set_status('f')
 
     def set_status(self, status):
         with open(self.filename, 'w') as fp:
