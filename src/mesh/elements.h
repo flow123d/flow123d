@@ -174,7 +174,6 @@ protected:
     RegionIdx  region_idx_;
     unsigned int dim_;
 
-    friend class GmshMeshReader;
     friend class Mesh;
 
     template<int spacedim, class Value>
