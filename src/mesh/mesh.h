@@ -88,6 +88,41 @@ public:
     static Input::Type::Record input_type;
 };
 
+
+/**
+ * Store data of nodes given by reader.
+ *
+ *  - allow transfer of general data from different types of readers
+ *  - every node is stored by pair (node id - node coordinates)
+ */
+typedef typename std::vector< std::pair<unsigned int, std::vector<double>> > NodeDataTable;
+
+
+/**
+ * Store data of elements given by reader
+ *
+ *  - allow transfer of general data from different types of readers
+ *  - every element is stored by vector with variable size (depends on n_nodes) and format:
+ *    element_id, dimension, region_id, partition_id, node_ids
+ */
+typedef typename std::vector< std::vector<unsigned int> > ElementDataTable;
+
+
+/// Data of one region (physical names) given by reader
+struct PhysicalNamesData {
+	unsigned int dim;  ///< dimension
+	unsigned int id;   ///< region_id
+	string name;       ///< region_name
+};
+
+
+/**
+ * Store data of physical names given by reader
+ */
+typedef typename std::vector< PhysicalNamesData > PhysicalNamesDataTable;
+
+
+
 //=============================================================================
 // STRUCTURE OF THE MESH
 //=============================================================================

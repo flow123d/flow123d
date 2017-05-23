@@ -94,6 +94,21 @@ public:
      */
     void check_compatible_mesh(Mesh &mesh) override;
 
+    /**
+     * method for reading data of nodes
+     */
+    NodeDataTable read_nodes_data();
+
+    /**
+     * method for reading data of elements
+     */
+    ElementDataTable read_elements_data();
+
+    /**
+     * method for reading data of elements
+     */
+    PhysicalNamesDataTable read_physical_names_data();
+
 protected:
     /**
      * private method for reading of nodes
