@@ -35,7 +35,7 @@ TEST(Partitioning, all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh * mesh = mesh_constructor(mesh_input);
-    mesh->init_from_input();
+    init_simplest_cube_mesh(mesh);
     const Distribution * init_ds = mesh->get_part()->get_init_distr();
 
     cout << *init_ds;

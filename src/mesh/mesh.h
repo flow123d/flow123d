@@ -226,7 +226,6 @@ public:
     /**
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
-    void init_from_input();
     void init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data);
 
 
@@ -312,6 +311,11 @@ public:
 
     /// Convert raw data of nodes and elements
     void add_mesh_data(NodeDataTable node_table, ElementDataTable element_table);
+
+    /// Return FilePath object representing "mesh_file" input key
+    inline FilePath mesh_file() {
+    	return in_record_.val<FilePath>("mesh_file");
+    }
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;

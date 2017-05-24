@@ -34,42 +34,6 @@ public:
 };
 
 
-// data structures represent mesh stored in UNIT_TESTS_SRC_DIR+/mesh/simplest_cube.msh
-PhysicalNamesDataTable physical_names_data = {
-		{1, 37, "1D diagonal"},
-		{2, 38, "2D XY diagonal"},
-		{2, 101, ".top side"},
-		{2, 102, ".bottom side"},
-		{3, 39, "3D back"},
-		{3, 40, "3D front"}
-};
-NodeDataTable node_data = {
-		{1, {1, 1, 1} },
-		{2, {-1, 1, 1} },
-		{3, {-1, -1, 1} },
-		{4, {1, -1, 1} },
-		{5, {1, -1, -1} },
-		{6, {-1, -1, -1} },
-		{7, {1, 1, -1} },
-		{8, {-1, 1, -1} }
-};
-ElementDataTable element_data = {
-		{ 1, 1, 37, 0, 7, 3 },
-		{ 2, 2, 38, 0, 6, 3, 7 },
-		{ 3, 2, 38, 0, 3, 1, 7 },
-		{ 4, 3, 39, 0, 3, 7, 1, 2 },
-		{ 5, 3, 39, 0, 3, 7, 2, 8 },
-		{ 6, 3, 39, 0, 3, 7, 8, 6 },
-		{ 7, 3, 40, 0, 3, 7, 6, 5 },
-		{ 8, 3, 40, 0, 3, 7, 5, 4 },
-		{ 9, 3, 40, 0, 3, 7, 4, 1 },
-		{10, 2, 101, 0, 1, 2, 3 },
-		{11, 2, 101, 0, 1, 3, 4 },
-		{12, 2, 102, 0, 6, 7, 8 },
-		{13, 2, 102, 0, 7, 6, 5 }
-};
-
-
 TEST_F(MeshTest, intersect_nodes_lists) {
 	node_elements.resize(3);
 	node_elements[0]={ 0, 1, 2, 3, 4};
@@ -97,7 +61,7 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Profiler::initialize();
     
     Mesh * mesh = mesh_constructor();
-    mesh->init_from_input(physical_names_data, node_data, element_data);
+    init_simplest_cube_mesh(mesh);
 
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->bc_elements.size());
@@ -144,7 +108,7 @@ TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh * mesh = mesh_constructor(mesh_input, Input::FileFormat::format_YAML);
-    mesh->init_from_input(physical_names_data, node_data, element_data);
+    init_simplest_cube_mesh(mesh);
 
     EXPECT_EQ( 37, mesh->element_accessor(0).region().id() );
     EXPECT_EQ( "1D rename", mesh->element_accessor(0).region().label() );
