@@ -108,7 +108,7 @@ public:
 
     /**
      * Map from reference element to global coord system.
-     * Matrix(3, dim+1), last column is the translation vector.
+     * Matrix(3, dim+1), first, column is the translation vector.
      */
     arma::mat::fixed<3, dim+1> element_map(Element &elm) const
     {

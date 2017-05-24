@@ -124,7 +124,8 @@ public:
     enum MortarMethod {
         NoMortar = 0,
         MortarP0 = 1,
-        MortarP1 = 2
+        MortarP1 = 2,
+        MortarPL = 3
     };
 
     /// Class with all fields used in the equation DarcyFlow.

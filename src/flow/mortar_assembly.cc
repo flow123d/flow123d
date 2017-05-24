@@ -506,5 +506,287 @@ void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac) {
 }
 
 
+PL_CouplingAssembler::PL_CouplingAssembler(AssemblyDataPtr data)
+: MortarAssemblyBase(data),
+  slave_ac_(data->mh_dh),
+  master_ac_(data->mh_dh)
+{
+    /// TODO: Use RefElement numberings to make it independent.
+    P1_for_P1e[0] = arma::mat({{1}});
+    P1_for_P1e[1] = arma::eye(2,2);
+
+    //{{1, 1, -1}, {1, -1, 1}, {-1, 1, 1}}
+    P1_for_P1e[2] = arma::ones(3,3);
+    P1_for_P1e[2].at(0,2)=-1;
+    P1_for_P1e[2].at(1,1)=-1;
+    P1_for_P1e[2].at(2,0)=-1;
+
+    //{{1, 1, 1, -1}, {1, 1, -1, 1}, {1, -1, 1, 1}, {-1, 1, 1, 1}}
+    P1_for_P1e[3] = arma::ones(4,4);
+    P1_for_P1e[3].at(0,3)=-2;
+    P1_for_P1e[3].at(1,2)=-2;
+    P1_for_P1e[3].at(2,1)=-2;
+    P1_for_P1e[3].at(3,0)=-2;
+
+}
+
+
+void PL_CouplingAssembler::set_side(LocalElementAccessorBase<3> ele_ac,
+        uint i_side, uint shift, arma::uvec &dofs)
+{
+    uint loc_dof = shift+i_side;
+    dofs[loc_dof] =  ele_ac.edge_row(i_side);
+    Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
+
+    if (bcd) {
+        ElementAccessor<3> b_ele = bcd->element_accessor();
+        auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
+        //DebugOut().fmt("bcd id: {} sidx: {} type: {}\n", ele->id(), i_side, type);
+        if (type == DarcyMH::EqData::dirichlet) {
+            double bc_pressure = data_->bc_pressure.value(b_ele.centre(), b_ele);
+            loc_system_.set_solution(loc_dof, bc_pressure, -1.0);
+        }
+    }
+}
+
+/*
+template<uint qdim, uint master_dim, uint slave_dim>
+void PL_CouplingAssembler::isec_assembly(
+        double master_sigma,
+        const IntersectionLocal<master_dim, slave_dim> &il,
+        std::array<uint, qdim+1 > subdiv)
+{
+    // mappings from quadrature ref. el (bary) to intersection ref. elements (local coords)
+    arma::mat master_map(master_dim, qdim + 1);
+    arma::mat slave_map(slave_dim, qdim+1);
+    for(uint i_col=0; i_col < qdim+1; i_col++) {
+        uint ip = subdiv[i_col];
+        master_map.col(i_col) = il[ip].comp_coords();
+        slave_map.col(i_col) = il[ip].bulk_coords();
+    }
+
+
+    //QGauss<qdim> q(2);
+    //arma::vec values(n_dofs);
+
+    for(uint ip=0; ip < q.size(); ip++) {
+        arma::vec bary_qp =  RefElement<qdim>::local_to_bary(q.point(ip));
+
+        arma::vec qp_master = RefElement<master_dim>::local_to_bary(master_map * bary_qp);
+        arma::vec qp_slave = RefElement<slave_dim>::local_to_bary(slave_map * bary_qp);
+        double JxW = q.weight(ip) * il.compute_measure() * master_jac;
+        uint shift = 0;
+        values.rows(shift, shift + master_dim) = P1_for_P1e[master_dim] * qp_master;
+        shift=master_dim + 1;
+        values.rows(shift, shift + slave_dim ) = -P1_for_P1e[slave_dim] * qp_slave;
+
+        double scale = -master_sigma * JxW;
+        arma::mat x = scale * ( values * values.t() );
+
+        //DebugOut() << print_var(scale);
+        //DebugOut() << print_var(values);
+        //DebugOut() << x;
+        loc_system_.get_matrix() += x;
+
+    }
+
+    loc_system_.eliminate_solution();
+    if (fix_velocity_flag) {
+        //this->fix_velocity_local(row_ele, col_ele);
+    } else {
+        data_->lin_sys->set_local_system(loc_system_);
+    }
+
+
+}
+*/
+
+
+/**
+ * P1 connection of different dimensions
+ *
+ * - 20.11. 2014 - very poor convergence, big error in pressure even at internal part of the fracture
+ */
+
+void PL_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac) {
+
+    if (master_ac.dim() > 2) return; // supported only for 1D and 2D master elements
+    auto &isec_list = mixed_mesh_.element_intersections_[master_ac.ele_global_idx()];
+    if (isec_list.size() == 0) return; // skip empty masters
+
+    //slave_ac_.setup(master_ac);
+
+    ElementFullIter master_ele = master_ac.full_iter();
+    master_ac_.reinit(master_ac.ele_global_idx());
+    arma::vec3 ele_centre = master_ele->centre();
+    double m_sigma = data_->sigma.value( ele_centre, master_ele->element_accessor());
+    double m_conductivity = data_->conductivity.value( ele_centre, master_ele->element_accessor());
+    double m_crossection = data_->cross_section.value( ele_centre, master_ele->element_accessor() );
+
+    double master_sigma = 2*m_sigma*m_conductivity *
+                    2/ m_crossection;
+                    /**
+                     * ?? How to deal with anisotropy ??
+                     * 3d-2d : compute nv of 2d triangle
+                     * 2d-2d : interpret as 2d-1d-2d, should be symmetric master-slave
+                     * 2d-1d : nv is tangent to 2d and normal to 1d
+                    arma::dot(data_->anisotropy.value( ele_centre, ele->element_accessor())*nv, nv)
+                    */
+
+    double master_measure = master_ele->measure();
+    DebugOut().fmt("master ele: {}  ", master_ac.ele_global_idx());
+
+    for(auto &isec_pair : isec_list) {
+        IntersectionLocalBase *isec = isec_pair.second;
+        ASSERT_EQ_DBG(master_ac.ele_global_idx(), isec->component_ele_idx());
+
+        //ElementFullIter slave_ele = data_->mesh->element(isec->bulk_ele_idx());
+        slave_ac_.reinit(isec->bulk_ele_idx());
+
+        if (typeid(*isec) == typeid(IntersectionLocal<1,2>)) {
+            const uint m_dim = 1;
+            const uint s_dim = 2;
+
+            auto il = static_cast<const IntersectionLocal<1,2> *>(isec);
+            ASSERT_EQ_DBG( il->size(), 2);
+            ASSERT_EQ_DBG( master_ac_.dim(), 1);
+            DebugOut() << "il: " <<  (*il)[0].comp_coords() << " " << (*il)[1].comp_coords();
+            DebugOut() << "il: " <<  (*il)[0].bulk_coords() << " " << (*il)[1].bulk_coords();
+
+            arma::mat::fixed<3, s_dim+1> ref_map_slave = elm_map2.element_map( *slave_ac_.full_iter() );
+            arma::mat::fixed<3, m_dim+1> ref_map_master = elm_map1.element_map( *master_ac_.full_iter() );
+            for(uint i_side=0; i_side< master_ac_.n_sides(); i_side ++) {
+
+                auto side_center_ref = RefElement<m_dim>::centers_of_subelements(0)[i_side];
+                arma::vec3 side_center = ref_map_master.cols(1,m_dim) * side_center_ref + ref_map_master.col(0);
+                arma::Col<double>::fixed<3>  bary_slave = elm_map2.project_point( side_center, ref_map_slave);
+                DebugOut() << "msc: " << side_center_ref << "b_slave:" << bary_slave;
+                if (bary_slave.min() < -1e-6) continue;
+
+                DebugOut().fmt("is: {} ",  i_side);
+
+                // side center in slave element
+
+                uint n_dofs = 1 + slave_ac_.n_sides();
+                arma::uvec dofs(n_dofs);
+                loc_system_.reset(n_dofs, n_dofs);
+                set_side(master_ac_, i_side, 0, dofs);
+                for(uint i_s_side=0; i_s_side < slave_ac_.n_sides(); i_s_side++)
+                    set_side(slave_ac_, i_s_side, 1, dofs);
+                loc_system_.set_dofs(dofs, dofs);
+
+                arma::vec values = arma::ones(n_dofs, 1);
+                values.rows(1,3) = -P1_for_P1e[2] * bary_slave;
+                loc_system_.get_matrix() = -(master_sigma * master_measure / master_ac_.dim())
+                        * ( values * values.t() );
+
+                loc_system_.eliminate_solution();
+
+                if (fix_velocity_flag) {
+                    //this->fix_velocity_local(row_ele, col_ele);
+                } else {
+                    data_->lin_sys->set_local_system(loc_system_);
+                }
+
+            }
+        } else
+        if (typeid(*isec) == typeid(IntersectionLocal<2,2>)) {
+            auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
+            ASSERT_EQ_DBG( il->size(), 2);
+            ASSERT(false).error("22 not implemented");
+            DebugOut() << "il22";
+
+            //this->isec_assembly<1,2,2>(master_sigma, *il, {0,1});
+
+        } else if (typeid(*isec) == typeid(IntersectionLocal<2,3>)) {
+            auto il = static_cast<const IntersectionLocal<2,3> *>(isec);
+            if (il->size() <= 2) continue; // skip degenerated intersections
+            ASSERT(false).error("23 not implemented");
+            /*
+            const uint master_dim = 2;
+            const uint slave_dim = 3;
+            const uint qdim = 2;
+
+            uint n_dofs=master_ac_.n_sides() + slave_ac_.n_sides();
+            arma::uvec dofs(n_dofs);
+            loc_system_.reset(n_dofs, n_dofs);
+            add_sides(master_ac_, 0, dofs);
+            add_sides(slave_ac_, master_ac_.n_sides(), dofs);
+            loc_system_.set_dofs(dofs, dofs);
+
+            double isec_area = 0;
+            double isec_measure = il->compute_measure();
+
+            //DebugOut() << "subdivision, n: " << il->size();
+
+            for(uint i_vtx=2; i_vtx< il->size();  i_vtx++) {
+                //this->isec_assembly<2,2,3>(master_sigma, *il, {0, i_vtx1, i_vtx1+1});
+                uint subdiv[3] = {0, i_vtx-1, i_vtx};
+
+                // mappings from quadrature ref. el (bary) to intersection ref. elements (local coords)
+                arma::mat master_map(master_dim, qdim + 1);
+                arma::mat slave_map(slave_dim, qdim+1);
+                for(uint i_col=0; i_col < qdim+1; i_col++) {
+                    uint ip = subdiv[i_col];
+                    master_map.col(i_col) = (*il)[ip].comp_coords();
+                    slave_map.col(i_col) = (*il)[ip].bulk_coords();
+                }
+
+                double m_jac =
+                    master_map.at(0,0)*(master_map.at(1,1) - master_map.at(1,2)) +
+                    master_map.at(0,1)*(master_map.at(1,2) - master_map.at(1,0)) +
+                    master_map.at(0,2)*(master_map.at(1,0) - master_map.at(1,1));
+
+                double master_map_jac = arma::det( master_map.cols(1,2) - master_map.col(0) * arma::ones(1,2) );
+                //DebugOut().fmt("jac1: {} jac2: {}", m_jac, master_map_jac);
+
+                QGauss<qdim> q(2);
+                arma::vec values(n_dofs);
+
+                double q_area = 0;
+                for(uint ip=0; ip < q.size(); ip++) {
+                    arma::vec bary_qp =  RefElement<qdim>::local_to_bary(q.point(ip));
+
+                    arma::vec qp_master = RefElement<master_dim>::local_to_bary(master_map * bary_qp);
+                    arma::vec qp_slave = RefElement<slave_dim>::local_to_bary(slave_map * bary_qp);
+                    double JxW = q.weight(ip) * isec_measure * master_jac;
+                    uint shift = 0;
+                    values.rows(shift, shift + master_dim) = P1_for_P1e[master_dim] * qp_master;
+                    shift=master_dim + 1;
+                    values.rows(shift, shift + slave_dim ) = -P1_for_P1e[slave_dim] * qp_slave;
+
+                    double scale = -master_sigma * JxW;
+                    arma::mat x = scale * ( values * values.t() );
+
+                    //DebugOut() << print_var(scale);
+                    //DebugOut() << print_var(values);
+                    //DebugOut().fmt("2d one: {} 3d one: {}", arma::sum(values.rows(0,2)), arma::sum(values.rows(3,6)) );
+                    //DebugOut() << x;
+                    loc_system_.get_matrix() += x;
+
+                    isec_area += q.weight(ip) * master_map_jac;
+                    q_area += q.weight(ip);
+                }
+
+
+                //DebugOut().fmt("isub: {} isec m: {} a: {} qa: {} jac: {}\n",
+                //        i_vtx, isec_measure, isec_area, q_area, master_map_jac);
+
+            }
+
+            loc_system_.eliminate_solution();
+            if (fix_velocity_flag) {
+                //this->fix_velocity_local(row_ele, col_ele);
+            } else {
+                data_->lin_sys->set_local_system(loc_system_);
+            }
+            */
+        } else {
+            ASSERT(false).error("Impossible case.");
+        }
+
+    }
+}
+
 
 

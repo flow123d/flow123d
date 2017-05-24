@@ -122,6 +122,8 @@ public:
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
         } else if (ad_->mortar_method_ == DarcyMH::MortarP1) {
             mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
+        } else if (ad_->mortar_method_ == DarcyMH::MortarPL) {
+            mortar_assembly = std::make_shared<PL_CouplingAssembler>(ad_);
         }
 
     }
@@ -150,8 +152,6 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        
-
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
