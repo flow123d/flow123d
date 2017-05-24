@@ -306,6 +306,12 @@ public:
     
     const BIHTree &get_bih_tree();
 
+    /// Convert raw data of physical_names_table to \p region_db_
+    void add_physical_names_data(PhysicalNamesDataTable physical_names_table);
+
+    /// Convert raw data of nodes and elements
+    void add_mesh_data(NodeDataTable node_table, ElementDataTable element_table);
+
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
 
@@ -375,6 +381,12 @@ protected:
      * during the further development.
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
+
+    /// Convert raw data of node_table to \p node_vector
+    void add_nodes_data(NodeDataTable node_table);
+
+    /// Convert raw data of element_table to \p element and \p bc_elements vectors
+    void add_elements_data(ElementDataTable element_table);
 
     unsigned int n_bb_neigh, n_vb_neigh;
 
