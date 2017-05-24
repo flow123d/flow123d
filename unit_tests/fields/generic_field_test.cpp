@@ -7,17 +7,21 @@
 
 #include "fields/generic_field.hh"
 #include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "fields/field_flag.hh"
 
 
 TEST(GenericField, all) {
     Profiler::initialize();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     GenericField<3>::IndexField subdomain;
     subdomain.flags(FieldFlag::input_copy);

@@ -218,12 +218,6 @@ public:
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
     /**
-     * Reads mesh from stream.
-     *
-     * Method is especially used in unit tests.
-     */
-    void read_gmsh_from_stream(istream &in);
-    /**
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
     void init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data);

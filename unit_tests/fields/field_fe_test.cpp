@@ -44,10 +44,12 @@ public:
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
         
-        FilePath mesh_file( "fields/one_element_2d.msh", FilePath::input_file);
-        mesh= mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh= mesh_constructor("{mesh_file=\"fields/one_element_2d.msh\"}");
+        GmshMeshReader gmsh_reader( mesh->mesh_file() );
+        auto physical_names_data = gmsh_reader.read_physical_names_data();
+        auto nodes_data = gmsh_reader.read_nodes_data();
+        auto elems_data = gmsh_reader.read_elements_data();
+        mesh->init_from_input(physical_names_data, nodes_data, elems_data);
         dh = new DOFHandlerMultiDim(*mesh);
         VecCreateSeqWithArray(PETSC_COMM_SELF, 1, 3, dof_values, &v);
     }

@@ -156,10 +156,12 @@ protected:
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        GmshMeshReader gmsh_reader( mesh->mesh_file() );
+        auto physical_names_data = gmsh_reader.read_physical_names_data();
+        auto nodes_data = gmsh_reader.read_nodes_data();
+        auto elems_data = gmsh_reader.read_elements_data();
+        mesh->init_from_input(physical_names_data, nodes_data, elems_data);
         component_names = { "comp_0", "comp_1", "comp_2" };
 
     }

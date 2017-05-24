@@ -16,6 +16,7 @@
 #include <mesh_constructor.hh>
 #include "io/observe.hh"
 #include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
@@ -212,12 +213,15 @@ public:
 
 TEST(ObservePoint, find_observe_point) {
     Profiler::initialize();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     armadillo_setup();
 
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     auto obs = TestObservePoint("0 -0.5 -0.5", 4, "ALL");
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
@@ -227,6 +231,7 @@ TEST(ObservePoint, find_observe_point) {
 
 TEST(Observe, all) {
     Profiler::initialize();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     armadillo_setup();
     EqData field_set;
 
@@ -240,10 +245,12 @@ TEST(Observe, all) {
     auto in_rec = Input::ReaderToStorage(test_input, output_type, Input::FileFormat::format_JSON)
         .get_root_interface<Input::Record>();
 
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     {
     TestObserve obs(*mesh, in_rec.val<Input::Array>("observe_points"));

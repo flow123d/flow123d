@@ -49,11 +49,14 @@ public:
 
 	void SetUp() {
 	    Profiler::initialize();
+	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    my_mesh = mesh_constructor();
-	    ifstream in(string(mesh_file).c_str());
-	    my_mesh->read_gmsh_from_stream(in);
+	    my_mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        GmshMeshReader gmsh_reader( my_mesh->mesh_file() );
+        auto physical_names_data = gmsh_reader.read_physical_names_data();
+        auto nodes_data = gmsh_reader.read_nodes_data();
+        auto elems_data = gmsh_reader.read_elements_data();
+        my_mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
 
 	    field_.name("test_field");
@@ -584,11 +587,14 @@ static const it::Selection &get_sorption_type_selection() {
 TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
-
-	Mesh * mesh = mesh_constructor();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-	mesh->read_gmsh_from_stream(in);
+
+	Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
@@ -721,13 +727,16 @@ public:
 TEST(Field, field_result) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Profiler::initialize();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     TimeGovernor tg(0.0, 1.0);
 
-    Mesh * mesh = mesh_constructor();
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -802,9 +811,12 @@ TEST(Field, init_from_default) {
 
     Profiler::initialize();
     
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     Space<3>::Point p("1 2 3");
 
@@ -875,9 +887,12 @@ TEST(Field, disable_where) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
     bc_type.set_mesh(*mesh);
     bc_flux.set_mesh(*mesh);

@@ -209,19 +209,6 @@ void Mesh::count_element_types() {
 }
 
 
-void Mesh::read_gmsh_from_stream(istream &in) {
-  
-    START_TIMER("Reading mesh - from_stream");
-    
-    GmshMeshReader reader(in);
-    reader.read_physical_names(this);
-    reader.read_mesh(this);
-    setup_topology();
-    //close region_db_.
-   	region_db_.close();
-}
-
-
 
 void Mesh::init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data) {
     START_TIMER("Reading mesh - init_from_input");

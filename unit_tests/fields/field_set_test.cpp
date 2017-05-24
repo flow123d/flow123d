@@ -93,11 +93,14 @@ public:
 
 	SomeEquation() {
 	    Profiler::initialize();
+	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = mesh_constructor();
-        ifstream in(string(mesh_file).c_str());
-        mesh_->read_gmsh_from_stream(in);
+        mesh_ = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        GmshMeshReader gmsh_reader( mesh_->mesh_file() );
+        auto physical_names_data = gmsh_reader.read_physical_names_data();
+        auto nodes_data = gmsh_reader.read_nodes_data();
+        auto elems_data = gmsh_reader.read_elements_data();
+        mesh_->init_from_input(physical_names_data, nodes_data, elems_data);
 	}
 
 	~SomeEquation() {

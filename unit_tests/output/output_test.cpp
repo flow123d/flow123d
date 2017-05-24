@@ -19,6 +19,7 @@
 #include "tools/time_governor.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/msh_gmshreader.h"
 
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -222,7 +223,11 @@ public:
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
 	    ifstream in(string(mesh_file).c_str());
-	    my_mesh->read_gmsh_from_stream(in);
+        GmshMeshReader gmsh_reader( in );
+        auto physical_names_data = gmsh_reader.read_physical_names_data();
+        auto nodes_data = gmsh_reader.read_nodes_data();
+        auto elems_data = gmsh_reader.read_elements_data();
+        my_mesh->init_from_input(physical_names_data, nodes_data, elems_data);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
