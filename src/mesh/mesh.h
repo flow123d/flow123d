@@ -227,6 +227,7 @@ public:
      * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
      */
     void init_from_input();
+    void init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data);
 
 
     /**

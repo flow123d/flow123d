@@ -11,12 +11,10 @@
 #include <mesh_constructor.hh>
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
 #include <iostream>
 #include <vector>
 #include "mesh/accessors.hh"
 #include "input/reader_to_storage.hh"
-#include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -33,6 +31,42 @@ public:
     ~MeshTest()
     {
     }
+};
+
+
+// data structures represent mesh stored in UNIT_TESTS_SRC_DIR+/mesh/simplest_cube.msh
+PhysicalNamesDataTable physical_names_data = {
+		{1, 37, "1D diagonal"},
+		{2, 38, "2D XY diagonal"},
+		{2, 101, ".top side"},
+		{2, 102, ".bottom side"},
+		{3, 39, "3D back"},
+		{3, 40, "3D front"}
+};
+NodeDataTable node_data = {
+		{1, {1, 1, 1} },
+		{2, {-1, 1, 1} },
+		{3, {-1, -1, 1} },
+		{4, {1, -1, 1} },
+		{5, {1, -1, -1} },
+		{6, {-1, -1, -1} },
+		{7, {1, 1, -1} },
+		{8, {-1, 1, -1} }
+};
+ElementDataTable element_data = {
+		{ 1, 1, 37, 0, 7, 3 },
+		{ 2, 2, 38, 0, 6, 3, 7 },
+		{ 3, 2, 38, 0, 3, 1, 7 },
+		{ 4, 3, 39, 0, 3, 7, 1, 2 },
+		{ 5, 3, 39, 0, 3, 7, 2, 8 },
+		{ 6, 3, 39, 0, 3, 7, 8, 6 },
+		{ 7, 3, 40, 0, 3, 7, 6, 5 },
+		{ 8, 3, 40, 0, 3, 7, 5, 4 },
+		{ 9, 3, 40, 0, 3, 7, 4, 1 },
+		{10, 2, 101, 0, 1, 2, 3 },
+		{11, 2, 101, 0, 1, 3, 4 },
+		{12, 2, 102, 0, 6, 7, 8 },
+		{13, 2, 102, 0, 7, 6, 5 }
 };
 
 
@@ -60,15 +94,10 @@ TEST_F(MeshTest, intersect_nodes_lists) {
 
 
 TEST(MeshTopology, make_neighbours_and_edges) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-
     Profiler::initialize();
     
     Mesh * mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
-
+    mesh->init_from_input(physical_names_data, node_data, element_data);
 
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->bc_elements.size());
@@ -115,7 +144,7 @@ TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh * mesh = mesh_constructor(mesh_input, Input::FileFormat::format_YAML);
-    mesh->init_from_input();
+    mesh->init_from_input(physical_names_data, node_data, element_data);
 
     EXPECT_EQ( 37, mesh->element_accessor(0).region().id() );
     EXPECT_EQ( "1D rename", mesh->element_accessor(0).region().label() );
@@ -137,28 +166,19 @@ TEST(Mesh, init_from_input) {
 }
 
 
-// simplest mesh
-string small_mesh = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-4
-1 -1 1 1
-2 -1 -1 1
-3 1 1 -1
-4 -1 1 -1
-$EndNodes
-$Elements
-1
-1 4 2 39 40 2 3 1 4
-$EndElements
-)CODE";
-
 TEST(Mesh, decompose_problem) {
     Mesh * mesh = mesh_constructor();
-    stringstream in(small_mesh.c_str());
-    EXPECT_THROW_WHAT( { mesh->read_gmsh_from_stream(in); }, Partitioning::ExcDecomposeMesh,
+    PhysicalNamesDataTable physical_names_dec;
+    NodeDataTable node_dec = {
+    		{1, {-1, 1, 1} },
+    		{2, {-1, -1, 1} },
+    		{3, {1, 1, -1} },
+    		{4, {-1, -1, -1} }
+    };
+    ElementDataTable element_dec = {
+    		{ 1, 3, 39, 0, 2, 3, 1, 4 }
+    };
+    EXPECT_THROW_WHAT( { mesh->init_from_input(physical_names_dec, node_dec, element_dec); }, Partitioning::ExcDecomposeMesh,
     		"greater then number of elements 1. Can not make partitioning of the mesh");
     delete mesh;
 }

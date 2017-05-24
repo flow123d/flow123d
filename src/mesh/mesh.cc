@@ -248,6 +248,26 @@ void Mesh::init_from_input() {
 
 
 
+void Mesh::init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data) {
+    START_TIMER("Reading mesh - init_from_input");
+
+	// add regions from mesh file
+	add_physical_names_data(physical_names_data);
+	// create regions from input
+	Input::Array region_list;
+	if (in_record_.opt_val("regions", region_list)) {
+		this->read_regions_from_input(region_list);
+	}
+	// add nodes and elements from mesh file
+	add_nodes_data(node_data);
+	add_elements_data(element_data);
+    // possibly add implicit_boundary region.
+    setup_topology();
+    // finish mesh initialization
+    this->check_and_finish();
+}
+
+
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
