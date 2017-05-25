@@ -104,6 +104,7 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
 NodeDataTable GmshMeshReader::read_nodes_data() {
     using namespace boost;
     NodeDataTable node_data_table;
+    tok_.set_position( Tokenizer::Position() );
 
     if (! tok_.skip_to("$Nodes")) THROW(ExcMissingSection() << EI_Section("$Nodes") << EI_GMSHFile(tok_.f_name()) );
     try {
