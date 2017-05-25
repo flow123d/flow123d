@@ -31,8 +31,10 @@ TEST(GMSHReader, read_mesh_from_stream) {
     Mesh * mesh = mesh_constructor();
     GmshMeshReader reader(ss);
 
-    reader.read_physical_names(mesh);
-    reader.read_mesh(mesh);
+    mesh->add_physical_names_data( reader.read_physical_names_data() );
+    auto nodes_data = reader.read_nodes_data();
+    auto elems_data = reader.read_elements_data();
+    mesh->add_mesh_data( nodes_data, elems_data );
 
     EXPECT_EQ(9, mesh->n_elements());
 
@@ -47,13 +49,15 @@ TEST(GMSHReader, read_mesh_from_file) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/test_input.msh\"}");
+    GmshMeshReader reader( mesh->mesh_file() );
 
-    Mesh * mesh = mesh_constructor();
-    GmshMeshReader reader(mesh_file);
+    mesh->add_physical_names_data( reader.read_physical_names_data() );
+    auto nodes_data = reader.read_nodes_data();
+    auto elems_data = reader.read_elements_data();
+    mesh->add_mesh_data( nodes_data, elems_data );
 
-    reader.read_physical_names(mesh);
-    reader.read_mesh(mesh);
-
+    EXPECT_EQ(118, mesh->n_nodes());
     EXPECT_EQ(216, mesh->n_elements());
 
     delete mesh;

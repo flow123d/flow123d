@@ -86,10 +86,10 @@ formula_field_base: !FieldFormula
   value: x
 
 elementwise_field: !FieldElementwise
-  gmsh_file: ../fields/simplest_cube_data.msh
+  gmsh_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
 interpolated_p0_field: !FieldInterpolatedP0
-  gmsh_file: ../fields/simplest_cube_3d.msh
+  gmsh_file: fields/simplest_cube_3d.msh
   field_name: scalar
 )YAML";
 
@@ -101,16 +101,15 @@ public:
 protected:
     virtual void SetUp() {
     	Profiler::initialize();
-    	FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-    	FilePath mesh_file( "../fields/simplest_cube_data.msh", FilePath::input_file);
-        GmshMeshReader reader(mesh_file);
-        mesh = mesh_constructor();
-        reader.read_physical_names(mesh);
-        reader.read_mesh(mesh);
-        mesh->check_and_finish();
+        mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+        GmshMeshReader gmsh_reader( mesh->mesh_file() );
+        auto nodes_data = gmsh_reader.read_nodes_data();
+        auto elems_data = gmsh_reader.read_elements_data();
+        mesh->add_mesh_data(nodes_data, elems_data);
 
     }
 
@@ -222,13 +221,14 @@ string eq_data_input = R"JSON(
 TEST(Operators, assignment) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
-    FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
-    GmshMeshReader msh_reader(mesh_file);
-    Mesh * mesh = mesh_constructor();
-    msh_reader.read_physical_names(mesh);
-	msh_reader.read_mesh(mesh);
-	mesh->check_and_finish();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    //auto physical_names_data = gmsh_reader.read_physical_names_data();
+    auto nodes_data = gmsh_reader.read_nodes_data();
+    auto elems_data = gmsh_reader.read_elements_data();
+    mesh->add_mesh_data(nodes_data, elems_data);
+    mesh->check_and_finish();
 
 	std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
 
