@@ -300,6 +300,13 @@ public:
     
     const BIHTree &get_bih_tree();
 
+    /**
+     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
+     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
+     * returned.
+     */
+    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+
     /// Convert raw data of physical_names_table to \p region_db_
     void add_physical_names_data(PhysicalNamesDataTable physical_names_table);
 
@@ -343,12 +350,6 @@ protected:
      */
     void create_node_element_lists();
     /**
-     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
-     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
-     * returned.
-     */
-    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
-    /**
      * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
      * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
      * if more elements are found we report an user input error.
@@ -384,7 +385,11 @@ protected:
     /// Convert raw data of node_table to \p node_vector
     void add_nodes_data(NodeDataTable node_table);
 
-    /// Convert raw data of element_table to \p element and \p bc_elements vectors
+    /**
+     * Convert raw data of element_table to \p element and \p bc_elements vectors
+     *
+     * Input of the mesh allows changing regions within the input YAML file.
+     */
     void add_elements_data(ElementDataTable element_table);
 
     unsigned int n_bb_neigh, n_vb_neigh;
@@ -424,8 +429,6 @@ protected:
      */
     MPI_Comm comm_;
 
-    friend class GmshMeshReader;
-    friend class VtkMeshReader;
     friend class RegionSetBase;
 
 
