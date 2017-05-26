@@ -648,12 +648,13 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
         }
         else
         {
-            if(continuous_pu){
-                // temporary dof vector
-                std::vector<std::vector<int>> enr_dofs_velocity(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
-                distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
-            }
-            else distribute_enriched_dofs(temp_offset, Quantity::velocity);
+//             if(continuous_pu){
+//                 // temporary dof vector
+//                 std::vector<std::vector<int>> enr_dofs_velocity(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+//                 distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+//             }
+//             else distribute_enriched_dofs(temp_offset, Quantity::velocity);
+            distribute_enriched_dofs(temp_offset, Quantity::velocity);
         }
     }
     
@@ -681,6 +682,59 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
     offset_enr_lagrange = offset_edges + mesh_->n_edges() - 1;
     
 }
+
+// void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
+// {
+//     // set dof offsets:
+//     offset_velocity = 0;
+//     offset_enr_velocity = mesh_->n_sides_;
+//     
+//     int temp_offset;
+//     unsigned int max_enr_per_node = 1;
+//     
+//     //distribute enriched dofs:
+//     temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
+//     if(enrich_velocity) {
+//         if(single_enr){
+//             row_4_vel_sing = new int[singularities_12d_.size()];
+//             for(unsigned int i=0; i < singularities_12d_.size(); i++, temp_offset++)
+//                 row_4_vel_sing[i] = temp_offset;
+//         }
+//         else
+//         {
+//             if(continuous_pu){
+//                 // temporary dof vector
+//                 std::vector<std::vector<int>> enr_dofs_velocity(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+//                 distribute_enriched_dofs(enr_dofs_velocity, temp_offset, Quantity::velocity);
+//             }
+//             else distribute_enriched_dofs(temp_offset, Quantity::velocity);
+//         }
+//     }
+//     
+//     offset_pressure = temp_offset;
+//     offset_enr_pressure = offset_pressure + mesh_->n_elements();
+//     
+//     temp_offset = offset_enr_pressure; // will return last dof + 1 (it means new available dof)
+//     if(enrich_pressure){
+//         if(single_enr){
+//             row_4_press_sing = new int[singularities_12d_.size()];
+//             for(unsigned int i=0; i < singularities_12d_.size(); i++, temp_offset++)
+//                 row_4_press_sing[i] = temp_offset;
+//         }
+//         else{
+//             if(continuous_pu){
+//                 // temporary dof vector
+//                 std::vector<std::vector<int>> enr_dofs_pressure(n_enriched_nodes, std::vector<int>(max_enr_per_node, empty_node_idx));
+//                 distribute_enriched_dofs(enr_dofs_pressure, temp_offset, Quantity::pressure);
+//             }
+//             else distribute_enriched_dofs(temp_offset, Quantity::pressure);
+//         }
+//     }
+//     offset_edges = temp_offset;
+// //     offset_enr_lagrange = offset_edges + mesh_->n_edges();
+//     offset_enr_lagrange = offset_edges + mesh_->n_edges() - 1;
+//     
+// }
 
 
 void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
@@ -808,6 +862,30 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
     }
 }
 
+// void MH_DofHandler::distribute_enriched_dofs(int& offset,
+//                                              Quantity quant)
+// {
+//     unsigned int w,i;
+//     
+//     for(XFEMElementSingularData& xdata : xfem_data){
+//         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+//         std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
+//         dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes(), -1));
+// //         DBGCOUT(<<"dofs xdata\n");
+//         for(w=0; w < xdata.n_enrichments(); w++){
+//             for(i=0; i < ele->n_nodes(); i++){
+//                 dofs[w][i] = offset;
+//                 offset++;
+//             }
+//         }
+// //         xdata.print(cout);
+//         ele->xfem_data = &xdata;
+//         
+// //         DBGCOUT(<< "xd[0]: " <<  xdata.global_enriched_dofs()[0].size() << "\n");
+//     }
+// }
+
+
 void MH_DofHandler::distribute_enriched_dofs(int& offset,
                                              Quantity quant)
 {
@@ -816,13 +894,11 @@ void MH_DofHandler::distribute_enriched_dofs(int& offset,
     for(XFEMElementSingularData& xdata : xfem_data){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
         std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
-        dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes(), -1));
+        dofs.resize(xdata.n_enrichments(), std::vector<int>(1, -1));
 //         DBGCOUT(<<"dofs xdata\n");
         for(w=0; w < xdata.n_enrichments(); w++){
-            for(i=0; i < ele->n_nodes(); i++){
-                dofs[w][i] = offset;
-                offset++;
-            }
+            dofs[w][0] = offset;
+            offset++;
         }
 //         xdata.print(cout);
         ele->xfem_data = &xdata;

@@ -355,9 +355,9 @@ protected:
             loc_system_.add_value(edge_row, side_row, 1.0);
             
             
-            if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
-                assemble_enriched_side_edge(ele_ac, i);
-            }
+//             if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//                 assemble_enriched_side_edge(ele_ac, i);
+//             }
         }
     }
     
@@ -747,7 +747,9 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
 template<> inline
 void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> ele_ac, unsigned int local_side){
         ElementFullIter ele = ele_ac.full_iter();
-        double val;
+//         ele->node[0]->point().print(cout, "point 0");
+//         ele->node[1]->point().print(cout, "point 1");
+//         ele->node[2]->point().print(cout, "point 2");
         DBGVAR(local_side);
         
 //         int side_row, edge_row;
@@ -770,11 +772,12 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
                                                             | update_quadrature_points);
         fv_side->reinit(ele, local_side);
         
+//         fv_side->normal_vector(0).print(cout,"normal");
+        
         QXFEM<2,3> qside_xfem;
         qside_xfem.resize(qside.size());
         for(unsigned int q=0; q < qside.size(); q++){
-            //TODO: use mapping for quad from side to element
-            arma::vec unit_p = map_.project_point(fv_side->point(q),map_.element_map(*ele));//ele->project_point(fv_side->point(q));
+            arma::vec unit_p = map_.project_point(fv_side->point(q),map_.element_map(*ele));
             qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
             qside_xfem.set_real_point(q,fv_side->point(q));
 //             fv_side->point(q).print(cout, "side point");
@@ -794,7 +797,11 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
             double sum_val = 0;
             double side_measure = ele->side(local_side)->measure();
             for(unsigned int q=0; q < qside.size(); q++){
-                val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(q))
+//                 auto qp = qside_xfem.real_point(q);
+//                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
+//                 auto fv = fv_xfem->shape_vector(j,q);
+//                 cout << fv(0) << " " << fv(1) << " " << fv(2) << "\n";
+                double val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(q))
                       // this makes JxW on the triangle side:
                       * qside_xfem.weight(q)
                       * side_measure;
@@ -806,10 +813,10 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
                 sum_val += val;
             }
             DBGVAR(sum_val);
+//             DBGVAR(side_measure);
         }        
         
 
-        
 //         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_,
 //                                                             update_values
 //                                                             | update_normal_vectors);

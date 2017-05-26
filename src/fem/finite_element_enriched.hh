@@ -36,7 +36,8 @@ protected:
     typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
     
     FiniteElement<dim,spacedim> *fe;
-    FE_P_disc<1,dim, spacedim> pu;
+//     FE_P_disc<1,dim, spacedim> pu;
+    FE_P_disc<0,dim, spacedim> pu;
     
     unsigned int n_regular_dofs_;
     

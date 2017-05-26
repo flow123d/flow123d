@@ -30,6 +30,9 @@
 
 #include "system/logger.hh"
 
+#include "quadrature/quadrature_lib.hh"
+#include "fem/mapping_p1.hh"
+
 template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM;
 
 /**
@@ -148,9 +151,6 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 {
     ElementFullIter ele = *fv_data.present_cell;
     typedef typename Space<spacedim>::Point Point;
-    unsigned int j;
-    
-    bool switch_delta = false;
     
     // can we suppose for this FE and element that:
     //  - jacobian (and its inverse and determinant) is constant on the element
@@ -168,45 +168,91 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     if (fv_data.update_flags & (update_values | update_divergence | update_gradients))
     {
         normals.resize(RefElement<dim>::n_sides);
-        //         DBGMSG("normals\n");
+//         DBGCOUT("normals\n");
         // compute normals - TODO: this should do mapping, but it does it for fe_side_values..
-        for (j = 0; j < RefElement<dim>::n_sides; j++){
+        for (unsigned int j = 0; j < RefElement<dim>::n_sides; j++){
             normals[j] = trans(fv_data.inverse_jacobians[0])*RefElement<dim>::normal_vector(j);
             normals[j] = normals[j]/norm(normals[j],2);
-//             normals[j].print(cout, "normal");
+//             normals[j].print(cout, "internal normal");
         }
-                
+        
         enr_dof_val.resize(enr.size());
-        //         DBGMSG("interpolation\n");
-        // for SGFEM
-        // values of enrichment function at generalized_support_points
-        // here: n_regular_dofs = RefElement<dim>::n_nodes = RefElement<dim>::n_sides = generalized_support_points.size()
-        auto& gen_points = fe->get_generalized_support_points();
+        // for SGFEM we need to compute fluxes of glob. enr. function over faces
+        ASSERT(dim == 2);
+        //TODO :
+        //  - create quadrature factory for uniform quad in 1d,2d,3d
+        //  - create quadrature<dim> from quadrature<dim-1> (see mapping.transform_subquadrature() )
+        QGauss<1> qside(1);
+        const uint qsize=100;
+        qside.resize(qsize);
+        double qweight = 1.0/qsize;
+        for(unsigned int q=0; q<qsize; q++){
+            qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
+            qside.set_weight(q,qweight);
+        }
+        MappingP1<2,3> map;
+        
         for (unsigned int w=0; w<enr.size(); w++){
-            enr_dof_val[w].resize(gen_points.size());
-            for (unsigned int i = 0; i < gen_points.size(); i++)
-            {
-                // compute real generalized_support_point
-                Point real_point; real_point.zeros();
+            enr_dof_val[w].resize(RefElement<dim>::n_sides);
+            for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
                 
-//                 arma::vec::fixed<dim+1> bp = RefElement<dim>::local_to_bary(gen_points[i]);
-//                 //bp.print(cout,"bp");
-//                 for (j = 0; j < RefElement<dim>::n_nodes; j++)
-//                     real_point += bp[(j+1)%dim] * ele->node[j]->point();
-                
-                // compute barycenter of the side ( = real generalized_support_point)
-                for (j = 0; j < RefElement<dim>::n_nodes_per_side; j++)
-                    real_point = real_point + ele->node[RefElement<dim>::interact(Interaction<0,1>(i))[j]]->point();
-                real_point = real_point / RefElement<dim>::n_nodes_per_side;
-                
-//                 real_point.print(cout,"real");
-//                 enr[w]->vector(real_point).print(cout);
-//                 normals[i].print(cout);
-                enr_dof_val[w][i] = arma::dot(enr[w]->vector(real_point), normals[i]);
-//                 cout << "interpolant: [" << i << "]: " << setprecision(15) << enr_dof_val[w][i] << endl;
+                QGauss<2> quad_side(1);
+                map.transform_subquadrature(j,ele->permutation_idx_[j],qside,quad_side);
+                arma::mat ele_mat = map.element_map(*ele);
+//                 ele_mat.print(cout,"ele_map");
+//                 for(unsigned int q=0; q < quad_side.size(); q++){
+//                     arma::vec qp = quad_side.point(q);
+//                     cout << qp(0) << " " << qp(1) << " " << "\n";
+//                 }
+                    
+                double side_measure = ele->side(j)->measure();
+                double val = 0;
+//                 DBGCOUT("edge quad [" << j << "]\n");
+                for(unsigned int q=0; q < quad_side.size(); q++){
+                    
+                    arma::vec3 real_point = ele_mat.cols(1,dim) * quad_side.point(q) + ele_mat.col(0);
+//                     cout << real_point(0) << " " << real_point(1) << " " << real_point(2) << "\n";
+                    val += arma::dot(enr[w]->vector(real_point),normals[j])
+                        // this makes JxW on the triangle side:
+                        * quad_side.weight(q)
+                        * side_measure;
+                }
+                enr_dof_val[w][j] = val;
+//                 DBGVAR(val);
             }
         }
+      
     }
+//         //         DBGMSG("interpolation\n");
+//         // for SGFEM
+//         // values of enrichment function at generalized_support_points
+//         // here: n_regular_dofs = RefElement<dim>::n_nodes = RefElement<dim>::n_sides = generalized_support_points.size()
+//         auto& gen_points = fe->get_generalized_support_points();
+//         for (unsigned int w=0; w<enr.size(); w++){
+//             enr_dof_val[w].resize(gen_points.size());
+//             for (unsigned int i = 0; i < gen_points.size(); i++)
+//             {
+//                 // compute real generalized_support_point
+//                 Point real_point; real_point.zeros();
+//                 
+// //                 arma::vec::fixed<dim+1> bp = RefElement<dim>::local_to_bary(gen_points[i]);
+// //                 //bp.print(cout,"bp");
+// //                 for (j = 0; j < RefElement<dim>::n_nodes; j++)
+// //                     real_point += bp[(j+1)%dim] * ele->node[j]->point();
+//                 
+//                 // compute barycenter of the side ( = real generalized_support_point)
+//                 for (j = 0; j < RefElement<dim>::n_nodes_per_side; j++)
+//                     real_point = real_point + ele->node[RefElement<dim>::interact(Interaction<0,1>(i))[j]]->point();
+//                 real_point = real_point / RefElement<dim>::n_nodes_per_side;
+//                 
+// //                 real_point.print(cout,"real");
+// //                 enr[w]->vector(real_point).print(cout);
+// //                 normals[i].print(cout);
+//                 enr_dof_val[w][i] = arma::dot(enr[w]->vector(real_point), normals[i]);
+// //                 cout << "interpolant: [" << i << "]: " << setprecision(15) << enr_dof_val[w][i] << endl;
+//             }
+//         }
+//     }
     
     
     // shape values
@@ -217,15 +263,8 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
         for (unsigned int q = 0; q < quad.size(); q++)
         {
 //             DBGMSG("pu q[%d]\n",q);
-            // compute PU
-            arma::vec pu_values(RefElement<dim>::n_nodes);
-            for (j=0; j<RefElement<dim>::n_nodes; j++)
-                    pu_values[j] = pu.basis_value(j, quad.point(q));
-            pu_values = pu.get_node_matrix() * pu_values;
+            // compute PU: PU=1
             
-            //switches 0. and 2. shape function for RT0 (for delta property)
-            if(switch_delta)
-                pu_values = fe->get_node_matrix() * pu_values;
             
 //             DBGMSG("regular shape vectors q[%d]\n",q);
             //fill regular shape functions
@@ -237,6 +276,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             
             shape_values = fe->get_node_matrix() * raw_values;
             
+            unsigned int j;
             for (j=0; j<n_regular_dofs_; j++)
                 vectors[j] = fv_data.jacobians[q] * trans(shape_values.row(j)) / fv_data.determinants[q];
             
@@ -255,7 +295,8 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
                 for (unsigned int k=0; k < pu.n_dofs(); k++)
                 {
-                    vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]) - interpolant);
+                    vectors[j] =  enr[w]->vector(fv_data.points[q]) - interpolant;
+//                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]) - interpolant);
 //                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]));
 //                     vectors[j] =  interpolant;//(enr[w]->vector(fv_data.points[q]) - interpolant);
 //                     vectors[j] =  enr[w]->vector(fv_data.points[q]);
@@ -273,30 +314,25 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //         arma::mat::fixed<dim,dim> unit_grad;
         vector<double> divs(number_of_dofs);
         
-        arma::vec pu_values(RefElement<dim>::n_nodes);
-        arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
-        arma::mat real_pu_grads(RefElement<dim>::n_nodes, spacedim);
+//         arma::vec pu_values(RefElement<dim>::n_nodes);
+//         arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
+//         arma::mat real_pu_grads(RefElement<dim>::n_nodes, spacedim);
             
         for (unsigned int q = 0; q < quad.size(); q++)
         {
 //             DBGMSG("pu q[%d]\n",q);
             // compute PU
-            for (j=0; j<RefElement<dim>::n_nodes; j++)
-                    pu_values[j] = pu.basis_value(j, quad.point(q));
-            pu_values = pu.get_node_matrix() * pu_values;
+//             for (unsigned int j=0; j<RefElement<dim>::n_nodes; j++)
+//                     pu_values[j] = pu.basis_value(j, quad.point(q));
+//             pu_values = pu.get_node_matrix() * pu_values;
+//             
+// //             DBGMSG("pu grad q[%d]\n",q);
+//             // compute PU grads
+//             for (unsigned int j=0; j<RefElement<dim>::n_nodes; j++)
+//                 pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
+//             pu_grads = pu.node_matrix * pu_grads;
+//             real_pu_grads = pu_grads * fv_data.inverse_jacobians[q];
             
-//             DBGMSG("pu grad q[%d]\n",q);
-            // compute PU grads
-            for (j=0; j<RefElement<dim>::n_nodes; j++)
-                pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
-            pu_grads = pu.node_matrix * pu_grads;
-            real_pu_grads = pu_grads * fv_data.inverse_jacobians[q];
-            
-            //switches 0. and 2. shape function for RT0 (for delta property)
-            if(switch_delta){
-                pu_values = fe->get_node_matrix() * pu_values;
-                real_pu_grads = fe->get_node_matrix() * real_pu_grads;
-            }
             
 //             pu_grads.print(cout,"pu_grads");
 //             real_pu_grads.print(cout,"real_pu_grads");
@@ -317,7 +353,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             
             
             //fill enriched shape functions
-            j = n_regular_dofs_;
+            unsigned int j = n_regular_dofs_;
             for (unsigned int w=0; w<enr.size(); w++)
             {
 //                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
@@ -333,8 +369,10 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
                 for (unsigned int k=0; k < pu.n_dofs(); k++)
                 {
-                    divs[j] = arma::dot(real_pu_grads.row(k),(enr[w]->vector(fv_data.points[q]) -  interpolant))
-                            + pu_values[k] * (0 - interpolant_div);
+//                     divs[j] = arma::dot(real_pu_grads.row(k),(enr[w]->vector(fv_data.points[q]) -  interpolant))
+//                             + pu_values[k] * (0 - interpolant_div);
+//                     divs[j] = arma::dot(real_pu_grads.row(k),enr[w]->vector(fv_data.points[q]));
+                    divs[j] = 0;
                     j++;
                 }
             }
@@ -342,20 +380,6 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             fv_data.shape_divergence[q] = divs;
         }
     }
-
-//     // shape gradients
-//     if (fv_data.update_flags & update_gradients)
-//     {
-//         vector<arma::mat::fixed<spacedim,spacedim> > grads;
-//         grads.resize(dim+1);
-//         for (unsigned int q = 0; q < quad.size(); q++)
-//         {
-//             for (unsigned int k=0; k<dim+1; k++)
-//                 grads[k] = fv_data.jacobians[q]*data.basis_grad_vectors[q][k]*fv_data.inverse_jacobians[q]/fv_data.determinants[q];
-// 
-//             fv_data.shape_grad_vectors[q] = grads;
-//         }
-//     }
 }
 
 #endif // FE_RT0_XFEM_HH_
