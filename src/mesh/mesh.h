@@ -95,7 +95,7 @@ public:
  *  - allow transfer of general data from different types of readers
  *  - every node is stored by pair (node id - node coordinates)
  */
-typedef typename std::vector< std::pair<unsigned int, std::vector<double>> > NodeDataTable;
+typedef typename std::vector< std::pair<unsigned int, arma::vec3> > NodeDataTable;
 
 
 /**

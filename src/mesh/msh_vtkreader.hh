@@ -82,6 +82,11 @@ public:
 	 */
 	void check_compatible_mesh(Mesh &mesh) override;
 
+    /**
+     * method for reading data of nodes
+     */
+    NodeDataTable read_nodes_data() override;
+
 protected:
     /**
 	 * Find header of DataArray section of VTK file given by field_name.

@@ -97,7 +97,7 @@ public:
     /**
      * method for reading data of nodes
      */
-    NodeDataTable read_nodes_data();
+    NodeDataTable read_nodes_data() override;
 
     /**
      * method for reading data of elements

@@ -771,10 +771,7 @@ void Mesh::add_nodes_data(NodeDataTable node_table) {
 	node_vector.reserve( node_table.size() );
 	for (auto node_data : node_table) {
 		NodeFullIter node = node_vector.add_item(node_data.first);
-
-		node->point()(0)=node_data.second[0];
-		node->point()(1)=node_data.second[1];
-		node->point()(2)=node_data.second[2];
+		node->point()=node_data.second;
 	}
 
     MessageOut().fmt("... {} nodes read. \n", node_vector.size());
