@@ -58,18 +58,9 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &
     // barycentric coordinates of quadrature points
     if (flags & update_quadrature_points)
     {
-        BaryPoint basis;
         data->bar_coords.resize(q.size());
         for (unsigned int i=0; i<q.size(); i++)
-        {
-            basis[0] = 1;
-            for (unsigned int j=0; j<dim; j++)
-            {
-                basis[0] -= q.point(i)[j];
-                basis[j+1] = q.point(i)[j];
-            }
-            data->bar_coords[i] = basis;
-        }
+            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point(i));
     }
 
 

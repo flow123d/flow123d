@@ -166,79 +166,8 @@ public:
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data) = 0;
 
-    /**
-     * @brief Creates a cell dim-dimensional quadrature from side (dim-1)-dimensional quadrature.
-     *
-     * @param cell The actual cell.
-     * @param sid  The side id.
-     * @param pid  Permutations index.
-     * @param subq @p dim-1 dimensional quadrature for integration on the side.
-     * @param q    The computed @p dim dimensional quadrature.
-     *
-     * TODO: use similar functionality in RefElement for point transformation, should be part of Quadrature classes since it is
-     * related to the RefElement only.
-     */
-    void transform_subquadrature(unsigned int sid,
-    		unsigned int pid,
-    		const Quadrature<dim-1> &subq,
-    		Quadrature<dim> &q);
-
     /// Destructor.
     virtual ~Mapping() {};
 };
-
-
-
-template<unsigned int dim, unsigned int spacedim> inline
-void Mapping<dim,spacedim>::transform_subquadrature(unsigned int sid,
-		unsigned int pid,
-        const Quadrature<dim - 1> & subq,
-        Quadrature<dim> &q)
-{
-    q.resize(subq.size());
-
-    double lambda;
-
-    // vectors of barycentric coordinates of quadrature points
-    arma::vec::fixed<dim+1> el_bar_coords;
-    arma::vec::fixed<dim> side_bar_coords;
-
-    for (unsigned int k=0; k<q.size(); k++)
-    {
-        const arma::vec::fixed<dim-1> &sub_point = subq.point(k);
-        // Calculate barycentric coordinates on the side of the k-th
-        // quadrature point.
-        el_bar_coords.zeros();
-        lambda = 0;
-        // Apply somewhere permutation of indices!
-        for (unsigned int j=0; j<dim-1; j++)
-        {
-            side_bar_coords(j) = sub_point(j);
-            lambda += sub_point(j);
-        }
-        side_bar_coords(dim-1) = 1.0 - lambda;
-
-        // transform to element coordinates
-        auto side_nodes = RefElement<dim>::interact(Interaction<0, (dim - 1)>(sid));
-        for (unsigned int i=0; i<dim; i++) {
-            // TODO: use RefElement<>::interpolate to map coordinates from the subelement
-            unsigned int i_node = (side_nodes[RefElement<dim>::side_permutations[pid][i]]+dim)%(dim+1);
-            el_bar_coords(i_node) = side_bar_coords((i+dim-1)%dim);
-        }
-        q.set_point(k, el_bar_coords.subvec(0,dim-1));
-        q.set_weight(k, subq.weight(k));
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
 
 #endif /* MAPPING_HH_ */
