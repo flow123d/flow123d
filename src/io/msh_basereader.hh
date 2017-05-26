@@ -24,7 +24,7 @@
 #include <vector>
 #include <istream>
 
-#include "mesh/element_data_cache.hh"
+#include "io/element_data_cache.hh"
 #include "mesh/mesh.h"
 #include "system/system.hh"
 #include "system/tokenizer.hh"

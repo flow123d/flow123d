@@ -7,7 +7,7 @@
 
 #include "fields/generic_field.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "fields/field_flag.hh"
 

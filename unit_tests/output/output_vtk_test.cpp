@@ -17,7 +17,7 @@
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "system/logger_options.hh"

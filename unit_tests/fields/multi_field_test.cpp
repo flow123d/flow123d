@@ -18,7 +18,7 @@
 #include <input/type_base.hh>
 #include <input/reader_to_storage.hh>
 #include <input/type_output.hh>
-#include <mesh/msh_gmshreader.h>
+#include <io/msh_gmshreader.h>
 #include <system/sys_profiler.hh>
 
 #include <iostream>

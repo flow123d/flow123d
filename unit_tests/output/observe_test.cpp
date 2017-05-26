@@ -16,7 +16,7 @@
 #include <mesh_constructor.hh>
 #include "io/observe.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"

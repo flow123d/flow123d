@@ -39,7 +39,7 @@
 #include "input/type_output.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
 

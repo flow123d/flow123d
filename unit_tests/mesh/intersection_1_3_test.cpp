@@ -15,7 +15,7 @@
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "fields/field_interpolated_p0.hh"
 #include "system/sys_profiler.hh"

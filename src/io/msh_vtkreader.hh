@@ -23,7 +23,7 @@
 #include <istream>
 #include <pugixml.hpp>
 
-#include "mesh/msh_basereader.hh"
+#include "io/msh_basereader.hh"
 #include "system/file_path.hh"
 
 class VtkMeshReader : public BaseMeshReader {

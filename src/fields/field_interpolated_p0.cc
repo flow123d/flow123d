@@ -19,7 +19,7 @@
 #include "field_interpolated_p0.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "system/system.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "io/reader_instances.hh"
 #include "mesh/ngh/include/intersection.h"

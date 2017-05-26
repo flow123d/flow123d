@@ -20,7 +20,7 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "system/file_path.hh"
 #include "input/input_type.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "io/reader_instances.hh"
 
 /// Implementation.

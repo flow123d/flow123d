@@ -19,7 +19,7 @@
 #include "tools/time_governor.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"

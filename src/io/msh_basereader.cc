@@ -17,7 +17,7 @@
  */
 
 
-#include "mesh/msh_basereader.hh"
+#include "io/msh_basereader.hh"
 
 
 BaseMeshReader::BaseMeshReader(const FilePath &file_name)

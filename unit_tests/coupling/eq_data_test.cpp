@@ -42,7 +42,7 @@
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/region.hh"
 #include <armadillo>
 

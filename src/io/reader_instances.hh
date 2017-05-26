@@ -19,7 +19,7 @@
 #define READER_INSTANCES_HH_
 
 
-#include "mesh/msh_basereader.hh"
+#include "io/msh_basereader.hh"
 #include "system/file_path.hh"
 
 

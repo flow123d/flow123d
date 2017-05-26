@@ -15,8 +15,8 @@
 #include <iostream>
 #include <pugixml.hpp>
 
-#include "mesh/msh_vtkreader.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_vtkreader.hh"
+#include "io/msh_gmshreader.h"
 #include "system/tokenizer.hh"
 
 
