@@ -25,6 +25,7 @@
 // #include "system/global_defs.h"
 // #include "system/system.hh"
 #include "fem/finite_element.hh"
+#include "fem/fe_values.hh"
 
 
 
@@ -41,6 +42,7 @@ class FESystem : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_pairs;
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
+    using FiniteElement<dim,spacedim>::n_components_;
     using FiniteElement<dim,spacedim>::unit_support_points;
     using FiniteElement<dim,spacedim>::generalized_support_points;
     using FiniteElement<dim,spacedim>::order;
@@ -77,8 +79,17 @@ public:
     arma::vec::fixed<dim> basis_grad_component(const unsigned int i, 
                                                const arma::vec::fixed<dim> &p, 
                                                const unsigned int comp) const override;
+                                               
+    UpdateFlags update_each(UpdateFlags flags) override;
     
     void compute_node_matrix() override;
+    
+    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags) override;
+    
+    void fill_fe_values(
+        const Quadrature<dim> &q,
+        FEInternalData &data,
+        FEValuesData<dim,spacedim> &fv_data) override;
 
     virtual ~FESystem();
 
@@ -103,6 +114,7 @@ private:
 
   std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe_;
   std::vector<DofComponentData> fe_dof_indices_;
+  std::vector<unsigned int> dof_basis_;
   
 };
 
