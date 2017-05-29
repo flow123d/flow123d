@@ -55,6 +55,10 @@ class MappingP1 : public Mapping<dim,spacedim>
 {
 public:
 
+    typedef arma::vec::fixed<dim+1> BaryPoint;
+    typedef arma::vec::fixed<spacedim> RealPoint;
+    typedef arma::mat::fixed<spacedim, dim+1> ElementMap;
+    
     /**
      * @brief Constructor.
      */
@@ -105,39 +109,33 @@ public:
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
+   
+    /**
+     * Map from reference element (barycentric coords) to global coord system.
+     * Matrix(3, dim+1) M: x_real = M * x_bary;
+     * M columns are real coordinates of nodes.
+     */
+    ElementMap element_map(const Element &elm) const;
 
     /**
-     * Map from reference element to global coord system.
-     * Matrix(3, dim+1), last column is the translation vector.
+     * Project given point in real coordinates to reference element (barycentic coordinates).
+     * Result vector have dimension dim()+1.
+     * Use RefElement<dim>::bary_to_local() to get local coordinates.
      */
-    arma::mat::fixed<3, dim+1> element_map(Element &elm) const
-    {
-    	ASSERT_EQ(elm.dim(), dim).error();
-
-        arma::vec3 &v0 = elm.node[0]->point();
-        arma::mat::fixed<3, dim+1> A;
-
-        A.col(0) = v0;
-        for(unsigned int i=1; i <= dim; i++ ) {
-            A.col(i) = elm.node[i]->point() - v0;
-        }
-
-        return A;
-    }
-
+    BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map) const;
+    
     /**
-     * Project given point to the barycentic coordinates.
-     * Result vector have dimension dim()+1. Local coordinates are the first.
-     * Last is 1-...
+     * Project given point from reference element (barycentic coordinates) to real coordinates.
+     * Use RefElement<dim>::local_to_bary() to get barycentric coordinates in input.
      */
-    arma::vec::fixed<dim+1> project_point(const arma::vec3 &point, const arma::mat::fixed<3, dim+1> &map) const;
+    RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map) const;
 
     /**
      * Clip a point given by barycentric cocordinates to the element.
      * If the point is out of the element the closest point
      * projection to the element surface is used.
      */
-    arma::vec::fixed<dim+1> clip_to_element(arma::vec::fixed<dim+1> &barycentric);
+    BaryPoint clip_to_element(BaryPoint &barycentric);
 
 private:
 

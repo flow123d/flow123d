@@ -37,6 +37,9 @@ public:
     /// Empty constructor
     QXFEM(){}
     
+    /// Constructor from subquadrature (does not compute real points!!!)
+    QXFEM(const Quadrature<dim-1> &sub_quadrature, unsigned int sid, unsigned int pid);
+    
     /// @name Getters.
     //@{
     
@@ -79,6 +82,16 @@ template<int dim, int spacedim>
 inline void QXFEM<dim, spacedim>::set_real_point(unsigned int i, const typename Space<spacedim>::Point &p)
 {   ASSERT_DBG(i < real_points_.size());
     real_points_[i] = p;
+}
+
+
+template<int dim, int spacedim> inline
+QXFEM<dim,spacedim>::QXFEM(const Quadrature<dim-1> &sub_quadrature, unsigned int sid, unsigned int pid)
+: Quadrature<dim>(sub_quadrature, sid, pid)
+{
+    Point vv;
+    vv.fill(0);
+    real_points_.resize(sub_quadrature.size(), vv);
 }
 
 

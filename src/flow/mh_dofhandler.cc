@@ -562,7 +562,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     for(; ele2d != mesh_->element.end(); ++ele2d){
         if(ele2d->dim() == 2){
             MappingP1<2,3> map;
-            arma::vec p = map.project_point(center,map.element_map(*ele2d));
+            arma::vec p = map.project_real_to_unit(center,map.element_map(*ele2d));
             if(p[0]>=0.0 && p[0]<=1.0 &&
                p[1]>=0.0 && p[1]<=1.0 &&
                p[2]>=0.0 && p[2]<=1.0)

@@ -31,6 +31,7 @@
 #include "system/logger.hh"
 
 #include "quadrature/quadrature_lib.hh"
+#include "quadrature/qmidpoint.hh"
 #include "fem/mapping_p1.hh"
 
 template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM;
@@ -182,24 +183,26 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
         //TODO :
         //  - create quadrature factory for uniform quad in 1d,2d,3d
         //  - create quadrature<dim> from quadrature<dim-1> (see mapping.transform_subquadrature() )
-        QGauss<1> qside(1);
+//         QGauss<1> qside(1);
+//         const uint qsize=100;
+//         qside.resize(qsize);
+//         double qweight = 1.0/qsize;
+//         for(unsigned int q=0; q<qsize; q++){
+//             qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
+//             qside.set_weight(q,qweight);
+//         }
         const uint qsize=100;
-        qside.resize(qsize);
-        double qweight = 1.0/qsize;
-        for(unsigned int q=0; q<qsize; q++){
-            qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
-            qside.set_weight(q,qweight);
-        }
+        QMidpoint qside(qsize);
         MappingP1<2,3> map;
+        arma::mat ele_mat = map.element_map(*ele);
         
         for (unsigned int w=0; w<enr.size(); w++){
             enr_dof_val[w].resize(RefElement<dim>::n_sides);
             for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
                 
-                QGauss<2> quad_side(1);
-                map.transform_subquadrature(j,ele->permutation_idx_[j],qside,quad_side);
-                arma::mat ele_mat = map.element_map(*ele);
-//                 ele_mat.print(cout,"ele_map");
+                Quadrature<2> quad_side(qside, j, *ele->permutation_idx_);
+//                 QGauss<2> quad_side(1);
+//                 map.transform_subquadrature(j,ele->permutation_idx_[j],qside,quad_side);
 //                 for(unsigned int q=0; q < quad_side.size(); q++){
 //                     arma::vec qp = quad_side.point(q);
 //                     cout << qp(0) << " " << qp(1) << " " << "\n";
@@ -210,7 +213,8 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //                 DBGCOUT("edge quad [" << j << "]\n");
                 for(unsigned int q=0; q < quad_side.size(); q++){
                     
-                    arma::vec3 real_point = ele_mat.cols(1,dim) * quad_side.point(q) + ele_mat.col(0);
+                    arma::vec3 real_point = map.project_unit_to_real(RefElement<2>::local_to_bary(quad_side.point(q)), ele_mat);
+//                     arma::vec3 real_point = ele_mat.cols(1,dim) * quad_side.point(q) + ele_mat.col(0);
 //                     cout << real_point(0) << " " << real_point(1) << " " << real_point(2) << "\n";
                     val += arma::dot(enr[w]->vector(real_point),normals[j])
                         // this makes JxW on the triangle side:

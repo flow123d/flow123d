@@ -15,6 +15,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "quadrature/qmidpoint.hh"
 #include "flow/mh_dofhandler.hh"
 
 #include "fem/singularity.hh"
@@ -755,37 +756,39 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
 //         int side_row, edge_row;
 //         edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
         
-//         QGauss<1> qside(29);
-        QGauss<1> qside(1);
-        const uint qsize=100;
-        qside.resize(qsize);
-        double qweight = 1.0/qsize;
-        for(unsigned int q=0; q<qsize; q++){
-            qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
-            qside.set_weight(q,qweight);
-        }
+//         QGauss<1> qside(1);
+//         const uint qsize=100;
+//         qside.resize(qsize);
+//         double qweight = 1.0/qsize;
+//         for(unsigned int q=0; q<qsize; q++){
+//             qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
+//             qside.set_weight(q,qweight);
+//         }
         
-        
-        
-        auto fv_side = std::make_shared<FESideValues<2,3>>(map_, qside, *fe_rt_xfem_,
-                                                            update_normal_vectors
-                                                            | update_quadrature_points);
+        //Simply create normal vector.
+        QGauss<1> auxq(1);
+        auto fv_side = std::make_shared<FESideValues<2,3>>(map_, auxq, *fe_rt_xfem_, update_normal_vectors);
         fv_side->reinit(ele, local_side);
         
 //         fv_side->normal_vector(0).print(cout,"normal");
         
-        QXFEM<2,3> qside_xfem;
-        qside_xfem.resize(qside.size());
-        for(unsigned int q=0; q < qside.size(); q++){
-            arma::vec unit_p = map_.project_point(fv_side->point(q),map_.element_map(*ele));
-            qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
+        const uint qsize=100;
+        QMidpoint qside(qsize); // 1d quadrature on side
+        QXFEM<2,3> qside_xfem(qside, local_side, *ele->permutation_idx_); // mapped side quadrature to 2d coords
+        for(unsigned int q=0; q < qside.size(); q++){   // map to real coords
+            arma::vec real_point = map_.project_unit_to_real(RefElement<2>::local_to_bary(qside.point(q)),map_.element_map(*ele));
             qside_xfem.set_real_point(q,fv_side->point(q));
-//             fv_side->point(q).print(cout, "side point");
-            qside_xfem.set_weight(q,qside.weight(q));
         }
+//         qside_xfem.resize(qside.size());
+//         for(unsigned int q=0; q < qside.size(); q++){
+//             arma::vec unit_p = map_.project_point(fv_side->point(q),map_.element_map(*ele));
+//             qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
+//             qside_xfem.set_real_point(q,fv_side->point(q));
+// //             fv_side->point(q).print(cout, "side point");
+//             qside_xfem.set_weight(q,qside.weight(q));
+//         }
         
-        auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, qside_xfem, *fe_rt_xfem_,
-                                                        update_values);
+        auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, qside_xfem, *fe_rt_xfem_, update_values);
         fv_xfem->reinit(ele);
         
         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
@@ -801,7 +804,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
 //                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
 //                 auto fv = fv_xfem->shape_vector(j,q);
 //                 cout << fv(0) << " " << fv(1) << " " << fv(2) << "\n";
-                double val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(q))
+                double val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(0))
                       // this makes JxW on the triangle side:
                       * qside_xfem.weight(q)
                       * side_measure;

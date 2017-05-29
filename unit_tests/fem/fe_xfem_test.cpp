@@ -56,8 +56,8 @@ void print_fv_side(ElementFullIter ele, FESideValues<2,3>& fv_side, unsigned int
     cout << arma::dot(fv_side.shape_vector(1,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
     cout << arma::dot(fv_side.shape_vector(2,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
     cout << arma::dot(fv_side.shape_vector(3,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-    cout << arma::dot(fv_side.shape_vector(4,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-    cout << arma::dot(fv_side.shape_vector(5,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+//     cout << arma::dot(fv_side.shape_vector(4,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+//     cout << arma::dot(fv_side.shape_vector(5,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
     cout << endl;
     
     double sv_norm = arma::norm(fv_side.shape_vector(3,0),2);
@@ -124,20 +124,23 @@ TEST(fe_xfem, fe_rt_xfem) {
     
     FE_RT0<2,3> fe_rt;
     FE_RT0_XFEM<2,3> fe_rt_xfem(&fe_rt,{func});
+    cout << "fe_values" << endl;
     FEValues<2,3> fe_values(map, *qxfem, fe_rt_xfem, update_values | update_JxW_values | update_jacobians | update_inverse_jacobians | update_quadrature_points | update_divergence);
     
+    
     fe_values.reinit(ele);
+    cout << "fe_values" << endl;
     cout << fe_values.n_points() << endl;
     cout << fe_values.n_dofs() << endl;
     cout << fe_values.determinant(0) << endl;
     cout << fe_values.shape_vector(3,0)[0] << "  " << fe_values.shape_vector(3,0)[1] << endl;
-    cout << fe_values.shape_vector(5,0)[0] << "  " << fe_values.shape_vector(5,0)[1] << endl;
+//     cout << fe_values.shape_vector(5,0)[0] << "  " << fe_values.shape_vector(5,0)[1] << endl;
     cout << fe_values.shape_divergence(0,0) << endl;
     cout << fe_values.shape_divergence(1,0) << endl;
     cout << fe_values.shape_divergence(2,0) << endl;
     cout << fe_values.shape_divergence(3,0) << endl;
-    cout << fe_values.shape_divergence(4,0) << endl;
-    cout << fe_values.shape_divergence(5,0) << endl;
+//     cout << fe_values.shape_divergence(4,0) << endl;
+//     cout << fe_values.shape_divergence(5,0) << endl;
 //     cout << fe_values.shape_vector(6,0)[0] << "  " << fe_values.shape_vector(6,0)[1] << endl;
     
     

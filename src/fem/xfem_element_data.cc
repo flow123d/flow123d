@@ -70,7 +70,7 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
 //         DBGCOUT(<< "test q_points\n");
         for(unsigned int q=0; q < n_qpoints; q++){
             const Space<3>::Point & p = sing->q_points()[q];
-            arma::vec unit_p = map.project_point(p, proj);
+            arma::vec unit_p = map.project_real_to_unit(p, proj);
             
 //             if(ele->index() == 42){
 //                 sing->q_points()[q].print(cout,"real_p");
