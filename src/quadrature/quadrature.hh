@@ -235,4 +235,13 @@ Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, uns
     }
 }
 
+// Specialized subquadrature consructor for dim=1.
+template<> inline
+Quadrature<1>::Quadrature(const Quadrature<0> &subq, unsigned int sid, unsigned int pid)
+{
+    arma::vec::fixed<1> p({sid});
+    quadrature_points.push_back(p);
+    weights.push_back(1);
+}
+
 #endif /* QUADRATURE_HH_ */
