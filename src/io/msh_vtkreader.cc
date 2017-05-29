@@ -63,6 +63,8 @@ const double VtkMeshReader::point_tolerance = 1E-10;
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
 : BaseMeshReader(file_name)
 {
+    data_section_name_ = "DataArray";
+    has_compatible_mesh_ = false;
 	make_header_table();
 }
 
@@ -489,6 +491,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         }
     }
 
+    has_compatible_mesh_ = true;
 }
 
 

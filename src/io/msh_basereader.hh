@@ -159,14 +159,14 @@ protected:
     		unsigned int n_components, std::vector<int> const & el_ids)=0;
 
     /**
-     * Check whether the check of compatible mesh was performed.
+     * Flag stores that check of compatible mesh was performed.
      *
-     * This method has effect only for VTK reader.
+     * This flag has effect only for VTK reader.
      */
-    virtual inline void check_test_compatible_mesh() {}
+    bool has_compatible_mesh_;
 
-    /// Return name of field data section specify for type of mesh file.
-    virtual std::string data_section_name()=0;
+    /// Store name of field data section specify for type of mesh file.
+    std::string data_section_name_;
 
     /// Cache with last read element data
     ElementDataCacheBase *current_cache_;

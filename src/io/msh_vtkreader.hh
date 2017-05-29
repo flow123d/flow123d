@@ -125,12 +125,6 @@ protected:
 	/// Get position of AppendedData tag in VTK file
 	Tokenizer::Position get_appended_position();
 
-	/// Override @p BaseMeshReader::check_test_compatible_mesh.
-	inline void check_test_compatible_mesh() override {
-		ASSERT_GT(vtk_to_gmsh_element_map_.size(), 0)
-				.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
-	}
-
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
@@ -144,11 +138,6 @@ protected:
      *  - calculate with \p point_tolerance parameter
      */
     bool compare_points(arma::vec3 &p1, arma::vec3 &p2);
-
-    /// Implements @p BaseMeshReader::data_section_name.
-    std::string data_section_name() override {
-    	return "DataArray";
-    }
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;

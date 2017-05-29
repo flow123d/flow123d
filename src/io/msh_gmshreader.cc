@@ -39,6 +39,8 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 : BaseMeshReader(file_name)
 {
     tok_.set_comment_pattern( "#");
+    data_section_name_ = "$ElementData";
+    has_compatible_mesh_ = true;
     make_header_table();
 }
 
@@ -48,6 +50,8 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 : BaseMeshReader(in)
 {
     tok_.set_comment_pattern( "#");
+    data_section_name_ = "$ElementData";
+    has_compatible_mesh_ = true;
     make_header_table();
 }
 
