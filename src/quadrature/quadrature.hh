@@ -22,6 +22,8 @@
 #include <armadillo>
 #include <vector>
 
+#include "mesh/ref_element.hh"
+
 /**
  * @brief Base class for quadrature rules on simplices in arbitrary dimensions.
  *
@@ -52,6 +54,13 @@ public:
     /// Copy constructor.
     Quadrature(const Quadrature<dim> &q);
 
+    /** @brief Constructor from quadrature of lower dimension (e.g. for side integration).
+     * @param sub_quadrature lower dimnesional (dim-1) quadrature
+     * @param sid local index of side
+     * @param pid index of permutation of nodes on given side
+     */
+    Quadrature(const Quadrature<dim-1> &sub_quadrature, unsigned int sid, unsigned int pid);
+    
     /// Virtual destructor.
     virtual ~Quadrature();
 
@@ -168,9 +177,71 @@ template<unsigned int dim>
 Quadrature<dim>::~Quadrature()
 {}
 
+template<unsigned int dim> inline
+Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, unsigned int pid)
+{
+    resize(subq.size());
 
+//     double lambda;
+// 
+//     // vectors of barycentric coordinates of quadrature points
+//     arma::vec::fixed<dim+1> el_bar_coords;
+//     arma::vec::fixed<dim> side_bar_coords;
+// 
+//     for (unsigned int k=0; k<subq.size(); k++)
+//     {
+//         const arma::vec::fixed<dim-1> &sub_point = subq.point(k);
+//         // Calculate barycentric coordinates on the side of the k-th
+//         // quadrature point.
+//         el_bar_coords.zeros();
+//         lambda = 0;
+//         // Apply somewhere permutation of indices!
+//         for (unsigned int j=0; j<dim-1; j++)
+//         {
+//             side_bar_coords(j) = sub_point(j);
+//             lambda += sub_point(j);
+//         }
+//         side_bar_coords(dim-1) = 1.0 - lambda;
+// 
+//         // transform to element coordinates
+//         auto side_nodes = RefElement<dim>::interact(Interaction<0, (dim - 1)>(sid));
+//         for (unsigned int i=0; i<dim; i++) {
+//             // TODO: use RefElement<>::interpolate to map coordinates from the subelement
+//             unsigned int i_node = (side_nodes[RefElement<dim>::side_permutations[pid][i]]+dim)%(dim+1);
+//             el_bar_coords(i_node) = side_bar_coords((i+dim-1)%dim);
+//         }
+//         quadrature_points[k] = el_bar_coords.subvec(0,dim-1);
+//         weights[k] = subq.weight(k);
+//     }
+    
+    arma::vec::fixed<dim+1> el_bar_coords, final_bar;
+    
+    for (unsigned int k=0; k<subq.size(); k++)
+    {
+        //compute barycentric coordinates on element
+        arma::vec::fixed<dim> p = RefElement<dim-1>::local_to_bary(subq.point(k));
+        arma::vec::fixed<dim> pp;
+        
+        //permute
+        for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; i++) {
+            pp(i) = p(RefElement<dim>::side_permutations[pid][i]);
+        }
+        
+        el_bar_coords = RefElement<dim>::template interpolate<dim-1>(pp,sid);
+        
+        //get local coordinates and set
+        quadrature_points[k] = RefElement<dim>::bary_to_local(el_bar_coords);
+        weights[k] = subq.weight(k);
+    }
+}
 
-
-
+// Specialized subquadrature consructor for dim=1.
+template<> inline
+Quadrature<1>::Quadrature(const Quadrature<0> &subq, unsigned int sid, unsigned int pid)
+{
+    arma::vec::fixed<1> p({(double)sid});
+    quadrature_points.push_back(p);
+    weights.push_back(1);
+}
 
 #endif /* QUADRATURE_HH_ */

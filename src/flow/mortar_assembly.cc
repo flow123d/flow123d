@@ -209,7 +209,8 @@ void P0_CouplingAssembler::add_to_linsys(double scale)
 
              double s =  -scale * row_ele.delta * col_ele.delta;
              //DebugOut().fmt("s: {} {} {} {}", s, scale, row_ele.delta, col_ele.delta);
-             product_ = s * tensor_average(row_ele.dim, col_ele.dim);
+             //product_ = s * tensor_average(row_ele.dim, col_ele.dim);
+             product_ = s * row_ele.values * col_ele.values;
 
              loc_system_.reset(row_ele.dofs, col_ele.dofs);
 
