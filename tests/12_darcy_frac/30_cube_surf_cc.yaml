@@ -20,13 +20,15 @@ problem: !Coupling_Sequential
     input_fields:
       - region: .3d_top
         bc_type: dirichlet
-        bc_pressure: !FieldFormula
+        bc_piezo_head: !FieldFormula
           value: 200.0/(1.0 + 4*(x/10000)^2 + 4*(y/10000)^2)  # simple bell shape
+#        bc_pressure: !FieldFormula
+#          value: (x-y)^2 - z
       
       - region: 2d
         conductivity: 1e-5
         cross_section: 1
-        sigma: 1.0
+        #sigma: 1.0
 
       - region: 3d
         conductivity: 1e-8
@@ -37,11 +39,12 @@ problem: !Coupling_Sequential
         - pressure_p0
         - region_id
 #        - pressure_p1
+        - source_p0
         - velocity_p0
 #        - velocity_diff
 #        - pressure_diff
 #        - div_diff
     balance: {}
     output_stream: 
-      format: !gmsh
+      format: !vtk
         variant: ascii
