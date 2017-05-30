@@ -3,8 +3,14 @@
 
 size=10000; // 10km
 
-h1=0.4*size; // step on 1D fracture
-h2=0.4*size; // step on 2D domain
+
+//step = 0.0450; // big mesh 412248 el
+//step = 0.09; // middle 59496 el
+step = 0.2; 
+//step = 0.4; // small 1465 el
+
+step_3d = step * size;
+step_2d = step * size;
 
 
 // left, front, bottom corner
@@ -18,16 +24,16 @@ Y1 = 1*size;
 Y2 = 1*size;
 
 
-Point(1) = {X0, X1, X2, h2};
-Point(2) = {Y0, X1, X2, h2};
-Point(3) = {Y0, Y1, X2, h2};
-Point(4) = {X0, Y1, X2, h2};
-Point(5) = {X0, Y1, Y2, h2};
-Point(6) = {Y0, Y1, Y2, h2};
-Point(7) = {X0, X1, Y2, h2};
-Point(8) = {Y0, X1, Y2, h2};
-Point(9) = {0.5*(X0 + Y0), 0.5*(X1 + Y1), X2, h2};
-Point(10) = {0.5*(X0 + Y0), 0.5*(X1 + Y1), Y2, h2};
+Point(1) = {X0, X1, X2, step_3d};
+Point(2) = {Y0, X1, X2, step_3d};
+Point(3) = {Y0, Y1, X2, step_3d};
+Point(4) = {X0, Y1, X2, step_3d};
+Point(5) = {X0, Y1, Y2, step_3d};
+Point(6) = {Y0, Y1, Y2, step_3d};
+Point(7) = {X0, X1, Y2, step_3d};
+Point(8) = {Y0, X1, Y2, step_3d};
+Point(9) = {0.5*(X0 + Y0), 0.5*(X1 + Y1), X2, step_2d};
+Point(10) = {0.5*(X0 + Y0), 0.5*(X1 + Y1), Y2, step_2d};
 Line(1) = {4, 1};
 Line(2) = {1, 9};
 Line(3) = {9, 4};
