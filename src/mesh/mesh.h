@@ -89,39 +89,6 @@ public:
 };
 
 
-/**
- * Store data of nodes given by reader.
- *
- *  - allow transfer of general data from different types of readers
- *  - every node is stored by pair (node id - node coordinates)
- */
-typedef typename std::vector< std::pair<unsigned int, std::vector<double>> > NodeDataTable;
-
-
-/**
- * Store data of elements given by reader
- *
- *  - allow transfer of general data from different types of readers
- *  - every element is stored by vector with variable size (depends on n_nodes) and format:
- *    element_id, dimension, region_id, partition_id, node_ids
- */
-typedef typename std::vector< std::vector<unsigned int> > ElementDataTable;
-
-
-/// Data of one region (physical names) given by reader
-struct PhysicalNamesData {
-	unsigned int dim;  ///< dimension
-	unsigned int id;   ///< region_id
-	string name;       ///< region_name
-};
-
-
-/**
- * Store data of physical names given by reader
- */
-typedef typename std::vector< PhysicalNamesData > PhysicalNamesDataTable;
-
-
 
 //=============================================================================
 // STRUCTURE OF THE MESH
@@ -221,7 +188,6 @@ public:
      * Reads input record, creates regions defined in input by user.
      */
     void init_from_input();
-    void init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data);
 
 
     /**
@@ -324,12 +290,6 @@ public:
     /// Add new node of given id and coordinates to mesh
     void add_physical_name(unsigned int dim, unsigned int id, std::string name);
 
-    /// Convert raw data of physical_names_table to \p region_db_
-    void add_physical_names_data(PhysicalNamesDataTable physical_names_table);
-
-    /// Convert raw data of nodes and elements
-    void add_mesh_data(NodeDataTable node_table, ElementDataTable element_table);
-
     /// Return FilePath object representing "mesh_file" input key
     inline FilePath mesh_file() {
     	return in_record_.val<FilePath>("mesh_file");
@@ -394,16 +354,6 @@ protected:
      * during the further development.
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
-
-    /// Convert raw data of node_table to \p node_vector
-    void add_nodes_data(NodeDataTable node_table);
-
-    /**
-     * Convert raw data of element_table to \p element and \p bc_elements vectors
-     *
-     * Input of the mesh allows changing regions within the input YAML file.
-     */
-    void add_elements_data(ElementDataTable element_table);
 
     unsigned int n_bb_neigh, n_vb_neigh;
 

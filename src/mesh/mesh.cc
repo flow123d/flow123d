@@ -218,27 +218,6 @@ void Mesh::init_from_input() {
 
 
 
-void Mesh::init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data) {
-    START_TIMER("Reading mesh - init_from_input");
-
-	// add regions from mesh file
-	add_physical_names_data(physical_names_data);
-	// create regions from input
-	Input::Array region_list;
-	if (in_record_.opt_val("regions", region_list)) {
-		this->read_regions_from_input(region_list);
-	}
-	// add nodes and elements from mesh file
-	add_nodes_data(node_data);
-	add_elements_data(element_data);
-    // possibly add implicit_boundary region.
-    setup_topology();
-    // finish mesh initialization
-    this->check_and_finish();
-}
-
-
-
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
 		ElementIter ele = this->element.find_id(elem_to_region.first);
@@ -766,35 +745,6 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 }
 
 
-void Mesh::add_physical_names_data(PhysicalNamesDataTable physical_names_table) {
-    for (auto physical_name_data : physical_names_table) {
-        region_db_.add_region(physical_name_data.id, physical_name_data.name, physical_name_data.dim, "$PhysicalNames");
-    }
-}
-
-
-void Mesh::add_mesh_data(NodeDataTable node_table, ElementDataTable element_table) {
-	this->add_nodes_data(node_table);
-	this->add_elements_data(element_table);
-}
-
-
-void Mesh::add_nodes_data(NodeDataTable node_table) {
-    MessageOut() << "- Reading nodes...";
-
-	node_vector.reserve( node_table.size() );
-	for (auto node_data : node_table) {
-		NodeFullIter node = node_vector.add_item(node_data.first);
-
-		node->point()(0)=node_data.second[0];
-		node->point()(1)=node_data.second[1];
-		node->point()(2)=node_data.second[2];
-	}
-
-    MessageOut().fmt("... {} nodes read. \n", node_vector.size());
-}
-
-
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 	NodeFullIter node = node_vector.add_item(node_id);
 	node->point() = coords;
@@ -829,50 +779,6 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
 		ele->node[ni] = node;
 	}
-
-}
-
-void Mesh::add_elements_data(ElementDataTable element_table) {
-    MessageOut() << "- Reading elements...";
-
-	element.reserve(element_table.size());
-
-	for (auto element_data : element_table) {
-		unsigned int id = element_data[0];
-		unsigned int dim = element_data[1];
-		unsigned int region_id = element_data[2];
-		unsigned int partition_id = element_data[3];
-
-		Element *ele=nullptr;
-		RegionIdx region_idx = region_db_.get_region( region_id, dim );
-		if ( !region_idx.is_valid() ) {
-			region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
-		}
-		region_db_.mark_used_region(region_idx.idx());
-
-		if (region_idx.is_boundary()) {
-			ele = bc_elements.add_item(id);
-		} else {
-			if(dim == 0 )
-				WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", id);
-			else
-				ele = element.add_item(id);
-		}
-		ele->init(dim, this, region_idx);
-		ele->pid = partition_id;
-
-		unsigned int ni;
-		FOR_ELEMENT_NODES(ele, ni) {
-			unsigned int node_id = element_data[ni+4];
-			NodeIter node = node_vector.find_id( node_id );
-			INPUT_CHECK( node != node_vector.end(),
-					"Unknown node id %d in specification of element with id=%d.\n", node_id, id);
-			ele->node[ni] = node;
-		}
-	}
-
-    n_all_input_elements_ = element.size() + bc_elements.size();
-    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", element.size(), bc_elements.size());
 
 }
 

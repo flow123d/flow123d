@@ -120,39 +120,6 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
 }
 
 
-NodeDataTable GmshMeshReader::read_nodes_data() {
-    using namespace boost;
-    NodeDataTable node_data_table;
-    tok_.set_position( Tokenizer::Position() );
-
-    if (! tok_.skip_to("$Nodes")) THROW(ExcMissingSection() << EI_Section("$Nodes") << EI_GMSHFile(tok_.f_name()) );
-    try {
-    	tok_.next_line(false);
-        unsigned int n_nodes = lexical_cast<unsigned int> (*tok_);;
-        INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok_.position_msg().c_str() );
-        ++tok_; // end of line
-
-        node_data_table.reserve(n_nodes);
-        for (unsigned int i = 0; i < n_nodes; ++i) {
-        	tok_.next_line();
-
-            unsigned int id = lexical_cast<unsigned int> (*tok_); ++tok_; // node id
-        	std::vector<double> node_data(3);                             // node coordinates
-        	node_data[0] = lexical_cast<double> (*tok_); ++tok_;
-        	node_data[1] = lexical_cast<double> (*tok_); ++tok_;
-        	node_data[2] = lexical_cast<double> (*tok_); ++tok_;
-            ++tok_; // skip mesh size parameter
-            node_data_table.push_back( std::make_pair(id, node_data) );
-        }
-
-    } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
-    }
-    return node_data_table;
-}
-
-
-
 void GmshMeshReader::read_elements(Mesh * mesh) {
     using namespace boost;
     MessageOut() << "- Reading elements...";
@@ -228,83 +195,6 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
 }
 
-ElementDataTable GmshMeshReader::read_elements_data() {
-    using namespace boost;
-    ElementDataTable element_data_table;
-
-    if (! tok_.skip_to("$Elements")) THROW(ExcMissingSection() << EI_Section("$Elements") << EI_GMSHFile(tok_.f_name()) );
-    try {
-    	tok_.next_line(false);
-        unsigned int n_elements = lexical_cast<unsigned int> (*tok_);
-        INPUT_CHECK( n_elements > 0, "Zero number of elements, %s.\n", tok_.position_msg().c_str());
-        ++tok_; // end of line
-
-        element_data_table.reserve(n_elements);
-
-        for (unsigned int i = 0; i < n_elements; ++i) {
-        	tok_.next_line();
-            unsigned int id = lexical_cast<unsigned int>(*tok_); ++tok_;
-
-            //get element type: supported:
-            //  1 Line (2 nodes)
-            //  2 Triangle (3 nodes)
-            //  4 Tetrahedron (4 nodes)
-            // 15 Point (1 node)
-            unsigned int type = lexical_cast<unsigned int>(*tok_); ++tok_;
-            unsigned int dim;
-            switch (type) {
-                case 1:
-                    dim = 1;
-                    break;
-                case 2:
-                    dim = 2;
-                    break;
-                case 4:
-                    dim = 3;
-                    break;
-                case 15:
-                    dim = 0;
-                    break;
-                default:
-                    dim = 0;
-                    THROW(ExcUnsupportedType() << EI_ElementId(id) << EI_ElementType(type) << EI_GMSHFile(tok_.f_name()) );
-                    break;
-            }
-
-            std::vector<unsigned int> element_data; // data of one element
-            element_data.resize(dim+5);
-            element_data[0] = id;
-            element_data[1] = dim;
-
-            //get number of tags (at least 2)
-            unsigned int n_tags = lexical_cast<unsigned int>(*tok_);
-            INPUT_CHECK(n_tags >= 2, "At least two element tags have to be defined for element with id=%d, %s.\n",
-                    id, tok_.position_msg().c_str());
-            ++tok_;
-
-            //get tags 1 and 2
-            element_data[2] = lexical_cast<unsigned int>(*tok_); ++tok_; // region_id
-            lexical_cast<unsigned int>(*tok_); ++tok_; // GMSH region number, we do not store this
-            //get remaining tags
-            element_data[3] = 0; // partition_id
-            if (n_tags > 2)  { element_data[3] = lexical_cast<unsigned int>(*tok_); ++tok_; } // save partition number from the new GMSH format
-            for (unsigned int ti = 3; ti < n_tags; ti++) ++tok_;         //skip remaining tags
-
-            for (unsigned int ni=0; ni<dim+1; ++ni) { // read node ids
-            	element_data[ni+4] = lexical_cast<unsigned int>(*tok_);
-                ++tok_;
-            }
-
-            element_data_table.push_back( element_data );
-        }
-
-    } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
-    }
-
-    return element_data_table;
-}
-
 
 
 void GmshMeshReader::read_physical_names(Mesh * mesh) {
@@ -333,39 +223,6 @@ void GmshMeshReader::read_physical_names(Mesh * mesh) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
-}
-
-PhysicalNamesDataTable GmshMeshReader::read_physical_names_data() {
-    using namespace boost;
-
-    PhysicalNamesDataTable physical_names_data_table;
-
-    if (! tok_.skip_to("$PhysicalNames", "$Nodes") ) return physical_names_data_table;
-    try {
-    	tok_.next_line(false);
-        unsigned int n_physicals = lexical_cast<unsigned int> (*tok_);
-        ++tok_; // end of line
-
-        physical_names_data_table.reserve(n_physicals);
-
-        for (unsigned int i = 0; i < n_physicals; ++i) {
-        	PhysicalNamesData physical_names_data;
-        	tok_.next_line();
-            // format of one line:
-            // dim    physical-id    physical-name
-
-        	physical_names_data.dim = lexical_cast<unsigned int>(*tok_); ++tok_;
-        	physical_names_data.id = lexical_cast<unsigned int>(*tok_); ++tok_;
-            physical_names_data.name = *tok_; ++tok_;
-
-            physical_names_data_table.push_back( physical_names_data );
-        }
-
-    } catch (bad_lexical_cast &) {
-    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
-    }
-
-    return physical_names_data_table;
 }
 
 
