@@ -218,8 +218,9 @@ public:
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
     /**
-     * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
+     * Reads input record, creates regions defined in input by user.
      */
+    void init_from_input();
     void init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data);
 
 
@@ -294,6 +295,12 @@ public:
     vector< vector< vector<unsigned int> > > side_nodes;
 
     /**
+     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
+     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
+     */
+    void setup_topology();
+
+    /**
      * Check usage of regions, set regions to elements defined by user, close RegionDB
      */
     void check_and_finish();
@@ -306,6 +313,16 @@ public:
      * returned.
      */
     void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+
+    /// Add new node of given id and coordinates to mesh
+    void add_node(unsigned int node_id, arma::vec3 coords);
+
+    /// Add new element of given id to mesh
+    void add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+    		std::vector<unsigned int> node_ids);
+
+    /// Add new node of given id and coordinates to mesh
+    void add_physical_name(unsigned int dim, unsigned int id, std::string name);
 
     /// Convert raw data of physical_names_table to \p region_db_
     void add_physical_names_data(PhysicalNamesDataTable physical_names_table);
@@ -321,6 +338,8 @@ public:
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements;
 
+    /// Number of elements read from input.
+    unsigned int n_all_input_elements_;
 
 protected:
 
@@ -361,12 +380,6 @@ protected:
      */
     bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
 
-    /**
-     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
-     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
-     */
-    void setup_topology();
-
 
     void element_to_neigh_vb();
 
@@ -399,8 +412,6 @@ protected:
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
     mutable vector<int> bulk_elements_id_, boundary_elements_id_;
-    /// Number of elements read from input.
-    unsigned int n_all_input_elements_;
 
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];

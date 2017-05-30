@@ -62,6 +62,55 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 
 
 
+void GmshMeshReader::read_mesh(Mesh* mesh) {
+    START_TIMER("GMSHReader - read mesh");
+
+    OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
+    read_physical_names(mesh);
+    mesh->init_from_input();
+    tok_.set_position( Tokenizer::Position() );
+    read_nodes(mesh);
+    read_elements(mesh);
+    mesh->setup_topology();
+    mesh->check_and_finish();
+}
+
+
+
+void GmshMeshReader::read_nodes(Mesh* mesh) {
+    using namespace boost;
+    unsigned int n_nodes;
+    MessageOut() << "- Reading nodes...";
+    tok_.set_position( Tokenizer::Position() );
+
+    if (! tok_.skip_to("$Nodes")) THROW(ExcMissingSection() << EI_Section("$Nodes") << EI_GMSHFile(tok_.f_name()) );
+    try {
+    	tok_.next_line(false);
+        n_nodes = lexical_cast<unsigned int> (*tok_);
+        mesh->node_vector.reserve( n_nodes );
+        INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok_.position_msg().c_str() );
+        ++tok_; // end of line
+
+        for (unsigned int i = 0; i < n_nodes; ++i) {
+        	tok_.next_line();
+
+            unsigned int id = lexical_cast<unsigned int> (*tok_); ++tok_; // node id
+        	arma::vec3 coords;                                         // node coordinates
+        	coords(0) = lexical_cast<double> (*tok_); ++tok_;
+        	coords(1) = lexical_cast<double> (*tok_); ++tok_;
+        	coords(2) = lexical_cast<double> (*tok_); ++tok_;
+            ++tok_; // skip mesh size parameter
+
+            mesh->add_node(id, coords);
+        }
+
+    } catch (bad_lexical_cast &) {
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
+    }
+    MessageOut().fmt("... {} nodes read. \n", n_nodes);
+}
+
+
 NodeDataTable GmshMeshReader::read_nodes_data() {
     using namespace boost;
     NodeDataTable node_data_table;
@@ -94,6 +143,81 @@ NodeDataTable GmshMeshReader::read_nodes_data() {
 }
 
 
+
+void GmshMeshReader::read_elements(Mesh * mesh) {
+    using namespace boost;
+    MessageOut() << "- Reading elements...";
+
+    if (! tok_.skip_to("$Elements")) THROW(ExcMissingSection() << EI_Section("$Elements") << EI_GMSHFile(tok_.f_name()) );
+    try {
+    	tok_.next_line(false);
+        unsigned int n_elements = lexical_cast<unsigned int> (*tok_);
+        INPUT_CHECK( n_elements > 0, "Zero number of elements, %s.\n", tok_.position_msg().c_str());
+        ++tok_; // end of line
+
+        mesh->element.reserve(n_elements);
+
+        for (unsigned int i = 0; i < n_elements; ++i) {
+        	tok_.next_line();
+            unsigned int id = lexical_cast<unsigned int>(*tok_); ++tok_;
+
+            //get element type: supported:
+            //  1 Line (2 nodes)
+            //  2 Triangle (3 nodes)
+            //  4 Tetrahedron (4 nodes)
+            // 15 Point (1 node)
+            unsigned int type = lexical_cast<unsigned int>(*tok_); ++tok_;
+            unsigned int dim;
+            switch (type) {
+                case 1:
+                    dim = 1;
+                    break;
+                case 2:
+                    dim = 2;
+                    break;
+                case 4:
+                    dim = 3;
+                    break;
+                case 15:
+                    dim = 0;
+                    break;
+                default:
+                    dim = 0;
+                    THROW(ExcUnsupportedType() << EI_ElementId(id) << EI_ElementType(type) << EI_GMSHFile(tok_.f_name()) );
+                    break;
+            }
+
+            //get number of tags (at least 2)
+            unsigned int n_tags = lexical_cast<unsigned int>(*tok_);
+            INPUT_CHECK(n_tags >= 2, "At least two element tags have to be defined for element with id=%d, %s.\n",
+                    id, tok_.position_msg().c_str());
+            ++tok_;
+
+            //get tags 1 and 2
+            unsigned int region_id = lexical_cast<unsigned int>(*tok_); ++tok_; // region_id
+            lexical_cast<unsigned int>(*tok_); ++tok_; // GMSH region number, we do not store this
+            //get remaining tags
+            unsigned int partition_id = 0;
+            if (n_tags > 2)  { partition_id = lexical_cast<unsigned int>(*tok_); ++tok_; } // save partition number from the new GMSH format
+            for (unsigned int ti = 3; ti < n_tags; ti++) ++tok_;         //skip remaining tags
+
+            std::vector<unsigned int> node_ids;
+            node_ids.resize(dim+1);
+            for (unsigned int ni=0; ni<dim+1; ++ni) { // read node ids
+            	node_ids[ni] = lexical_cast<unsigned int>(*tok_);
+                ++tok_;
+            }
+
+            mesh->add_element(id, dim, region_id, partition_id, node_ids);
+        }
+
+    } catch (bad_lexical_cast &) {
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
+    }
+
+    mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
+}
 
 ElementDataTable GmshMeshReader::read_elements_data() {
     using namespace boost;
@@ -173,6 +297,34 @@ ElementDataTable GmshMeshReader::read_elements_data() {
 }
 
 
+
+void GmshMeshReader::read_physical_names(Mesh * mesh) {
+	OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
+
+    using namespace boost;
+
+    if (! tok_.skip_to("$PhysicalNames", "$Nodes") ) return;
+    try {
+    	tok_.next_line(false);
+        unsigned int n_physicals = lexical_cast<unsigned int> (*tok_);
+        ++tok_; // end of line
+
+        for (unsigned int i = 0; i < n_physicals; ++i) {
+        	tok_.next_line();
+            // format of one line:
+            // dim    physical-id    physical-name
+
+            unsigned int dim = lexical_cast<unsigned int>(*tok_); ++tok_;
+            unsigned int id = lexical_cast<unsigned int>(*tok_); ++tok_;
+            string name = *tok_; ++tok_;
+            mesh->add_physical_name( dim, id, name );
+        }
+
+    } catch (bad_lexical_cast &) {
+    	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
+    }
+
+}
 
 PhysicalNamesDataTable GmshMeshReader::read_physical_names_data() {
     using namespace boost;

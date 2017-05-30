@@ -72,6 +72,22 @@ public:
     ~GmshMeshReader();
 
     /**
+     *  Reads @p mesh from the GMSH file.
+     *  Input of the mesh allows changing regions within the input CON file.
+     *
+     *  TODO: Implements @p BaseMeshReader::read_mesh.
+     */
+    void read_mesh(Mesh* mesh);
+
+    /**
+     * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
+     *
+     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
+     * assign regions to the boundary and are not used in actual FEM computations.
+     */
+    void read_physical_names(Mesh * mesh);
+
+    /**
      * Empty method for GMSH reader now.
      *
      * Implements @p BaseMeshReader::check_compatible_mesh.
@@ -99,6 +115,19 @@ public:
     PhysicalNamesDataTable read_physical_names_data();
 
 protected:
+    /**
+     * private method for reading of nodes
+     */
+    void read_nodes(Mesh*);
+    /**
+     *  Method for reading of elements.
+     *  Input of the mesh allows changing regions within the input CON file.
+     * Read section '$PhysicalNames' of the GMSH file and save the physical sections to general data structure.
+     *
+     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
+     * assign regions to the boundary and are not used in actual FEM computations.
+     */
+    void read_elements(Mesh * mesh);
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */

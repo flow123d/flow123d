@@ -209,6 +209,15 @@ void Mesh::count_element_types() {
 
 
 
+void Mesh::init_from_input() {
+	Input::Array region_list;
+	if (in_record_.opt_val("regions", region_list)) {
+		this->read_regions_from_input(region_list);
+	}
+}
+
+
+
 void Mesh::init_from_input(PhysicalNamesDataTable physical_names_data, NodeDataTable node_data, ElementDataTable element_data) {
     START_TIMER("Reading mesh - init_from_input");
 
@@ -752,6 +761,11 @@ const BIHTree &Mesh::get_bih_tree() {
 }
 
 
+void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
+	region_db_.add_region(id, name, dim, "$PhysicalNames");
+}
+
+
 void Mesh::add_physical_names_data(PhysicalNamesDataTable physical_names_table) {
     for (auto physical_name_data : physical_names_table) {
         region_db_.add_region(physical_name_data.id, physical_name_data.name, physical_name_data.dim, "$PhysicalNames");
@@ -777,6 +791,43 @@ void Mesh::add_nodes_data(NodeDataTable node_table) {
     MessageOut().fmt("... {} nodes read. \n", node_vector.size());
 }
 
+
+void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
+	NodeFullIter node = node_vector.add_item(node_id);
+	node->point() = coords;
+}
+
+
+void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+		std::vector<unsigned int> node_ids) {
+	Element *ele=nullptr;
+	RegionIdx region_idx = region_db_.get_region( region_id, dim );
+	if ( !region_idx.is_valid() ) {
+		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
+	}
+	region_db_.mark_used_region(region_idx.idx());
+
+	if (region_idx.is_boundary()) {
+		ele = bc_elements.add_item(elm_id);
+	} else {
+		if(dim == 0 )
+			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+		else
+			ele = element.add_item(elm_id);
+	}
+	ele->init(dim, this, region_idx);
+	ele->pid = partition_id;
+
+	unsigned int ni;
+	FOR_ELEMENT_NODES(ele, ni) {
+		unsigned int node_id = node_ids[ni];
+		NodeIter node = node_vector.find_id( node_id );
+		INPUT_CHECK( node != node_vector.end(),
+				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
+		ele->node[ni] = node;
+	}
+
+}
 
 void Mesh::add_elements_data(ElementDataTable element_table) {
     MessageOut() << "- Reading elements...";
