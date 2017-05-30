@@ -11,6 +11,7 @@
 #include <mesh_constructor.hh>
 
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 #include <iostream>
 #include <vector>
 #include "mesh/accessors.hh"
@@ -58,10 +59,15 @@ TEST_F(MeshTest, intersect_nodes_lists) {
 
 
 TEST(MeshTopology, make_neighbours_and_edges) {
+	// has to introduce some flag for passing absolute path to 'test_units' in source tree
+	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+
     Profiler::initialize();
     
     Mesh * mesh = mesh_constructor();
-    init_simplest_cube_mesh(mesh);
+    ifstream in(string(mesh_file).c_str());
+    GmshMeshReader gmsh_reader( in );
+    gmsh_reader.read_mesh(mesh);
 
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->bc_elements.size());
@@ -108,7 +114,8 @@ TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh * mesh = mesh_constructor(mesh_input, Input::FileFormat::format_YAML);
-    init_simplest_cube_mesh(mesh);
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    gmsh_reader.read_mesh(mesh);
 
     EXPECT_EQ( 37, mesh->element_accessor(0).region().id() );
     EXPECT_EQ( "1D rename", mesh->element_accessor(0).region().label() );
@@ -130,19 +137,30 @@ TEST(Mesh, init_from_input) {
 }
 
 
+// simplest mesh
+string small_mesh = R"CODE(
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$Nodes
+4
+1 -1 1 1
+2 -1 -1 1
+3 1 1 -1
+4 -1 1 -1
+$EndNodes
+$Elements
+1
+1 4 2 39 40 2 3 1 4
+$EndElements
+)CODE";
+
 TEST(Mesh, decompose_problem) {
     Mesh * mesh = mesh_constructor();
-    PhysicalNamesDataTable physical_names_dec;
-    NodeDataTable node_dec = {
-    		{1, {-1, 1, 1} },
-    		{2, {-1, -1, 1} },
-    		{3, {1, 1, -1} },
-    		{4, {-1, -1, -1} }
-    };
-    ElementDataTable element_dec = {
-    		{ 1, 3, 39, 0, 2, 3, 1, 4 }
-    };
-    EXPECT_THROW_WHAT( { mesh->init_from_input(physical_names_dec, node_dec, element_dec); }, Partitioning::ExcDecomposeMesh,
+    stringstream in(small_mesh.c_str());
+    GmshMeshReader gmsh_reader( in );
+    EXPECT_THROW_WHAT( { gmsh_reader.read_mesh(mesh); }, Partitioning::ExcDecomposeMesh,
     		"greater then number of elements 1. Can not make partitioning of the mesh");
+
     delete mesh;
 }

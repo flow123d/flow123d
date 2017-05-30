@@ -152,11 +152,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     {
         Mesh *mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_3d.msh\"}");
         GmshMeshReader gmsh_reader( mesh->mesh_file() );
-        auto physical_names_data = gmsh_reader.read_physical_names_data();
-        auto nodes_data = gmsh_reader.read_nodes_data();
-        auto elems_data = gmsh_reader.read_elements_data();
-
-        mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+        gmsh_reader.read_mesh(mesh);
         reader.check_compatible_mesh(*mesh);
         delete mesh;
     }

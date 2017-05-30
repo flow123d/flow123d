@@ -15,6 +15,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 
 
 // Test input for mesh
@@ -35,8 +36,12 @@ TEST(Partitioning, all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Mesh * mesh = mesh_constructor(mesh_input);
-    init_simplest_cube_mesh(mesh);
+    std::cout << "1" << std::endl;
+    GmshMeshReader gmsh_reader( mesh->mesh_file() );
+    gmsh_reader.read_mesh(mesh);
+    std::cout << "2" << std::endl;
     const Distribution * init_ds = mesh->get_part()->get_init_distr();
+    std::cout << "3" << std::endl;
 
     cout << *init_ds;
     const int * part = mesh->get_part()->get_loc_part();
