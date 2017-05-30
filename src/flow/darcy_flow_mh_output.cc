@@ -77,6 +77,8 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
     *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
+	*this += field_ele_source.name("source_p0").units(UnitSI().m(3).s(-1));
+
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
 					  .flags(FieldFlag::equation_external_output);
@@ -128,6 +130,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	ele_flux.resize(3*mesh_->n_elements());
 	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+
+    ele_source.resize(mesh_->n_elements());
+    auto ele_source_ptr=ele_source.create_field<3, FieldValue<3>::Scalar>(1);
+    output_fields.field_ele_source.set_field(mesh_->region_db().get_region_set("ALL"), ele_source_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
@@ -197,6 +203,12 @@ void DarcyFlowMHOutput::output()
         //else
         //        make_node_scalar_param(observed_elements);
 
+        if ( output_fields.is_field_output_time(output_fields.field_ele_source,darcy_flow->time().step()) )
+                make_element_vector(all_element_idx_);
+        //else
+        //        make_element_vector(observed_elements);
+
+
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
@@ -255,10 +267,12 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
 
-        flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
+        double source;
+        flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele, source);
 
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
+        ele_source[i_ele] = source;
     }
 }
 

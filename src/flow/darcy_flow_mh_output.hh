@@ -65,6 +65,7 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_ele_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
+        Field<3, FieldValue<3>::Scalar> field_ele_source;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
 	    Field<3, FieldValue<3>::Integer> subdomain;
 	    Field<3, FieldValue<3>::Integer> region_id;
@@ -148,6 +149,9 @@ private:
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
+
+    // Water source on every element (sum of edge fluxes)
+    VectorSeqDouble ele_source;
 
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;
