@@ -31,7 +31,8 @@ TEST(ReaderInstances, get_element_data) {
 
     Mesh * mesh = mesh_constructor();
     GmshMeshReader *reader = static_cast<GmshMeshReader *>( ReaderInstances::instance()->get_reader(mesh_file).get() );
-    reader->read_mesh(mesh);
+    reader->read_physical_names(mesh);
+    reader->read_raw_mesh(mesh);
 
     std::vector<int> el_ids;
     for (i=1; i<14; ++i) el_ids.push_back(i);
@@ -157,7 +158,8 @@ TEST(ReaderInstances, get_reader) {
 	    Mesh * mesh = mesh_constructor();
 		FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 		GmshMeshReader *mesh_reader = static_cast<GmshMeshReader *>( ReaderInstances::instance()->get_reader(mesh_file).get() );
-		mesh_reader->read_mesh(mesh);
+		mesh_reader->read_physical_names(mesh);
+		mesh_reader->read_raw_mesh(mesh);
 
 		EXPECT_EQ(118, mesh->n_nodes());
 
@@ -168,7 +170,8 @@ TEST(ReaderInstances, get_reader) {
 	    Mesh * mesh = mesh_constructor();
 		FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
 		GmshMeshReader *mesh_reader = static_cast<GmshMeshReader *>( ReaderInstances::instance()->get_reader(mesh_file).get() );
-		mesh_reader->read_mesh(mesh);
+		mesh_reader->read_physical_names(mesh);
+		mesh_reader->read_raw_mesh(mesh);
 
 		EXPECT_EQ(8, mesh->n_nodes());
 
@@ -184,7 +187,8 @@ TEST(ReaderInstances, repeat_call) {
     for (unsigned int i=0; i<2; ++i) {
         GmshMeshReader *reader = static_cast<GmshMeshReader *>( ReaderInstances::instance()->get_reader(mesh_file).get() );
         Mesh * mesh = mesh_constructor();
-        reader->read_mesh(mesh);
+        reader->read_physical_names(mesh);
+        reader->read_raw_mesh(mesh);
         delete mesh;
     }
 }
