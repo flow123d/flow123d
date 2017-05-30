@@ -12,6 +12,7 @@
 #include "mesh/region.hh"
 #include "mesh/mesh.h"
 #include "mesh/region_set.hh"
+#include "io/msh_gmshreader.h"
 #include "input/type_base.hh"
 #include "input/type_output.hh"
 #include "input/reader_to_storage.hh"
@@ -140,40 +141,48 @@ TEST(Region, add_nonunique_id_region) {
 }
 
 
-// simplest mesh data structures
-PhysicalNamesDataTable physical_names_data = {
-		{1, 37, "1D diagonal"},
-		{2, 38, "2D XY diagonal"},
-		{2, 101, ".top side"},
-		{2, 102, ".bottom side"},
-		{3, 39, "3D back"},
-		{3, 40, "3D front"}
-};
-NodeDataTable node_data = {
-		{1, {1, 1, 1} },
-		{2, {-1, 1, 1} },
-		{3, {-1, -1, 1} },
-		{4, {1, -1, 1} },
-		{5, {1, -1, -1} },
-		{6, {-1, -1, -1} },
-		{7, {1, 1, -1} },
-		{8, {-1, 1, -1} }
-};
-ElementDataTable element_data = {
-		{ 1, 1, 37, 0, 7, 3 },
-		{ 2, 2, 38, 0, 6, 3, 7 },
-		{ 3, 2, 38, 0, 3, 1, 7 },
-		{ 4, 3, 39, 0, 3, 7, 1, 2 },
-		{ 5, 3, 39, 0, 3, 7, 2, 8 },
-		{ 6, 3, 39, 0, 3, 7, 8, 6 },
-		{ 7, 3, 40, 0, 3, 7, 6, 5 },
-		{ 8, 3, 40, 0, 3, 7, 5, 4 },
-		{ 9, 3, 41, 0, 3, 7, 4, 1 },
-		{10, 2, 101, 0, 1, 2, 3 },
-		{11, 2, 101, 0, 1, 3, 4 },
-		{12, 2, 102, 0, 6, 7, 8 },
-		{13, 2, 102, 0, 7, 6, 5 }
-};
+// simplest mesh
+string gmsh_mesh = R"CODE(
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+6
+1       37      "1D diagonal"
+2       38      "2D XY diagonal"
+2       101     ".top side"
+2       102     ".bottom side"
+3       39      "3D back"
+3       40      "3D front"
+$EndPhysicalNames
+$Nodes
+8
+1 1 1 1
+2 -1 1 1
+3 -1 -1 1
+4 1 -1 1
+5 1 -1 -1
+6 -1 -1 -1
+7 1 1 -1
+8 -1 1 -1
+$EndNodes
+$Elements
+13
+1 1 2 37 20 7 3
+2 2 2 38 34 6 3 7
+3 2 2 38 36 3 1 7
+4 4 2 39 40 3 7 1 2
+5 4 2 39 40 3 7 2 8
+6 4 2 39 40 3 7 8 6
+7 4 2 40 42 3 7 6 5
+8 4 2 40 42 3 7 5 4
+9 4 2 41 42 3 7 4 1
+10 2 2 101 101 1 2 3
+11 2 2 101 101 1 3 4
+12 2 2 102 102 6 7 8
+13 2 2 102 102 7 6 5 
+$EndElements
+)CODE";
 
 const string read_regions_yaml = R"YAML(
 - !From_Id
@@ -230,16 +239,18 @@ TEST(Region, read_regions_from_yaml) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
+    stringstream in(gmsh_mesh.c_str());
+    GmshMeshReader reader(in);
     Mesh * mesh = mesh_constructor();
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
 	Input::ReaderToStorage json_reader( read_regions_yaml, element_map_array_input_type, Input::FileFormat::format_YAML);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
-	mesh->add_physical_names_data(physical_names_data);
-	mesh->read_regions_from_input(i_arr);
-	mesh->add_mesh_data(node_data, element_data);
-	mesh->check_and_finish();
+    reader.read_physical_names(mesh);
+    mesh->read_regions_from_input(i_arr);
+    reader.read_raw_mesh(mesh);
+    mesh->check_and_finish();
 
 	const RegionDB & region_db = mesh->region_db();
 
@@ -318,8 +329,9 @@ TEST(Region, read_regions_error_messages) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
+    GmshMeshReader reader(mesh_file);
     Mesh * mesh = mesh_constructor();
-    mesh->add_physical_names_data(physical_names_data);
+    reader.read_physical_names(mesh);
 
 	{
 		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );

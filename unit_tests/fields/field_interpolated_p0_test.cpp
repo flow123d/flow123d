@@ -135,10 +135,7 @@ public:
         mesh = mesh_constructor();
         stringstream in(gmsh_mesh.c_str());
         GmshMeshReader gmsh_reader( in );
-        auto physical_names_data = gmsh_reader.read_physical_names_data();
-        auto nodes_data = gmsh_reader.read_nodes_data();
-        auto elems_data = gmsh_reader.read_elements_data();
-        mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+        gmsh_reader.read_mesh(mesh);
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )

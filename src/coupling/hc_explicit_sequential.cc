@@ -129,10 +129,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     	try {
             GmshMeshReader gmsh_reader( mesh->mesh_file() );
-            auto physical_names_data = gmsh_reader.read_physical_names_data();
-            auto nodes_data = gmsh_reader.read_nodes_data();
-            auto elems_data = gmsh_reader.read_elements_data();
-            mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+            gmsh_reader.read_mesh(mesh);
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
     	catch (ExceptionBase const &e) {
     		throw;

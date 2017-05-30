@@ -115,10 +115,8 @@ public:
 		START_TIMER("create mesh");
 		GmshMeshReader reader(mesh_file);
 		mesh = mesh_constructor();
-		mesh->add_physical_names_data( reader.read_physical_names_data() );
-	    auto nodes_data = reader.read_nodes_data();
-	    auto elems_data = reader.read_elements_data();
-		mesh->add_mesh_data( nodes_data, elems_data );
+		reader.read_physical_names(mesh);
+		reader.read_raw_mesh(mesh);
 		END_TIMER("create mesh");
 
 	    int leaf_size_limit = 10;
@@ -298,11 +296,9 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 
     Mesh * mesh = mesh_constructor();
 	GmshMeshReader reader(mesh_file);
+	reader.read_physical_names(mesh);
+	reader.read_raw_mesh(mesh);
 
-	mesh->add_physical_names_data( reader.read_physical_names_data() );
-    auto nodes_data = reader.read_nodes_data();
-    auto elems_data = reader.read_elements_data();
-	mesh->add_mesh_data( nodes_data, elems_data );
 	unsigned int element_limit=20;
 	BIHTree bt(mesh, element_limit);
 	std::vector<unsigned int> insec_list;

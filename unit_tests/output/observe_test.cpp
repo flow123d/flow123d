@@ -218,10 +218,7 @@ TEST(ObservePoint, find_observe_point) {
 
     Mesh *mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+    gmsh_reader.read_mesh(mesh);
 
     auto obs = TestObservePoint("0 -0.5 -0.5", 4, "ALL");
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
@@ -231,7 +228,6 @@ TEST(ObservePoint, find_observe_point) {
 
 TEST(Observe, all) {
     Profiler::initialize();
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     armadillo_setup();
     EqData field_set;
 
@@ -245,12 +241,11 @@ TEST(Observe, all) {
     auto in_rec = Input::ReaderToStorage(test_input, output_type, Input::FileFormat::format_JSON)
         .get_root_interface<Input::Record>();
 
-    Mesh *mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    Mesh *mesh = mesh_constructor();
+    ifstream in(string(mesh_file).c_str());
+    GmshMeshReader gmsh_reader( in );
+    gmsh_reader.read_mesh(mesh);
 
     {
     TestObserve obs(*mesh, in_rec.val<Input::Array>("observe_points"));

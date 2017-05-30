@@ -53,10 +53,7 @@ public:
 
 	    my_mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         GmshMeshReader gmsh_reader( my_mesh->mesh_file() );
-        auto physical_names_data = gmsh_reader.read_physical_names_data();
-        auto nodes_data = gmsh_reader.read_nodes_data();
-        auto elems_data = gmsh_reader.read_elements_data();
-        my_mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+        gmsh_reader.read_mesh(my_mesh);
 
 
 	    field_.name("test_field");
@@ -591,10 +588,7 @@ TEST(Field, init_from_input) {
 
 	Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+    gmsh_reader.read_mesh(mesh);
 
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
@@ -733,10 +727,7 @@ TEST(Field, field_result) {
 
     Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+    gmsh_reader.read_mesh(mesh);
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -813,10 +804,7 @@ TEST(Field, init_from_default) {
     
     Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+    gmsh_reader.read_mesh(mesh);
 
     Space<3>::Point p("1 2 3");
 
@@ -889,10 +877,7 @@ TEST(Field, disable_where) {
 
     Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+    gmsh_reader.read_mesh(mesh);
 
     bc_type.set_mesh(*mesh);
     bc_flux.set_mesh(*mesh);

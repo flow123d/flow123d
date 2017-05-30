@@ -49,10 +49,7 @@ public:
         this->_mesh = mesh_constructor();
         ifstream in(string(mesh_file).c_str());
         GmshMeshReader gmsh_reader( in );
-        auto physical_names_data = gmsh_reader.read_physical_names_data();
-        auto nodes_data = gmsh_reader.read_nodes_data();
-        auto elems_data = gmsh_reader.read_elements_data();
-        _mesh->init_from_input(physical_names_data, nodes_data, elems_data);
+        gmsh_reader.read_mesh(_mesh);
 
         component_names = { "comp_0", "comp_1", "comp_2" };
     }

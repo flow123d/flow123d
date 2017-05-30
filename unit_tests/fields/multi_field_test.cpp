@@ -107,9 +107,7 @@ protected:
 
         mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
         GmshMeshReader gmsh_reader( mesh->mesh_file() );
-        auto nodes_data = gmsh_reader.read_nodes_data();
-        auto elems_data = gmsh_reader.read_elements_data();
-        mesh->add_mesh_data(nodes_data, elems_data);
+        gmsh_reader.read_raw_mesh(mesh);
 
     }
 
@@ -224,10 +222,8 @@ TEST(Operators, assignment) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    //auto physical_names_data = gmsh_reader.read_physical_names_data();
-    auto nodes_data = gmsh_reader.read_nodes_data();
-    auto elems_data = gmsh_reader.read_elements_data();
-    mesh->add_mesh_data(nodes_data, elems_data);
+    gmsh_reader.read_physical_names(mesh);
+    gmsh_reader.read_raw_mesh(mesh);
     mesh->check_and_finish();
 
 	std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
