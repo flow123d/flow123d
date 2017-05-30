@@ -12,7 +12,11 @@ test_cases:
     #- 20_cube_23d_p0_simple.yaml
     - 21_cube_23d_simple_nc_p0.yaml
     - 22_cube_23d_simple_nc_p1.yaml
-    - 30_surf_cube_cc.yaml
+    - 30_cube_surf_cc.yaml
+    - 31_cube_surf_23d_p0.yaml
+    - 32_cube_surf_223d_p0.yaml
+    - 33_cube_surf_23d_p1.yaml
+    - 34_cube_surf_223d_p1.yaml
   proc: [1]
 
 # long running tests
