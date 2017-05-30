@@ -137,10 +137,10 @@ NodeDataTable GmshMeshReader::read_nodes_data() {
         	tok_.next_line();
 
             unsigned int id = lexical_cast<unsigned int> (*tok_); ++tok_; // node id
-        	arma::vec3 node_data;                                         // node coordinates
-        	node_data(0) = lexical_cast<double> (*tok_); ++tok_;
-        	node_data(1) = lexical_cast<double> (*tok_); ++tok_;
-        	node_data(2) = lexical_cast<double> (*tok_); ++tok_;
+        	std::vector<double> node_data(3);                             // node coordinates
+        	node_data[0] = lexical_cast<double> (*tok_); ++tok_;
+        	node_data[1] = lexical_cast<double> (*tok_); ++tok_;
+        	node_data[2] = lexical_cast<double> (*tok_); ++tok_;
             ++tok_; // skip mesh size parameter
             node_data_table.push_back( std::make_pair(id, node_data) );
         }

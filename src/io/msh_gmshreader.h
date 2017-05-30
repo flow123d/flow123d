@@ -106,7 +106,7 @@ public:
      *
      * Implements @p BaseMeshReader::read_nodes_data.
      */
-    NodeDataTable read_nodes_data() override;
+    NodeDataTable read_nodes_data();
 
     /**
      * Read section '$Elements' of the GMSH file and save the physical sections to general data structure.

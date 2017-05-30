@@ -136,11 +136,6 @@ public:
      */
     virtual void check_compatible_mesh(Mesh &mesh)=0;
 
-    /**
-     * method for reading data of nodes
-     */
-    virtual NodeDataTable read_nodes_data()=0;
-
 protected:
     /**
 	 * Find data header for given time and field.

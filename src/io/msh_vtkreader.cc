@@ -404,18 +404,32 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         unsigned int i_node, i_elm_node;
         const BIHTree &bih_tree=mesh.get_bih_tree();
 
-        NodeDataTable nodes_data = this->read_nodes_data();
-        node_ids.resize(nodes_data.size());
+        MeshDataHeader point_header = this->find_header(0.0, "Points");
+        ASSERT_EQ(3, point_header.n_components).error();
+        node_ids.resize(point_header.n_entities);
+        // fill vectors necessary for correct reading of data, we read all data same order as data is stored
+        for (unsigned int i=0; i<point_header.n_entities; ++i) {
+        	el_ids.push_back(i);
+        	vtk_to_gmsh_element_map_.push_back(i);
+        }
 
-        for (node_data : nodes_data) {
+        // create temporary data cache
+        ElementDataCache<double> node_cache(point_header, 1, point_header.n_components*point_header.n_entities);
+
+        // check compatible nodes, to each VTK point must exist only one GMSH node
+        this->read_element_data(node_cache, point_header, 1, point_header.n_components, el_ids);
+        std::vector<double> &node_vec = *(node_cache.get_component_data(0) );
+        ASSERT_EQ(node_vec.size(), point_header.n_components*point_header.n_entities).error();
+        for (unsigned int i=0; i<point_header.n_entities; ++i) {
+            arma::vec3 point = { node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
             int found_i_node = -1;
-            bih_tree.find_point(node_data.second, searched_elements);
+            bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
                 ElementFullIter ele = mesh.element( *it );
                 FOR_ELEMENT_NODES(ele, i_node)
                 {
-                    if ( compare_points(ele->node[i_node]->point(), node_data.second) ) {
+                    if ( compare_points(ele->node[i_node]->point(), point) ) {
                     	i_elm_node = mesh.node_vector.index(ele->node[i_node]);
                         if (found_i_node == -1) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
@@ -428,7 +442,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             if (found_i_node == -1) {
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("no node found in GMSH file") << EI_VTKFile(tok_.f_name()));
             }
-            node_ids[ node_data.first ] = (unsigned int)found_i_node;
+            node_ids[i] = (unsigned int)found_i_node;
             searched_elements.clear();
         }
 
@@ -492,39 +506,6 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     }
 
     has_compatible_mesh_ = true;
-}
-
-
-NodeDataTable VtkMeshReader::read_nodes_data() {
-    using namespace boost;
-    NodeDataTable node_data_table;
-    std::vector<int> el_ids;
-
-    MeshDataHeader point_header = this->find_header(0.0, "Points");
-    ASSERT_EQ(3, point_header.n_components).error();
-    // fill vectors necessary for correct reading of data, we read all data same order as data is stored
-    for (unsigned int i=0; i<point_header.n_entities; ++i) {
-    	el_ids.push_back(i);
-    	vtk_to_gmsh_element_map_.push_back(i);
-    }
-
-    // create temporary data cache
-    ElementDataCache<double> node_cache(point_header, 1, point_header.n_components*point_header.n_entities);
-
-    // check compatible nodes, to each VTK point must exist only one GMSH node
-    this->read_element_data(node_cache, point_header, 1, point_header.n_components, el_ids);
-    std::vector<double> &node_vec = *(node_cache.get_component_data(0) );
-    ASSERT_EQ(node_vec.size(), point_header.n_components*point_header.n_entities).error();
-    for (unsigned int i=0; i<point_header.n_entities; ++i) { // node id is equivalent with 'i'
-    	arma::vec3 node_data;                                // node coordinates
-    	node_data(0) = node_vec[3*i];
-    	node_data(1) = node_vec[3*i+1];
-    	node_data(2) = node_vec[3*i+2];
-        node_data_table.push_back( std::make_pair(i, node_data) );
-    }
-    vtk_to_gmsh_element_map_.clear();
-
-    return node_data_table;
 }
 
 
