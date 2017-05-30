@@ -80,6 +80,13 @@ public:
     void read_mesh(Mesh* mesh);
 
     /**
+     *  Reads @p raw data of mesh (only nodes and elements) from the GMSH file.
+     *  Input of the mesh allows changing regions within the input CON file.
+     *
+     */
+    void read_raw_mesh(Mesh* mesh);
+
+    /**
      * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
      *
      * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to

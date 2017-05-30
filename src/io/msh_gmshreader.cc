@@ -77,6 +77,15 @@ void GmshMeshReader::read_mesh(Mesh* mesh) {
 
 
 
+void GmshMeshReader::read_raw_mesh(Mesh* mesh) {
+    OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
+    tok_.set_position( Tokenizer::Position() );
+    read_nodes(mesh);
+    read_elements(mesh);
+}
+
+
+
 void GmshMeshReader::read_nodes(Mesh* mesh) {
     using namespace boost;
     unsigned int n_nodes;
