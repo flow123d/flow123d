@@ -239,7 +239,7 @@ Quadrature<dim>::Quadrature(const Quadrature<dim-1> &subq, unsigned int sid, uns
 template<> inline
 Quadrature<1>::Quadrature(const Quadrature<0> &subq, unsigned int sid, unsigned int pid)
 {
-    arma::vec::fixed<1> p({sid});
+    arma::vec::fixed<1> p({(double)sid});
     quadrature_points.push_back(p);
     weights.push_back(1);
 }
