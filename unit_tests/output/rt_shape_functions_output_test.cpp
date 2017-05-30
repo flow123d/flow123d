@@ -98,27 +98,26 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
     stringstream in(ref_element_mesh.c_str());
     mesh->read_gmsh_from_stream(in);
     
-    DOFHandlerMultiDim dofhandler(*mesh);
+    shared_ptr<DOFHandlerMultiDim> dofhandler = std::make_shared<DOFHandlerMultiDim>(*mesh);
        
     MappingP1<1,3> map1;
     MappingP1<2,3> map2;
     MappingP1<3,3> map3;
     
-    dofhandler.distribute_dofs(fe_1, fe_2, fe_3);
+    dofhandler->distribute_dofs(fe_1, fe_2, fe_3);
     
-    Vec data_vec;
-    VecCreateSeq(PETSC_COMM_SELF, dofhandler.n_global_dofs(), &data_vec);
-    
+    VectorSeqDouble vvv;
+    vvv.resize(dofhandler->n_global_dofs());
     for(auto &pair: dof_values){
-        VecSetValue(data_vec, pair.first, pair.second, ADD_VALUES);
+        VecSetValue(vvv.get_data_petsc(), pair.first, pair.second, ADD_VALUES);
     }
     
     FieldCommon* output_field;
-        
+    
     if(is_scalar) {
         std::shared_ptr<FieldFE<3,FieldValue<3>::Scalar>> field_fe = std::make_shared<FieldFE<3,FieldValue<3>::Scalar>>(1);
         field_fe->set_mesh(mesh,false);
-        field_fe->set_fe_data(&dofhandler,&map1, &map2, &map3, &data_vec);
+        field_fe->set_fe_data(dofhandler,&map1, &map2, &map3, &vvv);
     
         Field<3,FieldValue<3>::Scalar>* of = new Field<3,FieldValue<3>::Scalar>();
         of->set_mesh(*mesh);
@@ -129,7 +128,7 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
         std::shared_ptr<FieldFE<3,FieldValue<3>::VectorFixed>> field_fe 
                         = std::make_shared<FieldFE<3,FieldValue<3>::VectorFixed>>(1);
         field_fe->set_mesh(mesh,false);
-        field_fe->set_fe_data(&dofhandler,&map1, &map2, &map3, &data_vec);
+        field_fe->set_fe_data(dofhandler,&map1, &map2, &map3, &vvv);
         
         Field<3,FieldValue<3>::VectorFixed>* of = new Field<3,FieldValue<3>::VectorFixed>();
         of->set_mesh(*mesh);
@@ -192,14 +191,22 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
         output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, filename + std::to_string(i));
     }
     
+//     //     //precise enrichment function approx.
+//     dof_values = {
+//         { 0, 1.53846153846154 },    // interpolation dofs
+//         { 1, 1.53846153846154 },
+//         { 2, 2.35702260395516 },
+//         { 3, 1.0 },
+//         { 4, 1.0 },
+//         { 5, 1.0 }
+//     };
+
     //     //precise enrichment function approx.
     dof_values = {
-        { 0, 1.53846153846154 },    // interpolation dofs
-        { 1, 1.53846153846154 },
-        { 2, 2.35702260395516 },
-        { 3, 1.0 },
-        { 4, 1.0 },
-        { 5, 1.0 }
+        { 0, 2.111270793766706 },    // interpolation dofs
+        { 1, 2.111270793766706 },
+        { 2, 2.060775278298543 },
+        { 3, 1.0 }
     };
     
     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt");
@@ -221,36 +228,38 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
 //     std::string filename = "test_rt_";
 //     
 // //                                                  1.0/sqrt(2)
-//     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{0, 1.0}}, false, filename + std::to_string(0));
-//     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{1, 1.0}}, false, filename + std::to_string(1));   
+// //     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{0, 1.0}}, false, filename + std::to_string(0));
+// //     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{1, 1.0}}, false, filename + std::to_string(1)); 
+// //     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{2, 1.0}}, false, filename + std::to_string(2));
+//     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{3, 1.0}}, false, filename + std::to_string(3));
 // }
 
-TEST(ShapeFunctionOutput, p0_xfem) {
-
-    auto func = std::make_shared<Singularity0D<3>>(arma::vec({0.2,0.2,0}),0.05,
-                                                   arma::vec({0, 0, 1}), arma::vec({0, 0, 1}));
-    
-    FE_P_disc<0,1,3> fe_p_1;
-    FE_P_disc<0,2,3> fe_p_2;
-    FE_P0_XFEM<2,3> fe_p0_xfem(&fe_p_2,{func});
-    FE_P_disc<0,3,3> fe_p_3;
-
-    std::map<unsigned int, double> dof_values;
-
-    // print all shape functions
-    std::string filename = "test_p0_";
-    for(unsigned int i=0; i < fe_p0_xfem.n_dofs(); i++){
-        dof_values = {{i, 1.0}};  //select only one shape function
-        output_field_fe(fe_p_1, fe_p0_xfem, fe_p_3, dof_values, true, filename + std::to_string(i));
-    }
-    
-//     //precise enrichment function approx.    
-    dof_values = {
-       { 0, -0.192831240405992 },   // value of enrich function at interpolation dof point
-       { 1, 1.0 },
-       { 2, 1.0 },
-       { 3, 1.0 }
-    };
-    
-    output_field_fe(fe_p_1, fe_p0_xfem, fe_p_3, dof_values, true, "test_p0");
-}
+// TEST(ShapeFunctionOutput, p0_xfem) {
+// 
+//     auto func = std::make_shared<Singularity0D<3>>(arma::vec({0.2,0.2,0}),0.05,
+//                                                    arma::vec({0, 0, 1}), arma::vec({0, 0, 1}));
+//     
+//     FE_P_disc<0,1,3> fe_p_1;
+//     FE_P_disc<0,2,3> fe_p_2;
+//     FE_P0_XFEM<2,3> fe_p0_xfem(&fe_p_2,{func});
+//     FE_P_disc<0,3,3> fe_p_3;
+// 
+//     std::map<unsigned int, double> dof_values;
+// 
+//     // print all shape functions
+//     std::string filename = "test_p0_";
+//     for(unsigned int i=0; i < fe_p0_xfem.n_dofs(); i++){
+//         dof_values = {{i, 1.0}};  //select only one shape function
+//         output_field_fe(fe_p_1, fe_p0_xfem, fe_p_3, dof_values, true, filename + std::to_string(i));
+//     }
+//     
+// //     //precise enrichment function approx.    
+//     dof_values = {
+//        { 0, -0.192831240405992 },   // value of enrich function at interpolation dof point
+//        { 1, 1.0 },
+//        { 2, 1.0 },
+//        { 3, 1.0 }
+//     };
+//     
+//     output_field_fe(fe_p_1, fe_p0_xfem, fe_p_3, dof_values, true, "test_p0");
+// }

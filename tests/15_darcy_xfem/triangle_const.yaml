@@ -2,7 +2,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test25 - Steady flow with xfem singular connection 1D-2D
   mesh:
-    mesh_file: ./input/triangle_const_5.msh
+    mesh_file: ./input/triangle_const_2.msh
     #regions:
       #- !From_Elements
         #name: source
@@ -21,7 +21,7 @@ problem: !Coupling_Sequential
       enrich_velocity: true
       enrich_pressure: false
       continuous_pu: false
-      single: true
+      single: false
       #enr_radius_factor: 1.5
     input_fields:
       - region: aquifer
@@ -58,6 +58,6 @@ problem: !Coupling_Sequential
         variant: ascii
       name: flow_output_stream
       output_mesh:
-        max_level: 2
+        max_level: 3
         refine_by_error: false
         error_control_field: pressure_p0

@@ -753,18 +753,6 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
 //         ele->node[2]->point().print(cout, "point 2");
         DBGVAR(local_side);
         
-//         int side_row, edge_row;
-//         edge_row = loc_system_.row_dofs[loc_edge_dofs[local_side]];
-        
-//         QGauss<1> qside(1);
-//         const uint qsize=100;
-//         qside.resize(qsize);
-//         double qweight = 1.0/qsize;
-//         for(unsigned int q=0; q<qsize; q++){
-//             qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
-//             qside.set_weight(q,qweight);
-//         }
-        
         //Simply create normal vector.
         QGauss<1> auxq(1);
         auto fv_side = std::make_shared<FESideValues<2,3>>(map_, auxq, *fe_rt_xfem_, update_normal_vectors);
@@ -772,21 +760,12 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
         
 //         fv_side->normal_vector(0).print(cout,"normal");
         
-        const uint qsize=100;
-        QMidpoint qside(qsize); // 1d quadrature on side
-        QXFEM<2,3> qside_xfem(qside, local_side, *ele->permutation_idx_); // mapped side quadrature to 2d coords
-        for(unsigned int q=0; q < qside.size(); q++){   // map to real coords
-            arma::vec real_point = map_.project_unit_to_real(RefElement<2>::local_to_bary(qside.point(q)),map_.element_map(*ele));
-            qside_xfem.set_real_point(q,fv_side->point(q));
+        const uint qsize=100; // 1d quadrature on side
+        QXFEM<2,3> qside_xfem(QMidpoint(qsize), local_side, *ele->permutation_idx_); // mapped side quadrature to 2d coords
+        for(unsigned int q=0; q < qsize; q++){   // map to real coords
+            arma::vec real_point = map_.project_unit_to_real(RefElement<2>::local_to_bary(qside_xfem.point(q)),map_.element_map(*ele));
+            qside_xfem.set_real_point(q,real_point);
         }
-//         qside_xfem.resize(qside.size());
-//         for(unsigned int q=0; q < qside.size(); q++){
-//             arma::vec unit_p = map_.project_point(fv_side->point(q),map_.element_map(*ele));
-//             qside_xfem.set_point(q, RefElement<2>::bary_to_local(unit_p));
-//             qside_xfem.set_real_point(q,fv_side->point(q));
-// //             fv_side->point(q).print(cout, "side point");
-//             qside_xfem.set_weight(q,qside.weight(q));
-//         }
         
         auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, qside_xfem, *fe_rt_xfem_, update_values);
         fv_xfem->reinit(ele);
@@ -799,7 +778,7 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
                     
             double sum_val = 0;
             double side_measure = ele->side(local_side)->measure();
-            for(unsigned int q=0; q < qside.size(); q++){
+            for(unsigned int q=0; q < qsize; q++){
 //                 auto qp = qside_xfem.real_point(q);
 //                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
 //                 auto fv = fv_xfem->shape_vector(j,q);
@@ -818,22 +797,6 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
             DBGVAR(sum_val);
 //             DBGVAR(side_measure);
         }        
-        
-
-//         fv_side_xfem_ = std::make_shared<FESideValues<2,3>>(map_, side_quad_, *fe_rt_xfem_,
-//                                                             update_values
-//                                                             | update_normal_vectors);
-//         fv_side_xfem_->reinit(ele, local_side);
-// 
-//         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
-//              side_row = loc_system_.row_dofs[loc_vel_dofs[j]];
-//             //suppose one point quadrature at the moment
-//             val = arma::dot(fv_side_xfem_->shape_vector(j,0),fv_side_xfem_->normal_vector(0))
-//                     * ele->side(local_side)->measure();
-//             ad_->lin_sys->mat_set_value(side_row, edge_row, val);
-//             ad_->lin_sys->mat_set_value(edge_row, side_row, val);
-//         }
-        
     }
     
 

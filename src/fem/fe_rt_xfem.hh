@@ -223,6 +223,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
                 }
                 enr_dof_val[w][j] = val;
 //                 DBGVAR(val);
+//                 cout << setprecision(16) << "val  " << val << endl;
             }
         }
       
