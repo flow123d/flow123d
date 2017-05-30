@@ -32,6 +32,10 @@ problem: !Coupling_Sequential
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
+        - region: ALL
+          porosity: !FieldElementwise
+            gmsh_file: ./03_field_descriptors-000000.vtu
+            field_name: porosity
         - region: bulk
           init_conc: 0
         - region: .right
@@ -41,6 +45,10 @@ problem: !Coupling_Sequential
                 - 0
               - - 0.5
                 - 20
+      output:
+        fields:
+          - conc
+          - porosity
     substances:
       - A
     time:

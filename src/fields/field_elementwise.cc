@@ -21,7 +21,7 @@
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "mesh/msh_gmshreader.h"
-#include "mesh/reader_instances.hh"
+#include "io/reader_instances.hh"
 
 /// Implementation.
 
@@ -89,7 +89,6 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
 	ASSERT(reader_file_ == FilePath()).error("Multiple call of init_from_input.");
     reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-    ReaderInstances::instance()->get_reader(reader_file_);
 
     field_name_ = rec.val<std::string>("field_name");
 }
@@ -120,18 +119,12 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    GMSH_DataHeader search_header;
-    search_header.actual=false;
-    search_header.field_name=field_name_;
-    search_header.n_components=n_components_;
-    search_header.n_entities=n_entities_;
-    search_header.time=time.end();
-
-
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
+    bool actual_header_data = false;
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
+    		field_name_, time.end(), n_entities_, n_components_, actual_header_data,
     		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     this->scale_and_check_limits();
-    return search_header.actual;
+    return actual_header_data;
 }
 
 
@@ -155,6 +148,8 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     	data_->resize(n_entities_ * n_components_);
     }
 
+    if ( reader_file_ == FilePath() ) return;
+    ReaderInstances::instance()->get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 
 

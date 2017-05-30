@@ -20,14 +20,13 @@
 #define	_GMSHMESHREADER_H
 
 #include <string>
-#include <istream>
 #include <vector>
 #include <map>
 
 
-#include "system/tokenizer.hh"
 #include "mesh/region.hh"
 #include "mesh/element_data_cache.hh"
+#include "mesh/msh_basereader.hh"
 #include "input/input_exception.hh"
 
 class Mesh;
@@ -35,63 +34,12 @@ class FilePath;
 
 
 
-/***********************************
- * Structure to store the information from a header of \\$ElementData section.
- *
- * Format of GMSH ASCII data sections
- *
-   number-of-string-tags (== 2)
-     field_name
-     interpolation_scheme_name
-   number-of-real-tags (==1)
-     time_of_dataset
-   number-of-integer-tags
-     time_step_index (starting from zero)
-     number_of_field_components (1, 3, or 9 - i.e. 3d scalar, vector or tensor data)
-     number_of entities (nodes or elements)
-     partition_index (0 == no partition, not clear if GMSH support reading different partition from different files)
-   elm-number value ...
-*
-*/
-
-struct GMSH_DataHeader {
-    /// True if the stream position is just after the header.
-    /// False either before first header is found or at EOF.
-    bool actual;
-    std::string field_name;
-    /// Currently ont used
-    std::string interpolation_scheme;
-    double time;
-    /// Currently ont used
-    unsigned int time_index;
-    /// Number of values on one row
-    unsigned int n_components;
-    /// Number of rows
-    unsigned int n_entities;
-    /// ?? Currently ont used
-    unsigned int partition_index;
-    /// Position of data in mesh file
-    Tokenizer::Position position;
-};
-
-
-class GmshMeshReader {
+class GmshMeshReader : public BaseMeshReader {
 public:
-	TYPEDEF_ERR_INFO(EI_FieldName, std::string);
 	TYPEDEF_ERR_INFO(EI_GMSHFile, std::string);
-	TYPEDEF_ERR_INFO(EI_Time, double);
-	TYPEDEF_ERR_INFO(EI_Type, std::string);
-	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
 	TYPEDEF_ERR_INFO(EI_Section, std::string);
 	TYPEDEF_ERR_INFO(EI_ElementId, int);
 	TYPEDEF_ERR_INFO(EI_ElementType, int);
-	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
-			<< "No data for field: "<< EI_FieldName::qval
-			<< " and time: "<< EI_Time::val
-			<< " in the input file: "<< EI_GMSHFile::qval);
-	DECLARE_EXCEPTION(ExcWrongFormat,
-			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
-			<< "in the input file: " << EI_GMSHFile::qval);
 	DECLARE_EXCEPTION(ExcMissingSection,
 			<< "Missing section " << EI_Section::qval << " in the GMSH input file: " << EI_GMSHFile::qval);
 	DECLARE_EXCEPTION(ExcUnsupportedType,
@@ -101,10 +49,10 @@ public:
 	/**
 	 * Map of ElementData sections in GMSH file.
 	 *
-	 * For each field_name contains vector of GMSH_DataHeader.
+	 * For each field_name contains vector of MeshDataHeader.
 	 * Headers are sorted by time in ascending order.
 	 */
-	typedef typename std::map< std::string, std::vector<GMSH_DataHeader> > HeaderTable;
+	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
 
     /**
      * Construct the GMSH format reader from given filename.
@@ -126,6 +74,8 @@ public:
     /**
      *  Reads @p mesh from the GMSH file.
      *  Input of the mesh allows changing regions within the input CON file.
+     *
+     *  Implements @p BaseMeshReader::read_mesh.
      */
     void read_mesh(Mesh* mesh);
 
@@ -138,23 +88,13 @@ public:
     void read_physical_names(Mesh * mesh);
 
     /**
-     *  Reads ElementData sections of opened GMSH file. The file is serached for the \\$ElementData section with header
-     *  that match the given @p search_header (same field_name, time of the next section is the first greater then
-     *  that given in the @p search_header). If such section has not been yet read, we read the data section into
-     *  raw buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into
-     *  indexes to the raw buffer. The buffer must have size at least @p search_header.n_components * @p search_header.n_entities.
-     *  Indexes in the map must be smaller then @p search_header.n_entities.
-     *  If the @p data buffer is updated we set search_header.actual to true.
+     * Empty method for GMSH reader now.
      *
-     *  Possible optimizations:
-     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
-     *  and just check that they comes in in correct order.
+     * Implements @p BaseMeshReader::check_compatible_mesh.
      */
-    template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( GMSH_DataHeader &search_header,
-    		std::vector<int> const & el_ids, unsigned int component_idx);
+    void check_compatible_mesh(Mesh &mesh) override;
 
-private:
+protected:
     /**
      * private method for reading of nodes
      */
@@ -167,23 +107,29 @@ private:
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */
-    void read_data_header(GMSH_DataHeader &head);
+    void read_data_header(MeshDataHeader &head);
     /**
      * Reads table of ElementData headers from the tokenizer file.
      */
-    void make_header_table();
+    void make_header_table() override;
     /**
      * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
      */
-    GMSH_DataHeader & find_header(double time, std::string field_name);
+    MeshDataHeader & find_header(double time, std::string field_name) override;
+    /**
+     * Implements @p BaseMeshReader::read_element_data.
+     */
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
+    		unsigned int n_components, std::vector<int> const & el_ids) override;
+
+    /// Implements @p BaseMeshReader::data_section_name.
+    std::string data_section_name() override {
+    	return "$ElementData";
+    }
 
 
-    /// Tokenizer used for reading ASCII GMSH file format.
-    Tokenizer tok_;
     /// Table with data of ElementData headers
     HeaderTable header_table_;
-    /// Cache with last read element data
-    ElementDataCacheBase *current_cache_;
 };
 
 #endif	/* _GMSHMESHREADER_H */

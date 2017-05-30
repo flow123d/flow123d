@@ -48,7 +48,7 @@ OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
         this->n_cols = 3;
     }
 
-    data_ = new ElemType[this->n_values * this->n_elem_];
+    this->data_ = ElementDataCache<ElemType>::create_data_cache(1, this->n_values * this->n_elem_);
 }
 
 /**
@@ -56,9 +56,7 @@ OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
  */
 template <class Value>
 OutputData<Value>::~OutputData()
-{
-    delete[] this->data_;
-}
+{}
 
 
 /**
@@ -71,9 +69,9 @@ template <class Value>
 void OutputData<Value>::print_ascii(ostream &out_stream, unsigned int idx)
 {
 	ASSERT_LT(idx, this->n_values).error();
-    ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-    for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
-        out_stream << *ptr << " ";
+	std::vector<ElemType> &vec = *( this->data_[0].get() );
+	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
+		out_stream << vec[i] << " ";
 }
 
 /**
@@ -86,10 +84,10 @@ void OutputData<Value>::print_ascii(ostream &out_stream, unsigned int idx)
 template <class Value>
 void OutputData<Value>::print_ascii_all(ostream &out_stream)
 {
-    for(unsigned int idx = 0; idx < this->n_values; idx++) {
-        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ )
-            out_stream << *ptr << " ";
+    std::vector<ElemType> &vec = *( this->data_[0].get() );
+	for(unsigned int idx = 0; idx < this->n_values; idx++) {
+    	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
+    		out_stream << vec[i] << " ";
     }
 }
 
@@ -104,11 +102,10 @@ void OutputData<Value>::print_binary_all(ostream &out_stream, bool print_data_si
 		out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
 	}
     // write data
+	std::vector<ElemType> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
-        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
-        	out_stream.write(reinterpret_cast<const char*>(ptr), sizeof(ElemType));
-        }
+    	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
+    		out_stream.write(reinterpret_cast<const char*>(&(vec[i])), sizeof(ElemType));
     }
 }
 
@@ -117,11 +114,11 @@ template <class Value>
 void OutputData<Value>::print_all_yaml(ostream &out_stream, unsigned int precision)
 {
     out_stream << "[ ";
+	std::vector<ElemType> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         if (idx != 0) out_stream << ", ";
-        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
         typename Value::return_type value;
-        out_stream << field_value_to_yaml( Value::from_raw(value, ptr_begin), precision );
+        out_stream << field_value_to_yaml( Value::from_raw(value, &vec[n_elem_ * idx]), precision );
     }
     out_stream << " ]";
 }
@@ -132,12 +129,12 @@ void OutputData<Value>::get_min_max_range(double &min, double &max)
 {
 	min = std::numeric_limits<double>::max();
 	max = std::numeric_limits<double>::min();
+	std::vector<ElemType> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
-        ElemType *ptr_begin = this->data_ + n_elem_ * idx;
-        for(ElemType *ptr = ptr_begin; ptr < ptr_begin + n_elem_; ptr++ ) {
-           	if ((double)(*ptr) < min) min = (double)(*ptr);
-           	if ((double)(*ptr) > max) max = (double)(*ptr);
-        }
+    	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i ) {
+    		if (vec[i] < min) min = vec[i];
+    		if (vec[i] > max) max = vec[i];
+    	}
     }
 }
 

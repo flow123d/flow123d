@@ -174,8 +174,11 @@ target_link_libraries(tools_lib
 
 # mesh_lib
 add_library(mesh_lib 
-        mesh/region.cc
+    mesh/region.cc
+    mesh/msh_basereader.cc
     mesh/msh_gmshreader.cc
+    mesh/msh_vtkreader.cc
+    mesh/element_data_cache.cc
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
@@ -189,7 +192,6 @@ add_library(mesh_lib
     
     mesh/bounding_box.cc
     mesh/bih_tree.cc
-    mesh/reader_instances.cc
     
     mesh/ngh/src/abscissa.cpp
     mesh/ngh/src/bisector.cpp
@@ -208,7 +210,9 @@ add_library(mesh_lib
 target_link_libraries(mesh_lib
     input_lib system_lib la_lib 
     armadillo 
-    ${Boost_LIBRARIES})
+    ${Boost_LIBRARIES}
+    ${PugiXml_LIBRARY}
+    ${Zlib_LIBRARY})
 
 
 
@@ -235,6 +239,8 @@ target_link_libraries(fem_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
+    io/reader_instances.cc
+
     io/output_data.cc
     io/output_time.cc
     io/output_vtk.cc

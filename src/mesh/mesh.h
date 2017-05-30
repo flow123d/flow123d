@@ -379,6 +379,7 @@ protected:
     MPI_Comm comm_;
 
     friend class GmshMeshReader;
+    friend class VtkMeshReader;
     friend class RegionSetBase;
 
 
