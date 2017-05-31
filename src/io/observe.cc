@@ -21,6 +21,7 @@
 #include "mesh/region.hh"
 #include "io/observe.hh"
 #include "io/output_data.hh"
+#include "fields/field_values.hh"
 
 
 namespace IT = Input::Type;
@@ -316,7 +317,10 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field.name());
     if (it == observe_field_values_.end()) {
-        observe_field_values_[field.name()] = std::make_shared< OutputData<Value> >(field, points_.size());
+    	typename Value::return_type r_val;
+    	Value val(r_val);
+        observe_field_values_[field.name()]
+					= std::make_shared< OutputData<Value> >(field.name(), val.n_rows(), val.n_cols(), points_.size());
         it=observe_field_values_.find(field.name());
     }
     OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(it->second));

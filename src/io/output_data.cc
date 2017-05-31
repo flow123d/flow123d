@@ -12,24 +12,23 @@
 #include "system/armadillo_tools.hh"
 
 template <class Value>
-OutputData<Value>::OutputData(const FieldCommon &field, unsigned int size)
+OutputData<Value>::OutputData(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size)
 : val_aux(aux)
 {
 	this->set_vtk_type<ElemType>();
-    this->field_name = field.name();
-    this->field_units = field.units();
+    this->field_name = field_name;
     this->output_field_name = this->field_name;
 
     this->n_values = size;
 
-    if (val_aux.NCols_ == 1) {
-        if (val_aux.NRows_ == 1) {
+    if (n_cols == 1) {
+        if (n_rows == 1) {
             this->n_elem_ = N_SCALAR;
             this->n_rows = 1;
             this->n_cols = 1;
         } else {
-            if (val_aux.NRows_ > 1) {
-                if (val_aux.NRows_ > 3) {
+            if (n_rows > 1) {
+                if (n_rows > 3) {
                     xprintf(PrgErr,
                             "Do not support output of vectors with fixed size >3. Field: %s\n",
                             this->field_name.c_str());

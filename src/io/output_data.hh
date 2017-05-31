@@ -14,8 +14,6 @@
 #include <type_traits>
 
 
-class FieldCommon;
-
 /**
  * \brief This class is used for storing data that are copied from field.
  *
@@ -29,7 +27,7 @@ public:
     /**
      * \brief Constructor of templated OutputData
      */
-    OutputData(const FieldCommon &field, unsigned int size);
+    OutputData(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size);
 
 
     /**
