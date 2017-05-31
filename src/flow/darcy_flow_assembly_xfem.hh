@@ -71,6 +71,7 @@ public:
         ASSERT_DBG(ele_ac.dim() == dim);
         
 //         unsigned int ndofs = ele_ac.n_dofs();
+        DBGVAR(ele_ac.element_accessor().idx());
         setup_local(ele_ac);
         
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
@@ -84,8 +85,8 @@ public:
         assemble_source_term(ele_ac);
         
         
-        if(ele_ac.is_enriched())
-            loc_system_.get_matrix().print(cout, "matrix");
+//         if(ele_ac.is_enriched())
+//             loc_system_.get_matrix().print(cout, "matrix");
         
         //mast be last due to overriding xfem fe values
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
@@ -812,18 +813,12 @@ arma::vec3 AssemblyMHXFEM<2>::make_element_vector_xfem(LocalElementAccessorBase<
     FEValues<2,3> fv_xfem(map_,velocity_interpolation_quad_, *fe_rt_xfem_, update_values | update_quadrature_points);
     fv_xfem.reinit(ele);
     
-    unsigned int li = 0;
-    for (; li < ele->n_sides(); li++) {
-        flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
-                        * fv_xfem.shape_vector(li,0);
-    }
+    int dofs[200];
+    int ndofs_vel = ele_ac.get_dofs_vel(dofs);
     
-    for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
-        std::vector<int>& wdofs = xdata->global_enriched_dofs()[Quantity::velocity][w];
-        for (unsigned int j = 0; j < wdofs.size(); j++, li++) {
-            flux_in_center += ad_->mh_dh->mh_solution[wdofs[li]]
-                            * fv_xfem.shape_vector(li,0);
-        }
+    unsigned int li = 0;
+    for (; li < ndofs_vel; li++) {
+        flux_in_center += ad_->mh_dh->mh_solution[dofs[li]] * fv_xfem.shape_vector(li,0);
     }
     
     return flux_in_center;

@@ -265,6 +265,13 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
     {
         vector<arma::vec::fixed<spacedim> > vectors(number_of_dofs);
         
+//         DBGCOUT(<<"#############################################################");
+//         arma::vec::fixed<spacedim> interpolant_aux;
+//         interpolant_aux.zeros();
+//         for (unsigned int k=0; k < n_regular_dofs_; k++)
+//             interpolant_aux += vectors[k] * enr_dof_val[0][k];
+//         unsigned int counter = 0;
+                
         for (unsigned int q = 0; q < quad.size(); q++)
         {
 //             DBGMSG("pu q[%d]\n",q);
@@ -296,6 +303,9 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
                 for (unsigned int k=0; k < n_regular_dofs_; k++)
                     interpolant += vectors[k] * enr_dof_val[w][k];
                 
+//                 DBGVAR(interpolant);
+//                 if(arma::norm(interpolant - interpolant_aux,2) < 1e-10) counter++;
+                
 //                 quad.real_point(q).print(cout);
 //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
                 for (unsigned int k=0; k < pu.n_dofs(); k++)
@@ -311,6 +321,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
                 
             fv_data.shape_vectors[q] = vectors;
         }
+//         DBGVAR(counter);
     }
 
     // divergence
@@ -363,10 +374,10 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             {
 //                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
                 //compute interpolant
-                arma::vec::fixed<spacedim> interpolant; interpolant.zeros();
+//                 arma::vec::fixed<spacedim> interpolant; interpolant.zeros();
                 double interpolant_div = 0;
                 for (unsigned int k=0; k < n_regular_dofs_; k++) {
-                    interpolant += fv_data.shape_vectors[q][k] * enr_dof_val[w][k];
+//                     interpolant += fv_data.shape_vectors[q][k] * enr_dof_val[w][k];
                     interpolant_div += divs[k] * enr_dof_val[w][k];
                 }
                 
@@ -377,7 +388,7 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //                     divs[j] = arma::dot(real_pu_grads.row(k),(enr[w]->vector(fv_data.points[q]) -  interpolant))
 //                             + pu_values[k] * (0 - interpolant_div);
 //                     divs[j] = arma::dot(real_pu_grads.row(k),enr[w]->vector(fv_data.points[q]));
-                    divs[j] = 0;
+                    divs[j] = - interpolant_div;
                     j++;
                 }
             }
