@@ -256,7 +256,10 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() {
+    	return_type transpose = value_.t();
+    	return transpose.memptr();
+    }
 
     void init_from_input( AccessType rec ) {
         internal::init_matrix_from_input(value_, rec);

@@ -158,7 +158,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                 field.value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
-                output_data.add(node_index, node_value);
+                output_data.add(node_index, const_cast<Value &>(node_value).mem_ptr() );
                 count[node_index]++;
             }
         }
@@ -180,7 +180,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                 field.value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
-                output_data.store_value(node_index,  node_value);
+                output_data.store_value(node_index, const_cast<Value &>(node_value).mem_ptr() );
             }
         }
     }
@@ -195,7 +195,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
                                                                         )
                              );
-                output_data.store_value(ele_index,  ele_value);
+                output_data.store_value(ele_index, const_cast<Value &>(ele_value).mem_ptr() );
         }
     }
     break;

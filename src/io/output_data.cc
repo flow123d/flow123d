@@ -13,7 +13,6 @@
 
 template <class Value>
 OutputData<Value>::OutputData(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size)
-: val_aux(aux)
 {
 	this->set_vtk_type<ElemType>();
     this->field_name = field_name;
@@ -48,6 +47,7 @@ OutputData<Value>::OutputData(std::string field_name, unsigned int n_rows, unsig
     }
 
     this->data_ = ElementDataCache<ElemType>::create_data_cache(1, this->n_values * this->n_elem_);
+    arr_ptr = (ElemType *)malloc( this->n_rows * this->n_cols * sizeof(ElemType));
 }
 
 /**
@@ -55,7 +55,9 @@ OutputData<Value>::OutputData(std::string field_name, unsigned int n_rows, unsig
  */
 template <class Value>
 OutputData<Value>::~OutputData()
-{}
+{
+	free(arr_ptr);
+}
 
 
 /**
@@ -142,7 +144,7 @@ void OutputData<Value>::get_min_max_range(double &min, double &max)
  * Store data element of given data value under given index.
  */
 template <class Value>
-void OutputData<Value>::store_value(unsigned int idx, const Value& value) {
+void OutputData<Value>::store_value(unsigned int idx, const ElemType * value) {
     operate(idx, value,  [](ElemType& raw, ElemType val) {raw = val;});
 };
 
@@ -150,7 +152,7 @@ void OutputData<Value>::store_value(unsigned int idx, const Value& value) {
  * Add value to given index
  */
 template <class Value>
-void OutputData<Value>::add(unsigned int idx, const Value& value) {
+void OutputData<Value>::add(unsigned int idx, const ElemType * value) {
     operate(idx, value,   [](ElemType& raw, ElemType val) {raw += val;});
 };
 
@@ -159,7 +161,7 @@ void OutputData<Value>::add(unsigned int idx, const Value& value) {
  */
 template <class Value>
 void OutputData<Value>::zero(unsigned int idx) {
-    operate(idx, val_aux,   [](ElemType& raw, ElemType val) {raw = 0;});
+    operate(idx, arr_ptr,   [](ElemType& raw, ElemType val) {raw = 0;});
 };
 
 /**
@@ -167,7 +169,7 @@ void OutputData<Value>::zero(unsigned int idx) {
  */
 template <class Value>
 void OutputData<Value>::normalize(unsigned int idx, unsigned int divisor) {
-    operate(idx, val_aux,   [divisor](ElemType& raw, ElemType val) {raw /= divisor;});
+    operate(idx, arr_ptr,   [divisor](ElemType& raw, ElemType val) {raw /= divisor;});
 };
 
 

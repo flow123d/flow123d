@@ -329,10 +329,10 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
     for(ObservePoint &o_point : points_) {
         unsigned int ele_index = o_point.element_idx_;
         const Value &obs_value =
-                Value( const_cast<typename Value::return_type &>(
-                        field.value(o_point.global_coords_,
-                                ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
-        output_data.store_value(i_data,  obs_value);
+                        Value( const_cast<typename Value::return_type &>(
+                                field.value(o_point.global_coords_,
+                                        ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
+        output_data.store_value(i_data,  const_cast<Value &>(obs_value).mem_ptr());
         i_data++;
     }
 

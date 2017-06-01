@@ -63,12 +63,12 @@ public:
     /**
      * Store data element of given data value under given index.
      */
-    void store_value(unsigned int idx, const Value& value);
+    void store_value(unsigned int idx, const ElemType * value);
 
     /**
      * Add value to given index
      */
-    void add(unsigned int idx, const Value& value);
+    void add(unsigned int idx, const ElemType * value);
 
     /**
      * Reset values at given index
@@ -91,32 +91,23 @@ private:
      * Perform given function at given index
      */
     template <class Func>
-    void operate(unsigned int idx, const Value &val, const Func& func) {
+    void operate(unsigned int idx, const ElemType * val, const Func& func) {
         ASSERT_LT_DBG(idx, this->n_values);
         std::vector<ElemType> &vec = *( this->data_[0].get() );
         unsigned int vec_idx = idx*this->n_elem_;
-        for(unsigned int i_row = 0; i_row < this->n_rows; i_row++) {
-            for(unsigned int i_col = 0; i_col < this->n_cols; i_col++) {
-                if (i_row < val.n_rows() && i_col < val.n_cols())
-                    func(vec[vec_idx], val(i_row, i_col));
-                else
-                    func(vec[vec_idx], 0);
-                vec_idx++;
-            }
+        for(unsigned int i = 0; i < this->n_rows*this->n_cols; i++) {
+        	func(vec[vec_idx], val[i]);
+        	vec_idx++;
         }
     };
 
 
     /**
-     * Auxiliary value
+     * Helper data member represents field.
+     *
+     * Used in zero and normalize methods.
      */
-    typename Value::return_type aux;
-
-
-    /**
-     * Auxiliary field value envelope over @p aux
-     */
-    Value val_aux;
+    ElemType * arr_ptr;
 
 
     /**
