@@ -252,7 +252,6 @@ target_link_libraries(io_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
-    io/output_data.cc
     io/output_time.cc
     io/output_vtk.cc
     io/output_msh.cc
