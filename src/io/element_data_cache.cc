@@ -48,8 +48,6 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
     if (n_cols == 1) {
         if (n_rows == 1) {
             this->n_elem_ = N_SCALAR;
-            this->n_rows_ = 1;
-            this->n_cols_ = 1;
         } else {
             if (n_rows > 1) {
                 if (n_rows > 3) {
@@ -58,8 +56,6 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
                             this->field_name.c_str());
                 } else {
                     this->n_elem_ = N_VECTOR;
-                    this->n_rows_ = 3;
-                    this->n_cols_ = 1;
                 }
             } else {
                 THROW(ExcOutputVariableVector() << EI_FieldName(this->field_name));
@@ -67,12 +63,10 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
         }
     } else {
         this->n_elem_ = N_TENSOR;
-        this->n_rows_ = 3;
-        this->n_cols_ = 3;
     }
 
     this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values * this->n_elem_);
-    arr_ptr = (T *)malloc( this->n_rows_ * this->n_cols_ * sizeof(T));
+    arr_ptr = (T *)malloc( this->n_elem_ * sizeof(T));
 }
 
 

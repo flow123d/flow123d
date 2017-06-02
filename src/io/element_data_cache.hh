@@ -191,7 +191,7 @@ protected:
         ASSERT_LT_DBG(idx, this->n_values);
         std::vector<T> &vec = *( this->data_[0].get() );
         unsigned int vec_idx = idx*this->n_elem_;
-        for(unsigned int i = 0; i < this->n_rows_*this->n_cols_; i++) {
+        for(unsigned int i = 0; i < this->n_elem_; i++) {
         	func(vec[vec_idx], val[i]);
         	vec_idx++;
         }
@@ -211,12 +211,6 @@ protected:
      * Used in zero and normalize methods.
      */
     T * arr_ptr;
-
-    /**
-     * Number of rows and cols in stored data element, valid values are (1,1)
-     * for scalar; (3,1) for vectors; (3,3) for tensors
-     */
-    unsigned int n_rows_, n_cols_;
 
 };
 
