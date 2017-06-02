@@ -19,10 +19,9 @@
  *
  *
  */
-template <class Value>
-class OutputData : public OutputDataBase, public ElementDataCache<typename Value::element_type> {
+template <typename T>
+class OutputData : public OutputDataBase, public ElementDataCache<T> {
 public:
-    typedef typename Value::element_type ElemType;
 
     /**
      * \brief Constructor of templated OutputData
@@ -63,12 +62,12 @@ public:
     /**
      * Store data element of given data value under given index.
      */
-    void store_value(unsigned int idx, const ElemType * value);
+    void store_value(unsigned int idx, const T * value);
 
     /**
      * Add value to given index
      */
-    void add(unsigned int idx, const ElemType * value);
+    void add(unsigned int idx, const T * value);
 
     /**
      * Reset values at given index
@@ -91,9 +90,9 @@ private:
      * Perform given function at given index
      */
     template <class Func>
-    void operate(unsigned int idx, const ElemType * val, const Func& func) {
+    void operate(unsigned int idx, const T * val, const Func& func) {
         ASSERT_LT_DBG(idx, this->n_values);
-        std::vector<ElemType> &vec = *( this->data_[0].get() );
+        std::vector<T> &vec = *( this->data_[0].get() );
         unsigned int vec_idx = idx*this->n_elem_;
         for(unsigned int i = 0; i < this->n_rows*this->n_cols; i++) {
         	func(vec[vec_idx], val[i]);
@@ -107,7 +106,7 @@ private:
      *
      * Used in zero and normalize methods.
      */
-    ElemType * arr_ptr;
+    T * arr_ptr;
 
 
     /**

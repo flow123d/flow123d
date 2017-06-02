@@ -305,6 +305,8 @@ Observe::~Observe() {
 template<int spacedim, class Value>
 void Observe::compute_field_values(Field<spacedim, Value> &field)
 {
+	typedef typename Value::element_type ElemType;
+
     if (points_.size() == 0) return;
 
     // check that all fields of one time frame are evaluated at the same time
@@ -320,10 +322,10 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
     	typename Value::return_type r_val;
     	Value val(r_val);
         observe_field_values_[field.name()]
-					= std::make_shared< OutputData<Value> >(field.name(), val.n_rows(), val.n_cols(), points_.size());
+					= std::make_shared< OutputData<ElemType> >(field.name(), val.n_rows(), val.n_cols(), points_.size());
         it=observe_field_values_.find(field.name());
     }
-    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(it->second));
+    OutputData<ElemType> &output_data = dynamic_cast<OutputData<ElemType> &>(*(it->second));
 
     unsigned int i_data=0;
     for(ObservePoint &o_point : points_) {

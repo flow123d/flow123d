@@ -112,6 +112,8 @@ void OutputTime::register_data(const DiscreteSpace type,
 template<int spacedim, class Value>
 void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
 {
+	typedef typename Value::element_type ElemType;
+
     /* It's possible now to do output to the file only in the first process */
     if( this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
@@ -133,10 +135,10 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     if ( it == od_vec.end() ) {
     	typename Value::return_type r_val;
     	Value val(r_val);
-        od_vec.push_back( std::make_shared< OutputData<Value> >(field.name(), val.n_rows(), val.n_cols(), size[space_type]) );
+        od_vec.push_back( std::make_shared< OutputData<ElemType> >(field.name(), val.n_rows(), val.n_cols(), size[space_type]) );
         it=--od_vec.end();
     }
-    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(*it));
+    OutputData<ElemType> &output_data = dynamic_cast<OutputData<ElemType> &>(*(*it));
 
 
     /* Copy data to array */
