@@ -71,7 +71,7 @@
 
 #include "io/output_data_base.hh"
 #include "output_mesh.hh"
-#include "io/output_data.hh"
+#include "io/element_data_cache.hh"
 #include "output_element.hh"
 
 
@@ -135,10 +135,10 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     if ( it == od_vec.end() ) {
     	typename Value::return_type r_val;
     	Value val(r_val);
-        od_vec.push_back( std::make_shared< OutputData<ElemType> >(field.name(), val.n_rows(), val.n_cols(), size[space_type]) );
+        od_vec.push_back( std::make_shared< ElementDataCache<ElemType> >(field.name(), val.n_rows(), val.n_cols(), size[space_type]) );
         it=--od_vec.end();
     }
-    OutputData<ElemType> &output_data = dynamic_cast<OutputData<ElemType> &>(*(*it));
+    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(*it));
 
 
     /* Copy data to array */

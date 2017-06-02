@@ -20,7 +20,7 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
 #include "io/observe.hh"
-#include "io/output_data.hh"
+#include "io/element_data_cache.hh"
 #include "fields/field_values.hh"
 
 
@@ -322,10 +322,10 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
     	typename Value::return_type r_val;
     	Value val(r_val);
         observe_field_values_[field.name()]
-					= std::make_shared< OutputData<ElemType> >(field.name(), val.n_rows(), val.n_cols(), points_.size());
+					= std::make_shared< ElementDataCache<ElemType> >(field.name(), val.n_rows(), val.n_cols(), points_.size());
         it=observe_field_values_.find(field.name());
     }
-    OutputData<ElemType> &output_data = dynamic_cast<OutputData<ElemType> &>(*(it->second));
+    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(it->second));
 
     unsigned int i_data=0;
     for(ObservePoint &o_point : points_) {
