@@ -25,7 +25,9 @@
 
 template <typename T>
 ElementDataCache<T>::ElementDataCache()
-: ElementDataCacheBase() {}
+: ElementDataCacheBase() {
+	arr_ptr = (T *)malloc(sizeof(T));
+}
 
 
 template <typename T>
@@ -33,6 +35,7 @@ ElementDataCache<T>::ElementDataCache(MeshDataHeader data_header, unsigned int s
 	this->time_ = data_header.time;
 	this->quantity_name_ = data_header.field_name;
 	this->data_ = create_data_cache(size_of_cache, row_vec_size);
+	arr_ptr = (T *)malloc( size_of_cache * sizeof(T));
 }
 
 
