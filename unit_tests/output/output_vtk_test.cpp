@@ -121,6 +121,9 @@ TEST_F(TestOutputVTK, write_data_ascii) {
 
 	this->init_mesh(test_output_time_ascii);
     this->current_step=1;
+    set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+    set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+    set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
     this->write_data();
     EXPECT_EQ("./test1.pvd", string(this->_base_filename));
     EXPECT_EQ("test1", this->main_output_basename_);

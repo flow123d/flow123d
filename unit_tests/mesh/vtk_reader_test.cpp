@@ -177,12 +177,13 @@ TEST(VtkReaderTest, read_binary_vtu) {
     // read data to one vector for Field
     actual_data=false;
     {
+    	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
     			reader.get_element_data<double>("tensor_field", 1.0, 6, 9, actual_data, el_ids, 0);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
     	for (j=0; j<vec.size(); j++) {
-    		EXPECT_DOUBLE_EQ( (j%9+1), vec[j] );
+    		EXPECT_DOUBLE_EQ( ref_data[j%9], vec[j] );
     	}
     }
 
