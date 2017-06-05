@@ -133,9 +133,8 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
             [&field](OutputDataPtr ptr) { return (ptr->field_name ==  field.name()); });
     if ( it == od_vec.end() ) {
-    	typename Value::return_type r_val;
-    	Value val(r_val);
-        od_vec.push_back( std::make_shared< ElementDataCache<ElemType> >(field.name(), val.n_rows(), val.n_cols(), size[space_type]) );
+        od_vec.push_back( std::make_shared< ElementDataCache<ElemType> >(field.name(), (unsigned int)Value::NRows_,
+        		(unsigned int)Value::NCols_, size[space_type]) );
         it=--od_vec.end();
     }
     ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(*it));
