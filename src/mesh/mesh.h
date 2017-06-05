@@ -150,6 +150,16 @@ public:
         return region_db_;
     }
 
+    /// Reserve size of node vector
+    inline void reserve_node_size(unsigned int n_nodes) {
+    	node_vector.reserve(n_nodes);
+    }
+
+    /// Reserve size of element vector
+    inline void reserve_element_size(unsigned int n_elements) {
+    	element.reserve(n_elements);
+    }
+
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */

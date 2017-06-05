@@ -96,7 +96,7 @@ void GmshMeshReader::read_nodes(Mesh* mesh) {
     try {
     	tok_.next_line(false);
         n_nodes = lexical_cast<unsigned int> (*tok_);
-        mesh->node_vector.reserve( n_nodes );
+        mesh->reserve_node_size( n_nodes );
         INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok_.position_msg().c_str() );
         ++tok_; // end of line
 
@@ -131,7 +131,10 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
         INPUT_CHECK( n_elements > 0, "Zero number of elements, %s.\n", tok_.position_msg().c_str());
         ++tok_; // end of line
 
-        mesh->element.reserve(n_elements);
+        std::vector<unsigned int> node_ids; //node_ids of elements
+        node_ids.resize(4); // maximal count of nodes
+
+        mesh->reserve_element_size(n_elements);
 
         for (unsigned int i = 0; i < n_elements; ++i) {
         	tok_.next_line();
@@ -177,8 +180,6 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
             if (n_tags > 2)  { partition_id = lexical_cast<unsigned int>(*tok_); ++tok_; } // save partition number from the new GMSH format
             for (unsigned int ti = 3; ti < n_tags; ti++) ++tok_;         //skip remaining tags
 
-            std::vector<unsigned int> node_ids;
-            node_ids.resize(dim+1);
             for (unsigned int ni=0; ni<dim+1; ++ni) { // read node ids
             	node_ids[ni] = lexical_cast<unsigned int>(*tok_);
                 ++tok_;
