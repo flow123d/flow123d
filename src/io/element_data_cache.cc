@@ -25,9 +25,7 @@
 
 template <typename T>
 ElementDataCache<T>::ElementDataCache()
-: ElementDataCacheBase() {
-	arr_ptr = (T *)malloc(sizeof(T));
-}
+: ElementDataCacheBase() {}
 
 
 template <typename T>
@@ -35,7 +33,6 @@ ElementDataCache<T>::ElementDataCache(MeshDataHeader data_header, unsigned int s
 	this->time_ = data_header.time;
 	this->quantity_name_ = data_header.field_name;
 	this->data_ = create_data_cache(size_of_cache, row_vec_size);
-	arr_ptr = (T *)malloc( size_of_cache * sizeof(T));
 }
 
 
@@ -69,14 +66,11 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
     }
 
     this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values * this->n_elem_);
-    arr_ptr = (T *)malloc( this->n_elem_ * sizeof(T));
 }
 
 
 template <typename T>
-ElementDataCache<T>::~ElementDataCache() {
-	free(arr_ptr);
-}
+ElementDataCache<T>::~ElementDataCache() {}
 
 
 template <typename T>
@@ -212,7 +206,12 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
  */
 template <typename T>
 void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
-    operate(idx, value,  [](T& raw, T val) {raw = val;});
+    ASSERT_LT_DBG(idx, this->n_values);
+    std::vector<T> &vec = *( this->data_[0].get() );
+    unsigned int vec_idx = idx*this->n_elem_;
+    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    	vec[vec_idx] = value[i];
+    }
 };
 
 /**
@@ -220,7 +219,12 @@ void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::add(unsigned int idx, const T * value) {
-    operate(idx, value,   [](T& raw, T val) {raw += val;});
+    ASSERT_LT_DBG(idx, this->n_values);
+    std::vector<T> &vec = *( this->data_[0].get() );
+    unsigned int vec_idx = idx*this->n_elem_;
+    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    	vec[vec_idx] += value[i];
+    }
 };
 
 /**
@@ -228,7 +232,12 @@ void ElementDataCache<T>::add(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::zero(unsigned int idx) {
-    operate(idx, arr_ptr,   [](T& raw, T val) {raw = 0;});
+    ASSERT_LT_DBG(idx, this->n_values);
+    std::vector<T> &vec = *( this->data_[0].get() );
+    unsigned int vec_idx = idx*this->n_elem_;
+    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    	vec[vec_idx] = 0;
+    }
 };
 
 /**
@@ -236,7 +245,12 @@ void ElementDataCache<T>::zero(unsigned int idx) {
  */
 template <typename T>
 void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
-    operate(idx, arr_ptr,   [divisor](T& raw, T val) {raw /= divisor;});
+    ASSERT_LT_DBG(idx, this->n_values);
+    std::vector<T> &vec = *( this->data_[0].get() );
+    unsigned int vec_idx = idx*this->n_elem_;
+    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    	vec[vec_idx] /= divisor;
+    }
 };
 
 

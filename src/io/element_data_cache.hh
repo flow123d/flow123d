@@ -183,21 +183,6 @@ public:
             << " returning variable size vectors. Try convert to MultiField.\n");
 
 protected:
-    /**
-     * Perform given function at given index
-     */
-    template <class Func>
-    void operate(unsigned int idx, const T * val, const Func& func) {
-        ASSERT_LT_DBG(idx, this->n_values);
-        std::vector<T> &vec = *( this->data_[0].get() );
-        unsigned int vec_idx = idx*this->n_elem_;
-        for(unsigned int i = 0; i < this->n_elem_; i++) {
-        	func(vec[vec_idx], val[i]);
-        	vec_idx++;
-        }
-    };
-
-
 	/**
 	 * Table of element data.
 	 *
@@ -205,13 +190,6 @@ protected:
 	 */
 	CacheData data_;
     
-    /**
-     * Helper data member represents field.
-     *
-     * Used in zero and normalize methods.
-     */
-    T * arr_ptr;
-
 };
 
 #endif /* ELEMENT_DATA_CACHE_HH_ */
