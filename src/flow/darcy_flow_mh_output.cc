@@ -621,7 +621,102 @@ void l2_diff_local(ElementFullIter &ele,
 }
 
 
+template <int dim>
+void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac, 
+                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+                   ExactSolution &anal_sol,  DiffData &result) {
+    DBGCOUT(<< "local diff\n");
+    
+    ElementFullIter ele = ele_ac.full_iter();
+    fv_rt.reinit(ele);
+    fe_values.reinit(ele);
+    
+    double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
+    double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
+    
+    int dofs_vel[20];
+    unsigned int ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
+    
+    // get values on the current element
+    vector<double> dofs_vel_val(ndofs_vel);
+    for (unsigned int i = 0; i < ndofs_vel; i++) {
+        dofs_vel_val[i] = result.solution[dofs_vel[i]];
+    }
 
+    arma::vec analytical(5);
+    arma::vec3 flux_in_q_point;
+    arma::vec3 anal_flux;
+
+    double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
+
+//     // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
+//     // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
+//     double mean_x_squared=0;
+//     for(unsigned int i_node=0; i_node < ele->n_nodes(); i_node++ )
+//         for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
+//         {
+//             mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
+//                     * arma::dot( ele->node[i_node]->point(), ele->node[j_node]->point());
+//         }
+
+    for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
+        arma::vec3 q_point = fe_values.point(i_point);
+
+        analytical = anal_sol.value(q_point, ele->element_accessor() );
+        for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
+
+//         // compute postprocesed pressure
+//         diff = 0;
+//         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
+//             unsigned int oposite_node = RefElement<dim>::oposite_node(i_shape);
+// 
+//             diff += fluxes[ i_shape ] *
+//                                (  arma::dot( q_point, q_point )/ 2
+//                                 - mean_x_squared / 2
+//                                 - arma::dot( q_point, ele->node[oposite_node]->point() )
+//                                 + arma::dot( ele->centre(), ele->node[oposite_node]->point() )
+//                                );
+//         }
+// 
+//         diff = - (1.0 / conductivity) * diff / dim / ele->measure() / cross + pressure_mean ;
+//         diff = ( diff - analytical[0]);
+//         pressure_diff += diff * diff * fe_values.JxW(i_point);
+
+
+        // velocity difference
+        flux_in_q_point.zeros();
+        for(unsigned int i_shape=0; i_shape < ndofs_vel; i_shape++) {
+            flux_in_q_point += dofs_vel_val[ i_shape ] * fv_rt.shape_vector(i_shape, i_point);
+        }
+        flux_in_q_point = flux_in_q_point / cross;
+
+        flux_in_q_point -= anal_flux;
+        velocity_diff += dot(flux_in_q_point, flux_in_q_point) * fe_values.JxW(i_point);
+//         velocity_diff += arma::norm(anal_flux,1) * fe_values.JxW(i_point);
+        
+        // divergence diff - flow over sides (RT dofs)
+        diff = 0;
+        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += dofs_vel_val[ i_shape ];
+        diff = ( diff / ele->measure() / cross - analytical[4]);
+        divergence_diff += diff * diff * fe_values.JxW(i_point);
+
+    }
+
+
+    DBGVAR(velocity_diff);
+    result.velocity_diff[ele.index()] = velocity_diff;
+    result.velocity_error[dim-1] += velocity_diff;
+    if (dim == 2 && result.velocity_mask.size() != 0 ) {
+        result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+    }
+
+    result.pressure_diff[ele.index()] = pressure_diff;
+    result.pressure_error[dim-1] += pressure_diff;
+
+    result.div_diff[ele.index()] = divergence_diff;
+    result.div_error[dim-1] += divergence_diff;
+
+}
 
 
 
@@ -651,6 +746,22 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
     FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
 
+    
+    // XFEM stuff ...
+    QXFEMFactory<2,3> qfactory;
+    shared_ptr<QXFEM<2,3>> qxfem;
+    
+    shared_ptr<FiniteElementEnriched<2,3>> fe_rt_xfem;
+    shared_ptr<FEValues<2,3>> fe_values_rt_xfem;
+    shared_ptr<FESideValues<2,3>> fv_side_xfem;
+    
+    shared_ptr<FiniteElementEnriched<2,3>> fe_p0_xfem;
+    shared_ptr<FEValues<2,3>> fe_values_p0_xfem;
+    
+    shared_ptr<FEValues<2,3>> fv_rt_sing;
+    // end XFEM stuff ...
+    
+    
     FilePath source_file( "analytical_module.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
     anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
@@ -703,8 +814,54 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     darcy_flow->get_solution_vector(result.solution, solution_size);
 
 
-    FOR_ELEMENTS( mesh_, ele) {
+    if(result.darcy->use_xfem){
+        for (unsigned int i_loc = 0; i_loc < result.dh->el_ds->lsize(); i_loc++) {
+            DBGVAR(i_loc);
+            auto ele_ac = const_cast<MH_DofHandler*>(result.dh)->accessor(i_loc);
+            ElementFullIter ele = ele_ac.full_iter();
+            unsigned int dim = ele_ac.dim();
+            
+            // prepare xfem
+            if(dim == 2 && ele->xfem_data != nullptr){
+                XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+        
+                std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(xdata->enrichment_func(0));
+                
+                qxfem = qfactory.create_singular({func}, ele);
+                
+                if(result.dh->single_enr) fe_rt_xfem = std::make_shared<FE_RT0_XFEM_S<2,3>>(&fe_rt2d,xdata->enrichment_func_vec());
+                else fe_rt_xfem = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt2d,xdata->enrichment_func_vec());
+                
+                
+                fe_values_rt_xfem = std::make_shared<FEValues<2,3>> 
+                                    (mapp_2d, *qxfem, *fe_rt_xfem, update_values |
+                                                                update_JxW_values | update_jacobians |
+                                                                update_inverse_jacobians | update_quadrature_points 
+                                                                | update_divergence);
+                
+                fe_p0_xfem = std::make_shared<FE_P0_XFEM<2,3>>(&fe_2d,xdata->enrichment_func_vec());
+                fe_values_p0_xfem = std::make_shared<FEValues<2,3>> 
+                                    (mapp_2d, *qxfem, *fe_p0_xfem, update_values |
+                                                                update_JxW_values |
+                                                                update_quadrature_points);
+                l2_diff_local_xfem<2>( ele_ac, *fe_values_p0_xfem, *fe_values_rt_xfem, anal_sol_2d, result);
+            }
+            else{
+                switch (dim) {
+                case 1:
 
+                    l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
+                    break;
+                case 2:
+                    l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
+                    break;
+                }
+            }
+        }
+    }
+    else{
+    FOR_ELEMENTS( mesh_, ele) {
+            
     	switch (ele->dim()) {
         case 1:
 
@@ -715,7 +872,10 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             break;
         }
     }
+    }
 
+    DebugOut() << "l2 norm output end\n";
+    
     os 	<< "l2 norm output\n\n"
     	<< "pressure error 1d: " << sqrt(result.pressure_error[0]) << endl
     	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
