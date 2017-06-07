@@ -28,8 +28,8 @@ TEST(GMSHReader, read_mesh_from_stream) {
     stringstream ss;
     ss << ifs.rdbuf();
 
-    Mesh * mesh = mesh_constructor();
     GmshMeshReader reader(ss);
+    Mesh * mesh = new Mesh();
 	reader.read_physical_names(mesh);
 	reader.read_raw_mesh(mesh);
 
@@ -44,12 +44,11 @@ TEST(GMSHReader, read_mesh_from_file) {
 
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    FilePath mesh_file("mesh/test_input.msh", FilePath::input_file);
 
-    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/test_input.msh\"}");
-    GmshMeshReader reader( mesh->mesh_file() );
-	reader.read_physical_names(mesh);
-	reader.read_raw_mesh(mesh);
+    auto reader = reader_constructor("{mesh_file=\"mesh/test_input.msh\"}");
+    Mesh * mesh = new Mesh();
+	reader->read_physical_names(mesh);
+	reader->read_raw_mesh(mesh);
 
     EXPECT_EQ(118, mesh->n_nodes());
     EXPECT_EQ(216, mesh->n_elements());

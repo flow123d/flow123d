@@ -105,9 +105,9 @@ protected:
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
+        auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
-        GmshMeshReader gmsh_reader( mesh->mesh_file() );
-        gmsh_reader.read_raw_mesh(mesh);
+        mesh_reader->read_raw_mesh(mesh);
 
     }
 
@@ -220,10 +220,10 @@ TEST(Operators, assignment) {
     Profiler::initialize();
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    gmsh_reader.read_physical_names(mesh);
-    gmsh_reader.read_raw_mesh(mesh);
+    mesh_reader->read_physical_names(mesh);
+    mesh_reader->read_raw_mesh(mesh);
     mesh->check_and_finish();
 
 	std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };

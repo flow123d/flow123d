@@ -27,7 +27,6 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "io/msh_gmshreader.h"
 
 
 
@@ -44,9 +43,8 @@ public:
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
         
-        mesh= mesh_constructor("{mesh_file=\"fields/one_element_2d.msh\"}");
-        GmshMeshReader gmsh_reader( mesh->mesh_file() );
-        gmsh_reader.read_mesh(mesh);
+        auto mesh_reader = reader_constructor("{mesh_file=\"fields/one_element_2d.msh\"}");
+        mesh = mesh_reader->read_mesh();
         dh = new DOFHandlerMultiDim(*mesh);
         VecCreateSeqWithArray(PETSC_COMM_SELF, 1, 3, dof_values, &v);
     }

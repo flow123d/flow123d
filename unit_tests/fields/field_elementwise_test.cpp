@@ -80,9 +80,8 @@ public:
 
         Profiler::initialize();
         
-        mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-        GmshMeshReader gmsh_reader( mesh->mesh_file() );
-        gmsh_reader.read_mesh(mesh);
+        auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh = mesh_reader->read_mesh();
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )

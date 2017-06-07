@@ -25,7 +25,7 @@ using namespace std;
 class MeshTest :  public testing::Test, public Mesh {
 public:
     MeshTest()
-    : Mesh(*mesh_constructor())
+    : Mesh()
     {
     }
 
@@ -60,14 +60,12 @@ TEST_F(MeshTest, intersect_nodes_lists) {
 
 TEST(MeshTopology, make_neighbours_and_edges) {
 	// has to introduce some flag for passing absolute path to 'test_units' in source tree
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Profiler::initialize();
     
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    GmshMeshReader gmsh_reader( in );
-    gmsh_reader.read_mesh(mesh);
+    auto gmsh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = gmsh_reader->read_mesh();
 
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->bc_elements.size());
@@ -87,7 +85,6 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     EXPECT_EQ(6, mesh->n_vb_neighbours() );
 
     delete mesh;
-
 }
 
 
@@ -113,9 +110,8 @@ regions:
 TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor(mesh_input, Input::FileFormat::format_YAML);
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    gmsh_reader.read_mesh(mesh);
+    auto gmsh_reader = reader_constructor(mesh_input, Input::FileFormat::format_YAML);
+    Mesh * mesh = gmsh_reader->read_mesh();
 
     EXPECT_EQ( 37, mesh->element_accessor(0).region().id() );
     EXPECT_EQ( "1D rename", mesh->element_accessor(0).region().label() );
@@ -159,7 +155,9 @@ TEST(Mesh, decompose_problem) {
     Mesh * mesh = mesh_constructor();
     stringstream in(small_mesh.c_str());
     GmshMeshReader gmsh_reader( in );
-    EXPECT_THROW_WHAT( { gmsh_reader.read_mesh(mesh); }, Partitioning::ExcDecomposeMesh,
+    gmsh_reader.read_physical_names(mesh);
+    gmsh_reader.read_raw_mesh(mesh);
+    EXPECT_THROW_WHAT( { mesh->setup_topology();; }, Partitioning::ExcDecomposeMesh,
     		"greater then number of elements 1. Can not make partitioning of the mesh");
 
     delete mesh;

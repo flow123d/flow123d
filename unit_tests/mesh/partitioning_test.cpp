@@ -35,13 +35,10 @@ TEST(Partitioning, all) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor(mesh_input);
-    std::cout << "1" << std::endl;
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    gmsh_reader.read_mesh(mesh);
-    std::cout << "2" << std::endl;
+    auto gmsh_reader = reader_constructor(mesh_input);
+    Mesh * mesh = gmsh_reader->read_mesh();
+
     const Distribution * init_ds = mesh->get_part()->get_init_distr();
-    std::cout << "3" << std::endl;
 
     cout << *init_ds;
     const int * part = mesh->get_part()->get_loc_part();

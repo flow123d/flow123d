@@ -39,9 +39,8 @@ TEST(OutputMesh, create_identical)
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     // read mesh - simplset cube from test1
-    Mesh* mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    gmsh_reader.read_mesh(mesh);
+    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh *mesh = mesh_reader->read_mesh();
     
     auto output_mesh = std::make_shared<OutputMesh>(*mesh);
     output_mesh->create_identical_mesh();
@@ -148,9 +147,8 @@ TEST(OutputMesh, write_on_output_mesh) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     // read mesh - simplset cube from test1
-    Mesh* mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    gmsh_reader.read_mesh(mesh);
+    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh *mesh = mesh_reader->read_mesh();
     
     
     // create scalar field out of FieldAlgorithmBase field

@@ -30,13 +30,13 @@ TEST(intersections, 1d_3d){
 	unsigned int elementLimit = 20;
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
 	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
-	Mesh *mesh_krychle = mesh_constructor();
-	GmshMeshReader reader(mesh_file);
+	auto reader = reader_constructor("{mesh_file=\"mesh/line_cube.msh\"}");
+	Mesh *mesh_krychle = new Mesh();
+	reader->read_physical_names(mesh_krychle);
+	reader->read_raw_mesh(mesh_krychle);
+
 	BoundingBox bb;
 	std::vector<unsigned int> searchedElements;
-
-	reader.read_physical_names(mesh_krychle);
-	reader.read_raw_mesh(mesh_krychle);
 
 	BIHTree bt(mesh_krychle, elementLimit);
 

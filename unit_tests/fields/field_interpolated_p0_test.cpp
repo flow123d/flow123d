@@ -131,11 +131,10 @@ public:
 
         Profiler::initialize();
 
-        //FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = mesh_constructor();
-        stringstream in(gmsh_mesh.c_str());
-        GmshMeshReader gmsh_reader( in );
-        gmsh_reader.read_mesh(mesh);
+        mesh = new Mesh();
+        auto mesh_reader = reader_constructor("{mesh_file=\"fields/interpolate_source.msh\"}");
+        mesh_reader->read_physical_names(mesh);
+        mesh_reader->read_raw_mesh(mesh);
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )

@@ -95,9 +95,8 @@ public:
 	    Profiler::initialize();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        mesh_ = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-        GmshMeshReader gmsh_reader( mesh_->mesh_file() );
-        gmsh_reader.read_mesh(mesh_);
+	    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh_ = mesh_reader->read_mesh();
 	}
 
 	~SomeEquation() {

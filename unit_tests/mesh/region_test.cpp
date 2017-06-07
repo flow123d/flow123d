@@ -328,10 +328,9 @@ TEST(Region, read_regions_error_messages) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-    GmshMeshReader reader(mesh_file);
-    Mesh * mesh = mesh_constructor();
-    reader.read_physical_names(mesh);
+    auto reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = new Mesh();
+    reader->read_physical_names(mesh);
 
 	{
 		Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );

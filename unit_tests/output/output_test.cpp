@@ -214,17 +214,16 @@ public:
 	: OutputTime()
 
 	{
-	    my_mesh = mesh_constructor();
+	    Profiler::initialize();
+		// read simple mesh
+	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+	    auto mesh_reader = reader_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+	    my_mesh = mesh_reader->read_mesh();
+
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
 	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
-	    Profiler::initialize();
-		// read simple mesh
-	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    ifstream in(string(mesh_file).c_str());
-        GmshMeshReader gmsh_reader( in );
-        gmsh_reader.read_mesh(my_mesh);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 

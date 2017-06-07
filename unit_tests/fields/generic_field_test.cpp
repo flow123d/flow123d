@@ -16,9 +16,8 @@ TEST(GenericField, all) {
     Profiler::initialize();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    GmshMeshReader gmsh_reader( mesh->mesh_file() );
-    gmsh_reader.read_mesh(mesh);
+    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_reader->read_mesh();
 
     GenericField<3>::IndexField subdomain;
     subdomain.flags(FieldFlag::input_copy);
