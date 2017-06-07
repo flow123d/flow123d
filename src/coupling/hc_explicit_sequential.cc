@@ -125,11 +125,10 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Read mesh
     {
         START_TIMER("HC read mesh");
-        mesh = new Mesh( in_record.val<Record>("mesh") );
 
     	try {
-            GmshMeshReader gmsh_reader( mesh->mesh_file() );
-            gmsh_reader.read_mesh(mesh);
+    		auto mesh_reader = BaseMeshReader::reader_factory( in_record.val<Record>("mesh") );
+    		mesh = mesh_reader->read_mesh();
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
     	catch (ExceptionBase const &e) {
     		throw;
