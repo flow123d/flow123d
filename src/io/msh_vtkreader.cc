@@ -60,8 +60,8 @@ uint64_t read_header_type(DataType data_header_type, std::istream &data_stream)
 const double VtkMeshReader::point_tolerance = 1E-10;
 
 
-VtkMeshReader::VtkMeshReader(const FilePath &file_name)
-: BaseMeshReader(file_name)
+VtkMeshReader::VtkMeshReader(const Input::Record &mesh_rec)
+: BaseMeshReader(mesh_rec)
 {
     data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
@@ -513,6 +513,22 @@ bool VtkMeshReader::compare_points(arma::vec3 &p1, arma::vec3 &p2) {
 	return fabs(p1[0]-p2[0]) < point_tolerance
 		&& fabs(p1[1]-p2[1]) < point_tolerance
 		&& fabs(p1[2]-p2[2]) < point_tolerance;
+}
+
+
+void VtkMeshReader::read_physical_names(Mesh * mesh) {
+	// will be implemented later
+}
+
+
+void VtkMeshReader::read_nodes(Mesh* mesh) {
+	ASSERT(false).error("Reading of VTK mesh is not supported yet!");
+	// will be implemented later
+}
+
+
+void VtkMeshReader::read_elements(Mesh * mesh) {
+	// will be implemented later
 }
 
 

@@ -18,16 +18,56 @@
 
 
 #include "io/msh_basereader.hh"
+#include "io/msh_gmshreader.h"
+#include "io/msh_vtkreader.hh"
+#include "system/sys_profiler.hh"
 
 
-BaseMeshReader::BaseMeshReader(const FilePath &file_name)
-: tok_(file_name) {
+BaseMeshReader::BaseMeshReader(const Input::Record &mesh_rec)
+: tok_(mesh_rec.val<FilePath>("mesh_file")) {
 	current_cache_ = new ElementDataCache<double>();
+	input_mesh_rec_ = mesh_rec;
 }
 
 BaseMeshReader::BaseMeshReader(std::istream &in)
 : tok_(in) {
 	current_cache_ = new ElementDataCache<double>();
+}
+
+std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const Input::Record &mesh_rec) {
+	FilePath file_path = mesh_rec.val<FilePath>("mesh_file");
+	std::shared_ptr<BaseMeshReader> reader_ptr;
+	if ( file_path.extension() == ".msh" ) {
+		reader_ptr = std::make_shared<GmshMeshReader>(mesh_rec);
+	} else if ( file_path.extension() == ".vtu" ) {
+		reader_ptr = std::make_shared<VtkMeshReader>(mesh_rec);
+	} else {
+		THROW(ExcWrongExtension() << EI_FileExtension(file_path.extension()) << EI_MeshFile((string)file_path) );
+	}
+	return reader_ptr;
+
+}
+
+Mesh * BaseMeshReader::read_mesh() {
+    START_TIMER("GMSHReader - read mesh");
+
+	Input::Array region_list;
+    Mesh * mesh = new Mesh( input_mesh_rec_ );
+    this->read_physical_names(mesh);
+	if (input_mesh_rec_.opt_val("regions", region_list)) {
+		mesh->read_regions_from_input(region_list);
+	}
+    this->read_raw_mesh(mesh);
+    mesh->setup_topology();
+    mesh->check_and_finish();
+    return mesh;
+}
+
+void BaseMeshReader::read_raw_mesh(Mesh* mesh) {
+	ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
+    tok_.set_position( Tokenizer::Position() );
+    read_nodes(mesh);
+    read_elements(mesh);
 }
 
 template<typename T>

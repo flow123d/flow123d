@@ -26,6 +26,7 @@
 
 #include "io/element_data_cache.hh"
 #include "mesh/mesh.h"
+#include "input/accessors.hh"
 #include "system/system.hh"
 #include "system/tokenizer.hh"
 
@@ -91,6 +92,7 @@ public:
 	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
 	TYPEDEF_ERR_INFO(EI_Type, std::string);
 	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+	TYPEDEF_ERR_INFO(EI_FileExtension, std::string);
 	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
 			<< "No data for field: "<< EI_FieldName::qval
 			<< " and time: "<< EI_Time::val
@@ -98,12 +100,39 @@ public:
 	DECLARE_EXCEPTION(ExcWrongFormat,
 			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
 			<< "in the input file: " << EI_MeshFile::qval);
+	DECLARE_EXCEPTION(ExcWrongExtension,
+			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
 
 	/// Constructor
-	BaseMeshReader(const FilePath &file_name);
+	BaseMeshReader(const Input::Record &mesh_rec);
 
 	/// Constructor
 	BaseMeshReader(std::istream &in);
+
+    /**
+     * This static method gets accessor to record with function input,
+     * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Returns shared pointer to BaseMeshReader.
+     */
+    static std::shared_ptr< BaseMeshReader > reader_factory(const Input::Record &mesh_rec);
+
+    /**
+     * Reads @p mesh from the GMSH or VTK file.
+     * Input of the mesh allows changing regions within the input file.
+     */
+    Mesh * read_mesh();
+
+    /**
+     * Reads @p raw data of mesh (only nodes and elements) from the GMSH or VTKfile.
+     * Input of the mesh allows changing regions within the input file.
+     *
+     */
+    void read_raw_mesh(Mesh* mesh);
+
+    /**
+     * Read regions from the mesh file and save the physical sections as regions in the RegionDB.
+     */
+    virtual void read_physical_names(Mesh * mesh)=0;
 
     /**
      *  Reads ElementData sections of opened mesh file. The file is searched for the \\$ElementData (GMSH) or DataArray
@@ -138,6 +167,16 @@ public:
 
 protected:
     /**
+     * private method for reading of nodes
+     */
+    virtual void read_nodes(Mesh*)=0;
+
+    /**
+     * Method for reading of elements.
+     */
+    virtual void read_elements(Mesh * mesh)=0;
+
+    /**
 	 * Find data header for given time and field.
 	 */
 	virtual MeshDataHeader & find_header(double time, std::string field_name)=0;
@@ -168,6 +207,9 @@ protected:
 
     /// Tokenizer used for reading ASCII file format.
     Tokenizer tok_;
+
+    /// Input record accessor of mesh.
+    Input::Record input_mesh_rec_;
 };
 
 #endif	/* MSH_BASE_READER_HH */

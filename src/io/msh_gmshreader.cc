@@ -24,7 +24,6 @@
 #include "msh_gmshreader.h"
 
 #include "system/system.hh"
-#include "system/sys_profiler.hh"
 #include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
@@ -35,8 +34,8 @@
 using namespace std;
 
 
-GmshMeshReader::GmshMeshReader(const FilePath &file_name)
-: BaseMeshReader(file_name)
+GmshMeshReader::GmshMeshReader(const Input::Record &mesh_rec)
+: BaseMeshReader(mesh_rec)
 {
     tok_.set_comment_pattern( "#");
     data_section_name_ = "$ElementData";
@@ -59,30 +58,6 @@ GmshMeshReader::GmshMeshReader(std::istream &in)
 
 GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 {}
-
-
-
-void GmshMeshReader::read_mesh(Mesh* mesh) {
-    START_TIMER("GMSHReader - read mesh");
-
-    OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
-    read_physical_names(mesh);
-    mesh->init_from_input();
-    tok_.set_position( Tokenizer::Position() );
-    read_nodes(mesh);
-    read_elements(mesh);
-    mesh->setup_topology();
-    mesh->check_and_finish();
-}
-
-
-
-void GmshMeshReader::read_raw_mesh(Mesh* mesh) {
-    OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
-    tok_.set_position( Tokenizer::Position() );
-    read_nodes(mesh);
-    read_elements(mesh);
-}
 
 
 
@@ -199,7 +174,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
 
 
 void GmshMeshReader::read_physical_names(Mesh * mesh) {
-	OLD_ASSERT( mesh , "Argument mesh is NULL.\n");
+	ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
 
     using namespace boost;
 

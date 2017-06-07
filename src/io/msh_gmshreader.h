@@ -55,10 +55,10 @@ public:
 	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
 
     /**
-     * Construct the GMSH format reader from given filename.
+     * Construct the GMSH format reader from given Input Record.
      * This opens the file for reading.
      */
-    GmshMeshReader(const FilePath &file_name);
+    GmshMeshReader(const Input::Record &mesh_rec);
     /**
      * Construct the GMSH format reader from given input stream.
      * The input stream should be correctly opened. To get correct information about
@@ -69,22 +69,7 @@ public:
     /**
      * Destructor close the file if opened.
      */
-    ~GmshMeshReader();
-
-    /**
-     *  Reads @p mesh from the GMSH file.
-     *  Input of the mesh allows changing regions within the input CON file.
-     *
-     *  TODO: Implements @p BaseMeshReader::read_mesh.
-     */
-    void read_mesh(Mesh* mesh);
-
-    /**
-     *  Reads @p raw data of mesh (only nodes and elements) from the GMSH file.
-     *  Input of the mesh allows changing regions within the input CON file.
-     *
-     */
-    void read_raw_mesh(Mesh* mesh);
+    virtual ~GmshMeshReader();
 
     /**
      * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
@@ -92,7 +77,7 @@ public:
      * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
      * assign regions to the boundary and are not used in actual FEM computations.
      */
-    void read_physical_names(Mesh * mesh);
+    void read_physical_names(Mesh * mesh) override;
 
     /**
      * Empty method for GMSH reader now.

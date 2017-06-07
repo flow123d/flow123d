@@ -64,13 +64,21 @@ public:
 	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
 
 	/**
-     * Construct the VTK format reader from given filename.
+     * Construct the VTK format reader from given Input Record.
      * This opens the file for reading.
      */
-	VtkMeshReader(const FilePath &file_name);
+	VtkMeshReader(const Input::Record &mesh_rec);
 
 	/// Destructor
 	~VtkMeshReader();
+
+    /**
+     * Read regions from the VTK file and save the physical sections as regions in the RegionDB.
+     *
+     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
+     * assign regions to the boundary and are not used in actual FEM computations.
+     */
+    void read_physical_names(Mesh * mesh) override;
 
 	/**
 	 * Check if nodes and elements of VTK mesh is compatible with \p mesh.
@@ -83,6 +91,17 @@ public:
 	void check_compatible_mesh(Mesh &mesh) override;
 
 protected:
+    /**
+     * private method for reading of nodes
+     */
+    void read_nodes(Mesh*);
+
+    /**
+     * Method for reading of elements.
+     * Input of the mesh allows changing regions within the input file.
+     */
+    void read_elements(Mesh * mesh);
+
     /**
 	 * Find header of DataArray section of VTK file given by field_name.
 	 *
