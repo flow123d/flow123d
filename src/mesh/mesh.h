@@ -116,6 +116,12 @@ public:
     enum {x_coord=0, y_coord=1, z_coord=2};
 
     /**
+     * Empty constructor.
+     *
+     * Use only for unit tests!!!
+     */
+    Mesh();
+    /**
      * Constructor from an input record.
      * Do not process input record. That is done in init_from_input.
      */
@@ -193,11 +199,6 @@ public:
      * @param dim Dimension of elements sharing the edge.
      */
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
-
-    /**
-     * Reads input record, creates regions defined in input by user.
-     */
-    void init_from_input();
 
 
     /**

@@ -71,6 +71,14 @@ const IT::Record & Mesh::get_input_type() {
 
 const unsigned int Mesh::undef_idx;
 
+Mesh::Mesh()
+: row_4_el(nullptr),
+  el_4_loc(nullptr),
+  el_ds(nullptr)
+{}
+
+
+
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
   comm_(com),
@@ -205,15 +213,6 @@ void Mesh::count_element_types() {
             n_tetrahedras++;
             break;
         }
-}
-
-
-
-void Mesh::init_from_input() {
-	Input::Array region_list;
-	if (in_record_.opt_val("regions", region_list)) {
-		this->read_regions_from_input(region_list);
-	}
 }
 
 
