@@ -15,8 +15,8 @@ class Parameters :
 
     # wells
     sigma_w = 100.0
-    #P_w = 100.0
-    P_w = 40.0
+    P_w = 100.0
+    #P_w = 40.0
     rho_w = 0.03    
     x_w = 3.3
     y_w = 3.3
@@ -46,17 +46,27 @@ class Parameters :
     ###############  
     # fuction value for p2 - 2D pressure
     def p2_fce_value(self, x, y):
-        return self.b + self.a * math.log(self.r(x,y)) 
+        tr = self.r(x,y)
+        if tr < self.rho_w:
+            return self.P_w
+        else:
+            return self.b + self.a * math.log(tr) 
     
     # fuction value for p2 - 2D pressure
     def vx2_fce_value(self, x, y):
         tr = self.r(x,y)  
-        return - self.k2 * self.a * (x-self.x_w) / (tr*tr)
+        if tr < self.rho_w:
+            return 0
+        else:
+            return - self.k2 * self.a * (x-self.x_w) / (tr*tr)
     
     # fuction value for p2 - 2D pressure
     def vy2_fce_value(self, x, y):
         tr = self.r(x,y)  
-        return - self.k2 * self.a * (y-self.y_w) / (tr*tr)
+        if tr < self.rho_w:
+            return 0
+        else:
+            return - self.k2 * self.a * (y-self.y_w) / (tr*tr)
        
             
 ### end class Parameters    
@@ -71,6 +81,11 @@ params.precalculations()
 ########################
 # provided functions
 
+def velocity_2d(xx , yy, zz):
+    vx2 = Parameters.vx2_fce_value(params,xx,yy)
+    vy2 = Parameters.vy2_fce_value(params,xx,yy)
+    return (vx2, vy2, 0)
+  
 def all_values_1d( xx , yy, zz):
     p1 = 0.0
     vx1 = 0.0

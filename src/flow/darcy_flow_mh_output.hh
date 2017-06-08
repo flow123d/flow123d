@@ -76,6 +76,7 @@ public:
 	    Field<3, FieldValue<3>::Scalar> pressure_diff;
 	    Field<3, FieldValue<3>::Scalar> div_diff;
 
+        Field<3, FieldValue<3>::VectorFixed> velocity_exact;
 	    FieldSet error_fields_for_output;
 	};
 

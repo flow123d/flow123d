@@ -90,7 +90,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	error_fields_for_output += pressure_diff.name("pressure_diff").units(UnitSI().m());
 	error_fields_for_output += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
 	error_fields_for_output += div_diff.name("div_diff").units(UnitSI().s(-1));
-
+    error_fields_for_output += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1));
 }
 
 
@@ -498,6 +498,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 #include "fields/field_values.hh"
 
 typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
+typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
 
 /*
 * Calculate approximation of L2 norm for:
@@ -513,6 +514,8 @@ struct DiffData {
     VectorSeqDouble velocity_diff;
     VectorSeqDouble div_diff;
 
+    std::shared_ptr<ExactSolution> velocity_exact;
+    std::shared_ptr<FieldPython<3, FieldValue<3>::Scalar >> pressure_exact;
 
     double * solution;
     const MH_DofHandler * dh;
@@ -798,13 +801,17 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     //result.ele_flux = &( ele_flux );
 
     output_fields.error_fields_for_output.set_mesh(*mesh_);
-
+    
     auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
     auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
     auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+    
+    std::shared_ptr<ExactVelocity> exact_vel_2d_ptr = std::make_shared<ExactVelocity>(3);
+    exact_vel_2d_ptr->set_python_field_from_file( source_file, "velocity_2d");
+    output_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
 
     output_fields.error_fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);
     output_fields += output_fields.error_fields_for_output;

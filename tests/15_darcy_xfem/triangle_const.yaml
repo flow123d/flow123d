@@ -11,6 +11,7 @@ problem: !Coupling_Sequential
           #- 219
   flow_equation: !Flow_Darcy_MH
     output_specific:
+      compute_errors: true
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -34,7 +35,7 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: 0 + (100-0)/log(0.03/10) * log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const dir problem
+          value: 40 + (100-40)/log(0.03/10) * log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const dir problem
           #value: (0 - 100)/(1/(0.03*1)-log(0.03/10))*log(((x-3.3)^2+(y-3.3)^2)^0.5 / 10) # const sigma problem
           # value: -100/(1/(0.03*1)-log(0.03/10))*log(((x-0.3)^2+(y-0.3)^2)^0.5 / 10) 
       #- region: .well_top
@@ -52,6 +53,9 @@ problem: !Coupling_Sequential
         - velocity_p0
         - velocity_enr
         - velocity_reg
+        - velocity_diff
+        - velocity_exact
+        - pressure_diff
     output_stream: 
       file: ./test25.pvd
       format: !vtk
