@@ -126,13 +126,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     {
         START_TIMER("HC read mesh");
 
-    	try {
-    		auto mesh_reader = BaseMeshReader::reader_factory( in_record.val<Record>("mesh") );
-    		mesh = mesh_reader->read_mesh();
-        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
-    	catch (ExceptionBase const &e) {
-    		throw;
-    	}
+   		auto mesh_reader = BaseMeshReader::reader_factory( in_record.val<Record>("mesh") );
+   		mesh = mesh_reader->read_mesh();
         
         //getting description for the Profiler
         string description;

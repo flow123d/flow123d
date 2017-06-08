@@ -37,12 +37,17 @@ BaseMeshReader::BaseMeshReader(std::istream &in)
 std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const Input::Record &mesh_rec) {
 	FilePath file_path = mesh_rec.val<FilePath>("mesh_file");
 	std::shared_ptr<BaseMeshReader> reader_ptr;
-	if ( file_path.extension() == ".msh" ) {
-		reader_ptr = std::make_shared<GmshMeshReader>(mesh_rec);
-	} else if ( file_path.extension() == ".vtu" ) {
-		reader_ptr = std::make_shared<VtkMeshReader>(mesh_rec);
-	} else {
-		THROW(ExcWrongExtension() << EI_FileExtension(file_path.extension()) << EI_MeshFile((string)file_path) );
+	try {
+		if ( file_path.extension() == ".msh" ) {
+			reader_ptr = std::make_shared<GmshMeshReader>(mesh_rec);
+		} else if ( file_path.extension() == ".vtu" ) {
+			reader_ptr = std::make_shared<VtkMeshReader>(mesh_rec);
+		} else {
+			THROW(ExcWrongExtension() << EI_FileExtension(file_path.extension()) << EI_MeshFile((string)file_path) );
+		}
+    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, mesh_rec)
+	catch (ExceptionBase const &e) {
+		throw;
 	}
 	return reader_ptr;
 
