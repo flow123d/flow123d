@@ -217,6 +217,11 @@ public:
      */
     void read_regions_from_input(Input::Array region_list);
 
+    /**
+     * Returns nodes_elements vector, if doesn't exist creates its.
+     */
+    vector<vector<unsigned int> > const & node_elements();
+
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
     /// Vector of elements of the mesh.
@@ -285,7 +290,7 @@ public:
     const BIHTree &get_bih_tree();
 
     /**
-     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
+     * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
      * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
      * returned.
      */
@@ -305,9 +310,6 @@ public:
     inline FilePath mesh_file() {
     	return in_record_.val<FilePath>("mesh_file");
     }
-
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements;
 
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
@@ -400,6 +402,9 @@ protected:
      * MPI communicator used for partitioning and ...
      */
     MPI_Comm comm_;
+
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements_;
 
     friend class RegionSetBase;
 

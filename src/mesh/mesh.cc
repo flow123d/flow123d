@@ -270,13 +270,13 @@ void Mesh::count_side_types()
 
 void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
-    node_elements.resize(node_vector.size());
+    node_elements_.resize(node_vector.size());
 
     FOR_ELEMENTS( this, e )
         for (unsigned int n=0; n<e->n_nodes(); n++)
-            node_elements[node_vector.index(e->node[n])].push_back(e->index());
+            node_elements_[node_vector.index(e->node[n])].push_back(e->index());
 
-    for (vector<vector<unsigned int> >::iterator n=node_elements.begin(); n!=node_elements.end(); n++)
+    for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
 }
 
@@ -286,22 +286,22 @@ void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vecto
     if (nodes_list.size() == 0) {
         intersection_element_list.clear();
     } else if (nodes_list.size() == 1) {
-        intersection_element_list = node_elements[ nodes_list[0] ];
+        intersection_element_list = node_elements_[ nodes_list[0] ];
 	} else {
 	    vector<unsigned int>::const_iterator it1=nodes_list.begin();
 	    vector<unsigned int>::const_iterator it2=it1+1;
-	    intersection_element_list.resize( node_elements[*it1].size() ); // make enough space
+	    intersection_element_list.resize( node_elements_[*it1].size() ); // make enough space
 
 	    it1=set_intersection(
-                node_elements[*it1].begin(), node_elements[*it1].end(),
-                node_elements[*it2].begin(), node_elements[*it2].end(),
+                node_elements_[*it1].begin(), node_elements_[*it1].end(),
+                node_elements_[*it2].begin(), node_elements_[*it2].end(),
                 intersection_element_list.begin());
         intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
 
         for(;it2<nodes_list.end();++it2) {
             it1=set_intersection(
                     intersection_element_list.begin(), intersection_element_list.end(),
-                    node_elements[*it2].begin(), node_elements[*it2].end(),
+                    node_elements_[*it2].begin(), node_elements_[*it2].end(),
                     intersection_element_list.begin());
             intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
         }
@@ -779,6 +779,14 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		ele->node[ni] = node;
 	}
 
+}
+
+
+vector<vector<unsigned int> > const & Mesh::node_elements() {
+	if (node_elements_.size() == 0) {
+		this->create_node_element_lists();
+	}
+	return node_elements_;
 }
 
 //-----------------------------------------------------------------------------

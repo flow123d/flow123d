@@ -36,10 +36,10 @@ public:
 
 
 TEST_F(MeshTest, intersect_nodes_lists) {
-	node_elements.resize(3);
-	node_elements[0]={ 0, 1, 2, 3, 4};
-	node_elements[1]={ 0, 2, 3, 4};
-	node_elements[2]={ 0, 1, 2, 4};
+	node_elements_.resize(3);
+	node_elements_[0]={ 0, 1, 2, 3, 4};
+	node_elements_[1]={ 0, 2, 3, 4};
+	node_elements_[2]={ 0, 1, 2, 4};
 
     vector<unsigned int> node_list={0,1,2};
     vector<unsigned int> result;

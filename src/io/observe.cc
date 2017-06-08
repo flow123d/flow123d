@@ -176,7 +176,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
             closed_elements.insert(i_elm);
             // add all node neighbours to the next level list
             for (unsigned int n=0; n < elm.n_nodes(); n++) {
-                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])])
                     candidate_list.push_back(i_node_ele);
             }
         } else {
@@ -212,7 +212,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         closed_elements.insert(i_elm);
         // add all node neighbours to the next level list
         for (unsigned int n=0; n < elm.n_nodes(); n++) {
-            for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+            for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])])
                 candidate_list.push_back(i_node_ele);
         }
 
@@ -239,7 +239,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
              }
             // add all node neighbours to the next level list
             for (unsigned int n=0; n < elm.n_nodes(); n++) {
-                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])])
                     candidate_list.push_back(i_node_ele);
             }
         }
