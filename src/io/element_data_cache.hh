@@ -64,6 +64,8 @@ protected:
 	double time_;
 	/// name of quantity stored in cache
 	std::string quantity_name_;
+
+	friend class BaseMeshReader;
 };
 
 

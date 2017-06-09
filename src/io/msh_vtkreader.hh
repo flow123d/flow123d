@@ -122,16 +122,16 @@ protected:
 	unsigned int type_value_size(DataType data_type);
 
 	/// Parse ascii data to data cache
-	void parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos);
+	void parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
+			Tokenizer::Position pos);
 
 	/// Parse binary data to data cache
-	void parse_binary_data(ElementDataCacheBase &data_cache, unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
+	void parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
+			Tokenizer::Position pos, DataType value_type);
 
 	/// Uncompress and parse binary compressed data to data cache
-	void parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
+	void parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
+			Tokenizer::Position pos, DataType value_type);
 
 	/// Set base attributes of VTK and get count of nodes and elements.
 	void read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements);
@@ -142,8 +142,8 @@ protected:
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
-    		unsigned int n_components, std::vector<int> const & el_ids) override;
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    		std::vector<int> const & el_ids) override;
 
     /**
      * Compare two points representing by armadillo vector.

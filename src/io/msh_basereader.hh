@@ -166,6 +166,9 @@ public:
     virtual void check_compatible_mesh(Mesh &mesh)=0;
 
 protected:
+    typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
+    typedef std::map< string, ElementDataPtr > ElementDataFieldMap;
+
     /**
      * private method for reading of nodes
      */
@@ -189,8 +192,8 @@ protected:
     /**
      * Read element data to data cache
      */
-    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
-    		unsigned int n_components, std::vector<int> const & el_ids)=0;
+    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    		std::vector<int> const & el_ids)=0;
 
     /**
      * Flag stores that check of compatible mesh was performed.
@@ -203,7 +206,7 @@ protected:
     std::string data_section_name_;
 
     /// Cache with last read element data
-    ElementDataCacheBase *current_cache_;
+    ElementDataFieldMap element_data_values_;
 
     /// Tokenizer used for reading ASCII file format.
     Tokenizer tok_;

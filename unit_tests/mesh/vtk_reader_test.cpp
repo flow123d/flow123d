@@ -50,23 +50,22 @@ public:
 		for (unsigned int i=0; i<vtk_to_gmsh_element_map_.size(); ++i) vtk_to_gmsh_element_map_[i]=i;
 
 		// set new cache
-	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
+	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data( *current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				parse_binary_data( *current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				parse_compressed_data(* current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type);
 				break;
 			}
@@ -77,7 +76,7 @@ public:
 		}
 
 		mesh->node_vector.reserve(actual_header.n_entities);
-		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache_)->get_component_data(0).get() );
+		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache)->get_component_data(0).get() );
 		for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
 	        NodeFullIter node = mesh->node_vector.add_item(i);
 	        node->point()(0)=vect[ivec]; ++ivec;
@@ -86,6 +85,7 @@ public:
 		}
 
 		vtk_to_gmsh_element_map_.clear();
+	    delete current_cache;
 	}
 
 	MeshDataHeader & find_header(double time, std::string field_name) {

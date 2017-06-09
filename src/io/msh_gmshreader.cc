@@ -260,8 +260,8 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 
-void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
-		unsigned int n_components, std::vector<int> const & el_ids) {
+void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+		std::vector<int> const & el_ids) {
     unsigned int id, i_row;
     unsigned int n_read = 0;
     vector<int>::const_iterator id_iter = el_ids.begin();

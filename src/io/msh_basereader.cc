@@ -25,13 +25,11 @@
 
 BaseMeshReader::BaseMeshReader(const Input::Record &mesh_rec)
 : tok_(mesh_rec.val<FilePath>("mesh_file")) {
-	current_cache_ = new ElementDataCache<double>();
 	input_mesh_rec_ = mesh_rec;
 }
 
 BaseMeshReader::BaseMeshReader(std::istream &in)
 : tok_(in) {
-	current_cache_ = new ElementDataCache<double>();
 }
 
 std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const Input::Record &mesh_rec) {
@@ -82,7 +80,8 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 
     MeshDataHeader actual_header = this->find_header(time, field_name);
-    if ( !current_cache_->is_actual(actual_header.time, field_name) ) {
+    ElementDataFieldMap::iterator it=element_data_values_.find(field_name);
+    if (it == element_data_values_.end()) {
     	unsigned int size_of_cache; // count of vectors stored in cache
 
 	    // check that the header is valid, try to correct
@@ -107,16 +106,23 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    	}
 	    }
 
-	    // set new cache
-	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<T>(actual_header, size_of_cache, n_components*n_entities);
+	    MeshDataHeader tmp_header;
+	    tmp_header.time = -std::numeric_limits<double>::infinity();
+	    tmp_header.field_name = actual_header.field_name;
+    	element_data_values_[field_name]
+					= std::make_shared< ElementDataCache<T> >(tmp_header, size_of_cache, n_components*n_entities);
+        it=element_data_values_.find(field_name);
+    }
+    ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
 
-	    this->read_element_data(*current_cache_, actual_header, size_of_cache, n_components, el_ids);
+    if ( !current_cache.is_actual(actual_header.time, field_name) ) {
+    	current_cache.time_ = actual_header.time;
+    	this->read_element_data(current_cache, actual_header, n_components, el_ids);
 	    actual = true; // use input header to indicate modification of @p data buffer
 	}
 
     if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
-	return static_cast< ElementDataCache<T> *>(current_cache_)->get_component_data(component_idx);
+	return current_cache.get_component_data(component_idx);
 }
 
 
