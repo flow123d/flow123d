@@ -44,9 +44,6 @@ std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const Input::Re
 			THROW(ExcWrongExtension() << EI_FileExtension(file_path.extension()) << EI_MeshFile((string)file_path) );
 		}
     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, mesh_rec)
-	catch (ExceptionBase const &e) {
-		throw;
-	}
 	return reader_ptr;
 
 }

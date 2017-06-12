@@ -762,8 +762,10 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	if (region_idx.is_boundary()) {
 		ele = bc_elements.add_item(elm_id);
 	} else {
-		if(dim == 0 )
+		if(dim == 0 ) {
 			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+			return;
+		}
 		else
 			ele = element.add_item(elm_id);
 	}
