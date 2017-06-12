@@ -14,7 +14,7 @@ class Parameters :
     k2 = 1.0
 
     # wells
-    sigma_w = 100.0
+    sigma_w = 10.0
     P_w = 100.0
     #P_w = 40.0
     rho_w = 0.03    
@@ -24,17 +24,18 @@ class Parameters :
     # Dirichlet BC
     #P2_d = 0.0
     P2_d = 40.0
-    R = 10
+    R = 10.0
     #P1 = 100.0
 
     # auxiliary variables to be filled
-    a = 0
-    b = 0
+    a = 0.0
+    b = 0.0
     
     
     # all precalculations
     def precalculations(self):
-        self.a = (self.P_w - self.P2_d)/(math.log(self.rho_w/self.R))
+        #self.a = (self.P_w - self.P2_d)/(math.log(self.rho_w/self.R))
+        self.a = (self.P2_d - self.P_w)/(1.0/self.sigma_w/self.rho_w - math.log(self.rho_w/self.R))
         self.b = self.P2_d - self.a *math.log(self.R)
 
     # distance from well w
@@ -56,7 +57,7 @@ class Parameters :
     def vx2_fce_value(self, x, y):
         tr = self.r(x,y)  
         if tr < self.rho_w:
-            return 0
+            return 0.0
         else:
             return - self.k2 * self.a * (x-self.x_w) / (tr*tr)
     
@@ -64,7 +65,7 @@ class Parameters :
     def vy2_fce_value(self, x, y):
         tr = self.r(x,y)  
         if tr < self.rho_w:
-            return 0
+            return 0.0
         else:
             return - self.k2 * self.a * (y-self.y_w) / (tr*tr)
        
@@ -84,7 +85,7 @@ params.precalculations()
 def velocity_2d(xx , yy, zz):
     vx2 = Parameters.vx2_fce_value(params,xx,yy)
     vy2 = Parameters.vy2_fce_value(params,xx,yy)
-    return (vx2, vy2, 0)
+    return (vx2, vy2, 0.0)
   
 def all_values_1d( xx , yy, zz):
     p1 = 0.0

@@ -40,7 +40,7 @@ row_4_edge(nullptr),
 edge_ds(nullptr),
 el_ds(nullptr),
 side_ds(nullptr),
-// row_4_sing(nullptr),
+row_4_sing(nullptr),
 row_4_vel_sing(nullptr),
 row_4_press_sing(nullptr),
 enrich_velocity(false),
@@ -61,7 +61,7 @@ MH_DofHandler::~MH_DofHandler()
     delete [] side_row_4_id;
     delete [] edge_4_loc;
     delete []  row_4_edge;
-//     delete [] row_4_sing;
+    delete [] row_4_sing;
     if(row_4_vel_sing) delete []  row_4_vel_sing;
     if(row_4_press_sing) delete []  row_4_press_sing;
 }
@@ -417,11 +417,11 @@ void MH_DofHandler::update_standard_dofs()
         row_4_edge[i] = dof;
     }
     
-//     dof = offset_enr_lagrange;
-//     row_4_sing = new int[singularities_12d_.size()];
-//     for(unsigned int i=0; i < singularities_12d_.size(); i++, dof++){
-//         row_4_sing[i] = dof;
-//     }
+    dof = offset_enr_lagrange;
+    row_4_sing = new int[singularities_12d_.size()];
+    for(unsigned int i=0; i < singularities_12d_.size(); i++, dof++){
+        row_4_sing[i] = dof;
+    }
 
 //     print_array(row_4_el, mesh_->n_elements(), "row_4_el(pressure)");
 //     print_array(row_4_edge, mesh_->n_edges(), "row_4_edge(lagrange pressure)");
@@ -553,7 +553,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
 //     Space<3>::Point center ({-0.1, 0, 0}); //circle
 //     Space<3>::Point center ({0.3, 0.3, 0}); //circle
     double radius = 0.03,//0.001643168,
-           sigma_const = 1,
+           sigma_const = 10.0,
            pressure = 100;//165.62;//100 + 28.5 * std::log(10);
     Space<3>::Point direction_vector ({0,0,1});
     Space<3>::Point n;
@@ -678,8 +678,8 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
         }
     }
     offset_edges = temp_offset;
-//     offset_enr_lagrange = offset_edges + mesh_->n_edges();
-    offset_enr_lagrange = offset_edges + mesh_->n_edges() - 1;
+    offset_enr_lagrange = offset_edges + mesh_->n_edges();
+//     offset_enr_lagrange = offset_edges + mesh_->n_edges() - 1;
     
 }
 
@@ -750,15 +750,15 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
     //flag the element
     mesh_flags_[ele->index()] = true;
        
-//     bool enrich = true;
-    bool enrich = false;
-    for(unsigned int i=0; i < ele->n_nodes(); i++){
-        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
-//         DBGCOUT(<< d << "\n");
-        if(d < radius){
-            enrich = true;
-        }
-    }
+    bool enrich = true;
+//     bool enrich = false;
+//     for(unsigned int i=0; i < ele->n_nodes(); i++){
+//         double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+// //         DBGCOUT(<< d << "\n");
+//         if(d < radius){
+//             enrich = true;
+//         }
+//     }
     
 //     if(ele->index() == 37) enrich = true;
 //     if(ele->index() == 0) enrich = true;
@@ -817,15 +817,15 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         }
         
 //         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";
-        for(unsigned int n=0; n < ele->n_sides(); n++) {
-            Edge* edge = ele->side(n)->edge();
-            for(int j=0; j < edge->n_sides;j++) {
-                if (edge->side(j)->element() != ele){
-//                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-                    find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
-                }
-            }
-        }
+//         for(unsigned int n=0; n < ele->n_sides(); n++) {
+//             Edge* edge = ele->side(n)->edge();
+//             for(int j=0; j < edge->n_sides;j++) {
+//                 if (edge->side(j)->element() != ele){
+// //                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
+//                     find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
+//                 }
+//             }
+//         }
     }
 }
 
@@ -889,7 +889,7 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
 void MH_DofHandler::distribute_enriched_dofs(int& offset,
                                              Quantity quant)
 {
-    unsigned int w,i;
+    unsigned int w;
     
     for(XFEMElementSingularData& xdata : xfem_data){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());

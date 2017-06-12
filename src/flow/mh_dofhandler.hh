@@ -133,9 +133,9 @@ public:
     
     int total_size();
     
-//     int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
+    int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
     int *row_4_vel_sing;        //< velocity singularity enr index to matrix row
-    int *row_4_press_sing;        //< velocity singularity enr index to matrix row
+    int *row_4_press_sing;        //< pressure singularity enr index to matrix row
     
     unsigned int n_enrichments();
     
@@ -308,9 +308,9 @@ public:
         return ele->xfem_data != nullptr;
     }
     
-//     int sing_row(uint local_enrichment_index){
-//         return dh->row_4_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
-//     }
+    int sing_row(uint local_enrichment_index){
+        return dh->row_4_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+    }
 
 
     int vel_sing_row(uint local_enrichment_index){
@@ -382,6 +382,18 @@ public:
         d += get_dofs_press(dofs+d);
         for(uint i=0; i< n_sides(); i++, d++) dofs[d] = edge_row(i);
         
+        // singularity lagrange multipliers
+        if(is_enriched() && ! ele->xfem_data->is_complement()){
+            XFEMElementSingularData* xd = xfem_data_sing();
+            for(uint w=0; w< xd->n_enrichments(); w++){
+                if(xd->is_singularity_inside(w)){
+                    dofs[d] = dh->row_4_sing[xd->global_enrichment_index(w)];
+                    d++;
+                }
+                    
+            }
+        }
+        
         return d;
     }
     
@@ -399,11 +411,18 @@ public:
         return n;
     }
     
+    unsigned int n_sing_dofs(){
+        unsigned int n = 0;
+        if(is_enriched() && ! ele->xfem_data->is_complement())
+            n += xfem_data_sing()->n_singularities_inside();
+        return n;
+    }
+    
     unsigned int n_dofs()
     {
         // velocity, pressure, edge pressure(lagrange)
         // exclude xfem pressure(lagrange)
-        return n_dofs_vel() + n_dofs_press() + n_sides(); // + xfem_data()->n_enrichments();
+        return n_dofs_vel() + n_dofs_press() + n_sides() + n_sing_dofs(); // + xfem_data()->n_enrichments();
     }
     
 private:

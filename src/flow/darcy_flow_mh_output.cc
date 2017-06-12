@@ -628,7 +628,7 @@ template <int dim>
 void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac, 
                    FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
                    ExactSolution &anal_sol,  DiffData &result) {
-    DBGCOUT(<< "local diff\n");
+//     DBGCOUT(<< "local diff\n");
     
     ElementFullIter ele = ele_ac.full_iter();
     fv_rt.reinit(ele);
@@ -706,7 +706,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     }
 
 
-    DBGVAR(velocity_diff);
+//     DBGVAR(velocity_diff);
     result.velocity_diff[ele.index()] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
@@ -823,7 +823,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     if(result.darcy->use_xfem){
         for (unsigned int i_loc = 0; i_loc < result.dh->el_ds->lsize(); i_loc++) {
-            DBGVAR(i_loc);
+//             DBGVAR(i_loc);
             auto ele_ac = const_cast<MH_DofHandler*>(result.dh)->accessor(i_loc);
             ElementFullIter ele = ele_ac.full_iter();
             unsigned int dim = ele_ac.dim();

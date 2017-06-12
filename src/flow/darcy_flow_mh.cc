@@ -1135,7 +1135,7 @@ void DarcyMH::assembly_linear_system() {
 //         delete multidim_assembler;
 
 	    schur0->finish_assembly();
-//         print_matlab_matrix("matrix");
+        print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
