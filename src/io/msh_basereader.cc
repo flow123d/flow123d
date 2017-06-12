@@ -82,6 +82,11 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
     MeshDataHeader actual_header = this->find_header(time, field_name);
     ElementDataFieldMap::iterator it=element_data_values_.find(field_name);
     if (it == element_data_values_.end()) {
+    	element_data_values_[field_name] = std::make_shared< ElementDataCache<T> >();
+        it=element_data_values_.find(field_name);
+    }
+
+    if ( !it->second->is_actual(actual_header.time, field_name) ) {
     	unsigned int size_of_cache; // count of vectors stored in cache
 
 	    // check that the header is valid, try to correct
@@ -106,22 +111,14 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    	}
 	    }
 
-	    MeshDataHeader tmp_header;
-	    tmp_header.time = -std::numeric_limits<double>::infinity();
-	    tmp_header.field_name = actual_header.field_name;
     	element_data_values_[field_name]
-					= std::make_shared< ElementDataCache<T> >(tmp_header, size_of_cache, n_components*n_entities);
-        it=element_data_values_.find(field_name);
-    }
-    ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
-
-    if ( !current_cache.is_actual(actual_header.time, field_name) ) {
-    	current_cache.time_ = actual_header.time;
-    	this->read_element_data(current_cache, actual_header, n_components, el_ids);
+					= std::make_shared< ElementDataCache<T> >(actual_header, size_of_cache, n_components*n_entities);
+    	this->read_element_data(*(it->second), actual_header, n_components, el_ids);
 	    actual = true; // use input header to indicate modification of @p data buffer
 	}
 
     if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
+    ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
 	return current_cache.get_component_data(component_idx);
 }
 
