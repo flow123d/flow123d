@@ -755,7 +755,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             DBGVAR(loc_enr_vel_dof);
             // robin like condition with sigma
             // well lagrange multiplier test function is 1
-            double sing_flow = -arma::norm(sing->vector(xd->sing_quadrature(w).real_point(0)),2) * sing->circumference();
+            double sing_flow = arma::norm(sing->vector(xd->sing_quadrature(w).real_point(0)),2) * sing->circumference();
             DBGVAR(sing_flow);
             loc_system_.add_value(loc_enr_vel_dof, loc_sing_dof, sing_flow, 0);
             loc_system_.add_value(loc_sing_dof, loc_enr_vel_dof, sing_flow, 0);

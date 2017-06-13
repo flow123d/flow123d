@@ -261,7 +261,8 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
 template<unsigned int spacedim>
 typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::vector(const Point &x) const
 {
-    return this->grad(x);
+    static const double t = -0.5/M_PI;
+    return t * this->grad(x);
 }
 
 template<unsigned int spacedim>
