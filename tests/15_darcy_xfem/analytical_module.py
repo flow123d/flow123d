@@ -18,8 +18,8 @@ class Parameters :
     P_w = 100.0
     #P_w = 40.0
     rho_w = 0.03    
-    x_w = 3.3
-    y_w = 3.3
+    x_w = 3.33
+    y_w = 3.33
     
     # Dirichlet BC
     #P2_d = 0.0

@@ -180,17 +180,6 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
         enr_dof_val.resize(enr.size());
         // for SGFEM we need to compute fluxes of glob. enr. function over faces
         ASSERT(dim == 2);
-        //TODO :
-        //  - create quadrature factory for uniform quad in 1d,2d,3d
-        //  - create quadrature<dim> from quadrature<dim-1> (see mapping.transform_subquadrature() )
-//         QGauss<1> qside(1);
-//         const uint qsize=100;
-//         qside.resize(qsize);
-//         double qweight = 1.0/qsize;
-//         for(unsigned int q=0; q<qsize; q++){
-//             qside.set_point(q, arma::vec({0.5*qweight + q*qweight}));
-//             qside.set_weight(q,qweight);
-//         }
         const uint qsize=100;
         QMidpoint qside(qsize);
         MappingP1<2,3> map;

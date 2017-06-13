@@ -71,7 +71,7 @@ public:
         ASSERT_DBG(ele_ac.dim() == dim);
         
 //         unsigned int ndofs = ele_ac.n_dofs();
-        DBGVAR(ele_ac.element_accessor().idx());
+//         DBGVAR(ele_ac.element_accessor().idx());
         setup_local(ele_ac);
         
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
@@ -359,10 +359,10 @@ protected:
             loc_system_.add_value(edge_row, side_row, 1.0);
             
             
-            if(ad_->mh_dh->single_enr)
-            if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
-                assemble_enriched_side_edge(ele_ac, i);
-            }
+//             if(ad_->mh_dh->single_enr)
+//             if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//                 assemble_enriched_side_edge(ele_ac, i);
+//             }
         }
     }
     

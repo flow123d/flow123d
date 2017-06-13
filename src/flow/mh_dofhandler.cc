@@ -549,7 +549,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     
                 
     //create singularity
-    Space<3>::Point center ({3.3, 3.3, 0}); //triangle
+    Space<3>::Point center ({3.33, 3.33, 0}); //triangle
 //     Space<3>::Point center ({-0.1, 0, 0}); //circle
 //     Space<3>::Point center ({0.3, 0.3, 0}); //circle
     double radius = 0.03,//0.001643168,
@@ -750,15 +750,24 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
     //flag the element
     mesh_flags_[ele->index()] = true;
        
-    bool enrich = true;
-//     bool enrich = false;
-//     for(unsigned int i=0; i < ele->n_nodes(); i++){
-//         double d = arma::norm(sing->center() - ele->node[i]->point(),2);
-// //         DBGCOUT(<< d << "\n");
-//         if(d < radius){
-//             enrich = true;
-//         }
-//     }
+//     bool enrich = true;
+    bool enrich = false;
+    for(unsigned int i=0; i < ele->n_nodes(); i++){
+        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+//         DBGCOUT(<< d << "\n");
+        if(d < radius){
+            enrich = true;
+        }
+        else
+        {
+            MappingP1<2,3> map;
+            arma::vec up = map.project_real_to_unit(sing->center(),map.element_map(*ele));
+            if(up(0) >= 0.0 && up(0) <= 1.0 &&
+               up(1) >= 0.0 && up(1) <= 1.0 &&
+               up(2) >= 0.0 && up(2) <= 1.0)
+                enrich = true;
+        }
+    }
     
 //     if(ele->index() == 37) enrich = true;
 //     if(ele->index() == 0) enrich = true;
@@ -817,15 +826,15 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         }
         
 //         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";
-//         for(unsigned int n=0; n < ele->n_sides(); n++) {
-//             Edge* edge = ele->side(n)->edge();
-//             for(int j=0; j < edge->n_sides;j++) {
-//                 if (edge->side(j)->element() != ele){
-// //                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-//                     find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
-//                 }
-//             }
-//         }
+        for(unsigned int n=0; n < ele->n_sides(); n++) {
+            Edge* edge = ele->side(n)->edge();
+            for(int j=0; j < edge->n_sides;j++) {
+                if (edge->side(j)->element() != ele){
+//                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
+                    find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
+                }
+            }
+        }
     }
 }
 
