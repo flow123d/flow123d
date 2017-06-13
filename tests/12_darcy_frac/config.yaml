@@ -6,10 +6,8 @@ test_cases:
 - files:
     - 10_exact_2d_cc.yaml
     - 11_exact_2d_nc_p0.yaml
-    - 12_exact_3d_nc_p0.yaml
     #- 15_exact_2d_nc_p1.yaml
-    #- 16_exact_3d_nc_p1.yaml    
-    #- 20_cube_23d_p0_simple.yaml
+    #- 16_exact_3d_nc_p1.yaml        
     - 30_surf_cube_cc.yaml
   proc: [1]
 
@@ -21,6 +19,10 @@ test_cases:
 
 # do not run these
 - files:
+    - 12_exact_3d_nc_p0.yaml
+    - 15_exact_2d_nc_p1.yaml
     - 20_cube_noncomp_p0.yaml
+    - 20_cube_23d_p0_simple.yaml
     - 21_cube_noncomp_p1.yaml   
+    #- 31_surf_cube_23d_p0.yaml    
   proc: []  
