@@ -706,7 +706,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     }
 
 
-//     DBGVAR(velocity_diff);
+    DBGVAR(velocity_diff);
     result.velocity_diff[ele.index()] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
@@ -888,8 +888,14 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
     	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
     	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
-    	<< "masked velocity error 2d: " << sqrt(result.mask_vel_error) <<endl
+    	<< "masked vel error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
+        
+    if(darcy_flow->use_xfem){
+        os << endl
+        << "enr vel dof: " << result.dh->mh_solution[mesh_->n_sides_] << endl
+        << "sing LP: " << result.dh->mh_solution[result.dh->row_4_sing[0]];
+    }
 }
 

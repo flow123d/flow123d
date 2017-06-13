@@ -28,6 +28,7 @@
 #include "fem/singularity.hh"
 #include "fem/fe_p0_xfem.hh"
 #include "fem/fe_rt_xfem.hh"
+#include "fem/fe_rt_xfem_single.hh"
 
 #include "quadrature/quadrature_lib.hh"
 #include "quadrature/qxfem.hh"
@@ -55,8 +56,9 @@ public:
         Value flux; flux.zeros();
         
         if(enr_ && elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
-            if(mh_dh_->single_enr) flux = value_vector_xfem_single(ele_ac, p); 
-            else flux =  value_vector_xfem(ele_ac);
+//             if(mh_dh_->single_enr) flux = value_vector_xfem_single(ele_ac, p); 
+//             else flux =  value_vector_xfem(ele_ac);
+            flux =  value_vector_xfem(ele_ac);
         }
         else if(reg_){
             flux = value_vector_regular(ele_ac.full_iter());
@@ -203,7 +205,9 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
     ElementFullIter ele = ele_ac.full_iter();
     
     XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
-    fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
+    if(mh_dh_->single_enr) fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM_S<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
+    else fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
+//     fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
     
     fv_rt_xfem_ = std::make_shared<FEValues<2,3>>(map_,quad_, *fe_rt_xfem_, update_values);
     fv_rt_xfem_->reinit(ele);
@@ -226,22 +230,22 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
     return flux;
 }
 
-template<> inline
-auto FieldVelocityInternal<2>::value_vector_xfem_single(LocalElementAccessorBase<3> ele_ac, const Point &p) -> Value
-{
-    Value flux, temp;
-    flux.zeros();
-    ElementFullIter ele = ele_ac.full_iter();
-    
-    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
-    
-    if(reg_) flux += value_vector_regular(ele);
-    
-    for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
-        auto sing = xdata->enrichment_func(w);
-        flux += mh_dh_->mh_solution[ele_ac.vel_sing_row(w)] * sing->vector(p);
-    }
-//     DBGVAR(flux);
-    return flux;
-}
+// template<> inline
+// auto FieldVelocityInternal<2>::value_vector_xfem_single(LocalElementAccessorBase<3> ele_ac, const Point &p) -> Value
+// {
+//     Value flux, temp;
+//     flux.zeros();
+//     ElementFullIter ele = ele_ac.full_iter();
+//     
+//     XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+//     
+//     if(reg_) flux += value_vector_regular(ele);
+//     
+//     for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
+//         auto sing = xdata->enrichment_func(w);
+//         flux += mh_dh_->mh_solution[ele_ac.vel_sing_row(w)] * sing->vector(p);
+//     }
+// //     DBGVAR(flux);
+//     return flux;
+// }
 #endif /* FIELD_VELOCITY_HH_ */
