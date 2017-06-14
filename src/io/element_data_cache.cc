@@ -178,9 +178,28 @@ void ElementDataCache<T>::print_all_yaml(ostream &out_stream, unsigned int preci
 	std::vector<T> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values; idx++) {
         if (idx != 0) out_stream << ", ";
-        //typename Value::return_type value;
-        //out_stream << field_value_to_yaml( Value::from_raw(value, &vec[n_elem_ * idx]), precision );
-        out_stream << field_value_to_yaml( vec[n_elem_ * idx], precision );
+        unsigned int vec_pos = n_elem_ * idx; // position of element value in data cache
+        switch (this->n_elem_) {
+            case NumCompValueType::N_SCALAR: {
+                out_stream << field_value_to_yaml( vec[vec_pos], precision );
+                break;
+            }
+            case NumCompValueType::N_VECTOR: {
+                typename arma::Col<T>::template fixed<3> vec_val;
+                for (unsigned int i=0; i<3; ++i, ++vec_pos)
+                    vec_val(i) = vec[vec_pos];
+                out_stream << field_value_to_yaml( vec_val, precision );
+                break;
+            }
+            case NumCompValueType::N_TENSOR: {
+                typename arma::Mat<T>::template fixed<3,3> mat_val;
+                for (unsigned int i=0; i<3; ++i)
+                    for (unsigned int j=0; j<3; ++j, ++vec_pos)
+                    	mat_val(i,j) = vec[vec_pos];
+                out_stream << field_value_to_yaml( mat_val, precision );
+                break;
+            }
+        }
     }
     out_stream << " ]";
 }
