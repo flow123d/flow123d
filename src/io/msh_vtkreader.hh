@@ -64,10 +64,10 @@ public:
 	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
 
 	/**
-     * Construct the VTK format reader from given Input Record.
+     * Construct the VTK format reader from given FilePath.
      * This opens the file for reading.
      */
-	VtkMeshReader(const Input::Record &mesh_rec);
+	VtkMeshReader(const FilePath &file_name);
 
 	/// Destructor
 	~VtkMeshReader();
@@ -94,7 +94,7 @@ protected:
     /**
      * private method for reading of nodes
      */
-    void read_nodes(Mesh*);
+    void read_nodes(Mesh * mesh);
 
     /**
      * Method for reading of elements.

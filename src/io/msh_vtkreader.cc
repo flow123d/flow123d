@@ -60,8 +60,8 @@ uint64_t read_header_type(DataType data_header_type, std::istream &data_stream)
 const double VtkMeshReader::point_tolerance = 1E-10;
 
 
-VtkMeshReader::VtkMeshReader(const Input::Record &mesh_rec)
-: BaseMeshReader(mesh_rec)
+VtkMeshReader::VtkMeshReader(const FilePath &file_name)
+: BaseMeshReader(file_name)
 {
     data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
@@ -519,7 +519,7 @@ void VtkMeshReader::read_physical_names(Mesh * mesh) {
 }
 
 
-void VtkMeshReader::read_nodes(Mesh* mesh) {
+void VtkMeshReader::read_nodes(Mesh * mesh) {
 	ASSERT(false).error("Reading of VTK mesh is not supported yet!");
 	// will be implemented later
 }

@@ -55,16 +55,10 @@ public:
 	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
 
     /**
-     * Construct the GMSH format reader from given Input Record.
+     * Construct the GMSH format reader from given FilePath.
      * This opens the file for reading.
      */
-    GmshMeshReader(const Input::Record &mesh_rec);
-    /**
-     * Construct the GMSH format reader from given input stream.
-     * The input stream should be correctly opened. To get correct information about
-     * line numbers there should be no previous reading from the stream.
-     */
-    GmshMeshReader(std::istream &in);
+    GmshMeshReader(const FilePath &file_name);
 
     /**
      * Destructor close the file if opened.
@@ -90,7 +84,7 @@ protected:
     /**
      * private method for reading of nodes
      */
-    void read_nodes(Mesh*);
+    void read_nodes(Mesh * mesh);
     /**
      *  Method for reading of elements.
      *  Input of the mesh allows changing regions within the input CON file.

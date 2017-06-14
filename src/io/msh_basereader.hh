@@ -104,30 +104,28 @@ public:
 			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
 
 	/// Constructor
-	BaseMeshReader(const Input::Record &mesh_rec);
+	BaseMeshReader(const FilePath &file_name);
 
-	/// Constructor
-	BaseMeshReader(std::istream &in);
+    /**
+     * This static method gets file path object of reader,
+     * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Returns shared pointer to BaseMeshReader.
+     */
+    static std::shared_ptr< BaseMeshReader > reader_factory(const FilePath &file_name);
 
     /**
      * This static method gets accessor to record with function input,
      * dispatch to correct constructor and initialize appropriate function object from the input.
-     * Returns shared pointer to BaseMeshReader.
+     * Returns pointer to Mesh.
      */
-    static std::shared_ptr< BaseMeshReader > reader_factory(const Input::Record &mesh_rec);
-
-    /**
-     * Reads @p mesh from the GMSH or VTK file.
-     * Input of the mesh allows changing regions within the input file.
-     */
-    Mesh * read_mesh();
+    static Mesh * mesh_factory(const Input::Record &input_mesh_rec);
 
     /**
      * Reads @p raw data of mesh (only nodes and elements) from the GMSH or VTKfile.
      * Input of the mesh allows changing regions within the input file.
      *
      */
-    void read_raw_mesh(Mesh* mesh);
+    void read_raw_mesh(Mesh * mesh);
 
     /**
      * Read regions from the mesh file and save the physical sections as regions in the RegionDB.
@@ -172,7 +170,7 @@ protected:
     /**
      * private method for reading of nodes
      */
-    virtual void read_nodes(Mesh*)=0;
+    virtual void read_nodes(Mesh * mesh)=0;
 
     /**
      * Method for reading of elements.

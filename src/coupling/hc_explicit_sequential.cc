@@ -126,8 +126,7 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     {
         START_TIMER("HC read mesh");
 
-   		auto mesh_reader = BaseMeshReader::reader_factory( in_record.val<Record>("mesh") );
-   		mesh = mesh_reader->read_mesh();
+   		mesh = BaseMeshReader::mesh_factory( in_record.val<Record>("mesh") );
         
         //getting description for the Profiler
         string description;

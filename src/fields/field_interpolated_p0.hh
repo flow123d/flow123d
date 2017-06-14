@@ -76,9 +76,6 @@ protected:
 	/// mesh reader file
 	FilePath reader_file_;
 
-    /// Accessor to Input::Record
-    Input::Record in_rec_;
-
     /// Raw buffer of n_entities rows each containing Value::size() doubles.
 	std::shared_ptr< std::vector<typename Value::element_type> > data_;
 

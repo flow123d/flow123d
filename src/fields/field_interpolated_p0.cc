@@ -66,14 +66,13 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
-	this->in_rec_ = rec;
 
 
 	// read mesh, create tree
     {
        source_mesh_ = new Mesh( Input::Record() );
        reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-       auto reader = ReaderInstances::instance()->get_reader(rec);
+       auto reader = ReaderInstances::instance()->get_reader(reader_file_ );
        reader->read_raw_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
@@ -104,7 +103,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
 
     bool actual_header_data = false;
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(in_rec_)->template get_element_data<typename Value::element_type>(
+    data_ = ReaderInstances::instance()->get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), actual_header_data,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     this->scale_data();

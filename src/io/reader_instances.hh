@@ -36,7 +36,7 @@ public:
 	/**
 	 * Returns mesh reader of get filepath. If reader doesn't exist, creates its.
 	 */
-	std::shared_ptr<BaseMeshReader> get_reader(const Input::Record &mesh_rec);
+	std::shared_ptr<BaseMeshReader> get_reader(const FilePath &file_name);
 
 private:
 	/// Constructor

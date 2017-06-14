@@ -34,19 +34,8 @@
 using namespace std;
 
 
-GmshMeshReader::GmshMeshReader(const Input::Record &mesh_rec)
-: BaseMeshReader(mesh_rec)
-{
-    tok_.set_comment_pattern( "#");
-    data_section_name_ = "$ElementData";
-    has_compatible_mesh_ = true;
-    make_header_table();
-}
-
-
-
-GmshMeshReader::GmshMeshReader(std::istream &in)
-: BaseMeshReader(in)
+GmshMeshReader::GmshMeshReader(const FilePath &file_name)
+: BaseMeshReader(file_name)
 {
     tok_.set_comment_pattern( "#");
     data_section_name_ = "$ElementData";
@@ -61,7 +50,7 @@ GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
 
 
 
-void GmshMeshReader::read_nodes(Mesh* mesh) {
+void GmshMeshReader::read_nodes(Mesh * mesh) {
     using namespace boost;
     unsigned int n_nodes;
     MessageOut() << "- Reading nodes...";
@@ -174,7 +163,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
 
 
 void GmshMeshReader::read_physical_names(Mesh * mesh) {
-	ASSERT_PTR(mesh).error("Argument mesh is NULL.\n");
+	ASSERT(mesh).error("Argument mesh is NULL.\n");
 
     using namespace boost;
 
