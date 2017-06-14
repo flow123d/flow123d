@@ -112,8 +112,8 @@ class BIH_test : public testing::Test {
 public:
 	void create_tree(const std::string &input_str) {
 		START_TIMER("create mesh");
-		auto reader = reader_constructor(input_str);
-		mesh = new Mesh();
+		mesh = mesh_constructor(input_str);
+	    auto reader = reader_constructor(input_str);
 		reader->read_physical_names(mesh);
 		reader->read_raw_mesh(mesh);
 		END_TIMER("create mesh");
@@ -223,10 +223,10 @@ public:
 	}
 
 	~BIH_test() {
-		if (mesh !=nullptr) delete mesh;
 		if (bt !=nullptr) delete bt;
-		mesh = nullptr;
+		if (mesh !=nullptr) delete mesh;
 		bt = nullptr;
+		mesh = nullptr;
 
 		Profiler::uninitialize();
 	}
@@ -281,8 +281,9 @@ TEST(BIH_Tree_Test, 2d_mesh) {
     Profiler::initialize();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    auto reader = reader_constructor("{mesh_file=\"mesh/noncompatible_small.msh\"}");
-    Mesh * mesh = new Mesh();
+	std::string mesh_in_string = "{mesh_file=\"mesh/noncompatible_small.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
 	reader->read_physical_names(mesh);
 	reader->read_raw_mesh(mesh);
 
@@ -296,6 +297,5 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 	}
 
 	delete mesh;
-
 }
 

@@ -43,8 +43,7 @@ public:
         Profiler::initialize();
         PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
         
-        auto mesh_reader = reader_constructor("{mesh_file=\"fields/one_element_2d.msh\"}");
-        mesh = mesh_reader->read_mesh();
+        mesh = mesh_full_constructor("{mesh_file=\"fields/one_element_2d.msh\"}");
         dh = new DOFHandlerMultiDim(*mesh);
         VecCreateSeqWithArray(PETSC_COMM_SELF, 1, 3, dof_values, &v);
     }
@@ -53,7 +52,7 @@ public:
     	delete mesh;
     }
 
-    Mesh *mesh;
+    Mesh * mesh;
     DOFHandlerMultiDim *dh;
     double dof_values[3];
     Vec v;

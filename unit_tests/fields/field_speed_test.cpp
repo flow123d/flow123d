@@ -117,8 +117,7 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-        mesh_ = mesh_reader->read_mesh();
+        mesh_ = mesh_reader->read_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
         set_values();
 	}

@@ -239,17 +239,17 @@ TEST(Region, read_regions_from_yaml) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    stringstream in(gmsh_mesh.c_str());
-    GmshMeshReader reader(in);
-    Mesh * mesh = mesh_constructor();
+	std::string mesh_in_string = "{mesh_file=\"mesh/mesh_read_regions.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
 
 	Input::Type::Array element_map_array_input_type( RegionSetBase::get_input_type() );
 	Input::ReaderToStorage json_reader( read_regions_yaml, element_map_array_input_type, Input::FileFormat::format_YAML);
 	Input::Array i_arr = json_reader.get_root_interface<Input::Array>();
 
-    reader.read_physical_names(mesh);
+    reader->read_physical_names(mesh);
     mesh->read_regions_from_input(i_arr);
-    reader.read_raw_mesh(mesh);
+    reader->read_raw_mesh(mesh);
     mesh->check_and_finish();
 
 	const RegionDB & region_db = mesh->region_db();
@@ -298,6 +298,8 @@ TEST(Region, read_regions_from_yaml) {
 	EXPECT_EQ( 40, mesh->element[6].region().id() );
 	EXPECT_EQ(  1, mesh->element[7].region().id() );
 	EXPECT_EQ("label_1", mesh->element[4].region().label() );
+
+	delete mesh;
 }
 
 
@@ -328,8 +330,9 @@ TEST(Region, read_regions_error_messages) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    auto reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    Mesh * mesh = new Mesh();
+	std::string mesh_in_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
     reader->read_physical_names(mesh);
 
 	{
@@ -351,6 +354,8 @@ TEST(Region, read_regions_error_messages) {
 		EXPECT_THROW_WHAT( { mesh->read_regions_from_input(i_arr); }, RegionSetBase::ExcEmptyRegionSetResult,
 				"Empty result of Intersection operation.");
 	}
+
+	delete mesh;
 }
 
 

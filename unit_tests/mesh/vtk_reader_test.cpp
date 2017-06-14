@@ -31,11 +31,11 @@ public:
 	    in_rec.finish();
 	    reader.read_stream(is, in_rec, format);
 
-		return std::make_shared<VtkMeshReaderTest>(reader.get_root_interface<Input::Record>());
+		return std::make_shared<VtkMeshReaderTest>(reader.get_root_interface<Input::Record>().val<FilePath>("mesh_file"));
 	}
 
-	VtkMeshReaderTest(const Input::Record &mesh_rec)
-	: VtkMeshReader(mesh_rec) {
+	VtkMeshReaderTest(const FilePath &file_name)
+	: VtkMeshReader(file_name) {
 	}
 
 	DataFormat get_data_format() {
@@ -117,9 +117,10 @@ TEST(PugiXml, read_simple_xml) {
 // test of reading of VTU file
 TEST(VtkReaderTest, read_ascii_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    auto reader = VtkMeshReaderTest::test_factory("{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}");
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}";
+    auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
 
-    Mesh *mesh = mesh_constructor();
+    Mesh * mesh = mesh_constructor(mesh_in_string);
 
     {
     	// test of Points data section
@@ -135,14 +136,17 @@ TEST(VtkReaderTest, read_ascii_vtu) {
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
     }
+
+    delete mesh;
 }
 
 
 TEST(VtkReaderTest, read_binary_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    auto reader = VtkMeshReaderTest::test_factory("{mesh_file=\"output/test_output_vtk_binary_ref.vtu\"}");
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_binary_ref.vtu\"}";
+    auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
 
-    Mesh *mesh = mesh_constructor();
+    Mesh * mesh = mesh_constructor(mesh_in_string);
 
     {
     	// test of Points data section
@@ -160,10 +164,15 @@ TEST(VtkReaderTest, read_binary_vtu) {
     }
 
     {
-    	auto gmsh_reader = reader_constructor("{mesh_file=\"fields/simplest_cube_3d.msh\"}");
-        Mesh *mesh = gmsh_reader->read_mesh();
-        reader->check_compatible_mesh(*mesh);
-        delete mesh;
+    	std::string mesh_in_string = "{mesh_file=\"fields/simplest_cube_3d.msh\"}";
+    	auto gmsh_reader = reader_constructor( mesh_in_string );
+    	Mesh * source_mesh = mesh_constructor( mesh_in_string );
+    	gmsh_reader->read_physical_names(source_mesh);
+    	gmsh_reader->read_raw_mesh(source_mesh);
+    	source_mesh->setup_topology();
+    	source_mesh->check_and_finish();
+        reader->check_compatible_mesh(*source_mesh);
+        delete source_mesh;
     }
 
     std::vector<int> el_ids;
@@ -196,14 +205,16 @@ TEST(VtkReaderTest, read_binary_vtu) {
     	}
     }
 
+    delete mesh;
 }
 
 
 TEST(VtkReaderTest, read_compressed_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    auto reader = VtkMeshReaderTest::test_factory("{mesh_file=\"output/test_output_vtk_zlib_ref.vtu\"}");
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_zlib_ref.vtu\"}";
+    auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
 
-    Mesh *mesh = mesh_constructor();
+    Mesh * mesh = mesh_constructor(mesh_in_string);
 
     {
     	// test of Points data section
@@ -219,4 +230,6 @@ TEST(VtkReaderTest, read_compressed_vtu) {
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
     }
+
+    delete mesh;
 }

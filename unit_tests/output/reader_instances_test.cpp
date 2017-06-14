@@ -40,9 +40,10 @@ TEST(ReaderInstances, get_element_data) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor();
     Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
-    auto reader = ReaderInstances::instance()->get_reader( i_rec );
+    FilePath file_name = i_rec.val<FilePath>("mesh_file");
+    Mesh * mesh = new Mesh(i_rec);
+    auto reader = ReaderInstances::instance()->get_reader(file_name);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
 
@@ -54,7 +55,7 @@ TEST(ReaderInstances, get_element_data) {
     bool actual_data = false;
     for (i=0; i<3; ++i) {
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
-        		ReaderInstances::instance()->get_reader(i_rec)->get_element_data<int>("vector_fixed", 0.0, 13, 1,
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 13, 1,
         		actual_data, el_ids, i);
     	std::vector<int> &vec = *( multifield_data.get() );
     	EXPECT_EQ(13, vec.size());
@@ -67,7 +68,7 @@ TEST(ReaderInstances, get_element_data) {
     actual_data=false;
     {
     	typename ElementDataCache<int>::ComponentDataPtr field_data =
-        		ReaderInstances::instance()->get_reader(i_rec)->get_element_data<int>("vector_fixed", 1.0, 13, 3,
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 13, 3,
                 actual_data, el_ids, 0);
     	std::vector<int> &vec = *( field_data.get() );
     	EXPECT_EQ(39, vec.size());
@@ -85,6 +86,7 @@ TEST(ReaderInstances, find_header) {
     // has to introduce some flag for passing absolute path to 'test_units' in source tree
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+    FilePath file_name = i_rec.val<FilePath>("mesh_file");
 
     unsigned int n_elements=13;
     unsigned int n_comp=3;
@@ -94,7 +96,7 @@ TEST(ReaderInstances, find_header) {
     	element_id_map[i]=i+1;
 
     bool actual_data = false;
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 0.0, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.0, n_elements, n_comp,
             actual_data, element_id_map, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
@@ -102,7 +104,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(3.0, (*data)[3*8+2]);
     EXPECT_EQ(4.0, (*data)[3*9]);
 
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 0.1, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.1, n_elements, n_comp,
         actual_data, element_id_map, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
@@ -110,7 +112,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(3.0, (*data)[3*8+2]);
     EXPECT_EQ(4.0, (*data)[3*9]);
 
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 0.9, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.9, n_elements, n_comp,
             actual_data, element_id_map, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
@@ -118,7 +120,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(3.0, (*data)[3*8+2]);
     EXPECT_EQ(4.0, (*data)[3*9]);
 
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 1.0, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.0, n_elements, n_comp,
             actual_data, element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
@@ -126,7 +128,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(4.0, (*data)[3*8+2]);
     EXPECT_EQ(5.0, (*data)[3*9]);
 
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 1.1, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.1, n_elements, n_comp,
             actual_data, element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
@@ -134,7 +136,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(4.0, (*data)[3*8+2]);
     EXPECT_EQ(5.0, (*data)[3*9]);
 
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 2.1, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 2.1, n_elements, n_comp,
             actual_data, element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
@@ -142,7 +144,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(4.0, (*data)[3*8+2]);
     EXPECT_EQ(5.0, (*data)[3*9]);
 
-    data = ReaderInstances::instance()->get_reader(i_rec)->get_element_data<double>("vector_fixed", 200, n_elements, n_comp,
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 200, n_elements, n_comp,
             actual_data, element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
@@ -162,16 +164,14 @@ TEST(ReaderInstances, get_reader) {
 	{
 		FilePath mesh1("mesh/test_input.msh", FilePath::input_file);
 		FilePath mesh2("mesh/simplest_cube.msh", FilePath::input_file);
-		Input::Record i_rec1 = get_input_record("{mesh_file=\"mesh/test_input.msh\"}");
-		Input::Record i_rec2 = get_input_record("{mesh_file=\"mesh/simplest_cube.msh\"}");
-		ReaderInstances::instance()->get_reader(i_rec1);
-		ReaderInstances::instance()->get_reader(i_rec2);
+		ReaderInstances::instance()->get_reader(mesh1);
+		ReaderInstances::instance()->get_reader(mesh2);
 	}
 
 	{
-	    Mesh * mesh = mesh_constructor();
-		Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_input.msh\"}");
-		auto mesh_reader = ReaderInstances::instance()->get_reader(i_rec);
+	    Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_input.msh\"}");
+	    Mesh * mesh = new Mesh(i_rec);
+	    auto mesh_reader = ReaderInstances::instance()->get_reader( i_rec.val<FilePath>("mesh_file") );
 		mesh_reader->read_physical_names(mesh);
 		mesh_reader->read_raw_mesh(mesh);
 
@@ -181,9 +181,9 @@ TEST(ReaderInstances, get_reader) {
 	}
 
 	{
-	    Mesh * mesh = mesh_constructor();
-		Input::Record i_rec = get_input_record("{mesh_file=\"mesh/simplest_cube.msh\"}");
-		auto mesh_reader = ReaderInstances::instance()->get_reader(i_rec);
+	    Input::Record i_rec = get_input_record("{mesh_file=\"mesh/simplest_cube.msh\"}");
+	    Mesh * mesh = new Mesh(i_rec);
+	    auto mesh_reader = ReaderInstances::instance()->get_reader( i_rec.val<FilePath>("mesh_file") );
 		mesh_reader->read_physical_names(mesh);
 		mesh_reader->read_raw_mesh(mesh);
 
@@ -199,8 +199,8 @@ TEST(ReaderInstances, repeat_call) {
 
     Input::Record i_rec = get_input_record("{mesh_file=\"mesh/test_108_elem.msh\"}");
     for (unsigned int i=0; i<2; ++i) {
-        auto mesh_reader = ReaderInstances::instance()->get_reader(i_rec);
-        Mesh * mesh = mesh_constructor();
+        auto mesh_reader = ReaderInstances::instance()->get_reader( i_rec.val<FilePath>("mesh_file") );
+        Mesh * mesh = new Mesh(i_rec);
         mesh_reader->read_physical_names(mesh);
         mesh_reader->read_raw_mesh(mesh);
         delete mesh;

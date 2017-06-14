@@ -64,8 +64,7 @@ TEST(MeshTopology, make_neighbours_and_edges) {
 
     Profiler::initialize();
     
-    auto gmsh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    Mesh * mesh = gmsh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->bc_elements.size());
@@ -110,8 +109,7 @@ regions:
 TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    auto gmsh_reader = reader_constructor(mesh_input, Input::FileFormat::format_YAML);
-    Mesh * mesh = gmsh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor(mesh_input, Input::FileFormat::format_YAML);
 
     EXPECT_EQ( 37, mesh->element_accessor(0).region().id() );
     EXPECT_EQ( "1D rename", mesh->element_accessor(0).region().label() );
@@ -133,31 +131,15 @@ TEST(Mesh, init_from_input) {
 }
 
 
-// simplest mesh
-string small_mesh = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-4
-1 -1 1 1
-2 -1 -1 1
-3 1 1 -1
-4 -1 1 -1
-$EndNodes
-$Elements
-1
-1 4 2 39 40 2 3 1 4
-$EndElements
-)CODE";
-
 TEST(Mesh, decompose_problem) {
-    Mesh * mesh = mesh_constructor();
-    stringstream in(small_mesh.c_str());
-    GmshMeshReader gmsh_reader( in );
-    gmsh_reader.read_physical_names(mesh);
-    gmsh_reader.read_raw_mesh(mesh);
-    EXPECT_THROW_WHAT( { mesh->setup_topology();; }, Partitioning::ExcDecomposeMesh,
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	std::string mesh_in_string = "{mesh_file=\"mesh/decompose_problem.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
+    reader->read_physical_names(mesh);
+    reader->read_raw_mesh(mesh);
+    EXPECT_THROW_WHAT( { mesh->setup_topology(); }, Partitioning::ExcDecomposeMesh,
     		"greater then number of elements 1. Can not make partitioning of the mesh");
 
     delete mesh;

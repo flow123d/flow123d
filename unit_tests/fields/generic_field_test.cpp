@@ -16,8 +16,7 @@ TEST(GenericField, all) {
     Profiler::initialize();
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    Mesh * mesh = mesh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     GenericField<3>::IndexField subdomain;
     subdomain.flags(FieldFlag::input_copy);
@@ -34,4 +33,6 @@ TEST(GenericField, all) {
     	EXPECT_EQ( ele->region().id(),
     			   region_id.value(ele->centre(), ele->element_accessor())
     			   );
+
+    delete mesh;
 }

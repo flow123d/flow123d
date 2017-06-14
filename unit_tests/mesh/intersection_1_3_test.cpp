@@ -29,22 +29,23 @@ TEST(intersections, 1d_3d){
         Profiler::initialize();
 	unsigned int elementLimit = 20;
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"", ".");
-	FilePath mesh_file("mesh/line_cube.msh", FilePath::input_file); // krychle 1x1x1 param = 0.2; sít úseček param = 0.1
-	auto reader = reader_constructor("{mesh_file=\"mesh/line_cube.msh\"}");
-	Mesh *mesh_krychle = new Mesh();
-	reader->read_physical_names(mesh_krychle);
-	reader->read_raw_mesh(mesh_krychle);
+    std::string mesh_input_string = "{mesh_file=\"mesh/line_cube.msh\"}";
+
+	Mesh * mesh_krychle = mesh_constructor(mesh_input_string);
+    auto reader = reader_constructor(mesh_input_string);
+    reader->read_physical_names(mesh_krychle);
+    reader->read_raw_mesh(mesh_krychle);
 
 	BoundingBox bb;
 	std::vector<unsigned int> searchedElements;
 
-	BIHTree bt(mesh_krychle, elementLimit);
+	BIHTree bt(mesh_krychle.get(), elementLimit);
 
 	//Profiler::initialize();
 	{
 	    START_TIMER("Inter");
 
-	    FOR_ELEMENTS(mesh_krychle, elm) {
+	    FOR_ELEMENTS(mesh_krychle.get(), elm) {
 	         if (elm->dim() == 1) {
 	        	TAbscissa ta;
 	        	FieldInterpolatedP0<3,FieldValue<3>::Scalar>::create_abscissa(elm, ta);
@@ -75,10 +76,10 @@ TEST(intersections, 1d_3d){
 	Profiler::instance()->output(MPI_COMM_WORLD, cout);
         
 	Profiler::uninitialize();
-	delete mesh_krychle;
 
 	MessageOut() << "Test is complete\n";
 
+	delete mesh_krychle;
 }
 
 

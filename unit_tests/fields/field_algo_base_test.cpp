@@ -51,8 +51,7 @@ public:
 	    Profiler::initialize();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-	    my_mesh = mesh_reader->read_mesh();
+	    my_mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
 
 	    field_.name("test_field");
@@ -135,7 +134,7 @@ public:
 	    3       40      "3D front"
 	    $EndPhysicalNames
 	 */
-	Mesh *my_mesh;
+	Mesh * my_mesh;
 
 	typename FieldType::Point point_;
 
@@ -585,8 +584,7 @@ TEST(Field, init_from_input) {
 	Profiler::initialize();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-	Mesh * mesh = mesh_reader->read_mesh();
+	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
@@ -667,7 +665,6 @@ TEST(Field, init_from_input) {
    }
 
     delete mesh;
-
 }
 
 
@@ -723,8 +720,7 @@ TEST(Field, field_result) {
 
     TimeGovernor tg(0.0, 1.0);
 
-    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    Mesh * mesh = mesh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -799,8 +795,7 @@ TEST(Field, init_from_default) {
 
     Profiler::initialize();
     
-    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    Mesh * mesh = mesh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     Space<3>::Point p("1 2 3");
 
@@ -841,10 +836,9 @@ TEST(Field, init_from_default) {
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(0, true)) );
 
-        delete mesh;
-
     }
 
+    delete mesh;
 }
 
 /// Test optional fields dependent e.g. on BC type
@@ -871,8 +865,7 @@ TEST(Field, disable_where) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-    Mesh * mesh = mesh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     bc_type.set_mesh(*mesh);
     bc_flux.set_mesh(*mesh);

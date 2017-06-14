@@ -151,7 +151,7 @@ public:
         test_time[1] = 1.0;
     }
     virtual void TearDown() {
-
+    	delete mesh;
     }
 
     const FieldAlgoBaseInitData& init_data(std::string field_name) {
@@ -160,7 +160,7 @@ public:
     	return init_data;
     }
 
-    Mesh *mesh;
+    Mesh * mesh;
     Input::Record rec;
     Space<3>::Point point;
     double test_time[2];

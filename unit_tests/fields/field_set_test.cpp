@@ -94,16 +94,14 @@ public:
 	SomeEquation() {
 	    Profiler::initialize();
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-	    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-        mesh_ = mesh_reader->read_mesh();
+        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 	}
 
 	~SomeEquation() {
-	    delete mesh_;
+		delete mesh_;
 	}
 
-	Mesh    *mesh_;
+	Mesh * mesh_;
 	std::vector<string> component_names_;
 };
 
@@ -217,9 +215,9 @@ TEST_F(SomeEquation, collective_interface) {
 
     EXPECT_EQ(nullptr,data["init_pressure"].mesh());
     data.set_mesh(*mesh_);
-    EXPECT_EQ(mesh_,data["init_pressure"].mesh());
-    EXPECT_EQ(mesh_,data["velocity"].mesh());
-    EXPECT_EQ(mesh_,data["reaction_type"].mesh());
+    EXPECT_EQ(mesh_, data["init_pressure"].mesh());
+    EXPECT_EQ(mesh_, data["velocity"].mesh());
+    EXPECT_EQ(mesh_, data["reaction_type"].mesh());
 
     // flags_add
     FieldFlag::Flags matrix(

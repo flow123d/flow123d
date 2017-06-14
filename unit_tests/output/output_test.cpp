@@ -217,8 +217,7 @@ public:
 	    Profiler::initialize();
 		// read simple mesh
 	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    auto mesh_reader = reader_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
-	    my_mesh = mesh_reader->read_mesh();
+	    my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)

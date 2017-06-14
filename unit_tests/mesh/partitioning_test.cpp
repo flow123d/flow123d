@@ -35,8 +35,7 @@ TEST(Partitioning, all) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    auto gmsh_reader = reader_constructor(mesh_input);
-    Mesh * mesh = gmsh_reader->read_mesh();
+    Mesh * mesh = mesh_full_constructor(mesh_input);
 
     const Distribution * init_ds = mesh->get_part()->get_init_distr();
 

@@ -156,8 +156,7 @@ protected:
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
-        mesh = mesh_reader->read_mesh();
+        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         component_names = { "comp_0", "comp_1", "comp_2" };
 
     }
@@ -200,7 +199,7 @@ protected:
     };
 
 
-    Mesh *mesh;
+    Mesh * mesh;
 };
 
 

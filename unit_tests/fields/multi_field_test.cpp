@@ -111,7 +111,9 @@ protected:
 
     }
 
-    virtual void TearDown() {}
+    virtual void TearDown() {
+    	delete mesh;
+    }
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
@@ -127,7 +129,7 @@ protected:
 
     static Input::Type::Record & get_input_type();
     static ScalarMultiField empty_mf;
-    Mesh *mesh;
+    Mesh * mesh;
     Space<3>::Point point;
 };
 
@@ -297,4 +299,6 @@ TEST(Operators, assignment) {
 		EXPECT_ASSERT_DEATH( { mf_assignment_error = mf_base; },
 				"Both multi fields must have same size of vectors");
 	}
+
+	delete mesh;
 }

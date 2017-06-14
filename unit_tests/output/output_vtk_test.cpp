@@ -46,8 +46,7 @@ public:
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        auto mesh_reader = reader_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
-        this->_mesh = mesh_reader->read_mesh();
+        this->_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
     }
