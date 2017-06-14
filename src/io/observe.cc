@@ -333,6 +333,7 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(o_point.global_coords_,
                                         ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
+        ASSERT_EQ(output_data.n_elem_, obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
     }

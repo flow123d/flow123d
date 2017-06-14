@@ -181,6 +181,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                 field.value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
+                ASSERT_EQ(output_data.n_elem_, node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
             }
         }
@@ -196,7 +197,8 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
                                                                         )
                              );
-                output_data.store_value(ele_index, ele_value.mem_ptr() );
+            ASSERT_EQ(output_data.n_elem_, ele_value.n_rows()*ele_value.n_cols()).error();
+            output_data.store_value(ele_index, ele_value.mem_ptr() );
         }
     }
     break;
