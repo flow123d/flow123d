@@ -21,17 +21,34 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <ostream>
+#include <typeinfo>
 #include "system/system.hh"
 #include "system/tokenizer.hh"
-#include "io/output_data_base.hh"
+#include "system/global_defs.h"
 
 
 class ElementDataCacheBase {
 public:
+
+	/**
+	 * Number of components of element data stored in the database.
+	 */
+	enum NumCompValueType {
+		N_SCALAR = 1,
+		N_VECTOR = 3,
+		N_TENSOR = 9
+	};
+
+    /// Types of VTK value
+	typedef enum { VTK_INT8, VTK_UINT8, VTK_INT16, VTK_UINT16, VTK_INT32, VTK_UINT32,
+                   VTK_FLOAT32, VTK_FLOAT64
+    } VTKValueType;
+
 	/// Constructor.
 	ElementDataCacheBase()
 	: time_(-std::numeric_limits<double>::infinity()),
-	  quantity_name_("") {}
+	  field_name_("") {}
 
 	/// Destructor
 	virtual ~ElementDataCacheBase() {}
@@ -41,12 +58,12 @@ public:
 	{ return time_; }
 
 	/// Getter for quantity name of cache
-	std::string get_quantity_name()
-	{ return quantity_name_; }
+	std::string field_input_name()
+	{ return field_input_name_; }
 
 	/// Check if cache stored actual data
-	bool is_actual(double time, std::string quantity_name) {
-		return (time_ == time) && (quantity_name_ == quantity_name);
+	bool is_actual(double time, std::string field_name) {
+		return (time_ == time) && (field_input_name_ == field_name);
 	}
 
 	/**
@@ -59,11 +76,110 @@ public:
 	 */
 	virtual void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row)=0;
 
+    /**
+     * Print one value at given index in ascii format
+     */
+    virtual void print_ascii(ostream &out_stream, unsigned int idx) = 0;
+
+    /**
+     * Print all data in ascii format at once stored in database
+     */
+    virtual void print_ascii_all(ostream &out_stream) = 0;
+
+    /**
+     * Print all data in binary format at once stored in database
+     */
+    virtual void print_binary_all(ostream &out_stream, bool print_data_size = true) = 0;
+
+    /**
+     * Print stored values in the YAML format (using JSON like arrays).
+     * Used for output of observe values.
+     */
+    virtual void print_all_yaml(ostream &out_stream, unsigned int precision) = 0;
+
+    /**
+     * Find minimal and maximal range of stored data
+     */
+    virtual void get_min_max_range(double &min, double &max) = 0;
+
+    /**
+     * Set string representation of SI units.
+     */
+    void set_field_units(std::string unit_string) {
+    	this->field_units_ = unit_string;
+    }
+
+    /**
+     * Set string representation of SI units.
+     */
+    void set_n_values(unsigned int n_values) {
+    	this->n_values_ = n_values;
+    }
+
+    /**
+     * Get string representation of SI units.
+     */
+    inline std::string field_units() {
+    	return this->field_units_;
+    }
+
+    /**
+     * Get number of data values.
+     */
+    inline unsigned int n_values() {
+    	return this->n_values_;
+    }
+
+    /**
+     * Get number of data elements per data value.
+     */
+    inline NumCompValueType n_elem() {
+    	return this->n_elem_;
+    }
+
+    /// Get type of stored data
+    inline VTKValueType vtk_type() {
+    	return this->vtk_type_;
+    }
+
 protected:
+    template <class T>
+    void set_vtk_type() {
+    	if ( std::is_same<T, double>::value ) {
+    		vtk_type_ = VTK_FLOAT64;
+    	} else if ( std::is_same<T, unsigned int>::value ) {
+    		vtk_type_ = VTK_UINT32;
+    	} else if ( std::is_same<T, int>::value ) {
+    		vtk_type_ = VTK_INT32;
+    	} else {
+    		ASSERT(false).error("Unsupported VTK type");
+    	}
+    }
+
 	/// time step stored in cache
 	double time_;
-	/// name of quantity stored in cache
-	std::string quantity_name_;
+
+	/// name of field stored in cache
+    std::string field_input_name_;
+    std::string field_name_;
+
+    /**
+     * Data copied from Field.
+     */
+    std::string field_units_;
+
+    /**
+     * Number of data values.
+     */
+    unsigned int n_values_;
+
+    /**
+     * Number of data elements per data value.
+     */
+    NumCompValueType n_elem_;
+
+    /// Type of stored data
+    VTKValueType vtk_type_;
 };
 
 
@@ -72,7 +188,7 @@ struct MeshDataHeader;
 
 
 template <typename T>
-class ElementDataCache : public ElementDataCacheBase, public OutputDataBase {
+class ElementDataCache : public ElementDataCacheBase {
 public:
 	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
 	typedef std::vector< ComponentDataPtr > CacheData;
@@ -85,7 +201,7 @@ public:
 	 *
 	 * Allows set variable size of cache.
 	 *
-	 * @param data_header   Set data members time_ and quantity_name_
+	 * @param data_header   Set data members time_ and field_name_
 	 * @param size_of_cache Count of columns of data cache
 	 * @param row_vec_size  Count of rows of data cache
 	 */

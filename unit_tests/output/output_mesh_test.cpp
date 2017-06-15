@@ -54,8 +54,8 @@ TEST(OutputMesh, create_identical)
     output_mesh->offsets_->print_ascii_all(std::cout);
     std::cout << endl;
     
-    EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
-    EXPECT_EQ(output_mesh->offsets_->n_values, mesh->n_elements());
+    EXPECT_EQ(output_mesh->nodes_->n_values(), mesh->n_nodes());
+    EXPECT_EQ(output_mesh->offsets_->n_values(), mesh->n_elements());
     
     for(const auto &ele : *output_mesh)
     {

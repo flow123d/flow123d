@@ -12,7 +12,7 @@
 
 #include "input/input_type.hh"
 #include "fields/field.hh"
-#include "io/output_data_base.hh"
+#include "io/element_data_cache.hh"
 #include "tools/time_governor.hh"
 #include "system/exceptions.hh"
 #include <armadillo>
@@ -193,7 +193,7 @@ protected:
     /// Elements of the o_points.
     std::vector<unsigned int> observed_element_indices_;
 
-    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
 
     /// Stored field values.

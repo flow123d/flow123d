@@ -16,7 +16,7 @@
  */
 
 #include "output_vtk.hh"
-#include "output_data_base.hh"
+#include "element_data_cache.hh"
 #include "output_mesh_data.hh"
 #include "output_mesh.hh"
 
@@ -242,15 +242,15 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
 
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << types[output_data->vtk_type_] << "\" ";
+    file    << "<DataArray type=\"" << types[output_data->vtk_type()] << "\" ";
     // possibly write name
-    if( ! output_data->output_field_name.empty()) 
-        file << "Name=\"" << output_data->output_field_name <<"\" ";
+    if( ! output_data->field_input_name().empty())
+        file << "Name=\"" << output_data->field_input_name() <<"\" ";
     // write number of components
-    if (output_data->n_elem_ > 1)
+    if (output_data->n_elem() > 1)
     {
         file
-            << "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
+            << "NumberOfComponents=\"" << output_data->n_elem() << "\" ";
     }
     file    << "format=\"" << formats[this->variant_type_] << "\"";
 
@@ -361,17 +361,17 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 
     file << "Scalars=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem_ == OutputDataBase::N_SCALAR) file << data->output_field_name << ",";
+		if (data->n_elem() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem_ == OutputDataBase::N_VECTOR) file << data->output_field_name << ",";
+		if (data->n_elem() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem_ == OutputDataBase::N_TENSOR) file << data->output_field_name << ",";
+		if (data->n_elem() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
 	file << "\"";
 }
 

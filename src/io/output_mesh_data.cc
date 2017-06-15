@@ -13,7 +13,7 @@ template <class T>
 MeshData<T>::MeshData(std::string name, NumCompValueType n_elem)
 {
 	this->set_vtk_type<T>();
-    output_field_name = name;
+	field_input_name_ = name;
     n_elem_ = n_elem;
 }
 
@@ -25,7 +25,7 @@ MeshData<T>::~MeshData()
 template <class T>
 void MeshData<T>::print_ascii(std::ostream& out_stream, unsigned int idx)
 {
-    ASSERT_LT(idx, this->n_values);
+    ASSERT_LT(idx, this->n_values_);
     out_stream << data_[idx] ;
 }
 
@@ -71,6 +71,16 @@ void MeshData<T>::get_min_max_range(double &min, double &max)
 		if ((double)d > max) max = (double)d;
     }
 }
+
+
+template <class T>
+void MeshData<T>::read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row)
+{}
+
+
+template <class T>
+void MeshData<T>::read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row)
+{}
 
 
 /// Access i-th element in the data vector.

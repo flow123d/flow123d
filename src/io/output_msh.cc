@@ -17,7 +17,7 @@
 
 #include "output_msh.hh"
 #include "mesh/mesh.h"
-#include "output_data_base.hh"
+#include "element_data_cache.hh"
 #include "input/factory.hh"
 
 
@@ -28,17 +28,17 @@ using namespace Input::Type;
 
 
 /**
- * Auxiliary implementation of OutputDataBase that performs output of single zero data for the fields that are
+ * Auxiliary implementation of ElementDataCacheBase that performs output of single zero data for the fields that are
  * off for current time frame.
  */
-class DummyOutputData : public OutputDataBase {
+class DummyOutputData : public ElementDataCacheBase {
 public:
 
-    DummyOutputData(std::string field_name_in, OutputDataBase::NumCompValueType n_elem_in)
+    DummyOutputData(std::string field_name_in, ElementDataCacheBase::NumCompValueType n_elem_in)
    {
-        this->output_field_name = field_name_in;
+        this->field_input_name_ = field_name_in;
         this->n_elem_ = n_elem_in;
-        this->n_values = 1;
+        this->n_values_ = 1;
     }
 
     virtual ~DummyOutputData() override
@@ -63,6 +63,12 @@ public:
     {}
 
     void get_min_max_range(double &min, double &max) override
+    {}
+
+    void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override
+    {}
+
+    void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override
     {}
 };
 
@@ -157,7 +163,7 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
     /* Set precision to max */
     file.precision(std::numeric_limits<double>::digits10);
 
-    for(unsigned int i=0; i < output_data->n_values; i ++) {
+    for(unsigned int i=0; i < output_data->n_values(); i ++) {
         file << vec(i).id() << " ";
         output_data->print_ascii(file, i);
         file << std::endl;
@@ -199,15 +205,15 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
     file << "$NodeData" << endl;
 
     file << "1" << endl;     // one string tag
-    file << "\"" << output_data->output_field_name <<"\"" << endl;
+    file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
     file << time_fixed << endl;    // first real tag = time
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
-    file << output_data->n_elem_ << endl;   // number of components
-    file << output_data->n_values << endl;  // number of values
+    file << output_data->n_elem() << endl;   // number of components
+    file << output_data->n_values() << endl;  // number of values
 
     this->write_msh_ascii_cont_data(this->_mesh->node_vector, output_data);
 
@@ -223,14 +229,14 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << "$ElementNodeData" << endl;
 
     file << "1" << endl;     // one string tag
-    file << "\"" << output_data->output_field_name <<"\"" << endl;
+    file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
     file << time_fixed << endl;    // first real tag = time
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
-    file << output_data->n_elem_ << endl;   // number of components
+    file << output_data->n_elem() << endl;   // number of components
     file << this->_mesh->n_elements() << endl; // number of values
 
     this->write_msh_ascii_discont_data(output_data);
@@ -246,15 +252,15 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << "$ElementData" << endl;
 
     file << "1" << endl;     // one string tag
-    file << "\"" << output_data->output_field_name <<"\"" << endl;
+    file << "\"" << output_data->field_input_name() <<"\"" << endl;
 
     file << "1" << endl;     // one real tag
     file << time_fixed << endl;    // first real tag = time
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
-    file << output_data->n_elem_ << endl;   // number of components
-    file << output_data->n_values << endl;  // number of values
+    file << output_data->n_elem() << endl;   // number of components
+    file << output_data->n_values() << endl;  // number of values
 
     this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
 
@@ -271,14 +277,14 @@ void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (Outpu
         // If more EquationOutput object with different initial times output into same
         // output stream, we may need to possibly update this list on every output frame.
         for(auto out_ptr : data_list)
-            dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->output_field_name, out_ptr->n_elem_));
+            dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
     }
 
 
     auto data_it = data_list.begin();
     for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-    	//DebugOut().fmt("dummy field: {} data field: {}\n", (*dummy_it)->output_field_name, (*data_it)->output_field_name);
-        if ((*dummy_it)->output_field_name == (*data_it)->output_field_name) {
+    	//DebugOut().fmt("dummy field: {} data field: {}\n", (*dummy_it)->field_input_name_, (*data_it)->field_input_name_);
+        if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
             (this->*format_fce)(*data_it); ++data_it;
         } else {
             (this->*format_fce)(*dummy_it);

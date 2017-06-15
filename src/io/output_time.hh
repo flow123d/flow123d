@@ -25,7 +25,7 @@
 
 class FilePath;
 class Observe;
-class OutputDataBase;
+class ElementDataCacheBase;
 class Mesh;
 class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
 template <int spacedim, class Value>
@@ -177,7 +177,7 @@ protected:
     /**
      * Map field name to its OutputData object.
      */
-    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
     /**

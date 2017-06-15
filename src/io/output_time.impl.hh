@@ -69,7 +69,6 @@
 #include "system/exceptions.hh"
 #include "io/output_time.hh"
 
-#include "io/output_data_base.hh"
 #include "output_mesh.hh"
 #include "io/element_data_cache.hh"
 #include "output_element.hh"
@@ -131,7 +130,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
-            [&field](OutputDataPtr ptr) { return (ptr->field_name ==  field.name()); });
+            [&field](OutputDataPtr ptr) { return (ptr->field_input_name() ==  field.name()); });
     if ( it == od_vec.end() ) {
         od_vec.push_back( std::make_shared< ElementDataCache<ElemType> >(field.name(), (unsigned int)Value::NRows_,
         		(unsigned int)Value::NCols_, size[space_type]) );
@@ -144,8 +143,8 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     switch(space_type) {
     case NODE_DATA: {
         // set output data to zero
-        vector<unsigned int> count(output_data.n_values, 0);
-        for(unsigned int idx=0; idx < output_data.n_values; idx++)
+        vector<unsigned int> count(output_data.n_values(), 0);
+        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
             output_data.zero(idx);
 
         for(const auto & ele : *output_mesh_)
@@ -165,7 +164,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
         }
         
         // Compute mean values at nodes
-        for(unsigned int idx=0; idx < output_data.n_values; idx++)
+        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
             output_data.normalize(idx, count[idx]);
     }
     break;
@@ -181,7 +180,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                 field.value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
-                ASSERT_EQ(output_data.n_elem_, node_value.n_rows()*node_value.n_cols()).error();
+                ASSERT_EQ(output_data.n_elem(), node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
             }
         }
@@ -197,7 +196,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
                                                                         )
                              );
-            ASSERT_EQ(output_data.n_elem_, ele_value.n_rows()*ele_value.n_cols()).error();
+            ASSERT_EQ(output_data.n_elem(), ele_value.n_rows()*ele_value.n_cols()).error();
             output_data.store_value(ele_index, ele_value.mem_ptr() );
         }
     }

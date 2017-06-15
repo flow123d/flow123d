@@ -333,7 +333,7 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
                         Value( const_cast<typename Value::return_type &>(
                                 field.value(o_point.global_coords_,
                                         ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
-        ASSERT_EQ(output_data.n_elem_, obs_value.n_rows()*obs_value.n_cols()).error();
+        ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
     }
@@ -387,7 +387,7 @@ void Observe::output_time_frame(double time) {
         unsigned int indent = 2;
         observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
         for(auto &field_data : observe_field_values_) {
-            observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
+            observe_file_ << setw(indent) << "" << "  " << field_data.second->field_input_name() << ": ";
             field_data.second->print_all_yaml(observe_file_, precision_);
             observe_file_ << endl;
         }

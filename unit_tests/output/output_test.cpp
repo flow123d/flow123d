@@ -14,7 +14,7 @@
 #include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
-#include "io/output_data_base.hh"
+#include "io/element_data_cache.hh"
 #include "io/output_mesh.hh"
 #include "tools/time_governor.hh"
 
@@ -260,8 +260,8 @@ public:
 			this->compute_field_data(ELEM_DATA, field);
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
-			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
-			for(unsigned int i=0;  i < data->n_values; i++) {
+			EXPECT_EQ(my_mesh->n_elements(), data->n_values());
+			for(unsigned int i=0;  i < data->n_values(); i++) {
 				std::stringstream ss;
 				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
@@ -272,8 +272,8 @@ public:
 			this->compute_field_data(NODE_DATA, field);
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
-			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
-			for(unsigned int i=0;  i < data->n_values; i++) {
+			EXPECT_EQ(my_mesh->n_nodes(), data->n_values());
+			for(unsigned int i=0;  i < data->n_values(); i++) {
 				std::stringstream ss;
 				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
@@ -284,8 +284,8 @@ public:
 			this->compute_field_data(CORNER_DATA, field);
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
-			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
-			for(unsigned int i=0;  i < data->n_values; i++) {
+			//EXPECT_EQ(my_mesh->n_elements(), data->n_values());
+			for(unsigned int i=0;  i < data->n_values(); i++) {
 				std::stringstream ss;
 				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
@@ -416,8 +416,8 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     ASSERT_EQ(output_time->elem_data.size(), 2);
 
     /* Get first registered data */
-    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->elem_data.begin();
-    OutputDataBase *output_data = *output_data_iter;
+    std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->elem_data.begin();
+    ElementDataCacheBase *output_data = *output_data_iter;
 
     /* Number of items should be equal to number of mesh elements */
     EXPECT_EQ(output_data->items_count, mesh.n_elements());
@@ -497,8 +497,8 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     ASSERT_EQ(output_time->corner_data.size(), 2);
 
     /* Get first registered corner data */
-    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->corner_data.begin();
-    OutputDataBase *output_data = *output_data_iter;
+    std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->corner_data.begin();
+    ElementDataCacheBase *output_data = *output_data_iter;
 
     /* All values has to be equal 20.0 */
     ElementFullIter ele = ELEMENT_FULL_ITER(&mesh, NULL);
@@ -594,8 +594,8 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     ASSERT_EQ(output_time->node_data.size(), 2);
 
     /* Get first registered corner data */
-    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->node_data.begin();
-    OutputDataBase *output_data = *output_data_iter;
+    std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->node_data.begin();
+    ElementDataCacheBase *output_data = *output_data_iter;
 
     /* Number of items should be equal to number of mesh nodes */
     EXPECT_EQ(output_data->items_count, mesh.n_nodes());

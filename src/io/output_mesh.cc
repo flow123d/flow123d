@@ -36,7 +36,7 @@ const IT::Record & OutputMeshBase::get_input_type() {
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
-    nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
+    nodes_ (std::make_shared<MeshData<double>>("", ElementDataCacheBase::N_VECTOR)),
     connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
     offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
     orig_mesh_(&mesh),
@@ -47,7 +47,7 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 : 
-    nodes_ (std::make_shared<MeshData<double>>("", OutputDataBase::N_VECTOR)),
+    nodes_ (std::make_shared<MeshData<double>>("", ElementDataCacheBase::N_VECTOR)),
     connectivity_(std::make_shared<MeshData<unsigned int>>("connectivity")),
     offsets_(std::make_shared<MeshData<unsigned int>>("offsets")),
     input_record_(in_rec), 
@@ -69,7 +69,7 @@ OutputElementIterator OutputMeshBase::begin()
 OutputElementIterator OutputMeshBase::end()
 {
     ASSERT_PTR(offsets_);
-    return OutputElementIterator(OutputElement(offsets_->n_values, shared_from_this()));
+    return OutputElementIterator(OutputElement(offsets_->n_values(), shared_from_this()));
 }
 
 void OutputMeshBase::select_error_control_field(FieldSet &output_fields)
@@ -113,13 +113,13 @@ void OutputMeshBase::select_error_control_field(FieldSet &output_fields)
 unsigned int OutputMeshBase::n_elements()
 {
     ASSERT_PTR(offsets_);
-    return offsets_->n_values;
+    return offsets_->n_values();
 }
 
 unsigned int OutputMeshBase::n_nodes()
 {
     ASSERT_PTR(nodes_);
-    return nodes_->n_values;
+    return nodes_->n_values();
 }
 
 
@@ -150,7 +150,7 @@ void OutputMesh::create_identical_mesh()
                        n_nodes = orig_mesh_->n_nodes();
 
     nodes_->data_.resize(spacedim*n_nodes);    // suppose 3D coordinates
-    nodes_->n_values = n_nodes;
+    nodes_->set_n_values(n_nodes);
     unsigned int coord_id = 0,  // coordinate id in vector
                  node_id = 0;   // node id
     FOR_NODES(orig_mesh_, node) {
@@ -165,7 +165,7 @@ void OutputMesh::create_identical_mesh()
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
     connectivity_->data_.reserve(4*n_elements);  //reserve - suppose all elements being tetrahedra (4 nodes)
     offsets_->data_.resize(n_elements);
-    offsets_->n_values = n_elements;
+    offsets_->set_n_values(n_elements);
     Node* node;
     unsigned int ele_id = 0,
                  connect_id = 0,
@@ -185,7 +185,7 @@ void OutputMesh::create_identical_mesh()
         ele_id++;
     }
     connectivity_->data_.shrink_to_fit();
-    connectivity_->n_values = connect_id;
+    connectivity_->set_n_values(connect_id);
 }
 
 void OutputMesh::create_refined_mesh()
@@ -222,24 +222,24 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 
 void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
 {
-    ASSERT_DBG(output_mesh->nodes_->n_values > 0);   //continuous data already computed
+    ASSERT_DBG(output_mesh->nodes_->n_values() > 0);   //continuous data already computed
     
     if(nodes_->data_.size() > 0) return;          //already computed
     
     DebugOut() << "Create discontinuous outputmesh.";
     
     // connectivity = for every element list the nodes => its length corresponds to discontinuous data
-    const unsigned int n_corners = output_mesh->connectivity_->n_values;
+    const unsigned int n_corners = output_mesh->connectivity_->n_values();
 
     // these are the same as in continuous case, so we copy the pointer.
     offsets_ = output_mesh->offsets_;
     orig_element_indices_ = output_mesh->orig_element_indices_;
     
     nodes_->data_.resize(spacedim*n_corners);
-    nodes_->n_values = n_corners;
+    nodes_->set_n_values(n_corners);
  
     connectivity_->data_.resize(n_corners);
-    connectivity_->n_values = n_corners;
+    connectivity_->set_n_values(n_corners);
 
     unsigned int coord_id = 0,  // coordinate id in vector
                  corner_id = 0, // corner index (discontinous node)

@@ -11,13 +11,13 @@
 #include <ostream>
 #include <string>
 #include "system/asserts.hh"
-#include "io/output_data_base.hh"
+#include "io/element_data_cache.hh"
 #include <type_traits>
 
 /// Class representing data vector of geometry and topology information (especially for VTK).
 /// Filling the vector is the users responsibility.
 template <typename T>
-class MeshData : public OutputDataBase {
+class MeshData : public ElementDataCacheBase {
 public:
     /// Constructor. @p name is the possible name of the output vector.
     MeshData(std::string name, NumCompValueType n_elem = N_SCALAR);
@@ -37,6 +37,10 @@ public:
 
     /// Prints the whole data vector into stream. UNSUPPORTED.
     void print_all_yaml(std::ostream& out_stream, unsigned int precision) override;
+
+    void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override;
+
+    void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override;
 
     /**
      * Find minimal and maximal range of stored data

@@ -23,7 +23,7 @@
 #include "system/sys_profiler.hh"
 #include "input/accessors.hh"
 
-#include "io/output_data_base.hh"
+#include "io/element_data_cache.hh"
 
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
