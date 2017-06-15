@@ -20,7 +20,6 @@
 
 #include "input/accessors_forward.hh"
 
-#include "element_data_cache.hh"
 #include "output_time.hh"
 
 #include <ostream>

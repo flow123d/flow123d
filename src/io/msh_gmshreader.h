@@ -25,7 +25,7 @@
 
 
 #include "mesh/region.hh"
-#include "io/element_data_cache.hh"
+#include "io/element_data_cache_base.hh"
 #include "io/msh_basereader.hh"
 #include "input/input_exception.hh"
 

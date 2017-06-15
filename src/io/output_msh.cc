@@ -17,7 +17,7 @@
 
 #include "output_msh.hh"
 #include "mesh/mesh.h"
-#include "element_data_cache.hh"
+#include "element_data_cache_base.hh"
 #include "input/factory.hh"
 
 

@@ -14,7 +14,7 @@
 #include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
-#include "io/element_data_cache.hh"
+#include "io/element_data_cache_base.hh"
 #include "io/output_mesh.hh"
 #include "tools/time_governor.hh"
 

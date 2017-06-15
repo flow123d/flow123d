@@ -11,7 +11,7 @@
 #include <ostream>
 #include <string>
 #include "system/asserts.hh"
-#include "io/element_data_cache.hh"
+#include "io/element_data_cache_base.hh"
 #include <type_traits>
 
 /// Class representing data vector of geometry and topology information (especially for VTK).

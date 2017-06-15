@@ -12,7 +12,7 @@
 
 #include "input/input_type.hh"
 #include "fields/field.hh"
-#include "io/element_data_cache.hh"
+#include "io/element_data_cache_base.hh"
 #include "tools/time_governor.hh"
 #include "system/exceptions.hh"
 #include <armadillo>

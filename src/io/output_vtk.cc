@@ -16,7 +16,7 @@
  */
 
 #include "output_vtk.hh"
-#include "element_data_cache.hh"
+#include "element_data_cache_base.hh"
 #include "output_mesh_data.hh"
 #include "output_mesh.hh"
 
