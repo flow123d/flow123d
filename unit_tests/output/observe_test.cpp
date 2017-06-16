@@ -113,6 +113,8 @@ public:
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
 
+    virtual ~TestObserve() {}
+
     void check_points_input() {
 
         EXPECT_EQ("obs_0", my_points[0].name_);
