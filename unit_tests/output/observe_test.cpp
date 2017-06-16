@@ -113,7 +113,7 @@ public:
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
 
-    virtual ~TestObserve() {}
+    virtual ~TestObserve() { DebugOut() << "TestObserve destructor"; }
 
     void check_points_input() {
 
