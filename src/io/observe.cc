@@ -298,7 +298,6 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
 }
 
 Observe::~Observe() {
-	DebugOut() << "Observe destructor ";
     observe_file_.close();
 }
 

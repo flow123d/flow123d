@@ -113,8 +113,6 @@ public:
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
 
-    virtual ~TestObserve() { DebugOut() << "TestObserve destructor"; }
-
     void check_points_input() {
 
         EXPECT_EQ("obs_0", my_points[0].name_);
@@ -215,10 +213,10 @@ public:
 
 TEST(ObservePoint, find_observe_point) {
     Profiler::initialize();
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     armadillo_setup();
 
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
     auto obs = TestObservePoint("0 -0.5 -0.5", 4, "ALL");
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
@@ -228,7 +226,6 @@ TEST(ObservePoint, find_observe_point) {
 
 TEST(Observe, all) {
     Profiler::initialize();
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     armadillo_setup();
     EqData field_set;
 
@@ -242,7 +239,8 @@ TEST(Observe, all) {
     auto in_rec = Input::ReaderToStorage(test_input, output_type, Input::FileFormat::format_JSON)
         .get_root_interface<Input::Record>();
 
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
     {
     TestObserve obs(*mesh, in_rec.val<Input::Array>("observe_points"));
