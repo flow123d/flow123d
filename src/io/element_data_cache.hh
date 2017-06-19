@@ -132,6 +132,9 @@ public:
      */
     void get_min_max_range(double &min, double &max) override;
 
+    /// Access i-th element in the data vector of 0th component.
+    T& operator[](unsigned int i);
+
     /**
      * Declaration of new exception info used in following exception
      */

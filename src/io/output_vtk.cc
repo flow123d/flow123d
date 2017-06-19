@@ -17,7 +17,6 @@
 
 #include "output_vtk.hh"
 #include "element_data_cache_base.hh"
-#include "output_mesh_data.hh"
 #include "output_mesh.hh"
 
 #include <limits.h>
@@ -192,12 +191,13 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 
 
-void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
+std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
 {    
-    auto offsets = output_mesh_->offsets_->data_;
+    auto &offsets = *( output_mesh_->offsets_->get_component_data(0).get() );
     unsigned int n_elements = offsets.size();
     
-    data.resize(n_elements);
+    auto types = std::make_shared<ElementDataCache<unsigned int>>("types", ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
     int n_nodes;
     
     n_nodes = offsets[0];
@@ -228,6 +228,8 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
             break;
         }
     }
+
+    return types;
 }
 
 
@@ -463,8 +465,7 @@ void OutputVTK::write_vtk_vtu(void)
         file << "<Cells>" << endl;
             write_vtk_data(output_mesh_->connectivity_);
             write_vtk_data(output_mesh_->offsets_);
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
+            auto types = fill_element_types_data();
            	write_vtk_data( types );
         file << "</Cells>" << endl;
 
@@ -491,8 +492,7 @@ void OutputVTK::write_vtk_vtu(void)
         file << "<Cells>" << endl;
             write_vtk_data(output_mesh_discont_->connectivity_);
             write_vtk_data(output_mesh_discont_->offsets_);
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
+            auto types = fill_element_types_data();
            	write_vtk_data( types );
         file << "</Cells>" << endl;
 

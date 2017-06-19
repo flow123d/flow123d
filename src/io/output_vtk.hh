@@ -21,6 +21,7 @@
 #include "input/accessors_forward.hh"
 
 #include "output_time.hh"
+#include "element_data_cache.hh"
 
 #include <ostream>
 #include <cstdint>
@@ -126,9 +127,9 @@ protected:
     void write_vtk_vtu_head(void);
 
     /**
-     * \brief Fills the given vector with VTK element types indicators.
+     * \brief Fills the data cache with VTK element types indicators.
      */
-    void fill_element_types_vector(std::vector<unsigned int> &data);
+    std::shared_ptr<ElementDataCache<unsigned int>> fill_element_types_data();
 
     /**
      * Write registered data of all components of given Field to output stream

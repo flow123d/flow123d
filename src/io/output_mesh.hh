@@ -31,6 +31,7 @@
 class Mesh;
 template<int, class Value> class Field;
 template<class T> class MeshData;
+template<class T> class ElementDataCache;
 
 class OutputElement;
 typedef GeneralIterator<OutputElement> OutputElementIterator;
@@ -73,15 +74,18 @@ public:
     /// Selects the error control field out of output field set according to input record.
     void select_error_control_field(FieldSet &output_fields);
     
+    /// Creates nodes_, connectivity_ and offsets_ data caches.
+    void create_data_caches();
+
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
     
     /// Vector of node coordinates. [spacedim x n_nodes]
-    std::shared_ptr<MeshData<double>> nodes_;
+    std::shared_ptr<ElementDataCache<double>> nodes_;
     /// Vector maps the nodes to their coordinates in vector @p nodes_.
-    std::shared_ptr<MeshData<unsigned int>> connectivity_;
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
     /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
-    std::shared_ptr<MeshData<unsigned int>> offsets_;
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
     
     /// Returns number of nodes.
     unsigned int n_nodes();

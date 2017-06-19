@@ -272,6 +272,15 @@ void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
     }
 };
 
+/// Access i-th element in the data vector.
+template <class T>
+T& ElementDataCache<T>::operator[](unsigned int i)
+{
+	std::vector<T> &vec = *( this->data_[0].get() );
+    ASSERT_DBG(i < vec.size());
+    return vec[i];
+}
+
 
 
 // explicit instantiation of template class
