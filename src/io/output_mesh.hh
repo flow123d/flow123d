@@ -30,7 +30,6 @@
 
 class Mesh;
 template<int, class Value> class Field;
-template<class T> class MeshData;
 template<class T> class ElementDataCache;
 
 class OutputElement;
