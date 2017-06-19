@@ -235,7 +235,6 @@ add_library(io_lib
     io/msh_vtkreader.cc
     io/element_data_cache.cc
     io/reader_instances.cc
-    io/output_mesh_data.cc
 )
 
 target_link_libraries(io_lib
