@@ -73,9 +73,6 @@ public:
     /// Selects the error control field out of output field set according to input record.
     void select_error_control_field(FieldSet &output_fields);
     
-    /// Creates nodes_, connectivity_ and offsets_ data caches.
-    void create_data_caches();
-
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
     

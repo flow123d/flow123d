@@ -124,7 +124,6 @@ void OutputTime::make_output_mesh(FieldSet &output_fields)
         if(it) {
             output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *it);
             output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *it);
-            output_mesh_discont_->create_data_caches();
             output_mesh_->select_error_control_field(output_fields);
             output_mesh_discont_->select_error_control_field(output_fields);
             
@@ -142,7 +141,6 @@ void OutputTime::make_output_mesh(FieldSet &output_fields)
     
     output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
     output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-    output_mesh_discont_->create_data_caches();
     
     output_mesh_->create_identical_mesh();
 }

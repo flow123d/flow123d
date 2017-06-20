@@ -117,15 +117,6 @@ unsigned int OutputMeshBase::n_nodes()
 }
 
 
-void OutputMeshBase::create_data_caches()
-{
-    nodes_ = std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 1);
-    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 1);
-	offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 1);
-
-}
-
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
