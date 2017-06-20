@@ -117,6 +117,15 @@ unsigned int OutputMeshBase::n_nodes()
 }
 
 
+void OutputMeshBase::create_data_caches()
+{
+    nodes_ = std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 1);
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 1);
+	offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 1);
+
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -138,6 +147,10 @@ OutputMesh::~OutputMesh()
 
 void OutputMesh::create_identical_mesh()
 {
+	nodes_.reset();
+	connectivity_.reset();
+	offsets_.reset();
+
 	DebugOut() << "Create outputmesh identical to computational one.";
 
     const unsigned int n_elements = orig_mesh_->n_elements(),
@@ -222,6 +235,10 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 
 void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
 {
+	nodes_.reset();
+	connectivity_.reset();
+	offsets_.reset();
+
     ASSERT_DBG(output_mesh->nodes_->n_values() > 0);   //continuous data already computed
     
     if (nodes_) return;          //already computed
