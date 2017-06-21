@@ -162,7 +162,7 @@ void EquationOutput::output(TimeStep step)
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->output(stream_);
+                field->field_output(stream_);
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
