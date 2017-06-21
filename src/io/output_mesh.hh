@@ -76,6 +76,9 @@ public:
     /// Creates nodes_, connectivity_ and offsets_ data caches.
     void create_data_caches();
 
+    /// Creates refined mesh.
+    virtual void create_refined_mesh()=0;
+
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
     
@@ -121,7 +124,7 @@ public:
     void create_identical_mesh();
     
     /// Creates refined mesh.
-    void create_refined_mesh();
+    void create_refined_mesh() override;
     
 protected:
     bool refinement_criterion();
@@ -142,7 +145,7 @@ public:
     void create_mesh(std::shared_ptr<OutputMesh> output_mesh);
     
     /// Creates discontinuous refined mesh.
-    void create_refined_mesh();
+    void create_refined_mesh() override;
     
 protected:
     bool refinement_criterion();

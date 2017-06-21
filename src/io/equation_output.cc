@@ -10,6 +10,7 @@
 #include "input/accessors.hh"
 #include "io/equation_output.hh"
 #include "io/output_time_set.hh"
+#include "io/output_mesh.hh"
 #include "input/flow_attribute_lib.hh"
 #include <memory>
 
@@ -156,7 +157,7 @@ void EquationOutput::output(TimeStep step)
 {
     // TODO: remove const_cast after resolving problems with const Mesh.
     //Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-    stream_->make_output_mesh(*this);
+	this->make_output_mesh();
 
     for(FieldCommon * field : this->field_list) {
 
@@ -176,4 +177,43 @@ void EquationOutput::output(TimeStep step)
 void EquationOutput::add_output_times(double begin, double step, double end)
 {
     common_output_times_.add(begin,step, end, equation_fixed_type_ );
+}
+
+
+void EquationOutput::make_output_mesh()
+{
+    // make observe points if not already done
+	stream_->observe();
+
+    // already computed
+    if (stream_->is_output_mesh_init()) return;
+
+    // Read optional error control field name
+    auto it = stream_->get_output_mesh_record();
+
+    if(stream_->enable_refinement()) {
+        if(it) {
+        	auto output_mesh = stream_->create_output_mesh_ptr(true);
+        	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
+        	output_mesh_discont->create_data_caches();
+            output_mesh->select_error_control_field(*this);
+            output_mesh_discont->select_error_control_field(*this);
+
+            output_mesh->create_refined_mesh();
+            return;
+        }
+    }
+    else
+    {
+        // skip creation of output mesh (use computational one)
+        if(it)
+        	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
+    }
+
+
+	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
+	auto output_mesh_discont = stream_->create_output_mesh_ptr(false, true);
+	output_mesh_discont->create_data_caches();
+
+	output_mesh->create_identical_mesh();
 }

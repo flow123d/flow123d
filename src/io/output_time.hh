@@ -34,6 +34,7 @@ class FieldSet;
 template <int spacedim, class Value>
 class MultiField;
 class TimeGovernor;
+class OutputMeshBase;
 class OutputMesh;
 class OutputMeshDiscontinuous;
 
@@ -72,6 +73,11 @@ public:
     Input::Iterator<Input::Array> get_time_set_array();
 
     /**
+     * Return the input record for the output mesh of the output stream.
+     */
+    Input::Iterator<Input::Record> get_output_mesh_record();
+
+    /**
      * \brief The specification of output stream
      *
      * \return This variable defines record for output stream
@@ -106,12 +112,6 @@ public:
     static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
     
     /**
-     * Create the output mesh from the given computational mesh. The field set passed in is used
-     * to select the field used for adaptivity of the output mesh.
-     */
-    void make_output_mesh(FieldSet &output_fields);
-    
-    /**
      * \brief Generic method for registering output data stored in MultiField
      *
      * @param ref_type    Type of output (element, node, corner data).
@@ -137,7 +137,7 @@ public:
     void write_time_frame();
 
     /**
-     * Getter of the oubserve object.
+     * Getter of the observe object.
      */
     std::shared_ptr<Observe> observe();
 
@@ -145,6 +145,26 @@ public:
      * \brief Clear data for output computed by method @p compute_field_data.
      */
     void clear_data(void);
+
+    /**
+     * Return if shared pointer to output_mesh_ is created.
+     */
+    inline bool is_output_mesh_init() {
+    	return (bool)(output_mesh_);
+    }
+
+    /// Return auxiliary flag enable_refinement_.
+    inline bool enable_refinement() {
+        return enable_refinement_;
+    }
+
+    /**
+     * Create shared pointer \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
+     *
+     * @param init_input Call constructor with initialization from Input Record
+     * @param discont    Determines type of output mesh (output_mesh_ or output_mesh_discont_)
+     */
+    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input, bool discont = false);
 
 
 protected:
@@ -240,7 +260,7 @@ protected:
     
     std::shared_ptr<Observe> observe_;
 
-    /// Auxliary flag for refinement enabling, due to gmsh format.
+    /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
 };
 

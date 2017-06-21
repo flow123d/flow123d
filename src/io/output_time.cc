@@ -108,43 +108,21 @@ Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
 }
 
 
-void OutputTime::make_output_mesh(FieldSet &output_fields)
-{
+Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
+    return input_record_.find<Input::Record>("output_mesh");
+}
 
-    // make observe points if not already done
-    observe();
 
-    // already computed
-    if(output_mesh_) return;
-
-    // Read optional error control field name
-    auto it = input_record_.find<Input::Record>("output_mesh");
-    
-    if(enable_refinement_) {
-        if(it) {
-            output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *it);
-            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *it);
-            output_mesh_discont_->create_data_caches();
-            output_mesh_->select_error_control_field(output_fields);
-            output_mesh_discont_->select_error_control_field(output_fields);
-            
-            output_mesh_->create_refined_mesh();
-            return;
-        }
-    }
-    else
-    {
-        // skip creation of output mesh (use computational one)
-        if(it)
-        	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
-    }
-    
-    
-    output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-    output_mesh_discont_->create_data_caches();
-    
-    output_mesh_->create_identical_mesh();
+std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input, bool discont) {
+	if (discont) {
+		if (init_input) output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
+		return output_mesh_discont_;
+	} else {
+		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
+		return output_mesh_;
+	}
 }
 
 
