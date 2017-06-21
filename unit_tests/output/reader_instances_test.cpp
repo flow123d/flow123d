@@ -52,11 +52,10 @@ TEST(ReaderInstances, get_element_data) {
 
 
     // read data by components for MultiField
-    bool actual_data = false;
     for (i=0; i<3; ++i) {
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
         		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 13, 1,
-        		actual_data, el_ids, i);
+        		el_ids, i);
     	std::vector<int> &vec = *( multifield_data.get() );
     	EXPECT_EQ(13, vec.size());
     	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] ); // bulk elements
@@ -65,11 +64,10 @@ TEST(ReaderInstances, get_element_data) {
 
 
     // read data to one vector for Field
-    actual_data=false;
     {
     	typename ElementDataCache<int>::ComponentDataPtr field_data =
         		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 13, 3,
-                actual_data, el_ids, 0);
+                el_ids, 0);
     	std::vector<int> &vec = *( field_data.get() );
     	EXPECT_EQ(39, vec.size());
     	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] ); // bulk elements
@@ -95,9 +93,8 @@ TEST(ReaderInstances, find_header) {
     for(unsigned int i=0;i<n_elements;i++)
     	element_id_map[i]=i+1;
 
-    bool actual_data = false;
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.0, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            element_id_map, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
@@ -105,7 +102,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(4.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.1, n_elements, n_comp,
-        actual_data, element_id_map, 0);
+        element_id_map, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
@@ -113,7 +110,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(4.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.9, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            element_id_map, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
@@ -121,7 +118,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(4.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.0, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
@@ -129,7 +126,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(5.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.1, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
@@ -137,7 +134,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(5.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 2.1, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
@@ -145,7 +142,7 @@ TEST(ReaderInstances, find_header) {
     EXPECT_EQ(5.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 200, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            element_id_map, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);

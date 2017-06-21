@@ -68,7 +68,7 @@ void BaseMeshReader::read_raw_mesh(Mesh * mesh) {
 
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( std::string field_name, double time,
-		unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx) {
+		unsigned int n_entities, unsigned int n_components, std::vector<int> const & el_ids, unsigned int component_idx) {
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 
@@ -107,7 +107,6 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
     	element_data_values_[field_name]
 					= std::make_shared< ElementDataCache<T> >(actual_header, size_of_cache, n_components*n_entities);
     	this->read_element_data(*(it->second), actual_header, n_components, el_ids);
-	    actual = true; // use input header to indicate modification of @p data buffer
 	}
 
     if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
@@ -119,7 +118,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 // explicit instantiation of template methods
 #define MESH_READER_GET_ELEMENT_DATA(TYPE) \
 template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
-	unsigned int n_entities, unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
+	unsigned int n_entities, unsigned int n_components, std::vector<int> const & el_ids, unsigned int component_idx);
 
 MESH_READER_GET_ELEMENT_DATA(int);
 MESH_READER_GET_ELEMENT_DATA(unsigned int);
