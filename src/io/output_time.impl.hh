@@ -81,34 +81,6 @@
  */
 
 template<int spacedim, class Value>
-void OutputTime::register_data(const DiscreteSpace type,
-        MultiField<spacedim, Value> &multi_field)
-{
-	ASSERT_LT(type, N_DISCRETE_SPACES).error();
-
-    DiscreteSpaceFlags flags = 1 << type;
-    for (unsigned long index=0; index < multi_field.size(); index++)
-        for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
-            if (flags & (1 << ids))
-                    this->compute_field_data( DiscreteSpace(ids), multi_field[index] );
-
-}
-
-
-template<int spacedim, class Value>
-void OutputTime::register_data(const DiscreteSpace type,
-        Field<spacedim, Value> &field_ref)
-{
-	ASSERT_LT(type, N_DISCRETE_SPACES).error();
-    
-	DiscreteSpaceFlags flags = 1 << type;
-    for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
-        if (flags & (1 << ids))
-            this->compute_field_data( DiscreteSpace(ids), field_ref);
-}
-
-
-template<int spacedim, class Value>
 void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
 {
 	typedef typename Value::element_type ElemType;

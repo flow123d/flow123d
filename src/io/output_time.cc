@@ -231,13 +231,9 @@ void OutputTime::clear_data(void)
 
 
 
-#define INSTANCE_register_field(spacedim, value) \
-	template  void OutputTime::register_data<spacedim, value> \
+#define INSTANCE_compute_field_data(spacedim, value) \
+	template void OutputTime::compute_field_data<spacedim, value> \
 		(const DiscreteSpace ref_type, Field<spacedim, value> &field);
-
-#define INSTANCE_register_multifield(spacedim, value) \
-	template void OutputTime::register_data<spacedim, value> \
-		(const DiscreteSpace ref_type, MultiField<spacedim, value> &field);
 
 
 #define INSTANCE_OutputData(spacedim, value) \
@@ -260,8 +256,7 @@ void OutputTime::clear_data(void)
 		INSTANCE_TO_ALL( MACRO, 2)
 
 
-INSTANCE_ALL( INSTANCE_register_field )
-INSTANCE_ALL( INSTANCE_register_multifield )
+INSTANCE_ALL( INSTANCE_compute_field_data )
 
 //INSTANCE_TO_ALL( INSTANCE_OutputData, 0)
 

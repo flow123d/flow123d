@@ -191,8 +191,17 @@ template<int spacedim, class Value>
 void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
-	if (!is_bc())
-		stream->register_data(this->output_type(), *this);
+	if (!is_bc()) {
+		const OutputTime::DiscreteSpace type = this->output_type();
+
+		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
+
+		OutputTime::DiscreteSpaceFlags flags = 1 << type;
+	    for (unsigned long index=0; index < this->size(); index++)
+	        for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
+	            if (flags & (1 << ids))
+	                    stream->compute_field_data( OutputTime::DiscreteSpace(ids), sub_fields_[index] );
+	}
 }
 
 

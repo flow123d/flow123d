@@ -100,6 +100,12 @@ public:
     };
 
     /**
+     * Maps names of output fields required by user to their indices in
+     * output_data_vec_.
+     */
+    typedef unsigned int DiscreteSpaceFlags;
+
+    /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
      */
@@ -112,24 +118,11 @@ public:
     static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
     
     /**
-     * \brief Generic method for registering output data stored in MultiField
-     *
-     * @param ref_type    Type of output (element, node, corner data).
-     * @param multi_field The actual field for output.
+     * Interpolate given @p field into output discrete @p space and store the values
+     * into private storage for postponed output.
      */
     template<int spacedim, class Value>
-    void register_data(const DiscreteSpace type,
-            MultiField<spacedim, Value> &multi_field);
-
-    /**
-     * \brief Generic method for registering of output data stored in Field
-     *
-     * @param ref_type  Type of output (element, node, corner data).
-     * @param field     The actual field for output.
-     */
-    template<int spacedim, class Value>
-    void register_data(const DiscreteSpace ref_type,
-            Field<spacedim, Value> &field);
+    void compute_field_data(DiscreteSpace type, Field<spacedim, Value> &field);
 
     /**
      * Write all data registered as a new time frame.
@@ -172,13 +165,6 @@ protected:
     void compute_discontinuous_output_mesh();
     
     /**
-     * Interpolate given @p field into output discrete @p space and store the values
-     * into private storage for postponed output.
-     */
-    template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace type, Field<spacedim, Value> &field);
-
-    /**
      * Change main filename to have prescribed extension.
      */
     void fix_main_file_extension(std::string extension);
@@ -220,12 +206,6 @@ protected:
      * The last time, when data was wrote to this stream
      */
     double write_time;
-
-    /**
-     * Maps names of output fields required by user to their indices in
-     * output_data_vec_.
-     */
-    typedef unsigned int DiscreteSpaceFlags;
 
     /**
      * Record for current output stream
