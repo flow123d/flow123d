@@ -124,6 +124,8 @@ public:
             mortar_assembly = std::make_shared<P1_CouplingAssembler>(ad_);
         } else if (ad_->mortar_method_ == DarcyMH::MortarPL) {
             mortar_assembly = std::make_shared<PL_CouplingAssembler>(ad_);
+        } else if (ad_->mortar_method_ == DarcyMH::MortarP01) {
+            mortar_assembly = std::make_shared<P01_CouplingAssembler>(ad_);
         }
 
     }

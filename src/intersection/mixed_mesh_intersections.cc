@@ -250,8 +250,6 @@ void MixedMeshIntersections::compute_intersections_12(vector< IntersectionLocal<
     START_TIMER("Intersection algorithm");
     storage.reserve(intersection_storage13_.size());
     algorithm12_.compute_intersections(element_intersections_, storage);
-    storage.shrink_to_fit();
-    END_TIMER("Intersection algorithm");
     
 //     START_TIMER("Intersection into storage");
 //     storage.reserve(algorithm12_.intersectionaux_storage12_.size());
@@ -286,6 +284,10 @@ void MixedMeshIntersections::compute_intersections_12(vector< IntersectionLocal<
 //         }
 //     }
 //     END_TIMER("Intersection into storage");
+
+    storage.shrink_to_fit();
+    END_TIMER("Intersection algorithm");
+
 }
 
 void MixedMeshIntersections::compute_intersections_12_2(vector< IntersectionLocal< 1, 2 > >& storage)
@@ -401,7 +403,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     if(d & IntersectionType::d12_3){
         START_TIMER("Intersections 1D-2D (3)");
-//         DebugOut() << "Intersection Algorithm d12_3\n";
+         DebugOut() << "Intersection Algorithm d12_3\n";
         compute_intersections_12(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (3)");
 
@@ -409,14 +411,14 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     if(d & IntersectionType::d12_2){
         START_TIMER("Intersections 1D-2D (2)");
-//         DebugOut() << "Intersection Algorithm d12_2\n";
+         DebugOut() << "Intersection Algorithm d12_2\n";
         compute_intersections_12_2(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (2)");
     }
 
     if(d & (IntersectionType::d12 | IntersectionType::d12_1)){
         intersection_storage12_.clear();
-//         DebugOut() << "Intersection Algorithm d12_ngh\n";
+         DebugOut() << "Intersection Algorithm d12_ngh\n";
         compute_intersections_12_ngh_plane(intersection_storage12_);
     }
 

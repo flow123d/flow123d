@@ -55,6 +55,7 @@ double IntersectionLocal<dimA,dimB>::compute_measure() const
     ASSERT_LT_DBG(i_points_.size(), 3 ); // avoid 2d-3d case and degenerated 2d-2d
     double length = 0;
 
+    // TODO: simplify remove uneccessary loop, i=0
     if(i_points_.size() > 1) // zero measure for point intersections
         for(unsigned int i=0; i < i_points_.size()-1; i++)
         {

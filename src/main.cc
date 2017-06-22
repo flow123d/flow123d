@@ -154,7 +154,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     desc.add_options()
         ("help", "produce help message")
         ("solve,s", po::value< string >(), "Main input file to solve.")
-        ("input_dir,i", po::value< string >()->default_value("input"), "Directory for the ${INPUT} placeholder in the main input file.")
+        ("input_dir", po::value< string >()->default_value("input"), "Directory for the ${INPUT} placeholder in the main input file.")
         ("output_dir,o", po::value< string >()->default_value("output"), "Directory for all produced output files.")
         ("log,l", po::value< string >()->default_value("flow123"), "Set base name for log files.")
         ("version", "Display version and build information and exit.")
@@ -264,6 +264,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     string input_dir;
     string output_dir;
     if (vm.count("input_dir")) {
+        //cout << "i dir: " << vm["input_dir"].as<string>();
         input_dir = vm["input_dir"].as<string>();
     }
     if (vm.count("output_dir")) {

@@ -77,6 +77,7 @@ const it::Selection & DarcyMH::get_mh_mortar_selection() {
 		.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
 		.add_value(MortarP1, "P1", "Mortar space: P1 on intersections, using non-conforming pressures.")
 		.add_value(MortarPL, "PL", "Mortar space: PL, using edge centers as quadrature points.")
+        .add_value(MortarP01, "P01", "Mortar space: P01, P0 with better interpolation from edge pressures.")
 		.close();
 }
 

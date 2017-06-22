@@ -127,6 +127,8 @@ public:
     /**
      * Project given point from reference element (barycentic coordinates) to real coordinates.
      * Use RefElement<dim>::local_to_bary() to get barycentric coordinates in input.
+     *
+     * TODO: make this and possibly other methods in this class inlined (allow armadillo optimizations).
      */
     RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map) const;
 

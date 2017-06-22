@@ -26,12 +26,16 @@ public:
     MortarAssemblyBase(AssemblyDataPtr data)
     : data_(data),
       mixed_mesh_(data->mesh->mixed_intersections()),
-      fix_velocity_flag(false)
+      fix_velocity_flag(false),
+      total_isec(0.0),
+      element_isec(0.0)
     {
 
     }
 
-    virtual ~MortarAssemblyBase() {};
+    virtual ~MortarAssemblyBase() {
+        DebugOut() << "total isec: " << total_isec;
+    };
 
     // Default assembly is empty to allow dummy implementation for dimensions without coupling.
     virtual void assembly(LocalElementAccessorBase<3> ele_ac) {};
@@ -39,6 +43,7 @@ public:
     void fix_velocity(LocalElementAccessorBase<3> ele_ac) {
         fix_velocity_flag = true;
         this->assembly(ele_ac);
+        total_isec+=element_isec;
         fix_velocity_flag = false;
     }
 
@@ -47,6 +52,9 @@ protected:
     MixedMeshIntersections &mixed_mesh_;
     LocalSystem loc_system_;
     bool fix_velocity_flag;
+
+    double total_isec;
+    double element_isec;
 
 };
 
@@ -60,6 +68,9 @@ struct IsecData {
     arma::uvec dirichlet_dofs;
     arma::vec dirichlet_sol;
     unsigned int n_dirichlet;
+
+    arma::vec values_;      // weights for side pressures
+    arma::vec z_values_;    // Z values on sides
 };
 
 
@@ -84,6 +95,7 @@ private:
     IntersectionQuadratureP0 quadrature_;
     arma::mat product_;
     LocalElementAccessorBase<3> slave_ac_;
+
 
 };
 
@@ -161,6 +173,44 @@ private:
     //
     arma::Mat<double>::fixed<3,2> side_slave_point_12;
     arma::Mat<double>::fixed<4,3> side_slave_point_23;
+};
+
+
+
+class P01_CouplingAssembler :public MortarAssemblyBase {
+public:
+    P01_CouplingAssembler(AssemblyDataPtr data);
+    void assembly(LocalElementAccessorBase<3> ele_ac) override;
+private:
+    void fix_velocity_local(const IsecData & row_ele, const IsecData &col_ele);
+    void add_intersection(LocalElementAccessorBase<3> ele_ac);
+    inline arma::mat & tensor_average(unsigned int row_dim, unsigned int col_dim) {
+        return tensor_average_[4*row_dim + col_dim];
+    }
+
+    template<uint qdim, uint master_dim, uint slave_dim>
+    void integrate(const IntersectionLocal<master_dim, slave_dim> &il, std::array<uint, qdim+1 > subdiv);
+
+    void add_to_linsys(double scale);
+
+    vector<IsecData> isec_data_list;
+
+    /// Row matrices to compute element pressure as average of boundary pressures
+    std::vector< arma::mat > tensor_average_;
+    std::vector< arma::vec > col_average_;
+    IntersectionQuadratureP0 quadrature_;
+    arma::mat product_;
+    LocalElementAccessorBase<3> slave_ac_;
+
+    /**
+     * For every element dimension a transition matrix from the P1e base to
+     * the P1 base in the space of linear polynomials.
+     * P1e base have support points in side centers,
+     * P1 basis have support points in vertices (corresponds to P1_disc FE)
+     */
+    arma::mat P1_for_P1e[4];
+    double isec_sum;
+
 };
 
 

@@ -300,6 +300,9 @@ public:
     static FaceBaryPoint barycentric_on_face(const BaryPoint &barycentric, unsigned int i_face);
 
 
+    /**
+     * Return list of centers (LocalPoint) of subelements of dimension sub_dim.
+     */
     typedef const std::vector<LocalPoint> & CentersList;
     static CentersList centers_of_subelements(unsigned int sub_dim);
     

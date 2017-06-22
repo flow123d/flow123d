@@ -125,7 +125,8 @@ public:
         NoMortar = 0,
         MortarP0 = 1,
         MortarP1 = 2,
-        MortarPL = 3
+        MortarPL = 3,
+        MortarP01 = 4
     };
 
     /// Class with all fields used in the equation DarcyFlow.
