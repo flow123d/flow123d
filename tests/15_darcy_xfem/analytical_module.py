@@ -31,6 +31,10 @@ class Parameters :
     a = 0.0
     b = 0.0
     
+    # source
+    U = 20.0
+    omg = 1
+    
     
     # all precalculations
     def precalculations(self):
@@ -69,7 +73,59 @@ class Parameters :
         else:
             return - self.k2 * self.a * (y-self.y_w) / (tr*tr)
        
-            
+    
+    
+    def p2_sin_source(self, x, y):
+        p_sin = self.U*math.sin(self.omg*x)
+        p2 = self.p2_fce_value(x,y) + p_sin
+        return p2
+  
+    def vx2_sin_source(self, x, y):
+        vx2_sin = -self.k2*self.U * self.omg*math.cos(self.omg*x)
+        vx2 = self.vx2_fce_value(x,y) + vx2_sin
+        return vx2
+  
+    def vy2_sin_source(self, x, y):
+        return self.vy2_fce_value(x,y)
+      
+    #def p2_sin_source(self, x, y):
+        #tr = self.r(x,y)
+        #tt = 0.0;
+        #if tr < self.rho_w:
+            #tt = 0.0
+        #else:
+            #tt = (tr-self.rho_w) * (tr-self.rho_w)
+        
+        #p_sin = self.U*math.sin(self.omg*x) * tt
+        #p2 = self.p2_fce_value(self,x,y) + p_sin
+        #return p2
+  
+    #def vx2_sin_source(self, x, y):
+        #tr = self.r(x,y)
+        #tt = 0.0;
+        #if tr < self.rho_w:
+            #tt = (tr-self.rho_w)
+        
+        #vx2_sin = -self.k2*self.U*tt * (self.omg*math.cos(self.omg*x)*tt + 2*math.sin(self.omg*x)*(x-self.x)/tr)
+        #vx2 = self.vx2_fce_value(self,x,y) + vx2_sin
+        #return vx2
+  
+    #def vy2_sin_source(self, x, y):
+        #return self.vy2_fce_value(self,x,y)
+      
+      
+    # SIMPLE SOURCE to test convergence order: P: 2.0, U: 1.0
+    
+    #def p2_sin_source(self, x, y):
+        #p2 = self.U*math.sin(self.omg*x)
+        #return p2
+  
+    #def vx2_sin_source(self, x, y):
+        #vx2 = -self.U*self.omg * math.cos(self.omg*x)
+        #return vx2
+  
+    #def vy2_sin_source(self, x, y):
+        #return 0.0
 ### end class Parameters    
 
 
@@ -81,6 +137,18 @@ params.precalculations()
 
 ########################
 # provided functions
+
+def all_sin_source(xx , yy, zz):
+    p2 = Parameters.p2_sin_source(params, xx, yy)
+    vx2 = Parameters.vx2_sin_source(params, xx, yy)
+    vy2 = Parameters.vy2_sin_source(params, xx, yy)
+    return (p2, vx2, vy2, 0.0, 1.0)
+  
+#def all_sin_source(xx , yy, zz):
+    #p2 = Parameters.p_sin_source(params, xx, yy)
+    #vx2 = Parameters.vx_sin_source(params, xx, yy)
+    #vy2 = Parameters.vy_sin_source(params, xx, yy)
+    #return (p2, vx2, vy2, 0.0, 1.0)
 
 def velocity_2d(xx , yy, zz):
     vx2 = Parameters.vx2_fce_value(params,xx,yy)
