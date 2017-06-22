@@ -23,7 +23,7 @@
 #include "mesh/bounding_box.hh"
 #include "mesh/mesh_types.hh"
 
-#include "simplex.hh"
+// #include "simplex.hh"
 
 #include <queue>
 
@@ -47,8 +47,8 @@ public:
 protected:
    
     /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
-    template<unsigned int simplex_dim>
-    void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
+//     template<unsigned int simplex_dim>
+//     void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
     
     /// Mesh pointer.
     Mesh *mesh;
@@ -56,8 +56,8 @@ protected:
     const unsigned int undefined_elm_idx_ = -1;
     
     /// Objects representing single elements.
-    Simplex<dimA> simplexA;
-    Simplex<dimB> simplexB;
+//     Simplex<dimA> simplexA;
+//     Simplex<dimB> simplexB;
 };
 
 /** @brief Class implements algorithm for dim-dimensional intersections with 3D elements.
@@ -116,8 +116,8 @@ public:
 private:
     using IntersectionAlgorithmBase<dim,3>::mesh;
     using IntersectionAlgorithmBase<dim,3>::undefined_elm_idx_;
-    using IntersectionAlgorithmBase<dim,3>::simplexA;
-    using IntersectionAlgorithmBase<dim,3>::simplexB;
+//     using IntersectionAlgorithmBase<dim,3>::simplexA;
+//     using IntersectionAlgorithmBase<dim,3>::simplexB;
     
     /** @brief Auxiliary structure for prolongation process.
      * 
@@ -163,12 +163,12 @@ private:
     bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
     /// Computes the first intersection, from which we then prolongate.
-    bool compute_initial_CI(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
+    bool compute_initial_CI(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
     void prolongation_decide(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele, 
-                             IntersectionAux<dim,3> is);
+                             IntersectionAux<dim,3>& is);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
@@ -259,13 +259,19 @@ public:
      * @param intersection_map_ map of intersections where 1D-3D and 2D-3D must be already computed
      * @param storage vector of intersection objects 1D-2D
      */
-    void compute_intersections(std::vector<std::vector<ILpair>> &intersection_map,
+    void compute_intersections_3(std::vector<std::vector<ILpair>> &intersection_map,
                                std::vector<IntersectionLocal<1,2>> &storage);
     
     /** @brief Runs the algorithm (2): compute 1D-2D intersection in 3D ambient space
      * BIH is used to find intersection candidates.
      */
     void compute_intersections_2(const BIHTree& bih);
+    
+    /** @brief Runs the algorithm (1): compute 1D-2D intersection in 2D plane.
+     * BIH is used to find intersection candidates.
+     */
+    void compute_intersections_1(const BIHTree& bih);
+    
 private: 
     /// Stores temporarily 1D-2D intersections.
     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;

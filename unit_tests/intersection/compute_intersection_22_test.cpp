@@ -93,11 +93,8 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
-    Simplex<2> triaA = create_simplex<2>(mesh->element(0)),
-               triaB = create_simplex<2>(mesh->element(1));
-    
     IntersectionAux<2,2> is;
-    ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA, triaB, mesh);
+    ComputeIntersection<2,2> CI(mesh->element(0), mesh->element(1), mesh);
     CI.init();
     CI.compute(is);
     

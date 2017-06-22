@@ -13,6 +13,7 @@
 #include "mesh_constructor.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
+#include "intersection/intersection_point_aux.hh"
 
 #include <dirent.h>
 
@@ -46,7 +47,8 @@ void compute_intersection(Mesh *mesh, TestCaseResult result)
     double total_length = ie.measure_22();
     cout << "total_length = " << setprecision(17) << total_length << endl;
     EXPECT_EQ(result.first, ie.number_of_components(2));
-    EXPECT_DOUBLE_EQ(result.second, total_length);
+//     EXPECT_DOUBLE_EQ(result.second, total_length);
+    EXPECT_NEAR(result.second, total_length, geometry_epsilon*result.second);
 }
 
 
