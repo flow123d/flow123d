@@ -27,12 +27,6 @@ class FilePath;
 class Observe;
 class ElementDataCacheBase;
 class Mesh;
-class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
-template <int spacedim, class Value>
-class Field;
-class FieldSet;
-template <int spacedim, class Value>
-class MultiField;
 class TimeGovernor;
 class OutputMeshBase;
 class OutputMesh;
@@ -106,6 +100,13 @@ public:
     typedef unsigned int DiscreteSpaceFlags;
 
     /**
+     * Map field name to its OutputData object.
+     */
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
+    typedef std::vector< OutputDataPtr > OutputDataFieldVec;
+    typedef OutputDataFieldVec::iterator OutputDataIter;
+
+    /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
      */
@@ -117,13 +118,6 @@ public:
      */
     static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
     
-    /**
-     * Interpolate given @p field into output discrete @p space and store the values
-     * into private storage for postponed output.
-     */
-    template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace type, Field<spacedim, Value> &field);
-
     /**
      * Write all data registered as a new time frame.
      */
@@ -152,18 +146,50 @@ public:
     }
 
     /**
-     * Create shared pointer \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
+     * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
      *
      * @param init_input Call constructor with initialization from Input Record
      * @param discont    Determines type of output mesh (output_mesh_ or output_mesh_discont_)
      */
     std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input, bool discont = false);
 
+    /**
+     * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
+     */
+    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr(bool discont = false);
+
+    /**
+     * Return MPI rank of process
+     */
+    inline int get_rank() {
+    	return rank;
+    }
+
+    /**
+     * Update the last time is actual \p time is less than \p field_time
+     */
+    void update_time(double field_time);
+
+    /**
+     * Prepare data for computing field values.
+     *
+     * Method:
+     *  - compute discontinuous mesh if CORNER_DATA is calculated
+     *  - find and return ElementDataCache of given field_name, create its if doesn't exist
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     * @param space_type Output discrete space
+     * @param n_rows     Count of rows of data cache (used only if new cache is created)
+     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     */
+    template <typename T>
+    OutputDataIter prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+
 
 protected:
     
     void compute_discontinuous_output_mesh();
-    
+
     /**
      * Change main filename to have prescribed extension.
      */
@@ -179,12 +205,6 @@ protected:
      * Cached MPI rank of process (is tested in methods)
      */
     int rank;
-
-    /**
-     * Map field name to its OutputData object.
-     */
-    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
-    typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace

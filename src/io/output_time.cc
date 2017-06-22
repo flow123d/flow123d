@@ -126,6 +126,22 @@ std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_inp
 }
 
 
+std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr(bool discont) {
+	if (discont) {
+		return output_mesh_discont_;
+	} else {
+		return output_mesh_;
+	}
+}
+
+
+void OutputTime::update_time(double field_time) {
+	if (this->time < field_time) {
+		this->time = field_time;
+	}
+}
+
+
 void OutputTime::compute_discontinuous_output_mesh()
 {
     ASSERT_PTR(output_mesh_).error("Create output mesh first!");
@@ -231,36 +247,12 @@ void OutputTime::clear_data(void)
 
 
 
-#define INSTANCE_compute_field_data(spacedim, value) \
-	template void OutputTime::compute_field_data<spacedim, value> \
-		(const DiscreteSpace ref_type, Field<spacedim, value> &field);
+// explicit instantiation of template methods
+#define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
+template OutputTime::OutputDataIter OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
+		unsigned int n_rows, unsigned int n_cols)
 
+OUTPUT_PREPARE_COMPUTE_DATA(int);
+OUTPUT_PREPARE_COMPUTE_DATA(unsigned int);
+OUTPUT_PREPARE_COMPUTE_DATA(double);
 
-#define INSTANCE_OutputData(spacedim, value) \
-	template class OutputData<value>;
-
-
-#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to) \
-		MACRO(dim_from, FieldValue<dim_to>::VectorFixed ) \
-		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
-
-#define INSTANCE_TO_ALL( MACRO, dim_from) \
-		MACRO(dim_from, FieldValue<0>::Enum ) \
-		MACRO(dim_from, FieldValue<0>::Integer) \
-		MACRO(dim_from, FieldValue<0>::Scalar) \
-        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
-        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
-
-#define INSTANCE_ALL(MACRO) \
-		INSTANCE_TO_ALL( MACRO, 3) \
-		INSTANCE_TO_ALL( MACRO, 2)
-
-
-INSTANCE_ALL( INSTANCE_compute_field_data )
-
-//INSTANCE_TO_ALL( INSTANCE_OutputData, 0)
-
-
-//INSTANCE_register_field(3, FieldValue<0>::Scalar)
-//INSTANCE_register_multifield(3, FieldValue<0>::Scalar)
-//INSTANCE_OutputData(3, FieldValue<0>::Scalar)

@@ -200,7 +200,7 @@ void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> strea
 	    for (unsigned long index=0; index < this->size(); index++)
 	        for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
 	            if (flags & (1 << ids))
-	                    stream->compute_field_data( OutputTime::DiscreteSpace(ids), sub_fields_[index] );
+	                    sub_fields_[index].compute_field_data( OutputTime::DiscreteSpace(ids), stream );
 	}
 }
 

@@ -278,6 +278,12 @@ public:
 
     void set_input_list(const Input::Array &list) override;
 
+    /**
+     * Interpolate given field into output discrete @p space_type and store the values
+     * into storage of output time @p stream for postponed output.
+     */
+    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+
 protected:
 
     /**
