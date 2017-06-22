@@ -652,6 +652,11 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 
     double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
 
+    double pressure_mean = result.dh->element_scalar(ele);
+    XFEMElementSingularData* xd = nullptr;
+    if(ele_ac.is_enriched())
+        xd = ele_ac.xfem_data_sing();
+       
 //     // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
 //     // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
 //     double mean_x_squared=0;
@@ -668,6 +673,16 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
         analytical = anal_sol.value(q_point, ele->element_accessor() );
         for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
 
+        diff = pressure_mean;
+//         if(xd){
+//             arma::vec tmp_rho({3.33 + 0.03, 3.33, 0});
+//             double aw = result.solution[ele_ac.sing_row(0)] / xd->enrichment_func(0)->value(tmp_rho);
+//             double sr = xd->enrichment_func(0)->value(q_point);
+// //             double srt = xd->enrichment_func(0)->value(ele->centre());
+//             diff += aw*sr-;
+//         }
+        diff = diff - analytical[0];
+        pressure_diff += diff * diff * fe_values.JxW(i_point);
 //         // compute postprocesed pressure
 //         diff = 0;
 //         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
@@ -707,16 +722,16 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 
 
     DBGVAR(velocity_diff);
-    result.velocity_diff[ele.index()] = velocity_diff;
+    result.velocity_diff[ele.index()] = std::sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
         result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
     }
 
-    result.pressure_diff[ele.index()] = pressure_diff;
+    result.pressure_diff[ele.index()] = std::sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
-    result.div_diff[ele.index()] = divergence_diff;
+    result.div_diff[ele.index()] = std::sqrt(divergence_diff);
     result.div_error[dim-1] += divergence_diff;
 
 }
@@ -770,7 +785,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
 
     ExactSolution anal_sol_2d(5);
-    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
+//     anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
+    anal_sol_2d.set_python_field_from_file( source_file, "all_sin_source");
 
 
     DiffData result;
