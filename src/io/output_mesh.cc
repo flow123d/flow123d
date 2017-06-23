@@ -18,8 +18,6 @@
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"
-#include "fields/field.hh"
-#include <fields/field_set.hh>
 
 namespace IT=Input::Type;
 
@@ -37,7 +35,8 @@ const IT::Record & OutputMeshBase::get_input_type() {
 OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
 	orig_mesh_(&mesh),
-    max_level_(0)
+    max_level_(0),
+    error_control_field_name_("")
 {
 }
 
@@ -48,6 +47,13 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level"))
 {
+    // Read optional error control field name
+    bool use_field = input_record_.val<bool>("refine_by_error");
+    error_control_field_name_ = "";
+    if(use_field) {
+        auto it = input_record_.find<std::string>("error_control_field");
+        if(it) error_control_field_name_ = *it;
+    }
 }
 
 OutputMeshBase::~OutputMeshBase()
@@ -64,44 +70,6 @@ OutputElementIterator OutputMeshBase::end()
 {
     ASSERT_PTR(offsets_);
     return OutputElementIterator(OutputElement(offsets_->n_values(), shared_from_this()));
-}
-
-void OutputMeshBase::select_error_control_field(FieldSet &output_fields)
-{
-    bool use_field = input_record_.val<bool>("refine_by_error");
-    
-    if(use_field)
-    {
-        std::string error_control_field_name = "";
-        // Read optional error control field name
-        auto it = input_record_.find<std::string>("error_control_field");
-        if(it) error_control_field_name = *it;
-
-        FieldCommon* field =  output_fields.field(error_control_field_name);
-        // throw input exception if the field is unknown
-        if(field == nullptr){
-            THROW(FieldSet::ExcUnknownField()
-                    << FieldCommon::EI_Field(error_control_field_name)
-                    << input_record_.ei_address());
-            return;
-        }
-        
-        // throw input exception if the field is not scalar
-        if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
-            
-            error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-            DebugOut() << "Output mesh will be refined according to field " << error_control_field_name << ".";
-        }
-        else{
-            THROW(ExcFieldNotScalar()
-                    << FieldCommon::EI_Field(error_control_field_name)
-                    << input_record_.ei_address());
-        }
-    }
-    else
-    {
-        error_control_field_ = nullptr;
-    }
 }
 
 unsigned int OutputMeshBase::n_elements()

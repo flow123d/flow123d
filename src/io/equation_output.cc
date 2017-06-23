@@ -196,8 +196,9 @@ void EquationOutput::make_output_mesh()
         	auto output_mesh = stream_->create_output_mesh_ptr(true);
         	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
         	output_mesh_discont->create_data_caches();
-            output_mesh->select_error_control_field(*this);
-            output_mesh_discont->select_error_control_field(*this);
+        	//TODO solve setting of error_control_field
+        	this->select_error_control_field( output_mesh->error_control_field_name() );
+        	this->select_error_control_field( output_mesh_discont->error_control_field_name() );
 
             output_mesh->create_refined_mesh();
             return;
@@ -216,4 +217,36 @@ void EquationOutput::make_output_mesh()
 	output_mesh_discont->create_data_caches();
 
 	output_mesh->create_identical_mesh();
+}
+
+
+void EquationOutput::select_error_control_field(std::string error_control_field_name)
+{
+    if(error_control_field_name!="")
+    {
+        FieldCommon* field =  this->field(error_control_field_name);
+        // throw input exception if the field is unknown
+        if(field == nullptr){
+            THROW(FieldSet::ExcUnknownField()
+                    << FieldCommon::EI_Field(error_control_field_name));
+                    //<< input_record_.ei_address());
+            return;
+        }
+
+        // throw input exception if the field is not scalar
+        if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
+
+            error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+            DebugOut() << "Output mesh will be refined according to field " << error_control_field_name << ".";
+        }
+        else{
+            THROW(ExcFieldNotScalar()
+                    << FieldCommon::EI_Field(error_control_field_name));
+                    //<< input_record_.ei_address());
+        }
+    }
+    else
+    {
+        error_control_field_ = nullptr;
+    }
 }

@@ -23,13 +23,9 @@
 #include "system/sys_profiler.hh"
 #include "input/accessors.hh"
 
-#include "fields/field_values.hh"
-#include "fields/field_set.hh"
-
 #include "tools/general_iterator.hh"
 
 class Mesh;
-template<int, class Value> class Field;
 template<class T> class ElementDataCache;
 
 class OutputElement;
@@ -47,9 +43,6 @@ class OutputMeshDiscontinuous;
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
 public:
-    DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
-                                         << "' is not scalar in spacedim 3.");
-    
     /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment. 
     static const unsigned int spacedim = 3;
     
@@ -70,14 +63,16 @@ public:
     /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
-    /// Selects the error control field out of output field set according to input record.
-    void select_error_control_field(FieldSet &output_fields);
-    
     /// Creates nodes_, connectivity_ and offsets_ data caches.
     void create_data_caches();
 
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
+
+    /// Returns \p error_control_field_name_
+    inline std::string error_control_field_name() {
+    	return error_control_field_name_;
+    }
 
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
@@ -104,9 +99,9 @@ protected:
     /// Maximal level of refinement.
     const unsigned int max_level_;
     
-    /// Refinement error control field.
-    Field<3, FieldValue<3>::Scalar> *error_control_field_;
-    
+    /// Refinement error control field name.
+    std::string error_control_field_name_;
+
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
 };

@@ -27,6 +27,8 @@ class TimeStep;
 class EquationOutput : public FieldSet {
 public:
 
+    DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
+                                         << "' is not scalar in spacedim 3.");
 
     /**
      * Make Input::Type for the output record. Particular selection of output fields is created
@@ -49,6 +51,9 @@ public:
      * Performs output of the fields marked for output in the time @param step.
      */
     void output(TimeStep step);
+
+    /// Selects the error control field out of output field set according to input record.
+    void select_error_control_field(std::string error_control_field_name);
 
 
 private:
@@ -90,6 +95,9 @@ private:
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;
+
+    /// Refinement error control field.
+    Field<3, FieldValue<3>::Scalar> *error_control_field_;
 };
 
 

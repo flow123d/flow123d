@@ -234,16 +234,16 @@ TEST_F(TestOutputMesh, read_input) {
     // create field set of output fields
     EquationOutput output_fields;
     output_fields += scalar_field.name("conc");
-    this->select_error_control_field(output_fields);
+    output_fields.select_error_control_field(this->error_control_field_name());
     
     // no field 'conc' is to be found
     output_fields.field("conc")->name("conc_error");
-    EXPECT_THROW( this->select_error_control_field(output_fields); ,
+    EXPECT_THROW( output_fields.select_error_control_field(this->error_control_field_name()); ,
                   FieldSet::ExcUnknownField);
     
     // 'conc' field is now vector field
     Field<3,FieldValue<3>::VectorFixed> vector_field;
     output_fields += vector_field.name("conc");
-    EXPECT_THROW( this->select_error_control_field(output_fields); ,
-                  OutputMeshBase::ExcFieldNotScalar);
+    EXPECT_THROW( output_fields.select_error_control_field(this->error_control_field_name()); ,
+                  EquationOutput::ExcFieldNotScalar);
 }
