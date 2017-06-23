@@ -21,7 +21,6 @@
 #include "mesh/region.hh"
 #include "io/observe.hh"
 #include "io/element_data_cache.hh"
-#include "fields/field_values.hh"
 
 
 namespace IT = Input::Type;
@@ -302,55 +301,33 @@ Observe::~Observe() {
 }
 
 
-template<int spacedim, class Value>
-void Observe::compute_field_values(Field<spacedim, Value> &field)
+template <typename T>
+Observe::OutputDataMapIter Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
+		unsigned int n_cols)
 {
-	typedef typename Value::element_type ElemType;
-
-    if (points_.size() == 0) return;
-
-    // check that all fields of one time frame are evaluated at the same time
-    double field_time = field.time();
     if ( std::isnan(observe_values_time_) )
         observe_values_time_ = field_time;
     else
         ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_);
 
-    OutputDataFieldMap::iterator it=observe_field_values_.find(field.name());
+    OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
     if (it == observe_field_values_.end()) {
-        observe_field_values_[field.name()]
-					= std::make_shared< ElementDataCache<ElemType> >(field.name(), (unsigned int)Value::NRows_,
-			        		(unsigned int)Value::NCols_, points_.size());
-        it=observe_field_values_.find(field.name());
+        observe_field_values_[field_name]
+					= std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, points_.size());
+        it=observe_field_values_.find(field_name);
     }
-    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(it->second));
-
-    unsigned int i_data=0;
-    for(ObservePoint &o_point : points_) {
-        unsigned int ele_index = o_point.element_idx_;
-        const Value &obs_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                field.value(o_point.global_coords_,
-                                        ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
-        ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
-        output_data.store_value(i_data,  obs_value.mem_ptr());
-        i_data++;
-    }
-
+    return it;
 }
 
-// Instantiation of the method template for particular dimension.
-#define INSTANCE_DIM(dim) \
-template void Observe::compute_field_values(Field<dim, FieldValue<0>::Enum> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<0>::Integer> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<0>::Scalar> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<dim>::VectorFixed> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<dim>::TensorFixed> &);
+// explicit instantiation of template method
+#define OBSERVE_PREPARE_COMPUTE_DATA(TYPE) \
+template Observe::OutputDataMapIter Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
+		unsigned int n_rows, unsigned int n_cols)
 
-// Make all instances for both dimensions.
-INSTANCE_DIM(2)
-INSTANCE_DIM(3)
+OBSERVE_PREPARE_COMPUTE_DATA(int);
+OBSERVE_PREPARE_COMPUTE_DATA(unsigned int);
+OBSERVE_PREPARE_COMPUTE_DATA(double);
 
 
 void Observe::output_header() {

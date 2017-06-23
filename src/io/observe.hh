@@ -11,7 +11,6 @@
 #include <string>
 
 #include "input/input_type.hh"
-#include "fields/field.hh"
 #include "io/element_data_cache_base.hh"
 #include "tools/time_governor.hh"
 #include "system/exceptions.hh"
@@ -35,6 +34,18 @@ public:
             << " close to the initial observe point. Using maximal number of neighbour levels: " << EI_NLevels::val << "\n");
 
     static const Input::Type::Record & get_input_type();
+
+    /**
+     * Return index of observation point in the mesh.
+     */
+    inline unsigned int element_idx()
+    { return element_idx_; }
+
+    /**
+     * Return global coordinates of the observation point.
+     */
+    inline arma::vec3 global_coords()
+    { return global_coords_; }
 
 protected:
     /**
@@ -142,6 +153,10 @@ protected:
 class Observe {
 public:
 
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
+    typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
+    typedef OutputDataFieldMap::iterator OutputDataMapIter;
+
     /**
      * Construct the observation object.
      *
@@ -154,12 +169,6 @@ public:
     /// Destructor, must close the file.
     ~Observe();
 
-
-    /**
-     * Evaluates and store values of the given field in the observe points.
-     */
-    template<int spacedim, class Value>
-    void compute_field_values(Field<spacedim, Value> &field);
 
     /**
      * Provides a vector of element indices on which the observation values are evaluated.
@@ -179,6 +188,39 @@ public:
      */
     void output_time_frame(double time);
 
+    /**
+     * Return pointer to \p mesh_
+     */
+    inline Mesh * mesh()
+    { return mesh_; }
+
+    /**
+     * Return \p points_ vector
+     */
+    inline std::vector<ObservePoint> points()
+    { return points_; }
+
+    /**
+     * Return size of \p points_ vector
+     */
+    inline unsigned int point_size()
+    { return points_.size(); }
+
+    /**
+     * Prepare data for computing observe values.
+     *
+     * Method:
+     *  - check that all fields of one time frame are evaluated at the same time
+     *  - find and return ElementDataCache of given field_name, create its if doesn't exist.
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     * @param field_time Actual computing time
+     * @param n_rows     Count of rows of data cache (used only if new cache is created)
+     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     */
+    template <typename T>
+    OutputDataMapIter prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+
 
 
 protected:
@@ -192,9 +234,6 @@ protected:
     std::vector<ObservePoint> points_;
     /// Elements of the o_points.
     std::vector<unsigned int> observed_element_indices_;
-
-    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
-    typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
 
     /// Stored field values.
     OutputDataFieldMap observe_field_values_;

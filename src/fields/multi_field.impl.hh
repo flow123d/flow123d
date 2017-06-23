@@ -209,7 +209,7 @@ void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> strea
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
-    for(auto &field : sub_fields_) observe->compute_field_values(field);
+    for(auto &field : sub_fields_) field.observe_output(observe);
 }
 
 
