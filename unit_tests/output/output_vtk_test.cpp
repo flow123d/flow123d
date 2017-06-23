@@ -21,6 +21,7 @@
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
+#include "fields/field.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
