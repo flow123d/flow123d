@@ -8,7 +8,7 @@
 #include "tools/time_marks.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 #include "io/output_time_set.hh"
 #include "io/output_mesh.hh"
 #include "input/flow_attribute_lib.hh"

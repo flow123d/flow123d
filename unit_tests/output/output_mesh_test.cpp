@@ -19,7 +19,7 @@
 #include "fields/field_constant.hh"
 #include <fields/field.hh>
 #include <fields/field_set.hh>
-#include <io/equation_output.hh>
+#include <fields/equation_output.hh>
 #include <fields/field_common.hh>
 #include "input/input_type.hh"
 

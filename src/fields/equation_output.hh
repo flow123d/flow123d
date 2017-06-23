@@ -5,8 +5,8 @@
  *      Author: jb
  */
 
-#ifndef SRC_IO_EQUATION_OUTPUT_HH_
-#define SRC_IO_EQUATION_OUTPUT_HH_
+#ifndef SRC_FIELDS_EQUATION_OUTPUT_HH_
+#define SRC_FIELDS_EQUATION_OUTPUT_HH_
 
 #include <memory>
 #include <unordered_map>
@@ -101,4 +101,4 @@ private:
 };
 
 
-#endif /* SRC_IO_EQUATION_OUTPUT_HH_ */
+#endif /* SRC_FIELDS_EQUATION_OUTPUT_HH_ */

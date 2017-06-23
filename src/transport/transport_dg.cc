@@ -35,7 +35,7 @@
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_CHILD(heatModel);

@@ -258,9 +258,8 @@ add_library(coupling_lib
     io/observe.cc
     io/output_mesh.cc
     io/output_time_set.cc
-    io/equation_output.cc
     
-    
+    fields/equation_output.cc
     fields/field_values.cc
     fields/field_common.cc
     fields/field.cc
