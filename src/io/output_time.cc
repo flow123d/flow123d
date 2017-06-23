@@ -26,7 +26,6 @@
 #include "output_mesh.hh"
 #include "io/output_time_set.hh"
 #include "io/observe.hh"
-#include <fields/field_set.hh>
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)

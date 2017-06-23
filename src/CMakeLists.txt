@@ -235,6 +235,13 @@ add_library(io_lib
     io/msh_vtkreader.cc
     io/element_data_cache.cc
     io/reader_instances.cc
+
+    io/output_time.cc
+    io/output_vtk.cc
+    io/output_msh.cc
+    io/observe.cc
+    io/output_mesh.cc
+    io/output_time_set.cc
 )
 
 target_link_libraries(io_lib
@@ -252,12 +259,6 @@ target_link_libraries(io_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
-    io/output_time.cc
-    io/output_vtk.cc
-    io/output_msh.cc
-    io/observe.cc
-    io/output_mesh.cc
-    io/output_time_set.cc
     
     fields/equation_output.cc
     fields/field_values.cc
@@ -286,8 +287,7 @@ target_link_libraries(coupling_lib
     system_lib input_lib mesh_lib tools_lib fem_lib io_lib
     fparser     
     armadillo
-    ${Boost_LIBRARIES}
-    ${Zlib_LIBRARY})
+    ${Boost_LIBRARIES})
 
 
 
