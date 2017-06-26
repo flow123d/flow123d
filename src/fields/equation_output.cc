@@ -195,7 +195,6 @@ void EquationOutput::make_output_mesh()
         if(it) {
         	auto output_mesh = stream_->create_output_mesh_ptr(true);
         	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
-        	output_mesh_discont->create_data_caches();
         	//TODO solve setting of error_control_field
         	this->select_error_control_field( output_mesh->error_control_field_name() );
         	this->select_error_control_field( output_mesh_discont->error_control_field_name() );
@@ -213,8 +212,7 @@ void EquationOutput::make_output_mesh()
 
 
 	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
-	auto output_mesh_discont = stream_->create_output_mesh_ptr(false, true);
-	output_mesh_discont->create_data_caches();
+	stream_->create_output_mesh_ptr(false, true);
 
 	output_mesh->create_identical_mesh();
 }

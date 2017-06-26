@@ -36,9 +36,28 @@ class OutputMesh;
 class OutputMeshDiscontinuous;
 
 
-/// @brief Base class for Output mesh.
 /**
- * Defines common members for OutputMesh classes.
+ * @brief Base class for Output mesh.
+ *
+ * Defines common members for Output mesh classes:
+ *  - OutputMesh represents output mesh with continuous elements
+ *  - OutputMeshDiscontinuous represents output mesh with discontinuous elements
+ *
+ * Making of output meshes and calling of their initialization methods must be execute in correct order, see example:
+@code
+    // Create or get Mesh object
+    Mesh * my_mesh = ...
+
+    // Construct mesh with continuous elements
+    std::make_shared<OutputMesh> output_mesh = std::make_shared<OutputMesh>(*my_mesh);
+    // Creates the mesh identical to the computational one.
+    output_mesh->create_identical_mesh();
+
+    // Construct mesh with discontinuous elements
+    std::make_shared<OutputMeshDiscontinuous> output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
+    // Creates mesh from the given continuous one.
+    output_mesh_discont->create_mesh(output_mesh);
+@endcode
  */
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
@@ -63,9 +82,6 @@ public:
     /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
-    /// Creates nodes_, connectivity_ and offsets_ data caches.
-    void create_data_caches();
-
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
@@ -129,6 +145,7 @@ protected:
 };
 
 
+/// @brief Class represents output mesh with discontinuous elements.
 class OutputMeshDiscontinuous : public OutputMeshBase
 {
 public:

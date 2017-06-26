@@ -34,6 +34,9 @@ const IT::Record & OutputMeshBase::get_input_type() {
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
+	nodes_( std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 0) ),
+	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 0) ),
+	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 0) ),
 	orig_mesh_(&mesh),
     max_level_(0),
     error_control_field_name_("")
@@ -43,6 +46,9 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 : 
+	nodes_( std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 0) ),
+	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 0) ),
+	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 0) ),
     input_record_(in_rec), 
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level"))
@@ -82,15 +88,6 @@ unsigned int OutputMeshBase::n_nodes()
 {
     ASSERT_PTR(nodes_);
     return nodes_->n_values();
-}
-
-
-void OutputMeshBase::create_data_caches()
-{
-    nodes_ = std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 1);
-    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 1);
-	offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 1);
-
 }
 
 
