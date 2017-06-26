@@ -22,6 +22,7 @@
 #include <string>
 #include <fstream>
 #include "input/accessors.hh"
+#include "io/element_data_cache.hh"
 
 class FilePath;
 class Observe;
@@ -104,7 +105,6 @@ public:
      */
     typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::vector< OutputDataPtr > OutputDataFieldVec;
-    typedef OutputDataFieldVec::iterator OutputDataIter;
 
     /**
      * \brief This method delete all object instances of class OutputTime stored
@@ -183,7 +183,7 @@ public:
      * @param n_cols     Count of columns of data cache (used only if new cache is created)
      */
     template <typename T>
-    OutputDataIter prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
 
 protected:

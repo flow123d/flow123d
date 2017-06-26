@@ -351,19 +351,18 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
 	typedef typename Value::element_type ElemType;
 
-    if (observe->point_size() == 0) return;
+    if (observe->points().size() == 0) return;
 
-    Observe::OutputDataFieldMap::iterator it = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
+    ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
     						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(it->second));
 
     unsigned int i_data=0;
-    for(ObservePoint &o_point : observe->points()) {
+    for(const ObservePoint &o_point : observe->points()) {
         unsigned int ele_index = o_point.element_idx();
         const Value &obs_value =
                         Value( const_cast<typename Value::return_type &>(
                                 this->value(o_point.global_coords(),
-                                        ElementAccessor<spacedim>(observe->mesh(), ele_index, false)) ));
+                                        ElementAccessor<spacedim>(this->mesh(), ele_index, false)) ));
         ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
@@ -591,8 +590,8 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         return;
     }
 
-    auto it = stream->prepare_compute_data<ElemType>(this->name(), space_type, (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(*it));
+    ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
+    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
 
     /* Copy data to array */

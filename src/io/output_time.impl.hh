@@ -75,7 +75,7 @@
  */
 
 template <typename T>
-OutputTime::OutputDataIter OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
+ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
 		unsigned int n_cols)
 {
     if(space_type == CORNER_DATA)
@@ -94,7 +94,7 @@ OutputTime::OutputDataIter OutputTime::prepare_compute_data(std::string field_na
         od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, size[space_type]) );
         it=--od_vec.end();
     }
-    return it;
+    return dynamic_cast<ElementDataCache<T> &>(*(*it));
 }
 
 #endif

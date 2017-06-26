@@ -264,8 +264,7 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
 
 
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision)
-: mesh_(&mesh),  
-  observe_values_time_(numeric_limits<double>::signaling_NaN()),
+: observe_values_time_(numeric_limits<double>::signaling_NaN()),
   observe_name_(observe_name),
   precision_(precision)
 {
@@ -273,7 +272,7 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
 
     for(auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
         ObservePoint point(*it, points_.size());
-        point.find_observe_point(*mesh_);
+        point.find_observe_point(mesh);
         points_.push_back( point );
         observed_element_indices_.push_back(point.element_idx_);
     }
@@ -302,7 +301,7 @@ Observe::~Observe() {
 
 
 template <typename T>
-Observe::OutputDataMapIter Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
+ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
 		unsigned int n_cols)
 {
     if ( std::isnan(observe_values_time_) )
@@ -317,12 +316,12 @@ Observe::OutputDataMapIter Observe::prepare_compute_data(std::string field_name,
 					= std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, points_.size());
         it=observe_field_values_.find(field_name);
     }
-    return it;
+    return dynamic_cast<ElementDataCache<T> &>(*(it->second));
 }
 
 // explicit instantiation of template method
 #define OBSERVE_PREPARE_COMPUTE_DATA(TYPE) \
-template Observe::OutputDataMapIter Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
+template ElementDataCache<TYPE> & Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
 		unsigned int n_rows, unsigned int n_cols)
 
 OBSERVE_PREPARE_COMPUTE_DATA(int);

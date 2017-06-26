@@ -12,6 +12,7 @@
 
 #include "input/input_type.hh"
 #include "io/element_data_cache_base.hh"
+#include "io/element_data_cache.hh"
 #include "tools/time_governor.hh"
 #include "system/exceptions.hh"
 #include <armadillo>
@@ -38,13 +39,13 @@ public:
     /**
      * Return index of observation point in the mesh.
      */
-    inline unsigned int element_idx()
+    inline unsigned int element_idx() const
     { return element_idx_; }
 
     /**
      * Return global coordinates of the observation point.
      */
-    inline arma::vec3 global_coords()
+    inline arma::vec3 global_coords() const
     { return global_coords_; }
 
 protected:
@@ -155,7 +156,6 @@ public:
 
     typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
-    typedef OutputDataFieldMap::iterator OutputDataMapIter;
 
     /**
      * Construct the observation object.
@@ -189,22 +189,10 @@ public:
     void output_time_frame(double time);
 
     /**
-     * Return pointer to \p mesh_
-     */
-    inline Mesh * mesh()
-    { return mesh_; }
-
-    /**
      * Return \p points_ vector
      */
-    inline std::vector<ObservePoint> points()
+    inline const std::vector<ObservePoint> & points() const
     { return points_; }
-
-    /**
-     * Return size of \p points_ vector
-     */
-    inline unsigned int point_size()
-    { return points_.size(); }
 
     /**
      * Prepare data for computing observe values.
@@ -219,16 +207,13 @@ public:
      * @param n_cols     Count of columns of data cache (used only if new cache is created)
      */
     template <typename T>
-    OutputDataMapIter prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
 
 
 
 protected:
     // MPI rank.
     int rank_;
-
-    // Mesh used for search of points.
-    Mesh *mesh_;
 
     /// Full information about observe points.
     std::vector<ObservePoint> points_;
