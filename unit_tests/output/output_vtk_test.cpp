@@ -17,6 +17,7 @@
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
@@ -45,9 +46,7 @@ public:
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        this->_mesh = mesh_constructor();
-        ifstream in(string(mesh_file).c_str());
-        this->_mesh->read_gmsh_from_stream(in);
+        this->_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
     }
@@ -119,6 +118,9 @@ TEST_F(TestOutputVTK, write_data_ascii) {
 
 	this->init_mesh(test_output_time_ascii);
     this->current_step=1;
+    set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+    set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+    set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
     this->write_data();
     EXPECT_EQ("./test1.pvd", string(this->_base_filename));
     EXPECT_EQ("test1", this->main_output_basename_);

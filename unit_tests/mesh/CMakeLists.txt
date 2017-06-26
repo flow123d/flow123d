@@ -22,7 +22,7 @@
 #
 
 
-set(libs mesh_lib system_lib)
+set(libs mesh_lib system_lib io_lib)
 add_test_directory("${libs}")
     
     define_test(ref_element)

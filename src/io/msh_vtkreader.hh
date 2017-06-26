@@ -23,7 +23,7 @@
 #include <istream>
 #include <pugixml.hpp>
 
-#include "mesh/msh_basereader.hh"
+#include "io/msh_basereader.hh"
 #include "system/file_path.hh"
 
 class VtkMeshReader : public BaseMeshReader {
@@ -64,13 +64,21 @@ public:
 	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
 
 	/**
-     * Construct the VTK format reader from given filename.
+     * Construct the VTK format reader from given FilePath.
      * This opens the file for reading.
      */
 	VtkMeshReader(const FilePath &file_name);
 
 	/// Destructor
 	~VtkMeshReader();
+
+    /**
+     * Read regions from the VTK file and save the physical sections as regions in the RegionDB.
+     *
+     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
+     * assign regions to the boundary and are not used in actual FEM computations.
+     */
+    void read_physical_names(Mesh * mesh) override;
 
 	/**
 	 * Check if nodes and elements of VTK mesh is compatible with \p mesh.
@@ -83,6 +91,17 @@ public:
 	void check_compatible_mesh(Mesh &mesh) override;
 
 protected:
+    /**
+     * private method for reading of nodes
+     */
+    void read_nodes(Mesh * mesh);
+
+    /**
+     * Method for reading of elements.
+     * Input of the mesh allows changing regions within the input file.
+     */
+    void read_elements(Mesh * mesh);
+
     /**
 	 * Find header of DataArray section of VTK file given by field_name.
 	 *
@@ -103,16 +122,16 @@ protected:
 	unsigned int type_value_size(DataType data_type);
 
 	/// Parse ascii data to data cache
-	void parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos);
+	void parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
+			Tokenizer::Position pos);
 
 	/// Parse binary data to data cache
-	void parse_binary_data(ElementDataCacheBase &data_cache, unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
+	void parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
+			Tokenizer::Position pos, DataType value_type);
 
 	/// Uncompress and parse binary compressed data to data cache
-	void parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int size_of_cache, unsigned int n_components,
-			unsigned int n_entities, Tokenizer::Position pos, DataType value_type);
+	void parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
+			Tokenizer::Position pos, DataType value_type);
 
 	/// Set base attributes of VTK and get count of nodes and elements.
 	void read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements);
@@ -120,17 +139,11 @@ protected:
 	/// Get position of AppendedData tag in VTK file
 	Tokenizer::Position get_appended_position();
 
-	/// Override @p BaseMeshReader::check_test_compatible_mesh.
-	inline void check_test_compatible_mesh() override {
-		ASSERT_GT(vtk_to_gmsh_element_map_.size(), 0)
-				.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
-	}
-
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
-    		unsigned int n_components, std::vector<int> const & el_ids) override;
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    		std::vector<int> const & el_ids) override;
 
     /**
      * Compare two points representing by armadillo vector.
@@ -139,11 +152,6 @@ protected:
      *  - calculate with \p point_tolerance parameter
      */
     bool compare_points(arma::vec3 &p1, arma::vec3 &p2);
-
-    /// Implements @p BaseMeshReader::data_section_name.
-    std::string data_section_name() override {
-    	return "DataArray";
-    }
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;

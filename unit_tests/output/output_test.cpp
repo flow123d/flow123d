@@ -19,6 +19,7 @@
 #include "tools/time_governor.hh"
 
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -213,16 +214,15 @@ public:
 	: OutputTime()
 
 	{
-	    my_mesh = mesh_constructor();
+	    Profiler::initialize();
+		// read simple mesh
+	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+	    my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
 	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
-	    Profiler::initialize();
-		// read simple mesh
-	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    ifstream in(string(mesh_file).c_str());
-	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
@@ -352,7 +352,7 @@ TEST_F(TestOutputTime, compute_field_data) {
 	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
 	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
 	//test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
-	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
+	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 0], [2, 4, 3], [0, 3, 5]]", "1 2 0 2 4 3 0 3 5 ");
 	//test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
 }
 

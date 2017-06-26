@@ -17,7 +17,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
@@ -93,18 +93,15 @@ public:
 
 	SomeEquation() {
 	    Profiler::initialize();
-
-        FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = mesh_constructor();
-        ifstream in(string(mesh_file).c_str());
-        mesh_->read_gmsh_from_stream(in);
+	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 	}
 
 	~SomeEquation() {
-	    delete mesh_;
+		delete mesh_;
 	}
 
-	Mesh    *mesh_;
+	Mesh * mesh_;
 	std::vector<string> component_names_;
 };
 
@@ -218,9 +215,9 @@ TEST_F(SomeEquation, collective_interface) {
 
     EXPECT_EQ(nullptr,data["init_pressure"].mesh());
     data.set_mesh(*mesh_);
-    EXPECT_EQ(mesh_,data["init_pressure"].mesh());
-    EXPECT_EQ(mesh_,data["velocity"].mesh());
-    EXPECT_EQ(mesh_,data["reaction_type"].mesh());
+    EXPECT_EQ(mesh_, data["init_pressure"].mesh());
+    EXPECT_EQ(mesh_, data["velocity"].mesh());
+    EXPECT_EQ(mesh_, data["reaction_type"].mesh());
 
     // flags_add
     FieldFlag::Flags matrix(

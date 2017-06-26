@@ -19,7 +19,7 @@
 #include "field_interpolated_p0.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "system/system.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "io/reader_instances.hh"
 #include "mesh/ngh/include/intersection.h"
@@ -72,8 +72,8 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
     {
        source_mesh_ = new Mesh( Input::Record() );
        reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-       GmshMeshReader *reader = static_cast<GmshMeshReader *>( ReaderInstances::instance()->get_reader(reader_file_).get() );
-       reader->read_mesh( source_mesh_ );
+       auto reader = ReaderInstances::instance()->get_reader(reader_file_ );
+       reader->read_raw_mesh( source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bih_tree_ = new BIHTree( source_mesh_ );
@@ -103,7 +103,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
 
     bool actual_header_data = false;
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(
+    data_ = ReaderInstances::instance()->get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), actual_header_data,
     		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
     this->scale_data();

@@ -146,17 +146,6 @@ public:
      */
     void clear_data(void);
 
-    /**
-     * Declaration of new exception info used in following exception
-     */
-    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
-
-    /**
-     * Declaration of exception
-     */
-    DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
-            << " returning variable size vectors. Try convert to MultiField.\n");
-
 
 protected:
     

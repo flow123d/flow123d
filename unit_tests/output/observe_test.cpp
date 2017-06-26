@@ -16,6 +16,7 @@
 #include <mesh_constructor.hh>
 #include "io/observe.hh"
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
@@ -215,9 +216,7 @@ TEST(ObservePoint, find_observe_point) {
     armadillo_setup();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
     auto obs = TestObservePoint("0 -0.5 -0.5", 4, "ALL");
     obs.check(*mesh,"0.25 0.25 0.25", "0 -0.5 -0.5", 6);
@@ -241,9 +240,7 @@ TEST(Observe, all) {
         .get_root_interface<Input::Record>();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
     {
     TestObserve obs(*mesh, in_rec.val<Input::Array>("observe_points"));

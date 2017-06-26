@@ -19,7 +19,7 @@
 #define READER_INSTANCES_HH_
 
 
-#include "mesh/msh_basereader.hh"
+#include "io/msh_basereader.hh"
 #include "system/file_path.hh"
 
 
@@ -28,11 +28,6 @@
  */
 class ReaderInstances {
 public:
-	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
-	TYPEDEF_ERR_INFO(EI_FileExtension, std::string);
-	DECLARE_EXCEPTION(ExcWrongExtension,
-			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
-
 	typedef std::map< string, std::shared_ptr<BaseMeshReader> > ReaderTable;
 
 	/// Returns singleton instance
@@ -41,7 +36,7 @@ public:
 	/**
 	 * Returns mesh reader of get filepath. If reader doesn't exist, creates its.
 	 */
-	std::shared_ptr<BaseMeshReader> get_reader(const FilePath &file_path);
+	std::shared_ptr<BaseMeshReader> get_reader(const FilePath &file_name);
 
 private:
 	/// Constructor

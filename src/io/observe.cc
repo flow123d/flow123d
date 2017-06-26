@@ -20,7 +20,8 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
 #include "io/observe.hh"
-#include "io/output_data.hh"
+#include "io/element_data_cache.hh"
+#include "fields/field_values.hh"
 
 
 namespace IT = Input::Type;
@@ -175,7 +176,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
             closed_elements.insert(i_elm);
             // add all node neighbours to the next level list
             for (unsigned int n=0; n < elm.n_nodes(); n++) {
-                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])])
                     candidate_list.push_back(i_node_ele);
             }
         } else {
@@ -211,7 +212,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         closed_elements.insert(i_elm);
         // add all node neighbours to the next level list
         for (unsigned int n=0; n < elm.n_nodes(); n++) {
-            for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+            for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])])
                 candidate_list.push_back(i_node_ele);
         }
 
@@ -238,7 +239,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
              }
             // add all node neighbours to the next level list
             for (unsigned int n=0; n < elm.n_nodes(); n++) {
-                for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])])
+                for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])])
                     candidate_list.push_back(i_node_ele);
             }
         }
@@ -304,6 +305,8 @@ Observe::~Observe() {
 template<int spacedim, class Value>
 void Observe::compute_field_values(Field<spacedim, Value> &field)
 {
+	typedef typename Value::element_type ElemType;
+
     if (points_.size() == 0) return;
 
     // check that all fields of one time frame are evaluated at the same time
@@ -316,19 +319,22 @@ void Observe::compute_field_values(Field<spacedim, Value> &field)
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field.name());
     if (it == observe_field_values_.end()) {
-        observe_field_values_[field.name()] = std::make_shared< OutputData<Value> >(field, points_.size());
+        observe_field_values_[field.name()]
+					= std::make_shared< ElementDataCache<ElemType> >(field.name(), (unsigned int)Value::NRows_,
+			        		(unsigned int)Value::NCols_, points_.size());
         it=observe_field_values_.find(field.name());
     }
-    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(it->second));
+    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(it->second));
 
     unsigned int i_data=0;
     for(ObservePoint &o_point : points_) {
         unsigned int ele_index = o_point.element_idx_;
         const Value &obs_value =
-                Value( const_cast<typename Value::return_type &>(
-                        field.value(o_point.global_coords_,
-                                ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
-        output_data.store_value(i_data,  obs_value);
+                        Value( const_cast<typename Value::return_type &>(
+                                field.value(o_point.global_coords_,
+                                        ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
+        ASSERT_EQ(output_data.n_elem_, obs_value.n_rows()*obs_value.n_cols()).error();
+        output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
     }
 

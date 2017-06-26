@@ -12,6 +12,7 @@
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 
@@ -27,6 +28,7 @@
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
 
+
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
@@ -37,10 +39,7 @@ TEST(OutputMesh, create_identical)
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     // read mesh - simplset cube from test1
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     
     auto output_mesh = std::make_shared<OutputMesh>(*mesh);
     output_mesh->create_identical_mesh();
@@ -144,13 +143,10 @@ TEST(OutputMesh, write_on_output_mesh) {
     typedef Field<3,FieldValue<3>::Scalar> ScalarField;
   
     // setup FilePath directories
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     // read mesh - simplset cube from test1
-    FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
     
     
     // create scalar field out of FieldAlgorithmBase field

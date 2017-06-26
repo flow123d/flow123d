@@ -175,10 +175,6 @@ target_link_libraries(tools_lib
 # mesh_lib
 add_library(mesh_lib 
     mesh/region.cc
-    mesh/msh_basereader.cc
-    mesh/msh_gmshreader.cc
-    mesh/msh_vtkreader.cc
-    mesh/element_data_cache.cc
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
@@ -232,6 +228,24 @@ target_link_libraries(fem_lib
 
 
 
+# io_lib  
+add_library(io_lib 
+    io/msh_basereader.cc
+    io/msh_gmshreader.cc
+    io/msh_vtkreader.cc
+    io/element_data_cache.cc
+    io/reader_instances.cc
+    io/output_mesh_data.cc
+)
+
+target_link_libraries(io_lib
+    system_lib input_lib mesh_lib la_lib
+    armadillo 
+    ${Boost_LIBRARIES}
+    ${PugiXml_LIBRARY}
+    ${Zlib_LIBRARY})
+
+
 
 
 
@@ -239,14 +253,10 @@ target_link_libraries(fem_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
-    io/reader_instances.cc
-
-    io/output_data.cc
     io/output_time.cc
     io/output_vtk.cc
     io/output_msh.cc
     io/observe.cc
-    io/output_mesh_data.cc
     io/output_mesh.cc
     io/output_time_set.cc
     io/equation_output.cc
@@ -275,7 +285,7 @@ add_library(coupling_lib
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
-    system_lib input_lib mesh_lib tools_lib fem_lib
+    system_lib input_lib mesh_lib tools_lib fem_lib io_lib
     fparser     
     armadillo
     ${Boost_LIBRARIES}
@@ -328,7 +338,7 @@ add_library(flow123d_lib
     coupling/hc_explicit_sequential.cc
 )    
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib input_lib 
+    fem_lib mesh_lib la_lib input_lib io_lib
     system_lib tools_lib coupling_lib  tools_lib
     fparser  
     armadillo 

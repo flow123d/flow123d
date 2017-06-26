@@ -25,8 +25,8 @@
 
 
 #include "mesh/region.hh"
-#include "mesh/element_data_cache.hh"
-#include "mesh/msh_basereader.hh"
+#include "io/element_data_cache.hh"
+#include "io/msh_basereader.hh"
 #include "input/input_exception.hh"
 
 class Mesh;
@@ -55,29 +55,15 @@ public:
 	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
 
     /**
-     * Construct the GMSH format reader from given filename.
+     * Construct the GMSH format reader from given FilePath.
      * This opens the file for reading.
      */
     GmshMeshReader(const FilePath &file_name);
-    /**
-     * Construct the GMSH format reader from given input stream.
-     * The input stream should be correctly opened. To get correct information about
-     * line numbers there should be no previous reading from the stream.
-     */
-    GmshMeshReader(std::istream &in);
 
     /**
      * Destructor close the file if opened.
      */
-    ~GmshMeshReader();
-
-    /**
-     *  Reads @p mesh from the GMSH file.
-     *  Input of the mesh allows changing regions within the input CON file.
-     *
-     *  Implements @p BaseMeshReader::read_mesh.
-     */
-    void read_mesh(Mesh* mesh);
+    virtual ~GmshMeshReader();
 
     /**
      * Read section '$PhysicalNames' of the GMSH file and save the physical sections as regions in the RegionDB.
@@ -85,7 +71,7 @@ public:
      * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
      * assign regions to the boundary and are not used in actual FEM computations.
      */
-    void read_physical_names(Mesh * mesh);
+    void read_physical_names(Mesh * mesh) override;
 
     /**
      * Empty method for GMSH reader now.
@@ -98,12 +84,16 @@ protected:
     /**
      * private method for reading of nodes
      */
-    void read_nodes(Mesh*);
+    void read_nodes(Mesh * mesh);
     /**
      *  Method for reading of elements.
      *  Input of the mesh allows changing regions within the input CON file.
+     * Read section '$PhysicalNames' of the GMSH file and save the physical sections to general data structure.
+     *
+     * Region Labels starting with '!' are treated as boundary regions. Elements of these regions are used just to
+     * assign regions to the boundary and are not used in actual FEM computations.
      */
-    void read_elements(Mesh*);
+    void read_elements(Mesh * mesh);
     /**
      * Reads the header from the tokenizer @p tok and return it as the second parameter.
      */
@@ -119,13 +109,8 @@ protected:
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */
-    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
-    		unsigned int n_components, std::vector<int> const & el_ids) override;
-
-    /// Implements @p BaseMeshReader::data_section_name.
-    std::string data_section_name() override {
-    	return "$ElementData";
-    }
+    void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    		std::vector<int> const & el_ids) override;
 
 
     /// Table with data of ElementData headers

@@ -24,8 +24,9 @@
 #include <vector>
 #include <istream>
 
-#include "mesh/element_data_cache.hh"
+#include "io/element_data_cache.hh"
 #include "mesh/mesh.h"
+#include "input/accessors.hh"
 #include "system/system.hh"
 #include "system/tokenizer.hh"
 
@@ -91,6 +92,7 @@ public:
 	TYPEDEF_ERR_INFO(EI_MeshFile, std::string);
 	TYPEDEF_ERR_INFO(EI_Type, std::string);
 	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+	TYPEDEF_ERR_INFO(EI_FileExtension, std::string);
 	DECLARE_INPUT_EXCEPTION(ExcFieldNameNotFound,
 			<< "No data for field: "<< EI_FieldName::qval
 			<< " and time: "<< EI_Time::val
@@ -98,12 +100,37 @@ public:
 	DECLARE_EXCEPTION(ExcWrongFormat,
 			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
 			<< "in the input file: " << EI_MeshFile::qval);
+	DECLARE_EXCEPTION(ExcWrongExtension,
+			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
 
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name);
 
-	/// Constructor
-	BaseMeshReader(std::istream &in);
+    /**
+     * This static method gets file path object of reader,
+     * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Returns shared pointer to BaseMeshReader.
+     */
+    static std::shared_ptr< BaseMeshReader > reader_factory(const FilePath &file_name);
+
+    /**
+     * This static method gets accessor to record with function input,
+     * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Returns pointer to Mesh.
+     */
+    static Mesh * mesh_factory(const Input::Record &input_mesh_rec);
+
+    /**
+     * Reads @p raw data of mesh (only nodes and elements) from the GMSH or VTKfile.
+     * Input of the mesh allows changing regions within the input file.
+     *
+     */
+    void read_raw_mesh(Mesh * mesh);
+
+    /**
+     * Read regions from the mesh file and save the physical sections as regions in the RegionDB.
+     */
+    virtual void read_physical_names(Mesh * mesh)=0;
 
     /**
      *  Reads ElementData sections of opened mesh file. The file is searched for the \\$ElementData (GMSH) or DataArray
@@ -137,6 +164,19 @@ public:
     virtual void check_compatible_mesh(Mesh &mesh)=0;
 
 protected:
+    typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
+    typedef std::map< string, ElementDataPtr > ElementDataFieldMap;
+
+    /**
+     * private method for reading of nodes
+     */
+    virtual void read_nodes(Mesh * mesh)=0;
+
+    /**
+     * Method for reading of elements.
+     */
+    virtual void read_elements(Mesh * mesh)=0;
+
     /**
 	 * Find data header for given time and field.
 	 */
@@ -150,24 +190,27 @@ protected:
     /**
      * Read element data to data cache
      */
-    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int size_of_cache,
-    		unsigned int n_components, std::vector<int> const & el_ids)=0;
+    virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
+    		std::vector<int> const & el_ids)=0;
 
     /**
-     * Check whether the check of compatible mesh was performed.
+     * Flag stores that check of compatible mesh was performed.
      *
-     * This method has effect only for VTK reader.
+     * This flag has effect only for VTK reader.
      */
-    virtual inline void check_test_compatible_mesh() {}
+    bool has_compatible_mesh_;
 
-    /// Return name of field data section specify for type of mesh file.
-    virtual std::string data_section_name()=0;
+    /// Store name of field data section specify for type of mesh file.
+    std::string data_section_name_;
 
     /// Cache with last read element data
-    ElementDataCacheBase *current_cache_;
+    ElementDataFieldMap element_data_values_;
 
     /// Tokenizer used for reading ASCII file format.
     Tokenizer tok_;
+
+    /// Input record accessor of mesh.
+    Input::Record input_mesh_rec_;
 };
 
 #endif	/* MSH_BASE_READER_HH */

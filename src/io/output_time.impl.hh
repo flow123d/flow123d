@@ -65,12 +65,13 @@
 
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "fields/field_values.hh"
 #include "system/exceptions.hh"
 #include "io/output_time.hh"
 
 #include "io/output_data_base.hh"
 #include "output_mesh.hh"
-#include "io/output_data.hh"
+#include "io/element_data_cache.hh"
 #include "output_element.hh"
 
 
@@ -111,6 +112,8 @@ void OutputTime::register_data(const DiscreteSpace type,
 template<int spacedim, class Value>
 void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
 {
+	typedef typename Value::element_type ElemType;
+
     /* It's possible now to do output to the file only in the first process */
     if( this->rank != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
@@ -130,10 +133,11 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
             [&field](OutputDataPtr ptr) { return (ptr->field_name ==  field.name()); });
     if ( it == od_vec.end() ) {
-        od_vec.push_back( std::make_shared< OutputData<Value> >(field, size[space_type]) );
+        od_vec.push_back( std::make_shared< ElementDataCache<ElemType> >(field.name(), (unsigned int)Value::NRows_,
+        		(unsigned int)Value::NCols_, size[space_type]) );
         it=--od_vec.end();
     }
-    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(*it));
+    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(*it));
 
 
     /* Copy data to array */
@@ -155,7 +159,7 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                 field.value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
-                output_data.add(node_index, node_value);
+                output_data.add(node_index, node_value.mem_ptr() );
                 count[node_index]++;
             }
         }
@@ -177,7 +181,8 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                 field.value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
                              );
-                output_data.store_value(node_index,  node_value);
+                ASSERT_EQ(output_data.n_elem_, node_value.n_rows()*node_value.n_cols()).error();
+                output_data.store_value(node_index, node_value.mem_ptr() );
             }
         }
     }
@@ -192,7 +197,8 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
                                                                         )
                              );
-                output_data.store_value(ele_index,  ele_value);
+            ASSERT_EQ(output_data.n_elem_, ele_value.n_rows()*ele_value.n_cols()).error();
+            output_data.store_value(ele_index, ele_value.mem_ptr() );
         }
     }
     break;

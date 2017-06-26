@@ -24,7 +24,6 @@
 #include <string>
 #include <typeinfo>
 
-#include "fields/unit_si.hh"
 #include "system/global_defs.h"
 
 using namespace std;
@@ -84,11 +83,18 @@ public:
     virtual void get_min_max_range(double &min, double &max) = 0;
 
     /**
+     * Set string representation of SI units.
+     */
+    void set_field_units(std::string unit_string) {
+    	this->field_units = unit_string;
+    }
+
+    /**
      * Data copied from Field.
      */
     std::string output_field_name;
     std::string field_name;
-    UnitSI field_units;
+    std::string field_units;
 
     /**
      * Number of data values.

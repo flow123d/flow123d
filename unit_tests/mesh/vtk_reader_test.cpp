@@ -15,13 +15,25 @@
 #include <iostream>
 #include <pugixml.hpp>
 
-#include "mesh/msh_vtkreader.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_vtkreader.hh"
+#include "io/msh_gmshreader.h"
 #include "system/tokenizer.hh"
 
 
 class VtkMeshReaderTest : public VtkMeshReader {
 public:
+	/// Helper factory, creates shared pointer to instance of VtkMeshReaderTest
+	static std::shared_ptr<VtkMeshReaderTest> test_factory(const std::string &input_str,
+			Input::FileFormat format = Input::FileFormat::format_JSON) {
+		istringstream is(input_str);
+	    Input::ReaderToStorage reader;
+	    IT::Record &in_rec = const_cast<IT::Record &>(Mesh::get_input_type());
+	    in_rec.finish();
+	    reader.read_stream(is, in_rec, format);
+
+		return std::make_shared<VtkMeshReaderTest>(reader.get_root_interface<Input::Record>().val<FilePath>("mesh_file"));
+	}
+
 	VtkMeshReaderTest(const FilePath &file_name)
 	: VtkMeshReader(file_name) {
 	}
@@ -38,23 +50,22 @@ public:
 		for (unsigned int i=0; i<vtk_to_gmsh_element_map_.size(); ++i) vtk_to_gmsh_element_map_[i]=i;
 
 		// set new cache
-	    delete current_cache_;
-	    current_cache_ = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
+	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data( *current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
-				parse_binary_data( *current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
-				parse_compressed_data(* current_cache_, 1, actual_header.n_components, actual_header.n_entities, actual_header.position,
+				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
 						actual_header.type);
 				break;
 			}
@@ -65,7 +76,7 @@ public:
 		}
 
 		mesh->node_vector.reserve(actual_header.n_entities);
-		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache_)->get_component_data(0).get() );
+		std::vector<double> &vect = *( static_cast< ElementDataCache<double> *>(current_cache)->get_component_data(0).get() );
 		for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
 	        NodeFullIter node = mesh->node_vector.add_item(i);
 	        node->point()(0)=vect[ivec]; ++ivec;
@@ -74,6 +85,7 @@ public:
 		}
 
 		vtk_to_gmsh_element_map_.clear();
+	    delete current_cache;
 	}
 
 	MeshDataHeader & find_header(double time, std::string field_name) {
@@ -105,56 +117,62 @@ TEST(PugiXml, read_simple_xml) {
 // test of reading of VTU file
 TEST(VtkReaderTest, read_ascii_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    FilePath vtu_file("output/test_output_vtk_ascii_ref.vtu", FilePath::input_file);
-    VtkMeshReaderTest reader(vtu_file);
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}";
+    auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
 
-    Mesh *mesh = mesh_constructor();
+    Mesh * mesh = mesh_constructor(mesh_in_string);
 
     {
     	// test of Points data section
-    	reader.read_nodes(mesh);
+    	reader->read_nodes(mesh);
         EXPECT_EQ(8, mesh->n_nodes());
     }
 
     {
     	// test of connectivity data array
-    	auto data_attr = reader.find_header(0.0, "connectivity");
+    	auto data_attr = reader->find_header(0.0, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type );
-    	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader.get_data_format() );
+    	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
     }
+
+    delete mesh;
 }
 
 
 TEST(VtkReaderTest, read_binary_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    FilePath vtu_file("output/test_output_vtk_binary_ref.vtu", FilePath::input_file);
-    VtkMeshReaderTest reader(vtu_file);
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_binary_ref.vtu\"}";
+    auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
 
-    Mesh *mesh = mesh_constructor();
+    Mesh * mesh = mesh_constructor(mesh_in_string);
 
     {
     	// test of Points data section
-    	reader.read_nodes(mesh);
+    	reader->read_nodes(mesh);
         EXPECT_EQ(8, mesh->n_nodes());
     }
 
     {
     	// test of connectivity data array
-    	auto data_attr = reader.find_header(0.0, "connectivity");
+    	auto data_attr = reader->find_header(0.0, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type );
-    	EXPECT_EQ( VtkMeshReader::DataFormat::binary_uncompressed, reader.get_data_format() );
+    	EXPECT_EQ( VtkMeshReader::DataFormat::binary_uncompressed, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
     }
 
     {
-        FilePath mesh_file("fields/simplest_cube_3d.msh", FilePath::input_file);
-        Mesh *mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_3d.msh\"}");
-        mesh->init_from_input();
-        reader.check_compatible_mesh(*mesh);
-        delete mesh;
+    	std::string mesh_in_string = "{mesh_file=\"fields/simplest_cube_3d.msh\"}";
+    	auto gmsh_reader = reader_constructor( mesh_in_string );
+    	Mesh * source_mesh = mesh_constructor( mesh_in_string );
+    	gmsh_reader->read_physical_names(source_mesh);
+    	gmsh_reader->read_raw_mesh(source_mesh);
+    	source_mesh->setup_topology();
+    	source_mesh->check_and_finish();
+        reader->check_compatible_mesh(*source_mesh);
+        delete source_mesh;
     }
 
     std::vector<int> el_ids;
@@ -166,7 +184,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     bool actual_data = false;
     for (i=0; i<3; ++i) {
         typename ElementDataCache<double>::ComponentDataPtr multifield_data =
-        		reader.get_element_data<double>("vector_field", 0.0, 6, 1, actual_data, el_ids, i);
+        		reader->get_element_data<double>("vector_field", 0.0, 6, 1, actual_data, el_ids, i);
     	std::vector<double> &vec = *( multifield_data.get() );
     	EXPECT_EQ(6, vec.size());
     	for (j=0; j<vec.size(); j++) {
@@ -177,37 +195,41 @@ TEST(VtkReaderTest, read_binary_vtu) {
     // read data to one vector for Field
     actual_data=false;
     {
+    	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
-    			reader.get_element_data<double>("tensor_field", 1.0, 6, 9, actual_data, el_ids, 0);
+    			reader->get_element_data<double>("tensor_field", 1.0, 6, 9, actual_data, el_ids, 0);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
     	for (j=0; j<vec.size(); j++) {
-    		EXPECT_DOUBLE_EQ( (j%9+1), vec[j] );
+    		EXPECT_DOUBLE_EQ( ref_data[j%9], vec[j] );
     	}
     }
 
+    delete mesh;
 }
 
 
 TEST(VtkReaderTest, read_compressed_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    FilePath vtu_file("output/test_output_vtk_zlib_ref.vtu", FilePath::input_file);
-    VtkMeshReaderTest reader(vtu_file);
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_zlib_ref.vtu\"}";
+    auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
 
-    Mesh *mesh = mesh_constructor();
+    Mesh * mesh = mesh_constructor(mesh_in_string);
 
     {
     	// test of Points data section
-    	reader.read_nodes(mesh);
+    	reader->read_nodes(mesh);
         EXPECT_EQ(8, mesh->n_nodes());
     }
 
     {
     	// test of connectivity data array
-    	auto data_attr = reader.find_header(0.0, "connectivity");
+    	auto data_attr = reader->find_header(0.0, "connectivity");
     	EXPECT_EQ( DataType::uint32, data_attr.type );
-    	EXPECT_EQ( VtkMeshReader::DataFormat::binary_zlib, reader.get_data_format() );
+    	EXPECT_EQ( VtkMeshReader::DataFormat::binary_zlib, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
     }
+
+    delete mesh;
 }
