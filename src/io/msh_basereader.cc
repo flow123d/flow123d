@@ -112,7 +112,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 
     	element_data_values_[field_name]
 					= std::make_shared< ElementDataCache<T> >(actual_header, size_of_cache, n_components*n_entities);
-    	this->read_element_data(*(it->second), actual_header, n_components, get_element_vector(boundary_domain) );
+    	this->read_element_data(*(it->second), actual_header, n_components, boundary_domain );
 	}
 
     if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;

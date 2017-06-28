@@ -85,7 +85,7 @@ public:
 	 *
 	 *  - to all nodes of VTK mesh must exists one and only one nodes in second mesh
 	 *  - the same must occur for elements
-	 *  - method fill vector \p vtk_to_gmsh_element_map_
+	 *  - method fill vector \p bulk_elements_id_
 	 *  - it is necessary to call this method before calling \p get_element_data
 	 */
 	void check_compatible_mesh(Mesh &mesh) override;
@@ -123,15 +123,15 @@ protected:
 
 	/// Parse ascii data to data cache
 	void parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-			Tokenizer::Position pos);
+			Tokenizer::Position pos, bool boundary_domain);
 
 	/// Parse binary data to data cache
 	void parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-			Tokenizer::Position pos, DataType value_type);
+			Tokenizer::Position pos, bool boundary_domain, DataType value_type);
 
 	/// Uncompress and parse binary compressed data to data cache
 	void parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-			Tokenizer::Position pos, DataType value_type);
+			Tokenizer::Position pos, bool boundary_domain, DataType value_type);
 
 	/// Set base attributes of VTK and get count of nodes and elements.
 	void read_base_vtk_attributes(pugi::xml_node vtk_node, unsigned int &n_nodes, unsigned int &n_elements);
@@ -143,7 +143,7 @@ protected:
      * Implements @p BaseMeshReader::read_element_data.
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
-    		std::vector<int> const & el_ids) override;
+    		bool boundary_domain) override;
 
     /**
      * Compare two points representing by armadillo vector.
@@ -170,10 +170,6 @@ protected:
 
     /// store count of read entities
     unsigned int n_read_;
-
-    /// get ids of elements in GMSH source mesh
-    /// OBSOLETE - will be replaced with bulk_elements_id_, boundary_elements_id_ vectors of base class
-    std::vector<int> vtk_to_gmsh_element_map_;
 
 };
 

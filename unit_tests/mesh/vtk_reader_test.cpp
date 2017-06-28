@@ -46,27 +46,27 @@ public:
 	{
 		auto actual_header = this->find_header(0.0, "Points");
 
-		vtk_to_gmsh_element_map_.resize(actual_header.n_entities);
-		for (unsigned int i=0; i<vtk_to_gmsh_element_map_.size(); ++i) vtk_to_gmsh_element_map_[i]=i;
+		bulk_elements_id_.resize(actual_header.n_entities);
+		for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
 
 		// set new cache
 	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position, false );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
 				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						actual_header.type );
+						false, actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
 				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						actual_header.type);
+						false, actual_header.type);
 				break;
 			}
 			default: {
@@ -84,7 +84,7 @@ public:
 	        node->point()(2)=vect[ivec]; ++ivec;
 		}
 
-		vtk_to_gmsh_element_map_.clear();
+		bulk_elements_id_.clear();
 	    delete current_cache;
 	}
 

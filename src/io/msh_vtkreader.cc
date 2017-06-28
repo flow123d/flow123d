@@ -270,21 +270,24 @@ unsigned int VtkMeshReader::type_value_size(DataType data_type)
 
 
 void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
-		std::vector<int> const & el_ids) {
+		bool boundary_domain) {
+
+	ASSERT(!boundary_domain).error("Reading VTK data of boundary elements is not supported yet!\n");
+
     switch (data_format_) {
 		case DataFormat::ascii: {
-			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position );
+			parse_ascii_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain );
 			break;
 		}
 		case DataFormat::binary_uncompressed: {
 			ASSERT_PTR(data_stream_).error();
-			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position,
+			parse_binary_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
 					actual_header.type );
 			break;
 		}
 		case DataFormat::binary_zlib: {
 			ASSERT_PTR(data_stream_).error();
-			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position,
+			parse_compressed_data( data_cache, n_components, actual_header.n_entities, actual_header.position, boundary_domain,
 					actual_header.type);
 			break;
 		}
@@ -300,7 +303,7 @@ void VtkMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
 
 void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos)
+		Tokenizer::Position pos, bool boundary_domain)
 {
     n_read_ = 0;
 
@@ -308,7 +311,7 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
     try {
     	tok_.next_line();
     	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-    		data_cache.read_ascii_data(tok_, n_components, vtk_to_gmsh_element_map_[i_row]);
+    		data_cache.read_ascii_data(tok_, n_components, get_element_vector(boundary_domain)[i_row]);
             n_read_++;
     	}
 	} catch (boost::bad_lexical_cast &) {
@@ -319,7 +322,7 @@ void VtkMeshReader::parse_ascii_data(ElementDataCacheBase &data_cache, unsigned 
 
 
 void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, DataType value_type)
+		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
 {
     n_read_ = 0;
 
@@ -327,14 +330,14 @@ void VtkMeshReader::parse_binary_data(ElementDataCacheBase &data_cache, unsigned
 	uint64_t data_size = read_header_type(header_type_, *data_stream_) / type_value_size(value_type);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(*data_stream_, n_components, vtk_to_gmsh_element_map_[i_row]);
+		data_cache.read_binary_data(*data_stream_, n_components, get_element_vector(boundary_domain)[i_row]);
         n_read_++;
 	}
 }
 
 
 void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsigned int n_components, unsigned int n_entities,
-		Tokenizer::Position pos, DataType value_type)
+		Tokenizer::Position pos, bool boundary_domain, DataType value_type)
 {
 	data_stream_->seekg(pos.file_position_);
 	uint64_t n_blocks = read_header_type(header_type_, *data_stream_);
@@ -382,7 +385,7 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 	uint64_t data_size = decompressed_data_size / type_value_size(value_type);
 
 	for (unsigned int i_row = 0; i_row < n_entities; ++i_row) {
-		data_cache.read_binary_data(decompressed_data, n_components, vtk_to_gmsh_element_map_[i_row]);
+		data_cache.read_binary_data(decompressed_data, n_components, get_element_vector(boundary_domain)[i_row]);
         n_read_++;
 	}
 }
@@ -390,7 +393,6 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
 void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 {
-    std::vector<int> el_ids;
     std::vector<unsigned int> node_ids; // allow mapping ids of nodes from VTK mesh to GMSH
     std::vector<unsigned int> offsets_vec; // value of offset section in VTK file
 
@@ -407,15 +409,14 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         node_ids.resize(point_header.n_entities);
         // fill vectors necessary for correct reading of data, we read all data same order as data is stored
         for (unsigned int i=0; i<point_header.n_entities; ++i) {
-        	el_ids.push_back(i);
-        	vtk_to_gmsh_element_map_.push_back(i);
+        	bulk_elements_id_.push_back(i);
         }
 
         // create temporary data cache
         ElementDataCache<double> node_cache(point_header, 1, point_header.n_components*point_header.n_entities);
 
         // check compatible nodes, to each VTK point must exist only one GMSH node
-        this->read_element_data(node_cache, point_header, point_header.n_components, el_ids);
+        this->read_element_data(node_cache, point_header, point_header.n_components, false);
         std::vector<double> &node_vec = *(node_cache.get_component_data(0) );
         ASSERT_EQ(node_vec.size(), point_header.n_components*point_header.n_entities).error();
         for (unsigned int i=0; i<point_header.n_entities; ++i) {
@@ -449,13 +450,12 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     {
         // read offset data section into offsets_vec vector, it's used for reading connectivity
         MeshDataHeader offset_header = this->find_header(0.0, "offsets");
-        for (unsigned int i=el_ids.size(); i<offset_header.n_entities; ++i) {
-        	el_ids.push_back(i);
-        	vtk_to_gmsh_element_map_.push_back(i);
+        for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
+        	bulk_elements_id_.push_back(i);
         }
 
         ElementDataCache<unsigned int> offset_cache(offset_header, 1, offset_header.n_components*offset_header.n_entities);
-        this->read_element_data(offset_cache, offset_header, offset_header.n_components, el_ids);
+        this->read_element_data(offset_cache, offset_header, offset_header.n_components, false);
 
         offsets_vec = *(offset_cache.get_component_data(0) );
     }
@@ -463,25 +463,24 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     {
         // read connectivity data section, find corresponding elements in GMSH
         // cells in data section and elements in GMSH must be in ratio 1:1
-        // store orders (mapping between VTK and GMSH file) into vtk_to_gmsh_element_map_ vector
+        // store orders (mapping between VTK and GMSH file) into bulk_elements_id_ vector
         MeshDataHeader con_header = this->find_header(0.0, "connectivity");
         con_header.n_entities = offsets_vec[offsets_vec.size()-1];
-        for (unsigned int i=el_ids.size(); i<con_header.n_entities; ++i) {
-        	el_ids.push_back(i);
-        	vtk_to_gmsh_element_map_.push_back(i);
+        for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
+        	bulk_elements_id_.push_back(i);
         }
 
         ElementDataCache<unsigned int> con_cache(con_header, 1, con_header.n_components*con_header.n_entities);
-        this->read_element_data(con_cache, con_header, con_header.n_components, el_ids);
+        this->read_element_data(con_cache, con_header, con_header.n_components, false);
 
         std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );
         vector<unsigned int> node_list;
         vector<unsigned int> candidate_list; // returned by intersect_element_lists
         vector<unsigned int> result_list; // list of elements with same dimension as vtk element
-        vtk_to_gmsh_element_map_.clear();
-        vtk_to_gmsh_element_map_.resize(offsets_vec.size());
+        bulk_elements_id_.clear();
+        bulk_elements_id_.resize(offsets_vec.size());
         // iterate trough connectivity data, to each VTK cell must exist only one GMSH element
-        // fill vtk_to_gmsh_element_map_ vector
+        // fill bulk_elements_id_ vector
         unsigned int i_con = 0, last_offset=0, dim;
         for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element
         	dim = offsets_vec[i] - last_offset - 1; // dimension of vtk element
@@ -496,7 +495,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("intersect_element_lists must produce one element")
             			<< EI_VTKFile(tok_.f_name()));
             }
-            vtk_to_gmsh_element_map_[i] = result_list[0];
+            bulk_elements_id_[i] = result_list[0];
             node_list.clear();
             result_list.clear();
             last_offset = offsets_vec[i];

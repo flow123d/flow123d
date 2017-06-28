@@ -194,7 +194,7 @@ protected:
      * Read element data to data cache
      */
     virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
-    		std::vector<int> const & el_ids)=0;
+    		bool boundary_domain)=0;
 
     /**
      * Flag stores that check of compatible mesh was performed.
