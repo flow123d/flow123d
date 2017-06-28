@@ -104,7 +104,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     bool boundary_domain_ = false;
     data_ = ReaderInstances::instance()->get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(),
-    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    		boundary_domain_, this->component_idx_);
     this->scale_data();
 
     return true;

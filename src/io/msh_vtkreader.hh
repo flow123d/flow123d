@@ -172,6 +172,7 @@ protected:
     unsigned int n_read_;
 
     /// get ids of elements in GMSH source mesh
+    /// OBSOLETE - will be replaced with bulk_elements_id_, boundary_elements_id_ vectors of base class
     std::vector<int> vtk_to_gmsh_element_map_;
 
 };

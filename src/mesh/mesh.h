@@ -202,9 +202,9 @@ public:
 
 
     /**
-     * Returns vector of ID numbers of elements, either bulk or bc elemnts.
+     * Fills vectors of ID numbers of bulk and bc elements.
      */
-    vector<int> const & elements_id_maps( bool boundary_domain) const;
+    void elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -369,12 +369,6 @@ protected:
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
     unsigned int n_bb_neigh, n_vb_neigh;
-
-    /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
-    /// in input mesh file and has ID assigned.
-    ///
-    /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    mutable vector<int> bulk_elements_id_, boundary_elements_id_;
 
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];

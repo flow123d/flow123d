@@ -672,14 +672,14 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
+void Mesh::elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const
 {
-    if (bulk_elements_id_.size() ==0) {
+    if (bulk_elements_id.size() ==0) {
         std::vector<int>::iterator map_it;
         int last_id;
 
-        bulk_elements_id_.resize(n_elements());
-        map_it = bulk_elements_id_.begin();
+        bulk_elements_id.resize(n_elements());
+        map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
         	int id = element.get_id(idx);
@@ -687,13 +687,13 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
             last_id=*map_it = id;
         }
 
-        boundary_elements_id_.resize(bc_elements.size());
-        map_it = boundary_elements_id_.begin();
+        boundary_elements_id.resize(bc_elements.size());
+        map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
         	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
-            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
             if (id < 0) last_id=*map_it=-1;
             else {
@@ -703,8 +703,8 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         }
     }
 
-    if (boundary_domain) return boundary_elements_id_;
-    return bulk_elements_id_;
+    //if (boundary_domain) return boundary_elements_id_;
+    //return bulk_elements_id_;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)

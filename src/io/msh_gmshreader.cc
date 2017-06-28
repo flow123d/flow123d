@@ -39,7 +39,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 {
     tok_.set_comment_pattern( "#");
     data_section_name_ = "$ElementData";
-    has_compatible_mesh_ = true;
+    has_compatible_mesh_ = false;
     make_header_table();
 }
 
@@ -347,4 +347,7 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 }
 
 void GmshMeshReader::check_compatible_mesh(Mesh &mesh)
-{}
+{
+	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
+	has_compatible_mesh_ = true;
+}
