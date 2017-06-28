@@ -74,6 +74,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
        reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
        auto reader = ReaderInstances::instance()->get_reader(reader_file_ );
        reader->read_raw_mesh( source_mesh_ );
+       reader->check_compatible_mesh( *source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bih_tree_ = new BIHTree( source_mesh_ );
