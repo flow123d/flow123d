@@ -44,7 +44,7 @@ enum IntersectionType
     d12_3 = 0x0040,
     d12_ngh = 0x0080,   // to be removed in future
     d12 = 0x00F0,   // automatically choose 12 alg.
-    all = 0xFFFF
+    all = 0xFFFF //d13 & d23 & d22 & d12_2 & d12_3 & d12_1
 };
 
 /** @brief Main class for computation of intersection of meshes of combined dimensions.

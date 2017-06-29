@@ -805,8 +805,9 @@ double jacobian<2>(arma::mat master_map) {
 
 
 template<uint qdim, uint master_dim, uint slave_dim>
-void P01_CouplingAssembler::integrate(const IntersectionLocal<master_dim, slave_dim> &il, std::array<uint, qdim+1 > subdiv) {
-
+void P01_CouplingAssembler::integrate(const IntersectionLocal<master_dim, slave_dim> &il, std::array<uint, qdim+1 > subdiv)
+{
+    if (il.size() < 2) return   ;
     IsecData & isec_data = isec_data_list.back();
 
     // local coordinates of simplex integration domain vertices (columns)
@@ -814,6 +815,7 @@ void P01_CouplingAssembler::integrate(const IntersectionLocal<master_dim, slave_
     arma::mat master_map(master_dim, qdim+1);
     for(uint i_col=0; i_col < qdim+1; i_col++) {
         uint ip = subdiv[i_col];
+        ASSERT_LT(ip, il.size());
         slave_map.col(i_col) = il[ip].bulk_coords();
         master_map.col(i_col) = il[ip].comp_coords();
     }
@@ -921,14 +923,14 @@ void P01_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         add_intersection(slave_ac_);
         if (typeid(*isec) == typeid(IntersectionLocal<1,2>)) {
             const IntersectionLocal<1,2> &il = *(static_cast<const IntersectionLocal<1,2> *>(isec));
-            ASSERT_EQ_DBG( il.size(), 2);
+            //ASSERT_EQ_DBG( il.size(), 2)(il.component_ele_idx())(il.bulk_ele_idx())(il);
             ASSERT_EQ(slave_ac_.dim(), 2);
-            //DebugOut() << "il12";
+            //DebugOut() << "il size: " << il.size();
             integrate<1,1,2>(il, {0,1});
 
         } else  if (typeid(*isec) == typeid(IntersectionLocal<2,2>)) {
             auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
-            ASSERT_EQ_DBG( il->size(), 2);
+            //ASSERT_EQ_DBG( il->size(), 2);
             //integrate<1,2,2>(il, {0,1});
             DebugOut() << "il22, not implemented";
 

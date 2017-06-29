@@ -338,6 +338,7 @@ void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< Intersec
      * 3) compute intersections for 1d, store it to master_elements
      *
      */
+    DebugOut() << "Intersections 1d-2d planar, NGH";
 
     const BIHTree &bih_tree =mesh->get_bih_tree();
 
@@ -417,9 +418,11 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     }
 
     if( mesh_in_2d_only){
+        DebugOut() << "Intersections 1d-2d planar case " << d << ":" << IntersectionType::d12_ngh;
         START_TIMER("Intersections 1D-2D (1)");
         if(d & IntersectionType::d12_1) compute_intersections_12_1(intersection_storage12_);
-        else if(d & IntersectionType::d12_ngh) compute_intersections_12_ngh_plane(intersection_storage12_);
+        //if(d & IntersectionType::d12_1) compute_intersections_12_ngh_plane(intersection_storage12_);
+
         END_TIMER("Intersections 1D-2D (1)");
     }
     // make sence only if some intersections in 3D are computed
