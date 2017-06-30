@@ -233,6 +233,7 @@ add_library(io_lib
     io/msh_basereader.cc
     io/msh_gmshreader.cc
     io/msh_vtkreader.cc
+    io/msh_pvdreader.cc
     io/element_data_cache.cc
     io/reader_instances.cc
 
