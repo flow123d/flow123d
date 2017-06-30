@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <istream>
+#include <memory>
 
 #include "io/element_data_cache.hh"
 #include "mesh/mesh.h"
@@ -170,7 +171,10 @@ protected:
     typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
     typedef std::map< string, ElementDataPtr > ElementDataFieldMap;
 
-    /**
+	/// Constructor
+	BaseMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values);
+
+	/**
      * private method for reading of nodes
      */
     virtual void read_nodes(Mesh * mesh)=0;
@@ -207,13 +211,10 @@ protected:
     std::string data_section_name_;
 
     /// Cache with last read element data
-    ElementDataFieldMap element_data_values_;
+    std::shared_ptr<ElementDataFieldMap> element_data_values_;
 
     /// Tokenizer used for reading ASCII file format.
     Tokenizer tok_;
-
-    /// Input record accessor of mesh.
-    Input::Record input_mesh_rec_;
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.

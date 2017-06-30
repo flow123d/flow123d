@@ -26,7 +26,13 @@
 #include "io/msh_basereader.hh"
 #include "system/file_path.hh"
 
+
+class PvdMeshReader;
+
+
 class VtkMeshReader : public BaseMeshReader {
+    friend class PvdMeshReader;
+
 public:
 	TYPEDEF_ERR_INFO(EI_VTKFile, std::string);
 	TYPEDEF_ERR_INFO(EI_ExpectedFormat, std::string);
@@ -70,7 +76,7 @@ public:
 	VtkMeshReader(const FilePath &file_name);
 
 	/// Destructor
-	~VtkMeshReader();
+	virtual ~VtkMeshReader();
 
     /**
      * Read regions from the VTK file and save the physical sections as regions in the RegionDB.
@@ -91,6 +97,14 @@ public:
 	void check_compatible_mesh(Mesh &mesh) override;
 
 protected:
+    /**
+     * Special constructor of VTK files defined in PVD file. Constructor is called from PVD mesh reader.
+     *
+     * Construct the VTK format reader from given FilePath and set shared map of element data values.
+     * This opens the file for reading.
+     */
+    VtkMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values, double time_step);
+
     /**
      * private method for reading of nodes
      */
@@ -171,6 +185,8 @@ protected:
     /// store count of read entities
     unsigned int n_read_;
 
+    /// time of VTK file (getting only during initialization from PVD reader)
+    double time_step_;
 };
 
 #endif	/* MSH_VTK_READER_HH */

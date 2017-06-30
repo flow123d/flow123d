@@ -25,6 +25,10 @@
 #include "io/msh_basereader.hh"
 #include "system/file_path.hh"
 
+
+class VtkMeshReader;
+
+
 class PvdMeshReader : public BaseMeshReader {
 public:
 	/**
@@ -58,10 +62,11 @@ protected:
 	/// Represents data of one VTK file defined in PVD file.
 	struct VtkFileData {
 		/// Constructor
-		VtkFileData(double t, FilePath file) : time(t), file_name(file) {}
+		VtkFileData(double t, FilePath file) : time(t), file_name(file), reader(nullptr) {}
 
-		double time;         ///< time step of VTK file
-		FilePath file_name;  ///< path to VTK file
+		double time;             ///< time step of VTK file
+		FilePath file_name;      ///< path to VTK file
+		VtkMeshReader * reader;  ///< reader is created only if it's needed
 	};
 
     /**

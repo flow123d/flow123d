@@ -22,6 +22,7 @@
 #include <pugixml.hpp>
 
 #include "msh_pvdreader.hh"
+#include "msh_vtkreader.hh"
 
 
 
@@ -36,7 +37,11 @@ PvdMeshReader::PvdMeshReader(const FilePath &file_name)
 
 
 PvdMeshReader::~PvdMeshReader()
-{}
+{
+	for (auto file_data : file_list_) {
+		if (file_data.reader != nullptr) delete file_data.reader;
+	}
+}
 
 
 void PvdMeshReader::read_physical_names(Mesh * mesh) {
@@ -73,11 +78,12 @@ void PvdMeshReader::make_header_table() {
 	doc.load_file( tok_.f_name().c_str() );
 	pugi::xml_node node = doc.child("VTKFile").child("Collection");
 
-	double last_time = -numeric_limits<double>::infinity();
+	double last_time = -numeric_limits<double>::infinity(); // check ascending order of times
 	std::vector<std::string> sub_paths; //allow construct paths of VTK files
 	sub_paths.resize(2);
 	sub_paths[0] = pvd_path_dir_;
 
+	// read PVD data
 	for (pugi::xml_node subnode = node.child("DataSet"); subnode; subnode = subnode.next_sibling("DataSet")) {
 		double time = subnode.attribute("timestep").as_double();
 		if (time <= last_time) {
@@ -93,8 +99,22 @@ void PvdMeshReader::make_header_table() {
 
 
 MeshDataHeader & PvdMeshReader::find_header(double time, std::string field_name) {
-	// will be implemented later
-	MeshDataHeader data_header;
-	return data_header;
+	auto comp = [](double t, const VtkFileData &a) {
+		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
+	};
+
+	// find iterator to data of VTK file
+	std::vector<VtkFileData>::iterator list_it = std::upper_bound(file_list_.begin(),
+			file_list_.end(),
+			time,
+			comp);
+	--list_it;
+
+	// check if VTK reader exists and eventually creates its
+	if (!list_it->reader) {
+		list_it->reader = new VtkMeshReader(list_it->file_name, this->element_data_values_, list_it->time);
+	}
+
+	return list_it->reader->find_header(time, field_name);
 }
 

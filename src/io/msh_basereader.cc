@@ -24,8 +24,14 @@
 
 
 BaseMeshReader::BaseMeshReader(const FilePath &file_name)
-: tok_(file_name) {
-}
+: element_data_values_(std::make_shared<ElementDataFieldMap>()),
+  tok_(file_name)
+{}
+
+BaseMeshReader::BaseMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values)
+: element_data_values_(element_data_values),
+  tok_(file_name)
+{}
 
 std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath &file_name) {
 	std::shared_ptr<BaseMeshReader> reader_ptr;
@@ -79,10 +85,10 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 
     MeshDataHeader actual_header = this->find_header(time, field_name);
-    ElementDataFieldMap::iterator it=element_data_values_.find(field_name);
-    if (it == element_data_values_.end()) {
-    	element_data_values_[field_name] = std::make_shared< ElementDataCache<T> >();
-        it=element_data_values_.find(field_name);
+    ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
+    if (it == element_data_values_->end()) {
+    	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >();
+        it=element_data_values_->find(field_name);
     }
 
     if ( !it->second->is_actual(actual_header.time, field_name) ) {
@@ -110,7 +116,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    	}
 	    }
 
-    	element_data_values_[field_name]
+    	(*element_data_values_)[field_name]
 					= std::make_shared< ElementDataCache<T> >(actual_header, size_of_cache, n_components*n_entities);
     	this->read_element_data(*(it->second), actual_header, n_components, boundary_domain );
 	}

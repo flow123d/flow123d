@@ -61,9 +61,21 @@ const double VtkMeshReader::point_tolerance = 1E-10;
 
 
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
-: BaseMeshReader(file_name)
+: BaseMeshReader(file_name),
+  time_step_(0.0)
 {
     data_section_name_ = "DataArray";
+    has_compatible_mesh_ = false;
+	make_header_table();
+}
+
+
+
+VtkMeshReader::VtkMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values, double time_step)
+: BaseMeshReader(file_name, element_data_values),
+  time_step_(time_step)
+{
+	data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
 	make_header_table();
 }
@@ -142,7 +154,7 @@ MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
-    header.time = 0.0;
+    header.time = this->time_step_;
     try {
         header.type = this->get_data_type( node.attribute("type").as_string() );
     } catch(ExcWrongType &e) {
