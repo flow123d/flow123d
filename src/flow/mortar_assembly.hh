@@ -34,7 +34,7 @@ public:
     }
 
     virtual ~MortarAssemblyBase() {
-        DebugOut() << "total isec: " << total_isec;
+        //DebugOut() << "total isec: " << total_isec;
     };
 
     // Default assembly is empty to allow dummy implementation for dimensions without coupling.
