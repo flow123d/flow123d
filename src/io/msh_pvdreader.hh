@@ -105,6 +105,9 @@ protected:
     /// Path to PVD file allows construct FilePath objects of VTK files.
     std::string pvd_path_dir_;
 
+    /// Iterator to items of \p file_list_
+    std::vector<VtkFileData>::iterator list_it_;
+
 };
 
 #endif	/* MSH_PVD_READER_HH */

@@ -64,12 +64,20 @@ void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 		bool boundary_domain) {
 
 	ASSERT(!boundary_domain).error("Reading PVD data of boundary elements is not supported yet!\n");
-
+	list_it_->reader->read_element_data(data_cache, actual_header, n_components, boundary_domain);
 }
 
 
 void PvdMeshReader::check_compatible_mesh(Mesh &mesh) {
-	// will be implemented later
+	ASSERT(file_list_.size()).error("Empty PVD file, no DataSet tag found.\n");
+	ASSERT(file_list_[0].reader == nullptr).error("Method check_compatible_mesh must be called as first, before reading element data.\n");
+
+	file_list_[0].reader = new VtkMeshReader(file_list_[0].file_name, this->element_data_values_, file_list_[0].time);
+	file_list_[0].reader->check_compatible_mesh(mesh);
+
+	this->bulk_elements_id_ = file_list_[0].reader->bulk_elements_id_;
+	this->boundary_elements_id_ = file_list_[0].reader->boundary_elements_id_;
+	this->has_compatible_mesh_ = true;
 }
 
 
@@ -104,17 +112,20 @@ BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::st
 	};
 
 	// find iterator to data of VTK file
-	std::vector<VtkFileData>::iterator list_it = std::upper_bound(file_list_.begin(),
+	list_it_ = std::upper_bound(file_list_.begin(),
 			file_list_.end(),
 			time,
 			comp);
-	--list_it;
+	--list_it_;
 
 	// check if VTK reader exists and eventually creates its
-	if (!list_it->reader) {
-		list_it->reader = new VtkMeshReader(list_it->file_name, this->element_data_values_, list_it->time);
+	if (!list_it_->reader) {
+		list_it_->reader = new VtkMeshReader(list_it_->file_name, this->element_data_values_, list_it_->time);
+		list_it_->reader->bulk_elements_id_ = this->bulk_elements_id_;
+		list_it_->reader->boundary_elements_id_ = this->boundary_elements_id_;
+		list_it_->reader->has_compatible_mesh_ = true;
 	}
 
-	return list_it->reader->find_header(time, field_name);
+	return list_it_->reader->find_header(time, field_name);
 }
 
