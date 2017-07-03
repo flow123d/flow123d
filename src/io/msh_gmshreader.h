@@ -46,14 +46,6 @@ public:
 			<< "Element " << EI_ElementId::val << "in the GMSH input file " << EI_GMSHFile::qval
 			<< " is of the unsupported type " << EI_ElementType::val );
 
-	/**
-	 * Map of ElementData sections in GMSH file.
-	 *
-	 * For each field_name contains vector of MeshDataHeader.
-	 * Headers are sorted by time in ascending order.
-	 */
-	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
-
     /**
      * Construct the GMSH format reader from given FilePath.
      * This opens the file for reading.
@@ -81,6 +73,14 @@ public:
     void check_compatible_mesh(Mesh &mesh) override;
 
 protected:
+	/**
+	 * Map of ElementData sections in GMSH file.
+	 *
+	 * For each field_name contains vector of MeshDataHeader.
+	 * Headers are sorted by time in ascending order.
+	 */
+	typedef typename std::map< std::string, std::vector<MeshDataHeader> > HeaderTable;
+
     /**
      * private method for reading of nodes
      */

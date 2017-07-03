@@ -98,7 +98,7 @@ void PvdMeshReader::make_header_table() {
 }
 
 
-MeshDataHeader & PvdMeshReader::find_header(double time, std::string field_name) {
+BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::string field_name) {
 	auto comp = [](double t, const VtkFileData &a) {
 		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
 	};

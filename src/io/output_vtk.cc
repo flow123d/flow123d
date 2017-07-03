@@ -196,7 +196,7 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_da
     auto &offsets = *( output_mesh_->offsets_->get_component_data(0).get() );
     unsigned int n_elements = offsets.size();
     
-    auto types = std::make_shared<ElementDataCache<unsigned int>>("types", ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
     std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
     int n_nodes;
     

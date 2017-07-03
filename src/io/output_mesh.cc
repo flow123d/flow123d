@@ -34,9 +34,9 @@ const IT::Record & OutputMeshBase::get_input_type() {
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
-	nodes_( std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 0) ),
-	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 0) ),
-	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 0) ),
+	nodes_( std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 0) ),
+	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
+	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
 	orig_mesh_(&mesh),
     max_level_(0),
     error_control_field_name_("")
@@ -46,9 +46,9 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 : 
-	nodes_( std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, 0) ),
-	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, 0) ),
-	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, 0) ),
+	nodes_( std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 0) ),
+	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
+	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
     input_record_(in_rec), 
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level"))
@@ -121,7 +121,7 @@ void OutputMesh::create_identical_mesh()
     const unsigned int n_elements = orig_mesh_->n_elements(),
                        n_nodes = orig_mesh_->n_nodes();
 
-    nodes_ = std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, n_nodes);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_nodes);
     unsigned int coord_id = 0,  // coordinate id in vector
                  node_id = 0;   // node id
     auto &node_vec = *( nodes_->get_component_data(0).get() );
@@ -137,7 +137,7 @@ void OutputMesh::create_identical_mesh()
     
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
 
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
     Node* node;
     unsigned int ele_id = 0,
                  connect_id = 0,
@@ -153,7 +153,8 @@ void OutputMesh::create_identical_mesh()
     }
 
     const unsigned int n_connectivities = offset_vec[offset_vec.size()-1];
-    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, n_connectivities);
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, n_connectivities);
     auto &connect_vec = *( connectivity_->get_component_data(0).get() );
     FOR_ELEMENTS(orig_mesh_, ele) {
         FOR_ELEMENT_NODES(ele, li) {
@@ -217,8 +218,9 @@ void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
     offsets_ = output_mesh->offsets_;
     orig_element_indices_ = output_mesh->orig_element_indices_;
     
-    nodes_ = std::make_shared<ElementDataCache<double>>("", ElementDataCacheBase::N_VECTOR, 1, n_corners);
-    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", ElementDataCacheBase::N_SCALAR, 1, n_corners);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_corners);
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, n_corners);
 
     unsigned int coord_id = 0,  // coordinate id in vector
                  corner_id = 0, // corner index (discontinous node)

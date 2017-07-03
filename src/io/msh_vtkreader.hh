@@ -63,13 +63,6 @@ public:
 	};
 
 	/**
-	 * Map of DataArray sections in VTK file.
-	 *
-	 * For each field_name contains MeshDataHeader.
-	 */
-	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
-
-	/**
      * Construct the VTK format reader from given FilePath.
      * This opens the file for reading.
      */
@@ -97,6 +90,13 @@ public:
 	void check_compatible_mesh(Mesh &mesh) override;
 
 protected:
+	/**
+	 * Map of DataArray sections in VTK file.
+	 *
+	 * For each field_name contains MeshDataHeader.
+	 */
+	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
+
     /**
      * Special constructor of VTK files defined in PVD file. Constructor is called from PVD mesh reader.
      *

@@ -117,7 +117,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	    }
 
     	(*element_data_values_)[field_name]
-					= std::make_shared< ElementDataCache<T> >(actual_header, size_of_cache, n_components*n_entities);
+					= std::make_shared< ElementDataCache<T> >(field_name, actual_header.time, size_of_cache, n_components*n_entities);
     	this->read_element_data(*(it->second), actual_header, n_components, boundary_domain );
 	}
 
