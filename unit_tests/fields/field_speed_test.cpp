@@ -67,8 +67,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
         region="set_2",
@@ -88,8 +88,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     }
 ]
 )JSON";

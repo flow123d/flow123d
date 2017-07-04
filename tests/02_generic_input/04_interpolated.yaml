@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
       - region: .IMPLICIT_BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: !FieldInterpolatedP0
-          gmsh_file: ref_out/05_interpolation_large_cube/large_cube.msh
+          mesh_data_file: ref_out/05_interpolation_large_cube/large_cube.msh
           field_name: piezo_head_p0
       - region: BULK
         anisotropy: 1

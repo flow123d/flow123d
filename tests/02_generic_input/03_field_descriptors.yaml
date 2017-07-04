@@ -34,10 +34,10 @@ problem: !Coupling_Sequential
       input_fields:
         - region: ALL
           porosity: !FieldElementwise
-            gmsh_file: ./03_field_descriptors-000000.vtu
+            mesh_data_file: ./03_field_descriptors-000000.vtu
             field_name: porosity
           sources_sigma: !FieldElementwise
-            gmsh_file: ./test-descriptors.pvd
+            mesh_data_file: ./test-descriptors.pvd
             field_name: sources_sigma
         - region: bulk
           init_conc: 0
