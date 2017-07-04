@@ -20,6 +20,7 @@
 #include "io/msh_basereader.hh"
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
+#include "io/msh_pvdreader.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -39,6 +40,8 @@ std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath 
 		reader_ptr = std::make_shared<GmshMeshReader>(file_name);
 	} else if ( file_name.extension() == ".vtu" ) {
 		reader_ptr = std::make_shared<VtkMeshReader>(file_name);
+	} else if ( file_name.extension() == ".pvd" ) {
+		reader_ptr = std::make_shared<PvdMeshReader>(file_name);
 	} else {
 		THROW(ExcWrongExtension() << EI_FileExtension(file_name.extension()) << EI_MeshFile((string)file_name) );
 	}
