@@ -13,7 +13,7 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
 ### ERROR wrong descendant of Abstract
         bc_piezo_head: !FieldInterpolatedP1
-          gmsh_file: ref_out/05_interpolation_large_cube/large_cube.msh
+          mesh_data_file: ref_out/05_interpolation_large_cube/large_cube.msh
           field_name: piezo_head_p0
     n_schurs: 2
     output:

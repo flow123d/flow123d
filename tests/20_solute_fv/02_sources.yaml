@@ -42,13 +42,13 @@ problem: !Coupling_Sequential
           init_conc: 0
           porosity: 1
           sources_density: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+            mesh_data_file: 02_input_sources.msh
             field_name: density
           sources_sigma: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+            mesh_data_file: 02_input_sources.msh
             field_name: sigma
           sources_conc: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+            mesh_data_file: 02_input_sources.msh
             field_name: concentration
     output_stream: 
       file: ./transport_test16.pvd

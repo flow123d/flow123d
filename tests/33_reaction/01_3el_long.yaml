@@ -40,7 +40,7 @@ problem: !Coupling_Sequential
         - region: .BOUNDARY
           #           {
           #             TYPE:"FieldElementwise",
-          #             gmsh_file:"./input/sit_decay_long.msh",
+          #             mesh_data_file:"./input/sit_decay_long.msh",
           #             field_name:"concentration"
           #           }
           bc_conc:
