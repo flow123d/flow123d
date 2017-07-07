@@ -660,6 +660,11 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         }
     }
     break;
+    case OutputTime::NATIVE_DATA: {
+        WarningOut() << "Computing of output discrete space NATIVE_DATA is not supported yet.\n";
+        // TODO implement NATIVE_DATA
+    }
+    break;
     }
 
     /* Set the last time */

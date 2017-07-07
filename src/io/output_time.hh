@@ -86,12 +86,15 @@ public:
 
     /**
      * Types of reference data
+     *
+     * NATIVE_DATA represents output of FieldFE in our own format, Paraview ignores this format.
      */
-    static const unsigned int N_DISCRETE_SPACES = 3;
+    static const unsigned int N_DISCRETE_SPACES = 4;
     enum DiscreteSpace {
         NODE_DATA   = 0,
         CORNER_DATA = 1,
-        ELEM_DATA   = 2
+        ELEM_DATA   = 2,
+        NATIVE_DATA = 3
     };
 
     /**
