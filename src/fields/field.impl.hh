@@ -22,6 +22,7 @@
 
 #include "field.hh"
 #include "field_algo_base.impl.hh"
+#include "field_fe.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -671,6 +672,25 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     stream->update_time(this->time());
 
 }
+
+
+template<int spacedim, class Value>
+std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
+	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
+
+	bool is_fe = (region_fields_.size()>0); // indicate if FieldFE is defined on all regions
+	for (auto region_field : region_fields_)
+		if (!region_field || typeid(*region_field) != typeid(FieldFE<spacedim, Value>)) {
+			is_fe = false;
+			break;
+		}
+	if (is_fe) {
+		field_fe_ptr = std::dynamic_pointer_cast<  FieldFE<spacedim, Value> >( region_fields_[0] );
+	}
+
+	return field_fe_ptr;
+}
+
 
 
 
