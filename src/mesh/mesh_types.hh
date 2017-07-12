@@ -29,7 +29,7 @@ class Node;
 class Element;
 class Boundary;
 class Edge;
-
+class MixedMeshIntersections;
 
 // Preparation for next development
 typedef flow::VectorId<Node> NodeVector;

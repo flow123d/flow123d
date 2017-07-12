@@ -22,8 +22,11 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <string>
+
 
 #include "system/fmt/format.h"
+#include "system/exc_common.hh"
 
 
 
@@ -160,7 +163,11 @@ public:
 	template<class... T>
 	Logger& fmt(T&&... t)
 	{
-	    return *this << fmt::format(std::forward<T>(t)...);
+	    try {
+	        return *this << fmt::format(std::forward<T>(t)...);
+	    } catch (const fmt::FormatError & e) {
+	        THROW(ExcMessage() << EI_Message("FormatError: " + std::string(e.what())));
+	    }
 	}
 
 	/// Destructor.
@@ -182,6 +189,9 @@ private:
 
 	/// Print header to file stream, helper method called from \p print_to_file.
 	void print_file_header(std::ofstream& stream, std::stringstream& file_stream);
+
+	/// Return compact (relative) path to the given source file.
+	std::string compact_file_name(std::string file_name);
 
 	std::stringstream cout_stream_;       ///< Store messages printed to cout output stream
 	std::stringstream cerr_stream_;       ///< Store messages printed to cerr output stream

@@ -21,27 +21,25 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
+#set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
 set(libs mesh_lib system_lib io_lib)
 add_test_directory("${libs}")
     
     define_test(ref_element)
-    define_test(element)
+    #define_test(element)
     define_test(gmsh_reader)
     define_mpi_test(vtk_reader 1)
     define_mpi_test(pvd_reader 1)
     define_test(intersection)
     define_mpi_test(bih_tree 1)
     define_test(bounding_box)
-    #define_test(intersection_1_3)
     
     define_mpi_test(partitioning 1)
     define_mpi_test(partitioning 2)
 
     define_test(region)
     define_mpi_test(mesh 2)
-    
-    #define_test(generic_node)
     
 
 

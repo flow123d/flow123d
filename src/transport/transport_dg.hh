@@ -23,9 +23,11 @@
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "fields/vec_seq_double.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/equation_output.hh"
+#include "fem/mapping_p1.hh"
 
 class Distribution;
 class OutputTime;
@@ -58,9 +60,9 @@ public:
 	inline Quadrature<dim> *q();
 
 	template<unsigned int dim>
-	inline Mapping<dim,3> *mapping();
+	inline MappingP1<dim,3> *mapping();
 
-	inline DOFHandlerMultiDim *dh();
+	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
 
@@ -81,13 +83,12 @@ private:
 	Quadrature<3> *q3_;
 
 	/// Auxiliary mappings of reference elements.
-	Mapping<0,3> *map0_;
-	Mapping<1,3> *map1_;
-	Mapping<2,3> *map2_;
-	Mapping<3,3> *map3_;
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
 
 	/// Object for distribution of dofs.
-	DOFHandlerMultiDim *dh_;
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 
@@ -462,7 +463,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<Vec> output_vec;
+	vector<VectorSeqDouble> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

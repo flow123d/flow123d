@@ -291,11 +291,11 @@ void Balance::lazy_initialize()
                &(region_source_rhs_[c])));
 
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-               be_regions_.size(),
-               n_loc_dofs_,
-               PETSC_DECIDE,
-               PETSC_DECIDE,
-               max_dofs_per_boundary_,
+               be_regions_.size(),  // n local rows, number of local boundary edges
+               n_loc_dofs_,         // n local cols (local rows of multiplying vector)
+               PETSC_DECIDE,        // n global rows
+               PETSC_DECIDE,        // n global cols
+               max_dofs_per_boundary_,  // allocation, local poriton
                0,
                0,
                0,
