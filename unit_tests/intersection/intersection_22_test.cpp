@@ -4,12 +4,13 @@
  *      Author: PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
@@ -65,13 +66,10 @@ TEST(intersection_prolongation_23d, all) {
         string file_name = test_case.first+".msh";
         TestCaseResult &case_result = test_case.second;
 
-        FilePath mesh_file(dir_name + file_name, FilePath::input_file);
-    
         MessageOut() << "Computing intersection on mesh: " << file_name << "\n";
         
-        Mesh *mesh = mesh_constructor();
-        ifstream in(string(mesh_file).c_str());
-        mesh->read_gmsh_from_stream(in);
+        string in_mesh_string = "{mesh_file=\"" + dir_name + file_name + "\"}";
+        Mesh *mesh = mesh_full_constructor(in_mesh_string);
         
         compute_intersection(mesh, case_result);
     }
