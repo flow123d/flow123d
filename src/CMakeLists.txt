@@ -259,7 +259,7 @@ add_library(io_lib
 )
 
 target_link_libraries(io_lib
-    system_lib input_lib mesh_lib la_lib
+    system_lib input_lib mesh_lib fem_lib la_lib
     armadillo 
     ${Boost_LIBRARIES}
     ${PugiXml_LIBRARY}
