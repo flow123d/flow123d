@@ -692,8 +692,8 @@ void Field<spacedim,Value>::compute_native_data(OutputTime::DiscreteSpace space_
 
     if (field_fe_ptr) {
         ElementDataCache<double> &output_data = stream->prepare_compute_data<double>(this->name(), space_type,
-                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-        //field_fe_ptr->fill_data_to_cache(output_data);
+                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_, field_fe_ptr->data_size());
+        field_fe_ptr->fill_data_to_cache(output_data);
     } else {
         WarningOut().fmt("Field %s of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
     }

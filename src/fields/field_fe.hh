@@ -98,6 +98,20 @@ public:
     void set_mesh(const Mesh *mesh, bool boundary_domain) override;
 
 
+    /**
+     * Copy data vector to given output ElementDataCache
+     */
+    void fill_data_to_cache(ElementDataCache<double> &output_data_cache);
+
+
+    /**
+     * Return size of vector of data stored in Field
+     */
+    inline unsigned int data_size() const {
+    	return data_vec_->size();
+    }
+
+
     /// Destructor.
 	virtual ~FieldFE();
 

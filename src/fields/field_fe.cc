@@ -271,6 +271,15 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 }
 
 
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &output_data_cache) {
+	unsigned int size = output_data_cache.n_values() * output_data_cache.n_elem();
+	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
+	for (unsigned int i=0; i<size; ++i)
+		output_data_cache.store_value(i, &((*data_vec)[i]) );
+}
+
+
 
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::~FieldFE()
