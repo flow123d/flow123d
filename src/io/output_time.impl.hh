@@ -76,7 +76,7 @@
 
 template <typename T>
 ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
-		unsigned int n_cols)
+		unsigned int n_cols, unsigned int cache_size)
 {
     if(space_type == CORNER_DATA)
         compute_discontinuous_output_mesh();
@@ -86,7 +86,7 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     size[NODE_DATA] = output_mesh_->n_nodes();
     size[ELEM_DATA] = output_mesh_->n_elements();
     size[CORNER_DATA] = output_mesh_discont_->n_nodes();
-    size[NATIVE_DATA] = 0; // TODO will be implemented later.
+    size[NATIVE_DATA] = cache_size;
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),

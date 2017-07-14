@@ -249,7 +249,7 @@ void OutputTime::clear_data(void)
 // explicit instantiation of template methods
 #define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
 template ElementDataCache<TYPE> & OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
-		unsigned int n_rows, unsigned int n_cols)
+		unsigned int n_rows, unsigned int n_cols, unsigned int cache_size = 1)
 
 OUTPUT_PREPARE_COMPUTE_DATA(int);
 OUTPUT_PREPARE_COMPUTE_DATA(unsigned int);
