@@ -29,6 +29,8 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
 void GetIntersection(const TBisector & B1, const TBisector &B2,
         TPosition &pos, double &t1, double &t2) {
     TNSolutions ns;
@@ -151,7 +153,7 @@ void GetIntersection(const TAbscissa &A1, const TAbscissa &A2, IntersectionLocal
     GetIntersection(A1, A2, pos, t1, t2);
     if ( pos == intersecting ) {
         // test t1 je (0-eps,1+eps) a t2 je z (0-eps,1+eps)
-    	if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon)) || (t2 > (0 - epsilon)) || (t2 < (1 + epsilon))) {
+    	if ((t1 > (0 - epsilon)) && (t1 < (1 + epsilon)) && (t2 > (0 - epsilon)) && (t2 < (1 + epsilon))) {
     		insec=new IntersectionLocal(IntersectionLocal::point);
     		vector<double> loc_coord_1(1,t1);
     		vector<double> loc_coord_2(1,t2);
@@ -277,7 +279,7 @@ void GetIntersection(const TAbscissa &A, const TBisector &B, IntersectionLocal *
     GetIntersection(A, B, pos, t1, t2);
     if ( pos == intersecting ) {
         // test t1 je (0-eps,1+eps)
-        if ((t1 > (0 - epsilon)) || (t1 < (1 + epsilon))) {
+        if ((t1 > (0 - epsilon)) && (t1 < (1 + epsilon))) {
         	insec=new IntersectionLocal(IntersectionLocal::point);
         	vector<double> loc_coord_1(1,t1);
         	vector<double> loc_coord_2(1,t2); //t2 na Bisectoru B
@@ -693,6 +695,7 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
                    insec->add_local_coord(insec_tmp->get_point(0)->el2_coord(), loc_tria_coord_02);
                    insec->add_local_coord(insec_tmp->get_point(1)->el2_coord(), loc_tria_coord_03);
                    delete insec_tmp;
+                   delete insec_point_tmp[0];
                    return;
                }
            }
@@ -714,6 +717,8 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
                    insec->add_local_coord(insec_tmp->get_point(0)->el2_coord(), loc_tria_coord_03);
                    insec->add_local_coord(insec_tmp->get_point(1)->el2_coord(), loc_tria_coord_01);
                    delete insec_tmp;
+                   delete insec_point_tmp[0];
+                   delete insec_point_tmp[1];
                    return;
                }
            }
@@ -747,7 +752,7 @@ void GetIntersection(const TBisector &B, const TTriangle &T, IntersectionLocal *
         			   break;
         		   }
         	   }
-        	   return;
+        	   //return;
            }
            if (cit != 2) {
         	   cout << "cit = " << cit << endl;
@@ -801,13 +806,16 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
     if (insec_tmp->get_type() == IntersectionLocal::point) {
     	if (insec_tmp->get_point(0) != NULL) {
     		double t1 = insec_tmp->get_point(0)->el1_coord()[0];
-    		if (t1 < 0 - epsilon || t1 > 1 + epsilon) {
+    		if (t1 < (0 - epsilon) || t1 > (1 + epsilon)) {
     		    delete insec_tmp;
     			insec = NULL;
     		} else {
     		    insec = insec_tmp;
     		}
-    	}
+    	} else{
+            delete insec_tmp;
+            insec = NULL;
+        }
     } else if(insec_tmp->get_type() == IntersectionLocal::line) {
         // A1 i A2 ma byt v intervalu (0,1) -> vrati insec
         // pokud ne tak zkusi zkratit, nebo NULL (delete)
@@ -839,8 +847,10 @@ void GetIntersection(const TAbscissa &A, const TTriangle &T,
 				insec->add_local_point(interpolate(*A1, *A2, A2_t));
 				delete insec_tmp;
     	    }
-    	}
-    return;
+    	} else{
+            delete insec_tmp;
+            insec = NULL;
+        }
     }
     return;
 
@@ -987,6 +997,7 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
             		if (tt2 > 1) tt2 = 1;
             		coef = fabs(tt2 - tt1);
             		it = line;
+                    delete insec;
             		return;
             	}
             }
@@ -996,6 +1007,8 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
                     cit++;
                 } else {
                     if (IsEqual(tt[0], insec->get_point(0)->el1_coord()[0])) {
+                        delete insec;
+                        insec = nullptr;
                         continue;
                     }
                     if (tt[0] > insec->get_point(0)->el1_coord()[0]) {
@@ -1009,13 +1022,17 @@ void GetIntersection(const TAbscissa &A, const TTetrahedron &T,
 						if (tt[1] > 1) tt[1] = 1;
 						coef = fabs(tt[1] - tt[0]);
 						it = line;
+                        delete insec;
 						return;
                     }
                 }
             }
+            delete insec;
+            insec = nullptr;
         }
     }
-
+    
+    if (insec != nullptr) delete insec;
     it = none;
 
     return;
@@ -1039,7 +1056,7 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
     }
 
     if (P.vertexes_count() < 3) {
-		IntersectionLocal *insec;
+		IntersectionLocal *insec = nullptr;
 
 		for (int i = 1; i <= 3; i++) {
 			for (int j = 1; j <= 4; j++) {
@@ -1059,6 +1076,7 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 							//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
 							break;
 					}
+					delete insec;
 				}
 			}
 		}
@@ -1077,6 +1095,7 @@ void GetIntersection(const TTriangle &Tr, const TTetrahedron &Te,
 						//mythrow((char*) "Runtime error - deny point\n", __LINE__, __FUNC__);
 						break;
 				}
+				delete insec;
 			}
 		}
     }
@@ -1105,3 +1124,4 @@ template<class A, class B> bool QuickIntersectionTest(const A &a, const B &b) {
     return true;
 }
 
+} // namespace ngh

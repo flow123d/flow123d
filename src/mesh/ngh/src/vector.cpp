@@ -22,6 +22,8 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
 int TVector::numberInstance = 0;
 
 int TVector::generateId() {
@@ -243,3 +245,6 @@ bool ArePerpendicular(const TVector &U, const TVector &V) {
     double x = Dot(U, V) / (U.Length() * V.Length());
     return IsZero(x);
 }
+
+
+} // namespace ngh

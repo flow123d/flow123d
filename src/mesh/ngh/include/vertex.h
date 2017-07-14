@@ -20,6 +20,8 @@
 
 #include "point.h"
 
+namespace ngh {
+
 class TVertex {
 private:
     static int numberInstance;
@@ -39,6 +41,8 @@ public:
         return TVertex::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif
 

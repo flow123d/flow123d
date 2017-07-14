@@ -146,7 +146,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 
 		double total_measure=0.0, measure;
-		TIntersectionType iType;
+		ngh::TIntersectionType iType;
 
 		START_TIMER("compute_pressure");
 		ADD_CALLS(searched_elements_.size());
@@ -168,16 +168,16 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 					}
 					case 1: {
 					    ngh::set_abscissa_from_element(abscissa_, elm.element());
-						GetIntersection(abscissa_, tetrahedron_, iType, measure);
-						if (iType != line) {
+					    ngh::GetIntersection(abscissa_, tetrahedron_, iType, measure);
+						if (iType != ngh::line) {
 							measure = 0.0;
 						}
 						break;
 					}
 			        case 2: {
 			        	ngh::set_triangle_from_element(triangle_, elm.element());
-						GetIntersection(triangle_, tetrahedron_, iType, measure);
-						if (iType != area) {
+			        	ngh::GetIntersection(triangle_, tetrahedron_, iType, measure);
+						if (iType != ngh::area) {
 							measure = 0.0;
 						}
 			            break;

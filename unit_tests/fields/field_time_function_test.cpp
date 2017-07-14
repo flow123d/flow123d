@@ -58,7 +58,8 @@ table_function_tensor: !FieldTimeFunction
 
 
 FieldAlgoBaseInitData get_field_init_data(std::string field_name, double max_limit = std::numeric_limits<double>::max() ) {
-	return FieldAlgoBaseInitData(field_name, 3, UnitSI::dimensionless(), std::make_pair(0, max_limit) );
+	return FieldAlgoBaseInitData(field_name, 3, UnitSI::dimensionless(), std::make_pair(0, max_limit),
+			(FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output) );
 }
 
 

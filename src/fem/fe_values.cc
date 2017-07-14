@@ -194,7 +194,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
     	{
     		// transform the side quadrature points to the cell quadrature points
-    		this->mapping->transform_subquadrature(sid, pid, *sub_quadrature, side_quadrature[sid][pid]);
+            side_quadrature[sid][pid] = Quadrature<dim>(_sub_quadrature, sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
     		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid], this->data.update_flags);
     	}
@@ -225,10 +225,12 @@ template<unsigned int dim,unsigned int spacedim>
 void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
 		unsigned int sid)
 {
+    ASSERT_LT_DBG( sid, cell->n_sides());
+    ASSERT_EQ_DBG(dim, cell->dim());
     this->data.present_cell = &cell;
 
     unsigned int pid = cell->permutation_idx_[sid];
-
+    ASSERT_LT_DBG(pid, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,
                                  sid,

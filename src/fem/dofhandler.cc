@@ -422,7 +422,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     row_4_el = mesh_->get_row_4_el();
 
     // create local array of edges
-    for (unsigned int iedg=0; iedg<mesh_->edges.size(); iedg++)
+    for (unsigned int iedg=0; iedg<mesh_->n_edges(); iedg++)
     {
         bool is_edge_local = false;
         Edge *edg = &mesh_->edges[iedg];
@@ -437,7 +437,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     }
 
     // create local array of neighbours
-	for (unsigned int inb=0; inb<mesh_->vb_neighbours_.size(); inb++)
+	for (unsigned int inb=0; inb<mesh_->n_vb_neighbours(); inb++)
 	{
 		Neighbour *nb = &mesh_->vb_neighbours_[inb];
 		if (el_is_local(mesh_->element.index(nb->element()))

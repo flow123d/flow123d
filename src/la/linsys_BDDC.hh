@@ -85,6 +85,11 @@ public:
         return numeric_limits<double>::max();
     }
 
+    /** Prints matrix in coordinate format, can be load by matlab as a sparse matrix.
+     * Works only on 1 proc.
+     */
+    void print_matrix(std::ostream& out);
+    
     ~LinSys_BDDC( );
 
 //private:

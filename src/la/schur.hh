@@ -141,6 +141,7 @@ protected:
     Mat IA;                     // Inverse of block A
 
     Mat B, Bt;                  // B and B' block (could be different from real B transpose)
+    Mat C;                      // Sub matrix.
     Mat xA;                     // Bt*IA*B
     Mat IAB;                    // reconstruction matrix IA * B
     int loc_size_A, loc_size_B; // loc size of the A and B block

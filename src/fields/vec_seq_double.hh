@@ -66,6 +66,14 @@ public:
 		return data_petsc_;
 	}
 
+	/// Getter for shared pointer of output data.
+	unsigned int size()
+	{
+		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+		return data_ptr_->size();
+	}
+
+
 	/// Create and return shared pointer to FieldElementwise object
 	template <int spacedim, class Value>
 	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)

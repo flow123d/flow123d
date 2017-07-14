@@ -10,7 +10,7 @@
 # 
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; 
 # without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the GNU General Public License for more detail
+# See the GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License along with this program; if not,
 # write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
@@ -21,9 +21,30 @@
 # $LastChangedDate: 2012-02-28 14:24:58 +0100 (Tue, 28 Feb 2012) $
 #
 
+#set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs system_lib)
+set(libs mesh_lib system_lib io_lib)
 add_test_directory("${libs}")
+    
+    define_mpi_test(compute_intersection_12 1)
+    define_mpi_test(compute_intersection_13 1)
+    define_mpi_test(compute_intersection_22 1)
+    define_mpi_test(compute_intersection_23 1)
+    
+    define_mpi_test(prolongation_12 1)
+    define_mpi_test(prolongation_13 1)
+    define_mpi_test(prolongation_23 1)
+    
+    define_mpi_test(intersection_22 1)
+    define_mpi_test(intersection_in_3D_mesh 1)
+    
+    define_mpi_test(speed_simple 1)
+    define_mpi_test(speed 1)
+    
+    define_test(simplex_class)
+
+
+
 
 
 

@@ -18,6 +18,8 @@
 #include "mesh/ngh/include/vertex.h"
 #include "mesh/ngh/include/myvector.h"
 
+namespace ngh {
+
 int TVertex::numberInstance = 0;
 
 int TVertex::generateId() {
@@ -39,3 +41,5 @@ TPoint TVertex::GetPoint() const {
     tmp = *X;
     return tmp;
 }
+
+} // namespace ngh

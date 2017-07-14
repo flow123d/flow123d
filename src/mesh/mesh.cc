@@ -36,7 +36,15 @@
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 
+
 #include "mesh/bih_tree.hh"
+
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/intersection.h"
+
+#include "intersection/mixed_mesh_intersections.hh"
+
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -50,6 +58,16 @@
 
 namespace IT = Input::Type;
 
+const Input::Type::Selection & Mesh::get_input_intersection_variant() {
+    return Input::Type::Selection("Types of search algorithm for finding intersection candidates.")
+        .add_value(Mesh::BIHsearch, "BIHsearch",
+            "Use BIH for finding initial candidates, then continue by prolongation.")
+        .add_value(Mesh::BIHonly, "BIHonly",
+            "Use BIH for finding all candidates.")
+        .add_value(Mesh::BBsearch, "BBsearch",
+            "Use bounding boxes for finding initial candidates, then continue by prolongation.")
+        .close();
+}
 
 const IT::Record & Mesh::get_input_type() {
 	return IT::Record("Mesh","Record with mesh related data." )
@@ -64,10 +82,13 @@ const IT::Record & Mesh::get_input_type() {
 				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
 	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
+        .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
+                     IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
+		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
+					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
+					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
 		.close();
 }
-
-
 
 const unsigned int Mesh::undef_idx;
 
@@ -99,6 +120,10 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 	reinit(in_record_);
 }
 
+Mesh::IntersectionSearch Mesh::get_intersection_search()
+{
+    return in_record_.val<Mesh::IntersectionSearch>("intersection_search");
+}
 
 
 void Mesh::reinit(Input::Record in_record)
@@ -134,15 +159,15 @@ void Mesh::reinit(Input::Record in_record)
 
     for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
     	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
-    		side_nodes[0][sid][nid] = RefElement<1>::side_nodes[sid][nid];
+            side_nodes[0][sid][nid] = RefElement<1>::interact(Interaction<0,0>(sid))[nid];
 
     for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
-        		side_nodes[1][sid][nid] = RefElement<2>::side_nodes[sid][nid];
+                side_nodes[1][sid][nid] = RefElement<2>::interact(Interaction<0,1>(sid))[nid];
 
     for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
-        		side_nodes[2][sid][nid] = RefElement<3>::side_nodes[sid][nid];
+        		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
 }
 
 
@@ -622,12 +647,9 @@ void Mesh::element_to_neigh_vb()
 
 
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
 
 
-void Mesh::make_intersec_elements() {
+MixedMeshIntersections & Mesh::mixed_intersections() {
 	/* Algorithm:
 	 *
 	 * 1) create BIH tree
@@ -635,33 +657,11 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-	const BIHTree &bih_tree =get_bih_tree();
-	master_elements.resize(n_elements());
-
-	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
-		Element &ele = this->element[i_ele];
-
-		if (ele.dim() == 1) {
-			vector<unsigned int> candidate_list;
-                        bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-                        
-			//for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
-                        for(unsigned int i_elm : candidate_list) {
-				ElementFullIter elm = this->element( i_elm );
-				if (elm->dim() == 2) {
-					IntersectionLocal *intersection;
-					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
-					if (intersection && intersection->get_type() == IntersectionLocal::line) {
-
-						master_elements[i_ele].push_back( intersections.size() );
-						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
-				    }
-				}
-
-			}
-		}
-	}
-
+    if (! intersections) {
+        intersections = std::make_shared<MixedMeshIntersections>(this);
+        intersections->compute_intersections();
+    }
+    return *intersections;
 }
 
 
@@ -732,6 +732,27 @@ void Mesh::check_and_finish()
 }
 
 
+void Mesh::compute_element_boxes() {
+    START_TIMER("Mesh::compute_element_boxes");
+    if (element_box_.size() > 0) return;
+
+    // make element boxes
+    element_box_.resize(this->element.size());
+    unsigned int i=0;
+    FOR_ELEMENTS(this, element) {
+         element_box_[i] = element->bounding_box();
+         i++;
+    }
+
+    // make mesh box
+    Node* node = this->node_vector.begin();
+    mesh_box_ = BoundingBox(node->point(), node->point());
+    FOR_NODES(this, node ) {
+        mesh_box_.expand( node->point() );
+    }
+
+}
+
 const BIHTree &Mesh::get_bih_tree() {
     if (! this->bih_tree_)
         bih_tree_ = std::make_shared<BIHTree>(this);
@@ -781,6 +802,13 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		ele->node[ni] = node;
 	}
 
+	// check that tetrahedron element is numbered correctly and is not degenerated
+    if(ele->dim() == 3)
+    {
+        double jac = ele->tetrahedron_jacobian();
+        if( ! (jac > 0) )
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
+    }
 }
 
 
@@ -789,6 +817,11 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 		this->create_node_element_lists();
 	}
 	return node_elements_;
+}
+
+
+double Mesh::global_observe_radius() const {
+	return in_record_.val<double>("global_observe_search_radius");
 }
 
 //-----------------------------------------------------------------------------

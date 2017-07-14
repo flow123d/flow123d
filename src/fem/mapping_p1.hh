@@ -21,6 +21,7 @@
 #define MAPPING_P1_HH_
 
 #include "fem/mapping.hh"
+#include "mesh/elements.h"
 
 
 /**
@@ -54,6 +55,10 @@ class MappingP1 : public Mapping<dim,spacedim>
 {
 public:
 
+    typedef arma::vec::fixed<dim+1> BaryPoint;
+    typedef arma::vec::fixed<spacedim> RealPoint;
+    typedef arma::mat::fixed<spacedim, dim+1> ElementMap;
+    
     /**
      * @brief Constructor.
      */
@@ -104,6 +109,33 @@ public:
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
 
+   
+    /**
+     * Map from reference element (barycentric coords) to global coord system.
+     * Matrix(3, dim+1) M: x_real = M * x_bary;
+     * M columns are real coordinates of nodes.
+     */
+    ElementMap element_map(const Element &elm) const;
+
+    /**
+     * Project given point in real coordinates to reference element (barycentic coordinates).
+     * Result vector have dimension dim()+1.
+     * Use RefElement<dim>::bary_to_local() to get local coordinates.
+     */
+    BaryPoint project_real_to_unit(const RealPoint &point, const ElementMap &map) const;
+    
+    /**
+     * Project given point from reference element (barycentic coordinates) to real coordinates.
+     * Use RefElement<dim>::local_to_bary() to get barycentric coordinates in input.
+     */
+    RealPoint project_unit_to_real(const BaryPoint &point, const ElementMap &map) const;
+
+    /**
+     * Clip a point given by barycentric cocordinates to the element.
+     * If the point is out of the element the closest point
+     * projection to the element surface is used.
+     */
+    BaryPoint clip_to_element(BaryPoint &barycentric);
 
 private:
 
