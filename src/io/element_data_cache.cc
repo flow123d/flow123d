@@ -31,7 +31,7 @@ ElementDataCache<T>::ElementDataCache()
 template <typename T>
 ElementDataCache<T>::ElementDataCache(MeshDataHeader data_header, unsigned int size_of_cache, unsigned int row_vec_size) {
 	this->time_ = data_header.time;
-	this->quantity_name_ = data_header.field_name;
+	this->field_input_name_ = data_header.field_name;
 	this->data_ = create_data_cache(size_of_cache, row_vec_size);
 }
 
@@ -40,10 +40,10 @@ template <typename T>
 ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size)
 {
 	this->set_vtk_type<T>();
-    this->field_name = field_name;
-    this->output_field_name = this->field_name;
+    this->field_name_ = field_name;
+    this->field_input_name_ = this->field_name_;
 
-    this->n_values = size;
+    this->n_values_ = size;
 
     if (n_cols == 1) {
         if (n_rows == 1) {
@@ -53,19 +53,19 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
                 if (n_rows > 3) {
                     xprintf(PrgErr,
                             "Do not support output of vectors with fixed size >3. Field: %s\n",
-                            this->field_name.c_str());
+                            this->field_input_name_.c_str());
                 } else {
                     this->n_elem_ = N_VECTOR;
                 }
             } else {
-                THROW(ExcOutputVariableVector() << EI_FieldName(this->field_name));
+                THROW(ExcOutputVariableVector() << EI_FieldName(this->field_input_name_));
             }
         }
     } else {
         this->n_elem_ = N_TENSOR;
     }
 
-    this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values * this->n_elem_);
+    this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_elem_);
 }
 
 
@@ -129,7 +129,7 @@ void ElementDataCache<T>::read_binary_data(std::istream &data_stream, unsigned i
 template <typename T>
 void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
 {
-	ASSERT_LT(idx, this->n_values).error();
+	ASSERT_LT(idx, this->n_values_).error();
 	std::vector<T> &vec = *( this->data_[0].get() );
 	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
 		out_stream << vec[i] << " ";
@@ -146,7 +146,7 @@ template <typename T>
 void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
 {
     std::vector<T> &vec = *( this->data_[0].get() );
-	for(unsigned int idx = 0; idx < this->n_values; idx++) {
+	for(unsigned int idx = 0; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
     		out_stream << vec[i] << " ";
     }
@@ -159,12 +159,12 @@ void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_
 {
 	if (print_data_size) {
 		// write size of data
-		unsigned long long int data_byte_size = this->n_values * n_elem_ * sizeof(T);
+		unsigned long long int data_byte_size = this->n_values_ * n_elem_ * sizeof(T);
 		out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
 	}
     // write data
 	std::vector<T> &vec = *( this->data_[0].get() );
-    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+    for(unsigned int idx = 0; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
     		out_stream.write(reinterpret_cast<const char*>(&(vec[i])), sizeof(T));
     }
@@ -176,7 +176,7 @@ void ElementDataCache<T>::print_all_yaml(ostream &out_stream, unsigned int preci
 {
     out_stream << "[ ";
 	std::vector<T> &vec = *( this->data_[0].get() );
-    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+    for(unsigned int idx = 0; idx < this->n_values_; idx++) {
         if (idx != 0) out_stream << ", ";
         unsigned int vec_pos = n_elem_ * idx; // position of element value in data cache
         switch (this->n_elem_) {
@@ -211,7 +211,7 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
 	min = std::numeric_limits<double>::max();
 	max = std::numeric_limits<double>::min();
 	std::vector<T> &vec = *( this->data_[0].get() );
-    for(unsigned int idx = 0; idx < this->n_values; idx++) {
+    for(unsigned int idx = 0; idx < this->n_values_; idx++) {
     	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i ) {
     		if (vec[i] < min) min = vec[i];
     		if (vec[i] > max) max = vec[i];
@@ -225,7 +225,7 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
  */
 template <typename T>
 void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values);
+    ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
     unsigned int vec_idx = idx*this->n_elem_;
     for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
@@ -238,7 +238,7 @@ void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::add(unsigned int idx, const T * value) {
-    ASSERT_LT_DBG(idx, this->n_values);
+    ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
     unsigned int vec_idx = idx*this->n_elem_;
     for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
@@ -251,7 +251,7 @@ void ElementDataCache<T>::add(unsigned int idx, const T * value) {
  */
 template <typename T>
 void ElementDataCache<T>::zero(unsigned int idx) {
-    ASSERT_LT_DBG(idx, this->n_values);
+    ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
     unsigned int vec_idx = idx*this->n_elem_;
     for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
@@ -264,13 +264,22 @@ void ElementDataCache<T>::zero(unsigned int idx) {
  */
 template <typename T>
 void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
-    ASSERT_LT_DBG(idx, this->n_values);
+    ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
     unsigned int vec_idx = idx*this->n_elem_;
     for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
     	vec[vec_idx] /= divisor;
     }
 };
+
+/// Access i-th element in the data vector.
+template <class T>
+T& ElementDataCache<T>::operator[](unsigned int i)
+{
+	std::vector<T> &vec = *( this->data_[0].get() );
+    ASSERT_DBG(i < vec.size());
+    return vec[i];
+}
 
 
 

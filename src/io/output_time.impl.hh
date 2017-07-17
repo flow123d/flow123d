@@ -58,21 +58,14 @@
 
 #include <vector>
 #include <string>
-#include <ostream>
 
 #include "system/system.hh"
-#include "mesh/mesh.h"
 
-#include "fields/field.hh"
-#include "fields/multi_field.hh"
-#include "fields/field_values.hh"
 #include "system/exceptions.hh"
 #include "io/output_time.hh"
-
-#include "io/output_data_base.hh"
-#include "output_mesh.hh"
+#include "io/output_mesh.hh"
 #include "io/element_data_cache.hh"
-#include "output_element.hh"
+#include "io/output_element.hh"
 
 
 
@@ -81,48 +74,13 @@
  * OutputTime implementation
  */
 
-template<int spacedim, class Value>
-void OutputTime::register_data(const DiscreteSpace type,
-        MultiField<spacedim, Value> &multi_field)
+template <typename T>
+ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
+		unsigned int n_cols)
 {
-	ASSERT_LT(type, N_DISCRETE_SPACES).error();
-
-    DiscreteSpaceFlags flags = 1 << type;
-    for (unsigned long index=0; index < multi_field.size(); index++)
-        for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
-            if (flags & (1 << ids))
-                    this->compute_field_data( DiscreteSpace(ids), multi_field[index] );
-
-}
-
-
-template<int spacedim, class Value>
-void OutputTime::register_data(const DiscreteSpace type,
-        Field<spacedim, Value> &field_ref)
-{
-	ASSERT_LT(type, N_DISCRETE_SPACES).error();
-    
-	DiscreteSpaceFlags flags = 1 << type;
-    for(unsigned int ids=0; ids < N_DISCRETE_SPACES; ids++)
-        if (flags & (1 << ids))
-            this->compute_field_data( DiscreteSpace(ids), field_ref);
-}
-
-
-template<int spacedim, class Value>
-void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Value> &field)
-{
-	typedef typename Value::element_type ElemType;
-
-    /* It's possible now to do output to the file only in the first process */
-    if( this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
     if(space_type == CORNER_DATA)
         compute_discontinuous_output_mesh();
-    
+
     // get possibly existing data for the same field, check both name and type
     std::vector<unsigned int> size(N_DISCRETE_SPACES);
     size[NODE_DATA] = output_mesh_->n_nodes();
@@ -131,84 +89,12 @@ void OutputTime::compute_field_data(DiscreteSpace space_type, Field<spacedim, Va
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
-            [&field](OutputDataPtr ptr) { return (ptr->field_name ==  field.name()); });
+            [&field_name](OutputDataPtr ptr) { return (ptr->field_input_name() == field_name); });
     if ( it == od_vec.end() ) {
-        od_vec.push_back( std::make_shared< ElementDataCache<ElemType> >(field.name(), (unsigned int)Value::NRows_,
-        		(unsigned int)Value::NCols_, size[space_type]) );
+        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, size[space_type]) );
         it=--od_vec.end();
     }
-    ElementDataCache<ElemType> &output_data = dynamic_cast<ElementDataCache<ElemType> &>(*(*it));
-
-
-    /* Copy data to array */
-    switch(space_type) {
-    case NODE_DATA: {
-        // set output data to zero
-        vector<unsigned int> count(output_data.n_values, 0);
-        for(unsigned int idx=0; idx < output_data.n_values; idx++)
-            output_data.zero(idx);
-
-        for(const auto & ele : *output_mesh_)
-        {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list();
-            for(unsigned int i=0; i < ele.n_nodes(); i++)
-            {
-                unsigned int node_index = ele.node_index(i);
-                const Value &node_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                field.value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
-                             );
-                output_data.add(node_index, node_value.mem_ptr() );
-                count[node_index]++;
-            }
-        }
-        
-        // Compute mean values at nodes
-        for(unsigned int idx=0; idx < output_data.n_values; idx++)
-            output_data.normalize(idx, count[idx]);
-    }
-    break;
-    case CORNER_DATA: {
-        for(const auto & ele : *output_mesh_discont_)
-        {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list();
-            for(unsigned int i=0; i < ele.n_nodes(); i++)
-            {
-                unsigned int node_index = ele.node_index(i);
-                const Value &node_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                field.value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
-                             );
-                ASSERT_EQ(output_data.n_elem_, node_value.n_rows()*node_value.n_cols()).error();
-                output_data.store_value(node_index, node_value.mem_ptr() );
-            }
-        }
-    }
-    break;
-    case ELEM_DATA: {
-        for(const auto & ele : *output_mesh_)
-        {
-            unsigned int ele_index = ele.idx();
-            const Value &ele_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                field.value(ele.centre(),
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
-                                                                        )
-                             );
-            ASSERT_EQ(output_data.n_elem_, ele_value.n_rows()*ele_value.n_cols()).error();
-            output_data.store_value(ele_index, ele_value.mem_ptr() );
-        }
-    }
-    break;
-    }
-
-    /* Set the last time */
-    if(this->time < field.time()) {
-        this->time = field.time();
-    }
+    return dynamic_cast<ElementDataCache<T> &>(*(*it));
 }
-
 
 #endif

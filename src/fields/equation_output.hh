@@ -5,8 +5,8 @@
  *      Author: jb
  */
 
-#ifndef SRC_IO_EQUATION_OUTPUT_HH_
-#define SRC_IO_EQUATION_OUTPUT_HH_
+#ifndef SRC_FIELDS_EQUATION_OUTPUT_HH_
+#define SRC_FIELDS_EQUATION_OUTPUT_HH_
 
 #include <memory>
 #include <unordered_map>
@@ -27,6 +27,8 @@ class TimeStep;
 class EquationOutput : public FieldSet {
 public:
 
+    DECLARE_EXCEPTION(ExcFieldNotScalar, << "Field '" << FieldCommon::EI_Field::qval
+                                         << "' is not scalar in spacedim 3.");
 
     /**
      * Make Input::Type for the output record. Particular selection of output fields is created
@@ -50,6 +52,9 @@ public:
      */
     void output(TimeStep step);
 
+    /// Selects the error control field out of output field set according to input record.
+    void select_error_control_field(std::string error_control_field_name);
+
 
 private:
     /**
@@ -69,6 +74,13 @@ private:
     void add_output_times(double begin, double step, double end);
 
 
+    /**
+     * Create the output mesh of \p stream_ OutputTime object. The field set passed in is used
+     * to select the field used for adaptivity of the output mesh.
+     */
+    void make_output_mesh();
+
+
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
@@ -83,7 +95,10 @@ private:
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;
+
+    /// Refinement error control field.
+    Field<3, FieldValue<3>::Scalar> *error_control_field_;
 };
 
 
-#endif /* SRC_IO_EQUATION_OUTPUT_HH_ */
+#endif /* SRC_FIELDS_EQUATION_OUTPUT_HH_ */

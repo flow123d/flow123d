@@ -1,40 +1,32 @@
 /*!
  *
 ﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
  * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
- * 
+ *
  * This program is distributed in the hope that it will be useful, but WITHOUT
  * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * 
- * @file    output_data_base.hh
- * @brief   
+ *
+ * @file    element_data_cache_base.hh
+ * @brief
  */
 
-#ifndef OUTPUT_DATA_BASE_HH_
-#define OUTPUT_DATA_BASE_HH_
+#ifndef ELEMENT_DATA_CACHE_BASE_HH_
+#define ELEMENT_DATA_CACHE_BASE_HH_
 
 
 
 #include <ostream>
 #include <string>
-#include <typeinfo>
 
-#include "system/global_defs.h"
+#include "system/tokenizer.hh"
+#include "system/system.hh"
 
-using namespace std;
-
-/**
- * \brief Common parent class for templated OutputData.
- *
- * Provides virtual method for output of stored data.
- *
- */
-class OutputDataBase {
+class ElementDataCacheBase {
 public:
 
 	/**
@@ -51,10 +43,36 @@ public:
                    VTK_FLOAT32, VTK_FLOAT64
     } VTKValueType;
 
+	/// Constructor.
+	ElementDataCacheBase()
+	: time_(-std::numeric_limits<double>::infinity()),
+	  field_name_("") {}
+
+	/// Destructor
+	virtual ~ElementDataCacheBase() {}
+
+	/// Getter for time of cache
+	double get_time()
+	{ return time_; }
+
+	/// Getter for quantity name of cache
+	std::string field_input_name()
+	{ return field_input_name_; }
+
+	/// Check if cache stored actual data
+	bool is_actual(double time, std::string field_name) {
+		return (time_ == time) && (field_input_name_ == field_name);
+	}
+
 	/**
-	 * Destructor of OutputDataBase
+	 * Read ascii data of given \p i_row from tokenizer
 	 */
-    virtual ~OutputDataBase() {};
+	virtual void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row)=0;
+
+	/**
+	 * Read binary data of given \p i_row from data stream
+	 */
+	virtual void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row)=0;
 
     /**
      * Print one value at given index in ascii format
@@ -86,28 +104,41 @@ public:
      * Set string representation of SI units.
      */
     void set_field_units(std::string unit_string) {
-    	this->field_units = unit_string;
+    	this->field_units_ = unit_string;
     }
 
     /**
-     * Data copied from Field.
+     * Set string representation of SI units.
      */
-    std::string output_field_name;
-    std::string field_name;
-    std::string field_units;
+    void set_n_values(unsigned int n_values) {
+    	this->n_values_ = n_values;
+    }
 
     /**
-     * Number of data values.
+     * Get string representation of SI units.
      */
-    unsigned int n_values;
+    inline std::string field_units() {
+    	return this->field_units_;
+    }
 
     /**
-     * Number of data elements per data value.
+     * Get number of data values.
      */
-    NumCompValueType n_elem_;
+    inline unsigned int n_values() {
+    	return this->n_values_;
+    }
 
-    /// Type of stored data
-    VTKValueType vtk_type_;
+    /**
+     * Get number of data elements per data value.
+     */
+    inline NumCompValueType n_elem() {
+    	return this->n_elem_;
+    }
+
+    /// Get type of stored data
+    inline VTKValueType vtk_type() {
+    	return this->vtk_type_;
+    }
 
 protected:
     template <class T>
@@ -123,9 +154,31 @@ protected:
     	}
     }
 
+	/// time step stored in cache
+	double time_;
+
+	/// name of field stored in cache
+    std::string field_input_name_;
+    std::string field_name_;
+
+    /**
+     * Data copied from Field.
+     */
+    std::string field_units_;
+
+    /**
+     * Number of data values.
+     */
+    unsigned int n_values_;
+
+    /**
+     * Number of data elements per data value.
+     */
+    NumCompValueType n_elem_;
+
+    /// Type of stored data
+    VTKValueType vtk_type_;
 };
 
 
-
-
-#endif /* OUTPUT_DATA_BASE_HH_ */
+#endif /* ELEMENT_DATA_CACHE_BASE_HH_ */

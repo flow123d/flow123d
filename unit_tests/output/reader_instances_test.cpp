@@ -33,7 +33,7 @@ Input::Record get_input_record(const std::string &input_str, Input::FileFormat f
 }
 
 
-TEST(ReaderInstances, get_element_data) {
+TEST(ReaderInstances, get_bulk_element_data) {
 	Profiler::initialize();
 	unsigned int i, j;
 
@@ -46,34 +46,65 @@ TEST(ReaderInstances, get_element_data) {
     auto reader = ReaderInstances::instance()->get_reader(file_name);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-
-    std::vector<int> el_ids;
-    for (i=1; i<14; ++i) el_ids.push_back(i);
-
+    reader->check_compatible_mesh(*mesh);
 
     // read data by components for MultiField
-    bool actual_data = false;
     for (i=0; i<3; ++i) {
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
-        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 13, 1,
-        		actual_data, el_ids, i);
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 9, 1,
+        		false, i);
     	std::vector<int> &vec = *( multifield_data.get() );
-    	EXPECT_EQ(13, vec.size());
-    	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] ); // bulk elements
-    	for ( ; j<vec.size(); j++) EXPECT_EQ( i+4, vec[j] ); // boundary elements
+    	EXPECT_EQ(9, vec.size());
+    	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] );
     }
 
-
     // read data to one vector for Field
-    actual_data=false;
     {
     	typename ElementDataCache<int>::ComponentDataPtr field_data =
-        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 13, 3,
-                actual_data, el_ids, 0);
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 9, 3,
+                false, 0);
     	std::vector<int> &vec = *( field_data.get() );
-    	EXPECT_EQ(39, vec.size());
-    	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] ); // bulk elements
-    	for ( ; j<vec.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] ); // boundary elements
+    	EXPECT_EQ(27, vec.size());
+    	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] );
+    }
+
+    delete mesh;
+}
+
+
+TEST(ReaderInstances, get_boundary_element_data) {
+	Profiler::initialize();
+	unsigned int i, j;
+
+    // has to introduce some flag for passing absolute path to 'test_units' in source tree
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+    Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+    FilePath file_name = i_rec.val<FilePath>("mesh_file");
+    Mesh * mesh = new Mesh(i_rec);
+    auto reader = ReaderInstances::instance()->get_reader(file_name);
+    reader->read_physical_names(mesh);
+    reader->read_raw_mesh(mesh);
+    reader->check_compatible_mesh(*mesh);
+
+    // read data by components for MultiField
+    for (i=0; i<3; ++i) {
+        typename ElementDataCache<int>::ComponentDataPtr multifield_data =
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 4, 1,
+        		true, i);
+    	std::vector<int> &vec = *( multifield_data.get() );
+    	EXPECT_EQ(4, vec.size());
+    	for (j=0; j<mesh->bc_elements.size(); j++) EXPECT_EQ( i+4, vec[j] );
+    }
+
+    // read data to one vector for Field
+    {
+    	typename ElementDataCache<int>::ComponentDataPtr field_data =
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 4, 3,
+                true, 0);
+    	std::vector<int> &vec = *( field_data.get() );
+    	EXPECT_EQ(12, vec.size());
+    	for (j=0; j<3*mesh->bc_elements.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
     delete mesh;
@@ -88,69 +119,65 @@ TEST(ReaderInstances, find_header) {
     Input::Record i_rec = get_input_record("{mesh_file=\"fields/simplest_cube_data.msh\"}");
     FilePath file_name = i_rec.val<FilePath>("mesh_file");
 
-    unsigned int n_elements=13;
+    Mesh * mesh = new Mesh(i_rec);
+    auto reader = ReaderInstances::instance()->get_reader(file_name);
+    reader->read_physical_names(mesh);
+    reader->read_raw_mesh(mesh);
+    reader->check_compatible_mesh(*mesh);
+    delete mesh;
+
+    unsigned int n_elements=9;
     unsigned int n_comp=3;
     std::shared_ptr< std::vector<double> > data;
-    std::vector<int> element_id_map(n_elements);
-    for(unsigned int i=0;i<n_elements;i++)
-    	element_id_map[i]=i+1;
 
-    bool actual_data = false;
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.0, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+            false, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
     EXPECT_EQ(3.0, (*data)[3*8+2]);
-    EXPECT_EQ(4.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.1, n_elements, n_comp,
-        actual_data, element_id_map, 0);
+    		false, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
     EXPECT_EQ(3.0, (*data)[3*8+2]);
-    EXPECT_EQ(4.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.9, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+    		false, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
     EXPECT_EQ(3.0, (*data)[3*8+2]);
-    EXPECT_EQ(4.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.0, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+    		false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
-    EXPECT_EQ(5.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.1, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+    		false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
-    EXPECT_EQ(5.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 2.1, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+    		false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
-    EXPECT_EQ(5.0, (*data)[3*9]);
 
     data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 200, n_elements, n_comp,
-            actual_data, element_id_map, 0);
+    		false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
-    EXPECT_EQ(5.0, (*data)[3*9]);
 
 }
 

@@ -119,12 +119,10 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    bool actual_header_data = false;
     data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), n_entities_, n_components_, actual_header_data,
-    		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
-    return actual_header_data;
+    return true;
 }
 
 
@@ -205,13 +203,14 @@ void FieldElementwise<spacedim, Value>::scale_and_check_limits()
 {
 	if (Value::is_scalable()) {
 		std::vector<typename Value::element_type> &vec = *( data_.get() );
+		bool printed_warning = false;
 		for(unsigned int i=0; i<vec.size(); ++i) {
 			vec[i] *= this->unit_conversion_coefficient_;
-			if ( (vec[i] < limits_.first) || (vec[i] > limits_.second) ) {
-				int el_id = mesh_->elements_id_maps(boundary_domain_)[(unsigned int)(i / this->n_components_)];
-                WarningOut().fmt("Value '{}' of FieldElementwise '{}', element id '{}' at address '{}' is out of limits: <{}, {}>\n"
+			if ( !printed_warning && ((vec[i] < limits_.first) || (vec[i] > limits_.second)) ) {
+				printed_warning = true;
+                WarningOut().fmt("Values of some elements of FieldElementwise '{}' at address '{}' is out of limits: <{}, {}>\n"
                 		"Unit of the Field: [{}]\n",
-						vec[i], field_name_, el_id, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
+						field_name_, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
 			}
 		}
 	}

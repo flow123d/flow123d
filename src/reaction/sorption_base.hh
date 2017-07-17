@@ -31,7 +31,7 @@
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 #include "reaction/reaction_term.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 
 class Isotherm;
 class Mesh;
