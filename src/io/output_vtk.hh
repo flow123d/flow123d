@@ -121,7 +121,10 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    /**
+    /// Formats of DataArray section
+	static const std::vector<std::string> formats;
+
+	/**
      * \brief Write header of VTK file (.vtu)
      */
     void write_vtk_vtu_head(void);
@@ -157,6 +160,11 @@ protected:
      * \brief Write data on elements to the VTK file (.vtu)
      */
    void write_vtk_element_data(void);
+
+   /**
+    * \brief Write native data (part of our own data skipped by Paraview) to the VTK file (.vtu)
+    */
+  void write_vtk_native_data(void);
 
    /**
     * \brief Write tail of VTK file (.vtu)
