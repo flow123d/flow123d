@@ -46,7 +46,9 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 
 
 GmshMeshReader::~GmshMeshReader()   // Tokenizer close the file automatically
-{}
+{
+    if(current_cache_ != nullptr) delete current_cache_;
+}
 
 
 
