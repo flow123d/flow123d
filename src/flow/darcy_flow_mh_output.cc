@@ -721,7 +721,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     }
 
 
-    DBGVAR(velocity_diff);
+//     DBGVAR(velocity_diff);
     result.velocity_diff[ele.index()] = std::sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
@@ -780,13 +780,12 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     // end XFEM stuff ...
     
     
-    FilePath source_file( "analytical_module.py", FilePath::input_file);
+    FilePath source_file( "analytical_module_2w_koeppl.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
     anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
 
     ExactSolution anal_sol_2d(5);
-//     anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
-    anal_sol_2d.set_python_field_from_file( source_file, "all_sin_source");
+    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
 
 
     DiffData result;

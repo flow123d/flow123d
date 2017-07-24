@@ -121,14 +121,14 @@ bool XFEMElementSingularData::is_singularity_inside(unsigned int local_enrichmen
 void XFEMElementSingularData::print(ostream& out) const
 {
     out << this << "xdata: ele " << ele_global_idx_ << " enrichments " << n_enrichments();
-    out << " dofs[ ";
-//     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
-    for(unsigned int q=0; q<2; q++)
-        for(unsigned int w=0; w<n_enrichments(); w++)
-            for(unsigned int j=0; j<global_enriched_dofs_[q][w].size(); j++){
-                out << global_enriched_dofs_[q][w][j] << " ";
-            }
-    out << "]\n";
+//     out << " dofs[ ";
+// //     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
+//     for(unsigned int q=0; q<2; q++)
+//         for(unsigned int w=0; w<n_enrichments(); w++)
+//             for(unsigned int j=0; j<global_enriched_dofs_[q][w].size(); j++){
+//                 out << global_enriched_dofs_[q][w][j] << " ";
+//             }
+//     out << "]\n";
 }
 
 
