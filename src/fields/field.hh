@@ -306,7 +306,7 @@ protected:
     void check_initialized_region_fields_();
 
     /**
-     * Check that the field is in fact FieldFE set on all regions, return shared pointer to that FieldFE or NULL
+     * Check that the field is in fact FieldFE set on all bulk regions, return shared pointer to that FieldFE or NULL
      * if the Field is not FieldFE.
      */
     std::shared_ptr< FieldFE<spacedim, Value> > get_field_fe();
