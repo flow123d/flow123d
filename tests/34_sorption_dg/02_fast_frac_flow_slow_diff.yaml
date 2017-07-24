@@ -42,8 +42,6 @@ problem: !Coupling_Sequential
     transport: !Solute_AdvectionDiffusion_DG
       dg_order: 3
       input_fields:
-        - region: ALL
-          dg_penalty: 1e6
         - region: .right
           bc_type: dirichlet
           bc_conc: 0
