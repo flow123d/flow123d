@@ -163,6 +163,8 @@ protected:
 
    /**
     * \brief Write native data (part of our own data skipped by Paraview) to the VTK file (.vtu)
+    *
+    * Tags of native data are subtags of 'Flow123dData' tag, that is subtag of 'Piece' tag
     */
   void write_vtk_native_data(void);
 

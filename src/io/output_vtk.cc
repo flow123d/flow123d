@@ -433,20 +433,18 @@ void OutputVTK::write_vtk_native_data(void)
     auto &data_map = this->output_data_vec_[NATIVE_DATA];
     if (data_map.empty()) return;
 
-    /* Write NativeData begin */
-    file << "<NativeData ";
+    /* Write Flow123dData begin */
+    file << "<Flow123dData ";
     write_vtk_data_names(file, data_map);
     file << ">" << endl;
 
     /* Write own data */
     for(OutputDataPtr output_data : data_map) {
-        file    << "<DataArray type=\"Float64\" ";
-        // possibly write name
-        if( ! output_data->field_input_name().empty())
-            file << "Name=\"" << output_data->field_input_name() <<"\" ";
-        // TODO: write dof handler hash, number of dofs, number of components
-        //file    << "NumberOfComponents=\"" << output_data->n_elem() << "\" ";
-        file    << "format=\"" << formats[this->variant_type_] << "\"";
+        file  << "<DataArray type=\"Float64\" ";
+        file  << "Name=\"" << output_data->field_input_name() <<"\" ";
+        file  << "format=\"" << formats[this->variant_type_] << "\" ";
+        file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
+        file  << "n_dofs_per_element=\"" << output_data->n_elem() << "\"";
 
         if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
         	// ascii output
@@ -471,8 +469,8 @@ void OutputVTK::write_vtk_native_data(void)
         }
     }
 
-    /* Write NativeData end */
-    file << "</NativeData>" << endl;
+    /* Write Flow123dData end */
+    file << "</Flow123dData>" << endl;
 }
 
 
