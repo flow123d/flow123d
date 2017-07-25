@@ -575,7 +575,7 @@ void l2_diff_local(ElementFullIter &ele,
 
     result.velocity_diff[ele.index()] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
-    if (dim == 2) {
+    if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
     }
 
@@ -627,11 +627,16 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
 
     DiffData result;
+    result.dh = &( darcy_flow->get_mh_dofhandler());
+    result.darcy = darcy_flow;
+    result.data_ = darcy_flow->data_.get();
 
     // mask 2d elements crossing 1d
-    result.velocity_mask.resize(mesh_->n_elements(),0);
-    for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
-        result.velocity_mask[ isec.bulk_ele_idx() ]++;
+    if (result.data_->mortar_method_ != DarcyMH::NoMortar) {
+        result.velocity_mask.resize(mesh_->n_elements(),0);
+        for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
+            result.velocity_mask[ isec.bulk_ele_idx() ]++;
+        }
     }
 
     result.pressure_diff.resize( mesh_->n_elements() );
@@ -664,9 +669,6 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
 
-    result.dh = &( darcy_flow->get_mh_dofhandler());
-    result.darcy = darcy_flow;
-    result.data_ = darcy_flow->data_.get();
 
     FOR_ELEMENTS( mesh_, ele) {
 
