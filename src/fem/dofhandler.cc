@@ -453,6 +453,11 @@ bool DOFHandlerMultiDim::el_is_local(int index) const
 }
 
 
+std::size_t DOFHandlerMultiDim::hash() const {
+	return this->n_dofs;
+}
+
+
 
 
 

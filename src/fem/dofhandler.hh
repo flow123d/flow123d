@@ -106,6 +106,11 @@ public:
     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
             double local_values[]) const = 0;
 
+    /**
+     * @brief Compute hash value of DOF handler.
+     */
+    virtual std::size_t hash() const =0;
+
     /// Destructor.
     virtual ~DOFHandlerBase() {};
 
@@ -345,6 +350,11 @@ public:
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
     FiniteElement<dim,3> *fe() const;
+
+    /**
+     * Implements @p DOFHandlerBase::hash.
+     */
+    std::size_t hash() const override;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
