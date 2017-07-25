@@ -306,7 +306,7 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
     
-    tree = new MeshTree(this);
+    tree = new DuplicateNodes(this);
 
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 

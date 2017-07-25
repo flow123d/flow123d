@@ -11,12 +11,12 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    mesh_tree.h
+ * @file    duplicate_nodes.h
  * @brief   
  */
 
-#ifndef MESH_TREE_H
-#define MESH_TREE_H
+#ifndef DUPLICATE_NODES_H
+#define DUPLICATE_NODES_H
 
 
 
@@ -36,9 +36,42 @@ public:
 
 
 /**
- * Class MeshTree constructs the graph structure of elements, their faces and nodes
+ * Class DuplicateNodes constructs the graph structure of elements, their faces and nodes
  * without any other data such as coordinates or region numbers. The nodes are then
  * duplicated where the elements are separated by fractures (elements of lower dim.).
+ * E.g.:
+ * 
+ * Consider a domain containing fracture like this:
+ * +-----+-----+
+ * |     |     |
+ * |     +     |
+ * |           |
+ * |           |
+ * |           |
+ * +-----------+
+ * 
+ * with the mesh nodes numbered as follows:
+ * 0-----1-----2
+ * |     |     |
+ * |     3     |
+ * |           |
+ * |           |
+ * |           |
+ * 4-----------5
+ * 
+ * The class duplicates node 1 and node 3 because in these nodes FE functions can be discontinuous
+ * (schematic view):
+ * 0-6   1   7-2
+ * |  \  |  /  |
+ * |   \ 3 /   |
+ * |    \ /    |
+ * |     8     |
+ * |           |
+ * 4-----------5
+ * 
+ * Now, nodes 1,6,7 have the same coordinates but belong to different groups of elements
+ * and analogously nodes 3 and 8.
+ * 
  * 
  * The structure is used in DOF handler to distribute dofs for FE spaces sharing dofs
  * between elements.
@@ -47,11 +80,12 @@ public:
  * available. This should be implemented if we need to distribute dofs on edges.
  * 
  */
-class MeshTree {
+class DuplicateNodes {
 public:
   
-  MeshTree(Mesh *mesh);
-  
+  DuplicateNodes(Mesh *mesh);
+
+  // Getters (see private section for explanation).  
   Mesh *mesh() const { return mesh_; }
   
   const std::vector<unsigned int> &nodes() const { return nodes_; }
@@ -69,25 +103,49 @@ public:
   
 private:
   
+  /// Initialize the vector of nodes from mesh.
   void init_nodes();
+  
+  /// Initialize objects from mesh edges.
   void init_from_edges();
+  
+  /// Initialize objects from mesh elements.
   void init_from_elements();
+  
+  /// Duplicate nodes that are lying on interfaces with fractures.
   void duplicate_nodes();
   
+  
+  /// The mesh object.
   Mesh *mesh_;
   
+  /// Internal indices of nodes (including duplicated nodes).
   std::vector<unsigned int> nodes_;
+  
+  /// Vector of space dimensions of elements using the particular node.
   std::vector<unsigned int> node_dim_;
   
+  /// Internal indices of points (0d elements).
   std::vector<MeshObject<0> > points_;
+  
+  /// Internal indices of lines (1d elements).
   std::vector<MeshObject<1> > lines_;
+  
+  /// Internal indices of triangles (2d elements).
   std::vector<MeshObject<2> > triangles_;
+  
+  /// Internal indices of tetrahedra (3d elements).
   std::vector<MeshObject<3> > tetras_;
   
+  /// Vector of object indices for each mesh element.
   std::vector<unsigned int> obj_4_el_;
+  
+  /// Vector of object indices for each mesh edge.
   std::vector<unsigned int> obj_4_edg_;
+  
+  /// Vector of object indices for each mesh node.
   std::vector<unsigned int> obj_4_node_;
 };
 
 
-#endif // MESH_TREE_H
+#endif // DUPLICATE_NODES_H

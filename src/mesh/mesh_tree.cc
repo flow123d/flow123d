@@ -11,9 +11,9 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    mesh_tree.cc
+ * @file    duplicate_nodes.cc
  * @ingroup mesh
- * @brief   Mesh tree construction
+ * @brief   Construction of mesh structure with nodes duplicated at fractures.
  */
 
 #include <set>
@@ -33,7 +33,7 @@ MeshObject<dim>::MeshObject()
 }
 
 
-MeshTree::MeshTree(Mesh* mesh)
+DuplicateNodes::DuplicateNodes(Mesh* mesh)
 : mesh_(mesh)
 {
   init_nodes();
@@ -44,7 +44,7 @@ MeshTree::MeshTree(Mesh* mesh)
 
 
 
-void MeshTree::init_nodes()
+void DuplicateNodes::init_nodes()
 {
   // initialize the nodes
   unsigned int nid=0;
@@ -57,7 +57,7 @@ void MeshTree::init_nodes()
 
 
 
-void MeshTree::init_from_edges()
+void DuplicateNodes::init_from_edges()
 {
   // initialize the objects from edges
   FOR_EDGES(mesh_, edge) {
@@ -94,7 +94,7 @@ void MeshTree::init_from_edges()
 
 
 
-void MeshTree::init_from_elements()
+void DuplicateNodes::init_from_elements()
 {
   // initialize the objects from elements
   FOR_ELEMENTS(mesh_, ele) {
@@ -137,8 +137,18 @@ void MeshTree::init_from_elements()
 }
 
 
-
-void MeshTree::duplicate_nodes()
+/**
+ * The main functionality of the class creates duplicate nodes
+ * at interfaces with fractures.
+ * 
+ * For each node:
+ * 1) Create the lists of elements (node_elements) and edges (node_edges) sharing the node.
+ * 2) Divide node_elements into groups (components) which share one of node_edges.
+ * 3) If more than one component was created, create for each extra component a new node
+ *    and update its index in the elements from this component.
+ *    Also set node_dim_ (dimension of elements using the node).
+ */
+void DuplicateNodes::duplicate_nodes()
 {
   FOR_NODES(mesh_, n){
     // create list of elements
