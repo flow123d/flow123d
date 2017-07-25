@@ -19,7 +19,7 @@
 #include <set>
 #include <queue>
 
-#include "mesh/mesh_tree.h"
+#include "mesh/duplicate_nodes.h"
 #include "mesh/mesh.h"
 
 

@@ -41,7 +41,7 @@
 
 
 #include "mesh/bih_tree.hh"
-#include "mesh/mesh_tree.h"
+#include "mesh/duplicate_nodes.h"
 
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/abscissa.h"

@@ -18,7 +18,7 @@
 
 #include "fem/discrete_space.hh"
 #include "mesh/mesh.h"
-#include "mesh/mesh_tree.h"
+#include "mesh/duplicate_nodes.h"
 
 
 

@@ -19,7 +19,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "mesh/mesh.h"
-#include "mesh/mesh_tree.h"
+#include "mesh/duplicate_nodes.h"
 #include "mesh/partitioning.hh"
 #include "la/distribution.hh"
 
