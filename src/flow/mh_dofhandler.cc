@@ -583,7 +583,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
                 
     DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
                 
-    auto sing = std::make_shared<Singularity0D<3>>(center, radius, direction_vector, n);
+    auto sing = std::make_shared<Singularity0D>(center, radius, direction_vector, n);
     // set sigma of 1d element
     sing->set_sigma(sigma_const);
     sing->set_pressure(pressure);
@@ -623,7 +623,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
                 
     DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
                 
-    auto sing2 = std::make_shared<Singularity0D<3>>(center2, radius2, direction_vector2, n2);
+    auto sing2 = std::make_shared<Singularity0D>(center2, radius2, direction_vector2, n2);
     // set sigma of 1d element
     sing2->set_sigma(sigma_const2);
     sing2->set_pressure(pressure2);

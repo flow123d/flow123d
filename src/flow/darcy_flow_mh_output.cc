@@ -847,7 +847,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             if(dim == 2 && ele->xfem_data != nullptr){
                 XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
         
-                std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(xdata->enrichment_func(0));
+                std::shared_ptr<Singularity0D> func = std::static_pointer_cast<Singularity0D>(xdata->enrichment_func(0));
                 
                 qxfem = qfactory.create_singular({func}, ele);
                 

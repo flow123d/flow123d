@@ -38,7 +38,7 @@ void QXFEMFactory< dim, spacedim >::clear()
 
 template<>
 std::shared_ptr< QXFEM< 2, 2 > > QXFEMFactory<2,2>::create_singular(
-                                                const std::vector<SingularityPtr> & sing,
+                                                const std::vector<Singularity0DPtr> & sing,
                                                 ElementFullIter ele)
 {
     clear();
@@ -49,7 +49,7 @@ std::shared_ptr< QXFEM< 2, 2 > > QXFEMFactory<2,2>::create_singular(
 
 template<>
 std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
-                                                const std::vector<SingularityPtr> & sing,
+                                                const std::vector<Singularity0DPtr> & sing,
                                                 ElementFullIter ele)
 {
     clear();
@@ -118,7 +118,7 @@ void QXFEMFactory<dim,spacedim>::refine_level(unsigned int n_simplices_to_refine
 
 
 template<int dim, int spacedim>
-unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<SingularityPtr> & sing)
+unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singularity0DPtr> & sing)
 {
     ASSERT_DBG(dim == 2);
     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
@@ -177,7 +177,7 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
 }
 
 template<int dim, int spacedim>
-int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D<spacedim>& w,
+int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D& w,
                                                                 const AuxSimplex& s,
                                                                 double& distance_sqr,
                                                                 double& max_h)
@@ -388,7 +388,7 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
 template<int dim, int spacedim>
 void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_points,
                                                        std::vector<double>& weights,
-                                                       const std::vector<SingularityPtr> & sing,
+                                                       const std::vector<Singularity0DPtr> & sing,
                                                        double ele_measure)
 {
     const unsigned int order = 3;
@@ -504,7 +504,7 @@ template<int dim, int spacedim>
 void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
                                                     const string& output_dir,
                                                     const QXFEM<dim,spacedim>& quad,
-                                                    const std::vector<SingularityPtr> & sing)
+                                                    const std::vector<Singularity0DPtr> & sing)
 {
  
     DBGCOUT("XFEM quadrature gnuplot print.\n");
@@ -635,3 +635,4 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
 // explicit instances:
 template class QXFEMFactory<2,2>;
 template class QXFEMFactory<2,3>;
+template class QXFEMFactory<3,3>;

@@ -155,3 +155,116 @@ void CircleEllipseProjection::project_to_circle_plane(vector< CircleEllipseProje
         points[j] += cos_r * x * direction_vector_;
     }
 }
+
+
+
+
+CylinderGeometry::CylinderGeometry(const CylinderGeometry::Point& a,
+                                   const CylinderGeometry::Point& b,
+                                   const double& radius)
+: a_(a), b_(b), radius_(radius)
+{
+    direction_vector_ = b-a;
+}
+
+CylinderGeometry::Point CylinderGeometry::dist_vector(const CylinderGeometry::Point& p) const
+{
+    Point u = direction_vector_ / arma::norm(direction_vector_,2);
+    Point t = a_ - p;
+    //projection of p on u
+    Point up = arma::dot(t,u) * u;
+    
+    return (up - t);
+}
+
+
+
+
+
+
+
+
+
+
+Singularity0D::Singularity0D(const Point& center, double radius,
+                                    const Point& direction_vector, const Point& normal_vector)
+:   center_(center), radius_(radius),
+    geom_(center,radius, direction_vector, normal_vector)
+{
+    radius_rounding_low_bound_ = radius - 1e-8*radius;
+}
+
+// void Singularity0D<2>::evaluate_q_points(unsigned int count)
+// {   
+//     //q_points_.clear();
+//     q_points_.resize(count);
+//     
+//     double phi = 2*M_PI / count;
+//     double offset = 1e-10;
+//     
+//     for(unsigned int i=0; i < count; i++)
+//         q_points_[i] = {center_[0] + radius_*std::cos(i*phi+offset),
+//                         center_[1] + radius_*std::sin(i*phi+offset)};
+// }
+
+void Singularity0D::evaluate_q_points(unsigned int count)
+{
+    //q_points_.clear();
+    q_points_.resize(count);  
+
+    double phi = 2*M_PI / count;
+    double offset = 1e-10;
+    
+    for(unsigned int i=0; i < count; i++)
+        q_points_[i] = center_ + std::cos(i*phi+offset)*geom_.ellipse_b() + std::sin(i*phi+offset)*geom_.ellipse_a();
+}
+
+
+Singularity1D::Singularity1D(const Point& a, const Point& b, double radius)
+:   geom_(a,b,radius)
+{
+    radius_rounding_low_bound_ = radius - 1e-8*radius;
+}
+
+void Singularity1D::evaluate_q_points(unsigned int n, unsigned int m)
+{
+    //q_points_.clear();
+    q_points_.resize(n*m);  
+
+    //compute normal vectors
+    //standard basis vectors
+    static const std::vector<Point> e_vec = {{1,0,0}, {0,1,0}, {0,0,1}};
+    
+    //find vector with minimal dot product (most orthogonal)
+    double min = std::numeric_limits<double>::max();
+    unsigned int idx = 0;
+    for(unsigned int i=0; i<3; i++){
+        double t = std::abs(arma::dot(geom_.direction_vector(),e_vec[i]));
+        if( t < min){
+            min = t;
+            idx = i;
+        }
+    }
+    
+    double length = arma::norm(geom_.direction_vector(), 2);
+    //cross product with rescaled e
+    Point n1 = arma::cross(geom_.direction_vector(), length * e_vec[idx]);
+    Point n2 = arma::cross(geom_.direction_vector(), n1);
+    n1 = n1 / arma::norm(n1,2);
+    n2 = n2 / arma::norm(n2,2);
+    
+    
+    
+    double phi = 2*M_PI / n;
+    double z = 1.0 / (m-1);
+    double offset = 1e-10;
+    Point center  = geom_.a();
+    
+    for(unsigned int i=0; i < m; i++){
+        center = geom_.a() + i*z*geom_.direction_vector();
+        for(unsigned int j=0; j < n; j++){
+            q_points_[i*n+j] = center + geom_.radius()*(std::cos(j*phi+offset)*n2 + std::sin(j*phi+offset)*n1);
+        }
+    }
+        
+}

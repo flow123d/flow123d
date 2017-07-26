@@ -28,17 +28,17 @@
 
 #include <armadillo>
 
-template<unsigned int dim, typename S> class SingularityCRTP;
+// template<unsigned int dim, class S> class SingularityCRTP;
 
 /**
  * CRTP - Curiously recurring template pattern.
  * - avoids virtual member calls for @p val, @p grad, @p div
  */
-template<unsigned int dim, template<unsigned int> class S, unsigned int spacedim>
-class SingularityCRTP< dim, S<spacedim> > : public GlobalEnrichmentFunc<dim,spacedim>
+template<unsigned int dim, class S>
+class SingularityCRTP : public GlobalEnrichmentFunc<dim,3>
 {
 public:
-    typedef typename Space<spacedim>::Point Point;
+    typedef Space<3>::Point Point;
     
     SingularityCRTP(){}
     virtual ~SingularityCRTP(){}
@@ -130,13 +130,12 @@ protected:
  *   (we suppose always circular cross section of 1D-2D)
  * 
  */
-template<unsigned int spacedim>
-class Singularity0D : public SingularityCRTP<2,Singularity0D<spacedim>>
+class Singularity0D : public SingularityCRTP<2,Singularity0D>
 {
 public:
-    typedef typename Space<spacedim>::Point Point;
+    typedef Space<3>::Point Point;
     
-    Singularity0D(const Point& center, double radius);
+//     Singularity0D(const Point& center, double radius);
     Singularity0D(const Point& center, double radius, const Point& direction_vector, const Point& normal_vector);
     
     //(CRTP functions)
@@ -145,10 +144,13 @@ public:
     Point vector(const Point &x) const override;
     double div(const Point &x) const override;
 
-    Point center() const;
-    double radius() const;
+    Point center() const
+    { return center_;}
+    double radius() const
+    { return radius_;}
        
-    const CircleEllipseProjection & geometry() const;
+    const CircleEllipseProjection & geometry() const
+    { return geom_;}
     
     /// Computes circumference along edge.
     double circumference() const;
@@ -157,11 +159,14 @@ public:
     void evaluate_q_points(unsigned int count);
     
     /// Quadrature points on the edge
-    const std::vector<Point>& q_points() const;
+    const std::vector<Point>& q_points() const
+    { return q_points_;}
     
     /// Value of the permeability coefficient between dimensions.
-    double sigma() const;
-    void set_sigma(double s);
+    double sigma() const
+    { return sigma_;}
+    void set_sigma(double s)
+    { sigma_ = s;}
     
     double pressure() const
     { return pressure_;}
@@ -190,51 +195,14 @@ private:
 };
 
 
-template<>
-inline Singularity0D<2>::Singularity0D(const Point& center, double radius)
-:   center_(center), radius_(radius),
-    geom_({center[0],center[1],0},radius, {0,0,1}, {0,0,1})
-{
-    radius_rounding_low_bound_ = radius - 1e-8*radius;
-}
+// inline Singularity0D::Singularity0D(const Point& center, double radius)
+// :   center_(center), radius_(radius),
+//     geom_({center[0],center[1],0},radius, {0,0,1}, {0,0,1})
+// {
+//     radius_rounding_low_bound_ = radius - 1e-8*radius;
+// }
 
-template<>
-inline Singularity0D<3>::Singularity0D(const Point& center, double radius,
-                                       const Point& direction_vector, const Point& normal_vector)
-:   center_(center), radius_(radius),
-    geom_(center,radius, direction_vector, normal_vector)
-{
-    radius_rounding_low_bound_ = radius - 1e-8*radius;
-}
-
-template<unsigned int spacedim>
-inline typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::center() const
-{   return center_;}
-
-template<unsigned int spacedim>
-inline double Singularity0D<spacedim>::radius() const
-{   return radius_;}
-
-
-template<unsigned int spacedim>
-inline const CircleEllipseProjection & Singularity0D<spacedim>::geometry() const
-{   return geom_;}
-
-template<unsigned int spacedim>
-inline const std::vector<typename Singularity0D<spacedim>::Point>& Singularity0D<spacedim>::q_points() const
-{   return q_points_;}
-
-
-template<unsigned int spacedim>
-inline double Singularity0D<spacedim>::sigma() const
-{   return sigma_;}
-
-template<unsigned int spacedim>
-inline void Singularity0D<spacedim>::set_sigma(double s)
-{   sigma_ = s;}
-
-template<unsigned int spacedim>
-double Singularity0D<spacedim>::value(const Point& x) const
+inline double Singularity0D::value(const Point& x) const
 {
     double distance = arma::norm(center_-x,2);
     if (distance >= radius_rounding_low_bound_)
@@ -243,8 +211,7 @@ double Singularity0D<spacedim>::value(const Point& x) const
     return std::log(radius_);
 }
 
-template<unsigned int spacedim>
-typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Point &x) const
+inline Singularity0D::Point Singularity0D::grad(const Point &x) const
 {
     Point grad; //initialize all entries with zero
     grad.zeros();
@@ -258,51 +225,197 @@ typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::grad(const Poin
     return grad;  //returns zero if  (distance <= radius)
 }
 
-template<unsigned int spacedim>
-typename Singularity0D<spacedim>::Point Singularity0D<spacedim>::vector(const Point &x) const
+inline Singularity0D::Point Singularity0D::vector(const Point &x) const
 {
     static const double t = -0.5/M_PI;
     return t * this->grad(x);
 }
 
-template<unsigned int spacedim>
-double Singularity0D<spacedim>::div(const Point& x) const
+inline double Singularity0D::div(const Point& x) const
 {
     return 0;
 }
 
-template<unsigned int spacedim>
-inline double Singularity0D<spacedim>::circumference() const
+inline double Singularity0D::circumference() const
 {
     return 2 * M_PI * radius_;
 }
 
-template<>
-inline void Singularity0D<2>::evaluate_q_points(unsigned int count)
-{   
-    //q_points_.clear();
-    q_points_.resize(count);
-    
-    double phi = 2*M_PI / count;
-    double offset = 1e-10;
-    
-    for(unsigned int i=0; i < count; i++)
-        q_points_[i] = {center_[0] + radius_*std::cos(i*phi+offset),
-                        center_[1] + radius_*std::sin(i*phi+offset)};
-}
 
-template<>
-inline void Singularity0D<3>::evaluate_q_points(unsigned int count)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///@brief Auxilliary class with geometric data and operations for singularity.
+class CylinderGeometry
 {
-    //q_points_.clear();
-    q_points_.resize(count);  
-
-    double phi = 2*M_PI / count;
-    double offset = 1e-10;
+public:
+    typedef Space<3>::Point Point;
+    CylinderGeometry(const Point& a, const Point& b,
+                     const double& radius);
     
-    for(unsigned int i=0; i < count; i++)
-        q_points_[i] = center_ + std::cos(i*phi+offset)*geom_.ellipse_b() + std::sin(i*phi+offset)*geom_.ellipse_a();
+    Point a() const
+    { return a_;}
+    Point b() const
+    { return b_;}
+    
+    double radius() const
+    { return radius_;}
+    
+    Point direction_vector() const
+    { return direction_vector_;}
+     
+    /// Distance vector from point p to the axis.
+    Point dist_vector(const Point &p) const;
+    
+    double distance(const Point &p) const
+    { return arma::norm(dist_vector(p),2);}
+    
+    /// Returns true if the point @p p lies in the circle (suppose @p p is lying in the circle plane).
+    bool point_in_cylinder(const Point& p) const
+    { return distance(p) <= radius_;}
+    
+    /// Computes lateral surface of the cylinder.
+    double lateral_surface() const
+    { return 2*M_PI*radius_*arma::norm(direction_vector_,2);}
+    
+protected:
+    
+    Point a_,b_,            ///< End points of the axis of the cylinder.
+        direction_vector_;  ///< Direction vector of the axis.
+        
+    double radius_;         ///< Radius of the cylinder base.
+};
+
+
+/** @brief Point singularity in 2D plane in 2D or 3D ambient space.
+ * 
+ * Singularity is defined by its center point and radius.
+ * Radius is the actual dimension of the singularity.
+ * 
+ * It provides global enrichment function @p val and its gradient @p grad for XFEM.
+ * 
+ * It can provide points on the circumference of the singularity edge.
+ * These must be explicitely computed by @p evaluate_q_points and later get by @p q_points.
+ * 
+ * In 3D ambient space: 
+ * - the plane in which the singularity lies must be set for evaluation of the @p q_points
+ * - the plane is defined by the element in which the singularity lies.
+ * - for simplicity, we do not map circle to ellipse in the plane
+ *   (we suppose always circular cross section of 1D-2D)
+ * 
+ */
+class Singularity1D : public SingularityCRTP<3,Singularity1D>
+{
+public:
+    typedef Space<3>::Point Point;
+    
+    Singularity1D(const Point& a, const Point& b, double radius);
+    
+    //(CRTP functions)
+    double value(const Point &x) const override;
+    Point grad(const Point &x) const override;
+    Point vector(const Point &x) const override;
+    double div(const Point &x) const override;
+    
+    /// Returns geometry object.
+    const CylinderGeometry & geometry() const
+    { return geom_;}
+    
+    /** Computes @p n*m points equally distributed on the lateral surface of cylinder.
+     * @param n is number of points around the cylinder in one layer
+     * @param m is number of layers of points in z coordinate of the cylinder
+     */
+    void evaluate_q_points(unsigned int n, unsigned int m);
+    
+    /// Quadrature points on the edge
+    const std::vector<Point>& q_points() const
+    { return q_points_;}
+    
+    /// Value of the permeability coefficient between dimensions.
+    double sigma() const
+    { return sigma_;}
+    void set_sigma(double s)
+    { sigma_ = s;}
+    
+    double pressure() const
+    { return pressure_;}
+    void set_pressure(double p)
+    { pressure_ = p;}
+    
+private:
+    /// points placed around the circle by @p evaluate_q_points function
+    std::vector<Point> q_points_;
+    
+    /// Geometry fucnctionality - plane projections.
+    CylinderGeometry geom_;
+    
+    /// Value of the permeability coefficient between dimensions.
+    double sigma_;
+    double pressure_;
+    
+    double radius_rounding_low_bound_;
+};
+
+
+inline double Singularity1D::value(const Point& x) const
+{
+    double distance = geom_.distance(x);
+    if (distance >= radius_rounding_low_bound_)
+        return std::log(distance);
+  
+    return std::log(geom_.radius());
 }
 
+inline Space<3>::Point Singularity1D::grad(const Point &x) const
+{
+    Point grad = geom_.dist_vector(x);    
+    double distance = arma::norm(grad,2);
+    
+    if (distance >= radius_rounding_low_bound_)
+    {   
+        distance = distance * distance;
+        grad = (grad) / distance;
+    }
+    else{
+        grad.zeros();
+    }
+    return grad;  //returns zero if  (distance <= radius)
+}
+
+inline Space<3>::Point Singularity1D::vector(const Point &x) const
+{
+    static const double t = -0.5/M_PI;
+    return t * this->grad(x);
+}
+
+inline double Singularity1D::div(const Point& x) const
+{
+    return 0;
+}
 
 #endif // SINGULARITY_HH_

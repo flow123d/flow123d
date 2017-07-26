@@ -551,7 +551,7 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
         
     XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
     
-    std::shared_ptr<Singularity0D<3>> func = std::static_pointer_cast<Singularity0D<3>>(xdata->enrichment_func(0));
+    std::shared_ptr<Singularity0D> func = std::static_pointer_cast<Singularity0D>(xdata->enrichment_func(0));
     
     qxfem_ = qfactory_.create_singular({func}, ele_ac.full_iter());
 //     qfactory_.gnuplot_refinement(ele_ac.full_iter(),
@@ -713,7 +713,7 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
 //                             (map_, quad, *fe_rt_xfem_, update_values);
 
 //             fv_rt_sing_->reinit(ele);
-            auto sing = static_pointer_cast<Singularity0D<3>>(xd->enrichment_func(w));
+            auto sing = static_pointer_cast<Singularity0D>(xd->enrichment_func(w));
 //             temp = 1.0 / sing->sigma();
             
 //             vector<double> sum(nvals,0);

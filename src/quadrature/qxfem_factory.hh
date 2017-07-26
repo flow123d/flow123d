@@ -47,7 +47,8 @@ template<int dim, int spacedim>
 class QXFEMFactory {
 public:
     typedef typename Space<spacedim>::Point Point;
-    typedef typename std::shared_ptr<Singularity0D<spacedim>> SingularityPtr;
+    typedef typename std::shared_ptr<Singularity0D> Singularity0DPtr;
+    typedef typename std::shared_ptr<Singularity1D> Singularity1DPtr;
     /**
      * @brief Create a formula of given order.
      *
@@ -57,7 +58,10 @@ public:
     : max_level_(max_level), level_offset_(0){}
     
     
-    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<SingularityPtr> & sing,
+    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<Singularity0DPtr> & sing,
+                                                         ElementFullIter ele);
+    
+    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<Singularity1DPtr> & sing,
                                                          ElementFullIter ele);
     
     /// Clears temporary refinement simplices, resets the factory to initial state.
@@ -73,7 +77,7 @@ public:
     void gnuplot_refinement(ElementFullIter ele,
                             const string& output_dir,
                             const QXFEM<dim,spacedim>& quad,
-                            const std::vector<SingularityPtr> & sing);
+                            const std::vector<Singularity0DPtr> & sing);
     
     
 protected:
@@ -95,7 +99,7 @@ protected:
      * Criterions:
      * 1] refine simplex which intersects with the edge of the singularity
      */
-    unsigned int refine_edge(const std::vector<SingularityPtr> & sing);
+    unsigned int refine_edge(const std::vector<Singularity0DPtr> & sing);
     
     /// Refines marked simplices.
     void refine_level(unsigned int n_simplices_to_refine);
@@ -104,7 +108,7 @@ protected:
     
     void distribute_qpoints(std::vector< Point >& real_points, 
                             std::vector< double >& weights,
-                            const std::vector<SingularityPtr> & sing,
+                            const std::vector<Singularity0DPtr> & sing,
                             double ele_measure);
     
     void map_real_to_unit_points(const std::vector<Point>& real_points,
@@ -115,7 +119,7 @@ protected:
      * @return intersection type:
      * 
      */
-    int simplex_sigularity_intersection(const Singularity0D<spacedim>& w,
+    int simplex_sigularity_intersection(const Singularity0D& w,
                                         const AuxSimplex &s,
                                         double& distance,
                                         double& max_h);

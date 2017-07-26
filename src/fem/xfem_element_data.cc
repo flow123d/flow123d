@@ -62,7 +62,7 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
     
     DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
     for(unsigned int w=0; w < n_enrichments(); w++){
-        std::shared_ptr<Singularity0D<3>> sing = static_pointer_cast<Singularity0D<3>>(enrichment_func(w));
+        std::shared_ptr<Singularity0D> sing = static_pointer_cast<Singularity0D>(enrichment_func(w));
         sing->evaluate_q_points(n_qpoints);
         
         unit_points_inside.clear();

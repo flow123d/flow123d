@@ -45,7 +45,7 @@ class LocalElementAccessorBase;
 #include "fem/xfem_element_data.hh"
 
 class XFEMElementSingularData;
-template<unsigned int spacedim> class Singularity0D;
+class Singularity0D;
 
 
 /// temporary solution to provide access to results
@@ -117,7 +117,7 @@ public:
     // XFEM:
 public:
     
-    typedef typename std::shared_ptr<Singularity0D<3>> SingularityPtr;
+    typedef typename std::shared_ptr<Singularity0D> SingularityPtr;
     
     void reinit(Mesh *mesh,
                 Field<3, FieldValue<3>::Scalar>& cross_section,
