@@ -766,7 +766,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     
     // XFEM stuff ...
-    QXFEMFactory<2,3> qfactory;
+    QXFEMFactory qfactory;
     shared_ptr<QXFEM<2,3>> qxfem;
     
     shared_ptr<FiniteElementEnriched<2,3>> fe_rt_xfem;

@@ -43,10 +43,9 @@
  * 4) possibly gnuplot, separately active auxsimplices, then real quad points
  * 5) delete auxiliary objects and return pure quadrature
  */
-template<int dim, int spacedim>
 class QXFEMFactory {
 public:
-    typedef typename Space<spacedim>::Point Point;
+    typedef typename Space<3>::Point Point;
     typedef typename std::shared_ptr<Singularity0D> Singularity0DPtr;
     typedef typename std::shared_ptr<Singularity1D> Singularity1DPtr;
     /**
@@ -58,10 +57,10 @@ public:
     : max_level_(max_level), level_offset_(0){}
     
     
-    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<Singularity0DPtr> & sing,
+    std::shared_ptr<QXFEM<2,3>> create_singular(const std::vector<Singularity0DPtr> & sing,
                                                          ElementFullIter ele);
     
-    std::shared_ptr<QXFEM<dim,spacedim>> create_singular(const std::vector<Singularity1DPtr> & sing,
+    std::shared_ptr<QXFEM<3,3>> create_singular(const std::vector<Singularity1DPtr> & sing,
                                                          ElementFullIter ele);
     
     /// Clears temporary refinement simplices, resets the factory to initial state.
@@ -73,10 +72,11 @@ public:
       * @param output_dir is the directory for output_dir
       * @param real is true then the element is printed in real coordinates
       * @param show is true then the gnuplot utility is started and plots the refinement on the screen
-      */ 
+      */
+    template<int dim>
     void gnuplot_refinement(ElementFullIter ele,
                             const string& output_dir,
-                            const QXFEM<dim,spacedim>& quad,
+                            const QXFEM<dim,3>& quad,
                             const std::vector<Singularity0DPtr> & sing);
     
     
@@ -92,6 +92,7 @@ protected:
         int sing_id;
         bool active;
         bool refine;
+        template<int dim> double measure() const;
     };
 
     
@@ -102,15 +103,19 @@ protected:
     unsigned int refine_edge(const std::vector<Singularity0DPtr> & sing);
     
     /// Refines marked simplices.
+    template<int dim>
     void refine_level(unsigned int n_simplices_to_refine);
     /// Refines single simplex.
+    template<int dim>
     void refine_simplex(const AuxSimplex &aux_element);
     
+    template<int dim>
     void distribute_qpoints(std::vector< Point >& real_points, 
                             std::vector< double >& weights,
                             const std::vector<Singularity0DPtr> & sing,
                             double ele_measure);
     
+    template<int dim>
     void map_real_to_unit_points(const std::vector<Point>& real_points,
                                  std::vector< typename Space< dim >::Point >& unit_points,
                                  ElementFullIter ele);
@@ -134,6 +139,7 @@ protected:
     // Square refinement criteria constant on the cells without well inside.
     static const double distance_criteria_factor_;
 };
+
 
 
 #endif // QXFEM_FACTORY_HH_

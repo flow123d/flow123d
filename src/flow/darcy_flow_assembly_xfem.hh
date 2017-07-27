@@ -517,7 +517,7 @@ protected:
     int dof_tmp[100];
     
     // assembly volume integrals
-    QXFEMFactory<dim,3> qfactory_;
+    QXFEMFactory qfactory_;
     shared_ptr<QXFEM<dim,3>> qxfem_;
     
     shared_ptr<FiniteElementEnriched<dim,3>> fe_rt_xfem_;
@@ -554,7 +554,7 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
     std::shared_ptr<Singularity0D> func = std::static_pointer_cast<Singularity0D>(xdata->enrichment_func(0));
     
     qxfem_ = qfactory_.create_singular({func}, ele_ac.full_iter());
-//     qfactory_.gnuplot_refinement(ele_ac.full_iter(),
+//     qfactory_.gnuplot_refinement<2>(ele_ac.full_iter(),
 //                                  FilePath("./", FilePath::output_file),
 //                                  *qxfem_,
 //                                  {func});

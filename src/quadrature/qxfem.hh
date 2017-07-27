@@ -25,7 +25,7 @@
 
 #include "mesh/point.hh"
 
-template<int dim, int spacedim> class QXFEMFactory;
+class QXFEMFactory;
 
 /** @brief Class representing quadrature for XFEM, with adaptively distributed points.
  * Includes quadrature points both in real coordinates and on the reference element.
@@ -64,7 +64,7 @@ private:
     /// Vector of quadrature points in real coordinates.
     std::vector<Point> real_points_;
     
-    friend class QXFEMFactory<dim,spacedim>;
+    friend class QXFEMFactory;
 };
 
 

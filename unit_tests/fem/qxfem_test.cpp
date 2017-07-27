@@ -354,7 +354,7 @@ TEST(qxfem, singularity1D) {
 
 TEST(qxfem, qxfem_factory) {
 
-    QXFEMFactory<2,3> qfactory(12);
+    QXFEMFactory qfactory(12);
     
     // read mesh
     Mesh* mesh = mesh_constructor();
@@ -412,9 +412,9 @@ TEST(qxfem, qxfem_factory) {
 
 
 
-class TestQXFEMFactory : public testing::Test, public QXFEMFactory<2,3> {
+class TestQXFEMFactory : public testing::Test, public QXFEMFactory {
 public:
-    TestQXFEMFactory(unsigned int max_level = 10) : QXFEMFactory<2,3>(max_level) {}
+    TestQXFEMFactory(unsigned int max_level = 10) : QXFEMFactory(max_level) {}
 
     void test_distance(const Singularity0D& sing, AuxSimplex& s, const Point& u)
     {
@@ -539,7 +539,7 @@ TEST_F(TestQXFEMFactory, distance) {
 
 TEST(qxfem, qxfem_factory_two) {
 
-    QXFEMFactory<2,3> qfactory(12);
+    QXFEMFactory qfactory(12);
     
     // read mesh
     Mesh* mesh = mesh_constructor();

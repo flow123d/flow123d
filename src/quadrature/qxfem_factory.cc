@@ -25,30 +25,16 @@
 #include "mesh/ref_element.hh"
 #include "mesh/elements.h"
 
-template<int dim, int spacedim>
-const double QXFEMFactory<dim,spacedim>::distance_criteria_factor_ = 0.25;
+const double QXFEMFactory::distance_criteria_factor_ = 0.25;
 
-template<int dim, int spacedim>
-void QXFEMFactory< dim, spacedim >::clear()
+void QXFEMFactory::clear()
 {
     simplices_.clear();
     level_ = 0;
     level_offset_ = 0;
 }
 
-template<>
-std::shared_ptr< QXFEM< 2, 2 > > QXFEMFactory<2,2>::create_singular(
-                                                const std::vector<Singularity0DPtr> & sing,
-                                                ElementFullIter ele)
-{
-    clear();
-    std::shared_ptr<QXFEM<2,2>> qxfem = make_shared<QXFEM<2,2>>();
-    ASSERT(0).error("Not implemented!");
-    return qxfem;
-}
-
-template<>
-std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
+std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
                                                 const std::vector<Singularity0DPtr> & sing,
                                                 ElementFullIter ele)
 {
@@ -82,7 +68,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
         unsigned int n_to_refine = refine_edge(sing);
         if(n_to_refine == 0) break; // end refinement
         
-        refine_level(n_to_refine);
+        refine_level<2>(n_to_refine);
     }
     refine_edge(sing);
     
@@ -91,37 +77,21 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory<2,3>::create_singular(
         sing[0]->geometry().project_to_ellipse_plane(simp.nodes);
     }
     
-    distribute_qpoints(qxfem->real_points_, qxfem->weights, sing, ele->measure());
-    map_real_to_unit_points(qxfem->real_points_, qxfem->quadrature_points, ele);
+    distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele->measure());
+    map_real_to_unit_points<2>(qxfem->real_points_, qxfem->quadrature_points, ele);
     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
 }
 
 
-template<int dim, int spacedim>
-void QXFEMFactory<dim,spacedim>::refine_level(unsigned int n_simplices_to_refine)
-{
-    unsigned int new_level_offset = simplices_.size();
-    unsigned int subsim_per_simplex = 1 << dim;
-    simplices_.reserve(simplices_.capacity() + subsim_per_simplex * n_simplices_to_refine);
-    
-    for(unsigned int i = level_offset_; i<simplices_.size(); i++) {
-        AuxSimplex &s = simplices_[i];
-        if(s.refine) {
-            refine_simplex(s);
-            s.active = false;
-        }
-    }
-    level_offset_ = new_level_offset;
-}
 
 
-template<int dim, int spacedim>
-unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singularity0DPtr> & sing)
+
+unsigned int QXFEMFactory::refine_edge(const std::vector<Singularity0DPtr> & sing)
 {
-    ASSERT_DBG(dim == 2);
-    ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
+//     ASSERT_DBG(dim == 2);
+//     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
     
     unsigned int n_simplices_to_refine = 0; 
   /* there are several cases that can happen:
@@ -176,14 +146,13 @@ unsigned int QXFEMFactory<dim,spacedim>::refine_edge(const std::vector<Singulari
     return n_simplices_to_refine;
 }
 
-template<int dim, int spacedim>
-int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularity0D& w,
-                                                                const AuxSimplex& s,
-                                                                double& distance_sqr,
-                                                                double& max_h)
+int QXFEMFactory::simplex_sigularity_intersection(const Singularity0D& w,
+                                                  const AuxSimplex& s,
+                                                  double& distance_sqr,
+                                                  double& max_h)
 {
-    ASSERT_DBG(dim == 2);
-    ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
+//     ASSERT_DBG(dim == 2);
+//     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
     
     //we suppose counterclockwise node order
     
@@ -319,8 +288,27 @@ int QXFEMFactory<dim,spacedim>::simplex_sigularity_intersection(const Singularit
 }
 
 
-template<int dim, int spacedim>
-void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
+
+template<int dim> inline
+void QXFEMFactory::refine_level(unsigned int n_simplices_to_refine)
+{
+    unsigned int new_level_offset = simplices_.size();
+    unsigned int subsim_per_simplex = 1 << dim;
+    simplices_.reserve(simplices_.capacity() + subsim_per_simplex * n_simplices_to_refine);
+    
+    for(unsigned int i = level_offset_; i<simplices_.size(); i++) {
+        AuxSimplex &s = simplices_[i];
+        if(s.refine) {
+            refine_simplex<dim>(s);
+            s.active = false;
+        }
+    }
+    level_offset_ = new_level_offset;
+}
+
+
+template<int dim> inline
+void QXFEMFactory::refine_simplex(const AuxSimplex& aux_simplex)
 {
     static const unsigned int n_subelements = 1 << dim,  //2^dim
                               n_old_nodes = RefElement<dim>::n_nodes,
@@ -385,12 +373,14 @@ void QXFEMFactory<dim,spacedim>::refine_simplex(const AuxSimplex& aux_simplex)
     }
 }
 
-template<int dim, int spacedim>
-void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_points,
-                                                       std::vector<double>& weights,
-                                                       const std::vector<Singularity0DPtr> & sing,
-                                                       double ele_measure)
+
+template<int dim>
+void QXFEMFactory::distribute_qpoints(std::vector<Point>& real_points,
+                                      std::vector<double>& weights,
+                                      const std::vector<Singularity0DPtr> & sing,
+                                      double ele_measure)
 {
+    ASSERT(dim == 2);
     const unsigned int order = 3;
     QGauss<dim> gauss(order);
     const unsigned int n_gauss = gauss.size();
@@ -422,10 +412,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
         if(s.active)
         {
             Point p;
-            Point s0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
-                  s1 = s.nodes[2] - s.nodes[0];   // 1. edge of triangle
-            double area = 0.5*arma::norm(arma::cross(s0,s1),2);
-            
+            double measure = s.measure<dim>();
             bool check_qpoint_inside_sing = s.refine && (s.sing_id >=0) && (i>level_offset_);
             
             for(unsigned int q=0; q<n_gauss; q++)
@@ -447,7 +434,7 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
                 // which means for an affine mapping: sum w_q * |J| = |T| - |S_w|
                 // therefore for T without singularity, it holds: sum w_q = |T| / |J|
                 // which is for triangle equal 0.5
-                double weight = gauss.weight(q) * area / (ele_measure);
+                double weight = gauss.weight(q) * measure / (ele_measure);
                 weights.push_back(weight);
             }
         }
@@ -456,14 +443,29 @@ void QXFEMFactory< dim, spacedim >::distribute_qpoints(std::vector<Point>& real_
     weights.shrink_to_fit();
 }
 
-template<int dim, int spacedim>
-void QXFEMFactory<dim,spacedim>::map_real_to_unit_points(const std::vector<Point>& real_points,
-                                                         std::vector< typename Space< dim >::Point >& unit_points,
-                                                         ElementFullIter ele)
+template<> double QXFEMFactory::AuxSimplex::measure<2>() const{
+    ASSERT_DBG(nodes.size() == 3);
+    Point s0 = nodes[1] - nodes[0],   // 0. edge of triangle
+          s1 = nodes[2] - nodes[0];   // 1. edge of triangle
+    return 0.5*arma::norm(arma::cross(s0,s1),2);
+}
+
+template<> double QXFEMFactory::AuxSimplex::measure<3>() const{
+    ASSERT_DBG(nodes.size() == 4);
+    Point s0 = nodes[1] - nodes[0],   // 0. edge
+          s1 = nodes[2] - nodes[0],   // 1. edge
+          s2 = nodes[3] - nodes[0];   // 2. edge
+    return std::abs(arma::dot(arma::cross(s0,s1),s2)) / 6.0;
+}
+                
+template<int dim>
+void QXFEMFactory::map_real_to_unit_points(const std::vector<Point>& real_points,
+                                              std::vector<typename Space<dim>::Point>& unit_points,
+                                              ElementFullIter ele)
 {
-    ASSERT(dim == 2);
-    ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
-    ASSERT_DBG(ele->dim() == dim);
+//     ASSERT(dim == 2);
+//     ASSERT_DBG( (spacedim == 2) || (spacedim == 3));
+    ASSERT_DBG(ele->dim() == 2);
     
     unit_points.resize(real_points.size());
     
@@ -500,11 +502,11 @@ void QXFEMFactory<dim,spacedim>::map_real_to_unit_points(const std::vector<Point
 }
 
 
-template<int dim, int spacedim>
-void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
-                                                    const string& output_dir,
-                                                    const QXFEM<dim,spacedim>& quad,
-                                                    const std::vector<Singularity0DPtr> & sing)
+template<int dim>
+void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
+                                      const string& output_dir,
+                                      const QXFEM<dim,3>& quad,
+                                      const std::vector<Singularity0DPtr> & sing)
 {
  
     DBGCOUT("XFEM quadrature gnuplot print.\n");
@@ -589,6 +591,7 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
     
     for(unsigned int j = 0; j < sing.size(); j++)
     {
+        ASSERT(dim==2);
         //print ellipse
         const CircleEllipseProjection& g = sing[j]->geometry();
         strs << "[t=0:2*pi] " 
@@ -633,6 +636,17 @@ void QXFEMFactory<dim,spacedim>::gnuplot_refinement(ElementFullIter ele,
 
 
 // explicit instances:
-template class QXFEMFactory<2,2>;
-template class QXFEMFactory<2,3>;
-template class QXFEMFactory<3,3>;
+template void QXFEMFactory::gnuplot_refinement<2>(ElementFullIter ele,
+                                                  const string& output_dir,
+                                                  const QXFEM<2,3>& quad,
+                                                  const std::vector<Singularity0DPtr> & sing);
+template void QXFEMFactory::gnuplot_refinement<3>(ElementFullIter ele,
+                                                  const string& output_dir,
+                                                  const QXFEM<3,3>& quad,
+                                                  const std::vector<Singularity0DPtr> & sing);
+
+template void QXFEMFactory::refine_level<2>(unsigned int n_simplices_to_refine);
+template void QXFEMFactory::refine_level<3>(unsigned int n_simplices_to_refine);
+
+template void QXFEMFactory::refine_simplex<2>(const AuxSimplex& aux_simplex);
+template void QXFEMFactory::refine_simplex<3>(const AuxSimplex& aux_simplex);

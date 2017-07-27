@@ -23,7 +23,7 @@
 #include <vector>
 #include "mesh/ref_element.hh"
 
-template<int dim, int spacedim> class QXFEMFactory;
+class QXFEMFactory;
 
 /**
  * @brief Base class for quadrature rules on simplices in arbitrary dimensions.
@@ -111,7 +111,7 @@ protected:
      */
     std::vector<double> weights;
     
-    friend class QXFEMFactory<dim,3>;
+    friend class QXFEMFactory;
 };
 
 
