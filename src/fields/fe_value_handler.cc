@@ -67,8 +67,7 @@ public:
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
-: dof_indices(nullptr),
-  value_(r_value_),
+: value_(r_value_),
   map_(nullptr)
 {}
 
@@ -76,11 +75,11 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
-	ASSERT(dof_indices == nullptr).error("Multiple initialization.");
+	ASSERT_EQ(dof_indices.size(), 0).error("Multiple initialization.");
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices = new unsigned int[init_data.ndofs];
+    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
 
     if (map == nullptr) {
@@ -144,9 +143,7 @@ bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, E
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
-{
-	if (dof_indices != nullptr) delete[] dof_indices;
-}
+{}
 
 
 // Instantiations of FEValueHandler and FEShapeHandler

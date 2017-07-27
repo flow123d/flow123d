@@ -60,7 +60,6 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   data_vec_(nullptr),
-  dof_indices(nullptr),
   field_name_("")
 {}
 
@@ -76,7 +75,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
     data_vec_ = data;
 
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
-    dof_indices = new unsigned int[ndofs];
+    dof_indices.resize(ndofs);
 
     // initialization data of value handlers
 	FEValueInitData init_data;
@@ -175,7 +174,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
-    dof_indices = new unsigned int[ndofs];
+    dof_indices.resize(ndofs);
 
     // allocate data_vec_
 	unsigned int data_size = dh_->n_global_dofs();
@@ -288,9 +287,7 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::~FieldFE()
-{
-	if (dof_indices != nullptr) delete[] dof_indices;
-}
+{}
 
 
 // Instantiations of FieldFE

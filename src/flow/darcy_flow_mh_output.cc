@@ -266,7 +266,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
 	unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
-	unsigned int indices[ndofs];
+	std::vector<int> indices(ndofs);
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
