@@ -1177,7 +1177,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     int side_dof_indices[2*ndofs];
-    vector<int> indices;
+    vector<int> indices(ndofs);
     unsigned int n_dofs[2], n_indices;
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(Model::n_substances()));
