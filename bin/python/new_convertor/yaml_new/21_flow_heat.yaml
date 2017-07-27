@@ -1,0 +1,74 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: heat_transfer
+  mesh:
+    mesh_file: ./input/test21.msh
+    regions:
+      - !Union
+        name: .bottom
+        regions:
+          - .fracture_bottom
+          - .rock_bottom
+      - !Union
+        name: .top
+        regions:
+          - .fracture_top
+          - .rock_top
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: rock
+        conductivity: 0.01
+        cross_section: 1
+      - region: fracture
+        conductivity: 1
+        cross_section: 0.01
+      - region: .bottom
+        bc_type: dirichlet
+        bc_pressure: 1
+      - region: .top
+        bc_type: dirichlet
+        bc_pressure: 0
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: {}
+    output_stream: 
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  heat_equation: !Heat_AdvectionDiffusion_DG
+    balance:
+      cumulative: true
+    input_fields:
+      - region: .bottom
+        bc_type: dirichlet
+        bc_temperature: 1
+      - region: ALL
+        fluid_density: 1000.0
+        fluid_heat_capacity: 5
+        fluid_heat_conductivity: 1
+        solid_density: 3000.0
+        solid_heat_capacity: 1
+        solid_heat_conductivity: 3
+      - region: rock
+        porosity: 0.001
+      - region: fracture
+        porosity: 1
+    output_stream: 
+      file: ./heat.pvd
+      format: !vtk
+        variant: ascii
+      name: transport_output_stream
+      times:
+        - step: 1
+    solver: !Petsc
+      a_tol: 1.0e-07
+    time:
+      end_time: 10

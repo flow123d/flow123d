@@ -1,0 +1,61 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
+  mesh:
+    mesh_file: ./input/test1_new.msh
+    regions:
+      - !Union
+        name: fractures
+        regions:
+          - 2d_fracture_1
+          - 2d_fracture_2
+      - !Union
+        name: dirichlet_boundary
+        regions:
+          - .1d_channel
+          - .2d_fracture_1
+          - .2d_fracture_2
+          - .3d_cube
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+      raw_flow_output: ./raw_output.txt
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: 1d_channel
+        anisotropy: 10
+        sigma: 0.05
+      # using region set
+      - region: fractures
+        anisotropy: 1
+        sigma: 0.5
+      #         { region:"2d_fracture_1",
+      #           anisotropy:1,
+      #           sigma:0.5
+      #         },
+      #         { region:"2d_fracture_2",
+      #           anisotropy:1,
+      #           sigma:0.5
+      #         },
+      - region: 3d_cube
+        anisotropy: 0.1
+      # using region set
+      - region: dirichlet_boundary
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x-z
+    balance: {}
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    output_stream: 
+      file: ./test1.msh
+      format: !gmsh
+        variant: ascii
+      name: flow_output_stream
