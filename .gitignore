@@ -83,3 +83,8 @@ bin/runtest.sh
 /bin/python/jenkins_jobs_script.py
 /docker.sh
 /bench_data
+
+# various test probelms
+/Problems
+/Problems/*
+.Rproj.user
