@@ -16,6 +16,8 @@
  */
 
 
+#include <limits>
+
 #include "fields/field_fe.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
@@ -273,11 +275,16 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_elem(), dh_->n_global_dofs()).error();
+	ASSERT_EQ(output_data_cache.n_elem(), dof_indices.size()).error();
+	double loc_values[output_data_cache.n_elem()];
+	unsigned int i, dof_filled_size;
 
 	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
 	FOR_ELEMENTS( dh_->mesh(), ele ) {
-		dh_->get_loc_dof_indices( ele, dof_indices);
-		output_data_cache.store_value(dof_indices[0], &((*data_vec)[ dof_indices[0] ]) );
+		dof_filled_size = dh_->get_loc_dof_indices( ele, dof_indices);
+		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices[0] ];
+		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
+		output_data_cache.store_value( ele.index(), loc_values );
 	}
 
 	output_data_cache.set_dof_handler_hash( dh_->hash() );
