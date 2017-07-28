@@ -169,6 +169,10 @@ protected:
         Tokenizer::Position position;
         /// Type of data (used only for VTK reader)
         DataType type;
+        /// Flag marks native data of VTK file
+        bool vtk_native_data;
+        /// Hash of DOF handler object (only for native data of VTK file)
+        std::size_t dof_handler_hash;
     };
 
 	/// Constructor

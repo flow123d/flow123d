@@ -242,6 +242,7 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
         }
         for(;n_int>0;n_int--) tok_.next_line(false);
         head.position = tok_.get_position();
+        head.vtk_native_data = false;
     } catch (bad_lexical_cast &) {
     	THROW(ExcWrongFormat() << EI_Type("$ElementData header") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }

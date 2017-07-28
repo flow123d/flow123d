@@ -127,7 +127,7 @@ protected:
     void make_header_table() override;
 
     /// Helper method that create DataArray header of given xml node (used from \p make_header_table)
-    MeshDataHeader create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos);
+    MeshDataHeader create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos, bool is_native_data=false);
 
     /// Get DataType by value of string
 	DataType get_data_type(std::string type_str);

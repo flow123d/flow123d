@@ -150,7 +150,8 @@ Tokenizer::Position VtkMeshReader::get_appended_position() {
 }
 
 
-BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos)
+BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos,
+		bool is_native_data)
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
@@ -160,7 +161,13 @@ BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node,
     } catch(ExcWrongType &e) {
         e << EI_SectionTypeName("DataArray " + header.field_name);
     }
-    header.n_components = node.attribute("NumberOfComponents").as_uint(1);
+    header.vtk_native_data = is_native_data;
+    if (is_native_data) {
+        header.n_components = node.attribute("n_dofs_per_element").as_uint();
+    	header.dof_handler_hash = node.attribute("dof_handler_hash").as_uint();
+    } else {
+        header.n_components = node.attribute("NumberOfComponents").as_uint(1);
+    }
     header.n_entities = n_entities;
     std::string format = node.attribute("format").as_string();
     if (format=="appended") {
@@ -222,9 +229,21 @@ void VtkMeshReader::make_header_table()
 	header_table_["types"]
 			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements, appended_pos );
 
-	node = node.child("CellData");
-	for (pugi::xml_node subnode = node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+	pugi::xml_node point_node = node.child("PointData");
+	for (pugi::xml_node subnode = point_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+		auto header = create_header( subnode, n_nodes, appended_pos );
+		header_table_[header.field_name] = header;
+	}
+
+	pugi::xml_node cell_node = node.child("CellData");
+	for (pugi::xml_node subnode = cell_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
 		auto header = create_header( subnode, n_elements, appended_pos );
+		header_table_[header.field_name] = header;
+	}
+
+	pugi::xml_node native_node = node.child("Flow123dData");
+	for (pugi::xml_node subnode = native_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+		auto header = create_header( subnode, n_elements, appended_pos, true );
 		header_table_[header.field_name] = header;
 	}
 }
