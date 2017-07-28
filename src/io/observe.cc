@@ -28,7 +28,6 @@
 namespace IT = Input::Type;
 
 
-
 /**
  * Helper class allows to work with ObservePoint above elements with different dimensions
  *
