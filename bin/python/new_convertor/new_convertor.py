@@ -11,6 +11,9 @@ Features:
 - can run in quiet mode or in debug mode, individual change sets may be noted as stable to do not report warnings as default
 - can be applied to the input format specification and check that it produce target format specification
 
+TODO:
+- force the ruaml.yaml to read custom tags for all types, without complaining (add_mluit_constructor works)
+- force to keep these tags in created objects
 
 '''
 import ruamel.yaml as ruml
@@ -19,10 +22,141 @@ import os
 #import sys
 import argparse
 import fnmatch
+import types
+import logging
+#import copy
 
 
 MapType=ruml.comments.CommentedMap
 ListType=list
+
+
+CommentsTag = ruml.comments.Tag
+
+class CommentedScalar:
+    """
+    Class to store all scalars with their tags
+    """
+    original_constructors={}
+
+
+    def __repr__(self):
+        str(self.value)
+
+    @classmethod
+    def to_yaml(cls, dumper, data):
+        representer = dumper.yaml_representers[type(data.value).__mro__[0]]
+        node = representer(dumper, data.value)
+        if data.tag.value is None:
+            tag = node.tag
+        elif data.tag.value.startswith(u'tag:yaml.org,2002'):
+            tag = node.tag
+        else:
+            tag = data.tag.value
+        print("val: ", data.value, "repr: ", node.value, "tag: ", tag)
+        return dumper.represent_scalar(tag, node.value)
+
+
+    def __init__(self, tag, value):
+        self.tag.value = tag
+        self.value = value
+
+    @property
+    def tag(self):
+        # type: () -> Any
+        if not hasattr(self, CommentsTag.attrib):
+            setattr(self, CommentsTag.attrib, CommentsTag())
+        return getattr(self, CommentsTag.attrib)
+
+
+
+def construct_any_tag(self, tag_suffix, node):
+    if tag_suffix is None:
+        orig_tag = None
+    else:
+        orig_tag = "!" + tag_suffix
+    if isinstance(node, ruml.ScalarNode):
+
+        implicit_tag = self.composer.resolver.resolve(ruml.ScalarNode, node.value, (True, None))
+        if implicit_tag in self.yaml_constructors:
+            #constructor = CommentedScalar.original_constructors[implicit_tag]
+            constructor = self.yaml_constructors[implicit_tag]
+        else:
+            constructor = self.construct_undefined
+
+        data = constructor(self, node)
+        if isinstance(data, types.GeneratorType):
+            generator = data
+            data = next(generator)  # type: ignore
+
+        scal = CommentedScalar(orig_tag, data)
+        yield scal
+
+    elif isinstance(node, ruml.SequenceNode):
+        for seq in self.construct_yaml_seq(node):
+            seq.yaml_set_tag(orig_tag)
+            yield seq
+    elif isinstance(node, ruml.MappingNode):
+        for map in self.construct_yaml_map(node):
+            map.yaml_set_tag(orig_tag)
+            yield map
+    else:
+        for dummy in self.construct_undefined(node):
+            yield dummy
+"""
+def construct_scalar(self, node):
+    gen = construct_any_tag(self, None, node)
+    for item in gen:
+        yield item
+"""
+
+#def dump_commented_scalar(cls, data):
+#    data.dump(cls)
+
+def represent_commented_seq(cls, data):
+    if data.tag.value is None:
+        tag = u'tag:yaml.org,2002:seq'
+    else:
+        tag = data.tag.value
+    return cls.represent_sequence(tag, data)
+
+
+yml=ruml.YAML(typ='rt')
+yml.representer.add_representer(CommentedScalar, CommentedScalar.to_yaml)
+yml.representer.add_representer(ruml.comments.CommentedSeq, represent_commented_seq)
+yml.constructor.add_multi_constructor("!", construct_any_tag)
+"""
+CommentedScalar.original_constructors = copy.deepcopy(yml.constructor.yaml_constructors)
+
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:null',
+    construct_scalar)
+
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:bool',
+    construct_scalar)
+
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:int',
+    construct_scalar)
+
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:float',
+    construct_scalar)
+
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:binary',
+    construct_scalar)
+
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:timestamp',
+    construct_scalar)
+yml.constructor.add_constructor(
+    u'tag:yaml.org,2002:str',
+    construct_scalar)
+
+"""
+
 
 '''
 Helpers:
@@ -35,6 +169,14 @@ def parse_yaml_str(yaml_string):
     '''
     pass
 
+def is_list_node(node):
+    return type(node) in [ list, ruml.comments.CommentedSeq ]
+
+def is_map_node(node):
+    return type(node) in [ dict, ruml.comments.CommentedMap ]
+
+def is_scalar_node(node):
+    return type(node) in [ CommentedScalar, int, float, bool, None, str ]
 
 
 class Changes:    
@@ -63,6 +205,33 @@ class Changes:
         return self
 
 
+
+    def unify_tree_scalars(self, node):
+        if is_list_node(node):
+            for idx in range(len(node)):
+                node[idx] = self.unify_tree_scalars(node[idx])
+        elif is_map_node(node):
+            for key, child in node.items():
+                node[key] = self.unify_tree_scalars(child)
+        elif is_scalar_node(node):
+            if type(node) != CommentedScalar:
+
+                tags_for_types = { \
+                    float : u'tag:yaml.org,2002:float',\
+                    int : u'tag:yaml.org,2002:int',\
+                    bool : u'tag:yaml.org,2002:bool',\
+                    str : u'tag:yaml.org,2002:str',\
+                    None : u'tag:yaml.org,2002:null'}
+                assert type(node) in tags_for_types
+                tag = tags_for_types[type(node)]
+                node = CommentedScalar(tag, node)
+        else:
+            assert False, "Unsupported node type: {}".format(type(node))
+        return node
+
+    def unify_trees(self, trees):
+        return [ (fname, self.unify_tree_scalars(tree)) for fname, tree in trees ]
+
     def apply_changes(self, trees, in_version, out_version,  reversed=False, warn=True):
         """
         Apply initailized list of actions to the data tree 'root'.
@@ -71,6 +240,7 @@ class Changes:
         :param reversed: Produce backward conversion from the target version to the initial version.
         :return: Data tree after conversion.
         """
+        trees = self.unify_trees(trees)
 
         # close last list
         self.new_version(None)
@@ -88,7 +258,7 @@ class Changes:
             if version == out_version:
                 break
             if active:
-                for path_set, forward, backward in change_list:
+                for path_set, forward, backward, ac_name in change_list:
                     if reversed:
                         action=backward
                     else:
@@ -99,7 +269,7 @@ class Changes:
                         if is_changed:
                             changed_files.append(fname)
                     if changed_files:
-                        print("Action: ", action)
+                        print("Action: ", ac_name)
                         print("Applied to: ", changed_files)
 
 
@@ -117,8 +287,13 @@ class PathSet(object):
         """
         self.patterns=[]
         for p in path_patterns:
-            pp=re.sub('\*\*', '[a-zA-Z0-9_]*(/[a-zA-Z0-9_]*)*',p)
-            pp = re.sub('\*', '[a-zA-Z0-9_]*', pp)
+            " ** = any number of levels, any key or index per level"
+            pp = re.sub('\*\*', '[a-zA-Z0-9_]@(/[a-zA-Z0-9_]@)@',p)
+            " * = single level, any key or index per level"
+            pp = re.sub('\*', '[a-zA-Z0-9_]@', pp)
+            " # = single level, only indices "
+            pp = re.sub('\#', '[0-9]@', pp)
+            pp = re.sub('@', '*', pp)
             pp = "^" + pp + "$"
             self.patterns.append(pp)
         self.options=kwds
@@ -130,32 +305,41 @@ class PathSet(object):
         :param root: Data tree
         :return: None
         """
-        self.dfs_apply(action, [root], "/")
+        logging.debug("Patterns: {}".format(self.patterns))
+        return self.dfs_apply(action, [root], "/")
 
     def dfs_apply(self, action, data_path, path):
+        matches=[]
         current = data_path[-1]
-        print("DFS apply:", path)
+        logging.debug("DFS apply: " + str(path))
         if self.match(data_path, path):
+            matches+=[current]
+            self.current_path=path
             action(data_path)
-        if type(current) == ListType:
+        if is_list_node(current):
             for idx, child in enumerate(current):
-                self.dfs_apply(action, data_path + [ child ], path  + str(idx) + "/"  )
-        elif type(current) == MapType:
+                matches += self.dfs_apply(action, data_path + [ child ], path  + str(idx) + "/"  )
+        elif is_map_node(current):
             for key, child in current.items():
-                self.dfs_apply(action, data_path + [ child] , path  + key + "/" )
+                matches += self.dfs_apply(action, data_path + [ child ] , path  + str(key) + "/" )
+        return matches
 
 
     def match(self, data_path, path):
         for pattern in self.patterns:
-            print("re pattern: '{}'  path: {}".format(pattern, path))
             if re.match(pattern, path) != None:
-                print("match")
-                for key, param in self.options:
+                logging.debug("Match path")
+                for key, param in self.options.items():
+                    logging.debug("Match path")
                     if key == "have_tag":
                         tag_path = list(param.split('/'))
                         target = self.traverse_tree(data_path, tag_path[0:-1])
-                        if not target or target.tag.value!=tag_path[-1]:
+                        target = target[-1]
+                        if not target or not hasattr(target, "tag"):
                             return False
+                        if target.tag.value != "!" + tag_path[-1]:
+                            return False
+                logging.debug("Full Match")
                 return True
         return False
 
@@ -169,8 +353,8 @@ class PathSet(object):
         :param rel_path: Relative address of the target node, e.g. "../key_name/1"
         :return: Data path of target node. None in case of incomaptible address.
         """
-        target_path=data_path
-        for key in rel_path[0:-1]:
+        target_path=data_path.copy()
+        for key in rel_path:
             curr = target_path[-1]
             if key == "..":
                 target_path.pop()
@@ -185,7 +369,7 @@ class PathSet(object):
                 if not key in curr:
                     return None
                 target_path.append(curr[key])
-
+        return target_path
 
     def __getattribute__(self, item):
         """
@@ -204,8 +388,8 @@ class PathSet(object):
                 def forward(path):
                     func(path, *args, reversed=False, **kargs)
                 def backward(path):
-                    func(path, *args, reversed=True, **bkargs)
-                return (self, forward, backward)
+                    func(path, *args, reversed=True, **kargs)
+                return (self, forward, backward, func.__name__)
             return wrap
         else:
             return object.__getattribute__(self, item)
@@ -225,7 +409,9 @@ class PathSet(object):
         For every path P in the path set 'path' remove key 'key_name' from the map.
         '''
         curr=path[-1]
-        assert(type(curr) == MapType)
+        if not is_map_node(curr):
+            logging.warning("Expecting map at path: {}".format(self.current_path))
+            return
         if reversed:
             if key in curr:
                 del curr[key]
@@ -256,22 +442,73 @@ class PathSet(object):
         Rename its key 'old_name' to 'new_name'.
         REVERSE.
         For every path P in the path set 'path', rename 'new_name' to 'old_name'.
+        TODO: generalize to move_key, problem where to apply reversed action.
         '''
         curr=path[-1]
-        assert(type(curr) == MapType)
+        if not is_map_node(curr):
+            logging.warning("Expecting map at path: {}".format(self.current_path))
+            return
         if reversed:
             curr[old_key] = curr.pop(new_key)
         else:
             curr[new_key] = curr.pop(old_key)
 
-    def scale_scalar(self,  multiplicator):
+    def _scale_scalar(self,  path, multiplicator, reversed):
         '''
         ACTION.
-        For every path P in the path set 'path' which has to the scalar, multiply it by 'multiplicator'
+        For every path P in the path set 'path' which has to be a scalar, multiply it by 'multiplicator'
         REVERSE.
-        For every path P in the path set 'path' which has to the scalar, divide it by 'multiplicator'
+        For every path P in the path set 'path' which has to be a scalar, divide it by 'multiplicator'
         '''
-        pass
+        curr=path[-1]
+        if not is_scalar_node(curr):
+            #print("Node: ", curr)
+            logging.warning("Expecting scalar at path: {} get: {}".format(self.current_path, type(curr)))
+            return
+        assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
+        if not type(curr.value) in [int, float]:
+            return
+        is_int = curr.value is int
+        if reversed:
+            curr.value /= multiplicator
+        else:
+            curr.value *= multiplicator
+        if is_int and float(curr.value).is_integer():
+            curr.value = int(curr.value)
+
+    def _replace_value(self, path, re_forward, re_backward):
+        """
+        ACTION.
+        For 'path' which has to be string scalar, apply regexp substitution.
+        :param path:
+        :param re_forward:  (regexp, substitute)
+        :param re_backward: (regexp, substitute)
+            ... used as re.sub(regexp, substitute, value)
+
+        If regexp is None, then substitute is tuple for the manual conversion.
+        :return: None
+        """
+        curr=path[-1]
+        if not is_scalar_node(curr):
+            #print("Node: ", curr)
+            logging.warning("Expecting scalar at path: {} get: {}".format(self.current_path, type(curr)))
+            return
+        assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
+        if not curr.value is str:
+            #print("Node: ", curr)
+            logging.warning("Expecting string at path: {} get: {}".format(self.current_path, type(curr)))
+            return
+        if reversed:
+            if re_backward[0] is None:
+                pass    # manual
+            else:
+                re.sub(re_backward[0], re_backward[1], curr.value)
+        else:
+            if re_forward[0] is None:
+                pass    # manual
+            else:
+                re.sub(re_forward[0], re_forward[1], curr.value)
+
     """
     def manual_conversion(self,  invalidate="key", message_forward, message_backward):
         '''
@@ -296,47 +533,46 @@ changes = Changes()
 changes.new_version("1.8.2")
 changes += PathSet(["/"]).add_key_to_map(key = "flow123d_version", value = "2.0.0")
 
-
 # Change degree keys in PadeApproximant
-path_set = PathSet([ "/problem/secondary_equation/**/ode_solver"],
-              have_tag="../PadeApproximant")
+path_set = PathSet(["/problem/secondary_equation/**/ode_solver/"],
+                   have_tag="PadeApproximant")
+changes += path_set.rename_key(old_key="denominator_degree", new_key="pade_denominator_degree")
+changes += path_set.rename_key(old_key="nominator_degree", new_key="pade_nominator_degree")
 
-
-changes += path_set.rename_key(old_name="denominator_degree", new_name = "pade_denominator_degree")
-changes += path_set.rename_key(old_name="nominator_degree", new_name = "pade_nominator_degree")
-
-"""
 # Change sign of boundary fluxes
 path_set = PathSet([
-            "/problem/secondary_equation/input_fields/*/bc_flux",
-            "/problem/primary_equation/input_fields/*/bc_flux"] )
-            
-changes += path_set.scale_scalar(-1)
+    "/problem/secondary_equation/input_fields/*/bc_flux/",
+    "/problem/primary_equation/input_fields/*/bc_flux/",
+    "/problem/secondary_equation/input_fields/*/bc_flux/#/",
+    "/problem/primary_equation/input_fields/*/bc_flux/#/"])
+changes += path_set.scale_scalar(multiplicator=-1)
 
-path_set = [ PathPatern("/problem/secondary_equation/input_fields/*/bc_flux/value"),
-             PathPatern("/problem/primary_equation/input_fields/*/bc_flux/value"),
-             HaveTag( relative_path="..", "FieldConstant") ]
-            
-changes += scale_scalar(path_set, -1)
+path_set = PathSet([
+    "/problem/secondary_equation/input_fields/*/bc_flux/value/",
+    "/problem/primary_equation/input_fields/*/bc_flux/value/"],
+    have_tag="../FieldConstant")
+changes += path_set.scale_scalar(multiplicator=-1)
 
-path_set = [ PathPatern("/problem/secondary_equation/input_fields/*/bc_flux/value"),
-             PathPatern("/problem/primary_equation/input_fields/*/bc_flux/value"),
-             HaveTag( relative_path="..", "FieldFormula") ]
+"""
+path_set = PathSet([ "/problem/secondary_equation/input_fields/*/bc_flux/value/",
+             "/problem/primary_equation/input_fields/*/bc_flux/value/"],
+             have_tag="../FieldFormula")
 
-changes += replace_value(path_set, regexp_forward=("^(.*)$", "-(\\1)"), regexp_backward=("^(.*)$", "-(\\1)"))
+changes += path_set.replace_value(
+            re_forward=("^(.*)$", "-(\\1)"),
+            re_backward=("^(.*)$", "-(\\1)"))
 
-path_set = [ PathPatern("/problem/secondary_equation/input_fields/*/bc_flux"),
-             PathPatern("/problem/primary_equation/input_fields/*/bc_flux"),
-             HaveTag(relative_path=".", tag="FieldElementwise") ]
+path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux",
+             "/problem/primary_equation/input_fields/*/bc_flux"],
+                   have_tag="../FieldElementwise")
 
-changes += manual_conversion(path_set, invalidate='tag', 
+changes += path_set.manual_conversion(invalidate='tag',
                              message_forward="Change sign of this field in the GMSH file.",
                              message_backward="Change sign of this field in the GMSH file.")
 
 # Replace Robin and Neumann conditions by total flux
-changes.new_set()
-path = [ PathPattern("/problem/primary_equation/input_fields/*/bc_type"]
-changes+= change_value(path, old_value=["neumann", "robin"], new_value="total_flux", manual_reversion="manual")  
+path = PathSet(["/problem/primary_equation/input_fields/*/bc_type"])
+changes+= path.replace_value(path, old_value=["neumann", "robin"], new_value="total_flux", manual_reversion="manual")
 
 path = [ PathPattern("/problem/secondary_equation/input_fields/*/bc_type"]
 changes+= change_value(path, old_value=["neumann", "robin"], new_value="diffusive_flux", manual_reversion="manual")  
@@ -1044,15 +1280,35 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if '/' in args.in_file:
-        files=[ args.in_file ]
-    else:
-        files=[ f for f in os.listdir('.') if fnmatch.fnmatch(f, args.in_file) ]
 
+    path_wild = args.in_file.split('/')
+    if path_wild[0]:
+        # relative path
+        dirs = ["."]
+    else:
+        # absloute
+        dirs = ["/"]
+
+    files=[]
+    for wild_name in path_wild:
+        # separate dirs and files
+        paths=[]
+        for dir in dirs:
+            paths += [ dir + "/" + f for f in os.listdir(dir) if fnmatch.fnmatch(f, wild_name) ]
+        dirs=[]
+        for path in paths:
+            if os.path.isdir(path):
+                dirs.append(path)
+            elif os.path.isfile(path):
+                files.append(path)
+            else:
+                assert False, "Path neither dir nor file."
+
+    print(files)
     trees = []
     for fname in files:
         with open(fname, "r") as f:
-            trees.append( ( fname, ruml.round_trip_load(f)) )
+            trees.append( ( fname, yml.load(f)) )
 
     changes.apply_changes(trees, args.from_version, args.to_version, reversed=args.reverse)
 
@@ -1060,4 +1316,4 @@ if __name__ == "__main__":
         base=os.path.splitext(fname)[0]
         out_fname = base + ".new.yaml"
         with open(out_fname, "w") as f:
-            ruml.round_trip_dump(tree, f)
+            yml.dump(tree, f)

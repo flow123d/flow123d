@@ -1,0 +1,25 @@
+problem: !SequentialCoupling
+  primary_equation: !Unsteady_LMH
+    input_fields:
+    - region: .left
+      bc_type: total_flux
+      bc_flux: 2.0
+    - region: .right
+      bc_type: total_flux
+      bc_flux: !FieldConstant
+        value: 3.0
+    balance:
+      cumulative: true
+    solver: !Petsc
+  secondary_equation: !SoluteTransport_DG
+    input_fields:
+    - region: .left
+      bc_type: total_flux
+      bc_flux: [10.0, 20.0]
+    substances: [A, B]
+    time:
+      end_time: 2.0
+      max_dt: 0.1
+    solver: !Petsc
+    balance:
+      cumulative: true

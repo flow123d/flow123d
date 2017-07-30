@@ -1,0 +1,17 @@
+# *
+#  * Should give same results as flow_gmsh.con, but BC condition is given as piezo head.
+flow123d_version: 2.0.0
+problem: !SequentialCoupling
+  primary_equation: !Steady_MH
+    n_schurs: 2
+    input_fields:
+    - region: 1d_channel
+      anisotropy: !FieldConstant 10
+      bc_pressure: !FieldFormula
+        value: x-z
+    balance: true
+    solver: !Petsc
+  secondary_equation: !TransportOperatorSplitting
+    input_fields:
+    - rid: 1
+      init_conc: !FieldConstant [1, 0, 0]
