@@ -65,6 +65,17 @@ public:
 	DECLARE_EXCEPTION(ExcWrongExtension,
 			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
 
+
+	/**
+	 * Store base data that determines native data of VTK file.
+	 *
+	 * Structure is filled in get_element data and has effect only for VTK files.
+	 */
+	struct NativeDataParams {
+        bool vtk_native_data;          ///< Flag marks native data of VTK file
+        std::size_t dof_handler_hash;  ///< Hash of DOF handler object
+	};
+
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name);
 
@@ -116,7 +127,7 @@ public:
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool boundary_domain, unsigned int component_idx);
+    		unsigned int n_components, bool boundary_domain, unsigned int component_idx, NativeDataParams &native_data);
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.

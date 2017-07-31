@@ -67,9 +67,11 @@ TEST(PVDReader, get_element_data) {
         delete source_mesh;
     }
 
+    BaseMeshReader::NativeDataParams native_data_params;
+
     for (unsigned int i=0; i<3; ++i) {
         typename ElementDataCache<double>::ComponentDataPtr scalar_data
-            = reader.get_element_data<double>("scalar_field", i*0.1, 6, 1, false, 0);
+            = reader.get_element_data<double>("scalar_field", i*0.1, 6, 1, false, 0, native_data_params);
         std::vector<double> &vec = *( scalar_data.get() );
         EXPECT_EQ(6, vec.size());
         for (unsigned int j=0; j<vec.size(); j++) {
@@ -79,7 +81,7 @@ TEST(PVDReader, get_element_data) {
 
     for (unsigned int i=0; i<3; ++i) {
         typename ElementDataCache<double>::ComponentDataPtr vector_data
-            = reader.get_element_data<double>("vector_field", i*0.1, 6, 3, false, 0);
+            = reader.get_element_data<double>("vector_field", i*0.1, 6, 3, false, 0, native_data_params);
         std::vector<double> &vec = *( vector_data.get() );
         EXPECT_EQ(18, vec.size());
         for (unsigned int j=0; j<vec.size(); j++) {

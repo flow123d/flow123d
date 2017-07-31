@@ -83,12 +83,17 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( std::string field_name, double time,
-		unsigned int n_entities, unsigned int n_components, bool boundary_domain, unsigned int component_idx) {
+		unsigned int n_entities, unsigned int n_components, bool boundary_domain, unsigned int component_idx,
+		NativeDataParams &native_data) {
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 
     MeshDataHeader actual_header = this->find_header(time, field_name);
-    ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
+    // fill structure of native data (necessary only for VTK)
+    native_data.vtk_native_data = actual_header.vtk_native_data;
+	native_data.dof_handler_hash = actual_header.dof_handler_hash;
+
+	ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
     if (it == element_data_values_->end()) {
     	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >();
         it=element_data_values_->find(field_name);
@@ -133,7 +138,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 // explicit instantiation of template methods
 #define MESH_READER_GET_ELEMENT_DATA(TYPE) \
 template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
-	unsigned int n_entities, unsigned int n_components, bool boundary_domain, unsigned int component_idx);
+	unsigned int n_entities, unsigned int n_components, bool boundary_domain, unsigned int component_idx, NativeDataParams &native_data);
 
 MESH_READER_GET_ELEMENT_DATA(int);
 MESH_READER_GET_ELEMENT_DATA(unsigned int);
