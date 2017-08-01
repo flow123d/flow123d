@@ -12,10 +12,10 @@ Features:
 - can be applied to the input format specification and check that it produce target format specification
 
 TODO:
-- incorporate tag info into address during dfs so we can
-- force the ruaml.yaml to read custom tags for all types, without complaining (add_mluit_constructor works)
-- force to keep these tags in created objects
-
+- add support for variant paths wild cards (x|y|z)
+- add support for manual change of other then value values, commenting all lines of the CommentedMap or CommentedSeq values
+- convert every non commented value to commented during DFS (possibly remove appriory conversion) this
+  doesn't force to take to much care in Actions
 '''
 import ruamel.yaml as ruml
 import re
@@ -25,6 +25,7 @@ import argparse
 import fnmatch
 import types
 import logging
+import itertools
 #import copy
 
 
@@ -331,6 +332,23 @@ class Changes:
                 curr.insert(idx, key, value)
                 self.changed = True
 
+    def _manual_change(self, paths, message_forward, message_backward):
+        '''
+        ACTION.
+        For every path P in the path set 'path' which has to end by key. Rename the key (if invalidate='key')
+        or the tag (if invalidate='tag') by postfix '_NEED_EDIT'. And appended comment with the message_forward.
+        REVERSE.
+        For every path P in the path set 'path', make the same, but use message_backward for the comment.
+        '''
+        for nodes, address in paths.iterate(self.tree):
+            if reversed:
+                self.__apply_manual_conv(nodes, address, message_backward)
+            else:
+                self.__apply_manual_conv(nodes, address, message_forward)
+
+
+
+
     """
     def remove_key(path_set, key_name, key_value):
         '''
@@ -448,19 +466,7 @@ class Changes:
         comment = "# :{}  # {}".format(curr.value, message)
         map_of_key.yaml_add_eol_comment(comment, key)
         curr.value = None
-
-    """
-    def manual_conversion(self,  invalidate="key", message_forward, message_backward):
-        '''
-        ACTION.
-        For every path P in the path set 'path' which has to end by key. Rename the key (if invalidate='key')
-        or the tag (if invalidate='tag') by postfix '_NEED_EDIT'. And appended comment with the message_forward.
-        REVERSE.
-        For every path P in the path set 'path', make the same, but use message_backward for the comment.
-        '''
-        pass
-    """
-
+        self.changed = True
 
 
 class PathSet(object):
@@ -475,18 +481,36 @@ class PathSet(object):
         """
         self.patterns=[]
         for p in path_patterns:
-            # '**' = any number of levels, any key or index per level
-            pp = re.sub('\*\*', '[a-zA-Z0-9_]@(/[a-zA-Z0-9_]@)@',p)
-            # '*' = single level, any key or index per level
-            pp = re.sub('\*', '[a-zA-Z0-9_]@', pp)
-            # '#' = single level, only indices
-            pp = re.sub('\#', '[0-9]@', pp)
-            # '/' = allow tag info just after key names
-            pp = re.sub('/', '(![a-zA-Z0-9_]@)?/', pp)
-            # return back all starts
-            pp = re.sub('@', '*', pp)
-            pp = "^" + pp + "$"
-            self.patterns.append(pp)
+
+            # pass through all combinations of alternatives (X|Y|Z)
+            list_of_alts=[]
+            for alt_group in re.finditer('\([^/|]*(\|[^/|]*)*\)', p):
+                before_group=p[0:alt_group.start()]
+                list_of_alts.append([before_group])
+
+                # swallow parenthesis
+                alts = alt_group.group(0)[1:-1]
+                alts = alts.split('|')
+                list_of_alts.append( alts )
+                p = p[alt_group.end():]
+            list_of_alts.append([p])
+
+            for pp_list in itertools.product(*list_of_alts):
+                pp= ''.join(pp_list)
+                # '**' = any number of levels, any key or index per level
+                pp = re.sub('\*\*', '[a-zA-Z0-9_]@(/[a-zA-Z0-9_]@)@',pp)
+                # '*' = single level, any key or index per level
+                pp = re.sub('\*', '[a-zA-Z0-9_]@', pp)
+                # '#' = single level, only indices
+                pp = re.sub('\#', '[0-9]@', pp)
+                # '/' = allow tag info just after key names
+                pp = re.sub('/', '(![a-zA-Z0-9_]@)?/', pp)
+                # return back all starts
+                pp = re.sub('@', '*', pp)
+                pp = "^" + pp + "$"
+                self.patterns.append(pp)
+        #logging.debug("Patterns: " + str(self.patterns) )
+        print("Patterns: " + str(self.patterns))
         self.options=kwds
         self.matches = []
 
@@ -627,33 +651,38 @@ path_set = PathSet([
     ])
 changes.scale_scalar(path_set, multiplicator=-1)
 
+# Change sign of boundary fluxes formulas
+path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux!FieldFormula/value/",
+                    "/problem/primary_equation/input_fields/*/bc_flux!FieldFormula/value/"])
+
+changes.replace_value(path_set,
+                      re_forward=('^(.*)$', '-(\\1)'),
+                      re_backward=('^(.*)$', '-(\\1)'))
+
+# Change sign of oter fields manually
+path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)",
+             "/problem/primary_equation/input_fields/*/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)"])
+
+changes.manual_change(path_set,
+    message_forward="Change sign of this field manually.",
+    message_backward="Change sign of this field manually.")
+
+
+# Test manual conversion
+path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_type/",
+                    "/problem/primary_equation/input_fields/*/bc_type/"])
+
+changes.replace_value(path_set,
+                      re_forward=("^(robin|neumann)$", "total_flux"),
+                      re_backward=(None,
+                                   "Select either 'robin' or 'neumann' according to the value of 'bc_flux', 'bc_pressure', 'bc_sigma'."))
+
+
+changes.new_version("2.0.0")
 """
-path_set = PathSet([ "/problem/secondary_equation/input_fields/*/bc_flux/value/",
-             "/problem/primary_equation/input_fields/*/bc_flux/value/"],
-             have_tag="../FieldFormula")
 
-changes += path_set.replace_value(
-            re_forward=("^(.*)$", "-(\\1)"),
-            re_backward=("^(.*)$", "-(\\1)"))
-
-path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux",
-             "/problem/primary_equation/input_fields/*/bc_flux"],
-                   have_tag="../FieldElementwise")
-
-changes += path_set.manual_conversion(invalidate='tag',
-                             message_forward="Change sign of this field in the GMSH file.",
-                             message_backward="Change sign of this field in the GMSH file.")
-
-# Replace Robin and Neumann conditions by total flux
-path = PathSet(["/problem/primary_equation/input_fields/*/bc_type"])
-changes+= path.replace_value(path, old_value=["neumann", "robin"], new_value="total_flux", manual_reversion="manual")
-
-path = [ PathPattern("/problem/secondary_equation/input_fields/*/bc_type"]
-changes+= change_value(path, old_value=["neumann", "robin"], new_value="diffusive_flux", manual_reversion="manual")  
-                         
 
 # Rename equations and couplings
-changes.new_set()
 
 path = "/problem/secondary_equation"
 changes += rename_tag(path, old_tag="TransportOperatorSplitting", new_tag="Coupling_OperatorSplitting")

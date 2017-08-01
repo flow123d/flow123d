@@ -5,7 +5,7 @@ from new_convertor import *
 import sys
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
+logging.debug("First debug message.")
 def files_cmp(ref,out):
     with open(ref, "r") as f:
         t=ruml.load(f, Loader=ruml.RoundTripLoader)
@@ -43,16 +43,14 @@ class TestActions(unittest.TestCase):
 
 
         # Change sign of boundary fluxes
-        path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux!FieldFormula/value/",
-                            "/problem/primary_equation/input_fields/*/bc_flux!FieldFormula/value/"])
+        path_set = PathSet(["/problem/(primary_equation|secondary_equation)/input_fields/*/bc_flux!FieldFormula/value/"])
 
         changes.replace_value(path_set,
             re_forward=('^(.*)$', '-(\\1)'),
             re_backward=('^(.*)$', '-(\\1)'))
 
-        # Test manual conversion
-        path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_type/",
-                            "/problem/primary_equation/input_fields/*/bc_type/"])
+        # Test manual conversion, alternative paths
+        path_set = PathSet(["/problem/(secondary_equation|primary_equation)/input_fields/*/bc_type/"])
 
         changes.replace_value(path_set,
             re_forward=("^(robin|neumann)$", "total_flux"),
@@ -66,12 +64,9 @@ class TestActions(unittest.TestCase):
 
         # Change sign of boundary fluxes
         path_set = PathSet([
-            "/problem/secondary_equation/input_fields/*/bc_flux/",
-            "/problem/primary_equation/input_fields/*/bc_flux/",
-            "/problem/secondary_equation/input_fields/*/bc_flux/#/",
-            "/problem/primary_equation/input_fields/*/bc_flux/#/",
-            "/problem/secondary_equation/input_fields/*/bc_flux!FieldConstant/value/",
-            "/problem/primary_equation/input_fields/*/bc_flux!FieldConstant/value/"
+            "/problem/(primary|secondary)_equation/input_fields/*/bc_flux/",
+            "/problem/(primary|secondary)_equation/input_fields/*/bc_flux/#/",
+            "/problem/(primary|secondary)_equation/input_fields/*/bc_flux!FieldConstant/value/",
         ])
         changes.scale_scalar(path_set, multiplicator=-1)
         self.perform(changes)
