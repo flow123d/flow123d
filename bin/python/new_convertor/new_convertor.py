@@ -12,6 +12,7 @@ Features:
 - can be applied to the input format specification and check that it produce target format specification
 
 TODO:
+- incorporate tag info into address during dfs so we can
 - force the ruaml.yaml to read custom tags for all types, without complaining (add_mluit_constructor works)
 - force to keep these tags in created objects
 
@@ -53,7 +54,7 @@ class CommentedScalar:
             tag = node.tag
         else:
             tag = data.tag.value
-        print("val: ", data.value, "repr: ", node.value, "tag: ", tag)
+        #print("val: ", data.value, "repr: ", node.value, "tag: ", tag)
         return dumper.represent_scalar(tag, node.value)
 
 
@@ -196,13 +197,13 @@ class Changes:
         self.current_version=version
         self._version_changes=[]
 
-    def __iadd__(self, change):
-        """
-        :param change:
-        :return:
-        """
-        self._version_changes.append(change)
-        return self
+#    def __iadd__(self, change):
+#        """
+#        :param change:
+#        :return:
+#        """
+#        .append(change)
+#        return self
 
 
 
@@ -258,20 +259,207 @@ class Changes:
             if version == out_version:
                 break
             if active:
-                for path_set, forward, backward, ac_name in change_list:
+                for forward, backward, ac_name in change_list:
                     if reversed:
                         action=backward
                     else:
                         action=forward
                     changed_files=[]
                     for fname, tree in trees:
-                        is_changed = path_set.apply(action, tree)
-                        if is_changed:
+                        self.tree = tree
+                        logging.debug("Action: "+ac_name)
+                        self.changed=False
+                        action()
+                        if self.changed:
                             changed_files.append(fname)
                     if changed_files:
                         print("Action: ", ac_name)
                         print("Applied to: ", changed_files)
 
+    def __getattribute__(self, item):
+        """
+        For every action method (with underscore) is defined a proxy method to add the action into
+        change list. Both forward and backward actions are generated.
+        :param item:
+        :return:
+        """
+        func_name="_"+item
+        try:
+            func = object.__getattribute__(self, func_name)
+        except AttributeError:
+            func=None
+        if func:
+            def wrap(*args, **kargs):
+                def forward():
+                    func(*args, reversed=False, **kargs)
+                def backward():
+                    func(*args, reversed=True, **kargs)
+                self._version_changes.append( (forward, backward, func.__name__) )
+            return wrap
+        else:
+            return object.__getattribute__(self, item)
+
+
+    '''
+    ACTIONS, __get_attr__ provides related method without underscore to add the action into changes.
+    In general actions do not raise erros but report warnings and just skip the conversion for actual path.
+    '''
+    def _add_key_to_map(self, paths, key, value, reversed):
+        '''
+        ACTION.
+        For every path P in path set 'paths' add key 'key' to the map at path P.
+        This path must be a map. Assign the given 'value' to the key. The key is inserted
+        before first key larger in alphabetical order.
+        The 'value' can be only scalar.
+        REVERSE.
+        For every path P in the path set 'path' remove key 'key_name' from the map.
+        '''
+        for nodes, address in paths.iterate(self.tree):
+            curr=nodes[-1]
+            if not is_map_node(curr):
+                logging.warning("Expecting map at path: {}".format(address))
+                continue
+            if reversed:
+                if key in curr:
+                    del curr[key]
+                    self.changed=True
+            else:
+                assert(not key in curr)
+                for idx, dict_key in enumerate(curr.keys()):
+                    if str(dict_key) > str(key):
+                        break
+                curr.insert(idx, key, value)
+                self.changed = True
+
+    """
+    def remove_key(path_set, key_name, key_value):
+        '''
+        ACTION.
+        For every path P in path list 'path_set' remove key 'key_name'. This is an inverse action to add_key_to_map.
+        REVERSE.
+        For every path P in the path set 'path' add key 'key_name' to the map and set it to the given default value
+        `key_value`.
+        '''
+    """
+
+    #def _move_value(self, old_paths, new_paths, reversed):
+    #    if reversed:
+    #        old_paths, new_paths =  new_paths, old_paths
+    #
+
+    def _rename_key(self, paths, old_key, new_key, reversed):
+        '''
+        ACTION.
+        For every path P in the path set 'paths', which has to be a map.
+        Rename its key 'old_key' to 'new_key'.
+        REVERSE.
+        For every path P in the path set 'paths', rename vice versa.
+        TODO: Replace with generalized move_value action, problem where to apply reversed action.
+        '''
+        for nodes, address in paths.iterate(self.tree):
+            curr=nodes[-1]
+            if not is_map_node(curr):
+                logging.warning("Expecting map at path: {}".format(address))
+                continue
+
+            self.changed = True
+            if reversed:
+                curr[old_key] = curr.pop(new_key)
+            else:
+                curr[new_key] = curr.pop(old_key)
+
+    def _replace_value(self, paths, re_forward, re_backward, reversed):
+        """
+        ACTION.
+        For every P in 'paths', apply regexp substitution 're_forward'
+        REVERSED:
+        For the same path set apply 're_backward'
+
+        :param re_forward:  (regexp, substitute)
+        :param re_backward: (regexp, substitute)
+            ... used as re.sub(regexp, substitute, value)
+        If regexp is None, then substitute is tuple for the manual conversion.
+        :return: None
+        """
+        for nodes, address in paths.iterate(self.tree):
+            curr=nodes[-1]
+            if not is_scalar_node(curr):
+                #print("Node: ", curr)
+                logging.warning("Expecting scalar at path: {} get: {}".format(address, type(curr)))
+                return
+            assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
+            if not type(curr.value) == str:
+                #print("Node: ", curr)
+                logging.warning("Expecting string at path: {} get: {}".format(address, type(curr)))
+                return
+
+            self.changed = True
+            if reversed:
+                if re_backward[0] is None:
+                    self.__apply_manual_conv(nodes, address, re_backward[1])    # manual
+                else:
+                    curr.value = re.sub(re_backward[0], re_backward[1], curr.value)
+            else:
+                if re_forward[0] is None:
+                    self.__apply_manual_conv(nodes, address, re_forward[1])  # manual
+                else:
+                    curr.value = re.sub(re_forward[0], re_forward[1], curr.value)
+
+
+    def _scale_scalar(self, paths, multiplicator, reversed):
+        '''
+        ACTION.
+        For every path P in the path set 'path' which has to be a scalar, multiply it by 'multiplicator'
+        REVERSE.
+        For every path P in the path set 'path' which has to be a scalar, divide it by 'multiplicator'
+        '''
+        for nodes, address in paths.iterate(self.tree):
+            curr=nodes[-1]
+            if not is_scalar_node(curr):
+                #print("Node: ", curr)
+                logging.warning("Expecting scalar at path: {} get: {}".format(address, type(curr)))
+                continue
+            assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
+            if not type(curr.value) in [int, float]:
+                continue
+
+            self.changed = True
+            is_int = curr.value is int
+            if reversed:
+                curr.value /= multiplicator
+            else:
+                curr.value *= multiplicator
+            if is_int and float(curr.value).is_integer():
+                curr.value = int(curr.value)
+
+
+    def __apply_manual_conv(self, nodes, address, message ):
+        if len(nodes) < 2 or not is_map_node(nodes[-2]):
+            return
+        curr = nodes[-1]
+        if not is_scalar_node(curr):
+            return
+
+        assert(address[-1]=='/')
+        key = address.split('/')[-2]
+        key = key.split('!')[0]
+
+        map_of_key = nodes[-2]
+        comment = "# :{}  # {}".format(curr.value, message)
+        map_of_key.yaml_add_eol_comment(comment, key)
+        curr.value = None
+
+    """
+    def manual_conversion(self,  invalidate="key", message_forward, message_backward):
+        '''
+        ACTION.
+        For every path P in the path set 'path' which has to end by key. Rename the key (if invalidate='key')
+        or the tag (if invalidate='tag') by postfix '_NEED_EDIT'. And appended comment with the message_forward.
+        REVERSE.
+        For every path P in the path set 'path', make the same, but use message_backward for the comment.
+        '''
+        pass
+    """
 
 
 
@@ -287,16 +475,54 @@ class PathSet(object):
         """
         self.patterns=[]
         for p in path_patterns:
-            " ** = any number of levels, any key or index per level"
+            # '**' = any number of levels, any key or index per level
             pp = re.sub('\*\*', '[a-zA-Z0-9_]@(/[a-zA-Z0-9_]@)@',p)
-            " * = single level, any key or index per level"
+            # '*' = single level, any key or index per level
             pp = re.sub('\*', '[a-zA-Z0-9_]@', pp)
-            " # = single level, only indices "
+            # '#' = single level, only indices
             pp = re.sub('\#', '[0-9]@', pp)
+            # '/' = allow tag info just after key names
+            pp = re.sub('/', '(![a-zA-Z0-9_]@)?/', pp)
+            # return back all starts
             pp = re.sub('@', '*', pp)
             pp = "^" + pp + "$"
             self.patterns.append(pp)
         self.options=kwds
+        self.matches = []
+
+    def iterate(self, tree):
+        """
+        Generator that iterates over all paths valid both in path set and in the tree.
+         Yields (nodes, address) pair. 'nodes' is list of all nodes from the root down to the
+        leaf node of the path. 'address' is string address of the path target.
+        :return:
+        """
+        logging.debug("Patterns: {}".format(self.patterns))
+
+        yield from self.dfs_iterate( [tree], "")
+
+    def get_node_tag(self, node):
+        if hasattr(node, "tag"):
+            tag = node.tag.value
+            if tag and len(tag)>1 and tag[0] == '!' and tag[1] !='!':
+                return tag
+        return ""
+
+    def dfs_iterate(self, nodes, address):
+        current = nodes[-1]
+        tag = self.get_node_tag(current)
+        address += tag + "/"
+
+        logging.debug("DFS at: " + str(address))
+        if self.match(nodes, address):
+            self.matches+=[current]
+            yield (nodes, address)
+        if is_list_node(current):
+            for idx, child in enumerate(current):
+                yield from self.dfs_iterate(nodes + [ child ], address  + str(idx)  )
+        elif is_map_node(current):
+            for key, child in current.items():
+                yield from self.dfs_iterate(nodes + [ child ] , address  + str(key) )
 
     def apply(self, action, root):
         """
@@ -329,17 +555,17 @@ class PathSet(object):
         for pattern in self.patterns:
             if re.match(pattern, path) != None:
                 logging.debug("Match path")
-                for key, param in self.options.items():
-                    logging.debug("Match path")
-                    if key == "have_tag":
-                        tag_path = list(param.split('/'))
-                        target = self.traverse_tree(data_path, tag_path[0:-1])
-                        target = target[-1]
-                        if not target or not hasattr(target, "tag"):
-                            return False
-                        if target.tag.value != "!" + tag_path[-1]:
-                            return False
-                logging.debug("Full Match")
+                # for key, param in self.options.items():
+                #     logging.debug("Match path")
+                #     if key == "have_tag":
+                #         tag_path = list(param.split('/'))
+                #         target = self.traverse_tree(data_path, tag_path[0:-1])
+                #         target = target[-1]
+                #         if not target or not hasattr(target, "tag"):
+                #             return False
+                #         if target.tag.value != "!" + tag_path[-1]:
+                #             return False
+                # logging.debug("Full Match")
                 return True
         return False
 
@@ -371,155 +597,6 @@ class PathSet(object):
                 target_path.append(curr[key])
         return target_path
 
-    def __getattribute__(self, item):
-        """
-        For every action method (with underscore) is defined a proxy method to add the action into
-        change list. Both forward and backward actions are generated.
-        :param item:
-        :return:
-        """
-        func_name="_"+item
-        try:
-            func = object.__getattribute__(self, func_name)
-        except AttributeError:
-            func=None
-        if func:
-            def wrap(*args, **kargs):
-                def forward(path):
-                    func(path, *args, reversed=False, **kargs)
-                def backward(path):
-                    func(path, *args, reversed=True, **kargs)
-                return (self, forward, backward, func.__name__)
-            return wrap
-        else:
-            return object.__getattribute__(self, item)
-
-
-    '''
-    Actions:
-    Need a decorator that for the particular function creates a method to save the action.
-    '''
-    def _add_key_to_map(self, path, key, value, reversed):
-        '''
-        ACTION.
-        For every path P in path set add key 'key_name' to the map at path P.
-        This path must be a map. Assign the given 'key_value' to the key.
-        The 'key_value' can be scalar, dict or list.
-        REVERSE.
-        For every path P in the path set 'path' remove key 'key_name' from the map.
-        '''
-        curr=path[-1]
-        if not is_map_node(curr):
-            logging.warning("Expecting map at path: {}".format(self.current_path))
-            return
-        if reversed:
-            if key in curr:
-                del curr[key]
-        else:
-            assert(not key in curr)
-            for idx, dict_key in enumerate(curr.keys()):
-                if str(dict_key) > str(key):
-                    break
-            curr.insert(idx, key, value)
-
-
-    """
-    def remove_key(path_set, key_name, key_value):
-        '''
-        ACTION.
-        For every path P in path list 'path_set' remove key 'key_name'. This is an inverse action to add_key_to_map.
-        REVERSE.
-        For every path P in the path set 'path' add key 'key_name' to the map and set it to the given default value
-        `key_value`.
-        '''
-    """
-
-
-    def _rename_key(self, path, old_key, new_key, reversed):
-        '''
-        ACTION.
-        For every path P in the path list 'path_set', which has to be a map.
-        Rename its key 'old_name' to 'new_name'.
-        REVERSE.
-        For every path P in the path set 'path', rename 'new_name' to 'old_name'.
-        TODO: generalize to move_key, problem where to apply reversed action.
-        '''
-        curr=path[-1]
-        if not is_map_node(curr):
-            logging.warning("Expecting map at path: {}".format(self.current_path))
-            return
-        if reversed:
-            curr[old_key] = curr.pop(new_key)
-        else:
-            curr[new_key] = curr.pop(old_key)
-
-    def _scale_scalar(self,  path, multiplicator, reversed):
-        '''
-        ACTION.
-        For every path P in the path set 'path' which has to be a scalar, multiply it by 'multiplicator'
-        REVERSE.
-        For every path P in the path set 'path' which has to be a scalar, divide it by 'multiplicator'
-        '''
-        curr=path[-1]
-        if not is_scalar_node(curr):
-            #print("Node: ", curr)
-            logging.warning("Expecting scalar at path: {} get: {}".format(self.current_path, type(curr)))
-            return
-        assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
-        if not type(curr.value) in [int, float]:
-            return
-        is_int = curr.value is int
-        if reversed:
-            curr.value /= multiplicator
-        else:
-            curr.value *= multiplicator
-        if is_int and float(curr.value).is_integer():
-            curr.value = int(curr.value)
-
-    def _replace_value(self, path, re_forward, re_backward):
-        """
-        ACTION.
-        For 'path' which has to be string scalar, apply regexp substitution.
-        :param path:
-        :param re_forward:  (regexp, substitute)
-        :param re_backward: (regexp, substitute)
-            ... used as re.sub(regexp, substitute, value)
-
-        If regexp is None, then substitute is tuple for the manual conversion.
-        :return: None
-        """
-        curr=path[-1]
-        if not is_scalar_node(curr):
-            #print("Node: ", curr)
-            logging.warning("Expecting scalar at path: {} get: {}".format(self.current_path, type(curr)))
-            return
-        assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
-        if not curr.value is str:
-            #print("Node: ", curr)
-            logging.warning("Expecting string at path: {} get: {}".format(self.current_path, type(curr)))
-            return
-        if reversed:
-            if re_backward[0] is None:
-                pass    # manual
-            else:
-                re.sub(re_backward[0], re_backward[1], curr.value)
-        else:
-            if re_forward[0] is None:
-                pass    # manual
-            else:
-                re.sub(re_forward[0], re_forward[1], curr.value)
-
-    """
-    def manual_conversion(self,  invalidate="key", message_forward, message_backward):
-        '''
-        ACTION.
-        For every path P in the path set 'path' which has to end by key. Rename the key (if invalidate='key')
-        of the tag (if invalidate='tag') by postfix '_NEED_EDIT'. And appended comment with the message_forward.
-        REVERSE.
-        For every path P in the path set 'path', make the same, but use message_backward for the comment.
-        '''
-        pass
-    """
 
 """
 Implement 'has_key', make tests of this class.
@@ -531,27 +608,24 @@ changes = Changes()
     
 # Add header key 'flow123d_version'
 changes.new_version("1.8.2")
-changes += PathSet(["/"]).add_key_to_map(key = "flow123d_version", value = "2.0.0")
+changes.add_key_to_map(path = "/", key = "flow123d_version", value = "2.0.0")
 
 # Change degree keys in PadeApproximant
-path_set = PathSet(["/problem/secondary_equation/**/ode_solver/"],
-                   have_tag="PadeApproximant")
-changes += path_set.rename_key(old_key="denominator_degree", new_key="pade_denominator_degree")
-changes += path_set.rename_key(old_key="nominator_degree", new_key="pade_nominator_degree")
+path_set = PathSet(["/problem/secondary_equation/**/ode_solver!PadeApproximant/"])
+
+changes.rename_key(path_set, old_key="denominator_degree", new_key="pade_denominator_degree")
+changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
 
 # Change sign of boundary fluxes
 path_set = PathSet([
     "/problem/secondary_equation/input_fields/*/bc_flux/",
     "/problem/primary_equation/input_fields/*/bc_flux/",
     "/problem/secondary_equation/input_fields/*/bc_flux/#/",
-    "/problem/primary_equation/input_fields/*/bc_flux/#/"])
-changes += path_set.scale_scalar(multiplicator=-1)
-
-path_set = PathSet([
-    "/problem/secondary_equation/input_fields/*/bc_flux/value/",
-    "/problem/primary_equation/input_fields/*/bc_flux/value/"],
-    have_tag="../FieldConstant")
-changes += path_set.scale_scalar(multiplicator=-1)
+    "/problem/primary_equation/input_fields/*/bc_flux/#/",
+    "/problem/secondary_equation/input_fields/*/bc_flux!FieldConstant/value/",
+    "/problem/primary_equation/input_fields/*/bc_flux!FieldConstant/value/"
+    ])
+changes.scale_scalar(path_set, multiplicator=-1)
 
 """
 path_set = PathSet([ "/problem/secondary_equation/input_fields/*/bc_flux/value/",

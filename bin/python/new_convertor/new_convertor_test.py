@@ -24,36 +24,58 @@ class TestActions(unittest.TestCase):
     def test_add_key(self):
         changes=Changes()
         changes.new_version("A")
-        changes += PathSet(["/"]).add_key_to_map(key="flow123d_version", value="2.0.0")
+        changes.add_key_to_map(PathSet(["/"]), key="flow123d_version", value="2.0.0")
         self.perform(changes)
 
     def test_rename_key(self):
         changes=Changes()
         changes.new_version("A")
         # Change degree keys in PadeApproximant
-        path_set = PathSet(["/problem/secondary_equation/**/ode_solver/"],
-                           have_tag="PadeApproximant")
-        changes += path_set.rename_key(old_key="denominator_degree", new_key="pade_denominator_degree")
-        changes += path_set.rename_key(old_key="nominator_degree", new_key="pade_nominator_degree")
+        path_set = PathSet(["/problem/secondary_equation/**/ode_solver!PadeApproximant/"])
+        changes.rename_key(path_set, old_key="denominator_degree", new_key="pade_denominator_degree")
+        changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
         self.perform(changes)
+
+
+    def test_replace_value(self):
+        changes=Changes()
+        changes.new_version("A")
+
+
+        # Change sign of boundary fluxes
+        path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux!FieldFormula/value/",
+                            "/problem/primary_equation/input_fields/*/bc_flux!FieldFormula/value/"])
+
+        changes.replace_value(path_set,
+            re_forward=('^(.*)$', '-(\\1)'),
+            re_backward=('^(.*)$', '-(\\1)'))
+
+        # Test manual conversion
+        path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_type/",
+                            "/problem/primary_equation/input_fields/*/bc_type/"])
+
+        changes.replace_value(path_set,
+            re_forward=("^(robin|neumann)$", "total_flux"),
+            re_backward=(None, "Select either 'robin' or 'neumann' according to the value of 'bc_flux', 'bc_pressure', 'bc_sigma'."))
+        self.perform(changes)
+
 
     def test_scale_scalar(self):
         changes=Changes()
         changes.new_version("A")
+
         # Change sign of boundary fluxes
         path_set = PathSet([
             "/problem/secondary_equation/input_fields/*/bc_flux/",
             "/problem/primary_equation/input_fields/*/bc_flux/",
             "/problem/secondary_equation/input_fields/*/bc_flux/#/",
-            "/problem/primary_equation/input_fields/*/bc_flux/#/"])
-        changes += path_set.scale_scalar(multiplicator=-1)
-
-        path_set = PathSet([
-            "/problem/secondary_equation/input_fields/*/bc_flux/value/",
-            "/problem/primary_equation/input_fields/*/bc_flux/value/"],
-            have_tag="../FieldConstant")
-        changes += path_set.scale_scalar(multiplicator=-1)
+            "/problem/primary_equation/input_fields/*/bc_flux/#/",
+            "/problem/secondary_equation/input_fields/*/bc_flux!FieldConstant/value/",
+            "/problem/primary_equation/input_fields/*/bc_flux!FieldConstant/value/"
+        ])
+        changes.scale_scalar(path_set, multiplicator=-1)
         self.perform(changes)
+
 
     def  make_test_file(self, ext):
         fname = "tests/" + self.test_name_base + ext
