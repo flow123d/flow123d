@@ -419,8 +419,8 @@ public:
     void test_distance(const Singularity0D& sing, AuxSimplex& s, const Point& u)
     {
         double computed_distance_sqr = -1.0;
-        double max_h = 0;
-        sigularity0D_distance(sing,s,computed_distance_sqr, max_h);
+        double max_h = s.compute_max_h<2>();
+        sigularity0D_distance(sing,s,computed_distance_sqr);
         
 //         DBGMSG("maxh %f crit %f\n",max_h, square_refinement_criteria_factor_ * computed_distance_sqr);
         

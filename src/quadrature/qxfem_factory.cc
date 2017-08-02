@@ -37,6 +37,20 @@ void QXFEMFactory::clear()
     level_offset_ = 0;
 }
 
+template<int dim>
+double QXFEMFactory::AuxSimplex::compute_max_h() const
+{
+    ASSERT(nodes.size() == dim+1);
+    double max_h = 0;
+    for(unsigned int li=0; li<RefElement<dim>::n_lines; li++){
+        Point v = nodes[RefElement<dim>::interact(Interaction<0,1>(li))[0]]
+                 -nodes[RefElement<dim>::interact(Interaction<0,1>(li))[1]];
+        double t = arma::norm(v,2);
+        if(t>max_h) max_h = t;
+    }
+    return max_h;
+}
+
 std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
                                                 const std::vector<Singularity0DPtr> & sing,
                                                 ElementFullIter ele)
@@ -67,12 +81,14 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
     // project the simplex into the plane of the circle
     sing[0]->geometry().project_to_circle_plane(s.nodes);
     
+    max_h_level_0_ = s.compute_max_h<2>();
     s.active = true;
     simplices_.push_back(s);
     
     for(unsigned int i=0; i < max_level_; i++)
     {
-        DebugOut() << "QXFEM level: " << i << "\n";
+        level_ = i;
+        DebugOut() << "QXFEM level: " << level_ << "\n";
         unsigned int n_to_refine = mark_refinement_2D(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -115,12 +131,14 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
 //         std::swap(s.nodes[0],s.nodes[1]);
 //     }
     
+    max_h_level_0_ = s.compute_max_h<3>();
     s.active = true;
     simplices_.push_back(s);
     
     for(unsigned int i=0; i < max_level_; i++)
     {
-        DebugOut() << "QXFEM level: " << i << "\n";
+        level_ = i;
+        DebugOut() << "QXFEM level: " << level_ << "\n";
         unsigned int n_to_refine = mark_refinement_3D(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -160,8 +178,8 @@ unsigned int QXFEMFactory::mark_refinement_2D(const std::vector<Singularity0DPtr
         {
 //             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
             double distance_sqr = -1;
-            double max_h;
-            int res = sigularity0D_distance(*sing[j],s, distance_sqr, max_h);
+            double max_h = max_h_level_0_/(1<<level_);
+            int res = sigularity0D_distance(*sing[j],s, distance_sqr);
             if(res > 0) {
                 s.refine = true;
                 s.sing_id = j;
@@ -203,8 +221,8 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
         {
 //             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
             double distance = -1;
-            double max_h;
-            int res = singularity1D_distance(*sing[j],s, distance, max_h);
+            double max_h = max_h_level_0_/(1<<level_);
+            int res = singularity1D_distance(*sing[j],s, distance);
 //             DBGVAR(res);
             if(res > 0) {
                 s.refine = true;
@@ -237,8 +255,7 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
 
 int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
                                         const AuxSimplex& s,
-                                        double& distance_sqr,
-                                        double& max_h)
+                                        double& distance_sqr)
 {
     ASSERT_DBG(s.nodes.size() == 3);
     
@@ -332,8 +349,6 @@ int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
 //             DebugOut().fmt("k1 = {}  {}\n",k1, k1*k1/d11);
 //             DebugOut().fmt("k2 = {}  {}\n",k2, k2*k2/d22);
             
-            max_h = std::max(std::max(d00,d11),d22);
-            
             // possibly compute distance_sqr
             if(distance_sqr < 0) 
             {
@@ -389,8 +404,7 @@ int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
 
 int QXFEMFactory::singularity1D_distance(const Singularity1D& w,
                                             const QXFEMFactory::AuxSimplex& s,
-                                            double& distance,
-                                            double& max_h)
+                                            double& distance)
 {
     const unsigned int n_nodes = s.nodes.size();
     ASSERT_DBG(s.nodes.size() == n_nodes);
@@ -411,7 +425,6 @@ int QXFEMFactory::singularity1D_distance(const Singularity1D& w,
 //     DBGVAR(count_nodes);
     if(count_nodes > 0 ){
         distance = 0.0;
-        max_h = -1.0;
         if(count_nodes == n_nodes) return 0; //tetrahedron inside cylinder, do not refine
         else return 1;
     }
@@ -445,7 +458,6 @@ int QXFEMFactory::singularity1D_distance(const Singularity1D& w,
         // perpendicular distance from line to BB center
         double d = arma::norm(c,2);
         
-        max_h = max_axis_size;
         if(d > (geom.radius())) {
             distance = d;
             return -1;

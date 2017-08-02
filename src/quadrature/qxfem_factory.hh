@@ -98,6 +98,7 @@ protected:
         bool active;
         bool refine;
         template<int dim> double measure() const;
+        template<int dim> double compute_max_h() const;
     };
 
     
@@ -136,8 +137,7 @@ protected:
      */
     int sigularity0D_distance(const Singularity0D& w,
                               const AuxSimplex &s,
-                              double& distance,
-                              double& max_h);
+                              double& distance);
     
     /** @brief Tests intersection of 3d simplex and singularity (cylinder) in 3d space.
      * Uses bounding boxes as an approximation.
@@ -150,12 +150,12 @@ protected:
      */
     int singularity1D_distance(const Singularity1D& w,
                               const AuxSimplex &s,
-                              double& distance,
-                              double& max_h);
+                              double& distance);
     
     /// Level of current refinement.
     unsigned int level_;
     unsigned int max_level_;
+    double max_h_level_0_;
     
     std::vector<AuxSimplex> simplices_;
     unsigned int level_offset_;
