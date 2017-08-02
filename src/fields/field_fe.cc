@@ -213,7 +213,13 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		BaseMeshReader::NativeDataParams native_data_params;
 		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
 				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_, native_data_params);
-		this->interpolate(data_vec);
+		if (native_data_params.vtk_native_data) {
+			ASSERT_EQ(native_data_params.dof_handler_hash, dh_->hash())(native_data_params.dof_handler_hash)(dh_->hash())
+					.error("Invalid DOF handler!\n");
+			this->calculate_native_values(data_vec);
+		} else {
+			this->interpolate(data_vec);
+		}
 
 		return true;
 	} else return false;
@@ -269,6 +275,31 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		dh_->get_loc_dof_indices( ele, dof_indices);
 		ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
 		(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
+	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+{
+	unsigned int dof_size, data_vec_i;
+	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
+	data_vec_->fill(0.0);
+	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
+
+	// iterate through elements, assembly global vector and count number of writes
+	FOR_ELEMENTS( dh_->mesh(), ele ) {
+		dof_size = dh_->get_loc_dof_indices( ele, dof_indices );
+		data_vec_i = ele.index() * dof_indices.size();
+		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+			(*data_vector)[ dof_indices[i] ] += (*data_cache)[data_vec_i];
+			++count_vector[ dof_indices[i] ];
+		}
+	}
+
+	// compute averages of values
+	for (unsigned int i=0; i<data_vec_->size(); ++i) {
+		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
 	}
 }
 

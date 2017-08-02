@@ -122,6 +122,9 @@ private:
 	/// Interpolate data over all elements of target mesh.
 	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
 
+	/// Calculate native data over all elements of target mesh.
+	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
