@@ -303,6 +303,10 @@ public:
     double lateral_surface() const
     { return 2*M_PI*radius_*arma::norm(direction_vector_,2);}
     
+    /// Computes volume of the cylinder.
+    double volume() const
+    { return M_PI * radius_ * radius_ * arma::norm(direction_vector_,2);}
+    
 protected:
     
     Point a_,b_,            ///< End points of the axis of the cylinder.

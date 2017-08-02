@@ -79,6 +79,11 @@ public:
                             const QXFEM<dim,3>& quad,
                             const std::vector<Singularity0DPtr> & sing);
     
+    template<int dim>
+    void gnuplot_refinement(ElementFullIter ele,
+                            const string& output_dir,
+                            const QXFEM<dim,3>& quad);
+    
     
 protected:
     
@@ -100,7 +105,9 @@ protected:
      * Criterions:
      * 1] refine simplex which intersects with the edge of the singularity
      */
-    unsigned int refine_edge(const std::vector<Singularity0DPtr> & sing);
+    unsigned int mark_refinement_2D(const std::vector<Singularity0DPtr> & sing);
+    
+    unsigned int mark_refinement_3D(const std::vector<Singularity1DPtr> & sing);
     
     /// Refines marked simplices.
     template<int dim>
@@ -109,11 +116,14 @@ protected:
     template<int dim>
     void refine_simplex(const AuxSimplex &aux_element);
     
-    template<int dim>
+    template<int dim, class S>
     void distribute_qpoints(std::vector< Point >& real_points, 
                             std::vector< double >& weights,
-                            const std::vector<Singularity0DPtr> & sing,
+                            const std::vector<S> & sing,
                             double ele_measure);
+    
+    template<int dim, class S>
+    bool point_in_singularity(const Point& p, S s);
     
     template<int dim>
     void map_real_to_unit_points(const std::vector<Point>& real_points,
@@ -124,10 +134,24 @@ protected:
      * @return intersection type:
      * 
      */
-    int simplex_sigularity_intersection(const Singularity0D& w,
-                                        const AuxSimplex &s,
-                                        double& distance,
-                                        double& max_h);
+    int sigularity0D_distance(const Singularity0D& w,
+                              const AuxSimplex &s,
+                              double& distance,
+                              double& max_h);
+    
+    /** @brief Tests intersection of 3d simplex and singularity (cylinder) in 3d space.
+     * Uses bounding boxes as an approximation.
+     * @return intersection type:
+     * -1:  tetrahedron of @p max_h at @p distance from singularity
+     * 0:   tetrahedron inside singularity (all nodes inside)
+     * 1:   one or more nodes of tetrahedron inside singularity
+     * 2:   singularity is inside tetrahedron
+     * 3:   distance is less then radius
+     */
+    int singularity1D_distance(const Singularity1D& w,
+                              const AuxSimplex &s,
+                              double& distance,
+                              double& max_h);
     
     /// Level of current refinement.
     unsigned int level_;
@@ -136,8 +160,10 @@ protected:
     std::vector<AuxSimplex> simplices_;
     unsigned int level_offset_;
     
-    // Square refinement criteria constant on the cells without well inside.
-    static const double distance_criteria_factor_;
+    // Refinement criteria constant on elements without well inside. [2D]
+    static const double distance_criteria_factor_2d_;
+    // Refinement criteria constant on elements without well inside. [3D]
+    static const double distance_criteria_factor_3d_;
 };
 
 
