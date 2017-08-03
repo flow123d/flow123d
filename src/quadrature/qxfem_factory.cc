@@ -198,6 +198,58 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
 }
 
 
+std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
+                                                const std::vector<Singularity0DPtr> & sing,
+                                                ElementFullIter ele,
+                                                unsigned int side_idx)
+{
+    clear();
+    std::shared_ptr<QXFEM<2,3>> qxfem = make_shared<QXFEM<2,3>>();
+    
+    //create first auxsimplex:
+    AuxSimplex s;
+    for(unsigned int i=0; i < RefElement<2>::n_nodes_per_side; i++)
+        s.nodes.push_back(ele->side(side_idx)->node(i)->point());
+    
+//     //we suppose counterclockwise node order
+//     Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
+//           v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
+//     if(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] < 0)
+//     {
+//         DebugOut() << "change node order\n";
+//         std::swap(s.nodes[0],s.nodes[1]);
+//     }
+    
+    // project the simplex into the plane of the circle
+    sing[0]->geometry().project_to_circle_plane(s.nodes);
+    
+    max_h_level_0_ = s.compute_max_h<1>();
+    s.active = true;
+    simplices_.push_back(s);
+    
+    for(unsigned int i=0; i < max_level_; i++)
+    {
+        level_ = i;
+        DebugOut() << "QXFEM level: " << level_ << "\n";
+        unsigned int n_to_refine = mark_refinement_01d(sing);
+        if(n_to_refine == 0) break; // end refinement
+        
+        refine_level<1>(n_to_refine);
+    }
+    mark_refinement_01d(sing);
+    
+    // project the simplices back to the plane of the ellipse
+    for(AuxSimplex& simp : simplices_){
+        sing[0]->geometry().project_to_ellipse_plane(simp.nodes);
+    }
+    
+    distribute_qpoints<1>(qxfem->real_points_, qxfem->weights, sing, ele->side(side_idx)->measure());
+    map_real_to_unit_points<2>(qxfem->real_points_, qxfem->quadrature_points, ele);
+    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+    
+    return qxfem;
+}
+
 unsigned int QXFEMFactory::mark_refinement_12d(const std::vector<Singularity1DPtr> & sing)
 {    
     unsigned int n_simplices_to_refine = 0; 
@@ -214,6 +266,52 @@ unsigned int QXFEMFactory::mark_refinement_12d(const std::vector<Singularity1DPt
             double distance = -1;
             double max_h = max_h_level_0_/(1<<level_);
             int res = distance_12d(*sing[j],s, distance);
+//             DBGVAR(res);
+            s.res = res;
+            if(res > 0) {
+                s.refine = true;
+                s.sing_id = j;
+                n_simplices_to_refine++;
+                break;
+            }
+            // distance criterion
+            if(distance > 0)
+            {
+                double rmin = distance-sing[j]->geometry().radius();
+//                 rmin = rmin*rmin;
+                if( max_h > distance_criteria_factor_2d_ * rmin)
+                {
+                    s.refine = true;
+                    n_simplices_to_refine++;
+                    break;
+                }
+            }
+            if(res == 0) {
+                s.active = false;
+                break;
+            }
+        }
+    }
+    
+    return n_simplices_to_refine;
+}
+
+unsigned int QXFEMFactory::mark_refinement_01d(const std::vector<Singularity0DPtr> & sing)
+{    
+    unsigned int n_simplices_to_refine = 0;
+
+    // go through simplices on the current level
+    for(unsigned int i = level_offset_; i < simplices_.size(); i++)
+    {
+        AuxSimplex& s = simplices_[i];
+        if(s.res == 0) continue;
+        
+        for(unsigned int j = 0; j < sing.size(); j++)
+        {
+//             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
+            double distance = -1;
+            double max_h = max_h_level_0_/(1<<level_);
+            int res = distance_01d(*sing[j],s, distance);
 //             DBGVAR(res);
             s.res = res;
             if(res > 0) {
@@ -405,11 +503,76 @@ int QXFEMFactory::distance_12d(const Singularity1D& w,
         else return 1;
     }
     else{
-        distance = min_dist_v;
+        distance = std::sqrt(min_dist_v);
         return 2;
     }
 }
 
+int QXFEMFactory::distance_01d(const Singularity0D& w,
+                               const QXFEMFactory::AuxSimplex& s,
+                               double& distance)
+{
+    ASSERT_DBG(s.nodes.size() == 2);
+    
+    // parent simplex inside sigularity => same result for child simplex
+    // is tested before this call
+//     if(s.res == 0){
+//         distance = 0.0;
+//         return 0;
+//     }
+    ASSERT(s.res != 0);
+    
+    const unsigned int n_nodes = s.nodes.size();
+    const CircleEllipseProjection& geom = w.geometry();
+    
+    //TEST: distance of simplex barycenter and singularity
+    
+    // compute barycenter
+    Point bcenter({0,0,0});
+    for(unsigned int i=0; i<n_nodes; i++)
+        bcenter = bcenter + s.nodes[i];
+    bcenter = bcenter / n_nodes;
+    
+    double d = geom.distance(bcenter);
+    
+    // parent simplex 'far' from singularity => child is also 'far'
+    if(s.res == -1){
+        distance = d;
+        return -1;
+    }
+    
+    
+    double max_h = max_h_level_0_/(1<<level_);
+
+    // if simplex is 'far enough'
+    if(d > (max_h + geom.radius())){
+        distance = d;
+        return -1;
+    }
+    
+    
+    //TEST: nodes of tetrahedron in cylinder and minimal vertex distance
+
+    std::vector<double> dist_v(n_nodes);
+    unsigned int count_nodes = 0;
+    double min_dist_v = d;
+    for(unsigned int i=0; i<n_nodes; i++){
+        dist_v[i] = geom.distance(s.nodes[i]);
+        if(dist_v[i] < geom.radius()) count_nodes++;
+        if(dist_v[i] < min_dist_v) min_dist_v = dist_v[i];
+    }
+    
+//     DBGVAR(count_nodes);
+    if(count_nodes > 0 ){
+        distance = 0.0;
+        if(count_nodes == n_nodes) return 0; //tetrahedron inside cylinder, do not refine
+        else return 1;
+    }
+    else{
+        distance = min_dist_v;
+        return 2;
+    }
+}
 
 int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
                                         const AuxSimplex& s,
@@ -831,12 +994,22 @@ bool QXFEMFactory::point_in_singularity<2, QXFEMFactory::Singularity0DPtr>(const
     return s->geometry().point_in_ellipse(p);
 }
 template<>
+bool QXFEMFactory::point_in_singularity<1, QXFEMFactory::Singularity0DPtr>(const Point& p, Singularity0DPtr s){
+    return s->geometry().point_in_ellipse(p);
+}
+
+template<>
 bool QXFEMFactory::point_in_singularity<3, QXFEMFactory::Singularity1DPtr>(const Point& p, Singularity1DPtr s){
     return s->geometry().point_in_cylinder(p);
 }
 template<>
 bool QXFEMFactory::point_in_singularity<2, QXFEMFactory::Singularity1DPtr>(const Point& p, Singularity1DPtr s){
     return s->geometry().point_in_cylinder(p);
+}
+
+template<> double QXFEMFactory::AuxSimplex::measure<1>() const{
+    ASSERT_DBG(nodes.size() == 2);
+    return arma::norm(nodes[0]-nodes[1],2);
 }
 
 template<> double QXFEMFactory::AuxSimplex::measure<2>() const{
@@ -1166,8 +1339,10 @@ template void QXFEMFactory::gnuplot_refinement<3>(ElementFullIter ele,
                                                   const string& output_dir,
                                                   const QXFEM<3,3>& quad);
 
+template void QXFEMFactory::refine_level<1>(unsigned int n_simplices_to_refine);
 template void QXFEMFactory::refine_level<2>(unsigned int n_simplices_to_refine);
 template void QXFEMFactory::refine_level<3>(unsigned int n_simplices_to_refine);
 
+template void QXFEMFactory::refine_simplex<1>(const AuxSimplex& aux_simplex);
 template void QXFEMFactory::refine_simplex<2>(const AuxSimplex& aux_simplex);
 template void QXFEMFactory::refine_simplex<3>(const AuxSimplex& aux_simplex);

@@ -118,8 +118,8 @@ protected:
      * 1] refine simplex which intersects with the edge of the singularity
      */
     unsigned int mark_refinement_2D(const std::vector<Singularity0DPtr> & sing);
+    unsigned int mark_refinement_01d(const std::vector<Singularity0DPtr> & sing);
     unsigned int mark_refinement_12d(const std::vector<Singularity1DPtr> & sing);
-    
     unsigned int mark_refinement_3D(const std::vector<Singularity1DPtr> & sing);
     
     /// Refines marked simplices.
@@ -164,16 +164,10 @@ protected:
                               const AuxSimplex &s,
                               double& distance);
     
-    /** @brief Tests intersection of 3d simplex and singularity (cylinder) in 3d space.
-     * Uses bounding boxes as an approximation.
-     * @return intersection type:
-     * -1:  tetrahedron of @p max_h at @p distance from singularity
-     * 0:   tetrahedron inside singularity (all nodes inside)
-     * 1:   one or more nodes of tetrahedron inside singularity
-     * 2:   singularity is inside tetrahedron
-     * 3:   distance is less then radius
-     */
     int distance_12d(const Singularity1D& w,
+                     const AuxSimplex &s,
+                     double& distance);
+    int distance_01d(const Singularity0D& w,
                      const AuxSimplex &s,
                      double& distance);
     
