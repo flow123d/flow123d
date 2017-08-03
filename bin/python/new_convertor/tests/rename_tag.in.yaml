@@ -1,0 +1,55 @@
+problem: !SequentialCoupling
+  description: Adsorption all
+  mesh:
+    mesh_file: input/test_20.msh
+  primary_equation: !Steady_MH
+    input_fields:
+      - region: rectangle
+        conductivity: 0.125
+      - r_set: BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x
+    output:
+      output_stream: 
+        file: test_20.pvd
+        format: !vtk
+          variant: ascii
+        name: flow_output_stream
+      output_fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    balance: true
+    solver: !Petsc
+      a_tol: 1.0e-07
+  secondary_equation: !TransportOperatorSplitting
+    balance: true
+    substances:
+      - A
+      - As-lin
+      - Bs-lang
+      - Cs-freund
+    input_fields:
+      - r_set: ALL
+        init_conc: 0
+        porosity: 0.25
+      - r_set: BOUNDARY
+        bc_conc: !FieldFormula
+          value: 0.05*t
+    output_stream: 
+      file: transport_test_20.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.5
+      name: transport_output_stream
+    time:
+      end_time: 15.0
+    reaction_term: !RadioactiveDecay
+      ode_solver: !PadeApproximant  
+        denominator_degree: 2
+        nominator_degree: 3    
+      decays:
+        - half_life: 0.2
+          radionuclide: A
+          products:  [ As-lin ]  

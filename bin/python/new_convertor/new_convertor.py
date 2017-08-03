@@ -12,7 +12,6 @@ Features:
 - can be applied to the input format specification and check that it produce target format specification
 
 TODO:
-- add support for variant paths wild cards (x|y|z)
 - add support for manual change of other then value values, commenting all lines of the CommentedMap or CommentedSeq values
 - convert every non commented value to commented during DFS (possibly remove appriory conversion) this
   doesn't force to take to much care in Actions
@@ -386,6 +385,33 @@ class Changes:
             else:
                 curr[new_key] = curr.pop(old_key)
 
+    def _rename_tag(self, paths, old_tag, new_tag, reversed):
+        '''
+        ACTION.
+        For every path P in the path set 'paths', which has to be a map.
+        Rename the path tag  'old_key' to 'new_key'. Other tags are ignored, producing warning.
+        REVERSE.
+        For every path P in the path set 'paths', rename vice versa.
+        TODO: Replace with generalized move_value action, problem where to apply reversed action.
+        '''
+        if old_tag[0]=='!':
+            old_tag = old_tag[1:]
+        if new_tag[0]=='!':
+            new_tag = new_tag[1:]
+        if reversed:
+            old_tag, new_tag = new_tag, old_tag
+        for nodes, address in paths.iterate(self.tree):
+            curr=nodes[-1]
+            assert( hasattr(curr, 'tag'), "All nodes should be CommentedXYZ." )
+
+            self.changed = True
+            if curr.tag.value == "!" + old_tag:
+                curr.tag.value = "!" + new_tag
+            else:
+                logging.warning("Tag '{}'!='{}' at path: {}".format(curr.tag.value, old_tag, address))
+
+
+
     def _replace_value(self, paths, re_forward, re_backward, reversed):
         """
         ACTION.
@@ -668,7 +694,7 @@ changes.manual_change(path_set,
     message_backward="Change sign of this field manually.")
 
 
-# Test manual conversion
+# Merge robin and neumann BC types into total_flux
 path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_type/",
                     "/problem/primary_equation/input_fields/*/bc_type/"])
 
@@ -679,14 +705,14 @@ changes.replace_value(path_set,
 
 
 changes.new_version("2.0.0")
-"""
+
 
 
 # Rename equations and couplings
+path = PathSet(["/problem/secondary_equation/"])
+changes.rename_tag(path, old_tag="TransportOperatorSplitting", new_tag="Coupling_OperatorSplitting")
 
-path = "/problem/secondary_equation"
-changes += rename_tag(path, old_tag="TransportOperatorSplitting", new_tag="Coupling_OperatorSplitting")
-
+"""
 path_os = [path, HaveTag("Coupling_OperatorSplitting")]
 destination_path="/problem/secondary_equation/transport"
 changes += add_key( path_os, key="transport", tag="Solute_Advection_FV") # parent="Transport" #seems unnecessary
