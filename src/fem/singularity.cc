@@ -188,8 +188,7 @@ CylinderGeometry::Point CylinderGeometry::dist_vector(const CylinderGeometry::Po
 
 Singularity0D::Singularity0D(const Point& center, double radius,
                                     const Point& direction_vector, const Point& normal_vector)
-:   center_(center), radius_(radius),
-    geom_(center,radius, direction_vector, normal_vector)
+:   geom_(center,radius, direction_vector, normal_vector)
 {
     radius_rounding_low_bound_ = radius - 1e-8*radius;
 }
@@ -216,7 +215,7 @@ void Singularity0D::evaluate_q_points(unsigned int count)
     double offset = 1e-10;
     
     for(unsigned int i=0; i < count; i++)
-        q_points_[i] = center_ + std::cos(i*phi+offset)*geom_.ellipse_b() + std::sin(i*phi+offset)*geom_.ellipse_a();
+        q_points_[i] = geom_.center() + std::cos(i*phi+offset)*geom_.ellipse_b() + std::sin(i*phi+offset)*geom_.ellipse_a();
 }
 
 

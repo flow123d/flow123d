@@ -88,6 +88,9 @@ public:
     Point ellipse_b() const
     { return b_*eb_;}
     
+    double distance(const Point &p) const
+    { return arma::norm(center_-p,2);}
+    
     /// Projects points from circle plane to ellipse plane.
     void project_to_ellipse_plane(std::vector<Point>& points) const;
     /// Projects points from ellipse plane tot circle plane.
@@ -145,9 +148,9 @@ public:
     double div(const Point &x) const override;
 
     Point center() const
-    { return center_;}
+    { return geom_.center();}
     double radius() const
-    { return radius_;}
+    { return geom_.radius();}
        
     const CircleEllipseProjection & geometry() const
     { return geom_;}
@@ -175,12 +178,6 @@ public:
     
 private:
     
-    /// center of the singularity
-    Point center_;
-    
-    /// radius of the singularity
-    double radius_;
-    
     /// points placed around the circle by @p evaluate_q_points function
     std::vector<Point> q_points_;
     
@@ -204,11 +201,11 @@ private:
 
 inline double Singularity0D::value(const Point& x) const
 {
-    double distance = arma::norm(center_-x,2);
+    double distance = geom_.distance(x);
     if (distance >= radius_rounding_low_bound_)
         return std::log(distance);
   
-    return std::log(radius_);
+    return std::log(geom_.radius());
 }
 
 inline Singularity0D::Point Singularity0D::grad(const Point &x) const
@@ -216,11 +213,11 @@ inline Singularity0D::Point Singularity0D::grad(const Point &x) const
     Point grad; //initialize all entries with zero
     grad.zeros();
     
-    double distance = arma::norm(center_-x,2);
+    double distance = geom_.distance(x);
     if (distance >= radius_rounding_low_bound_)
     {   
         distance = distance * distance;
-        grad = (x - center_) / distance;
+        grad = (x - geom_.center()) / distance;
     }
     return grad;  //returns zero if  (distance <= radius)
 }
@@ -238,7 +235,8 @@ inline double Singularity0D::div(const Point& x) const
 
 inline double Singularity0D::circumference() const
 {
-    return 2 * M_PI * radius_;
+    //TODO: https://en.wikipedia.org/wiki/Ellipse#Circumference
+    return 2 * M_PI * geom_.radius();
 }
 
 
