@@ -27,7 +27,7 @@
 
 #include "fem/mapping_p1.hh"
 
-const double QXFEMFactory::distance_criteria_factor_2d_ = 0.25;
+const double QXFEMFactory::distance_criteria_factor_2d_ = 0.5;
 const double QXFEMFactory::distance_criteria_factor_3d_ = 1.0;
 
 void QXFEMFactory::clear()
@@ -153,6 +153,96 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
     return qxfem;
 }
 
+std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
+                                                const std::vector<Singularity1DPtr> & sing,
+                                                ElementFullIter ele,
+                                                unsigned int side_idx)
+{
+    clear();
+    std::shared_ptr<QXFEM<3,3>> qxfem = make_shared<QXFEM<3,3>>();
+    
+    //create first auxsimplex:
+    AuxSimplex s;
+    for(unsigned int i=0; i < RefElement<3>::n_nodes_per_side; i++)
+        s.nodes.push_back(ele->side(side_idx)->node(i)->point());
+    
+    //we suppose counterclockwise node order
+    Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
+          v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
+    if(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] < 0)
+    {
+        DebugOut() << "change node order\n";
+        std::swap(s.nodes[0],s.nodes[1]);
+    }
+    
+    max_h_level_0_ = s.compute_max_h<2>();
+    s.active = true;
+    simplices_.push_back(s);
+    
+    for(unsigned int i=0; i < max_level_; i++)
+    {
+        level_ = i;
+        DebugOut() << "QXFEM level: " << level_ << "\n";
+        unsigned int n_to_refine = mark_refinement_12d(sing);
+        if(n_to_refine == 0) break; // end refinement
+        
+        refine_level<2>(n_to_refine);
+    }
+    mark_refinement_12d(sing);
+    
+    distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele->side(side_idx)->measure());    
+    map_real_to_unit_points<3>(qxfem->real_points_, qxfem->quadrature_points, ele);
+    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+    
+    return qxfem;
+}
+
+
+unsigned int QXFEMFactory::mark_refinement_12d(const std::vector<Singularity1DPtr> & sing)
+{    
+    unsigned int n_simplices_to_refine = 0; 
+
+    // go through simplices on the current level
+    for(unsigned int i = level_offset_; i < simplices_.size(); i++)
+    {
+        AuxSimplex& s = simplices_[i];
+        if(s.res == 0) continue;
+        
+        for(unsigned int j = 0; j < sing.size(); j++)
+        {
+//             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
+            double distance = -1;
+            double max_h = max_h_level_0_/(1<<level_);
+            int res = distance_12d(*sing[j],s, distance);
+//             DBGVAR(res);
+            s.res = res;
+            if(res > 0) {
+                s.refine = true;
+                s.sing_id = j;
+                n_simplices_to_refine++;
+                break;
+            }
+            // distance criterion
+            if(distance > 0)
+            {
+                double rmin = distance-sing[j]->geometry().radius();
+//                 rmin = rmin*rmin;
+                if( max_h > distance_criteria_factor_2d_ * rmin)
+                {
+                    s.refine = true;
+                    n_simplices_to_refine++;
+                    break;
+                }
+            }
+            if(res == 0) {
+                s.active = false;
+                break;
+            }
+        }
+    }
+    
+    return n_simplices_to_refine;
+}
 
 unsigned int QXFEMFactory::mark_refinement_2D(const std::vector<Singularity0DPtr> & sing)
 {    
@@ -190,7 +280,7 @@ unsigned int QXFEMFactory::mark_refinement_2D(const std::vector<Singularity0DPtr
             if(distance_sqr > 0)
             {
                 double rmin = std::sqrt(distance_sqr)-sing[j]->radius();
-                rmin = rmin*rmin;
+//                 rmin = rmin*rmin;
                 if( max_h > distance_criteria_factor_2d_ * rmin)
                 {
                     s.refine = true;
@@ -234,8 +324,7 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
             if(distance > 0)
             {
                 double rmin = distance-sing[j]->geometry().radius();
-                rmin = rmin*rmin;
-                rmin = rmin;
+//                 rmin = rmin*rmin;
                 if( max_h > distance_criteria_factor_3d_ * rmin)
                 {
                     s.refine = true;
@@ -252,6 +341,75 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
     
     return n_simplices_to_refine;
 }
+
+int QXFEMFactory::distance_12d(const Singularity1D& w,
+                               const QXFEMFactory::AuxSimplex& s,
+                               double& distance)
+{
+    ASSERT_DBG(s.nodes.size() == 3);
+    
+    // parent simplex inside sigularity => same result for child simplex
+    // is tested before this call
+//     if(s.res == 0){
+//         distance = 0.0;
+//         return 0;
+//     }
+    ASSERT(s.res != 0);
+    
+    const unsigned int n_nodes = s.nodes.size();
+    const CylinderGeometry& geom = w.geometry();
+    
+    //TEST: distance of simplex barycenter and singularity
+    
+    // compute barycenter
+    Point bcenter({0,0,0});
+    for(unsigned int i=0; i<n_nodes; i++)
+        bcenter = bcenter + s.nodes[i];
+    bcenter = bcenter / n_nodes;
+    
+    double d = geom.distance(bcenter);
+    
+    // parent simplex 'far' from singularity => child is also 'far'
+    if(s.res == -1){
+        distance = d;
+        return -1;
+    }
+    
+    
+    double max_h = max_h_level_0_/(1<<level_);
+
+    // if simplex is 'far enough'
+    if(d > (max_h + geom.radius())){
+        distance = d;
+        return -1;
+    }
+    
+    
+    //TEST: nodes of tetrahedron in cylinder and minimal vertex distance
+
+    std::vector<double> dist_sqr_v(n_nodes);
+    unsigned int count_nodes = 0;
+    double min_dist_v = d;
+    double rsqr = geom.radius() * geom.radius();
+    for(unsigned int i=0; i<n_nodes; i++){
+        Point dv = geom.dist_vector(s.nodes[i]);
+        dist_sqr_v[i] = arma::dot(dv,dv);
+        if(dist_sqr_v[i] < rsqr) count_nodes++;
+        if(dist_sqr_v[i] < min_dist_v) min_dist_v = dist_sqr_v[i];
+    }
+    
+//     DBGVAR(count_nodes);
+    if(count_nodes > 0 ){
+        distance = 0.0;
+        if(count_nodes == n_nodes) return 0; //tetrahedron inside cylinder, do not refine
+        else return 1;
+    }
+    else{
+        distance = min_dist_v;
+        return 2;
+    }
+}
+
 
 int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
                                         const AuxSimplex& s,
@@ -409,7 +567,6 @@ int QXFEMFactory::singularity1D_distance(const Singularity1D& w,
     const unsigned int n_nodes = s.nodes.size();
     ASSERT_DBG(s.nodes.size() == n_nodes);
     
-    //TODO idea: keep results of mutual position for AuxSimplex and on refined levels check only relevant ones..
     const CylinderGeometry& geom = w.geometry();
     
     //TEST 1: nodes of tetrahedron in cylinder
@@ -677,6 +834,10 @@ template<>
 bool QXFEMFactory::point_in_singularity<3, QXFEMFactory::Singularity1DPtr>(const Point& p, Singularity1DPtr s){
     return s->geometry().point_in_cylinder(p);
 }
+template<>
+bool QXFEMFactory::point_in_singularity<2, QXFEMFactory::Singularity1DPtr>(const Point& p, Singularity1DPtr s){
+    return s->geometry().point_in_cylinder(p);
+}
 
 template<> double QXFEMFactory::AuxSimplex::measure<2>() const{
     ASSERT_DBG(nodes.size() == 3);
@@ -887,19 +1048,24 @@ void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
             if(simplices_[i].active)
 //             if(simplices_[i].refine && (simplices_[i].sing_id >=0) && (i>level_offset_))
             {
-                for (unsigned int j = 0; j < dim+1; j++) 
+                for (unsigned int j = 0; j < simplices_[i].nodes.size(); j++) 
                 {
                     Point &p = simplices_[i].nodes[j];
                     myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
                 }
-                Point &p = simplices_[i].nodes[0];
-                myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
-                p = simplices_[i].nodes[2];
-                myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
-                p = simplices_[i].nodes[1];
-                myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
-                p = simplices_[i].nodes[3];
-                myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n\n\n";
+                if(simplices_[i].nodes.size() > 2){
+                    Point &p = simplices_[i].nodes[0];
+                    myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
+                }
+                if(simplices_[i].nodes.size() > 3){
+                    Point &p = simplices_[i].nodes[2];
+                    myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
+                    p = simplices_[i].nodes[1];
+                    myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
+                    p = simplices_[i].nodes[3];
+                    myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
+                }
+                myfile1 << "\n\n";
             }
         }
     }

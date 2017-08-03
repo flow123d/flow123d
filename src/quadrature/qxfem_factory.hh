@@ -42,6 +42,9 @@
  * 3) go through all quadrature points a map them to RefElement
  * 4) possibly gnuplot, separately active auxsimplices, then real quad points
  * 5) delete auxiliary objects and return pure quadrature
+ * 
+ * 
+ * TODO idea: keep results of mutual position for AuxSimplex and on refined levels check only relevant ones..
  */
 class QXFEMFactory {
 public:
@@ -59,9 +62,15 @@ public:
     
     std::shared_ptr<QXFEM<2,3>> create_singular(const std::vector<Singularity0DPtr> & sing,
                                                          ElementFullIter ele);
+    std::shared_ptr<QXFEM<2,3>> create_side_singular(const std::vector<Singularity0DPtr> & sing,
+                                                     ElementFullIter ele,
+                                                     unsigned int side_idx);
     
     std::shared_ptr<QXFEM<3,3>> create_singular(const std::vector<Singularity1DPtr> & sing,
                                                          ElementFullIter ele);
+    std::shared_ptr<QXFEM<3,3>> create_side_singular(const std::vector<Singularity1DPtr> & sing,
+                                                     ElementFullIter ele,
+                                                     unsigned int side_idx);
     
     /// Clears temporary refinement simplices, resets the factory to initial state.
     void clear();
@@ -92,11 +101,13 @@ protected:
             active = true; 
             refine = false;
             sing_id = -1;
+            res = 100;
         }
         std::vector<Point> nodes;
         int sing_id;
         bool active;
         bool refine;
+        int res;
         template<int dim> double measure() const;
         template<int dim> double compute_max_h() const;
     };
@@ -107,6 +118,7 @@ protected:
      * 1] refine simplex which intersects with the edge of the singularity
      */
     unsigned int mark_refinement_2D(const std::vector<Singularity0DPtr> & sing);
+    unsigned int mark_refinement_12d(const std::vector<Singularity1DPtr> & sing);
     
     unsigned int mark_refinement_3D(const std::vector<Singularity1DPtr> & sing);
     
@@ -151,6 +163,19 @@ protected:
     int singularity1D_distance(const Singularity1D& w,
                               const AuxSimplex &s,
                               double& distance);
+    
+    /** @brief Tests intersection of 3d simplex and singularity (cylinder) in 3d space.
+     * Uses bounding boxes as an approximation.
+     * @return intersection type:
+     * -1:  tetrahedron of @p max_h at @p distance from singularity
+     * 0:   tetrahedron inside singularity (all nodes inside)
+     * 1:   one or more nodes of tetrahedron inside singularity
+     * 2:   singularity is inside tetrahedron
+     * 3:   distance is less then radius
+     */
+    int distance_12d(const Singularity1D& w,
+                     const AuxSimplex &s,
+                     double& distance);
     
     /// Level of current refinement.
     unsigned int level_;

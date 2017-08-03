@@ -419,7 +419,7 @@ public:
     void test_distance(const Singularity0D& sing, AuxSimplex& s, const Point& u)
     {
         double computed_distance_sqr = -1.0;
-        double max_h = s.compute_max_h<2>();
+//         double max_h = s.compute_max_h<2>();
         sigularity0D_distance(sing,s,computed_distance_sqr);
         
 //         DBGMSG("maxh %f crit %f\n",max_h, square_refinement_criteria_factor_ * computed_distance_sqr);
@@ -693,5 +693,69 @@ TEST(qxfem, qxfem_factory_3d) {
         WarningOut() << "Coud not write refinement for gnuplot.\n";
     }
     q_points_file.close();
+    // add this to splot: 'q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'
+}
+
+TEST(qxfem, qxfem_factory_3d_side) {
+
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
+    
+    // read mesh
+    Mesh* mesh = mesh_constructor();
+    stringstream in(mesh_tetrahedron.c_str());
+    mesh->read_gmsh_from_stream(in);
+    ElementFullIter ele = mesh->element(0);
+    
+//     auto func = std::make_shared<Singularity1D>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
+    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.2,0}), arma::vec({0.2,0.5,2}),0.05);
+    
+//     for(unsigned int i=6; i<7; i++)
+    unsigned int sid = 3;
+    unsigned int i = 9;
+    {
+        QXFEMFactory qfactory(i);
+        shared_ptr<QXFEM<3,3>> qxfem = qfactory.create_side_singular({func},ele, sid);
+        
+//         qfactory.gnuplot_refinement<3>(ele, dir_name, *qxfem);
+        
+//         std::ofstream q_points_file;
+//         q_points_file.open (dir_name + "unit_q_points.dat");
+//         if (q_points_file.is_open()) 
+//         {
+//             for(const Space<2>::Point &p : qxfem->get_points())
+//                 q_points_file << p[0] << " " << p[1] << " " << 0 << "\n";
+//         }
+//         else 
+//         { 
+//             MessageOut() << "Coud not write refinement for gnuplot.\n";
+//         }
+//         q_points_file.close();
+        
+//         double sum=0;
+//         for(unsigned int q=0; q<qxfem->size(); q++) sum += qxfem->weight(q);
+//         MessageOut() << setprecision(15) << "sum: " << sum << "\n";
+//         MessageOut() << setprecision(15) << "Tmeasure: " << ele->side(sid)->measure() << "\n";
+//         MessageOut() << setprecision(15) << "Cylinder: " << func->geometry().volume() << "\n";
+        
+//         double exact_sum = (ele->measure()-func->geometry().volume()*0.5) / (6*ele->measure());
+//         double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / (2*ele->measure());
+//         MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
+//         MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
+//         EXPECT_NEAR(sum,exact_sum,2e-5);
+    }
+    
+//     func->evaluate_q_points(50, 20);
+//     std::ofstream q_points_file;
+//     q_points_file.open (dir_name + "q_points.dat");
+//     if (q_points_file.is_open()) 
+//     {
+//         for(const Singularity1D::Point &p : func->q_points())
+//         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+//     }
+//     else 
+//     { 
+//         WarningOut() << "Coud not write refinement for gnuplot.\n";
+//     }
+//     q_points_file.close();
     // add this to splot: 'q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'
 }
