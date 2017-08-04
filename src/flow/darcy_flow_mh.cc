@@ -93,21 +93,21 @@ const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
             "Specify the pressure head through the ''bc_pressure'' field "
             "or the piezometric head through the ''bc_piezo_head'' field.")
         .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
-            "Water inflow equal to (($q^N + \\sigma (h^R - h)$)). "
+            "Water inflow equal to (($ \\delta_d(q_d^N + \\sigma_d (h_d^R - h_d) )$)). "
             "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
             "and the reference pressure head or pieozmetric head through ''bc_pressure'' or ''bc_piezo_head'' respectively.")
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
             "is described by the pair of inequalities: "
-            "(($h \\le h_d^D$)) and (($ q \\le q_d^N$)), where the equality holds in at least one of them. "
+            "(($h_d \\le h_d^D$)) and (($ -\\boldsymbol q_d\\cdot\\boldsymbol n \\le \\delta q_d^N$)), where the equality holds in at least one of them. "
             "Caution. Setting (($q_d^N$)) strictly negative "
             "may lead to an ill posed problem since a positive outflow is enforced. "
-            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_pressure`` (or ``bc_piezo_head``) and ``bc_flux`` respectively."
+            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_switch_pressure`` (or ``bc_switch_piezo_head``) and ``bc_flux`` respectively."
             )
         .add_value(river, "river",
-            "River boundary condition. For the water level above the bedrock, (($H > H^S$)), the Robin boundary condition is used with the inflow given by: "
-            "(( $q^N + \\sigma(H^D - H)$)). For the water level under the bedrock, constant infiltration is used "
-            "(( $q^N + \\sigma(H^D - H^S)$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
+            "River boundary condition. For the water level above the bedrock, (($H_d > H_d^S$)), the Robin boundary condition is used with the inflow given by: "
+            "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d) )$)). For the water level under the bedrock, constant infiltration is used: "
+            "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d^S) )$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
             " ``bc_sigma, ``bc_flux``."
             )
         .close();
@@ -202,12 +202,12 @@ DarcyMH::EqData::EqData()
         bc_type.input_selection( get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' save the bc_type='none'."
+    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' except for 'none' and 'seepage'. "
 		"See documentation of 'bc_type' for exact meaning of 'bc_pressure' in individual boundary condition types.", "0.0");
-    	bc_pressure.disable_where(bc_type, {none} );
+    	bc_pressure.disable_where(bc_type, {none, seepage} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : 'none', 'total_flux', 'seepage', 'river'.", "0.0");
+    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : 'total_flux', 'seepage', 'river'.", "0.0");
     	bc_flux.disable_where(bc_type, {none, dirichlet} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
@@ -221,7 +221,7 @@ DarcyMH::EqData::EqData()
     bc_switch_pressure.units( UnitSI().m() );
 
     //these are for unsteady
-    ADD_FIELD(init_pressure, "Initial condition as pressure", "0.0" );
+    ADD_FIELD(init_pressure, "Initial condition for pressure", "0.0" );
     	init_pressure.units( UnitSI().m() );
 
     ADD_FIELD(storativity,"Storativity.", "0.0" );

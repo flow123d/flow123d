@@ -16,7 +16,8 @@ to:
 \end{itemize}
 
 For the fluid flow model we change the atmospheric pressure on the
-surface to the more realistic infiltration 200 mm/yr (= 6.34e-9 m/s):
+surface to the more realistic infiltration 200 mm/yr (=
+\(6.34\times 10^{-9}\) m/s):
 
 \begin{verbatim}
     - region: .surface
@@ -25,8 +26,8 @@ surface to the more realistic infiltration 200 mm/yr (= 6.34e-9 m/s):
 \end{verbatim}
 
 In the resulting file \texttt{water\_balance.txt} we can see that the
-value of the input and output flux changes to 6.34e-8. The visual
-results are similar to the case \texttt{01\_column.yaml}.
+value of the input and output flux changes to \(6.34 \times 10^{-8}\).
+The visual results are similar to the case \texttt{01\_column.yaml}.
 
 Next we demonstrate a simulation of the transport of a tracer. The
 equation of advective transport (no diffusion/dispersion) is specified
@@ -58,7 +59,7 @@ be multiple transported substances):
 \end{verbatim}
 
 The end time of the simulation is set in the section \texttt{time} to
-value 1e10 seconds (381 years):
+value \(10^{10}\) seconds (381 years):
 
 \begin{verbatim}
   time:
@@ -66,7 +67,7 @@ value 1e10 seconds (381 years):
 \end{verbatim}
 
 The output files can be generated for specific time values. We set the
-time step for output to 1e8 seconds (=3 years and 2 months):
+time step for output to \(10^8\) seconds (=3 years and 2 months):
 
 \begin{verbatim}
   output_stream:
@@ -89,11 +90,12 @@ the file \texttt{mass\_balance.txt}. The evolution of concentration is
 depicted in Figure \ref{fig:transport}. A selected part of numerical
 results of mass balance is in the Table \ref{tbl:mass_balance}. On the
 region ``.surface'', the mass flux of the tracer is still identical (6 ×
-10-6 kg/s). On ``.tunnel'', the mass flux is zero at the beginning and
-then it changes within around 100 years to the opposite value of inflow
--6 × 10-6 kg/s. Figure \ref{fig:mass_plot} depicts results from the file
-\texttt{mass\_balance.txt} for mass transported through the boundaries
-``.surface'' and ``.tunnel'' and in the volume of ``rock''.
+10\({}^{-6}\) kg/s). On ``.tunnel'', the mass flux is zero at the
+beginning and then it changes within around 100 years to the opposite
+value of inflow -6 × 10\({}^{-6}\) kg/s. Figure \ref{fig:mass_plot}
+depicts results from the file \texttt{mass\_balance.txt} for mass
+transported through the boundaries ``.surface'' and ``.tunnel'' and in
+the volume of ``rock''.
 
 \begin{figure}[htbp]
 \centering
