@@ -26,6 +26,7 @@
 #include "fem/global_enrichment_func.hh"
 #include "fem/fe_values.hh"
 #include "quadrature/qxfem.hh"
+#include <quadrature/qxfem_factory.hh>
 #include "mesh/ref_element.hh"
 
 #include "system/logger.hh"
@@ -100,6 +101,9 @@ public:
      */
     ~FE_RT0_XFEM_S() {};
 
+private:
+    /// Awful HACK function for getting quadrature based on Singularity0D or Singularity1D
+    std::shared_ptr<QXFEM<dim,spacedim>> qxfem_side(ElementFullIter ele, unsigned int sid);
 };
 
 
@@ -169,30 +173,23 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
         }
         
         enr_dof_val.resize(enr.size());
-        // for SGFEM we need to compute fluxes of glob. enr. function over faces
-        ASSERT(dim == 2);
-        const uint qsize=100;
-        QMidpoint qside(qsize);
-        MappingP1<2,3> map;
-        arma::mat ele_mat = map.element_map(*ele);
-        
-        for (unsigned int w=0; w<enr.size(); w++){
+        for (unsigned int w=0; w<enr.size(); w++)
             enr_dof_val[w].resize(RefElement<dim>::n_sides);
-            for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
-                
-                Quadrature<2> quad_side(qside, j, *ele->permutation_idx_);
-                    
-                double side_measure = ele->side(j)->measure();
+        
+        // for SGFEM we need to compute fluxes of glob. enr. function over faces
+        for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
+            
+            std::shared_ptr<QXFEM<dim,3>> q_side = qxfem_side(ele, j);
+            
+            double side_measure = ele->side(j)->measure();
+            
+            for (unsigned int w=0; w<enr.size(); w++){
                 double val = 0;
 //                 DBGCOUT("edge quad [" << j << "]\n");
-                for(unsigned int q=0; q < quad_side.size(); q++){
-                    
-                    arma::vec3 real_point = map.project_unit_to_real(RefElement<2>::local_to_bary(quad_side.point(q)), ele_mat);
-//                     arma::vec3 real_point = ele_mat.cols(1,dim) * quad_side.point(q) + ele_mat.col(0);
-//                     cout << real_point(0) << " " << real_point(1) << " " << real_point(2) << "\n";
-                    val += arma::dot(enr[w]->vector(real_point),normals[j])
+                for(unsigned int q=0; q < q_side->size(); q++){
+                    val += arma::dot(enr[w]->vector(q_side->real_point(q)),normals[j])
                         // this makes JxW on the triangle side:
-                        * quad_side.weight(q)
+                        * q_side->weight(q)
                         * side_measure;
                 }
                 enr_dof_val[w][j] = val;
@@ -200,6 +197,37 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
 //                 cout << setprecision(16) << "val  " << val << endl;
             }
         }
+//         // for SGFEM we need to compute fluxes of glob. enr. function over faces
+//         ASSERT(dim == 2);
+//         const uint qsize=100;
+//         QMidpoint qside(qsize);
+//         MappingP1<2,3> map;
+//         arma::mat ele_mat = map.element_map(*ele);
+//         
+//         for (unsigned int w=0; w<enr.size(); w++){
+//             enr_dof_val[w].resize(RefElement<dim>::n_sides);
+//             for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
+//                 
+//                 Quadrature<2> quad_side(qside, j, *ele->permutation_idx_);
+//                     
+//                 double side_measure = ele->side(j)->measure();
+//                 double val = 0;
+// //                 DBGCOUT("edge quad [" << j << "]\n");
+//                 for(unsigned int q=0; q < quad_side.size(); q++){
+//                     
+//                     arma::vec3 real_point = map.project_unit_to_real(RefElement<2>::local_to_bary(quad_side.point(q)), ele_mat);
+// //                     arma::vec3 real_point = ele_mat.cols(1,dim) * quad_side.point(q) + ele_mat.col(0);
+// //                     cout << real_point(0) << " " << real_point(1) << " " << real_point(2) << "\n";
+//                     val += arma::dot(enr[w]->vector(real_point),normals[j])
+//                         // this makes JxW on the triangle side:
+//                         * quad_side.weight(q)
+//                         * side_measure;
+//                 }
+//                 enr_dof_val[w][j] = val;
+// //                 DBGVAR(val);
+// //                 cout << setprecision(16) << "val  " << val << endl;
+//             }
+//         }
       
     }
     
@@ -281,6 +309,28 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             fv_data.shape_divergence[q] = divs;
         }
     }
+}
+
+template<>
+inline std::shared_ptr<QXFEM<2,3>> FE_RT0_XFEM_S<2,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
+{
+    std::vector<std::shared_ptr<Singularity0D>> vec(enr.size());
+    for(unsigned int w=0; w<enr.size(); w++){
+        vec[w] = static_pointer_cast<Singularity0D>(enr[w]);
+    }
+    QXFEMFactory qfact(12);
+    return qfact.create_side_singular(vec, ele, sid);
+}
+
+template<>
+inline std::shared_ptr<QXFEM<3,3>> FE_RT0_XFEM_S<3,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
+{
+    std::vector<std::shared_ptr<Singularity1D>> vec(enr.size());
+    for(unsigned int w=0; w<enr.size(); w++){
+        vec[w] = static_pointer_cast<Singularity1D>(enr[w]);
+    }
+    QXFEMFactory qfact(12);
+    return qfact.create_side_singular(vec, ele, sid);
 }
 
 #endif // FE_RT0_XFEM_S_HH_
