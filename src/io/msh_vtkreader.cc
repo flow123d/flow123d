@@ -552,13 +552,72 @@ void VtkMeshReader::read_physical_names(Mesh * mesh) {
 
 
 void VtkMeshReader::read_nodes(Mesh * mesh) {
-	ASSERT(false).error("Reading of VTK mesh is not supported yet!");
-	// will be implemented later
+	auto actual_header = this->find_header(0.0, "Points");
+
+	bulk_elements_id_.resize(actual_header.n_entities);
+	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
+
+	// set new cache, read node data
+	ElementDataCache<double> node_cache(actual_header.field_name, actual_header.time, 1,
+    		actual_header.n_components*actual_header.n_entities);
+    this->read_element_data(node_cache, actual_header, actual_header.n_components, false);
+
+	// create nodes of mesh
+    mesh->reserve_node_size(actual_header.n_entities);
+	std::vector<double> &vect = *( node_cache.get_component_data(0).get() );
+	arma::vec3 point;
+	for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
+        point(0)=vect[ivec]; ++ivec;
+        point(1)=vect[ivec]; ++ivec;
+        point(2)=vect[ivec]; ++ivec;
+        mesh->add_node(i, point);
+	}
+
+	bulk_elements_id_.clear();
 }
 
 
 void VtkMeshReader::read_elements(Mesh * mesh) {
-	// will be implemented later
+    // read offset data section into offsets_vec vector, it's used for reading connectivity
+    MeshDataHeader offset_header = this->find_header(0.0, "offsets");
+    for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
+    	bulk_elements_id_.push_back(i);
+    }
+
+    ElementDataCache<unsigned int> offset_cache(offset_header.field_name, offset_header.time, 1,
+    		offset_header.n_components*offset_header.n_entities);
+    this->read_element_data(offset_cache, offset_header, offset_header.n_components, false);
+
+    std::vector<unsigned int> &offsets_vec = *(offset_cache.get_component_data(0) ); // values of offset section in VTK file
+
+    // read connectivity data section
+    MeshDataHeader con_header = this->find_header(0.0, "connectivity");
+    con_header.n_entities = offsets_vec[offsets_vec.size()-1];
+    for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
+    	bulk_elements_id_.push_back(i);
+    }
+
+    ElementDataCache<unsigned int> con_cache(con_header.field_name, con_header.time, 1, con_header.n_components*con_header.n_entities);
+    this->read_element_data(con_cache, con_header, con_header.n_components, false);
+
+    std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );
+
+    // iterate trough connectivity data, create bulk elements
+    // fill bulk_elements_id_ vector
+    bulk_elements_id_.clear();
+    bulk_elements_id_.resize(offsets_vec.size());
+    unsigned int i_con = 0, last_offset=0, dim;
+    vector<unsigned int> node_list;
+    for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element
+    	dim = offsets_vec[i] - last_offset - 1; // dimension of vtk element
+        for ( ; i_con<offsets_vec[i]; ++i_con ) { // iterate trough all nodes of any element
+            node_list.push_back( connectivity_vec[i_con] );
+        }
+		mesh->add_element(i, dim, dim, 0, node_list); // TODO need to set region_id (3rd parameter, now is created from dim)
+        bulk_elements_id_[i] = i;
+        node_list.clear();
+        last_offset = offsets_vec[i];
+    }
 }
 
 

@@ -246,3 +246,17 @@ TEST(VtkReaderTest, read_compressed_vtu) {
 
     delete mesh;
 }
+
+
+TEST(VtkReaderTest, read_mesh) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}";
+    auto reader = reader_constructor(mesh_in_string);
+    Mesh * mesh = mesh_constructor(mesh_in_string);
+    reader->read_raw_mesh(mesh);
+    mesh->setup_topology();
+    mesh->check_and_finish();
+
+    EXPECT_EQ(8, mesh->n_nodes());
+    EXPECT_EQ(6, mesh->n_elements());
+}
