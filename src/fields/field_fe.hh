@@ -26,7 +26,7 @@
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
-#include "mesh/element_data_cache.hh"
+#include "io/element_data_cache.hh"
 #include "fem/dofhandler.hh"
 #include "input/factory.hh"
 

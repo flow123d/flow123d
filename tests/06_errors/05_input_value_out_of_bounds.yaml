@@ -1,0 +1,23 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: "Integer value out of bounds at address: /problem/flow_equation/n_schurs"
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac21_shift.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1e-07
+    input_fields:
+      - region: ALL
+        bc_type: dirichlet
+### ERROR value out of bounds
+    n_schurs: 3
+    output:
+      fields:
+        - piezo_head_p0
+    balance: {}
+    output_stream: 
+      file: ./small_cube.pvd
+      format: !vtk
+        variant: ascii

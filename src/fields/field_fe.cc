@@ -20,7 +20,8 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
-#include "mesh/reader_instances.hh"
+#include "io/reader_instances.hh"
+#include "io/msh_gmshreader.h"
 
 
 
@@ -206,19 +207,13 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
 
-		GMSH_DataHeader search_header;
-		search_header.actual = false;
-		search_header.field_name = field_name_;
-		search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-		search_header.n_entities = source_mesh->element.size();
-		search_header.time = time.end();
-
-		bool boundary_domain_ = false;
-		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(search_header,
-				source_mesh->elements_id_maps(boundary_domain_), this->component_idx_);
+		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
+		bool boundary_domain = false;
+		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
+				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_);
 		this->interpolate(data_vec);
 
-		return search_header.actual;
+		return true;
 	} else return false;
 
 }

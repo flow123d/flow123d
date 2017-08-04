@@ -18,7 +18,7 @@
 #ifndef OUTPUT_ELEMENT_HH_
 #define OUTPUT_ELEMENT_HH_
 
-#include "output_mesh_data.hh"
+#include "element_data_cache.hh"
 #include "output_mesh.hh"
 
 template <int spacedim>
@@ -147,7 +147,7 @@ inline OutputElement::Point OutputElement::vertex(unsigned int loc_idx) const
     ASSERT_DBG(loc_idx < n);
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
     unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + loc_idx];
-    auto &d = output_mesh_->nodes_->data_;
+    auto &d = *( output_mesh_->nodes_->get_component_data(0).get() );
     Point point({d[off], d[off+1], d[off+2]});
     return point;
 }
@@ -159,7 +159,7 @@ inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
     std::vector<Point> vertices(n);
     
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
-    auto &d = output_mesh_->nodes_->data_;
+    auto &d = *( output_mesh_->nodes_->get_component_data(0).get() );
     for(unsigned int i=0; i<n; i++) {
         unsigned int off = spacedim * (* output_mesh_->connectivity_)[con_off - n + i];
         vertices[i] = {d[off], d[off+1], d[off+2]};

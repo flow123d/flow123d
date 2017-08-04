@@ -82,7 +82,6 @@
 ##      output_stream:
 ##        file: flow.msh
 ##        format: !gmsh
-##          variant: ascii
 ##
 ##The list of fields (solution components, input fields etc.) to be saved is specified by:
 ##
@@ -142,7 +141,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
     output:
       fields:
         - piezo_head_p0

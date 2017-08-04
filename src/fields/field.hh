@@ -214,7 +214,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -277,6 +277,12 @@ public:
     void add_factory(std::shared_ptr<FactoryBase> factory);
 
     void set_input_list(const Input::Array &list) override;
+
+    /**
+     * Interpolate given field into output discrete @p space_type and store the values
+     * into storage of output time @p stream for postponed output.
+     */
+    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
 protected:
 

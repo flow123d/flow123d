@@ -2,6 +2,13 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version master
+
+## Bug fixes
+* Fix wrong communication between dimensions when porosities differ
+  in heat and solute transport.
+
+
 #Flow123d version 2.1.2
 (2017-02-21)
 

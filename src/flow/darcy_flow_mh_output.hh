@@ -31,7 +31,7 @@
 #include "fem/fe_p.hh"
 
 #include "fields/vec_seq_double.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 
 
 class DarcyMH;

@@ -12,13 +12,14 @@
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 
 #include "fields/field_constant.hh"
 #include <fields/field.hh>
 #include <fields/field_set.hh>
-#include <io/equation_output.hh>
+#include <fields/equation_output.hh>
 #include <fields/field_common.hh>
 #include "input/input_type.hh"
 
@@ -34,14 +35,9 @@ FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 TEST(OutputMesh, create_identical)
 {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    // read mesh - simplset cube from test1
+    // read mesh - simplest cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
     
     auto output_mesh = std::make_shared<OutputMesh>(*mesh);
     output_mesh->create_identical_mesh();
@@ -56,8 +52,8 @@ TEST(OutputMesh, create_identical)
     output_mesh->offsets_->print_ascii_all(std::cout);
     std::cout << endl;
     
-    EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
-    EXPECT_EQ(output_mesh->offsets_->n_values, mesh->n_elements());
+    EXPECT_EQ(output_mesh->nodes_->n_values(), mesh->n_nodes());
+    EXPECT_EQ(output_mesh->offsets_->n_values(), mesh->n_elements());
     
     for(const auto &ele : *output_mesh)
     {
@@ -148,10 +144,7 @@ TEST(OutputMesh, write_on_output_mesh) {
     FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
 
     // read mesh - simplset cube from test1
-    FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"../mesh/simplest_cube.msh\"}");
     
     
     // create scalar field out of FieldAlgorithmBase field
@@ -241,16 +234,16 @@ TEST_F(TestOutputMesh, read_input) {
     // create field set of output fields
     EquationOutput output_fields;
     output_fields += scalar_field.name("conc");
-    this->select_error_control_field(output_fields);
+    output_fields.select_error_control_field(this->error_control_field_name());
     
     // no field 'conc' is to be found
     output_fields.field("conc")->name("conc_error");
-    EXPECT_THROW( this->select_error_control_field(output_fields); ,
+    EXPECT_THROW( output_fields.select_error_control_field(this->error_control_field_name()); ,
                   FieldSet::ExcUnknownField);
     
     // 'conc' field is now vector field
     Field<3,FieldValue<3>::VectorFixed> vector_field;
     output_fields += vector_field.name("conc");
-    EXPECT_THROW( this->select_error_control_field(output_fields); ,
-                  OutputMeshBase::ExcFieldNotScalar);
+    EXPECT_THROW( output_fields.select_error_control_field(this->error_control_field_name()); ,
+                  EquationOutput::ExcFieldNotScalar);
 }

@@ -22,7 +22,7 @@
 #include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
 #include "system/system.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/ngh/include/ngh_interface.hh"
 #include "input/factory.hh"
