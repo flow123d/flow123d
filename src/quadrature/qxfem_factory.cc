@@ -405,13 +405,16 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
     for(unsigned int i = level_offset_; i < simplices_.size(); i++)
     {
         AuxSimplex& s = simplices_[i];
+        if(s.res == 0) continue;
+        
         for(unsigned int j = 0; j < sing.size(); j++)
         {
 //             DebugOut().fmt("QXFEM test simplex {}, singularity {}\n",i,j);
             double distance = -1;
             double max_h = max_h_level_0_/(1<<level_);
-            int res = singularity1D_distance(*sing[j],s, distance);
+            int res = distance_13d(*sing[j],s, distance);
 //             DBGVAR(res);
+            s.res = res;
             if(res > 0) {
                 s.refine = true;
                 s.sing_id = j;
@@ -723,23 +726,49 @@ int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
 //   return c;
 // }
 
-int QXFEMFactory::singularity1D_distance(const Singularity1D& w,
-                                            const QXFEMFactory::AuxSimplex& s,
-                                            double& distance)
+int QXFEMFactory::distance_13d(const Singularity1D& w,
+                               const QXFEMFactory::AuxSimplex& s,
+                               double& distance)
 {
     const unsigned int n_nodes = s.nodes.size();
     ASSERT_DBG(s.nodes.size() == n_nodes);
     
     const CylinderGeometry& geom = w.geometry();
     
-    //TEST 1: nodes of tetrahedron in cylinder
+    // compute barycenter
+    Point bcenter({0,0,0});
+    for(unsigned int i=0; i<n_nodes; i++)
+        bcenter = bcenter + s.nodes[i];
+    bcenter = bcenter / n_nodes;
+    
+    double d = geom.distance(bcenter);
+    
+    // parent simplex 'far' from singularity => child is also 'far'
+    if(s.res == -1){
+        distance = d;
+        return -1;
+    }
+    
+    
+    double max_h = max_h_level_0_/(1<<level_);
 
-    std::vector<Point> dist_v(n_nodes);
+    // if simplex is 'far enough'
+    if(d > (max_h + geom.radius())){
+        distance = d;
+        return -1;
+    }
+    
+    
+    //TEST 1: nodes of tetrahedron in cylinder
+    std::vector<double> dist_sqr_v(n_nodes);
     unsigned int count_nodes = 0;
+    double min_dist_v = d;
     double rsqr = geom.radius() * geom.radius();
     for(unsigned int i=0; i<n_nodes; i++){
-        dist_v[i] = geom.dist_vector(s.nodes[i]);
-        if(arma::dot(dist_v[i],dist_v[i]) < rsqr) count_nodes++;
+        Point dv = geom.dist_vector(s.nodes[i]);
+        dist_sqr_v[i] = arma::dot(dv,dv);
+        if(dist_sqr_v[i] < rsqr) count_nodes++;
+        if(dist_sqr_v[i] < min_dist_v) min_dist_v = dist_sqr_v[i];
     }
     
 //     DBGVAR(count_nodes);
@@ -748,45 +777,50 @@ int QXFEMFactory::singularity1D_distance(const Singularity1D& w,
         if(count_nodes == n_nodes) return 0; //tetrahedron inside cylinder, do not refine
         else return 1;
     }
-    
-    //TEST 2: check sing inside tetrahedron
-    //TODO: consider line segment, not entire line !!!
-    
-    Point u = geom.direction_vector();
-    Point un = u / arma::norm(u,2);
-    
-    // projection to plane with un normal vector and A origin
-    arma::mat proj;
-    proj.eye(3,3);
-    proj = proj - un*un.t();
-    
-    std::vector<Point> v(n_nodes);
-    for(unsigned int i=0; i<n_nodes; i++)
-        v[i] = proj * (s.nodes[i] - geom.a());
-    
-    BoundingBox bp (v);
-    if(bp.contains_point(Point({0,0,0}))){
-        distance = 0.0;
+    else{
+        distance = std::sqrt(min_dist_v);
         return 2;
     }
-    else{
-        Point c = bp.center();
-        double max_axis_size = 0;
-        for(unsigned int i=0; i<3; i++)
-            if(bp.size(i) > max_axis_size) max_axis_size = bp.size(i);
-        
-        // perpendicular distance from line to BB center
-        double d = arma::norm(c,2);
-        
-        if(d > (geom.radius())) {
-            distance = d;
-            return -1;
-        }
-        else{
-            distance = 0.0;
-            return 3;
-        }
-    }
+  
+    
+//     //TEST 2: check sing inside tetrahedron
+//     //TODO: consider line segment, not entire line !!!
+//     
+//     Point u = geom.direction_vector();
+//     Point un = u / arma::norm(u,2);
+//     
+//     // projection to plane with un normal vector and A origin
+//     arma::mat proj;
+//     proj.eye(3,3);
+//     proj = proj - un*un.t();
+//     
+//     std::vector<Point> v(n_nodes);
+//     for(unsigned int i=0; i<n_nodes; i++)
+//         v[i] = proj * (s.nodes[i] - geom.a());
+//     
+//     BoundingBox bp (v);
+//     if(bp.contains_point(Point({0,0,0}))){
+//         distance = 0.0;
+//         return 2;
+//     }
+//     else{
+//         Point c = bp.center();
+//         double max_axis_size = 0;
+//         for(unsigned int i=0; i<3; i++)
+//             if(bp.size(i) > max_axis_size) max_axis_size = bp.size(i);
+//         
+//         // perpendicular distance from line to BB center
+//         double d = arma::norm(c,2);
+//         
+//         if(d > (geom.radius())) {
+//             distance = d;
+//             return -1;
+//         }
+//         else{
+//             distance = 0.0;
+//             return 3;
+//         }
+//     }
     
     
     /* TEST 3: compute distance between S center and line w

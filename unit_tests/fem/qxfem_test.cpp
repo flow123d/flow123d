@@ -648,8 +648,8 @@ TEST(qxfem, qxfem_factory_3d) {
 //     auto func = std::make_shared<Singularity1D>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
     auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.5,0}), arma::vec({0.5,0.5,2}),0.05);
     
-//     for(unsigned int i=6; i<7; i++)
-    unsigned int i = 7;
+//     for(unsigned int i=4; i<10; i++)
+    unsigned int i = 9;
     {
         QXFEMFactory qfactory(i);
         shared_ptr<QXFEM<3,3>> qxfem = qfactory.create_singular({func},ele);
@@ -677,7 +677,7 @@ TEST(qxfem, qxfem_factory_3d) {
         double exact_sum = (ele->measure()-func->geometry().volume()*0.5) / (6*ele->measure());
         MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
         MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
-        EXPECT_NEAR(sum,exact_sum,2e-5);
+        EXPECT_NEAR(sum,exact_sum,1e-6);
     }
     
     func->evaluate_q_points(50, 20);

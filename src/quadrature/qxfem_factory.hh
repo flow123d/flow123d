@@ -160,9 +160,9 @@ protected:
      * 2:   singularity is inside tetrahedron
      * 3:   distance is less then radius
      */
-    int singularity1D_distance(const Singularity1D& w,
-                              const AuxSimplex &s,
-                              double& distance);
+    int distance_13d(const Singularity1D& w,
+                     const AuxSimplex &s,
+                     double& distance);
     
     int distance_12d(const Singularity1D& w,
                      const AuxSimplex &s,
