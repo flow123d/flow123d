@@ -24,7 +24,7 @@ class TestActions(unittest.TestCase):
     def test_add_key(self):
         changes=Changes()
         changes.new_version("A")
-        changes.add_key_to_map(PathSet(["/"]), key="flow123d_version", value="2.0.0")
+        changes.add_key_to_map("/", key="flow123d_version", value="2.0.0")
         self.perform(changes)
 
 
@@ -32,7 +32,7 @@ class TestActions(unittest.TestCase):
         changes=Changes()
         changes.new_version("A")
         # Change degree keys in PadeApproximant
-        path_set = PathSet(["/problem/secondary_equation/**/ode_solver!PadeApproximant/"])
+        path_set = "/problem/secondary_equation/**/ode_solver!PadeApproximant/"
         changes.rename_key(path_set, old_key="denominator_degree", new_key="pade_denominator_degree")
         changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
         self.perform(changes)
@@ -42,11 +42,11 @@ class TestActions(unittest.TestCase):
         changes.new_version("A")
 
         # Rename equations and couplings
-        path = PathSet(["/problem/secondary_equation/"])
+        path = "/problem/secondary_equation/"
         changes.rename_tag(path, old_tag="TransportOperatorSplitting", new_tag="Coupling_OperatorSplitting")
         self.perform(changes)
 
-    """
+
     def test_replace_value(self):
         changes=Changes()
         changes.new_version("A")
@@ -73,14 +73,14 @@ class TestActions(unittest.TestCase):
         changes.new_version("A")
 
         # Change sign of boundary fluxes
-        path_set = PathSet([
+        path_set = [
             "/problem/(primary|secondary)_equation/input_fields/*/bc_flux/",
             "/problem/(primary|secondary)_equation/input_fields/*/bc_flux/#/",
             "/problem/(primary|secondary)_equation/input_fields/*/bc_flux!FieldConstant/value/",
-        ])
+        ]
         changes.scale_scalar(path_set, multiplicator=-1)
         self.perform(changes)
-    """
+
 
 ####################################
 

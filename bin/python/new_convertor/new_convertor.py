@@ -314,7 +314,7 @@ class Changes:
         REVERSE.
         For every path P in the path set 'path' remove key 'key_name' from the map.
         '''
-        for nodes, address in paths.iterate(self.tree):
+        for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_map_node(curr):
                 logging.warning("Expecting map at path: {}".format(address))
@@ -339,7 +339,7 @@ class Changes:
         REVERSE.
         For every path P in the path set 'path', make the same, but use message_backward for the comment.
         '''
-        for nodes, address in paths.iterate(self.tree):
+        for nodes, address in PathSet(paths).iterate(self.tree):
             if reversed:
                 self.__apply_manual_conv(nodes, address, message_backward)
             else:
@@ -359,10 +359,28 @@ class Changes:
         '''
     """
 
-    #def _move_value(self, old_paths, new_paths, reversed):
-    #    if reversed:
-    #        old_paths, new_paths =  new_paths, old_paths
-    #
+    def _move_value(self, path_in, path_out, reversed):
+        """
+        ACTION.
+        1. In path_out, substitute initial './' with path_in (relative path_out),
+           , then we colapse every /../ checking that this do not remove any ** (produce error).
+        2. Try to match every '*' and '**' in path_out against path_in and substitute, check that
+           match is unique, otherwise error.
+        2. Both old_paths and new_paths are expanded for alternatives
+           resulting lists should be of the same size. Otherwise we report error since this is indpendent of the data.
+        3. For every corresponding pair of 'old' and 'new' paths, using the correct order:
+           - for every value matching the 'old' path
+           - make path according to 'new' path, new keys are created (not renamed), tags are renamed
+           - move the value
+           - for every pair of items in paths  (a_key, a_tag) -> (b_key, b_tag)
+             ... no tag info = '*', missing key = (None, None)
+           - if   a_key != b_key, create key b_key
+           - same for tags
+           - a_key = '*', b_key != '*' - error, same for '**' or '#', so
+        """
+        if reversed:
+            old_paths, new_paths =  new_paths, old_paths
+        pass
 
     def _rename_key(self, paths, old_key, new_key, reversed):
         '''
@@ -373,7 +391,7 @@ class Changes:
         For every path P in the path set 'paths', rename vice versa.
         TODO: Replace with generalized move_value action, problem where to apply reversed action.
         '''
-        for nodes, address in paths.iterate(self.tree):
+        for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_map_node(curr):
                 logging.warning("Expecting map at path: {}".format(address))
@@ -388,10 +406,14 @@ class Changes:
     def _rename_tag(self, paths, old_tag, new_tag, reversed):
         '''
         ACTION.
-        For every path P in the path set 'paths', which has to be a map.
+        For every path P in the path set 'paths':
         Rename the path tag  'old_key' to 'new_key'. Other tags are ignored, producing warning.
         REVERSE.
         For every path P in the path set 'paths', rename vice versa.
+
+        Can be used also to set or delete a tag:
+        rename_tag(old_tag=None, new_tag="XYZ")
+        rename_tag(old_tag="XYZ", new_tag=None)
         TODO: Replace with generalized move_value action, problem where to apply reversed action.
         '''
         if old_tag[0]=='!':
@@ -400,7 +422,7 @@ class Changes:
             new_tag = new_tag[1:]
         if reversed:
             old_tag, new_tag = new_tag, old_tag
-        for nodes, address in paths.iterate(self.tree):
+        for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             assert( hasattr(curr, 'tag'), "All nodes should be CommentedXYZ." )
 
@@ -425,7 +447,7 @@ class Changes:
         If regexp is None, then substitute is tuple for the manual conversion.
         :return: None
         """
-        for nodes, address in paths.iterate(self.tree):
+        for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_scalar_node(curr):
                 #print("Node: ", curr)
@@ -457,7 +479,7 @@ class Changes:
         REVERSE.
         For every path P in the path set 'path' which has to be a scalar, divide it by 'multiplicator'
         '''
-        for nodes, address in paths.iterate(self.tree):
+        for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_scalar_node(curr):
                 #print("Node: ", curr)
@@ -475,6 +497,7 @@ class Changes:
                 curr.value *= multiplicator
             if is_int and float(curr.value).is_integer():
                 curr.value = int(curr.value)
+
 
 
     def __apply_manual_conv(self, nodes, address, message ):
@@ -499,14 +522,24 @@ class PathSet(object):
     """
     Set of places in YAML file to which apply a given rule
     """
-    def __init__(self, path_patterns, **kwds):
+    def __init__(self, path_patterns):
         """
         Initialize the set by all plases of the given root structure using deep first search.
         :param path: Path to root (e.g. "/key1/0/key2/1"
         :param root: Root map or array.
         """
+        if type(path_patterns) == PathSet:
+            self.path_patterns = path_patterns.path_patterns
+        elif type(path_patterns) == str:
+            self.path_patterns = [ path_patterns ]
+        else:
+            assert type(path_patterns) == list
+            assert len(path_patterns) > 0
+            assert type(path_patterns[0]) == str
+            self.path_patterns = path_patterns
+
         self.patterns=[]
-        for p in path_patterns:
+        for p in self.path_patterns:
 
             # pass through all combinations of alternatives (X|Y|Z)
             list_of_alts=[]
@@ -537,7 +570,7 @@ class PathSet(object):
                 self.patterns.append(pp)
         #logging.debug("Patterns: " + str(self.patterns) )
         print("Patterns: " + str(self.patterns))
-        self.options=kwds
+        #self.options=kwds
         self.matches = []
 
     def iterate(self, tree):
@@ -706,25 +739,56 @@ changes.replace_value(path_set,
 
 changes.new_version("2.0.0")
 
-
+"""
 
 # Rename equations and couplings
-path = PathSet(["/problem/secondary_equation/"])
-changes.rename_tag(path, old_tag="TransportOperatorSplitting", new_tag="Coupling_OperatorSplitting")
+path = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/"])
+changes.rename_tag(path, target_path=".!Coupling_OperatorSplitting")
 
-"""
-path_os = [path, HaveTag("Coupling_OperatorSplitting")]
-destination_path="/problem/secondary_equation/transport"
-changes += add_key( path_os, key="transport", tag="Solute_Advection_FV") # parent="Transport" #seems unnecessary
-changes += move_keys( path_os, keys=["output_fields", "input_fields"], destination_path )
 
-path_dg = [path, HaveTag("SoluteTransport_DG")]
-changes += add_key( path_dg, key="transport", tag="Solute_AdvectionDiffusion_DG")
+# Move transport under OperatorSplitting
+path = PathSet(["/problem/secondary_equation!(Coupling_OperatorSplitting|SoluteTransportDG)/"])
+changes.add_key_to_map( path, key="transport")
+
+
+
+path = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport/"])
+changes.rename_tag(path, old_tag=None, new_tag="Solute_Advection_FV")
+
+path = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/(output_fields|input_fields)/"])
+changes.move_values( path, "./transport" )
+
+# Transport, proposed simplified syntax:
+path_in = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/(output_fields|input_fields)/"])
+path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!Solute_Advection_FV/(*)"])
+changes.move_values( path_in, path_out)
+
+path = PathSet(["/problem/secondary_equation!SoluteTransport_DG/transport/"])
+changes.rename_tag(path, old_tag=None, new_tag="Solute_AdvectionDiffusion_DG")
+path = PathSet(["/problem/secondary_equation!SoluteTransport_DG/"])
+changes.rename_tag(path, old_tag="SoluteTransport_DG", new_tag="Coupling_OperatorSplitting")
+
+path_dg = PathSet([path, HaveTag("SoluteTransport_DG")])
+
 changes += move_keys( path_dg, keys=["input_fields", "output_fields", "solver", "dg_order", "dg_variant", "solvent_density"], destination_path)
 changes += rename_tag(path, old_tag="SoluteTransport_DG", new_tag="Coupling_OperatorSplitting")
 
-changes += rename_tag(path,  old_tag="HeatTransfer_DG", new_tag="Heat_AdvectionDiffusion_DG")
 
+# DG transport, proposed simplified syntax:
+path_in = PathSet(["/problem/secondary_equation!SoluteTransport_DG/(input_fields|output_fields|solver|dg_order|dg_variant|solvent_density)/"])
+path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!SoluteTransport_DG/(*)/"])
+changes.move_values( path_in, path_out)
+
+
+# Heat transport, proposed simplified syntax:
+changes.move_values("/problem/secondary_equation!HeatTransfer_DG/", "/problem/secondary_equation!Heat_AdvectionDiffusion_DG/")
+
+# TODO: add automatic conversion to PathSet from list or string.
+changes.add_key_to_map("/problem/secondary_equation", "transport")
+
+"""
+
+"""
 # Remove r_set, use region instead
 changes.new_set()
 changes += move_and_rename_key(PathPattern("/**/input_fields/*/r_set"), new_path="$1/input_fields/$2/region")
