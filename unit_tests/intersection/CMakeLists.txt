@@ -43,8 +43,3 @@ add_test_directory("${libs}")
     
     define_test(simplex_class)
 
-
-
-
-
-

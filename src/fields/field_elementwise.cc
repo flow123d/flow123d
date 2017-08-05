@@ -33,7 +33,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_elementwise)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
 {
-    return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),

@@ -200,8 +200,6 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.25, 0, 0},
                 {0, 0, 0}
                 }});
-
-
     c.push_back({ "61_p", {
                 {0, 0.25, 0.25},
                 {0.25, 0, 0},

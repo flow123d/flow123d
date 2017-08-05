@@ -8,13 +8,13 @@
 ##* Use flux boundary conditions;
 ##* Set up the advective transport model.
 ##
-##For the fluid flow model we change the atmospheric pressure on the surface to the more realistic infiltration 200 mm/yr (= 6.34e-9 m/s):
+##For the fluid flow model we change the atmospheric pressure on the surface to the more realistic infiltration 200 mm/yr (= $6.34\times 10^{-9}$ m/s):
 ##
 ##        - region: .surface
 ##          bc_type: total_flux
 ##          bc_flux: 6.34E-09
 ##
-##In the resulting file ```water_balance.txt``` we can see that the value of the input and output flux changes to 6.34e-8. The visual results are similar to the case ```01_column.yaml```.
+##In the resulting file ```water_balance.txt``` we can see that the value of the input and output flux changes to $6.34 \times 10^{-8}$. The visual results are similar to the case ```01_column.yaml```.
 ##
 ##Next we demonstrate a simulation of the transport of a tracer.
 ##The equation of advective transport (no diffusion/dispersion) is specified by:
@@ -34,12 +34,12 @@
 ##
 ##      substances: O-18
 ##
-##The end time of the simulation is set in the section ```time``` to value 1e10 seconds (381 years):
+##The end time of the simulation is set in the section ```time``` to value $10^{10}$ seconds (381 years):
 ## 
 ##      time:
 ##        end_time: 1e10
 ##
-##The output files can be generated for specific time values. We set the time step for output to 1e8 seconds (=3 years and 2 months):
+##The output files can be generated for specific time values. We set the time step for output to $10^8$ seconds (=3 years and 2 months):
 ##
 ##      output_stream:
 ##        times:
@@ -54,8 +54,8 @@
 ##The results of the mass balance computation are in the output folder in the file ```mass_balance.txt```.
 ##The evolution of concentration is depicted in Figure @fig:transport.
 ##A selected part of numerical results of mass balance is in the Table @tbl:mass_balance.
-##On the region ".surface", the mass flux of the tracer is still identical (6 × 10-6 kg/s).
-##On ".tunnel", the mass flux is zero at the beginning and then it changes within around 100 years to the opposite value of inflow -6 × 10-6 kg/s.
+##On the region ".surface", the mass flux of the tracer is still identical (6 × 10${}^{-6}$ kg/s).
+##On ".tunnel", the mass flux is zero at the beginning and then it changes within around 100 years to the opposite value of inflow -6 × 10${}^{-6}$ kg/s.
 ##Figure @fig:mass_plot depicts results from the file ```mass_balance.txt``` for mass transported through the boundaries ".surface" and ".tunnel" and in the volume of "rock".
 ##
 ##![Tracer concentration after 5, 10, 15 and 20 time steps.](tutor_figures/02_transport.pdf){#fig:transport width=100%}
