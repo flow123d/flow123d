@@ -32,6 +32,7 @@
 #include "fem/fe_rt.hh"
 #include "fem/singularity.hh"
 #include "fem/fe_rt_xfem.hh"
+#include "fem/fe_rt_xfem_single.hh"
 #include "fem/fe_p0_xfem.hh"
 
 
@@ -179,7 +180,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
     
     FE_RT0<1,3> fe_rt1;
     FE_RT0<2,3> fe_rt2;
-    FE_RT0_XFEM<2,3> fe_rt_xfem(&fe_rt2,{func});
+    FE_RT0_XFEM_S<2,3> fe_rt_xfem(&fe_rt2,{func});
     FE_RT0<3,3> fe_rt3;
     
    std::map<unsigned int, double> dof_values;
@@ -202,37 +203,20 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
 //     };
 
     //     //precise enrichment function approx.
-    dof_values = {
-        { 0, 2.111270793766706 },    // interpolation dofs
-        { 1, 2.111270793766706 },
-        { 2, 2.060775278298543 },
+//     dof_values = {
+//         { 0, 2.111270793766706 },    // interpolation dofs
+//         { 1, 2.111270793766706 },
+//         { 2, 2.060775278298543 },
+//         { 3, 1.0 }
+        dof_values = {
+        { 0, -0.3360070022065689 },    // interpolation dofs
+        { 1, -0.33600700220656896 },
+        { 2, -0.3279799752702353 },
         { 3, 1.0 }
     };
     
     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt");
 }
-
-// TEST(ShapeFunctionOutput, rt_xfem_shape) {
-//     
-//     auto func = std::make_shared<Singularity0D>(arma::vec({0.2,0.2,0}),0.05,
-//                                                    arma::vec({0, 0, 1}), arma::vec({0, 0, 1}));
-//     
-//     FE_RT0<1,3> fe_rt1;
-//     FE_RT0<2,3> fe_rt2;
-//     FE_RT0_XFEM<2,3> fe_rt_xfem(&fe_rt2,{func});
-//     FE_RT0<3,3> fe_rt3;
-//     
-//    std::map<unsigned int, double> dof_values;
-// 
-//     // print all shape functions
-//     std::string filename = "test_rt_";
-//     
-// //                                                  1.0/sqrt(2)
-// //     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{0, 1.0}}, false, filename + std::to_string(0));
-// //     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{1, 1.0}}, false, filename + std::to_string(1)); 
-// //     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{2, 1.0}}, false, filename + std::to_string(2));
-//     output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, {{3, 1.0}}, false, filename + std::to_string(3));
-// }
 
 // TEST(ShapeFunctionOutput, p0_xfem) {
 // 
