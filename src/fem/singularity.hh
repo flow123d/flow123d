@@ -411,7 +411,7 @@ inline Space<3>::Point Singularity1D::grad(const Point &x) const
 
 inline Space<3>::Point Singularity1D::vector(const Point &x) const
 {
-    static const double t = -0.5/M_PI;
+    static const double t = -1.0 / geom_.lateral_surface();
     return t * this->grad(x);
 }
 

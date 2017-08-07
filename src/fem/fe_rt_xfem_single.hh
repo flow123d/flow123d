@@ -104,6 +104,16 @@ public:
 private:
     /// Awful HACK function for getting quadrature based on Singularity0D or Singularity1D
     std::shared_ptr<QXFEM<dim,spacedim>> qxfem_side(ElementFullIter ele, unsigned int sid);
+    
+    /// Element data cache for SGFEM interpolation.
+    /** Keeps integrals of enrichment functions over sides.
+     * This optimization is necessary when outputing on refined output meshes.
+     */
+    struct EleCache{
+        unsigned int last_ele_index;
+        std::vector<std::vector<double>> enr_dof_val;
+    } ele_cache_;
+    
 };
 
 
@@ -122,6 +132,7 @@ FE_RT0_XFEM_S<dim,spacedim>::FE_RT0_XFEM_S(FE_RT0<dim,spacedim>* fe,
     // regular + enriched from every singularity
     number_of_dofs = n_regular_dofs_ + enr.size();
     number_of_single_dofs[dim] = number_of_dofs;
+    ele_cache_.last_ele_index = std::numeric_limits<unsigned int>::max();
 }
 
 
@@ -159,7 +170,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
     unsigned int j;
 
     vector<arma::vec::fixed<spacedim>> normals;
-    vector<vector<double>> enr_dof_val;
+    vector<vector<double>>& enr_dof_val = ele_cache_.enr_dof_val;
     
     if (fv_data.update_flags & (update_values | update_divergence | update_gradients))
     {
@@ -172,30 +183,36 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
 //             normals[j].print(cout, "internal normal");
         }
         
-        enr_dof_val.resize(enr.size());
-        for (unsigned int w=0; w<enr.size(); w++)
-            enr_dof_val[w].resize(RefElement<dim>::n_sides);
-        
-        // for SGFEM we need to compute fluxes of glob. enr. function over faces
-        for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
+        if(ele_cache_.last_ele_index != ele->index()){
+            enr_dof_val.resize(enr.size());
+            for (unsigned int w=0; w<enr.size(); w++)
+                enr_dof_val[w].resize(RefElement<dim>::n_sides);
             
-            std::shared_ptr<QXFEM<dim,3>> q_side = qxfem_side(ele, j);
-            
-            double side_measure = ele->side(j)->measure();
-            
-            for (unsigned int w=0; w<enr.size(); w++){
-                double val = 0;
-//                 DBGCOUT("edge quad [" << j << "]\n");
-                for(unsigned int q=0; q < q_side->size(); q++){
-                    val += arma::dot(enr[w]->vector(q_side->real_point(q)),normals[j])
-                        // this makes JxW on the triangle side:
-                        * q_side->weight(q)
-                        * side_measure;
+            // for SGFEM we need to compute fluxes of glob. enr. function over faces
+            for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
+                
+                std::shared_ptr<QXFEM<dim,3>> q_side = qxfem_side(ele, j);
+                
+                double side_measure = ele->side(j)->measure();
+                
+                for (unsigned int w=0; w<enr.size(); w++){
+                    double val = 0;
+    //                 DBGCOUT("edge quad [" << j << "]\n");
+                    for(unsigned int q=0; q < q_side->size(); q++){
+                        val += arma::dot(enr[w]->vector(q_side->real_point(q)),normals[j])
+                            // this makes JxW on the triangle side:
+                            * q_side->weight(q)
+                            * side_measure;
+                    }
+                    enr_dof_val[w][j] = val;
+//                     DBGVAR(val);
+//                     cout << setprecision(16) << "val  " << val << endl;
                 }
-                enr_dof_val[w][j] = val;
-//                 DBGVAR(val);
-//                 cout << setprecision(16) << "val  " << val << endl;
             }
+            ele_cache_.last_ele_index = ele->index();
+        }
+        else{
+            enr_dof_val = ele_cache_.enr_dof_val;
         }
 //         // for SGFEM we need to compute fluxes of glob. enr. function over faces
 //         ASSERT(dim == 2);

@@ -48,7 +48,7 @@ const std::string input_rt = R"INPUT(
         variant = "ascii"
     },
     output_mesh = {
-        max_level = 7
+        max_level = 5
     }
   }
   ,output = {fields = ["shape_func"]}
@@ -56,7 +56,7 @@ const std::string input_rt = R"INPUT(
 )INPUT";
 
 // simplest mesh
-string ref_element_mesh = R"CODE(
+string ref_element_mesh_2d = R"CODE(
 $MeshFormat
 2.2 0 8
 $EndMeshFormat
@@ -72,6 +72,23 @@ $Elements
 $EndElements
 )CODE";
 
+// simplest mesh
+string ref_element_mesh_3d = R"CODE(
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$Nodes
+4
+1 0 0 0
+2 1 0 0
+3 0 1 0
+4 0 0 1
+$EndNodes
+$Elements
+1
+1 4 2 39 40 1 2 3 4
+$EndElements
+)CODE";
 
 bool replace_string(std::string& str, const std::string& from, const std::string& to) {
     size_t start_pos = str.find(from);
@@ -87,7 +104,8 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
                      FiniteElement<3,3>& fe_3,
                      const std::map<unsigned int, double>& dof_values,
                      bool is_scalar,
-                     std::string file_name)
+                     std::string file_name,
+                     std::string mesh_record)
 {
     // replace correct output file name in input record string
     std::string input_json = input_rt;
@@ -96,7 +114,7 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
     
     // read mesh
     Mesh* mesh = mesh_constructor();
-    stringstream in(ref_element_mesh.c_str());
+    stringstream in(mesh_record.c_str());
     mesh->read_gmsh_from_stream(in);
     
     shared_ptr<DOFHandlerMultiDim> dofhandler = std::make_shared<DOFHandlerMultiDim>(*mesh);
@@ -173,7 +191,7 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
 }
 
 
-TEST(ShapeFunctionOutput, rt_xfem_shape) {
+TEST(ShapeFunctionOutput, rt_xfem_shape_2d) {
     
     auto func = std::make_shared<Singularity0D>(arma::vec({0.2,0.2,0}),0.05,
                                                    arma::vec({0, 0, 1}), arma::vec({0, 0, 1}));
@@ -186,10 +204,10 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
    std::map<unsigned int, double> dof_values;
 
     // print all shape functions
-    std::string filename = "test_rt_";
+    std::string filename = "test_rt_2d_";
     for(unsigned int i=0; i < fe_rt_xfem.n_dofs(); i++){
         dof_values = {{i, 1.0}};  //select only one shape function
-        output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, filename + std::to_string(i));
+        output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, filename + std::to_string(i), ref_element_mesh_2d);
     }
     
 //     //     //precise enrichment function approx.
@@ -215,7 +233,53 @@ TEST(ShapeFunctionOutput, rt_xfem_shape) {
         { 3, 1.0 }
     };
     
-    output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt");
+    output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt_2d",  ref_element_mesh_2d);
+}
+
+
+TEST(ShapeFunctionOutput, rt_xfem_shape_3d) {
+    
+    auto func = std::make_shared<Singularity1D>(arma::vec({0.2,0.2,0}),arma::vec({0.2,0.2,1.0}),0.05);
+    
+    FE_RT0<1,3> fe_rt1;
+    FE_RT0<2,3> fe_rt2;
+    FE_RT0<3,3> fe_rt3;
+    FE_RT0_XFEM_S<3,3> fe_rt_xfem(&fe_rt3,{func});
+    
+   std::map<unsigned int, double> dof_values;
+
+    // print all shape functions
+    std::string filename = "test_rt__3d_";
+//     for(unsigned int i=0; i < fe_rt_xfem.n_dofs(); i++){
+//         dof_values = {{i, 1.0}};  //select only one shape function
+//         output_field_fe(fe_rt1, fe_rt2, fe_rt_xfem, dof_values, false, filename + std::to_string(i), ref_element_mesh_3d);
+//     }
+    
+//     //     //precise enrichment function approx.
+//     dof_values = {
+//         { 0, 1.53846153846154 },    // interpolation dofs
+//         { 1, 1.53846153846154 },
+//         { 2, 2.35702260395516 },
+//         { 3, 1.0 },
+//         { 4, 1.0 },
+//         { 5, 1.0 }
+//     };
+
+    //     //precise enrichment function approx.
+//     dof_values = {
+//         { 0, 2.111270793766706 },    // interpolation dofs
+//         { 1, 2.111270793766706 },
+//         { 2, 2.060775278298543 },
+//         { 3, 1.0 }
+        dof_values = {
+        { 0, 0.0 },    // interpolation dofs
+        { 1, -0.1173743870500195 },    // interpolation dofs
+        { 2, -0.1173743870500195 },
+        { 3, -0.06525196651968521 },
+        { 4, 1.0 }
+    };
+    
+    output_field_fe(fe_rt1, fe_rt2, fe_rt_xfem, dof_values, false, "test_rt_3d", ref_element_mesh_3d);
 }
 
 // TEST(ShapeFunctionOutput, p0_xfem) {
