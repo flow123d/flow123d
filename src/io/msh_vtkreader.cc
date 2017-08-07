@@ -61,9 +61,21 @@ const double VtkMeshReader::point_tolerance = 1E-10;
 
 
 VtkMeshReader::VtkMeshReader(const FilePath &file_name)
-: BaseMeshReader(file_name)
+: BaseMeshReader(file_name),
+  time_step_(0.0)
 {
     data_section_name_ = "DataArray";
+    has_compatible_mesh_ = false;
+	make_header_table();
+}
+
+
+
+VtkMeshReader::VtkMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values, double time_step)
+: BaseMeshReader(file_name, element_data_values),
+  time_step_(time_step)
+{
+	data_section_name_ = "DataArray";
     has_compatible_mesh_ = false;
 	make_header_table();
 }
@@ -138,11 +150,11 @@ Tokenizer::Position VtkMeshReader::get_appended_position() {
 }
 
 
-MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos)
+BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos)
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
-    header.time = 0.0;
+    header.time = this->time_step_;
     try {
         header.type = this->get_data_type( node.attribute("type").as_string() );
     } catch(ExcWrongType &e) {
@@ -218,7 +230,7 @@ void VtkMeshReader::make_header_table()
 }
 
 
-MeshDataHeader & VtkMeshReader::find_header(double time, std::string field_name)
+BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(double time, std::string field_name)
 {
 	HeaderTable::iterator table_it = header_table_.find(field_name);
 
@@ -413,7 +425,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         }
 
         // create temporary data cache
-        ElementDataCache<double> node_cache(point_header, 1, point_header.n_components*point_header.n_entities);
+        ElementDataCache<double> node_cache(point_header.field_name, point_header.time, 1,
+        		point_header.n_components*point_header.n_entities);
 
         // check compatible nodes, to each VTK point must exist only one GMSH node
         this->read_element_data(node_cache, point_header, point_header.n_components, false);
@@ -454,7 +467,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	bulk_elements_id_.push_back(i);
         }
 
-        ElementDataCache<unsigned int> offset_cache(offset_header, 1, offset_header.n_components*offset_header.n_entities);
+        ElementDataCache<unsigned int> offset_cache(offset_header.field_name, offset_header.time, 1,
+        		offset_header.n_components*offset_header.n_entities);
         this->read_element_data(offset_cache, offset_header, offset_header.n_components, false);
 
         offsets_vec = *(offset_cache.get_component_data(0) );
@@ -470,7 +484,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         	bulk_elements_id_.push_back(i);
         }
 
-        ElementDataCache<unsigned int> con_cache(con_header, 1, con_header.n_components*con_header.n_entities);
+        ElementDataCache<unsigned int> con_cache(con_header.field_name, con_header.time, 1, con_header.n_components*con_header.n_entities);
         this->read_element_data(con_cache, con_header, con_header.n_components, false);
 
         std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );

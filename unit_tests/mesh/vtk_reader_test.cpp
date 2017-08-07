@@ -50,7 +50,8 @@ public:
 		for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
 
 		// set new cache
-	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
+	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header.field_name, actual_header.time, 1,
+	    		actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
 			case DataFormat::ascii: {

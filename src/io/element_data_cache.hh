@@ -29,9 +29,6 @@
 #include "io/element_data_cache_base.hh"
 
 
-struct MeshDataHeader;
-
-
 template <typename T>
 class ElementDataCache : public ElementDataCacheBase {
 public:
@@ -46,11 +43,12 @@ public:
 	 *
 	 * Allows set variable size of cache.
 	 *
-	 * @param data_header   Set data members time_ and field_name_
+     * @param field_name    Field name thas is read
+     * @param time          Actual time of data
 	 * @param size_of_cache Count of columns of data cache
 	 * @param row_vec_size  Count of rows of data cache
 	 */
-	ElementDataCache(MeshDataHeader data_header, unsigned int size_of_cache, unsigned int row_vec_size);
+	ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size);
 
     /**
      * \brief Constructor of output ElementDataCache (allow write data)

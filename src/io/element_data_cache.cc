@@ -29,9 +29,9 @@ ElementDataCache<T>::ElementDataCache()
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(MeshDataHeader data_header, unsigned int size_of_cache, unsigned int row_vec_size) {
-	this->time_ = data_header.time;
-	this->field_input_name_ = data_header.field_name;
+ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size) {
+	this->time_ = time;
+	this->field_input_name_ = field_name;
 	this->data_ = create_data_cache(size_of_cache, row_vec_size);
 }
 

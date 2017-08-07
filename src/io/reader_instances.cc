@@ -18,8 +18,13 @@
 #include "io/reader_instances.hh"
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
+#include "io/msh_pvdreader.hh"
 #include "input/accessors.hh"
 
+
+/***********************************************************************************************
+ * Implementation of ReaderInstance
+ */
 
 ReaderInstance * ReaderInstance::instance() {
 	static ReaderInstance *instance = new ReaderInstance;
@@ -50,6 +55,10 @@ ReaderInstance::ReaderData ReaderInstance::get_instance(const FilePath &file_pat
 }
 
 
+/***********************************************************************************************
+ * Implementation of ReaderInstances
+ */
+
 ReaderInstances * ReaderInstances::instance() {
 	static ReaderInstances *instance = new ReaderInstances;
 	return instance;
@@ -63,6 +72,8 @@ std::shared_ptr<BaseMeshReader> ReaderInstances::get_reader(const FilePath &file
 			reader_ptr = std::make_shared<GmshMeshReader>(file_name);
 		} else if ( file_name.extension() == ".vtu" ) {
 			reader_ptr = std::make_shared<VtkMeshReader>(file_name);
+		} else if ( file_name.extension() == ".pvd" ) {
+			reader_ptr = std::make_shared<PvdMeshReader>(file_name);
 		} else {
 			THROW(BaseMeshReader::ExcWrongExtension()
 				<< BaseMeshReader::EI_FileExtension(file_name.extension()) << BaseMeshReader::EI_MeshFile((string)file_name) );

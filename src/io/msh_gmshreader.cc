@@ -319,7 +319,7 @@ void GmshMeshReader::make_header_table()
 
 
 
-MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
+BaseMeshReader::MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
 {
 	HeaderTable::iterator table_it = header_table_.find(field_name);
 
