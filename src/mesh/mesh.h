@@ -211,11 +211,17 @@ public:
      */
     unsigned int max_edge_sides(unsigned int dim) const { return max_edge_sides_[dim-1]; }
 
-
     /**
-     * Fills vectors of ID numbers of bulk and bc elements.
+     * Reads mesh from stream.
+     *
+     * Method is especially used in unit tests.
      */
-    void elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const;
+    void read_gmsh_from_stream(istream &in);
+    /**
+     * Reads input record, creates regions, read the mesh, setup topology. creates region sets.
+     */
+    void init_from_input();
+
 
     /**
      * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
@@ -223,6 +229,12 @@ public:
      */
     void setup_topology();
     
+    /**
+     * Returns vector of ID numbers of elements, either bulk or bc elemnts.
+     */
+    void elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const;
+
+
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
 
     /**
@@ -306,7 +318,7 @@ public:
     }
 
     /// Getter for BIH. Creates and compute BIH at first call.
-    const BIHTree &get_bih_tree();
+    const BIHTree &get_bih_tree();\
 
     /**
      * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
@@ -396,6 +408,12 @@ protected:
 
     unsigned int n_bb_neigh, n_vb_neigh;
 
+    /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
+    /// in input mesh file and has ID assigned.
+    ///
+    /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
+    mutable vector<int> bulk_elements_id_, boundary_elements_id_;
+
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];
 
@@ -433,6 +451,7 @@ protected:
 
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
+
 
     friend class RegionSetBase;
     friend class Element;

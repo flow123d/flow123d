@@ -258,6 +258,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
 
 
+
 void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int precision)
 {
     out << setw(indent_spaces) << "" << "- name: " << name_ << endl;

@@ -758,6 +758,9 @@ const BIHTree &Mesh::get_bih_tree() {
     return *bih_tree_;
 }
 
+double Mesh::global_observe_radius() const {
+	return in_record_.val<double>("global_observe_search_radius");
+}
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
 	region_db_.add_region(id, name, dim, "$PhysicalNames");
@@ -801,7 +804,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		ele->node[ni] = node;
 	}
 
-	// check that tetrahedron element is numbered correctly and is not degenerated
+    // check that tetrahedron element is numbered correctly and is not degenerated
     if(ele->dim() == 3)
     {
         double jac = ele->tetrahedron_jacobian();
@@ -816,11 +819,6 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 		this->create_node_element_lists();
 	}
 	return node_elements_;
-}
-
-
-double Mesh::global_observe_radius() const {
-	return in_record_.val<double>("global_observe_search_radius");
 }
 
 //-----------------------------------------------------------------------------
