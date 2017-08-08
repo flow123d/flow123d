@@ -210,11 +210,11 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
-		BaseMeshReader::NativeDataParams native_data_params;
+		BaseMeshReader::DiscretizationParams disc_params;
 		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
-				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_, native_data_params);
-		if (native_data_params.vtk_native_data) {
-			ASSERT_EQ(native_data_params.dof_handler_hash, dh_->hash())(native_data_params.dof_handler_hash)(dh_->hash())
+				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_, disc_params);
+		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {
+			ASSERT_EQ(disc_params.dof_handler_hash, dh_->hash())(disc_params.dof_handler_hash)(dh_->hash())
 					.error("Invalid DOF handler!\n");
 			this->calculate_native_values(data_vec);
 		} else {

@@ -136,7 +136,7 @@ TEST(VtkReaderTest, read_ascii_vtu) {
     	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
-    	EXPECT_FALSE( data_attr.vtk_native_data );
+    	EXPECT_EQ( data_attr.discretization, BaseMeshReader::Discretization::mesh_definition );
     }
 
     {
@@ -146,7 +146,7 @@ TEST(VtkReaderTest, read_ascii_vtu) {
     	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
     	EXPECT_EQ( 6, data_attr.n_entities );
-    	EXPECT_TRUE( data_attr.vtk_native_data );
+    	EXPECT_EQ( data_attr.discretization, BaseMeshReader::Discretization::native_data );
     	EXPECT_EQ( 6, data_attr.dof_handler_hash );
     }
 
@@ -194,11 +194,11 @@ TEST(VtkReaderTest, read_binary_vtu) {
 
 
     bool boundary_domain = false; // bulk data
-    BaseMeshReader::NativeDataParams native_data_params;
+    BaseMeshReader::DiscretizationParams disc_params;
     // read data by components for MultiField
     for (i=0; i<3; ++i) {
         typename ElementDataCache<double>::ComponentDataPtr multifield_data =
-        		reader->get_element_data<double>("vector_field", 0.0, 6, 1, boundary_domain, i, native_data_params);
+        		reader->get_element_data<double>("vector_field", 0.0, 6, 1, boundary_domain, i, disc_params);
     	std::vector<double> &vec = *( multifield_data.get() );
     	EXPECT_EQ(6, vec.size());
     	for (j=0; j<vec.size(); j++) {
@@ -210,7 +210,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     {
     	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
-    			reader->get_element_data<double>("tensor_field", 1.0, 6, 9, boundary_domain, 0, native_data_params);
+    			reader->get_element_data<double>("tensor_field", 1.0, 6, 9, boundary_domain, 0, disc_params);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
     	for (j=0; j<vec.size(); j++) {

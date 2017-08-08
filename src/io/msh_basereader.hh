@@ -66,13 +66,24 @@ public:
 			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
 
 
+    /**
+     * Specify section where to find the field, some sections are specific to file format.
+     */
+	enum Discretization {
+		node_data,         ///< point_data (VTK) / node_data (GMSH)
+		element_data,      ///< cell_data (VTK) / element_data (GMSH)
+		element_node_data, ///< element_node_data (only for VTK)
+		native_data,       ///< native_data (only for GMSH)
+		mesh_definition    ///< special case of section (of VTK) that defines mesh
+	};
+
 	/**
 	 * Store base data that determines native data of VTK file.
 	 *
 	 * Structure is filled in get_element data and has effect only for VTK files.
 	 */
-	struct NativeDataParams {
-        bool vtk_native_data;          ///< Flag marks native data of VTK file
+	struct DiscretizationParams {
+		Discretization discretization; ///< Flag marks native data of VTK file
         std::size_t dof_handler_hash;  ///< Hash of DOF handler object
 	};
 
@@ -127,7 +138,7 @@ public:
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool boundary_domain, unsigned int component_idx, NativeDataParams &native_data);
+    		unsigned int n_components, bool boundary_domain, unsigned int component_idx, DiscretizationParams &disc_params);
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.
@@ -180,8 +191,8 @@ protected:
         Tokenizer::Position position;
         /// Type of data (used only for VTK reader)
         DataType type;
-        /// Flag marks native data of VTK file
-        bool vtk_native_data;
+        /// Flag marks input discretization of data of VTK file
+        Discretization discretization;
         /// Hash of DOF handler object (only for native data of VTK file)
         std::size_t dof_handler_hash;
     };

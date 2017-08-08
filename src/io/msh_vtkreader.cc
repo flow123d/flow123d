@@ -151,7 +151,7 @@ Tokenizer::Position VtkMeshReader::get_appended_position() {
 
 
 BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos,
-		bool is_native_data)
+		Discretization disc)
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
@@ -161,8 +161,8 @@ BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node,
     } catch(ExcWrongType &e) {
         e << EI_SectionTypeName("DataArray " + header.field_name);
     }
-    header.vtk_native_data = is_native_data;
-    if (is_native_data) {
+    header.discretization = disc;
+    if (disc == Discretization::native_data) {
         header.n_components = node.attribute("n_dofs_per_element").as_uint();
     	header.dof_handler_hash = node.attribute("dof_handler_hash").as_uint();
     } else {
@@ -220,30 +220,31 @@ void VtkMeshReader::make_header_table()
 	header_table_.clear();
 
 	// create headers of Points and Cells DataArrays
-	header_table_["Points"] = create_header( node.child("Points").child("DataArray"), n_nodes, appended_pos );
+	header_table_["Points"] = create_header( node.child("Points").child("DataArray"), n_nodes, appended_pos,
+			Discretization::mesh_definition );
 	header_table_["Points"].field_name = "Points";
-	header_table_["connectivity"]
-			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"), n_elements, appended_pos );
-	header_table_["offsets"]
-			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"), n_elements, appended_pos );
-	header_table_["types"]
-			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements, appended_pos );
+	header_table_["connectivity"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"),
+			n_elements, appended_pos, Discretization::mesh_definition );
+	header_table_["offsets"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"),
+			n_elements, appended_pos, Discretization::mesh_definition );
+	header_table_["types"] = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements,
+			appended_pos, Discretization::mesh_definition );
 
 	pugi::xml_node point_node = node.child("PointData");
 	for (pugi::xml_node subnode = point_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_nodes, appended_pos );
+		auto header = create_header( subnode, n_nodes, appended_pos, Discretization::node_data );
 		header_table_[header.field_name] = header;
 	}
 
 	pugi::xml_node cell_node = node.child("CellData");
 	for (pugi::xml_node subnode = cell_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_elements, appended_pos );
+		auto header = create_header( subnode, n_elements, appended_pos, Discretization::element_data );
 		header_table_[header.field_name] = header;
 	}
 
 	pugi::xml_node native_node = node.child("Flow123dData");
 	for (pugi::xml_node subnode = native_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_elements, appended_pos, true );
+		auto header = create_header( subnode, n_elements, appended_pos, Discretization::native_data );
 		header_table_[header.field_name] = header;
 	}
 }
