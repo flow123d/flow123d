@@ -653,9 +653,9 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     double velocity_diff=0, divergence_diff=0, pressure_diff=0, diff;
 
     double pressure_mean = result.dh->element_scalar(ele);
-    XFEMElementSingularData* xd = nullptr;
+//     XFEMElementSingularData* xd = nullptr;
     if(ele_ac.is_enriched())
-        xd = ele_ac.xfem_data_sing();
+//         xd = ele_ac.xfem_data_sing();
        
 //     // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
 //     // 2d:  mean_x_squared = 1/12 (v0^2 + v1^2 +v2^2 + v0*v1 + v0*v2 + v1*v2)
@@ -780,7 +780,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     // end XFEM stuff ...
     
     
-    FilePath source_file( "analytical_module_2w_koeppl.py", FilePath::input_file);
+//     FilePath source_file( "analytical_module_2w_koeppl.py", FilePath::input_file);
+    FilePath source_file( "analytical_module.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
     anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
 
@@ -845,7 +846,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             
             // prepare xfem
             if(dim == 2 && ele->xfem_data != nullptr){
-                XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+                XFEMElementSingularData<2> * xdata = ele_ac.xfem_data_sing<2>();
         
                 std::shared_ptr<Singularity0D> func = std::static_pointer_cast<Singularity0D>(xdata->enrichment_func(0));
                 

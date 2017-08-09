@@ -549,7 +549,7 @@ protected:
 template<> inline
 void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
         
-    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+    XFEMElementSingularData<2> * xdata = ele_ac.xfem_data_sing<2>();
     
     std::shared_ptr<Singularity0D> func = std::static_pointer_cast<Singularity0D>(xdata->enrichment_func(0));
     
@@ -694,20 +694,20 @@ void AssemblyMHXFEM<2>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
 template<> inline
 void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
 
-    ElementFullIter ele = ele_ac.full_iter();
-    XFEMElementSingularData * xd = ele_ac.xfem_data_sing();
+//     ElementFullIter ele = ele_ac.full_iter();
+    XFEMElementSingularData<2> * xd = ele_ac.xfem_data_sing<2>();
     
     //as long as pressure is not enriched and is P0
     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
 //     double temp = 1.0;
 //     int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
     
-    int nvals = loc_vel_dofs.size();
-    double val;
+//     int nvals = loc_vel_dofs.size();
+//     double val;
     
     
     for(unsigned int w=0; w < xd->n_enrichments(); w++){
-        if(xd->is_singularity_inside(w)){
+        if(xd->enrichment_intersects(w)){
 //             auto quad = xd->sing_quadrature(w);
 //             fv_rt_sing_ = std::make_shared<FEValues<2,3>> 
 //                             (map_, quad, *fe_rt_xfem_, update_values);
@@ -755,14 +755,15 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
             DBGVAR(loc_enr_vel_dof);
             // robin like condition with sigma
             // well lagrange multiplier test function is 1
-            double sing_flow = arma::norm(sing->vector(xd->sing_quadrature(w).real_point(0)),2) * sing->circumference();
+            double effective_surface = sing->geometry().effective_surface();
+            double sing_flow = arma::norm(sing->vector(xd->sing_quadrature(w).real_point(0)),2) * effective_surface;
             DBGVAR(sing_flow);
             loc_system_.add_value(loc_enr_vel_dof, loc_sing_dof, sing_flow, 0);
             loc_system_.add_value(loc_sing_dof, loc_enr_vel_dof, sing_flow, 0);
             
             loc_system_.add_value(loc_sing_dof, loc_sing_dof,
-                                  - sing->circumference() * sing->sigma(),
-                                  - sing->circumference() * sing->sigma() * sing->pressure());
+                                  - effective_surface * sing->sigma(),
+                                  - effective_surface * sing->sigma() * sing->pressure());
         }
     }
 }
@@ -829,7 +830,7 @@ arma::vec3 AssemblyMHXFEM<2>::make_element_vector_xfem(LocalElementAccessorBase<
     flux_in_center.zeros();
     ElementFullIter ele = ele_ac.full_iter();
     
-    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+    XFEMElementSingularData<2> * xdata = ele_ac.xfem_data_sing<2>();
     fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
     
     FEValues<2,3> fv_xfem(map_,velocity_interpolation_quad_, *fe_rt_xfem_, update_values | update_quadrature_points);

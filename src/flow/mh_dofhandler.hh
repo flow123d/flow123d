@@ -44,8 +44,9 @@ class LocalElementAccessorBase;
 #include "fields/field.hh"
 #include "fem/xfem_element_data.hh"
 
-class XFEMElementSingularData;
+template<int> class XFEMElementSingularData;
 class Singularity0D;
+class Singularity1D;
 
 
 /// temporary solution to provide access to results
@@ -117,7 +118,8 @@ public:
     // XFEM:
 public:
     
-    typedef typename std::shared_ptr<Singularity0D> SingularityPtr;
+    typedef typename std::shared_ptr<Singularity0D> Singularity0DPtr;
+    typedef typename std::shared_ptr<Singularity1D> Singularity1DPtr;
     
     void reinit(Mesh *mesh,
                 Field<3, FieldValue<3>::Scalar>& cross_section,
@@ -144,12 +146,15 @@ public:
 protected:
     static const int empty_node_idx;
     
-    void create_enrichment(std::vector<SingularityPtr> &singularities,
+    void create_enrichment(std::vector<Singularity0DPtr> &singularities,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
     
+    void create_enrichment(std::vector<Singularity1DPtr> &singularities,
+                           Field<3, FieldValue<3>::Scalar>& cross_section,
+                           Field<3, FieldValue<3>::Scalar>& sigma);
 
-    void find_ele_to_enrich(SingularityPtr sing, int ele1d_global_idx,
+    void find_ele_to_enrich(Singularity0DPtr sing, int ele1d_global_idx,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
     
     void clear_mesh_flags();
@@ -169,10 +174,12 @@ protected:
     
     void update_standard_dofs();
     
-    std::vector<SingularityPtr> singularities_12d_;
+    std::vector<Singularity0DPtr> singularities_12d_;
+    std::vector<Singularity1DPtr> singularities_13d_;
     
-    std::vector<XFEMComplementData> xfem_data_1d;
-    std::vector<XFEMElementSingularData> xfem_data;
+//     std::vector<XFEMComplementData> xfem_data_1d;
+    std::vector<XFEMElementSingularData<2>> xfem_data_2d;
+    std::vector<XFEMElementSingularData<3>> xfem_data_3d;
     
 //     std::vector<std::map<int, double> > node_values;
 //     std::vector<std::map<int, Space<3>::Point> > node_vec_values;
@@ -296,12 +303,10 @@ public:
         return ele->xfem_data;
     }
     
-    XFEMElementSingularData* xfem_data_sing(){
-        if(is_enriched()){
-            return static_cast<XFEMElementSingularData*>(ele->xfem_data);
-        }
-        ASSERT_DBG(0).error("Element not enriched with any XFEM data!");
-        return nullptr;
+    template<int dim>
+    XFEMElementSingularData<dim>* xfem_data_sing(){
+        ASSERT_DBG(is_enriched()).error("Element not enriched with any XFEM data!");
+        return static_cast<XFEMElementSingularData<dim>*>(ele->xfem_data);
     }
     
     bool is_enriched(){
@@ -309,16 +314,15 @@ public:
     }
     
     int sing_row(uint local_enrichment_index){
-        return dh->row_4_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+        return dh->row_4_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
     }
 
-
     int vel_sing_row(uint local_enrichment_index){
-        return dh->row_4_vel_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+        return dh->row_4_vel_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
     }
 
     int press_sing_row(uint local_enrichment_index){
-        return dh->row_4_press_sing[xfem_data_sing()->global_enrichment_index(local_enrichment_index)];
+        return dh->row_4_press_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
     }
 
 //     int get_dofs(Quantity quant, int dofs[])
@@ -340,7 +344,7 @@ public:
         for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
         
         if(is_enriched() && ! ele->xfem_data->is_complement()){
-            XFEMElementSingularData* xd = xfem_data_sing();
+            XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
                 if(dh->single_enr && dh->enrich_velocity){
                     dofs[i] = dh->row_4_vel_sing[xd->global_enrichment_index(w)];
@@ -361,7 +365,7 @@ public:
         uint i = 1;
         
         if(is_enriched() && ! ele->xfem_data->is_complement()){
-            XFEMElementSingularData* xd = xfem_data_sing();
+            XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
                 if(dh->single_enr && dh->enrich_pressure){
                     dofs[i] = dh->row_4_press_sing[xd->global_enrichment_index(w)];
@@ -384,9 +388,9 @@ public:
         
         // singularity lagrange multipliers
         if(is_enriched() && ! ele->xfem_data->is_complement()){
-            XFEMElementSingularData* xd = xfem_data_sing();
+            XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
-                if(xd->is_singularity_inside(w)){
+                if(xd->enrichment_intersects(w)){
                     dofs[d] = dh->row_4_sing[xd->global_enrichment_index(w)];
                     d++;
                 }

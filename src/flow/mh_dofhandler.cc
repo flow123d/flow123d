@@ -144,7 +144,7 @@ void MH_DofHandler::print_dofs_dbg()
         
         DBGCOUT("### DOFS ele " << ele_ac.ele_global_idx() << "   ");
         cout << "[" << ele_ac.is_enriched();
-        if(ele_ac.is_enriched()) cout << ", " << ele_ac.xfem_data_sing()->n_enrichments();
+        if(ele_ac.is_enriched()) cout << ", " << ele_ac.xfem_data_pointer()->n_enrichments();
         cout << "]  ";
         
         for(int i =0; i < ndofs; i++){
@@ -436,7 +436,7 @@ void MH_DofHandler::update_standard_dofs()
 }
 
 
-void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
+void MH_DofHandler::create_enrichment(vector< Singularity0DPtr >& singularities,
                                       Field<3, FieldValue<3>::Scalar>& cross_section,
                                       Field<3, FieldValue<3>::Scalar>& sigma)
 {
@@ -454,7 +454,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
 //     node_vec_values.reserve(sing_count_guess);
     
     //TODO propose some allocation size for xfem data
-    xfem_data.reserve(mesh_->n_elements());
+    xfem_data_2d.reserve(mesh_->n_elements());
     
 //     // TODO: use mesh_->mixed_mesh_intersections()    
 //     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
@@ -554,16 +554,17 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     
                 
     //create singularity
-    Space<3>::Point center ({4.42, 2.08, 0}); //triangle
-//     Space<3>::Point center ({3.33, 3.33, 0}); //triangle
+//     Space<3>::Point center ({4.42, 2.08, 0}); //triangle
+    Space<3>::Point center ({3.33, 3.33, 0}); //triangle
 //     Space<3>::Point center ({-0.1, 0, 0}); //circle
 //     Space<3>::Point center ({0.3, 0.3, 0}); //circle
     double radius = 0.03,//0.001643168,
            sigma_const = 10.0,
-           pressure = 50;//165.62;//100 + 28.5 * std::log(10);
-//            pressure = 100;
+//            pressure = 50;//165.62;//100 + 28.5 * std::log(10);
+           pressure = 100;
     Space<3>::Point direction_vector ({0,0,1});
     Space<3>::Point n;
+    unsigned int n_qpoints = 100;
     
     ElementFullIter ele2d(mesh_->element.begin());
     for(; ele2d != mesh_->element.end(); ++ele2d){
@@ -583,7 +584,7 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
                 
     DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
                 
-    auto sing = std::make_shared<Singularity0D>(center, radius, direction_vector, n);
+    auto sing = std::make_shared<Singularity0D>(center, radius, direction_vector, n, n_qpoints);
     // set sigma of 1d element
     sing->set_sigma(sigma_const);
     sing->set_pressure(pressure);
@@ -598,52 +599,52 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     find_ele_to_enrich(singularities.back(), 0, ele2d, enr_radius, new_enrich_node_idx);
     
     //create singularity
-    Space<3>::Point center2 ({2.08, 4.42, 0}); //triangle
-    double radius2 = 0.03,//0.001643168,
-           sigma_const2 = 10.0,
-           pressure2 = 50;//165.62;//100 + 28.5 * std::log(10);
-    Space<3>::Point direction_vector2 ({0,0,1});
-    Space<3>::Point n2;
-    
-    ele2d = mesh_->element.begin();
-    for(; ele2d != mesh_->element.end(); ++ele2d){
-        if(ele2d->dim() == 2){
-            MappingP1<2,3> map;
-            arma::vec p = map.project_real_to_unit(center2,map.element_map(*ele2d));
-            if(p[0]>=0.0 && p[0]<=1.0 &&
-               p[1]>=0.0 && p[1]<=1.0 &&
-               p[2]>=0.0 && p[2]<=1.0)
-            {
-                n2 = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
-                                ele2d->node[2]->point() - ele2d->node[0]->point());
-                break;
-            }
-        }
-    }
-                
-    DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
-                
-    auto sing2 = std::make_shared<Singularity0D>(center2, radius2, direction_vector2, n2);
-    // set sigma of 1d element
-    sing2->set_sigma(sigma_const2);
-    sing2->set_pressure(pressure2);
-    singularities.push_back(sing2);
-
-    //TODO: suggest proper enrichment radius
-//     double enr_radius = 1.3*std::sqrt(ele2d->measure());
-//     double enr_radius = 1.0;
-    DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
-    clear_mesh_flags();
-
-    find_ele_to_enrich(singularities.back(), 0, ele2d, enr_radius, new_enrich_node_idx);
+//     Space<3>::Point center2 ({2.08, 4.42, 0}); //triangle
+//     double radius2 = 0.03,//0.001643168,
+//            sigma_const2 = 10.0,
+//            pressure2 = 50;//165.62;//100 + 28.5 * std::log(10);
+//     Space<3>::Point direction_vector2 ({0,0,1});
+//     Space<3>::Point n2;
+//     
+//     ele2d = mesh_->element.begin();
+//     for(; ele2d != mesh_->element.end(); ++ele2d){
+//         if(ele2d->dim() == 2){
+//             MappingP1<2,3> map;
+//             arma::vec p = map.project_real_to_unit(center2,map.element_map(*ele2d));
+//             if(p[0]>=0.0 && p[0]<=1.0 &&
+//                p[1]>=0.0 && p[1]<=1.0 &&
+//                p[2]>=0.0 && p[2]<=1.0)
+//             {
+//                 n2 = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
+//                                 ele2d->node[2]->point() - ele2d->node[0]->point());
+//                 break;
+//             }
+//         }
+//     }
+//                 
+//     DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
+//                 
+//     auto sing2 = std::make_shared<Singularity0D>(center2, radius2, direction_vector2, n2);
+//     // set sigma of 1d element
+//     sing2->set_sigma(sigma_const2);
+//     sing2->set_pressure(pressure2);
+//     singularities.push_back(sing2);
+// 
+//     //TODO: suggest proper enrichment radius
+// //     double enr_radius = 1.3*std::sqrt(ele2d->measure());
+// //     double enr_radius = 1.0;
+//     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
+//     clear_mesh_flags();
+// 
+//     find_ele_to_enrich(singularities.back(), 0, ele2d, enr_radius, new_enrich_node_idx);
     
     
     //shrink here (invalidates iterators, pointers); element xdata pointer is set in distribute_enriched_dofs()
-    xfem_data.shrink_to_fit();
+    xfem_data_2d.shrink_to_fit();
 
     // update invalid pointers //HACK for xfem without enriching:
 //     if(! (enrich_pressure || enrich_velocity))
-    for(XFEMElementSingularData& xdata : xfem_data){
+    for(auto& xdata : xfem_data_2d){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
 //         xdata.print(cout);
         ele->xfem_data = &xdata;
@@ -656,13 +657,15 @@ void MH_DofHandler::create_enrichment(vector< SingularityPtr >& singularities,
     update_standard_dofs();
     
     // Evaluate singularity quad points around the circle/ellipse.
-    for(XFEMElementSingularData& xd: xfem_data){
+    for(auto& xd: xfem_data_2d){
         //TODO: distribute quad points around the well more effectively
         ElementFullIter ele = mesh_->element(xd.ele_global_idx());
-        xd.create_sing_quads(ele);
-        DBGVAR(xd.n_singularities_inside());
+        
+        auto xds = static_cast<XFEMElementSingularData<2>*>(&xd);
+        xds->create_sing_quads(ele);
+        DBGVAR(xd.n_enrichments_intersect());
 //         xd.print(cout);
-        ele->xfem_data = &xd;
+        ele->xfem_data = xds;
         //HACK:
         if(! enrich_pressure)
             xd.global_enriched_dofs()[Quantity::pressure].resize(xd.n_enrichments());
@@ -783,7 +786,7 @@ void MH_DofHandler::distribute_enriched_dofs(int n_enriched_nodes)
 // }
 
 
-void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
+void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
                                        int ele1d_global_idx,
                                    ElementFullIter ele,
                                    double radius,
@@ -799,7 +802,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
 //     bool enrich = true;
     bool enrich = false;
     for(unsigned int i=0; i < ele->n_nodes(); i++){
-        double d = arma::norm(sing->center() - ele->node[i]->point(),2);
+        double d = sing->geometry().distance(ele->node[i]->point());
 //         DBGCOUT(<< d << "\n");
         if(d < radius){
             enrich = true;
@@ -807,7 +810,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         else
         {
             MappingP1<2,3> map;
-            arma::vec up = map.project_real_to_unit(sing->center(),map.element_map(*ele));
+            arma::vec up = map.project_real_to_unit(sing->geometry_ellipse().center(),map.element_map(*ele));
             if(up(0) >= 0.0 && up(0) <= 1.0 &&
                up(1) >= 0.0 && up(1) <= 1.0 &&
                up(2) >= 0.0 && up(2) <= 1.0)
@@ -828,11 +831,11 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         // add new xfem data
         unsigned int sing_idx = singularities_12d_.size()-1;
         
-        XFEMElementSingularData * xdata;
+        XFEMElementSingularData<2> * xdata;
         
         if(ele->xfem_data == nullptr){   //possibly create new one
-            xfem_data.push_back(XFEMElementSingularData());
-            xdata = & xfem_data.back();
+            xfem_data_2d.push_back(XFEMElementSingularData<2>());
+            xdata = & xfem_data_2d.back();
 //             xdata->set_node_values(&node_values, &node_vec_values);
             //TODO: set number of quantities
             xdata->global_enriched_dofs().resize(2);
@@ -847,7 +850,7 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
         }
         else{
             DBGCOUT(<< "existing XData\n");
-            xdata = static_cast<XFEMElementSingularData*>(ele->xfem_data);
+            xdata = static_cast<XFEMElementSingularData<2>*>(ele->xfem_data);
             xdata->print(cout);
             ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMElementSingularData Type!");
         }
@@ -889,12 +892,12 @@ void MH_DofHandler::find_ele_to_enrich(SingularityPtr sing,
 
 
 void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_dofs,
-                                               int& offset,
-                                               Quantity quant)
+                                             int& offset,
+                                             Quantity quant)
 {
     unsigned int w,i,node_idx;
     
-    for(XFEMElementSingularData& xdata : xfem_data){
+    for(XFEMElementDataBase& xdata : xfem_data_2d){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
         std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
         dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes(), -1));
@@ -949,7 +952,7 @@ void MH_DofHandler::distribute_enriched_dofs(int& offset,
 {
     unsigned int w;
     
-    for(XFEMElementSingularData& xdata : xfem_data){
+    for(XFEMElementDataBase& xdata : xfem_data_2d){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
         std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
         dofs.resize(xdata.n_enrichments(), std::vector<int>(1, -1));

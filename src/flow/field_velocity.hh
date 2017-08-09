@@ -68,8 +68,7 @@ public:
     }
     
     void update_quad(ElementFullIter ele, const Point &p){
-        MappingP1<2,3> map;
-        arma::vec unit_p = map_.project_real_to_unit(p,map.element_map(*ele));
+        arma::vec unit_p = map_.project_real_to_unit(p,map_.element_map(*ele));
         quad_.resize(1);
         quad_.set_point(0, RefElement<dim>::bary_to_local(unit_p));
         quad_.set_real_point(0,p);
@@ -99,12 +98,6 @@ public:
     }
     
     Value value_vector_xfem(LocalElementAccessorBase<3> ele_ac){
-        Value flux;
-        ASSERT_DBG(0).error("Not implemented!");
-        return flux;
-    }
-    
-    Value value_vector_xfem_single(LocalElementAccessorBase<3> ele_ac, const Point &p){
         Value flux;
         ASSERT_DBG(0).error("Not implemented!");
         return flux;
@@ -204,7 +197,7 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
     flux.zeros();
     ElementFullIter ele = ele_ac.full_iter();
     
-    XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
+    XFEMElementSingularData<2> * xdata = ele_ac.xfem_data_sing<2>();
     if(mh_dh_->single_enr) fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM_S<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
     else fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
 //     fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
@@ -230,22 +223,4 @@ auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele
     return flux;
 }
 
-// template<> inline
-// auto FieldVelocityInternal<2>::value_vector_xfem_single(LocalElementAccessorBase<3> ele_ac, const Point &p) -> Value
-// {
-//     Value flux, temp;
-//     flux.zeros();
-//     ElementFullIter ele = ele_ac.full_iter();
-//     
-//     XFEMElementSingularData * xdata = ele_ac.xfem_data_sing();
-//     
-//     if(reg_) flux += value_vector_regular(ele);
-//     
-//     for (unsigned int w = 0; w < xdata->n_enrichments(); w++){
-//         auto sing = xdata->enrichment_func(w);
-//         flux += mh_dh_->mh_solution[ele_ac.vel_sing_row(w)] * sing->vector(p);
-//     }
-// //     DBGVAR(flux);
-//     return flux;
-// }
 #endif /* FIELD_VELOCITY_HH_ */

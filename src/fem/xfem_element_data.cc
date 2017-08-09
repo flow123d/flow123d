@@ -1,32 +1,20 @@
 #include "xfem_element_data.hh"
 #include "singularity.hh"
+#include "quadrature/qxfem.hh"
 
 #include <armadillo>
 #include "mapping_p1.hh"
 
 using namespace std;
 
-XFEMElementSingularData::XFEMElementSingularData()
-{}
-
-XFEMElementSingularData::~XFEMElementSingularData()
-{}
-
-
-vector< vector< vector< int > > >& XFEMElementSingularData::global_enriched_dofs()
-{
-    return global_enriched_dofs_;
-}
-
-
-const vector< int >& XFEMElementSingularData::global_enriched_dofs(Quantity quant,
-                                                                   unsigned int local_enrichment_index) const
+const vector< int >& XFEMElementDataBase::global_enriched_dofs(Quantity quant,
+                                                               unsigned int local_enrichment_index) const
 {   ASSERT_DBG(quant < global_enriched_dofs_.size());
     ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
     return global_enriched_dofs_[quant][local_enrichment_index];
 }
 
-unsigned int XFEMElementSingularData::n_enriched_dofs(Quantity quant) const
+unsigned int XFEMElementDataBase::n_enriched_dofs(Quantity quant) const
 {
 //     DBGVAR(ele_global_idx_); cout<<endl;
 //     DBGVAR(global_enriched_dofs_.size()); cout<<endl;
@@ -37,21 +25,51 @@ unsigned int XFEMElementSingularData::n_enriched_dofs(Quantity quant) const
     ASSERT_DBG(global_enriched_dofs_[quant].size() > 0);
 //     ASSERT_DBG(global_enriched_dofs_[quant][0].size() > 0);
     // if quantity not enriched, then returns 0
-    //FIXME: supposing that all enrichments have the same number of enr dofs
-    return global_enriched_dofs_[quant].size() * global_enriched_dofs_[quant][0].size();
+    unsigned int count;
+    for(auto& q :global_enriched_dofs_)
+        count += q.size();
+    return count;
 }
 
-unsigned int XFEMElementSingularData::n_enriched_dofs(Quantity quant,
-                                                      unsigned int local_enrichment_index) const
+unsigned int XFEMElementDataBase::n_enriched_dofs(Quantity quant,
+                                                  unsigned int local_enrichment_index) const
 {
     ASSERT_DBG(quant < global_enriched_dofs_.size());
     ASSERT_DBG(local_enrichment_index < global_enriched_dofs_[quant].size());
     return global_enriched_dofs_[quant][local_enrichment_index].size();
 }
 
-void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
+unsigned int XFEMElementDataBase::n_enrichments_intersect() const
 {
-    const unsigned int n_qpoints = 100;
+    unsigned int count = 0;
+    for(unsigned int w=0; w < this->n_enrichments(); w++){
+        if(enrichment_intersects_[w]) count++;
+    }
+    return count;
+}
+
+
+void XFEMElementDataBase::print(ostream& out) const
+{
+    out << this << "xdata: ele " << this->ele_global_idx_;
+//     out << " dofs[ ";
+// //     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
+//     for(unsigned int q=0; q<2; q++)
+//         for(unsigned int w=0; w<n_enrichments(); w++)
+//             for(unsigned int j=0; j<global_enriched_dofs_[q][w].size(); j++){
+//                 out << global_enriched_dofs_[q][w][j] << " ";
+//             }
+//     out << "]\n";
+}
+
+
+
+template<int dim> XFEMElementSingularData<dim>::XFEMElementSingularData(){}
+template<int dim> XFEMElementSingularData<dim>::~XFEMElementSingularData(){}
+
+template<>
+void XFEMElementSingularData<2>::create_sing_quads(ElementFullIter ele)
+{
 //     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
     sing_quads_.resize(n_enrichments());
     
@@ -62,14 +80,13 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
     
     DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
     for(unsigned int w=0; w < n_enrichments(); w++){
-        std::shared_ptr<Singularity0D> sing = static_pointer_cast<Singularity0D>(enrichment_func(w));
-        sing->evaluate_q_points(n_qpoints);
+        const Geometry& geom = enrichment_func(w)->geometry();
         
         unit_points_inside.clear();
         
 //         DBGCOUT(<< "test q_points\n");
-        for(unsigned int q=0; q < n_qpoints; q++){
-            const Space<3>::Point & p = sing->q_points()[q];
+        for(unsigned int q=0; q < geom.q_points().size(); q++){
+            const Space<3>::Point & p = geom.q_points()[q];
             arma::vec unit_p = map.project_real_to_unit(p, proj);
             
 //             if(ele->index() == 42){
@@ -88,51 +105,83 @@ void XFEMElementSingularData::create_sing_quads(ElementFullIter ele)
         
         QXFEM<2,3>& qxfem = sing_quads_[w];
         qxfem.resize(unit_points_inside.size());
-        double weight =  sing->circumference() / n_qpoints;
+        double weight = geom.effective_surface() / geom.q_points().size();
         std::map<unsigned int, arma::vec>::const_iterator pair;
         unsigned int i = 0;
         for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++, i++){
             
             qxfem.set_point(i, RefElement<2>::bary_to_local(pair->second));
-            qxfem.set_real_point(i, sing->q_points()[pair->first]);
+            qxfem.set_real_point(i, geom.q_points()[pair->first]);
+            qxfem.set_weight(i,weight);
+        }
+        //determine if enrichment is cross-secting the element
+        enrichment_intersects_[w] = (qxfem.size() > 0);
+        
+        DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
+    }
+}
+
+
+template<>
+void XFEMElementSingularData<3>::create_sing_quads(ElementFullIter ele)
+{
+//     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+    sing_quads_.resize(n_enrichments());
+    
+    MappingP1<3,3> map;
+    arma::mat proj = map.element_map(*ele);
+    BoundingBox& bb = ele->get_bounding_box_fast();
+    
+    std::map<unsigned int, arma::vec> unit_points_inside;
+    
+    DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
+    for(unsigned int w=0; w < n_enrichments(); w++){
+        const Geometry& geom = enrichment_func(w)->geometry();
+        unit_points_inside.clear();
+        
+//         DBGCOUT(<< "test q_points\n");
+        for(unsigned int q=0; q < geom.q_points().size(); q++){
+            const Space<3>::Point & p = geom.q_points()[q];
+            
+            //fast check
+            if( ! bb.contains_point(p)) continue;
+            
+            //slow projection
+            arma::vec unit_p = map.project_real_to_unit(p, proj);
+            
+            if( unit_p(0) >= 0 && unit_p(0) <= 1 &&
+                unit_p(1) >= 0 && unit_p(1) <= 1 &&
+                unit_p(2) >= 0 && unit_p(2) <= 1 &&
+                unit_p(3) >= 0 && unit_p(3) <= 1 ){
+        
+//                 DBGCOUT(<< "qpoint inside\n");
+                unit_points_inside[q] = unit_p;
+            }
+        }
+        
+        QXFEM<3,3>& qxfem = sing_quads_[w];
+        qxfem.resize(unit_points_inside.size());
+        double weight =  geom.effective_surface() / geom.q_points().size();
+        std::map<unsigned int, arma::vec>::const_iterator pair;
+        unsigned int i = 0;
+        for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++, i++){
+            
+            qxfem.set_point(i, RefElement<3>::bary_to_local(pair->second));
+            qxfem.set_real_point(i, geom.q_points()[pair->first]);
             qxfem.set_weight(i,weight);
         }
         DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
     }
 }
 
-unsigned int XFEMElementSingularData::n_singularities_inside() const
-{
-    unsigned int count = 0;
-    for(unsigned int w=0; w < n_enrichments(); w++){
-        if(is_singularity_inside(w)) count++;
-    }
-    return count;
-}
 
-
-bool XFEMElementSingularData::is_singularity_inside(unsigned int local_enrichment_index) const
-{
-    ASSERT_DBG(local_enrichment_index < sing_quads_.size());
-    return sing_quads_[local_enrichment_index].size() > 0;
-}
-
-
-void XFEMElementSingularData::print(ostream& out) const
-{
-    out << this << "xdata: ele " << ele_global_idx_ << " enrichments " << n_enrichments();
-//     out << " dofs[ ";
-// //     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
-//     for(unsigned int q=0; q<2; q++)
-//         for(unsigned int w=0; w<n_enrichments(); w++)
-//             for(unsigned int j=0; j<global_enriched_dofs_[q][w].size(); j++){
-//                 out << global_enriched_dofs_[q][w][j] << " ";
-//             }
-//     out << "]\n";
-}
-
-
-const QXFEM< int(2), int(3) >& XFEMElementSingularData::sing_quadrature(unsigned int local_enrichment_index) const
+template<int dim>
+const QXFEM<dim,3>& XFEMElementSingularData<dim>::sing_quadrature(unsigned int local_enrichment_index) const
 {   ASSERT_DBG(local_enrichment_index < sing_quads_.size());
     return sing_quads_[local_enrichment_index];
 }
+
+
+// explicit instantiation
+template class XFEMElementSingularData<2>;
+template class XFEMElementSingularData<3>;
