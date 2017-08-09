@@ -71,11 +71,11 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
     ea_ = ea_ / arma::norm(ea_,2);
     eb_ = eb_ / arma::norm(eb_,2);
     
-//     (center + u).print(DebugOut(),"direction");
-//     (center + n/arma::norm(n,2)).print(DebugOut(),"normal");
-//     center.print(DebugOut(),"center");
-//     (center+a_*ea_).print(DebugOut(),"a");
-//     (center+b_*eb_).print(DebugOut(),"b");
+//     (center + u).print(cout,"direction");
+//     (center + n/arma::norm(n,2)).print(cout,"normal");
+//     center.print(cout,"center");
+//     (center+a_*ea_).print(cout,"a");
+//     (center+b_*eb_).print(cout,"b");
 }
 
 bool CircleEllipseProjection::point_in_circle(const CircleEllipseProjection::Point& p) const
@@ -148,7 +148,6 @@ void CircleEllipseProjection::project_to_circle_plane(vector< CircleEllipseProje
         Point r = points[j] - center_;
         double r_norm = arma::norm(r,2);
         double cos_r = arma::dot(r,eb_) / r_norm;
-       
         //maximal translation is in eb direction
         //the factor of translation is given by cos of angle between r and eb
         double x = sin_a * r_norm;
@@ -156,6 +155,17 @@ void CircleEllipseProjection::project_to_circle_plane(vector< CircleEllipseProje
     }
 }
 
+void CircleEllipseProjection::evaluate_q_points(unsigned int count)
+{
+     //q_points_.clear();
+    q_points_.resize(count);  
+
+    double phi = 2*M_PI / count;
+    double offset = 1e-10;
+    
+    for(unsigned int i=0; i < count; i++)
+        q_points_[i] = center_ + std::cos(i*phi+offset)*ellipse_b() + std::sin(i*phi+offset)*ellipse_a();
+}
 
 
 
@@ -177,56 +187,8 @@ CylinderGeometry::Point CylinderGeometry::dist_vector(const CylinderGeometry::Po
     return (up - t);
 }
 
-
-
-
-
-
-
-
-
-
-Singularity0D::Singularity0D(const Point& center, double radius,
-                                    const Point& direction_vector, const Point& normal_vector)
-:   geom_(center,radius, direction_vector, normal_vector)
-{
-    radius_rounding_low_bound_ = radius - 1e-8*radius;
-}
-
-// void Singularity0D<2>::evaluate_q_points(unsigned int count)
-// {   
-//     //q_points_.clear();
-//     q_points_.resize(count);
-//     
-//     double phi = 2*M_PI / count;
-//     double offset = 1e-10;
-//     
-//     for(unsigned int i=0; i < count; i++)
-//         q_points_[i] = {center_[0] + radius_*std::cos(i*phi+offset),
-//                         center_[1] + radius_*std::sin(i*phi+offset)};
-// }
-
-void Singularity0D::evaluate_q_points(unsigned int count)
-{
-    //q_points_.clear();
-    q_points_.resize(count);  
-
-    double phi = 2*M_PI / count;
-    double offset = 1e-10;
-    
-    for(unsigned int i=0; i < count; i++)
-        q_points_[i] = geom_.center() + std::cos(i*phi+offset)*geom_.ellipse_b() + std::sin(i*phi+offset)*geom_.ellipse_a();
-}
-
-
-Singularity1D::Singularity1D(const Point& a, const Point& b, double radius)
-:   geom_(a,b,radius)
-{
-    radius_rounding_low_bound_ = radius - 1e-8*radius;
-}
-
-void Singularity1D::evaluate_q_points(unsigned int n, unsigned int m)
-{
+void CylinderGeometry::evaluate_q_points(unsigned int n, unsigned int m)
+{   
     //q_points_.clear();
     q_points_.resize(n*m);  
 
@@ -238,17 +200,17 @@ void Singularity1D::evaluate_q_points(unsigned int n, unsigned int m)
     double min = std::numeric_limits<double>::max();
     unsigned int idx = 0;
     for(unsigned int i=0; i<3; i++){
-        double t = std::abs(arma::dot(geom_.direction_vector(),e_vec[i]));
+        double t = std::abs(arma::dot(direction_vector_,e_vec[i]));
         if( t < min){
             min = t;
             idx = i;
         }
     }
     
-    double length = arma::norm(geom_.direction_vector(), 2);
+    double length = arma::norm(direction_vector_, 2);
     //cross product with rescaled e
-    Point n1 = arma::cross(geom_.direction_vector(), length * e_vec[idx]);
-    Point n2 = arma::cross(geom_.direction_vector(), n1);
+    Point n1 = arma::cross(direction_vector_, length * e_vec[idx]);
+    Point n2 = arma::cross(direction_vector_, n1);
     n1 = n1 / arma::norm(n1,2);
     n2 = n2 / arma::norm(n2,2);
     
@@ -257,13 +219,38 @@ void Singularity1D::evaluate_q_points(unsigned int n, unsigned int m)
     double phi = 2*M_PI / n;
     double z = 1.0 / (m-1);
     double offset = 1e-10;
-    Point center  = geom_.a();
+    Point center  = a_;
     
     for(unsigned int i=0; i < m; i++){
-        center = geom_.a() + i*z*geom_.direction_vector();
+        center = a_ + i*z*direction_vector_;
         for(unsigned int j=0; j < n; j++){
-            q_points_[i*n+j] = center + geom_.radius()*(std::cos(j*phi+offset)*n2 + std::sin(j*phi+offset)*n1);
+            q_points_[i*n+j] = center + radius_*(std::cos(j*phi+offset)*n2 + std::sin(j*phi+offset)*n1);
         }
     }
         
+}
+
+
+
+
+
+
+
+
+Singularity0D::Singularity0D(const Point& center, double radius,
+                             const Point& direction_vector,
+                             const Point& normal_vector,
+                             unsigned int n)
+:   geom_(center,radius, direction_vector, normal_vector)
+{
+    radius_rounding_low_bound_ = radius - 1e-8*radius;
+    geom_.evaluate_q_points(n);
+}
+
+Singularity1D::Singularity1D(const Point& a, const Point& b, double radius,
+                             unsigned int n, unsigned int m)
+:   geom_(a,b,radius)
+{
+    radius_rounding_low_bound_ = radius - 1e-8*radius;
+    geom_.evaluate_q_points(n,m);
 }

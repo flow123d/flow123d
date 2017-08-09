@@ -21,6 +21,7 @@
 
 #include "mesh/point.hh"
 
+class Geometry;
 
 /** @brief Abstract class defining the interface of global enrichment function.
  * 
@@ -46,7 +47,25 @@ public:
 //     virtual arma::mat::fixed<spacedim,spacedim> grad_grad(const Point &x) const = 0;
     /// divergence of vector enrichment function
     virtual double div(const Point &x) const = 0;
+    
+    virtual const Geometry& geometry() const = 0;
 };
 
+class Geometry
+{
+    typedef typename Space<3>::Point Point;
+public:
+    virtual Point dist_vector(const Point &p) const = 0;
+    virtual double distance(const Point &p) const = 0;
+    virtual double effective_surface() const = 0;
+    virtual double volume() const = 0;
+    virtual bool point_inside(const Point &p) const = 0;
+    const std::vector<Point>& q_points() const
+    { return q_points_;};
+    
+protected:
+    /// quadrature points on effective surface computed by @p evaluate_q_points function
+    std::vector<Point> q_points_;
+};
 
 #endif // GLOBAL_ENRICHMENT_FUNCTION_HH_

@@ -34,35 +34,55 @@
  * CRTP - Curiously recurring template pattern.
  * - avoids virtual member calls for @p val, @p grad, @p div
  */
-template<unsigned int dim, class S>
-class SingularityCRTP : public GlobalEnrichmentFunc<dim,3>
-{
-public:
-    typedef Space<3>::Point Point;
-    
-    SingularityCRTP(){}
-    virtual ~SingularityCRTP(){}
-    
-    /// scalar enrichment function
-    virtual double value(const Point &x) const = 0;
-    /// gradient of scalar enrichment function
-    virtual Point grad(const Point &x) const = 0;
-    
-    /// vector enrichment function
-    virtual Point vector(const Point &x) const = 0;
-    /// divergence of vector enrichment function
-    virtual double div(const Point &x) const = 0;
-};
+// template<unsigned int dim, class S>
+// class SingularityCRTP : public GlobalEnrichmentFunc<dim,3>
+// {
+// public:
+//     typedef Space<3>::Point Point;
+//     
+//     SingularityCRTP(){}
+//     virtual ~SingularityCRTP(){}
+//     
+//     /// scalar enrichment function
+//     virtual double value(const Point &x) const = 0;
+//     /// gradient of scalar enrichment function
+//     virtual Point grad(const Point &x) const = 0;
+//     
+//     /// vector enrichment function
+//     virtual Point vector(const Point &x) const = 0;
+//     /// divergence of vector enrichment function
+//     virtual double div(const Point &x) const = 0;
+// };
 
 
 ///@brief Auxilliary class with geometric data and operations for singularity.
-class CircleEllipseProjection
+class CircleEllipseProjection : public Geometry
 {
 public:
     typedef Space<3>::Point Point;
     CircleEllipseProjection(const Point& center, const double& radius,
                             const Point& direction_vector,
                             const Point& normal_vector);
+    
+    /// @name Geometry implementation.
+    //@{
+    Point dist_vector(const Point &p) const override
+    { return center_-p;}
+    
+    double distance(const Point &p) const override
+    { return arma::norm(dist_vector(p),2);}
+    
+    double effective_surface() const override
+    { //TODO: https://en.wikipedia.org/wiki/Ellipse#Circumference
+      return 2 * M_PI * radius_;}
+    
+    double volume() const override
+    { return ellipse_area();}
+    
+    bool point_inside(const Point& p) const override
+    { if(cos_a > 0) return point_in_ellipse(p);
+      else return point_in_circle(p);}
+    //@}
     
     Point center() const
     { return center_;}
@@ -88,9 +108,6 @@ public:
     Point ellipse_b() const
     { return b_*eb_;}
     
-    double distance(const Point &p) const
-    { return arma::norm(center_-p,2);}
-    
     /// Projects points from circle plane to ellipse plane.
     void project_to_ellipse_plane(std::vector<Point>& points) const;
     /// Projects points from ellipse plane tot circle plane.
@@ -100,6 +117,9 @@ public:
     bool point_in_circle(const Point& p) const;
     /// Returns true if the point @p p lies in the ellipse (suppose @p p is lying in the ellipse plane).
     bool point_in_ellipse(const Point& p) const;
+    
+    /// Computes @p n points equally distributed along the eqge in 2D ambient space.
+    void evaluate_q_points(unsigned int count);
     
 protected:
     
@@ -133,37 +153,28 @@ protected:
  *   (we suppose always circular cross section of 1D-2D)
  * 
  */
-class Singularity0D : public SingularityCRTP<2,Singularity0D>
+class Singularity0D : public GlobalEnrichmentFunc<2,3>
 {
 public:
     typedef Space<3>::Point Point;
     
-//     Singularity0D(const Point& center, double radius);
-    Singularity0D(const Point& center, double radius, const Point& direction_vector, const Point& normal_vector);
+    Singularity0D(const Point& center, double radius,
+                  const Point& direction_vector,
+                  const Point& normal_vector,
+                  unsigned int n_qpoints);
     
-    //(CRTP functions)
+    /// @name GlobalEnrichmentFunc implementation.
+    //@{
     double value(const Point &x) const override;
     Point grad(const Point &x) const override;
     Point vector(const Point &x) const override;
     double div(const Point &x) const override;
-
-    Point center() const
-    { return geom_.center();}
-    double radius() const
-    { return geom_.radius();}
-       
-    const CircleEllipseProjection & geometry() const
+    const Geometry & geometry() const override
     { return geom_;}
+    //@}
     
-    /// Computes circumference along edge.
-    double circumference() const;
-    
-    /// Computes @p n points equally distributed along the eqge in 2D ambient space.
-    void evaluate_q_points(unsigned int count);
-    
-    /// Quadrature points on the edge
-    const std::vector<Point>& q_points() const
-    { return q_points_;}
+    const CircleEllipseProjection & geometry_ellipse() const
+    { return geom_;}
     
     /// Value of the permeability coefficient between dimensions.
     double sigma() const
@@ -177,10 +188,6 @@ public:
     { pressure_ = p;}
     
 private:
-    
-    /// points placed around the circle by @p evaluate_q_points function
-    std::vector<Point> q_points_;
-    
     /// Geometry fucnctionality - plane projections.
     CircleEllipseProjection geom_;
     
@@ -190,14 +197,6 @@ private:
     
     double radius_rounding_low_bound_;
 };
-
-
-// inline Singularity0D::Singularity0D(const Point& center, double radius)
-// :   center_(center), radius_(radius),
-//     geom_({center[0],center[1],0},radius, {0,0,1}, {0,0,1})
-// {
-//     radius_rounding_low_bound_ = radius - 1e-8*radius;
-// }
 
 inline double Singularity0D::value(const Point& x) const
 {
@@ -224,19 +223,13 @@ inline Singularity0D::Point Singularity0D::grad(const Point &x) const
 
 inline Singularity0D::Point Singularity0D::vector(const Point &x) const
 {
-    static const double t = -0.5/M_PI;
+    const double t = -1.0 / geom_.effective_surface();
     return t * this->grad(x);
 }
 
 inline double Singularity0D::div(const Point& x) const
 {
     return 0;
-}
-
-inline double Singularity0D::circumference() const
-{
-    //TODO: https://en.wikipedia.org/wiki/Ellipse#Circumference
-    return 2 * M_PI * geom_.radius();
 }
 
 
@@ -269,12 +262,33 @@ inline double Singularity0D::circumference() const
 
 
 ///@brief Auxilliary class with geometric data and operations for singularity.
-class CylinderGeometry
+class CylinderGeometry : public Geometry
 {
 public:
     typedef Space<3>::Point Point;
     CylinderGeometry(const Point& a, const Point& b,
                      const double& radius);
+
+    /// @name Geometry implementation.
+    //@{
+    /// Distance vector from point p to the axis.
+    Point dist_vector(const Point &p) const override;
+    
+    double distance(const Point &p) const override
+    { return arma::norm(dist_vector(p),2);}
+    
+    /// Computes lateral surface of the cylinder.
+    double effective_surface() const override
+    { return 2*M_PI*radius_*arma::norm(direction_vector_,2);}
+    
+    /// Computes volume of the cylinder.
+    double volume() const override
+    { return M_PI * radius_ * radius_ * arma::norm(direction_vector_,2);}
+    
+    /// Returns true if the point @p p lies in the circle (suppose @p p is lying in the circle plane).
+    bool point_inside(const Point& p) const override
+    { return distance(p) <= radius_;}
+    //@}
     
     Point a() const
     { return a_;}
@@ -286,24 +300,12 @@ public:
     
     Point direction_vector() const
     { return direction_vector_;}
-     
-    /// Distance vector from point p to the axis.
-    Point dist_vector(const Point &p) const;
     
-    double distance(const Point &p) const
-    { return arma::norm(dist_vector(p),2);}
-    
-    /// Returns true if the point @p p lies in the circle (suppose @p p is lying in the circle plane).
-    bool point_in_cylinder(const Point& p) const
-    { return distance(p) <= radius_;}
-    
-    /// Computes lateral surface of the cylinder.
-    double lateral_surface() const
-    { return 2*M_PI*radius_*arma::norm(direction_vector_,2);}
-    
-    /// Computes volume of the cylinder.
-    double volume() const
-    { return M_PI * radius_ * radius_ * arma::norm(direction_vector_,2);}
+    /** Computes @p n*m points equally distributed on the lateral surface of cylinder.
+     * @param n is number of points around the cylinder in one layer
+     * @param m is number of layers of points in z coordinate of the cylinder
+     */
+    void evaluate_q_points(unsigned int n, unsigned int m);
     
 protected:
     
@@ -331,32 +333,26 @@ protected:
  *   (we suppose always circular cross section of 1D-2D)
  * 
  */
-class Singularity1D : public SingularityCRTP<3,Singularity1D>
+class Singularity1D : public GlobalEnrichmentFunc<3,3>
 {
 public:
     typedef Space<3>::Point Point;
     
-    Singularity1D(const Point& a, const Point& b, double radius);
+    Singularity1D(const Point& a, const Point& b, double radius,
+                  unsigned int n, unsigned int m);
     
-    //(CRTP functions)
+    /// @name GlobalEnrichmentFunc implementation.
+    //@{
     double value(const Point &x) const override;
     Point grad(const Point &x) const override;
     Point vector(const Point &x) const override;
     double div(const Point &x) const override;
-    
-    /// Returns geometry object.
-    const CylinderGeometry & geometry() const
+    const Geometry & geometry() const override
     { return geom_;}
+    //@}
     
-    /** Computes @p n*m points equally distributed on the lateral surface of cylinder.
-     * @param n is number of points around the cylinder in one layer
-     * @param m is number of layers of points in z coordinate of the cylinder
-     */
-    void evaluate_q_points(unsigned int n, unsigned int m);
-    
-    /// Quadrature points on the edge
-    const std::vector<Point>& q_points() const
-    { return q_points_;}
+    const CylinderGeometry & geometry_cylinder() const
+    { return geom_;}
     
     /// Value of the permeability coefficient between dimensions.
     double sigma() const
@@ -369,10 +365,7 @@ public:
     void set_pressure(double p)
     { pressure_ = p;}
     
-private:
-    /// points placed around the circle by @p evaluate_q_points function
-    std::vector<Point> q_points_;
-    
+private:    
     /// Geometry fucnctionality - plane projections.
     CylinderGeometry geom_;
     
@@ -411,7 +404,7 @@ inline Space<3>::Point Singularity1D::grad(const Point &x) const
 
 inline Space<3>::Point Singularity1D::vector(const Point &x) const
 {
-    static const double t = -1.0 / geom_.lateral_surface();
+    const double t = -1.0 / geom_.effective_surface();
     return t * this->grad(x);
 }
 
