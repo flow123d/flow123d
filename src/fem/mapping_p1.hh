@@ -137,6 +137,8 @@ public:
      */
     BaryPoint clip_to_element(BaryPoint &barycentric);
 
+    ///Tests whether the given point lies within the element.
+    bool is_point_inside(const BaryPoint &barycentric);
 private:
 
     /**

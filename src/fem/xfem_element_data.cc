@@ -67,76 +67,23 @@ void XFEMElementDataBase::print(ostream& out) const
 template<int dim> XFEMElementSingularData<dim>::XFEMElementSingularData(){}
 template<int dim> XFEMElementSingularData<dim>::~XFEMElementSingularData(){}
 
-template<>
-void XFEMElementSingularData<2>::create_sing_quads(ElementFullIter ele)
-{
-//     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
-    sing_quads_.resize(n_enrichments());
-    
-    MappingP1<2,3> map;
-    arma::mat proj = map.element_map(*ele);
-    
-    std::map<unsigned int, arma::vec> unit_points_inside;
-    
-    DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
-    for(unsigned int w=0; w < n_enrichments(); w++){
-        const Geometry& geom = enrichment_func(w)->geometry();
-        
-        unit_points_inside.clear();
-        
-//         DBGCOUT(<< "test q_points\n");
-        for(unsigned int q=0; q < geom.q_points().size(); q++){
-            const Space<3>::Point & p = geom.q_points()[q];
-            arma::vec unit_p = map.project_real_to_unit(p, proj);
-            
-//             if(ele->index() == 42){
-//                 sing->q_points()[q].print(cout,"real_p");
-//                 unit_p.print(cout,"unit_p");
-//             }
-            
-            if( unit_p(0) >= 0 && unit_p(0) <= 1 &&
-                unit_p(1) >= 0 && unit_p(1) <= 1 &&
-                unit_p(2) >= 0 && unit_p(2) <= 1){
-        
-//                 DBGCOUT(<< "qpoint inside\n");
-                unit_points_inside[q] = unit_p;
-            }
-        }
-        
-        QXFEM<2,3>& qxfem = sing_quads_[w];
-        qxfem.resize(unit_points_inside.size());
-        double weight = geom.effective_surface() / geom.q_points().size();
-        std::map<unsigned int, arma::vec>::const_iterator pair;
-        unsigned int i = 0;
-        for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++, i++){
-            
-            qxfem.set_point(i, RefElement<2>::bary_to_local(pair->second));
-            qxfem.set_real_point(i, geom.q_points()[pair->first]);
-            qxfem.set_weight(i,weight);
-        }
-        //determine if enrichment is cross-secting the element
-        enrichment_intersects_[w] = (qxfem.size() > 0);
-        
-        DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
-    }
-}
 
-
-template<>
-void XFEMElementSingularData<3>::create_sing_quads(ElementFullIter ele)
+template<int dim>
+void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
 {
+    ASSERT_DBG(dim == ele->dim());
 //     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
-    sing_quads_.resize(n_enrichments());
+    sing_quads_.resize(this->n_enrichments());
     
-    MappingP1<3,3> map;
+    MappingP1<dim,3> map;
     arma::mat proj = map.element_map(*ele);
     BoundingBox& bb = ele->get_bounding_box_fast();
     
     std::map<unsigned int, arma::vec> unit_points_inside;
     
     DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
-    for(unsigned int w=0; w < n_enrichments(); w++){
-        const Geometry& geom = enrichment_func(w)->geometry();
+    for(unsigned int w=0; w < this->n_enrichments(); w++){
+        const Geometry& geom = this->enrichment_func(w)->geometry();
         unit_points_inside.clear();
         
 //         DBGCOUT(<< "test q_points\n");
@@ -149,28 +96,28 @@ void XFEMElementSingularData<3>::create_sing_quads(ElementFullIter ele)
             //slow projection
             arma::vec unit_p = map.project_real_to_unit(p, proj);
             
-            if( unit_p(0) >= 0 && unit_p(0) <= 1 &&
-                unit_p(1) >= 0 && unit_p(1) <= 1 &&
-                unit_p(2) >= 0 && unit_p(2) <= 1 &&
-                unit_p(3) >= 0 && unit_p(3) <= 1 ){
+            if( map.is_point_inside(unit_p)){
         
 //                 DBGCOUT(<< "qpoint inside\n");
                 unit_points_inside[q] = unit_p;
             }
         }
         
-        QXFEM<3,3>& qxfem = sing_quads_[w];
+        QXFEM<dim,3>& qxfem = sing_quads_[w];
         qxfem.resize(unit_points_inside.size());
         double weight =  geom.effective_surface() / geom.q_points().size();
         std::map<unsigned int, arma::vec>::const_iterator pair;
         unsigned int i = 0;
         for(pair = unit_points_inside.begin(); pair != unit_points_inside.end(); pair++, i++){
             
-            qxfem.set_point(i, RefElement<3>::bary_to_local(pair->second));
+            qxfem.set_point(i, RefElement<dim>::bary_to_local(pair->second));
             qxfem.set_real_point(i, geom.q_points()[pair->first]);
             qxfem.set_weight(i,weight);
         }
-        DBGCOUT(<< "quad[" << global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
+        //determine if enrichment is cross-secting the element
+        this->enrichment_intersects_[w] = (qxfem.size() > 0);
+        
+        DBGCOUT(<< "quad[" << this->global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
     }
 }
 

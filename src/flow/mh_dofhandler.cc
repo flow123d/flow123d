@@ -571,9 +571,7 @@ void MH_DofHandler::create_enrichment(vector< Singularity0DPtr >& singularities,
         if(ele2d->dim() == 2){
             MappingP1<2,3> map;
             arma::vec p = map.project_real_to_unit(center,map.element_map(*ele2d));
-            if(p[0]>=0.0 && p[0]<=1.0 &&
-               p[1]>=0.0 && p[1]<=1.0 &&
-               p[2]>=0.0 && p[2]<=1.0)
+            if(map.is_point_inside(p))
             {
                 n = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
                                 ele2d->node[2]->point() - ele2d->node[0]->point());
@@ -611,9 +609,7 @@ void MH_DofHandler::create_enrichment(vector< Singularity0DPtr >& singularities,
 //         if(ele2d->dim() == 2){
 //             MappingP1<2,3> map;
 //             arma::vec p = map.project_real_to_unit(center2,map.element_map(*ele2d));
-//             if(p[0]>=0.0 && p[0]<=1.0 &&
-//                p[1]>=0.0 && p[1]<=1.0 &&
-//                p[2]>=0.0 && p[2]<=1.0)
+//             if(map.is_point_inside(p))
 //             {
 //                 n2 = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
 //                                 ele2d->node[2]->point() - ele2d->node[0]->point());
@@ -811,9 +807,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
         {
             MappingP1<2,3> map;
             arma::vec up = map.project_real_to_unit(sing->geometry_ellipse().center(),map.element_map(*ele));
-            if(up(0) >= 0.0 && up(0) <= 1.0 &&
-               up(1) >= 0.0 && up(1) <= 1.0 &&
-               up(2) >= 0.0 && up(2) <= 1.0)
+            if(map.is_point_inside(up))
                 enrich = true;
         }
     }

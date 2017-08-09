@@ -298,7 +298,17 @@ auto MappingP1<dim,spacedim>::clip_to_element(BaryPoint &barycentric) -> BaryPoi
     return RefElement<dim>::clip(barycentric);
 }
 
-
+template<unsigned int dim, unsigned int spacedim>
+bool MappingP1<dim,spacedim>::is_point_inside(const BaryPoint &bp){
+    bool res = true;
+    for(unsigned int i=0; i<dim+1;i++){
+        if( ! (bp(i) >= 0.0 && bp(i) <= 1.0)) {
+            res = false;
+            break;
+        }
+    }
+    return res;
+}
 
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
