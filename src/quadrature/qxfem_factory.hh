@@ -77,17 +77,11 @@ public:
     
     /** @brief Calls gnuplot to create image of refined element.
      * 
-      * Also can save the gnuplot script to file.
+      * Also saves the gnuplot script to file.
       * @param output_dir is the directory for output_dir
-      * @param real is true then the element is printed in real coordinates
-      * @param show is true then the gnuplot utility is started and plots the refinement on the screen
+      * @param ele is the element
+      * @param quad is the adaptive quadrature
       */
-    template<int dim>
-    void gnuplot_refinement(ElementFullIter ele,
-                            const string& output_dir,
-                            const QXFEM<dim,3>& quad,
-                            const std::vector<Singularity0DPtr> & sing);
-    
     template<int dim>
     void gnuplot_refinement(ElementFullIter ele,
                             const string& output_dir,
@@ -134,9 +128,6 @@ protected:
                             std::vector< double >& weights,
                             const std::vector<S> & sing,
                             double ele_measure);
-    
-    template<int dim, class S>
-    bool point_in_singularity(const Point& p, S s);
     
     template<int dim>
     void map_real_to_unit_points(const std::vector<Point>& real_points,

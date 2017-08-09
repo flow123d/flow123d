@@ -80,8 +80,9 @@ public:
     { return ellipse_area();}
     
     bool point_inside(const Point& p) const override
-    { if(cos_a > 0) return point_in_ellipse(p);
-      else return point_in_circle(p);}
+    {   if(std::abs(sin_a) < std::numeric_limits<double>::epsilon()) return point_in_circle(p);
+        else return point_in_ellipse(p);
+    }
     //@}
     
     Point center() const

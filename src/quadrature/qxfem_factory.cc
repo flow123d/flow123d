@@ -79,7 +79,9 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
     // 2) work with ellipses
     
     // project the simplex into the plane of the circle
-    sing[0]->geometry().project_to_circle_plane(s.nodes);
+    
+    const CircleEllipseProjection& geom = sing[0]->geometry_ellipse();
+    geom.project_to_circle_plane(s.nodes);
     
     max_h_level_0_ = s.compute_max_h<2>();
     s.active = true;
@@ -88,7 +90,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
     for(unsigned int i=0; i < max_level_; i++)
     {
         level_ = i;
-        DebugOut() << "QXFEM level: " << level_ << "\n";
+//         DebugOut() << "QXFEM level: " << level_ << "\n";
         unsigned int n_to_refine = mark_refinement_2D(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -98,12 +100,12 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
     
     // project the simplices back to the plane of the ellipse
     for(AuxSimplex& simp : simplices_){
-        sing[0]->geometry().project_to_ellipse_plane(simp.nodes);
+        geom.project_to_ellipse_plane(simp.nodes);
     }
     
     distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele->measure());
     map_real_to_unit_points<2>(qxfem->real_points_, qxfem->quadrature_points, ele);
-    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+//     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
 }
@@ -138,7 +140,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
     for(unsigned int i=0; i < max_level_; i++)
     {
         level_ = i;
-        DebugOut() << "QXFEM level: " << level_ << "\n";
+//         DebugOut() << "QXFEM level: " << level_ << "\n";
         unsigned int n_to_refine = mark_refinement_3D(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -148,7 +150,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
     
     distribute_qpoints<3>(qxfem->real_points_, qxfem->weights, sing, ele->measure());
     map_real_to_unit_points<3>(qxfem->real_points_, qxfem->quadrature_points, ele);
-    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+//     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
 }
@@ -182,7 +184,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
     for(unsigned int i=0; i < max_level_; i++)
     {
         level_ = i;
-        DebugOut() << "QXFEM level: " << level_ << "\n";
+//         DebugOut() << "QXFEM level: " << level_ << "\n";
         unsigned int n_to_refine = mark_refinement_12d(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -192,7 +194,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
     
     distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele->side(side_idx)->measure());    
     map_real_to_unit_points<3>(qxfem->real_points_, qxfem->quadrature_points, ele);
-    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+//     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
 }
@@ -221,7 +223,8 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
 //     }
     
     // project the simplex into the plane of the circle
-    sing[0]->geometry().project_to_circle_plane(s.nodes);
+    const CircleEllipseProjection& geom = sing[0]->geometry_ellipse();
+    geom.project_to_circle_plane(s.nodes);
     
     max_h_level_0_ = s.compute_max_h<1>();
     s.active = true;
@@ -230,7 +233,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
     for(unsigned int i=0; i < max_level_; i++)
     {
         level_ = i;
-        DebugOut() << "QXFEM level: " << level_ << "\n";
+//         DebugOut() << "QXFEM level: " << level_ << "\n";
         unsigned int n_to_refine = mark_refinement_01d(sing);
         if(n_to_refine == 0) break; // end refinement
         
@@ -240,12 +243,12 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
     
     // project the simplices back to the plane of the ellipse
     for(AuxSimplex& simp : simplices_){
-        sing[0]->geometry().project_to_ellipse_plane(simp.nodes);
+        geom.project_to_ellipse_plane(simp.nodes);
     }
     
     distribute_qpoints<1>(qxfem->real_points_, qxfem->weights, sing, ele->side(side_idx)->measure());
     map_real_to_unit_points<2>(qxfem->real_points_, qxfem->quadrature_points, ele);
-    DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
+//     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
     return qxfem;
 }
@@ -277,9 +280,7 @@ unsigned int QXFEMFactory::mark_refinement_12d(const std::vector<Singularity1DPt
             // distance criterion
             if(distance > 0)
             {
-                double rmin = distance-sing[j]->geometry().radius();
-//                 rmin = rmin*rmin;
-                if( max_h > distance_criteria_factor_2d_ * rmin)
+                if( max_h > distance_criteria_factor_2d_ * distance)
                 {
                     s.refine = true;
                     n_simplices_to_refine++;
@@ -323,9 +324,7 @@ unsigned int QXFEMFactory::mark_refinement_01d(const std::vector<Singularity0DPt
             // distance criterion
             if(distance > 0)
             {
-                double rmin = distance-sing[j]->geometry().radius();
-//                 rmin = rmin*rmin;
-                if( max_h > distance_criteria_factor_2d_ * rmin)
+                if( max_h > distance_criteria_factor_2d_ * distance)
                 {
                     s.refine = true;
                     n_simplices_to_refine++;
@@ -377,8 +376,7 @@ unsigned int QXFEMFactory::mark_refinement_2D(const std::vector<Singularity0DPtr
             // distance criterion
             if(distance_sqr > 0)
             {
-                double rmin = std::sqrt(distance_sqr)-sing[j]->radius();
-//                 rmin = rmin*rmin;
+                double rmin = std::sqrt(distance_sqr);
                 if( max_h > distance_criteria_factor_2d_ * rmin)
                 {
                     s.refine = true;
@@ -424,9 +422,7 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
             // distance criterion
             if(distance > 0)
             {
-                double rmin = distance-sing[j]->geometry().radius();
-//                 rmin = rmin*rmin;
-                if( max_h > distance_criteria_factor_3d_ * rmin)
+                if( max_h > distance_criteria_factor_3d_ * distance)
                 {
                     s.refine = true;
                     n_simplices_to_refine++;
@@ -458,7 +454,7 @@ int QXFEMFactory::distance_12d(const Singularity1D& w,
     ASSERT(s.res != 0);
     
     const unsigned int n_nodes = s.nodes.size();
-    const CylinderGeometry& geom = w.geometry();
+    const CylinderGeometry& geom = w.geometry_cylinder();
     
     //TEST: distance of simplex barycenter and singularity
     
@@ -526,7 +522,7 @@ int QXFEMFactory::distance_01d(const Singularity0D& w,
     ASSERT(s.res != 0);
     
     const unsigned int n_nodes = s.nodes.size();
-    const CircleEllipseProjection& geom = w.geometry();
+    const CircleEllipseProjection& geom = w.geometry_ellipse();
     
     //TEST: distance of simplex barycenter and singularity
     
@@ -583,17 +579,18 @@ int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
 {
     ASSERT_DBG(s.nodes.size() == 3);
     
+    const CircleEllipseProjection & g = w.geometry_ellipse();
     //we suppose counterclockwise node order
     
 //             DebugOut() << "QXFEM refine test1\n";
             // TEST 1: Vertex within circle
             // http://www.phatcode.net/articles.php?id=459
-            Point c0 = w.center() - s.nodes[0],
-                  c1 = w.center() - s.nodes[1],
-                  c2 = w.center() - s.nodes[2];
+            Point c0 = g.center() - s.nodes[0],
+                  c1 = g.center() - s.nodes[1],
+                  c2 = g.center() - s.nodes[2];
             
             
-            double radius_sqr = w.radius() * w.radius();
+            double radius_sqr = g.radius() * g.radius();
             double c0sqr = arma::dot(c0,c0) - radius_sqr;
             double c1sqr = arma::dot(c1,c1) - radius_sqr;
             double c2sqr = arma::dot(c2,c2) - radius_sqr;
@@ -733,7 +730,7 @@ int QXFEMFactory::distance_13d(const Singularity1D& w,
     const unsigned int n_nodes = s.nodes.size();
     ASSERT_DBG(s.nodes.size() == n_nodes);
     
-    const CylinderGeometry& geom = w.geometry();
+    const CylinderGeometry& geom = w.geometry_cylinder();
     
     // compute barycenter
     Point bcenter({0,0,0});
@@ -1005,7 +1002,7 @@ void QXFEMFactory::distribute_qpoints(std::vector<Point>& real_points,
                 //skip points inside singularity
                 if(check_qpoint_inside_sing)   //simplex is intersecting singularity
                 {
-                    if(point_in_singularity<dim>(p, sing[s.sing_id])) continue;
+                    if(sing[s.sing_id]->geometry().point_inside(p)) continue;
                 }
                 
                 real_points.push_back(p);
@@ -1021,24 +1018,6 @@ void QXFEMFactory::distribute_qpoints(std::vector<Point>& real_points,
     }
     real_points.shrink_to_fit();
     weights.shrink_to_fit();
-}
-
-template<>
-bool QXFEMFactory::point_in_singularity<2, QXFEMFactory::Singularity0DPtr>(const Point& p, Singularity0DPtr s){
-    return s->geometry().point_in_ellipse(p);
-}
-template<>
-bool QXFEMFactory::point_in_singularity<1, QXFEMFactory::Singularity0DPtr>(const Point& p, Singularity0DPtr s){
-    return s->geometry().point_in_ellipse(p);
-}
-
-template<>
-bool QXFEMFactory::point_in_singularity<3, QXFEMFactory::Singularity1DPtr>(const Point& p, Singularity1DPtr s){
-    return s->geometry().point_in_cylinder(p);
-}
-template<>
-bool QXFEMFactory::point_in_singularity<2, QXFEMFactory::Singularity1DPtr>(const Point& p, Singularity1DPtr s){
-    return s->geometry().point_in_cylinder(p);
 }
 
 template<> double QXFEMFactory::AuxSimplex::measure<1>() const{
@@ -1078,138 +1057,6 @@ void QXFEMFactory::map_real_to_unit_points(const std::vector<Point>& real_points
     }
 }
 
-
-template<int dim>
-void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
-                                      const string& output_dir,
-                                      const QXFEM<dim,3>& quad,
-                                      const std::vector<Singularity0DPtr> & sing)
-{
- 
-    DBGCOUT("XFEM quadrature gnuplot print.\n");
-    DBGVAR(output_dir);
-    std::string fgnuplot_ref = "adaptive_integration_refinement_",
-              fgnuplot_qpoints = "adaptive_integration_qpoints_",
-              script_file = "g_script_adapt_",
-              felements = "elements";
-  
-              fgnuplot_ref += std::to_string(ele->index()) + ".dat";
-              fgnuplot_qpoints += std::to_string(ele->index()) + ".dat";
-              script_file += std::to_string(ele->index()) + ".p";
-        
-    std::ofstream felements_file;
-    felements_file.open (output_dir + felements, std::ios_base::app);
-    if (felements_file.is_open()) 
-    {
-        for(unsigned int j=0; j<ele->n_nodes(); j++) {
-            felements_file << ele->node[j]->getX() << " "
-                << ele->node[j]->getY() << " " 
-                << ele->node[j]->getZ() << "\n";
-        }
-        felements_file << ele->node[0]->getX() << " "
-                << ele->node[0]->getY() << " " 
-                << ele->node[0]->getZ() << "\n\n";
-    }
-    else 
-    { 
-        WarningOut() << "Coud not write refinement for gnuplot.\n";
-    }
-    felements_file.close();
-    
-    std::ofstream myfile1;
-    myfile1.open (output_dir + fgnuplot_ref);
-    if (myfile1.is_open()) {
-        for (unsigned int i = 0; i < simplices_.size(); i++)
-        {
-            if(simplices_[i].active)
-            for (unsigned int j = 0; j < dim+1; j++) 
-            {
-                Point &p = simplices_[i].nodes[j];
-                myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
-            }
-            Point &p = simplices_[i].nodes[0];
-            myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n\n";
-        }
-    }
-    else 
-    { 
-        WarningOut() << "Coud not write refinement for gnuplot.\n";
-    }
-    myfile1.close();
-    
-    std::ofstream myfile2;
-    myfile2.open (output_dir + fgnuplot_qpoints);
-    if (myfile2.is_open()) 
-    {
-        for (unsigned int q = 0; q < quad.size(); q++) {
-            const Point &p = quad.real_point(q);
-            myfile2 << p[0] << " " << p[1] << " " << p[2] << "\n";
-        }
-        
-    }
-    else 
-    { 
-        WarningOut() << "Coud not write qpoints for gnuplot.\n";
-    }
-    myfile2.close();
-    
-    //creating command
-    std::ostringstream strs;
-    strs << "set terminal x11\n";
-    strs << "set size ratio -1\n";
-    strs << "set parametric\n";
-    strs << "set xlabel 'X'\n";
-    strs << "set ylabel 'Y'\n";
-    strs << "set zlabel 'Z'\n";
-       
-    strs << "set style line 1 lt 2 lw 2 lc rgb 'blue'\n"
-            << "set style line 2 lt 1 lw 2 lc rgb '#66A61E'\n";
-    strs << "splot "; 
-    
-    for(unsigned int j = 0; j < sing.size(); j++)
-    {
-        ASSERT(dim==2);
-        //print ellipse
-        const CircleEllipseProjection& g = sing[j]->geometry();
-        strs << "[t=0:2*pi] " 
-            << g.center()[0] << " + " << g.ellipse_b()[0] << "*cos(t) + " <<  g.ellipse_a()[0] << "*sin(t), "
-            << g.center()[1] << " + " << g.ellipse_b()[1] << "*cos(t) + " <<  g.ellipse_a()[1] << "*sin(t), "
-            << g.center()[2] << " + " << g.ellipse_b()[2] << "*cos(t) + " <<  g.ellipse_a()[2] << "*sin(t) ls 1 ,\\\n";
-        
-        //print circle
-        CircleEllipseProjection gg(g.center(),g.radius(),g.direction_vector(),g.direction_vector());
-        strs << "[t=0:2*pi] " 
-            << gg.center()[0] << " + " << gg.ellipse_b()[0] << "*cos(t) + " <<  gg.ellipse_a()[0] << "*sin(t), "
-            << gg.center()[1] << " + " << gg.ellipse_b()[1] << "*cos(t) + " <<  gg.ellipse_a()[1] << "*sin(t), "
-            << gg.center()[2] << " + " << gg.ellipse_b()[2] << "*cos(t) + " <<  gg.ellipse_a()[2] << "*sin(t) ls 1 ,\\\n";
-    }
-    
-    strs << "'" << fgnuplot_qpoints << "' using 1:2:3 with points lc rgb 'light-blue' title 'quadrature points' ,\\\n";
-    strs << "'" << fgnuplot_ref << "' using 1:2:3 with lines lc rgb 'red' title 'refinement'\n";
-    
-    //saving gnuplot script
-    std::ofstream myfile3;
-    myfile3.open (output_dir + script_file);
-    if (myfile3.is_open()) 
-    {
-        // header
-        myfile3 << "# Gnuplot script for printing adaptively refined element.\n" <<
-                    "# Made by Pavel Exner.\n#\n" <<
-                    "# Run the script in gnuplot:\n" <<
-                    "# > load \"" << script_file << "\"\n#\n" <<
-                    "# Data files used:\n" << 
-                    "# " << fgnuplot_ref << "\n"
-                    "# " << fgnuplot_qpoints << "\n" 
-                    "#\n#" << std::endl;
-        // script
-        myfile3 << strs.str() << std::endl;
-    }
-    else 
-    { 
-        WarningOut() << "Coud not write gnuplot script.\n";
-    }
-    myfile3.close();
-}
 
 template<int dim>
 void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
@@ -1358,14 +1205,6 @@ void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
 }
 
 // explicit instances:
-template void QXFEMFactory::gnuplot_refinement<2>(ElementFullIter ele,
-                                                  const string& output_dir,
-                                                  const QXFEM<2,3>& quad,
-                                                  const std::vector<Singularity0DPtr> & sing);
-template void QXFEMFactory::gnuplot_refinement<3>(ElementFullIter ele,
-                                                  const string& output_dir,
-                                                  const QXFEM<3,3>& quad,
-                                                  const std::vector<Singularity0DPtr> & sing);
 template void QXFEMFactory::gnuplot_refinement<2>(ElementFullIter ele,
                                                   const string& output_dir,
                                                   const QXFEM<2,3>& quad);

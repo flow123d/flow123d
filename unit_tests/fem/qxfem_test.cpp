@@ -19,6 +19,8 @@
 #include "quadrature/qxfem.hh"
 #include "quadrature/qxfem_factory.hh"
 
+typedef Space<3>::Point Point;
+
 // simplest mesh
 string ref_element_mesh = R"CODE(
 $MeshFormat
@@ -36,320 +38,7 @@ $Elements
 $EndElements
 )CODE";
 
-typedef Space<3>::Point Point;
 
-void print_point(ostream& stream,Point p) {
-    stream << p[0] << " " << p[1] << " " << p[2] << "\n";
-}
-
-class TestProjection : public testing::Test, public CircleEllipseProjection {
-public:
-    TestProjection() : CircleEllipseProjection({4,5,6}, 2, {1,2,3}, {5,-2,2}) {}
-
-protected:
-    Point c = {4,5,6};
-    double r = 2;
-    Point u = {1,2,3};
-    Point n = {5,-2,2};
-};
-
-TEST_F(TestProjection, project_circle_ellipse) {
-
-    EXPECT_EQ(M_PI*r*r, this->circle_area());
-    
-    u = u / arma::norm(u,2);
-    n = n / arma::norm(n,2);
-    double cos_a = arma::dot(n,u);
-    
-    EXPECT_EQ(cos_a, this->cos_a);
-    
-    EXPECT_EQ(r, this->a_);
-    EXPECT_EQ(r/cos_a, this->b_);
-    
-    Point v = arma::cross(n,u);
-    Point w = arma::cross(n,v);
-    v = v / arma::norm(v,2);
-    w = w / arma::norm(w,2);
-    EXPECT_ARMA_EQ(v, this->ea_);
-    EXPECT_ARMA_EQ(w, this->eb_);
-    
-    EXPECT_EQ(M_PI * r * r / cos_a, this->ellipse_area());
-    
-    std::vector<Point> ell_points, c_points;
-    ell_points.push_back(c + ea_ + eb_);
-    ell_points.push_back(c + b_*eb_);
-    ell_points.push_back(c + a_*ea_);
-    ell_points.push_back(c + 0.4*ea_ + 0.3*eb_);
-    ell_points.push_back(c + a_*ea_ + 0.0001*eb_);
-    
-    c_points = ell_points;
-    this->project_to_circle_plane(c_points);
-    EXPECT_TRUE(point_in_circle(c_points[0]));
-    EXPECT_TRUE(point_in_circle(c_points[1]));
-    EXPECT_TRUE(point_in_circle(c_points[2]));
-    EXPECT_TRUE(point_in_circle(c_points[3]));
-    EXPECT_FALSE(point_in_circle(c_points[4]));
-    
-    this->project_to_ellipse_plane(c_points);
-    for(unsigned int i=0; i<ell_points.size(); i++)
-        EXPECT_ARMA_EQ(ell_points[i],c_points[i]);
-
-    EXPECT_TRUE(point_in_ellipse(ell_points[0]));
-    EXPECT_TRUE(point_in_ellipse(ell_points[1]));
-    EXPECT_TRUE(point_in_ellipse(ell_points[2]));
-    EXPECT_TRUE(point_in_ellipse(ell_points[3]));
-    EXPECT_FALSE(point_in_ellipse(ell_points[4]));
-    
-    
-    
-//     Point er = arma::cross(v,u);
-//     er = er / arma::norm(er,2);
-//     unsigned int count = 100;
-//     double phi = 2*M_PI / count;
-//     std::vector<Point> circle_points(count), ell_points(count);
-//     for(unsigned int i=0; i < count; i++){
-//         circle_points[i] = c+ r*sin(i*phi)*ea_+ r*cos(i*phi)*er;
-//         ell_points[i] = c + this->a_*cos(i*phi)*this->ea_+ this->b_*sin(i*phi)*this->eb_;
-//     }
-//     
-//     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-//     std::ofstream file;
-//     file.open (dir_name + "projection.dat");
-//     if (file.is_open())
-//     {
-//         for(Point& p : circle_points)
-//             print_point(file,p);
-//         print_point(file,circle_points[0]);
-//         
-//         file << "\n";
-//         for(Point& p : ell_points)
-//             print_point(file,p);
-//         print_point(file,ell_points[0]);
-//         
-//         file << "\n";
-//         print_point(file,c+2*u);
-//         print_point(file,c);
-//         
-//         file << "\n";
-//         print_point(file,c+2*n);
-//         print_point(file,c);
-//         
-//         file << "\n";
-//         print_point(file,c + a_*ea_);
-//         print_point(file,c);
-//         file << "\n";
-//         print_point(file,c + b_*eb_);
-//         print_point(file,c);
-//         
-//         file << "\n";
-//         print_point(file,c + r*ea_);
-//         print_point(file,c);
-//         
-//         file << "\n";
-//         print_point(file,c + r*er);
-//         print_point(file,c);
-//         
-//         
-//         file << "\n";
-//         print_point(file,points[1]);
-//         
-//         this->project_to_circle_plane(points);
-//         print_point(file,points[1]);
-//         print_point(MessageOut() << setprecision(15),points[1]);
-//     }
-//     else 
-//     { 
-//         WarningOut() << "Coud not write for gnuplot.\n";
-//     }
-//     file.close();
-}
-
-TEST(CircleEllipseProjection, parallel){
-    
-    // TEST when direction and normal is parallel
-    Point c = {1,2,3};
-    double r = 2;
-    Point u = {1,2,-1};
-    Point n = {2,4,-2};
-    CircleEllipseProjection proj(c,r,u,n);
-    
-    EXPECT_EQ(M_PI * r * r, proj.circle_area());
-//     DBGMSG("%e\n",proj.circle_area()- proj.ellipse_area());
-    EXPECT_DOUBLE_EQ(proj.circle_area(), proj.ellipse_area());
-    
-    std::vector<Point> points = {
-        {0,0,0},
-        {1,2,3},
-        {2,2,2},
-        {3,2,1}
-    };
-    auto orig = points;
-    
-    proj.project_to_circle_plane(points);
-    for(unsigned int i=0; i<points.size(); i++)
-        EXPECT_ARMA_EQ(orig[i],points[i]);
-    
-    proj.project_to_ellipse_plane(points);
-    for(unsigned int i=0; i<points.size(); i++)
-        EXPECT_ARMA_EQ(orig[i],points[i]);
-    
-    
-    // TEST when direction and normal and Z is parallel
-    u = {0,0,1};
-    n = {0,0,5};
-    proj = CircleEllipseProjection(c,r,u,n);
-    
-    EXPECT_EQ(M_PI * r * r, proj.circle_area());
-//     DBGMSG("%e\n",proj.circle_area()- proj.ellipse_area());
-    EXPECT_DOUBLE_EQ(proj.circle_area(), proj.ellipse_area());
-    
-    points = orig;
-    
-    proj.project_to_circle_plane(points);
-    for(unsigned int i=0; i<points.size(); i++)
-        EXPECT_ARMA_EQ(orig[i],points[i]);
-    
-    proj.project_to_ellipse_plane(points);
-    for(unsigned int i=0; i<points.size(); i++)
-        EXPECT_ARMA_EQ(orig[i],points[i]);
-}
-
-
-
-TEST(qxfem, singularity0D) {
-    
-    // read mesh - simplset cube from test1
-    Mesh* mesh = mesh_constructor();
-    stringstream in(ref_element_mesh.c_str());
-    mesh->read_gmsh_from_stream(in);
-    ElementFullIter ele = mesh->element(0);
-    Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
-                          ele->node[2]->point() - ele->node[0]->point());
-    
-    Point center({1,2,2});
-    double radius = 0.1;
-    Point direction_vector({0,0,1});
-    unsigned int n_qpoints = 100;
-    
-    Singularity0D func(center, radius, direction_vector, n);
-    func.evaluate_q_points(n_qpoints);
-    
-    EXPECT_EQ(n_qpoints, func.q_points().size());
-    
-    std::vector<Point> points = func.q_points();
-    
-    func.geometry().project_to_circle_plane(points);
-    
-    for(const Point &p : points){
-        double dist = arma::norm(p-center, 2);
-        EXPECT_NEAR(radius, dist, 1e-15);
-    }
-    
-    func.geometry().project_to_ellipse_plane(points);
-    for(unsigned int i=0; i< points.size(); i++){
-        EXPECT_ARMA_EQ(func.q_points()[i], points[i]);
-    }
-    
-//     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-//     std::ofstream q_points_file;
-//     q_points_file.open (dir_name + "q_points.dat");
-//     if (q_points_file.is_open()) 
-//     {
-//         for(const Singularity0D::Point &p : func.q_points())
-//             print_point(q_points_file,p);
-//     }
-//     else 
-//     { 
-//         WarningOut() << "Coud not write refinement for gnuplot.\n";
-//     }
-//     q_points_file.close();
-// //     add this to splot: 'q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'
-    
-//     Space<2>::Point center2d({1,2});
-//     Singularity0D<2> func2d(center2d,radius);
-//     func2d.evaluate_q_points(n_qpoints);
-//     EXPECT_EQ(n_qpoints, func2d.q_points().size());
-//     for(const Space<2>::Point &p : func2d.q_points()){
-//         double dist = arma::norm(p-center2d, 2);
-//         EXPECT_NEAR(radius, dist, 1e-15);
-//     }
-}
-
-
-TEST(qxfem, singularity1D) {
-    
-    Point a({1,2,2}), b({3,4,5});
-    double radius = 0.1;
-    unsigned int n = 100, m = 10;
-    
-    Singularity1D func(a, b, radius);
-    func.evaluate_q_points(n, m);
-    
-    EXPECT_EQ(n*m, func.q_points().size());
-    
-    for(unsigned int i=0; i< func.q_points().size(); i++){
-        EXPECT_NEAR(func.geometry().distance(func.q_points()[i]),radius,1e-14);
-    }
-    
-//     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-//     std::ofstream q_points_file;
-//     q_points_file.open (dir_name + "s1_q_points.dat");
-//     if (q_points_file.is_open()) 
-//     {
-//         for(const Point &p : func.q_points())
-//             print_point(q_points_file,p);
-//     }
-//     else 
-//     { 
-//         WarningOut() << "Coud not write refinement for gnuplot.\n";
-//     }
-//     q_points_file.close();
-// //     add this to splot: 's1_q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'
-}
-
-// void project_circle(const Singularity0D& sing, ElementFullIter ele,
-//                     double& a, double& b, double& surface)
-// {
-//     typedef Space<3>::Point Point;
-//     
-//     //create first auxsimplex:
-//     std::vector<Point> nodes;
-//     for(unsigned int i=0; i < ele->n_nodes(); i++)
-//         nodes.push_back(ele->node[i]->point());
-//     
-//     //we suppose counterclockwise node order
-//     Point v0 = nodes[1] - nodes[0],   // 0. edge of triangle
-//           v1 = nodes[2] - nodes[1];   // 1. edge of triangle
-//     if(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] < 0)
-//     {
-//         DBGMSG("change node order\n");
-//         std::swap(nodes[0],nodes[1]);
-//     }
-//     
-//     Point n = arma::cross(v0,v1);   //normal to element
-//     Point u = sing.geometry().direction_vector() / arma::norm(sing.geometry().direction_vector(),2);
-//     
-//     Point v = arma::cross(n,u);
-//     Point w = arma::cross(n,v);
-//     v = v / arma::norm(v,2) * sing.radius();
-//     w = w / arma::norm(w,2);
-//     
-//     
-//     double cos_a = arma::dot(n,u) / arma::norm(n,2);
-//     w = sing.radius()/cos_a * w;
-//     //double sin_a = std::sqrt(1-cos_a*cos_a);
-//     //double tan_a = sin_a / cos_a;
-//     
-//     (sing.center() + u).print(MessageOut(),"direction");
-//     (sing.center() + n/arma::norm(n,2)).print(MessageOut(),"normal");
-//     sing.center().print(MessageOut(),"center");
-//     (sing.center()+v).print(MessageOut(),"a");
-//     (sing.center()+w).print(MessageOut(),"b");
-//     
-//     a = arma::norm(v,2);
-//     b = arma::norm(w,2);
-//     surface = M_PI * a * b;
-// }
 
 
 TEST(qxfem, qxfem_factory) {
@@ -364,12 +53,12 @@ TEST(qxfem, qxfem_factory) {
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
     
-    auto func = std::make_shared<Singularity0D>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n);
+    auto func = std::make_shared<Singularity0D>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n, 100);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
     
 //     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-//     qfactory.gnuplot_refinement(ele, dir_name, *qxfem, {func});
-//     
+//     qfactory.gnuplot_refinement(ele, dir_name, *qxfem);
+    
 //     std::ofstream q_points_file;
 //     q_points_file.open (dir_name + "unit_q_points.dat");
 //     if (q_points_file.is_open()) 
@@ -388,13 +77,11 @@ TEST(qxfem, qxfem_factory) {
 //     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
 //     MessageOut() << setprecision(15) << "Tmeasure: " << ele->measure() << "\n";
     
-    double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / (2*ele->measure());
+    double exact_sum = (ele->measure()-func->geometry().volume()) / (2*ele->measure());
 //     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
     EXPECT_NEAR(sum,exact_sum,1e-7);
     
-    
-//     func.evaluate_q_points(100, ele);
 //     std::ofstream q_points_file;
 //     q_points_file.open (dir_name + "q_points.dat");
 //     if (q_points_file.is_open()) 
@@ -455,6 +142,7 @@ TEST_F(TestQXFEMFactory, distance) {
     AuxSimplex s;
     std::vector<Point> nodes = {{2,3,0}, {8,1,3}, {7,8,6}};
     s.nodes.resize(nodes.size());
+    unsigned int n_qpoints = 100;
     
     const std::vector<std::vector<unsigned int>> permutations_triangle = {
     {0,1,2},
@@ -494,7 +182,7 @@ TEST_F(TestQXFEMFactory, distance) {
         c = m + u;
 
     //     DBGMSG("k0 = %f\n",arma::dot(m-s.nodes[0], m-s.nodes[0]));
-        test_distance(Singularity0D(c,radius,dv,nn), s, u);
+        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity v1
         m = s.nodes[1] + 0.33*v1;
@@ -502,7 +190,7 @@ TEST_F(TestQXFEMFactory, distance) {
         c = m + u;
 
     //     DBGMSG("k2 = %f\n",arma::dot(m-s.nodes[2], m-s.nodes[2]));
-        test_distance(Singularity0D(c,radius,dv,nn), s, u);
+        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity v2
         m = s.nodes[2] + 0.6*v2;
@@ -510,28 +198,28 @@ TEST_F(TestQXFEMFactory, distance) {
         c = m + u;
 
     //     DBGMSG("k1 = %f\n",arma::dot(m-s.nodes[1], m-s.nodes[1]));
-        test_distance(Singularity0D(c,radius,dv,nn), s, u);
+        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity node0
         m = s.nodes[0];
         u = -f*n1;
         c = m + u;
 
-        test_distance(Singularity0D(c,radius,dv,nn), s, u);
+        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity node1
         m = s.nodes[1];
         u = -f*n2;
         c = m + u;
 
-        test_distance(Singularity0D(c,radius,dv,nn), s, u);
+        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity node2
         m = s.nodes[2];
         u = -f*n0;
         c = m + u;
 
-        test_distance(Singularity0D(c,radius,dv,nn), s, u);
+        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
     }
 }
 
@@ -548,9 +236,10 @@ TEST(qxfem, qxfem_factory_two) {
     ElementFullIter ele = mesh->element(0);
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
+    unsigned int n_qpoints = 100;
     
-    auto func1 = std::make_shared<Singularity0D>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n);
-    auto func2 = std::make_shared<Singularity0D>(arma::vec({2,1,2}),0.05,arma::vec({0,0,1}),n);
+    auto func1 = std::make_shared<Singularity0D>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n,n_qpoints);
+    auto func2 = std::make_shared<Singularity0D>(arma::vec({2,1,2}),0.05,arma::vec({0,0,1}),n,n_qpoints);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func1, func2},ele);
     
 //     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output_two/";
@@ -574,7 +263,7 @@ TEST(qxfem, qxfem_factory_two) {
 //     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
 //     MessageOut() << setprecision(15) << "Tmeasure: " << ele->measure() << "\n";
     
-    double exact_sum = (ele->measure()-func1->geometry().ellipse_area()-func2->geometry().ellipse_area()) / (2*ele->measure());
+    double exact_sum = (ele->measure()-func1->geometry().volume()-func2->geometry().volume()) / (2*ele->measure());
 //     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
     EXPECT_NEAR(sum,exact_sum,1e-7);
@@ -645,8 +334,10 @@ TEST(qxfem, qxfem_factory_3d) {
     mesh->read_gmsh_from_stream(in);
     ElementFullIter ele = mesh->element(0);
     
+    unsigned int n = 50, m = 20;
+    
 //     auto func = std::make_shared<Singularity1D>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
-    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.5,0}), arma::vec({0.5,0.5,2}),0.05);
+    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.5,0}), arma::vec({0.5,0.5,2}),0.05,n,m);
     
 //     for(unsigned int i=4; i<10; i++)
     unsigned int i = 9;
@@ -680,19 +371,18 @@ TEST(qxfem, qxfem_factory_3d) {
         EXPECT_NEAR(sum,exact_sum,1e-6);
     }
     
-    func->evaluate_q_points(50, 20);
-    std::ofstream q_points_file;
-    q_points_file.open (dir_name + "q_points.dat");
-    if (q_points_file.is_open()) 
-    {
-        for(const Singularity1D::Point &p : func->q_points())
-        q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
-    }
-    else 
-    { 
-        WarningOut() << "Coud not write refinement for gnuplot.\n";
-    }
-    q_points_file.close();
+//     std::ofstream q_points_file;
+//     q_points_file.open (dir_name + "q_points.dat");
+//     if (q_points_file.is_open()) 
+//     {
+//         for(const Singularity1D::Point &p : func->q_points())
+//         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+//     }
+//     else 
+//     { 
+//         WarningOut() << "Coud not write refinement for gnuplot.\n";
+//     }
+//     q_points_file.close();
     // add this to splot: 'q_points.dat' using 1:2:3 with points lc rgb 'green' title 'q_points'
 }
 
@@ -706,17 +396,28 @@ TEST(qxfem, qxfem_factory_3d_side) {
     mesh->read_gmsh_from_stream(in);
     ElementFullIter ele = mesh->element(0);
     
+    unsigned int n = 50, m = 20;
+    
 //     auto func = std::make_shared<Singularity1D>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
-    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.2,0}), arma::vec({0.2,0.5,2}),0.05);
+    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.2,0}), arma::vec({0.2,0.5,2}),0.05,n,m);
     
 //     for(unsigned int i=6; i<7; i++)
     unsigned int sid = 3;
-    unsigned int i = 9;
+    unsigned int i = 12;
     {
         QXFEMFactory qfactory(i);
         shared_ptr<QXFEM<3,3>> qxfem = qfactory.create_side_singular({func},ele, sid);
         
-//         qfactory.gnuplot_refinement<3>(ele, dir_name, *qxfem);
+        qfactory.gnuplot_refinement<3>(ele, dir_name, *qxfem);
+        
+        //comparison with 2d - we need only the are of ellipse
+        auto nodes = RefElement<3>::interact(Interaction<0,2>(sid));
+        Point n = arma::cross(ele->node[nodes[1]]->point() - ele->node[nodes[0]]->point(),
+                              ele->node[nodes[2]]->point() - ele->node[nodes[0]]->point());
+        const CylinderGeometry& geom = func->geometry_cylinder();
+        
+        CircleEllipseProjection geom_ellipse(arma::vec({0,0,0}),geom.radius(),geom.direction_vector(),n);
+
         
 //         std::ofstream q_points_file;
 //         q_points_file.open (dir_name + "unit_q_points.dat");
@@ -731,17 +432,16 @@ TEST(qxfem, qxfem_factory_3d_side) {
 //         }
 //         q_points_file.close();
         
-//         double sum=0;
-//         for(unsigned int q=0; q<qxfem->size(); q++) sum += qxfem->weight(q);
-//         MessageOut() << setprecision(15) << "sum: " << sum << "\n";
+        double sum=0;
+        for(unsigned int q=0; q<qxfem->size(); q++) sum += qxfem->weight(q);
+        MessageOut() << setprecision(15) << "sum: " << sum << "\n";
 //         MessageOut() << setprecision(15) << "Tmeasure: " << ele->side(sid)->measure() << "\n";
 //         MessageOut() << setprecision(15) << "Cylinder: " << func->geometry().volume() << "\n";
         
-//         double exact_sum = (ele->measure()-func->geometry().volume()*0.5) / (6*ele->measure());
-//         double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / (2*ele->measure());
-//         MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
-//         MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
-//         EXPECT_NEAR(sum,exact_sum,2e-5);
+        double exact_sum = (ele->side(sid)->measure()-geom_ellipse.ellipse_area()) / (2*ele->side(sid)->measure());
+        MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
+        MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
+        EXPECT_NEAR(sum,exact_sum,1e-8);
     }
     
 //     func->evaluate_q_points(50, 20);
@@ -771,7 +471,8 @@ TEST(qxfem, qxfem_factory_2d_side) {
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
     
-    auto func = std::make_shared<Singularity0D>(arma::vec({1.4,2.9,3}),0.1,arma::vec({1.4,2.9,0}),n);
+    unsigned int n_qpoints = 100;
+    auto func = std::make_shared<Singularity0D>(arma::vec({1.4,2.9,3}),0.1,arma::vec({1.4,2.9,0}),n,n_qpoints);
     
     unsigned int sid = 2;
     unsigned int i = 12;
@@ -797,7 +498,7 @@ TEST(qxfem, qxfem_factory_2d_side) {
     double sum=0;
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
-    MessageOut() << setprecision(15) << "Tmeasure: " << ele->side(sid)->measure() << "\n";
+//     MessageOut() << setprecision(15) << "Tmeasure: " << ele->side(sid)->measure() << "\n";
     
 //     double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / (2*ele->measure());
 //     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
