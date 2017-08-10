@@ -27,6 +27,7 @@
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
 #include "io/element_data_cache.hh"
+#include "io/msh_basereader.hh"
 #include "fem/dofhandler.hh"
 #include "input/factory.hh"
 
@@ -54,6 +55,11 @@ public:
      * Return Record for initialization of FieldFE that is derived from Abstract
      */
     static const Input::Type::Record & get_input_type();
+
+    /**
+     * Return Input selection for discretization type (determines the section of VTK file).
+     */
+    static const Input::Type::Selection & get_disc_selection_input_type();
 
     /**
      * Setter for the finite element data. The mappings are required for computation of local coordinates.
@@ -155,6 +161,9 @@ private:
 
 	/// field name read from input
 	std::string field_name_;
+
+	/// Specify section where to find the field data in input mesh file
+	BaseMeshReader::Discretization discretization_;
 
 	/// Field flags.
 	FieldFlag::Flags flags_;

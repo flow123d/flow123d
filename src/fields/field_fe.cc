@@ -46,9 +46,26 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "GMSH mesh with data. Can be different from actual computational mesh.")
+        .declare_key("input_discretization", FieldFE<spacedim, Value>::get_disc_selection_input_type(), IT::Default::optional(),
+                "Section where to find the field, some sections are specific to file format \n"
+        		"point_data/node_data, cell_data/element_data, -/element_node_data, native/-.\n"
+        		"If not given by user we try to find the field in all sections, but report error \n"
+        		"if it is found in more the one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .close();
+}
+
+template <int spacedim, class Value>
+const Input::Type::Selection & FieldFE<spacedim, Value>::get_disc_selection_input_type()
+{
+	return it::Selection("FE_discretization",
+			"Specify the section in mesh input file where field data is listed.\nSome sections are specific to file format.")
+		.add_value(BaseMeshReader::Discretization::node_data, "node_data", "point_data (VTK) / node_data (GMSH)")
+		.add_value(BaseMeshReader::Discretization::element_data, "element_data", "cell_data (VTK) / element_data (GMSH)")
+		.add_value(BaseMeshReader::Discretization::element_node_data, "element_node_data", "element_node_data (only for GMSH)")
+		.add_value(BaseMeshReader::Discretization::native_data, "native_data", "native_data (only for VTK)")
+		.close();
 }
 
 template <int spacedim, class Value>
@@ -90,6 +107,9 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
 	value_handler1_.initialize(init_data, map1);
 	value_handler2_.initialize(init_data, map2);
 	value_handler3_.initialize(init_data, map3);
+
+	// set discretization
+	discretization_ = BaseMeshReader::Discretization::undefined;
 }
 
 
@@ -151,6 +171,9 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	// read data from input record
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 	field_name_ = rec.val<std::string>("field_name");
+	if (! rec.opt_val<BaseMeshReader::Discretization>("input_discretization", discretization_) ) {
+		discretization_ = BaseMeshReader::Discretization::undefined;
+	}
 }
 
 
@@ -211,7 +234,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
 		BaseMeshReader::DiscretizationParams disc_params;
-		disc_params.discretization = BaseMeshReader::Discretization::element_data;
+		disc_params.discretization = this->discretization_;
 		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
 				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_, disc_params);
 		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {
