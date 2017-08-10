@@ -81,18 +81,18 @@ public:
     Mesh *mesh() const { return mesh_; }
 
     /**
-     * @brief Returns the global indices of dofs associated to the @p cell.
+     * @brief Fill vector of the global indices of dofs associated to the @p cell.
      *
      * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param indices Vector of dof indices on the cell.
      */
     virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const = 0;
 
     /**
-     * @brief Returns the indices of dofs associated to the @p cell on the local process.
+     * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
      *
      * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param indices Vector of dof indices on the cell.
      */
     virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const =0;
     
