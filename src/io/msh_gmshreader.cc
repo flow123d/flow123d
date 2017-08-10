@@ -321,8 +321,18 @@ void GmshMeshReader::make_header_table()
 
 
 
-BaseMeshReader::MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name)
+BaseMeshReader::MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name, BaseMeshReader::DiscretizationParams &disc_params)
 {
+	// check discretization, only type element_data or undefined is supported
+	if (disc_params.discretization != BaseMeshReader::Discretization::element_data) {
+		if (disc_params.discretization != BaseMeshReader::Discretization::undefined) {
+			WarningOut().fmt(
+					"Unsupported discretization for field '{}', time: {} and GMSH format.\nType 'element_data' of discretization will be used.\n",
+	                field_name, time);
+		}
+		disc_params.discretization = BaseMeshReader::Discretization::element_data;
+	}
+
 	HeaderTable::iterator table_it = header_table_.find(field_name);
 
 	if (table_it == header_table_.end()) {

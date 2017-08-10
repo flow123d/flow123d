@@ -105,7 +105,7 @@ protected:
     /**
      * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
      */
-    MeshDataHeader & find_header(double time, std::string field_name) override;
+    MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params) override;
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */

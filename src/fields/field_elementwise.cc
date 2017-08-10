@@ -120,6 +120,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
     BaseMeshReader::DiscretizationParams disc_params;
+    disc_params.discretization = BaseMeshReader::Discretization::element_data;
     data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_, disc_params);
     this->scale_and_check_limits();

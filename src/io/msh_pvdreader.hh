@@ -85,7 +85,7 @@ protected:
 	 *
 	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
 	 */
-	MeshDataHeader & find_header(double time, std::string field_name) override;
+	MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params) override;
 
     /**
      * This method is specified for PVD reader. Table of mesh data headers (same as for GMSH or VTK) is not created,

@@ -24,8 +24,8 @@ public:
 	PvdMeshReaderTest(const FilePath &file_name)
 	: PvdMeshReader(file_name) {}
 
-	void test_find_header(double time, double expected_time, std::string field_name) {
-		MeshDataHeader &header = this->find_header(time, field_name);
+	void test_find_header(double time, double expected_time, std::string field_name, DiscretizationParams &disc_params) {
+		MeshDataHeader &header = this->find_header(time, field_name, disc_params);
 		EXPECT_DOUBLE_EQ(expected_time, header.time);
 		EXPECT_EQ(field_name, header.field_name);
 	}
@@ -39,11 +39,14 @@ TEST(PVDReader, read_pvd) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("mesh/pvd-test.pvd", FilePath::input_file);
 
+	BaseMeshReader::DiscretizationParams disc_params;
+	disc_params.discretization = BaseMeshReader::Discretization::mesh_definition;
+
     PvdMeshReaderTest reader(mesh_file);
-    reader.test_find_header(0.0,  0.0, "offsets");
-    reader.test_find_header(0.05, 0.0, "offsets");
-    reader.test_find_header(0.11, 0.1, "offsets");
-    reader.test_find_header(0.21, 0.2, "offsets");
+    reader.test_find_header(0.0,  0.0, "offsets", disc_params);
+    reader.test_find_header(0.05, 0.0, "offsets", disc_params);
+    reader.test_find_header(0.11, 0.1, "offsets", disc_params);
+    reader.test_find_header(0.21, 0.2, "offsets", disc_params);
 }
 
 
@@ -68,6 +71,7 @@ TEST(PVDReader, get_element_data) {
     }
 
     BaseMeshReader::DiscretizationParams disc_params;
+    disc_params.discretization = BaseMeshReader::Discretization::element_data;
 
     for (unsigned int i=0; i<3; ++i) {
         typename ElementDataCache<double>::ComponentDataPtr scalar_data

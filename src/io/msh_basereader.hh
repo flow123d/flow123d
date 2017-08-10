@@ -59,6 +59,11 @@ public:
 			<< "No data for field: "<< EI_FieldName::qval
 			<< " and time: "<< EI_Time::val
 			<< " in the input file: "<< EI_MeshFile::qval);
+	DECLARE_INPUT_EXCEPTION(ExcMissingFieldDiscretization,
+			<< "Missing data type specification for field: "<< EI_FieldName::qval
+			<< " and time: "<< EI_Time::val
+			<< " in the input file: "<< EI_MeshFile::qval
+			<< "\nPlease, add value of key 'input_discretization'.");
 	DECLARE_EXCEPTION(ExcWrongFormat,
 			<< "Wrong format of " << EI_Type::val << ", " << EI_TokenizerMsg::val << "\n"
 			<< "in the input file: " << EI_MeshFile::qval);
@@ -74,7 +79,8 @@ public:
 		element_data,      ///< cell_data (VTK) / element_data (GMSH)
 		element_node_data, ///< element_node_data (only for VTK)
 		native_data,       ///< native_data (only for GMSH)
-		mesh_definition    ///< special case of section (of VTK) that defines mesh
+		mesh_definition,   ///< special case of section (of VTK) that defines mesh
+		undefined          ///< section is not specified by user (requires control specific for concrete usage)
 	};
 
 	/**
@@ -135,6 +141,7 @@ public:
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
      *  @param boundary_domain flag determines that data is read for boundary or bulk elements
      *  @param component_idx component index of MultiField
+     *  @param disc_params struct with parameters 'discretization' (can be define on input) and 'dof_handler_hash' used only for native data
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
@@ -213,7 +220,7 @@ protected:
     /**
 	 * Find data header for given time and field.
 	 */
-	virtual MeshDataHeader & find_header(double time, std::string field_name)=0;
+	virtual MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params)=0;
 
     /**
      * Reads table of data headers specific for each descendants.

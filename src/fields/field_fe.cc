@@ -211,6 +211,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
 		BaseMeshReader::DiscretizationParams disc_params;
+		disc_params.discretization = BaseMeshReader::Discretization::element_data;
 		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
 				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_, disc_params);
 		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {

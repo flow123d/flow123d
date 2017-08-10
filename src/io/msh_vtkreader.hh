@@ -95,7 +95,7 @@ protected:
 	 *
 	 * For each field_name contains MeshDataHeader.
 	 */
-	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
+	typedef typename std::multimap< std::string, MeshDataHeader > HeaderTable;
 
     /**
      * Special constructor of VTK files defined in PVD file. Constructor is called from PVD mesh reader.
@@ -121,7 +121,7 @@ protected:
 	 *
 	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
 	 */
-	MeshDataHeader & find_header(double time, std::string field_name) override;
+	MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params) override;
 
     /// Reads table of DataArray headers through pugixml interface
     void make_header_table() override;

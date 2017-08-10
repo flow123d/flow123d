@@ -106,7 +106,7 @@ void PvdMeshReader::make_header_table() {
 }
 
 
-BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::string field_name) {
+BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::string field_name, BaseMeshReader::DiscretizationParams &disc_params) {
 	auto comp = [](double t, const VtkFileData &a) {
 		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
 	};
@@ -126,6 +126,6 @@ BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::st
 		list_it_->reader->has_compatible_mesh_ = true;
 	}
 
-	return list_it_->reader->find_header(time, field_name);
+	return list_it_->reader->find_header(time, field_name, disc_params);
 }
 

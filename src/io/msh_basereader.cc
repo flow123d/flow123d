@@ -88,10 +88,7 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 
-    MeshDataHeader actual_header = this->find_header(time, field_name);
-    // fill structure of native data (necessary only for VTK)
-    disc_params.discretization = actual_header.discretization;
-    disc_params.dof_handler_hash = actual_header.dof_handler_hash;
+    MeshDataHeader actual_header = this->find_header(time, field_name, disc_params);
 
 	ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
     if (it == element_data_values_->end()) {
