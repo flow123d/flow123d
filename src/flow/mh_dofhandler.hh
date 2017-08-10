@@ -146,13 +146,15 @@ public:
 protected:
     static const int empty_node_idx;
     
-    void create_enrichment(std::vector<Singularity0DPtr> &singularities,
+    template<int dim, class Enr>
+    void create_enrichment(std::vector<std::shared_ptr<Enr>> &singularities,
+                           std::vector<XFEMElementSingularData<dim>>& xfem_data,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
     
-    void create_enrichment(std::vector<Singularity1DPtr> &singularities,
-                           Field<3, FieldValue<3>::Scalar>& cross_section,
-                           Field<3, FieldValue<3>::Scalar>& sigma);
+    template<class Enr>
+    void create_testing_singularities(std::vector<std::shared_ptr<Enr>> &singularities,
+                                      int & new_enrich_node_idx);
 
     void find_ele_to_enrich(Singularity0DPtr sing, int ele1d_global_idx,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
@@ -164,7 +166,7 @@ protected:
     void print_dofs_dbg();
     
     /// Distribute continuous enriched FE DoFs.
-    void distribute_enriched_dofs(int n_enriched_nodes);
+    void distribute_enriched_dofs();
         
     /// (Internal) Distribute continuous enriched DoFs.
     void distribute_enriched_dofs(std::vector<std::vector<int>>& temp_dofs, int& offset, Quantity quant);
@@ -343,10 +345,10 @@ public:
         uint i;
         for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
         
-        if(is_enriched() && ! ele->xfem_data->is_complement()){
+        if(is_enriched() && dh->enrich_velocity && ! ele->xfem_data->is_complement()){
             XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
-                if(dh->single_enr && dh->enrich_velocity){
+                if(dh->single_enr){
                     dofs[i] = dh->row_4_vel_sing[xd->global_enrichment_index(w)];
                     i++;
                 }
@@ -364,10 +366,10 @@ public:
         dofs[0] = ele_row();
         uint i = 1;
         
-        if(is_enriched() && ! ele->xfem_data->is_complement()){
+        if(is_enriched() && dh->enrich_pressure && ! ele->xfem_data->is_complement()){
             XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
-                if(dh->single_enr && dh->enrich_pressure){
+                if(dh->single_enr){
                     dofs[i] = dh->row_4_press_sing[xd->global_enrichment_index(w)];
                     i++;
                 }
