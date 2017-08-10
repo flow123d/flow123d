@@ -692,7 +692,7 @@ void Field<spacedim,Value>::compute_native_data(OutputTime::DiscreteSpace space_
 
     if (field_fe_ptr) {
         ElementDataCache<double> &output_data = stream->prepare_compute_data<double>(this->name(), space_type,
-                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_, field_fe_ptr->data_size());
+                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
         field_fe_ptr->fill_data_to_cache(output_data);
     } else {
         WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
@@ -712,8 +712,9 @@ std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe(
 	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
 
 	bool is_fe = (region_fields_.size()>0); // indicate if FieldFE is defined on all bulk regions
-	for (unsigned int i=1; i<2*this->mesh()->region_db().bulk_size(); i+=2)
-		if (!region_fields_[i] || typeid(*region_fields_[i]) != typeid(FieldFE<spacedim, Value>)) {
+	is_fe = is_fe && region_fields_[1] && (typeid(*region_fields_[1]) == typeid(FieldFE<spacedim, Value>));
+	for (unsigned int i=3; i<2*this->mesh()->region_db().bulk_size(); i+=2)
+		if (!region_fields_[i] || (region_fields_[i] != region_fields_[1])) {
 			is_fe = false;
 			break;
 		}

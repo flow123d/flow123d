@@ -187,8 +187,7 @@ public:
      * @param size       Size of data cache (used only if new cache is created and only for native data)
      */
     template <typename T>
-    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols,
-    		unsigned int cache_size = 1);
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
 
 protected:
