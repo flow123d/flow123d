@@ -359,13 +359,12 @@ class Changes:
         '''
     """
 
-    def _move_value(self, path_in, path_out, reversed):
+    def _move_value(self, new_paths, old_paths, reversed):
         """
         ACTION.
-        1. In path_out, substitute initial './' with path_in (relative path_out),
-           , then we colapse every /../ checking that this do not remove any ** (produce error).
-        2. Try to match every '*' and '**' in path_out against path_in and substitute, check that
-           match is unique, otherwise error.
+        Path_in must be pattern for absolute path, '*' and '**' are not allowed.
+
+        1. In path_out, substitute every {} with corresponding {*} in  with path_in.
         2. Both old_paths and new_paths are expanded for alternatives
            resulting lists should be of the same size. Otherwise we report error since this is indpendent of the data.
         3. For every corresponding pair of 'old' and 'new' paths, using the correct order:
@@ -373,11 +372,15 @@ class Changes:
            - make path according to 'new' path, new keys are created (not renamed), tags are renamed
            - move the value
            - for every pair of items in paths  (a_key, a_tag) -> (b_key, b_tag)
-             ... no tag info = '*', missing key = (None, None)
-           - if   a_key != b_key, create key b_key
+                - if   a_key != b_key : create key b_key
+                - if   a_tag != b_tag : rename tag
+                - if   a_tag == None : match any tagkeep any tag
+             - a_tag = None means any tag, b_tag=None means  '*', missing key = (None, None)
+
            - same for tags
            - a_key = '*', b_key != '*' - error, same for '**' or '#', so
         """
+
         if reversed:
             old_paths, new_paths =  new_paths, old_paths
         pass
@@ -607,32 +610,6 @@ class PathSet(object):
             for key, child in current.items():
                 yield from self.dfs_iterate(nodes + [ child ] , address  + str(key) )
 
-    def apply(self, action, root):
-        """
-        Apply 'fun' to all paths in path set in data tree 'root'.
-        :param fun: Function accepting a data tree path as parameter.
-        :param root: Data tree
-        :return: None
-        """
-        logging.debug("Patterns: {}".format(self.patterns))
-        return self.dfs_apply(action, [root], "/")
-
-    def dfs_apply(self, action, data_path, path):
-        matches=[]
-        current = data_path[-1]
-        logging.debug("DFS apply: " + str(path))
-        if self.match(data_path, path):
-            matches+=[current]
-            self.current_path=path
-            action(data_path)
-        if is_list_node(current):
-            for idx, child in enumerate(current):
-                matches += self.dfs_apply(action, data_path + [ child ], path  + str(idx) + "/"  )
-        elif is_map_node(current):
-            for key, child in current.items():
-                matches += self.dfs_apply(action, data_path + [ child ] , path  + str(key) + "/" )
-        return matches
-
 
     def match(self, data_path, path):
         for pattern in self.patterns:
@@ -759,8 +736,8 @@ path = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/(output_
 changes.move_values( path, "./transport" )
 
 # Transport, proposed simplified syntax:
-path_in = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/(output_fields|input_fields)/"])
-path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!Solute_Advection_FV/(*)"])
+path_in = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/{(output_fields|input_fields)}/"])
+path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!Solute_Advection_FV/{}/"])
 changes.move_values( path_in, path_out)
 
 path = PathSet(["/problem/secondary_equation!SoluteTransport_DG/transport/"])
