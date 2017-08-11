@@ -123,29 +123,35 @@ public:
     virtual void read_physical_names(Mesh * mesh)=0;
 
     /**
-     *  Reads ElementData sections of opened mesh file. The file is searched for the \\$ElementData (GMSH) or DataArray
-     *  (VTK) section with header that match the given @p field_name and @p time of the next section is the first greater
-     *  then that given in input parameters). If such section has not been yet read, we read the data section into raw
-     *  buffer @p data. The map @p id_to_idx is used to convert IDs that marks individual input rows/entities into indexes
-     *  to the raw buffer. The buffer must have size at least @p n_components * @p n_entities. Indexes in the map must be
-     *  smaller then @p n_entities.
-     *  If the @p data buffer is updated we set actual to true.
+     * Prepare data header for reading ElementData sections of opened mesh file. The file is searched for the \\$ElementData
+     * (GMSH) or DataArray (VTK) section with header that match the given @p field_name, @p time and discretization of the
+     * next section is the first greater then that given in input parameters).
+     *
+     * This method must be call before \p get_element_data method!
+     *
+     *  @param field_name field name
+     *  @param time searched time
+     *  @param disc_params struct with parameters 'discretization' (can be define on input) and 'dof_handler_hash' used only for native data
+     */
+    void set_actual_data_header( std::string field_name, double time, DiscretizationParams &disc_params);
+
+    /**
+     *  Reads ElementData sections of opened mesh file. Method must be call after \p set_data_header method. If such section
+     *  has not been yet read, we read the data section into raw buffer @p data. The buffer must have size at least
+     *  @p n_components * @p n_entities. Indexes in the map must be smaller then @p n_entities.
      *
      *  Possible optimizations:
      *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
      *  and just check that they comes in in correct order.
      *
-     *  @param field_name field name
-     *  @param time searched time
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
      *  @param boundary_domain flag determines that data is read for boundary or bulk elements
      *  @param component_idx component index of MultiField
-     *  @param disc_params struct with parameters 'discretization' (can be define on input) and 'dof_handler_hash' used only for native data
 	 */
     template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool boundary_domain, unsigned int component_idx, DiscretizationParams &disc_params);
+    typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
+    		bool boundary_domain, unsigned int component_idx);
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.
@@ -180,6 +186,8 @@ protected:
     *
     */
     struct MeshDataHeader {
+    	/// Set field_name value to empty string, that signs invalid header (using after reading data)
+    	void reset() { field_name = ""; }
         /// Name of field
     	std::string field_name;
         /// Currently d'ont used
@@ -252,6 +260,9 @@ protected:
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.
     vector<int> bulk_elements_id_, boundary_elements_id_;
+
+    /// Header of actual loaded data.
+    MeshDataHeader actual_header_;
 };
 
 #endif	/* MSH_BASE_READER_HH */

@@ -205,8 +205,9 @@ TEST(VtkReaderTest, read_binary_vtu) {
     disc_params.discretization = BaseMeshReader::Discretization::element_data;
     // read data by components for MultiField
     for (i=0; i<3; ++i) {
+    	reader->set_actual_data_header("vector_field", 0.0, disc_params);
         typename ElementDataCache<double>::ComponentDataPtr multifield_data =
-        		reader->get_element_data<double>("vector_field", 0.0, 6, 1, boundary_domain, i, disc_params);
+        		reader->get_element_data<double>(6, 1, boundary_domain, i);
     	std::vector<double> &vec = *( multifield_data.get() );
     	EXPECT_EQ(6, vec.size());
     	for (j=0; j<vec.size(); j++) {
@@ -217,8 +218,9 @@ TEST(VtkReaderTest, read_binary_vtu) {
     // read data to one vector for Field
     {
     	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
+    	reader->set_actual_data_header("tensor_field", 1.0, disc_params);
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
-    			reader->get_element_data<double>("tensor_field", 1.0, 6, 9, boundary_domain, 0, disc_params);
+    			reader->get_element_data<double>(6, 9, boundary_domain, 0);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
     	for (j=0; j<vec.size(); j++) {

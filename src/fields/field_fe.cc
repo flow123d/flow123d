@@ -235,8 +235,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		bool boundary_domain = false;
 		BaseMeshReader::DiscretizationParams disc_params;
 		disc_params.discretization = this->discretization_;
-		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
-				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_, disc_params);
+		ReaderInstance::get_reader(reader_file_)->set_actual_data_header(field_name_, time.end(), disc_params);
+		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(source_mesh->element.size(),
+				n_components, boundary_domain, this->component_idx_);
 		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {
 			ASSERT_EQ(disc_params.dof_handler_hash, dh_->hash())(disc_params.dof_handler_hash)(dh_->hash())
 					.error("Invalid DOF handler!\n");

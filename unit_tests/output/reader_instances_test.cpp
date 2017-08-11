@@ -52,9 +52,9 @@ TEST(ReaderInstances, get_bulk_element_data) {
     BaseMeshReader::DiscretizationParams disc_params;
     disc_params.discretization = BaseMeshReader::Discretization::element_data;
     for (i=0; i<3; ++i) {
+    	ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.0, disc_params);
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
-        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 9, 1,
-        		false, i, disc_params);
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>(9, 1, false, i);
     	std::vector<int> &vec = *( multifield_data.get() );
     	EXPECT_EQ(9, vec.size());
     	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] );
@@ -62,9 +62,9 @@ TEST(ReaderInstances, get_bulk_element_data) {
 
     // read data to one vector for Field
     {
+    	ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 1.0, disc_params);
     	typename ElementDataCache<int>::ComponentDataPtr field_data =
-        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 9, 3,
-                false, 0, disc_params);
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>(9, 3, false, 0);
     	std::vector<int> &vec = *( field_data.get() );
     	EXPECT_EQ(27, vec.size());
     	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] );
@@ -93,9 +93,9 @@ TEST(ReaderInstances, get_boundary_element_data) {
     BaseMeshReader::DiscretizationParams disc_params;
     disc_params.discretization = BaseMeshReader::Discretization::element_data;
     for (i=0; i<3; ++i) {
+    	ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.0, disc_params);
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
-        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 0.0, 4, 1,
-        		true, i, disc_params);
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>(4, 1, true, i);
     	std::vector<int> &vec = *( multifield_data.get() );
     	EXPECT_EQ(4, vec.size());
     	for (j=0; j<mesh->bc_elements.size(); j++) EXPECT_EQ( i+4, vec[j] );
@@ -103,9 +103,9 @@ TEST(ReaderInstances, get_boundary_element_data) {
 
     // read data to one vector for Field
     {
+    	ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 1.0, disc_params);
     	typename ElementDataCache<int>::ComponentDataPtr field_data =
-        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>("vector_fixed", 1.0, 4, 3,
-                true, 0, disc_params);
+        		ReaderInstances::instance()->get_reader(file_name)->get_element_data<int>(4, 3, true, 0);
     	std::vector<int> &vec = *( field_data.get() );
     	EXPECT_EQ(12, vec.size());
     	for (j=0; j<3*mesh->bc_elements.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] );
@@ -136,50 +136,50 @@ TEST(ReaderInstances, find_header) {
     disc_params.discretization = BaseMeshReader::Discretization::element_data;
     std::shared_ptr< std::vector<double> > data;
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.0, n_elements, n_comp,
-            false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.0, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
     EXPECT_EQ(3.0, (*data)[3*8+2]);
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.1, n_elements, n_comp,
-    		false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.1, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
     EXPECT_EQ(3.0, (*data)[3*8+2]);
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 0.9, n_elements, n_comp,
-    		false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.9, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(1.0, (*data)[0]);
     EXPECT_EQ(2.0, (*data)[1]);
     EXPECT_EQ(3.0, (*data)[2]);
     EXPECT_EQ(3.0, (*data)[3*8+2]);
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.0, n_elements, n_comp,
-    		false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 1.0, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 1.1, n_elements, n_comp,
-    		false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 1.1, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 2.1, n_elements, n_comp,
-    		false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 2.1, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);
     EXPECT_EQ(4.0, (*data)[3*8+2]);
 
-    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>("vector_fixed", 200, n_elements, n_comp,
-    		false, 0, disc_params);
+    ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 200, disc_params);
+    data = ReaderInstances::instance()->get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
     EXPECT_EQ(2.0, (*data)[0]);
     EXPECT_EQ(3.0, (*data)[1]);
     EXPECT_EQ(4.0, (*data)[2]);

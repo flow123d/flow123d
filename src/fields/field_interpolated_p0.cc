@@ -105,9 +105,9 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     bool boundary_domain_ = false;
     BaseMeshReader::DiscretizationParams disc_params;
     disc_params.discretization = BaseMeshReader::Discretization::element_data;
+    ReaderInstances::instance()->get_reader(reader_file_)->set_actual_data_header(field_name_, time.end(), disc_params);
     data_ = ReaderInstances::instance()->get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(),
-    		boundary_domain_, this->component_idx_, disc_params);
+    		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
     this->scale_data();
 
     return true;
