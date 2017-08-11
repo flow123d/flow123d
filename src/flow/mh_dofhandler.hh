@@ -158,6 +158,14 @@ protected:
 
     void find_ele_to_enrich(Singularity0DPtr sing, int ele1d_global_idx,
                             ElementFullIter ele, double radius, int& new_enrich_node_idx);
+    void find_ele_to_enrich(Singularity1DPtr sing, int ele1d_global_idx,
+                            ElementFullIter ele, double radius, int& new_enrich_node_idx);
+    
+    template<int dim, class Enr>
+    void enrich_ele(std::shared_ptr<Enr> sing, unsigned int sing_idx,
+                    std::vector<XFEMElementSingularData<dim>>& xfem_data,
+                    int ele1d_global_idx,
+                    ElementFullIter ele, int& new_enrich_node_idx);
     
     void clear_mesh_flags();
     
