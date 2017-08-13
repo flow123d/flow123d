@@ -82,6 +82,23 @@ class TestActions(unittest.TestCase):
         self.perform(changes)
 
 
+    def test_move_value(self):
+        changes=Changes()
+        changes.new_version("A")
+
+        # Move FV transport
+        path_in = "/problem/secondary_equation_1!TransportOperatorSplitting/{(output_fields|input_fields)}/"
+        path_out = "/problem/secondary_equation_1!Coupling_OperatorSplitting/transport!Solute_Advection_FV/{}/"
+        changes.move_value(path_in, path_out)
+
+        # Move DG transport
+        path_in = "/problem/secondary_equation_2!SoluteTransport_DG/{(input_fields|output_fields|solver|dg_order|dg_variant|solvent_density)}/"
+        path_out = "/problem/secondary_equation_2!Coupling_OperatorSplitting/transport!SoluteTransport_DG/{}/"
+        changes.move_value(path_in, path_out)
+
+        self.perform(changes)
+
+
 ####################################
 
     def  make_test_file(self, ext):

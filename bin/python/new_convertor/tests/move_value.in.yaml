@@ -1,0 +1,53 @@
+problem: !SequentialCoupling
+  secondary_equation_1: !TransportOperatorSplitting
+    input_fields:
+      - region: domain
+        init_conc: 0
+      - region: .left
+        bc_type: dirichlet
+        bc_conc: 10
+        time: 0.0
+    output_stream: 
+      file: ./transport.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.1
+      name: transport_output_stream
+    substances:
+      - conc
+    reaction_term: !Sorption
+      solvent_density: 1.0
+    time:
+      end_time: 2.0
+    balance:
+      cumulative: true
+      
+  secondary_equation_2: !SoluteTransport_DG
+    input_fields:
+      - r_set: BOUNDARY
+        bc_conc: 0
+      - rid: 20
+        init_conc: 0
+        diff_m: 0.1
+      - rid: 24
+        init_conc: 0
+        diff_m: 0.1
+        dg_penalty: 100
+      - rid: 30
+        init_conc: 1
+    output_stream: 
+      file: ./transport-implicit.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.001
+      name: transport_output_stream
+    substances:
+      - A
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+    time:
+      end_time: 0.01
+      max_dt: 0.001
+    balance:
+      cumulative: true    

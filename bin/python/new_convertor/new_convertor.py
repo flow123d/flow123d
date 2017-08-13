@@ -28,9 +28,6 @@ import itertools
 #import copy
 
 
-MapType=ruml.comments.CommentedMap
-ListType=list
-
 
 CommentsTag = ruml.comments.Tag
 
@@ -178,6 +175,16 @@ def is_map_node(node):
 
 def is_scalar_node(node):
     return type(node) in [ CommentedScalar, int, float, bool, None, str ]
+
+def is_map_key(key_str):
+    return re.match('^[a-zA-Z][a-zA-Z_0-9]*$', key_str)
+
+
+def enlist(s):
+    if type(s) != list:
+        return [s]
+    else:
+        return s
 
 
 class Changes:    
@@ -359,31 +366,163 @@ class Changes:
         '''
     """
 
+    def __brace_substitution(self, old, new):
+        """
+        Subsititute {} in new by corresponding {...} in 'old'.
+        :param old:
+        :param new:
+        :return: old, new ... changed
+        """
+
+        old_braces = re.findall('{[^}]*}', old)
+
+        while True:
+            # need to get just first match each time, since 'new' is changed
+            new_brace = next(re.finditer('{[^}]*}', new), None)
+            if new_brace is None:
+                break
+            if not old_braces:
+                raise Exception("Missing brace(s) in {}.".format(old))
+            old_brace = old_braces.pop(0)[1:-1]  # strip braces
+            new = new[:new_brace.start()] + old_brace + new[new_brace.end():]
+
+        if old_braces:
+            raise Exception("Too many braces in {}.".format(old))
+        # remove all braces from old
+        old = re.sub("[{}]", "", old)
+        assert not re.findall("[{}]", new)
+        return old, new
+
     def _move_value(self, new_paths, old_paths, reversed):
         """
         ACTION.
+        Move a values from 'new_paths' to 'old_paths'.
+        We can not use standard patterns as this makes move a non-invertible action.
+        We first expand both lists into list of pairs of simple paths with tag specifications and
+        than apply move for each pair of these paths.
+
+
         Path_in must be pattern for absolute path, '*' and '**' are not allowed.
 
-        1. In path_out, substitute every {} with corresponding {*} in  with path_in.
-        2. Both old_paths and new_paths are expanded for alternatives
+        1. In path_out, substitute every {} with corresponding {*} in path_in.
+        2. Expand both old_paths and new_paths for alternatives
            resulting lists should be of the same size. Otherwise we report error since this is indpendent of the data.
-        3. For every corresponding pair of 'old' and 'new' paths, using the correct order:
-           - for every value matching the 'old' path
-           - make path according to 'new' path, new keys are created (not renamed), tags are renamed
-           - move the value
-           - for every pair of items in paths  (a_key, a_tag) -> (b_key, b_tag)
-                - if   a_key != b_key : create key b_key
-                - if   a_tag != b_tag : rename tag
-                - if   a_tag == None : match any tagkeep any tag
-             - a_tag = None means any tag, b_tag=None means  '*', missing key = (None, None)
-
-           - same for tags
-           - a_key = '*', b_key != '*' - error, same for '**' or '#', so
+        3. For every corresponding pair of 'old' and 'new' paths:
+           - tag spec must be in both paths for corresponding keys
+           - find 'old' in the tree (no tag spec '/x/' means any tag, empty tag /x!/, means no tag)
+            # - is allowed, means any item of a list
+           - create path in the tree according to 'new',
+           - set tags if specified, check tag spec in 'old'
+           - # means append to the list
+           - move value from old path to new path
+           - remove any empty map or list in 'old' path
         """
+        new_paths = enlist(new_paths)
+        old_paths = enlist(old_paths)
 
-        if reversed:
-            old_paths, new_paths =  new_paths, old_paths
-        pass
+        cases = []
+        assert len(new_paths) == len(old_paths)
+        for old, new in zip(new_paths, old_paths):
+            old, new = self.__brace_substitution(old, new)
+            old_alts = PathSet.expand_alternatives(old)
+            new_alts = PathSet.expand_alternatives(new)
+            assert len(old_alts) == len(new_alts), "old: {} new: {}".format(old_alts, new_alts)
+            for o_alt, n_alt in zip(old_alts, new_alts ):
+                # TODO: check tag specifications
+
+                if reversed:
+                    o_alt, n_alt =  n_alt, o_alt
+
+                path_match  = [ match for match in PathSet(o_alt).iterate(self.tree) ]
+                if path_match:
+                    if len(path_match) > 1:
+                        raise Exception("More then single match for the move path: {}".format(old))
+
+                    nodes, addr = path_match[0]
+
+
+                    cases.append( (nodes, addr, n_alt) )
+
+        for case in cases:
+            nodes, addr, new = case
+            value_to_move = nodes[-1]
+            self.__remove_value(nodes, addr.strip('/').split('/'))
+
+            # create list of (key, tag); tag=None if no tag is specified
+            new_split = new.strip('/').split('/')
+            path_list = [ ( item.split('!') +  [None])[:2]   for item in  new_split ]
+            self.tree = self.__move_value( value_to_move, [self.tree], path_list)
+
+    def __remove_value(self, nodes, addr_list):
+        # remove value
+        assert len(nodes) > 1
+        key = addr_list[-1].split('!')[0]
+
+        if is_map_node(nodes[-2]):
+            assert is_map_key(key)
+            del nodes[-2][key]
+        elif is_list_node(nodes[-2]):
+            assert key.isdigit()
+            del nodes[-2][int(key)]
+        else:
+            assert False
+
+        # remove empty maps and seqs
+        if len(nodes[-2]) == 0 :
+            self.__remove_value( nodes[:-1], addr_list[:-1])
+
+    # debug: check setting tag to ""
+    def __set_tag(self, node, tag):
+        if tag is not None:
+            # have tag spec in 'new', set the tag
+            if tag == "":
+                node.tag.value = None
+            else:
+                node.tag.value = "!" + tag
+
+    def __move_value(self, value, nodes, path_list):
+        """
+        Add moved value to the tree.
+        
+        :param n_nodes:
+        :param path: list of tuples (key, tag, value_type)
+        :return: Updated subtree.
+        """
+        if not path_list:
+            return value
+
+        key, tag = path_list.pop(0)
+
+        # debug: check that path is shorter
+        if key in ['#', '0']:
+            if nodes is None:
+                # debug correctly created Seq
+                nodes = [ruml.comments.CommentedSeq()]
+            assert is_list_node(nodes[-1])
+            if key =='0':
+                i = 0
+            if key == '#':
+                i = len(nodes[-1])
+            new_value = self.__move_value(value, None, path_list)
+            self.__set_tag(new_value, tag)
+
+            nodes[-1].insert(i, new_value)
+        elif is_map_key(key) :
+            if nodes is None:
+                nodes = [ ruml.comments.CommentedMap() ]
+
+            assert is_map_node(nodes[-1])
+            if key in nodes[-1]:
+                nodes_plus = nodes + [ nodes[-1][key] ]
+            else:
+                nodes_plus = None
+            new_value = self.__move_value(value, nodes_plus, path_list)
+            self.__set_tag(new_value, tag)
+            nodes[-1][key] = new_value
+        else:
+            raise Exception("Wrong key: {}".format(key))
+        return nodes[-1]
+
 
     def _rename_key(self, paths, old_key, new_key, reversed):
         '''
@@ -522,6 +661,30 @@ class Changes:
 
 
 class PathSet(object):
+
+    @staticmethod
+    def expand_alternatives(pattern):
+        """
+        For given pattern with alternatives return list of patters for all valid alternative combinations.
+        :param pattern:
+        :return:
+        """
+        # pass through all combinations of alternatives (X|Y|Z)
+        list_of_alts = []
+        for alt_group in re.finditer('\([^/|]*(\|[^/|]*)*\)', pattern):
+            before_group = pattern[0:alt_group.start()]
+            list_of_alts.append([before_group])
+
+            # swallow parenthesis
+            alts = alt_group.group(0)[1:-1]
+            alts = alts.split('|')
+            list_of_alts.append(alts)
+            pattern = pattern[alt_group.end():]
+        list_of_alts.append([pattern])
+
+        return [ ''.join(pp_list) for pp_list in itertools.product(*list_of_alts)]
+
+
     """
     Set of places in YAML file to which apply a given rule
     """
@@ -543,22 +706,7 @@ class PathSet(object):
 
         self.patterns=[]
         for p in self.path_patterns:
-
-            # pass through all combinations of alternatives (X|Y|Z)
-            list_of_alts=[]
-            for alt_group in re.finditer('\([^/|]*(\|[^/|]*)*\)', p):
-                before_group=p[0:alt_group.start()]
-                list_of_alts.append([before_group])
-
-                # swallow parenthesis
-                alts = alt_group.group(0)[1:-1]
-                alts = alts.split('|')
-                list_of_alts.append( alts )
-                p = p[alt_group.end():]
-            list_of_alts.append([p])
-
-            for pp_list in itertools.product(*list_of_alts):
-                pp= ''.join(pp_list)
+            for pp in self.expand_alternatives(p):
                 # '**' = any number of levels, any key or index per level
                 pp = re.sub('\*\*', '[a-zA-Z0-9_]@(/[a-zA-Z0-9_]@)@',pp)
                 # '*' = single level, any key or index per level
@@ -581,18 +729,25 @@ class PathSet(object):
         Generator that iterates over all paths valid both in path set and in the tree.
          Yields (nodes, address) pair. 'nodes' is list of all nodes from the root down to the
         leaf node of the path. 'address' is string address of the path target.
-        :return:
+        :return: (nodes, address)
+        nodes - list of nodes along the path from root down to the current node
+        address - address of current node including the tag specification if the tag is set
         """
         logging.debug("Patterns: {}".format(self.patterns))
 
         yield from self.dfs_iterate( [tree], "")
 
-    def get_node_tag(self, node):
+    @staticmethod
+    def get_node_tag(node):
         if hasattr(node, "tag"):
             tag = node.tag.value
             if tag and len(tag)>1 and tag[0] == '!' and tag[1] !='!':
                 return tag
         return ""
+
+    @staticmethod
+    def node_has_tag(node, tag):
+        return tag is None or PathSet.get_node_tag(node) == tag
 
     def dfs_iterate(self, nodes, address):
         current = nodes[-1]
@@ -601,6 +756,7 @@ class PathSet(object):
 
         logging.debug("DFS at: " + str(address))
         if self.match(nodes, address):
+            # terminate recursion in every node
             self.matches+=[current]
             yield (nodes, address)
         if is_list_node(current):
@@ -630,6 +786,27 @@ class PathSet(object):
         return False
 
 
+    @staticmethod
+    def traverse_node(nodes, key, create = False):
+        curr = nodes[-1]
+        if key == "..":
+            nodes.pop()
+        elif key.isdigit():
+            assert( is_list_node(curr) )
+            idx = int(key)
+            if idx >= len(curr):
+                return None
+            nodes.append( curr[idx] )
+        else:
+            assert ( is_map_node(curr) )
+            if not key in curr:
+                if create:
+                    curr[key]=None
+                else:
+                    return None
+            nodes.append(curr[key])
+        return nodes
+
     def traverse_tree(self, data_path, rel_path):
         """
         Move accross data tree starting at address given by 'data_path', according
@@ -639,22 +816,11 @@ class PathSet(object):
         :param rel_path: Relative address of the target node, e.g. "../key_name/1"
         :return: Data path of target node. None in case of incomaptible address.
         """
-        target_path=data_path.copy()
+        target_path = data_path.copy()
         for key in rel_path:
-            curr = target_path[-1]
-            if key == "..":
-                target_path.pop()
-            elif key.isdigit():
-                assert(type(curr) == ListType)
-                idx = int(key)
-                if idx >= len(curr):
-                    return None
-                target_path.append( curr[idx] )
-            else:
-                assert (type(curr) == MapType)
-                if not key in curr:
-                    return None
-                target_path.append(curr[key])
+            target_path = self.traverse_node(target_path, key)
+            if target_path is None:
+                return None
         return target_path
 
 
