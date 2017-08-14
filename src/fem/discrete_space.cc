@@ -38,9 +38,9 @@ unsigned int EqualOrderDiscreteSpace::n_node_dofs(unsigned int nid) const
   unsigned int dim = mesh_->tree->node_dim()[nid];
   switch (dim)
   {
-    case 1: return fe1_->n_object_dofs(0, DofMultiplicity::DOF_SINGLE)/(dim+1);
-    case 2: return fe2_->n_object_dofs(0, DofMultiplicity::DOF_SINGLE)/(dim+1);
-    case 3: return fe3_->n_object_dofs(0, DofMultiplicity::DOF_SINGLE)/(dim+1);
+    case 1: return fe1_->n_object_dofs(0, DofMultiplicity::DOF_SINGLE);
+    case 2: return fe2_->n_object_dofs(0, DofMultiplicity::DOF_SINGLE);
+    case 3: return fe3_->n_object_dofs(0, DofMultiplicity::DOF_SINGLE);
   }
 }
 

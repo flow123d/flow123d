@@ -55,7 +55,7 @@ DofDistribution<1,1>::DofDistribution()
     init();
     number_of_dofs = 2;
 
-    number_of_single_dofs[0] = 2;
+    number_of_single_dofs[0] = 1;
 
     unit_support_points.push_back(RefElement<1>::node_coords(0));
     unit_support_points.push_back(RefElement<1>::node_coords(1));
@@ -68,7 +68,7 @@ DofDistribution<2,1>::DofDistribution()
     init();
     number_of_dofs = 3;
 
-    number_of_single_dofs[0] = 2;
+    number_of_single_dofs[0] = 1;
     number_of_single_dofs[1] = 1;
 
     unit_support_points.push_back(RefElement<1>::node_coords(0));
@@ -84,7 +84,7 @@ DofDistribution<3,1>::DofDistribution()
     init();
     number_of_dofs = 4;
 
-    number_of_single_dofs[0] = 2;
+    number_of_single_dofs[0] = 1;
     number_of_pairs[1] = 1;
 
     unit_support_points.push_back(RefElement<1>::node_coords(0));
@@ -118,7 +118,7 @@ DofDistribution<1,2>::DofDistribution()
     init();
     number_of_dofs = 3;
 
-    number_of_single_dofs[0] = 3;
+    number_of_single_dofs[0] = 1;
 
     unit_support_points.push_back(RefElement<2>::node_coords(0));
     unit_support_points.push_back(RefElement<2>::node_coords(1));
@@ -132,8 +132,8 @@ DofDistribution<2,2>::DofDistribution()
     init();
     number_of_dofs = 6;
 
-    number_of_single_dofs[0] = 3;
-    number_of_single_dofs[1] = 3;
+    number_of_single_dofs[0] = 1;
+    number_of_single_dofs[1] = 1;
 
     unit_support_points.push_back(RefElement<2>::node_coords(0));
     unit_support_points.push_back(RefElement<2>::node_coords(1));
@@ -153,8 +153,8 @@ DofDistribution<3,2>::DofDistribution()
     init();
     number_of_dofs = 10;
 
-    number_of_single_dofs[0] = 3;
-    number_of_pairs[1] = 3;
+    number_of_single_dofs[0] = 1;
+    number_of_pairs[1] = 1;
     number_of_single_dofs[2] = 1;
 
     unit_support_points.push_back(RefElement<2>::node_coords(0));
@@ -200,7 +200,7 @@ DofDistribution<1,3>::DofDistribution()
     init();
     number_of_dofs = 4;
 
-    number_of_single_dofs[0] = 4;
+    number_of_single_dofs[0] = 1;
 
     unit_support_points.push_back(RefElement<3>::node_coords(0));
     unit_support_points.push_back(RefElement<3>::node_coords(1));
@@ -215,8 +215,8 @@ DofDistribution<2,3>::DofDistribution()
     init();
     number_of_dofs = 10;
 
-    number_of_single_dofs[0] = 4;
-    number_of_single_dofs[1] = 6;
+    number_of_single_dofs[0] = 1;
+    number_of_single_dofs[1] = 1;
 
     unit_support_points.push_back(RefElement<3>::node_coords(0));
     unit_support_points.push_back(RefElement<3>::node_coords(1));
@@ -243,9 +243,9 @@ DofDistribution<3,3>::DofDistribution()
     init();
     number_of_dofs = 20;
 
-    number_of_single_dofs[0] = 4;
-    number_of_pairs[1] = 6;
-    number_of_single_dofs[2] = 4;
+    number_of_single_dofs[0] = 1;
+    number_of_pairs[1] = 1;
+    number_of_single_dofs[2] = 1;
 
     unit_support_points.push_back(RefElement<3>::node_coords(0));
     unit_support_points.push_back(RefElement<3>::node_coords(1));
