@@ -23,6 +23,14 @@
 
 class Mesh;
 
+/**
+ * Class representing an n-face (node, line, triangle or tetrahedron) in the mesh.
+ * Currently, the object stores information about its 1-codimensional faces
+ * and nodes.
+ * 
+ * In the future we should think about complete graph, where every n-dimensional object
+ * has information only about its (n-1)-dimensional faces.
+ */
 template<int dim>
 class MeshObject {
 public:
@@ -30,7 +38,10 @@ public:
   MeshObject();
   ~MeshObject() {}
   
+  /// (dim-1)-dimensional faces
   MeshObject<dim-1> *faces[dim+1];
+  
+  /// Indices of nodes.
   unsigned int nodes[dim+1];
 };
 
@@ -88,7 +99,7 @@ public:
   // Getters (see private section for explanation).  
   Mesh *mesh() const { return mesh_; }
   
-  const std::vector<unsigned int> &nodes() const { return nodes_; }
+  unsigned int n_nodes() const { return n_duplicated_nodes_; }
   const std::vector<unsigned int> &node_dim() const { return node_dim_; }
   
   const std::vector<MeshObject<0> > &points() const { return points_; }
@@ -98,7 +109,6 @@ public:
   
   const std::vector<unsigned int> &obj_4_el() const { return obj_4_el_; }
   const std::vector<unsigned int> &obj_4_edg() const { return obj_4_edg_; }
-  const std::vector<unsigned int> &obj_4_node() const { return obj_4_node_; }
   
   
 private:
@@ -119,10 +129,10 @@ private:
   /// The mesh object.
   Mesh *mesh_;
   
-  /// Internal indices of nodes (including duplicated nodes).
-  std::vector<unsigned int> nodes_;
+  /// Number of nodes (including duplicated ones).
+  unsigned int n_duplicated_nodes_;
   
-  /// Vector of space dimensions of elements using the particular node.
+  /// Vector of space dimensions of elements using the particular duplicated node.
   std::vector<unsigned int> node_dim_;
   
   /// Internal indices of points (0d elements).
@@ -137,14 +147,14 @@ private:
   /// Internal indices of tetrahedra (3d elements).
   std::vector<MeshObject<3> > tetras_;
   
-  /// Vector of object indices for each mesh element.
+  /** Vector of object indices for each mesh element.
+   * For an element with index el_idx, obj_4_el_[el_idx] is the index of the corresponding object
+   * in the vector tetras_/triangles_/lines_/points_, depending on the element dimension.
+   */
   std::vector<unsigned int> obj_4_el_;
   
   /// Vector of object indices for each mesh edge.
   std::vector<unsigned int> obj_4_edg_;
-  
-  /// Vector of object indices for each mesh node.
-  std::vector<unsigned int> obj_4_node_;
 };
 
 

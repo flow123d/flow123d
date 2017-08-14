@@ -268,14 +268,14 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     // may be discontinuous on nodes shared by different
     // dimensions.
     std::vector<int> node_dofs, node_dof_starts, node_status, elem_dofs, elem_dof_starts;
-    for (unsigned int nid=0; nid<mesh_->tree->nodes().size(); nid++)
+    for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
     {
       node_dof_starts.push_back(n_node_dofs);
       n_node_dofs += ds->n_node_dofs(nid);
     }
     node_dof_starts.push_back(n_node_dofs);
     node_dofs.resize(n_node_dofs);
-    node_status.resize(mesh_->tree->nodes().size(), INVALID_NODE);
+    node_status.resize(mesh_->tree->n_nodes(), INVALID_NODE);
     
     // initialize dofs on elements
     for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++) {
@@ -529,7 +529,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 	}
 	
 	// create array of local nodes
-	std::vector<bool> node_is_local(mesh_->tree->nodes().size(), false);
+	std::vector<bool> node_is_local(mesh_->tree->n_nodes(), false);
     for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++)
     {
       CellIterator cell = mesh_->element(el_index(loc_el));
@@ -549,7 +549,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
           break;
       }
     }
-    for (unsigned int nid=0; nid<mesh_->tree->nodes().size(); nid++)
+    for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
       if (node_is_local[nid])
         node_4_loc.push_back(nid);
     

@@ -34,7 +34,8 @@ MeshObject<dim>::MeshObject()
 
 
 DuplicateNodes::DuplicateNodes(Mesh* mesh)
-: mesh_(mesh)
+: mesh_(mesh),
+  n_duplicated_nodes_(0)
 {
   init_nodes();
   init_from_edges();
@@ -47,12 +48,8 @@ DuplicateNodes::DuplicateNodes(Mesh* mesh)
 void DuplicateNodes::init_nodes()
 {
   // initialize the nodes
-  unsigned int nid=0;
-  FOR_NODES(mesh_, n) {
-    obj_4_node_.push_back(nid);
-    nodes_.push_back(nid++);
-  }
-  node_dim_.resize(nodes_.size());
+  n_duplicated_nodes_ = mesh_->n_nodes();
+  node_dim_.resize(n_duplicated_nodes_);
 }
 
 
@@ -65,7 +62,7 @@ void DuplicateNodes::init_from_edges()
       case 0:
         {
           MeshObject<0> p;
-          p.nodes[0] = obj_4_node_[mesh_->node_vector.index(edge->side(0)->node(0))];
+          p.nodes[0] = mesh_->node_vector.index(edge->side(0)->node(0));
           obj_4_edg_.push_back(points_.size());
           points_.push_back(p);
         }
@@ -74,7 +71,7 @@ void DuplicateNodes::init_from_edges()
         {
           MeshObject<1> l;
           for (unsigned int i=0; i<2; i++)
-            l.nodes[i] = obj_4_node_[mesh_->node_vector.index(edge->side(0)->node(i))];
+            l.nodes[i] = mesh_->node_vector.index(edge->side(0)->node(i));
           obj_4_edg_.push_back(lines_.size());
           lines_.push_back(l);
         }
@@ -83,7 +80,7 @@ void DuplicateNodes::init_from_edges()
         {
           MeshObject<2> t;
           for (unsigned int i=0; i<3; i++)
-            t.nodes[i] = obj_4_node_[mesh_->node_vector.index(edge->side(0)->node(i))];
+            t.nodes[i] = mesh_->node_vector.index(edge->side(0)->node(i));
           obj_4_edg_.push_back(triangles_.size());
           triangles_.push_back(t);
         }
@@ -103,7 +100,7 @@ void DuplicateNodes::init_from_elements()
         {
           MeshObject<1> l;
           for (unsigned int i=0; i<2; i++)
-            l.nodes[i] = obj_4_node_[mesh_->node_vector.index(ele->node[i])];
+            l.nodes[i] = mesh_->node_vector.index(ele->node[i]);
           for (unsigned int i=0; i<2; i++)
             l.faces[i] = &points_[obj_4_edg_[ele->side(i)->edge_idx()]];
           obj_4_el_.push_back(lines_.size());
@@ -114,7 +111,7 @@ void DuplicateNodes::init_from_elements()
         {
           MeshObject<2> tr;
           for (unsigned int i=0; i<3; i++)
-            tr.nodes[i] = obj_4_node_[mesh_->node_vector.index(ele->node[i])];
+            tr.nodes[i] = mesh_->node_vector.index(ele->node[i]);
           for (unsigned int i=0; i<3; i++)
             tr.faces[i] = &lines_[obj_4_edg_[ele->side(i)->edge_idx()]];
           obj_4_el_.push_back(triangles_.size());
@@ -125,7 +122,7 @@ void DuplicateNodes::init_from_elements()
         {
           MeshObject<3> te;
           for (unsigned int i=0; i<4; i++)
-            te.nodes[i] = obj_4_node_[mesh_->node_vector.index(ele->node[i])];
+            te.nodes[i] = mesh_->node_vector.index(ele->node[i]);
           for (unsigned int i=0; i<4; i++)
             te.faces[i] = &triangles_[obj_4_edg_[ele->side(i)->edge_idx()]];
           obj_4_el_.push_back(tetras_.size());
@@ -163,7 +160,7 @@ void DuplicateNodes::duplicate_nodes()
     }
     
     // divide node_elements into components connected by node_edges
-    std::vector<std::set<unsigned int> > components;
+    std::list<std::set<unsigned int> > components;
     while (node_elements.size() > 0)
     {
       // create component containing the first element in node_elements
@@ -198,17 +195,19 @@ void DuplicateNodes::duplicate_nodes()
       components.push_back(component);
     }
     
-    // for each component except the first one
-    // create a duplicate of the node
+    // For the first component leave the current node and set its node_dim_.
+    // If there are more components, then for each additional component
+    // create a duplicate of the node and update the affected mesh objects.
     if (components.size() > 0) {
-      node_dim_[obj_4_node_[n.index()]] = mesh_->element[*components[0].begin()].dim();
+      node_dim_[n.index()] = mesh_->element[*(components.begin()->begin())].dim();
       components.erase(components.begin());
     }
     for (auto component : components) {
-      unsigned int new_nid = nodes_.size();
-      nodes_.push_back(new_nid);
+      unsigned int new_nid = n_duplicated_nodes_++;
       node_dim_.push_back(mesh_->element[*component.begin()].dim());
       for (auto el_idx : component) {
+        // After we have complete graph tetrahedron-triangles-lines-points,
+        // the updating of duplicated nodes will have to change.
         switch (mesh_->element[el_idx].dim()) {
           case 1:
             {
