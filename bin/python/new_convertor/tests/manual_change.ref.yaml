@@ -1,0 +1,22 @@
+problem: !SequentialCoupling
+  primary_equation: !Unsteady_LMH
+    input_fields:
+    - region: .left
+      bc_type: neumann
+      # Change sign of this field manually.
+      COMMENTED_bc_flux: !FieldElementwise
+        file: xyz.msh
+
+    - region: .right
+      bc_type: total_flux
+      # Change sign of this field manually.
+      COMMENTED_bc_flux: !FieldInterpolatedP0
+        file: xyz.msh
+
+  secondary_equation: !SoluteTransport_DG
+    input_fields:
+    - region: .left
+      bc_type: robin
+      # Change sign of this field manually.
+      COMMENTED_bc_flux: !FieldPython
+        file: xyz.py

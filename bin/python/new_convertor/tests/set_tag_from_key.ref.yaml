@@ -1,0 +1,5 @@
+problem: !SequentialCoupling
+  secondary_equation: !TransportDG
+    dg_penalty: 1
+  sec_eq:
+    dg_none: 1

@@ -27,6 +27,17 @@ class TestActions(unittest.TestCase):
         changes.add_key_to_map("/", key="flow123d_version", value="2.0.0")
         self.perform(changes)
 
+    def test_manual_change(self):
+        changes=Changes()
+        changes.new_version("A")
+        # Change sign of oter fields manually
+        path_set = PathSet(
+            ["/problem/secondary_equation/input_fields/#/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)/",
+             "/problem/primary_equation/input_fields/#/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)/"])
+        changes.manual_change(path_set,
+                              message_forward="Change sign of this field manually.",
+                              message_backward="Change sign of this field manually.")
+        self.perform(changes)
 
     def test_rename_key(self):
         changes=Changes()
@@ -35,6 +46,14 @@ class TestActions(unittest.TestCase):
         path_set = "/problem/secondary_equation/**/ode_solver!PadeApproximant/"
         changes.rename_key(path_set, old_key="denominator_degree", new_key="pade_denominator_degree")
         changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
+        self.perform(changes)
+
+    def test_set_tag_from_key(self):
+        changes=Changes()
+        changes.new_version("A")
+
+        # Set  to DG transport
+        changes.set_tag_from_key("/problem/*/", key='dg_penalty',  tag='TransportDG')
         self.perform(changes)
 
     def test_rename_tag(self):
@@ -95,6 +114,9 @@ class TestActions(unittest.TestCase):
         path_in = "/problem/secondary_equation_2!SoluteTransport_DG/{(input_fields|output_fields|solver|dg_order|dg_variant|solvent_density)}/"
         path_out = "/problem/secondary_equation_2!Coupling_OperatorSplitting/transport!SoluteTransport_DG/{}/"
         changes.move_value(path_in, path_out)
+
+        changes.move_value("/problem/secondary_equation_3!HeatTransfer_DG/",
+                            "/problem/secondary_equation_3!Heat_AdvectionDiffusion_DG/")
 
         self.perform(changes)
 

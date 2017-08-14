@@ -50,4 +50,17 @@ problem: !SequentialCoupling
       end_time: 0.01
       max_dt: 0.001
     balance:
-      cumulative: true    
+      cumulative: true   
+  secondary_equation_3: !HeatTransfer_DG
+    input_fields:
+      - r_set: BOUNDARY
+        bc_conc: 0
+      - rid: 20
+        init_conc: 0
+        diff_m: 0.1
+    substances:
+      - A
+    solver: !Petsc
+      a_tol: 1.0e-12
+      r_tol: 1.0e-12
+      

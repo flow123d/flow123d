@@ -17,6 +17,8 @@ TODO:
   doesn't force to take to much care in Actions
 '''
 import ruamel.yaml as ruml
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
+
 import re
 import os
 #import sys
@@ -121,7 +123,7 @@ def represent_commented_seq(cls, data):
 
 yml=ruml.YAML(typ='rt')
 yml.representer.add_representer(CommentedScalar, CommentedScalar.to_yaml)
-yml.representer.add_representer(ruml.comments.CommentedSeq, represent_commented_seq)
+yml.representer.add_representer(CommentedSeq, represent_commented_seq)
 yml.constructor.add_multi_constructor("!", construct_any_tag)
 """
 CommentedScalar.original_constructors = copy.deepcopy(yml.constructor.yaml_constructors)
@@ -168,10 +170,10 @@ def parse_yaml_str(yaml_string):
     pass
 
 def is_list_node(node):
-    return type(node) in [ list, ruml.comments.CommentedSeq ]
+    return type(node) in [ list, CommentedSeq ]
 
 def is_map_node(node):
-    return type(node) in [ dict, ruml.comments.CommentedMap ]
+    return type(node) in [ dict, CommentedMap ]
 
 def is_scalar_node(node):
     return type(node) in [ CommentedScalar, int, float, bool, None, str ]
@@ -203,15 +205,6 @@ class Changes:
             self._changes.append( (self.current_version, self._version_changes) )
         self.current_version=version
         self._version_changes=[]
-
-#    def __iadd__(self, change):
-#        """
-#        :param change:
-#        :return:
-#        """
-#        .append(change)
-#        return self
-
 
 
     def unify_tree_scalars(self, node):
@@ -338,7 +331,30 @@ class Changes:
                 curr.insert(idx, key, value)
                 self.changed = True
 
-    def _manual_change(self, paths, message_forward, message_backward):
+    def _set_tag_from_key(self, paths, key, tag, reversed):
+        '''
+        ACTION.
+        For ever path P in 'paths' which has to be a map. Set 'tag' if the map contains 'key'.
+        Reversed: just remove the tag. Ignore other tags.
+        :param paths:
+        :param key:
+        :param tag:
+        :param reversed:
+        :return:
+        '''
+        for nodes, address in PathSet(paths).iterate(self.tree):
+            assert is_map_node(nodes[-1]), "Node: {}".format(nodes[-1])
+            if not key in nodes[-1]:
+                return
+            if reversed:
+                assert nodes[-1].tag.value == '!' + tag
+                self.__set_tag(nodes[-1], "") # remove tag
+            else:
+                self.__set_tag(nodes[-1], tag)
+
+
+
+    def _manual_change(self, paths, message_forward, message_backward, reversed):
         '''
         ACTION.
         For every path P in the path set 'path' which has to end by key. Rename the key (if invalidate='key')
@@ -471,8 +487,14 @@ class Changes:
         if len(nodes[-2]) == 0 :
             self.__remove_value( nodes[:-1], addr_list[:-1])
 
-    # debug: check setting tag to ""
+
     def __set_tag(self, node, tag):
+        '''
+        Set tag of given node.
+        :param node: must be Commented* node
+        :param tag: tag without '!', "" means set to None, None value is ignored
+        :return: None
+        '''
         if tag is not None:
             # have tag spec in 'new', set the tag
             if tag == "":
@@ -497,7 +519,7 @@ class Changes:
         if key in ['#', '0']:
             if nodes is None:
                 # debug correctly created Seq
-                nodes = [ruml.comments.CommentedSeq()]
+                nodes = [CommentedSeq()]
             assert is_list_node(nodes[-1])
             if key =='0':
                 i = 0
@@ -509,7 +531,7 @@ class Changes:
             nodes[-1].insert(i, new_value)
         elif is_map_key(key) :
             if nodes is None:
-                nodes = [ ruml.comments.CommentedMap() ]
+                nodes = [ CommentedMap() ]
 
             assert is_map_node(nodes[-1])
             if key in nodes[-1]:
@@ -566,7 +588,7 @@ class Changes:
             old_tag, new_tag = new_tag, old_tag
         for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
-            assert( hasattr(curr, 'tag'), "All nodes should be CommentedXYZ." )
+            assert hasattr(curr, 'tag'), "All nodes should be CommentedXYZ."
 
             self.changed = True
             if curr.tag.value == "!" + old_tag:
@@ -645,19 +667,29 @@ class Changes:
     def __apply_manual_conv(self, nodes, address, message ):
         if len(nodes) < 2 or not is_map_node(nodes[-2]):
             return
-        curr = nodes[-1]
-        if not is_scalar_node(curr):
-            return
 
-        assert(address[-1]=='/')
-        key = address.split('/')[-2]
+        key = address.strip('/').split('/')[-1]
         key = key.split('!')[0]
-
         map_of_key = nodes[-2]
-        comment = "# :{}  # {}".format(curr.value, message)
-        map_of_key.yaml_add_eol_comment(comment, key)
-        curr.value = None
-        self.changed = True
+        assert is_map_node(map_of_key)
+
+        curr = nodes[-1]
+
+
+        if is_scalar_node(curr):
+            comment = "# :{}  # {}".format(curr.value, message)
+            map_of_key.yaml_add_eol_comment(comment, key)
+            curr.value = None
+            self.changed = True
+        else:
+            # nodes[-1].yaml_set_start_comment(message)
+            ckey = 'COMMENTED_' + key
+
+            map_of_key[ckey] = nodes[-1]
+            map_of_key.yaml_set_comment_before_after_key(ckey, before=message, indent=len(nodes) )
+            del map_of_key[key]
+
+
 
 
 class PathSet(object):
@@ -882,78 +914,43 @@ changes.replace_value(path_set,
 
 changes.new_version("2.0.0")
 
-"""
-
-# Rename equations and couplings
-path = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/"])
-changes.rename_tag(path, target_path=".!Coupling_OperatorSplitting")
-
-
-# Move transport under OperatorSplitting
-path = PathSet(["/problem/secondary_equation!(Coupling_OperatorSplitting|SoluteTransportDG)/"])
-changes.add_key_to_map( path, key="transport")
-
-
-
-path = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport/"])
-changes.rename_tag(path, old_tag=None, new_tag="Solute_Advection_FV")
-
-path = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/(output_fields|input_fields)/"])
-changes.move_values( path, "./transport" )
 
 # Transport, proposed simplified syntax:
 path_in = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/{(output_fields|input_fields)}/"])
 path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!Solute_Advection_FV/{}/"])
-changes.move_values( path_in, path_out)
-
-path = PathSet(["/problem/secondary_equation!SoluteTransport_DG/transport/"])
-changes.rename_tag(path, old_tag=None, new_tag="Solute_AdvectionDiffusion_DG")
-path = PathSet(["/problem/secondary_equation!SoluteTransport_DG/"])
-changes.rename_tag(path, old_tag="SoluteTransport_DG", new_tag="Coupling_OperatorSplitting")
-
-path_dg = PathSet([path, HaveTag("SoluteTransport_DG")])
-
-changes += move_keys( path_dg, keys=["input_fields", "output_fields", "solver", "dg_order", "dg_variant", "solvent_density"], destination_path)
-changes += rename_tag(path, old_tag="SoluteTransport_DG", new_tag="Coupling_OperatorSplitting")
+changes.move_value( path_in, path_out)
 
 
 # DG transport, proposed simplified syntax:
-path_in = PathSet(["/problem/secondary_equation!SoluteTransport_DG/(input_fields|output_fields|solver|dg_order|dg_variant|solvent_density)/"])
-path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!SoluteTransport_DG/(*)/"])
-changes.move_values( path_in, path_out)
+path_in = PathSet(["/problem/secondary_equation!SoluteTransport_DG/{(input_fields|output_fields|solver|dg_order|dg_variant|solvent_density)}/"])
+path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!SoluteTransport_DG/{}/"])
+changes.move_value( path_in, path_out)
 
 
 # Heat transport, proposed simplified syntax:
-changes.move_values("/problem/secondary_equation!HeatTransfer_DG/", "/problem/secondary_equation!Heat_AdvectionDiffusion_DG/")
+changes.move_value("/problem/secondary_equation!HeatTransfer_DG/", "/problem/secondary_equation!Heat_AdvectionDiffusion_DG/")
 
-# TODO: add automatic conversion to PathSet from list or string.
-changes.add_key_to_map("/problem/secondary_equation", "transport")
 
-"""
-
-"""
 # Remove r_set, use region instead
-changes.new_set()
-changes += move_and_rename_key(PathPattern("/**/input_fields/*/r_set"), new_path="$1/input_fields/$2/region")
+# Reversed change is not unique
+changes.rename_key("/**/input_fields/*/", old_key="r_set", new_key="region")
 
 # Changes in mesh record
-changes.new_set()
-path = PathPattern("/problem/mesh/regions/*/")
-destination_path = "/problem/mesh/_regions_elementary/$1/"
-changes += move_keys(path, keys=["name","id", "element_list"], destination_path)
-path_el = [ PathPattern("/problem/mesh/_regions_elementary/$1/"), HaveKey("element_list") ]
-changes += set_tag(path_el, new_tag="From_Elements")
-path_el = [ PathPattern("/problem/mesh/_regions_elementary/$1/"), HaveKey("id") ]
-changes += set_tag(path_el, new_tag="From_ID")
+changes.set_tag_from_key("/problem/mesh/regions/#/", key='id', tag='From_ID')
+changes.set_tag_from_key("/problem/mesh/regions/#/", key='element_list', tag='From_Elements')
 
-path = PathPattern("/problem/mesh/sets/*/")
-destination_path = "/problem/mesh/_sets_new/$1/"
-changes += move_keys(path, keys=["name","region_ids", "region_labels", ], destination_path)
-path_el = [ PathPattern("/problem/mesh/_regions_elementary/$1/"), HaveKey("element_list") ]
-changes += set_tag(path_el, new_tag="From_Elements")
-path_el = [ PathPattern("/problem/mesh/_regions_elementary/$1/"), HaveKey("id") ]
-changes += set_tag(path_el, new_tag="From_ID")
-"""
+
+changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'region_ids', tag = 'Union')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'region_labels', tag = 'Union')
+changes.move_value("/problem/mesh/sets/#/", old_key='region_labels', new_key='regions')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'union', tag = 'Union')
+changes.rename_key("/problem/mesh/sets/#/", old_key='union', new_key='regions')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'intersection', tag = 'Intersection' )
+changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'difference', tag = 'Difference' )
+changes.move_value("{/problem/mesh}/sets/#/", "{}/regions/#/")
+
+
+
 
 '''
      { 
@@ -1064,8 +1061,11 @@ changes += set_tag(path_el, new_tag="From_ID")
         "destination_path":"/problem/mesh/regions"        
       }
     },
+'''
 
+changes.move_value("{/problem/primary_equation}/solver", "{}/nonlinear_solver/linear_solver")
 
+'''
     {
       "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
       "action": "add-key",
@@ -1091,6 +1091,16 @@ changes += set_tag(path_el, new_tag="From_ID")
         "create_path":true  
       }
     },
+'''
+
+stor_map=CommentedMap()
+stor_map['region']=CommentedScalar(None, 'ALL')
+stor_map['storativity']=CommentedScalar(None, 1.0)
+changes.add_key_to_map("/problem/primary_equation!(Unsteady_LMH|Unsteady_MH)/",
+                        key="aux_storativity",
+                        value=stor_map)
+changes.move_value("{/problem/primary_equation!(Unsteady_LMH|Unsteady_MH)}/aux_storativity", "{}/input_fields/0")
+'''
     {
       "NAME": "Set storativity for Unsteady_LMH.",
       "action": "add-key",
@@ -1221,6 +1231,13 @@ changes += set_tag(path_el, new_tag="From_ID")
         "path-type-filter-path" : "/problem/primary_equation"
       }
     },
+'''
+
+changes.rename_tag("/problem/primary_equation/", old_tag="Steady_MH", new_tag="Flow_Darcy_MH")
+changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_MH", new_tag="Flow_Darcy_MH")
+changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag="Flow_Richards_LMH")
+
+'''
     {
       "NAME": "Use time aware Darcy_MH instead of Steady.",
       "action": "rename-type",
