@@ -229,20 +229,22 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
 
-		std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
-
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
 		BaseMeshReader::DiscretizationParams disc_params;
 		disc_params.discretization = this->discretization_;
 		ReaderInstance::get_reader(reader_file_)->set_actual_data_header(field_name_, time.end(), disc_params);
-		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(source_mesh->element.size(),
-				n_components, boundary_domain, this->component_idx_);
+
 		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {
 			ASSERT_EQ(disc_params.dof_handler_hash, dh_->hash())(disc_params.dof_handler_hash)(dh_->hash())
 					.error("Invalid DOF handler!\n");
+			auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
+					n_components, boundary_domain, this->component_idx_);
 			this->calculate_native_values(data_vec);
 		} else {
+			std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
+			auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(source_mesh->element.size(),
+					n_components, boundary_domain, this->component_idx_);
 			this->interpolate(data_vec);
 		}
 
