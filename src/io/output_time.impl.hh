@@ -86,6 +86,7 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     size[NODE_DATA] = output_mesh_->n_nodes();
     size[ELEM_DATA] = output_mesh_->n_elements();
     size[CORNER_DATA] = output_mesh_discont_->n_nodes();
+    size[NATIVE_DATA] = output_mesh_->n_elements();
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),

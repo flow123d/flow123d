@@ -98,6 +98,20 @@ public:
     void set_mesh(const Mesh *mesh, bool boundary_domain) override;
 
 
+    /**
+     * Copy data vector to given output ElementDataCache
+     */
+    void fill_data_to_cache(ElementDataCache<double> &output_data_cache);
+
+
+    /**
+     * Return size of vector of data stored in Field
+     */
+    inline unsigned int data_size() const {
+    	return data_vec_->size();
+    }
+
+
     /// Destructor.
 	virtual ~FieldFE();
 
@@ -113,7 +127,7 @@ private:
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    unsigned int *dof_indices;
+    std::vector<unsigned int> dof_indices;
 
     /// Value handler that allows get value of 1D elements.
     FEValueHandler<1, spacedim, Value> value_handler1_;

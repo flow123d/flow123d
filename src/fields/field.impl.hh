@@ -22,6 +22,7 @@
 
 #include "field.hh"
 #include "field_algo_base.impl.hh"
+#include "field_fe.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -334,14 +335,18 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
+		unsigned int ids;
 		const OutputTime::DiscreteSpace type = this->output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 
 		OutputTime::DiscreteSpaceFlags flags = 1 << type;
-	    for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
+	    for(ids=0; ids < OutputTime::N_DISCRETE_SPACES - 1; ids++)
 	        if (flags & (1 << ids))
 	        	this->compute_field_data( OutputTime::DiscreteSpace(ids), stream);
+	    ids = OutputTime::NATIVE_DATA;
+	    if (flags & (1 << ids))
+	    	this->compute_native_data( OutputTime::DiscreteSpace(ids), stream);
 	}
 }
 
@@ -584,6 +589,8 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
+	ASSERT(space_type != OutputTime::NATIVE_DATA).error();
+
     /* It's possible now to do output to the file only in the first process */
     if( stream->get_rank() != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
@@ -660,12 +667,64 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         }
     }
     break;
+    case OutputTime::NATIVE_DATA:
+        //should not happen
+    break;
     }
 
     /* Set the last time */
     stream->update_time(this->time());
 
 }
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::compute_native_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+	ASSERT_EQ(space_type, OutputTime::NATIVE_DATA).error();
+
+    /* It's possible now to do output to the file only in the first process */
+    if( stream->get_rank() != 0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
+    std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+    if (field_fe_ptr) {
+        ElementDataCache<double> &output_data = stream->prepare_compute_data<double>(this->name(), space_type,
+                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+        field_fe_ptr->fill_data_to_cache(output_data);
+    } else {
+        WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+    }
+
+    /* Set the last time */
+    stream->update_time(this->time());
+
+}
+
+
+template<int spacedim, class Value>
+std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
+	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
+	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+
+	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
+
+	bool is_fe = (region_fields_.size()>0); // indicate if FieldFE is defined on all bulk regions
+	is_fe = is_fe && region_fields_[1] && (typeid(*region_fields_[1]) == typeid(FieldFE<spacedim, Value>));
+	for (unsigned int i=3; i<2*this->mesh()->region_db().bulk_size(); i+=2)
+		if (!region_fields_[i] || (region_fields_[i] != region_fields_[1])) {
+			is_fe = false;
+			break;
+		}
+	if (is_fe) {
+		field_fe_ptr = std::dynamic_pointer_cast<  FieldFE<spacedim, Value> >( region_fields_[1] );
+	}
+
+	return field_fe_ptr;
+}
+
 
 
 

@@ -63,6 +63,9 @@ const int OutputVTK::registrar = Input::register_class< OutputVTK >("vtk") +
 		OutputVTK::get_input_type().size();
 
 
+const std::vector<std::string> OutputVTK::formats = { "ascii", "appended", "appended" };
+
+
 
 OutputVTK::OutputVTK()
 {
@@ -239,8 +242,6 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
         "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Float32", "Float64" };
-    // formats of DataArray section
-	static const std::vector<std::string> formats = { "ascii", "appended", "appended" };
 
     ofstream &file = this->_data_file;
 
@@ -425,6 +426,54 @@ void OutputVTK::write_vtk_element_data(void)
 }
 
 
+void OutputVTK::write_vtk_native_data(void)
+{
+    ofstream &file = this->_data_file;
+
+    auto &data_map = this->output_data_vec_[NATIVE_DATA];
+    if (data_map.empty()) return;
+
+    /* Write Flow123dData begin */
+    file << "<Flow123dData ";
+    write_vtk_data_names(file, data_map);
+    file << ">" << endl;
+
+    /* Write own data */
+    for(OutputDataPtr output_data : data_map) {
+        file  << "<DataArray type=\"Float64\" ";
+        file  << "Name=\"" << output_data->field_input_name() <<"\" ";
+        file  << "format=\"" << formats[this->variant_type_] << "\" ";
+        file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
+        file  << "n_dofs_per_element=\"" << output_data->n_elem() << "\"";
+
+        if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+        	// ascii output
+        	file << ">" << endl;
+        	file << std::fixed << std::setprecision(10); // Set precision to max
+        	output_data->print_ascii_all(file);
+        	file << "\n</DataArray>" << endl;
+        } else {
+        	// binary output is stored to appended_data_ stream
+        	double range_min, range_max;
+        	output_data->get_min_max_range(range_min, range_max);
+        	file    << " offset=\"" << appended_data_.tellp() << "\" ";
+        	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
+        	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_UNCOMPRESSED ) {
+        		output_data->print_binary_all( appended_data_ );
+        	} else { // ZLib compression
+        		stringstream uncompressed_data, compressed_data;
+        		output_data->print_binary_all( uncompressed_data, false );
+        		this->compress_data(uncompressed_data, compressed_data);
+        		appended_data_ << compressed_data.str();
+        	}
+        }
+    }
+
+    /* Write Flow123dData end */
+    file << "</Flow123dData>" << endl;
+}
+
+
 void OutputVTK::write_vtk_vtu_tail(void)
 {
     ofstream &file = this->_data_file;
@@ -475,6 +524,9 @@ void OutputVTK::write_vtk_vtu(void)
         /* Write VTK data on elements */
         this->write_vtk_element_data();
 
+        /* Write own VTK native data (skipped by Paraview) */
+        this->write_vtk_native_data();
+
         /* Write Piece end */
         file << "</Piece>" << endl;
 
@@ -501,6 +553,9 @@ void OutputVTK::write_vtk_vtu(void)
 
         /* Write VTK data on elements */
         this->write_vtk_element_data();
+
+        /* Write own VTK native data (skipped by Paraview) */
+        this->write_vtk_native_data();
 
         /* Write Piece end */
         file << "</Piece>" << endl;
