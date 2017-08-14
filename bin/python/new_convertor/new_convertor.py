@@ -11,10 +11,6 @@ Features:
 - can run in quiet mode or in debug mode, individual change sets may be noted as stable to do not report warnings as default
 - can be applied to the input format specification and check that it produce target format specification
 
-TODO:
-- add support for manual change of other then value values, commenting all lines of the CommentedMap or CommentedSeq values
-- convert every non commented value to commented during DFS (possibly remove appriory conversion) this
-  doesn't force to take to much care in Actions
 '''
 import ruamel.yaml as ruml
 from ruamel.yaml.comments import CommentedMap, CommentedSeq
@@ -125,37 +121,6 @@ yml=ruml.YAML(typ='rt')
 yml.representer.add_representer(CommentedScalar, CommentedScalar.to_yaml)
 yml.representer.add_representer(CommentedSeq, represent_commented_seq)
 yml.constructor.add_multi_constructor("!", construct_any_tag)
-"""
-CommentedScalar.original_constructors = copy.deepcopy(yml.constructor.yaml_constructors)
-
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:null',
-    construct_scalar)
-
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:bool',
-    construct_scalar)
-
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:int',
-    construct_scalar)
-
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:float',
-    construct_scalar)
-
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:binary',
-    construct_scalar)
-
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:timestamp',
-    construct_scalar)
-yml.constructor.add_constructor(
-    u'tag:yaml.org,2002:str',
-    construct_scalar)
-
-"""
 
 
 '''
@@ -207,13 +172,17 @@ class Changes:
         self._version_changes=[]
 
 
-    def unify_tree_scalars(self, node):
+    def unify_tree_dfs(self, node):
         if is_list_node(node):
             for idx in range(len(node)):
-                node[idx] = self.unify_tree_scalars(node[idx])
+                node[idx] = self.unify_tree_dfs(node[idx])
+            if type(node) != CommentedSeq:
+                return CommentedSeq(node)
         elif is_map_node(node):
             for key, child in node.items():
-                node[key] = self.unify_tree_scalars(child)
+                node[key] = self.unify_tree_dfs(child)
+            if type(node) != CommentedMap:
+                return CommentedMap(node)
         elif is_scalar_node(node):
             if type(node) != CommentedScalar:
 
@@ -225,13 +194,13 @@ class Changes:
                     None : u'tag:yaml.org,2002:null'}
                 assert type(node) in tags_for_types
                 tag = tags_for_types[type(node)]
-                node = CommentedScalar(tag, node)
+                return CommentedScalar(tag, node)
         else:
             assert False, "Unsupported node type: {}".format(type(node))
         return node
 
     def unify_trees(self, trees):
-        return [ (fname, self.unify_tree_scalars(tree)) for fname, tree in trees ]
+        return [ (fname, self.unify_tree_dfs(tree)) for fname, tree in trees ]
 
     def apply_changes(self, trees, in_version, out_version,  reversed=False, warn=True):
         """
@@ -275,6 +244,7 @@ class Changes:
                     if changed_files:
                         print("Action: ", ac_name)
                         print("Applied to: ", changed_files)
+                    trees = self.unify_trees(trees)
 
     def __getattribute__(self, item):
         """
