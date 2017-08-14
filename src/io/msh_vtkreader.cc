@@ -456,6 +456,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 
 	BaseMeshReader::DiscretizationParams disc_params;
 	disc_params.discretization = BaseMeshReader::Discretization::mesh_definition;
+	bulk_elements_id_.clear();
 
     {
         // read points data section, find corresponding nodes in GMSH trough BIH tree
