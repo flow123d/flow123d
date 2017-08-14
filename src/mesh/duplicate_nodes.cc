@@ -148,8 +148,9 @@ void DuplicateNodes::init_from_elements()
 void DuplicateNodes::duplicate_nodes()
 {
   FOR_NODES(mesh_, n){
-    // create list of elements
-    std::vector<unsigned int> node_elements = mesh_->node_elements[n.index()];
+    // copy list of adjacent elements from mesh_->node_elements[n.index()]
+    std::list<unsigned int> node_elements;
+    std::copy( mesh_->node_elements[n.index()].begin(), mesh_->node_elements[n.index()].end(), std::back_inserter( node_elements ) );
     
     // create list of edges sharing the node
     std::set<unsigned int> node_edges;
@@ -165,7 +166,7 @@ void DuplicateNodes::duplicate_nodes()
     {
       // create component containing the first element in node_elements
       std::queue<unsigned int> q;
-      q.push(node_elements[0]);
+      q.push(*node_elements.begin());
       node_elements.erase(node_elements.begin());
       std::set<unsigned int> component;
       while (q.size() > 0) {
