@@ -51,6 +51,13 @@ public:
   /// Number of dofs associated to element (not shared by adjacent elements).
   virtual unsigned int n_elem_dofs(const ElementFullIter &cell) const = 0;
   
+  /// Number of dofs associated to generalized n-face (node, line, triangle or tetrahedron).
+  template<unsigned int dim>
+  unsigned int n_face_dofs(unsigned int face_id)
+  {
+    ASSERT(false).error("Not implemented.");
+  }
+  
   /// Return finite element object for given element.
   template<unsigned int dim>
   FiniteElement<dim,3> *fe(const ElementFullIter &) const;
