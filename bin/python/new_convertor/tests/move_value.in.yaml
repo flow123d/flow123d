@@ -1,4 +1,24 @@
 problem: !SequentialCoupling
+  mesh:
+    regions:
+      - name: A
+        id: 1
+      - name: B
+        label: X
+      - name: C
+        id: 3
+        element_list: [ 2, 3]
+    sets:
+      - name: D
+        region_ids: [ 5, 6]
+      - name: E
+        region_labels: [ F, G]
+      - name: F
+        union: [ D, E]
+      - name: G
+        intersection: [ F, E]
+      - name: H
+        difference: [ G, E]
   secondary_equation_1: !TransportOperatorSplitting
     input_fields:
       - region: domain

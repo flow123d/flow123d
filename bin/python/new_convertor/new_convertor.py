@@ -312,12 +312,17 @@ class Changes:
         :param reversed:
         :return:
         '''
+        print("set_tag_from_key: {} {}", tag, key)
         for nodes, address in PathSet(paths).iterate(self.tree):
+
             assert is_map_node(nodes[-1]), "Node: {}".format(nodes[-1])
             if not key in nodes[-1]:
-                return
+                continue
+            logging.debug("addr: {}".format(address))
             if reversed:
-                assert nodes[-1].tag.value == '!' + tag
+                curr_tag = nodes[-1].tag.value
+                if curr_tag and curr_tag != '!' + tag:
+                    raise Exception("Deleting wrong tag: {}, expected: {}".format(curr_tag, tag))
                 self.__set_tag(nodes[-1], "") # remove tag
             else:
                 self.__set_tag(nodes[-1], tag)
@@ -405,7 +410,8 @@ class Changes:
         """
         new_paths = enlist(new_paths)
         old_paths = enlist(old_paths)
-
+        rev = reversed
+        del reversed
         cases = []
         assert len(new_paths) == len(old_paths)
         for old, new in zip(new_paths, old_paths):
@@ -416,23 +422,23 @@ class Changes:
             for o_alt, n_alt in zip(old_alts, new_alts ):
                 # TODO: check tag specifications
 
-                if reversed:
+                if rev:
                     o_alt, n_alt =  n_alt, o_alt
 
                 path_match  = [ match for match in PathSet(o_alt).iterate(self.tree) ]
-                if path_match:
-                    if len(path_match) > 1:
-                        raise Exception("More then single match for the move path: {}".format(old))
+                #if path_match:
+                #    if len(path_match) > 1:
+                #        raise Exception("More then single match for the move path: {}".format(old))
 
-                    nodes, addr = path_match[0]
+                # Reverse list matches to move list elemenets from end.
 
-
-                    cases.append( (nodes, addr, n_alt) )
+                for match in path_match[::-1]:
+                    nodes, addr = match
+                    value = self.__remove_value(nodes, addr.strip('/').split('/'))
+                    cases.append( (value, n_alt, nodes, addr) )
 
         for case in cases:
-            nodes, addr, new = case
-            value_to_move = nodes[-1]
-            self.__remove_value(nodes, addr.strip('/').split('/'))
+            value_to_move, new, nodes, addr = case
 
             # create list of (key, tag); tag=None if no tag is specified
             new_split = new.strip('/').split('/')
@@ -446,16 +452,17 @@ class Changes:
 
         if is_map_node(nodes[-2]):
             assert is_map_key(key)
-            del nodes[-2][key]
+            value = nodes[-2].pop(key)
         elif is_list_node(nodes[-2]):
             assert key.isdigit()
-            del nodes[-2][int(key)]
+            value = nodes[-2].pop(int(key))
         else:
             assert False
 
         # remove empty maps and seqs
         if len(nodes[-2]) == 0 :
             self.__remove_value( nodes[:-1], addr_list[:-1])
+        return value
 
 
     def __set_tag(self, node, tag):
@@ -525,17 +532,21 @@ class Changes:
         For every path P in the path set 'paths', rename vice versa.
         TODO: Replace with generalized move_value action, problem where to apply reversed action.
         '''
+        if reversed:
+            old_key, new_key = new_key, old_key
+
         for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_map_node(curr):
                 logging.warning("Expecting map at path: {}".format(address))
                 continue
+                            
+            if not old_key in curr:
+                logging.warning("No key {} to rename at {}.".format(old_key, address))
+                continue
 
             self.changed = True
-            if reversed:
-                curr[old_key] = curr.pop(new_key)
-            else:
-                curr[new_key] = curr.pop(old_key)
+            curr[new_key] = curr.pop(old_key)
 
     def _rename_tag(self, paths, old_tag, new_tag, reversed):
         '''
@@ -586,12 +597,12 @@ class Changes:
             if not is_scalar_node(curr):
                 #print("Node: ", curr)
                 logging.warning("Expecting scalar at path: {} get: {}".format(address, type(curr)))
-                return
+                continue
             assert type(curr) == CommentedScalar, "Wrong type: {} {}".format(type(curr))
             if not type(curr.value) == str:
                 #print("Node: ", curr)
                 logging.warning("Expecting string at path: {} get: {}".format(address, type(curr)))
-                return
+                continue
 
             self.changed = True
             if reversed:

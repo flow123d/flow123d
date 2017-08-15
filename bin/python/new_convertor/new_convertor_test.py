@@ -118,6 +118,19 @@ class TestActions(unittest.TestCase):
         changes.move_value("/problem/secondary_equation_3!HeatTransfer_DG/",
                             "/problem/secondary_equation_3!Heat_AdvectionDiffusion_DG/")
 
+        # Changes in mesh record
+        changes.set_tag_from_key("/problem/mesh/regions/#/", key='id', tag='From_ID')
+        changes.set_tag_from_key("/problem/mesh/regions/#/", key='element_list', tag='From_Elements')
+
+        changes.set_tag_from_key("/problem/mesh/sets/#/", key='region_ids', tag='Union')
+        changes.set_tag_from_key("/problem/mesh/sets/#/", key='region_labels', tag='Union')
+        changes.set_tag_from_key("/problem/mesh/sets/#/", key='union', tag='Union')
+        changes.rename_key("/problem/mesh/sets/#!Union/", old_key='region_labels', new_key='regions')
+        changes.rename_key("/problem/mesh/sets/#!Union/", old_key='union', new_key='regions')
+        changes.set_tag_from_key("/problem/mesh/sets/#/", key='intersection', tag='Intersection')
+        changes.set_tag_from_key("/problem/mesh/sets/#/", key='difference', tag='Difference')
+        changes.move_value("{/problem/mesh}/sets/#{!(Union|Intersection|Difference)}/", "{}/regions/#{}/")
+
         self.perform(changes)
 
 
