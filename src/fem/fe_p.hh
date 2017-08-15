@@ -341,12 +341,14 @@ FE_P<degree,dim,spacedim>::FE_P()
 {
     this->init();
 
+    number_of_dofs = dof_distribution.number_of_dofs;
+    
     for (int i=0; i<=dim; i++)
     {
-        number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +2*dof_distribution.number_of_pairs[i]
-                         +3*dof_distribution.number_of_triples[i]
-                         +6*dof_distribution.number_of_sextuples[i];
+//         number_of_dofs += dof_distribution.number_of_single_dofs[i]
+//                          +2*dof_distribution.number_of_pairs[i]
+//                          +3*dof_distribution.number_of_triples[i]
+//                          +6*dof_distribution.number_of_sextuples[i];
 
         number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
         number_of_pairs[i] = dof_distribution.number_of_pairs[i];
@@ -412,7 +414,7 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
 {
     this->init();
 
-    number_of_dofs += dof_distribution.number_of_dofs;
+    number_of_dofs = dof_distribution.number_of_dofs;
 
     number_of_single_dofs[dim] = number_of_dofs;
 
