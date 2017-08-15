@@ -113,7 +113,8 @@ public:
 		FE_P_disc<0,1,3> fe1;
 		FE_P_disc<0,2,3> fe2;
 		FE_P_disc<0,3,3> fe3;
-		dh->distribute_dofs(fe1, fe2, fe3);
+        std::shared_ptr<::DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(this->_mesh, &fe1, &fe2, &fe3);
+		dh->distribute_dofs(ds);
 
 		VectorSeqDouble v;
         v.resize(size);
