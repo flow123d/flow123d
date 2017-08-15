@@ -385,48 +385,51 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
 {
     static const unsigned int n_subelements = 1 << dim;  //2^dim
     
-    // FIXME Use RefElement<>::interact<> from intersections
-    static const std::vector<std::vector<unsigned int>> line_nodes[] = {
-        {}, //0D
-        
-        {{0,1}},
-        
-        {{0,1},
-         {0,2},
-         {1,2}},
-        
-        {{0,1},
-         {0,2},
-         {1,2},
-         {0,3},
-         {1,3},
-         {2,3}}
-    };
-    
     static const std::vector<unsigned int> conn[] = {
         {}, //0D
         
+        //1D:
         {0, 2,
          2, 1},
-         
+        
+        //2D:
         {0, 3, 4,
          3, 1, 5,
          4, 5, 2,
          3, 5, 4},
+        
+        //3D:
+        {1, 7, 4, 8,
+         7, 2, 5, 9,
+         4, 5, 0, 6,
+         8, 9, 6, 3,
+         7, 4, 8, 9, // 4-9 octahedron diagonal
+         7, 4, 5, 9,
+         4, 8, 9, 6,
+         4, 5, 9, 6},
+        
+        {1, 7, 4, 8,
+         7, 2, 5, 9,
+         4, 5, 0, 6,
+         8, 9, 6, 3,
+         8, 5, 4, 6, // 5-8 octahedron diagonal
+         5, 8, 9, 6,
+         5, 8, 4, 7,
+         8, 5, 9, 7},
          
-        {0, 4, 5, 7,
-         4, 1, 6, 8,
-         5, 6, 2, 9,
-         7, 8, 9, 3,
-         4, 7, 8, 9,
-         4, 6, 8, 9,
-         4, 7, 5, 9,
-         4, 5, 6, 9}
+        {1, 7, 4, 8,
+         7, 2, 5, 9,
+         4, 5, 0, 6,
+         8, 9, 6, 3,
+         6, 8, 7, 9, // 6-7 octahedron diagonal
+         8, 6, 7, 4,
+         6, 5, 7, 4,
+         5, 6, 7, 9}
     }; 
 //     DBGMSG("level = %d, %d\n", aux_element.level, max_refinement_level_);
  
     ASSERT_DBG(dim == aux_element.nodes.size()-1);
-    
+
     // check refinement criterion
     bool is_refined_enough;
     if(refine_by_error_)
@@ -448,40 +451,51 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
     
     std::vector<AuxElement> subelements(n_subelements);
     
-    // FIXME Use RefElement<>::n_nodes and RefElement<>::n_lines from intersections
-    const unsigned int n_old_nodes = dim+1,
-                       n_new_nodes = (unsigned int)((dim * (dim + 1)) / 2); // new points are in the center of lines
+    const unsigned int n_old_nodes = RefElement<dim>::n_nodes,
+                       n_new_nodes = RefElement<dim>::n_lines; // new points are in the center of lines
     
     // auxiliary vectors
     std::vector<Space<spacedim>::Point> nodes = aux_element.nodes;
-//     std::vector<unsigned int> node_numbering = aux_element.connectivity;
+    
     nodes.reserve(n_old_nodes+n_new_nodes);
-//     node_numbering.reserve(n_old_nodes+n_new_nodes);
 
     // create new points in the element
     for(unsigned int e=0; e < n_new_nodes; e++)
     {
-        Space<spacedim>::Point p = nodes[line_nodes[dim][e][0]]+nodes[line_nodes[dim][e][1]];
+        Space<spacedim>::Point p = nodes[RefElement<dim>::interact(Interaction<0,1>(e))[0]]
+                                  +nodes[RefElement<dim>::interact(Interaction<0,1>(e))[1]];
         nodes.push_back( p / 2.0);
         //nodes.back().print();
-        
-//         last_node_idx++;
-//         node_numbering.push_back(last_node_idx);
     }
-   
+    
+    unsigned int diagonal = 0;
+    // find shortest diagonal: [0]:4-9, [1]:5-8 or [2]:6-7
+    if(dim == 3){
+        double min_diagonal = arma::norm(nodes[4]-nodes[9],2);
+        double d = arma::norm(nodes[5]-nodes[8],2);
+        if(d < min_diagonal){
+            min_diagonal = d;
+            diagonal = 1;
+        }
+        d = arma::norm(nodes[6]-nodes[7],2);
+        if(d < min_diagonal){
+            min_diagonal = d;
+            diagonal = 2;
+        }
+        
+    }
     
     for(unsigned int i=0; i < n_subelements; i++)
     {
         AuxElement& sub_ele = subelements[i];
         sub_ele.nodes.resize(n_old_nodes);
-//         sub_ele.connectivity.resize(n_old_nodes);
         sub_ele.level = aux_element.level+1;
         
         // over nodes
         for(unsigned int j=0; j < n_old_nodes; j++)
         {
             unsigned int conn_id = (n_old_nodes)*i + j;
-            sub_ele.nodes[j] = nodes[conn[dim][conn_id]];
+            sub_ele.nodes[j] = nodes[conn[dim+diagonal][conn_id]];
         }
         
         refine_aux_element<dim>(sub_ele, refinement, ele_acc, error_control_field);
