@@ -23,7 +23,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 
 
@@ -110,13 +110,12 @@ protected:
 
 class BIH_test : public testing::Test {
 public:
-	void create_tree(const FilePath &mesh_file) {
-
+	void create_tree(const std::string &input_str) {
 		START_TIMER("create mesh");
-		GmshMeshReader reader(mesh_file);
-		mesh = mesh_constructor();
-		reader.read_physical_names(mesh);
-		reader.read_mesh(mesh);
+		mesh = mesh_constructor(input_str);
+	    auto reader = reader_constructor(input_str);
+		reader->read_physical_names(mesh);
+		reader->read_raw_mesh(mesh);
 		END_TIMER("create mesh");
 
 	    int leaf_size_limit = 10;
@@ -127,7 +126,6 @@ public:
 	    EXPECT_EQ(mesh->n_elements(), bt->get_element_count());
 
 	    this->init_random_gen();
-
 	}
 
 	void init_random_gen() {
@@ -221,13 +219,14 @@ public:
 	: r_gen(123), mesh(nullptr), bt(nullptr)
 	{
         Profiler::initialize();
+		FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 	}
 
 	~BIH_test() {
-		if (mesh !=nullptr) delete mesh;
 		if (bt !=nullptr) delete bt;
-		mesh = nullptr;
+		if (mesh !=nullptr) delete mesh;
 		bt = nullptr;
+		mesh = nullptr;
 
 		Profiler::uninitialize();
 	}
@@ -241,37 +240,27 @@ public:
 
 
 TEST_F(BIH_test, find_bounding_box_1) {
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_108_elem.msh", FilePath::input_file);
-	this->create_tree(mesh_file);
-
+	this->create_tree("{mesh_file=\"mesh/test_108_elem.msh\"}");
 	this->test_find_boxes();
 }
 
 TEST_F(BIH_test, find_bounding_box_2) {
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-	this->create_tree(mesh_file);
-
+	this->create_tree("{mesh_file=\"fields/simplest_cube_3d.msh\"}");
 	this->test_find_boxes();
 }
 
 TEST_F(BIH_test, find_bounding_box_3) {
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_7590_elem.msh", FilePath::input_file);
-	this->create_tree(mesh_file);
-
+	this->create_tree("{mesh_file=\"mesh/test_7590_elem.msh\"}");
 	this->test_find_boxes();
 }
 
 TEST_F(BIH_test, find_bounding_box_4) {
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_188_elem.msh", FilePath::input_file);
-	this->create_tree(mesh_file);
-
+	this->create_tree("{mesh_file=\"mesh/test_188_elem.msh\"}");
 	this->test_find_boxes();
 }
 
 TEST_F(BIH_test, find_bounding_box_5) {
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_27936_elem.msh", FilePath::input_file);
-	this->create_tree(mesh_file);
-
+	this->create_tree("{mesh_file=\"mesh/test_27936_elem.msh\"}");
 	this->test_find_boxes();
 }
 
@@ -283,22 +272,21 @@ TEST_F(BIH_test, find_bounding_box_5) {
  * in directory '1024_111324_el'
  */
 /*TEST_F(BIH_test, find_bounding_box_6) {
-	FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/test_111324_elem.msh", FilePath::input_file);
-	this->create_tree(mesh_file);
-
+	this->create_tree("{mesh_file=\"mesh/test_111324_elem.msh\"}");
 	this->test_find_boxes();
 }*/
 
 
 TEST(BIH_Tree_Test, 2d_mesh) {
     Profiler::initialize();
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/noncompatible_small.msh", FilePath::input_file);
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor();
-	GmshMeshReader reader(mesh_file);
+	std::string mesh_in_string = "{mesh_file=\"mesh/noncompatible_small.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
+	reader->read_physical_names(mesh);
+	reader->read_raw_mesh(mesh);
 
-	reader.read_physical_names(mesh);
-	reader.read_mesh(mesh);
 	unsigned int element_limit=20;
 	BIHTree bt(mesh, element_limit);
 	std::vector<unsigned int> insec_list;
@@ -309,7 +297,5 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 	}
 
 	delete mesh;
-
-
 }
 

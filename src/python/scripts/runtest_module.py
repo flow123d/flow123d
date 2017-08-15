@@ -108,7 +108,7 @@ class ModuleRuntest(ScriptModule):
         Method creates pbs start script which will be passed to
         some qsub command
 
-        :type case: scripts.config.yaml_config.ConfigCase
+        :type case: scripts.yamlc.yaml_config.ConfigCase
         :type module: scripts.pbs.modules.pbs_tarkil_cesnet_cz
         :rtype : str
         """
@@ -121,9 +121,12 @@ class ModuleRuntest(ScriptModule):
             python=sys.executable,
             script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
-            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
+            random_output_dir='' if not self.arg_options.random_output_dir else '--random-output-dir ' + str(self.arg_options.random_output_dir),
+            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit} --input {case.input}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
             dump_output=case.fs.dump_output,
+            save_to_db='' if not self.arg_options.save_to_db else '--save-to-db',
+            status_file='' if not self.arg_options.status_file else '--status-file',
             log_file=case.fs.job_output
         )
 
@@ -258,6 +261,7 @@ class ModuleRuntest(ScriptModule):
             proc=self.arg_options.cpu,
             time_limit=self.arg_options.time_limit,
             memory_limit=self.arg_options.memory_limit,
+            input=self.arg_options.input,
         )
 
         # filter tags for includes and excludes
@@ -283,6 +287,28 @@ def do_work(arg_options=None, debug=False):
     """
     module = ModuleRuntest(arg_options)
     result = module.run(debug)  # type: ParallelThreads
+
+    if not arg_options.queue:
+        Printer.all.sep()
+        if arg_options.save_to_db:
+            from scripts.artifacts.collect.loader import load_data, save_to_database
+            from scripts.artifacts.collect.modules.flow123d_profiler import Flow123dProfiler
+
+            for t in result.threads:
+                thread = t  # type: RuntestMultiThread
+                with Printer.all.with_level(1):
+                    Printer.all.out('Processing %s' % thread.pypy.case.fs.output)
+                    data = load_data(thread.pypy.case.fs.output, Flow123dProfiler())
+
+                    if data:
+                        with Printer.all.with_level(1):
+                            Printer.all.out(' - found %d file(s)' % len(data))
+                            with Printer.all.with_level(1):
+                                for item in data:
+                                    Printer.all.out(' %d element(s)' % len(item.items))
+                    else:
+                        Printer.all.err('No profiler data found')
+                    save_to_database(data)
 
     # pickle out result on demand
     if arg_options.dump:

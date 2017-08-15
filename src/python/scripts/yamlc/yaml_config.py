@@ -203,7 +203,7 @@ class ConfigBase(object):
             ))
         return yamls
 
-    def update(self, proc, time_limit, memory_limit, **kwargs):
+    def update(self, proc, time_limit, memory_limit, input, **kwargs):
         for case in self.cases:
             if proc:
                 case[yamlc.TAG_PROC] = set(proc)
@@ -211,6 +211,8 @@ class ConfigBase(object):
                 case[yamlc.TAG_TIME_LIMIT] = time_limit
             if memory_limit:
                 case[yamlc.TAG_MEMORY_LIMIT] = memory_limit
+            if input:
+                case[yamlc.TAG_INPUTS] = ensure_iterable(input)
 
     def filter_tags(self, include, exclude):
         """
@@ -315,9 +317,9 @@ class ConfigPool(object):
 
     __iadd__ = add
 
-    def update(self, proc, time_limit, memory_limit, **kwargs):
+    def update(self, proc, time_limit, memory_limit, input, **kwargs):
         for config in list(self.configs.values()):
-            config.update(proc, time_limit, memory_limit, **kwargs)
+            config.update(proc, time_limit, memory_limit, input, **kwargs)
 
     def filter_tags(self, include, exclude):
         include = set(include) if include else None

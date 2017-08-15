@@ -22,7 +22,7 @@
 #
 
 
-set(libs fem_lib)
+set(libs fem_lib io_lib)
 add_test_directory("${libs}")
 
 

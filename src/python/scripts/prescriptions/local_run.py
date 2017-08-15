@@ -11,6 +11,7 @@ from scripts.core.threads import PyPy, ExtendedThread, ComparisonMultiThread
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.prescriptions import AbstractRun
 from scripts.yamlc import REF_OUTPUT_DIR
+from scripts.core.returncode import RC, RC_NONE, RC_OK, RC_BROKEN
 # ----------------------------------------------
 
 
@@ -90,8 +91,8 @@ class LocalRun(AbstractRun):
                     pm.start_monitor.deactivate()
                     pm.end_monitor.deactivate()
                     pm.progress_monitor.deactivate()
-                    pm.limit_monitor.deactivate() # TODO: maybe some time limit would be useful
-                    pm.output_monitor.policy = pm.output_monitor.POLICY_ERROR_ONLY
+                    pm.limit_monitor.deactivate()  # TODO: maybe some time limit would be useful
+                    pm.output_monitor.policy = pm.output_monitor.POLICY_BATCH_OR_ERROR
 
                     pm.error_monitor.message = 'Comparison using method {} failed!'.format(method)
                     pm.error_monitor.indent = 1
@@ -124,15 +125,15 @@ class CleanThread(ExtendedThread):
         super(CleanThread, self).__init__(name)
         self.dir = dir
         self.error = None
-        self.returncode = 0
+        self.returncode = RC_OK
 
     def _run(self):
         if Paths.exists(self.dir):
             try:
                 shutil.rmtree(self.dir)
-                self.returncode = 0
+                self.returncode = RC_OK
             except OSError as e:
-                self.returncode = 4
+                self.returncode = RC(4)
                 self.error = str(e)
 
     def to_json(self):
@@ -144,7 +145,7 @@ class CleanThread(ExtendedThread):
 
 class DummyCleanThread(CleanThread):
     def _run(self):
-        self.returncode = 0
+        self.returncode = RC_OK
 
 
 class DummyComparisonThread(ComparisonMultiThread):
@@ -153,4 +154,4 @@ class DummyComparisonThread(ComparisonMultiThread):
 
     @property
     def returncode(self):
-        return 0
+        return RC_OK

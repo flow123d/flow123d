@@ -20,8 +20,8 @@
 
 #include "input/accessors_forward.hh"
 
-#include "output_data_base.hh"
 #include "output_time.hh"
+#include "element_data_cache.hh"
 
 #include <ostream>
 #include <cstdint>
@@ -121,15 +121,18 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    /**
+    /// Formats of DataArray section
+	static const std::vector<std::string> formats;
+
+	/**
      * \brief Write header of VTK file (.vtu)
      */
     void write_vtk_vtu_head(void);
 
     /**
-     * \brief Fills the given vector with VTK element types indicators.
+     * \brief Fills the data cache with VTK element types indicators.
      */
-    void fill_element_types_vector(std::vector<unsigned int> &data);
+    std::shared_ptr<ElementDataCache<unsigned int>> fill_element_types_data();
 
     /**
      * Write registered data of all components of given Field to output stream
@@ -157,6 +160,13 @@ protected:
      * \brief Write data on elements to the VTK file (.vtu)
      */
    void write_vtk_element_data(void);
+
+   /**
+    * \brief Write native data (part of our own data skipped by Paraview) to the VTK file (.vtu)
+    *
+    * Tags of native data are subtags of 'Flow123dData' tag, that is subtag of 'Piece' tag
+    */
+  void write_vtk_native_data(void);
 
    /**
     * \brief Write tail of VTK file (.vtu)

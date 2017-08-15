@@ -20,8 +20,8 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "system/file_path.hh"
 #include "input/input_type.hh"
-#include "mesh/msh_gmshreader.h"
-#include "mesh/reader_instances.hh"
+#include "io/msh_gmshreader.h"
+#include "io/reader_instances.hh"
 
 /// Implementation.
 
@@ -33,7 +33,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_elementwise)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
 {
-    return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
@@ -89,7 +89,6 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
 	ASSERT(reader_file_ == FilePath()).error("Multiple call of init_from_input.");
     reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-    ReaderInstances::instance()->get_reader(reader_file_);
 
     field_name_ = rec.val<std::string>("field_name");
 }
@@ -120,18 +119,10 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    GMSH_DataHeader search_header;
-    search_header.actual=false;
-    search_header.field_name=field_name_;
-    search_header.n_components=n_components_;
-    search_header.n_entities=n_entities_;
-    search_header.time=time.end();
-
-
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(search_header,
-    		mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
+    		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
-    return search_header.actual;
+    return true;
 }
 
 
@@ -155,6 +146,8 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     	data_->resize(n_entities_ * n_components_);
     }
 
+    if ( reader_file_ == FilePath() ) return;
+    ReaderInstances::instance()->get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 
 
@@ -210,13 +203,14 @@ void FieldElementwise<spacedim, Value>::scale_and_check_limits()
 {
 	if (Value::is_scalable()) {
 		std::vector<typename Value::element_type> &vec = *( data_.get() );
+		bool printed_warning = false;
 		for(unsigned int i=0; i<vec.size(); ++i) {
 			vec[i] *= this->unit_conversion_coefficient_;
-			if ( (vec[i] < limits_.first) || (vec[i] > limits_.second) ) {
-				int el_id = mesh_->elements_id_maps(boundary_domain_)[(unsigned int)(i / this->n_components_)];
-                WarningOut().fmt("Value '{}' of FieldElementwise '{}', element id '{}' at address '{}' is out of limits: <{}, {}>\n"
+			if ( !printed_warning && ((vec[i] < limits_.first) || (vec[i] > limits_.second)) ) {
+				printed_warning = true;
+                WarningOut().fmt("Values of some elements of FieldElementwise '{}' at address '{}' is out of limits: <{}, {}>\n"
                 		"Unit of the Field: [{}]\n",
-						vec[i], field_name_, el_id, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
+						field_name_, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
 			}
 		}
 	}

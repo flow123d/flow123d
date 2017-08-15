@@ -30,7 +30,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include <iostream>
 
@@ -117,10 +117,7 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh_->read_gmsh_from_stream(in);
+        mesh_ = mesh_reader->read_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
         set_values();
 	}

@@ -19,6 +19,7 @@
 #include <set>
 #include <queue>
 
+#include "system/sys_profiler.hh"
 #include "mesh/duplicate_nodes.h"
 #include "mesh/mesh.h"
 
@@ -147,10 +148,11 @@ void DuplicateNodes::init_from_elements()
  */
 void DuplicateNodes::duplicate_nodes()
 {
+  START_TIMER("duplicate_nodes");
   FOR_NODES(mesh_, n){
-    // copy list of adjacent elements from mesh_->node_elements[n.index()]
+    // create list of adjacent elements from mesh_->node_elements[n.index()]
     std::list<unsigned int> node_elements;
-    std::copy( mesh_->node_elements[n.index()].begin(), mesh_->node_elements[n.index()].end(), std::back_inserter( node_elements ) );
+    std::copy( mesh_->node_elements()[n.index()].begin(), mesh_->node_elements()[n.index()].end(), std::back_inserter( node_elements ) );
     
     // create list of edges sharing the node
     std::set<unsigned int> node_edges;
@@ -249,6 +251,7 @@ void DuplicateNodes::duplicate_nodes()
       }
     }
   }
+  END_TIMER("duplicate_nodes");
 }
 
 

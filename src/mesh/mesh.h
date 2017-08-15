@@ -129,6 +129,12 @@ public:
     enum {x_coord=0, y_coord=1, z_coord=2};
 
     /**
+     * Empty constructor.
+     *
+     * Use only for unit tests!!!
+     */
+    Mesh();
+    /**
      * Constructor from an input record.
      * Do not process input record. That is done in init_from_input.
      */
@@ -161,6 +167,16 @@ public:
 
     inline const RegionDB &region_db() const {
         return region_db_;
+    }
+
+    /// Reserve size of node vector
+    inline void reserve_node_size(unsigned int n_nodes) {
+    	node_vector.reserve(n_nodes);
+    }
+
+    /// Reserve size of element vector
+    inline void reserve_element_size(unsigned int n_elements) {
+    	element.reserve(n_elements);
     }
 
     /**
@@ -218,7 +234,7 @@ public:
     /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    vector<int> const & elements_id_maps( bool boundary_domain) const;
+    void elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -230,6 +246,11 @@ public:
      * @param region_list Array input AbstractRecords which define regions, region sets and elements
      */
     void read_regions_from_input(Input::Array region_list);
+
+    /**
+     * Returns nodes_elements vector, if doesn't exist creates its.
+     */
+    vector<vector<unsigned int> > const & node_elements();
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
@@ -301,16 +322,38 @@ public:
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\
 
+    /**
+     * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
+     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
+     * returned.
+     */
+    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+
+    /// Add new node of given id and coordinates to mesh
+    void add_node(unsigned int node_id, arma::vec3 coords);
+
+    /// Add new element of given id to mesh
+    void add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+    		std::vector<unsigned int> node_ids);
+
+    /// Add new node of given id and coordinates to mesh
+    void add_physical_name(unsigned int dim, unsigned int id, std::string name);
+
+    /// Return FilePath object representing "mesh_file" input key
+    inline FilePath mesh_file() {
+    	return in_record_.val<FilePath>("mesh_file");
+    }
+
     /// Getter for input type selection for intersection search algorithm.
     IntersectionSearch get_intersection_search();
 
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements;
-    
-    DuplicateNodes *tree;
-
     /// Maximal distance of observe point from Mesh relative to its size
     double global_observe_radius() const;
+
+    /// Number of elements read from input.
+    unsigned int n_all_input_elements_;
+
+    DuplicateNodes *tree;
 
 
 protected:
@@ -340,12 +383,6 @@ protected:
      * Create element lists for nodes in Mesh::nodes_elements.
      */
     void create_node_element_lists();
-    /**
-     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
-     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
-     * returned.
-     */
-    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
     /**
      * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
      * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
@@ -380,8 +417,6 @@ protected:
     ///
     /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
     mutable vector<int> bulk_elements_id_, boundary_elements_id_;
-    /// Number of elements read from input.
-    unsigned int n_all_input_elements_;
 
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];
@@ -418,7 +453,10 @@ protected:
      */
     MPI_Comm comm_;
 
-    friend class GmshMeshReader;
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements_;
+
+
     friend class RegionSetBase;
     friend class Element;
     friend class BIHTree;

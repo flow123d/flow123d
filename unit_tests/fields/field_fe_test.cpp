@@ -27,8 +27,8 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
-#include "mesh/reader_instances.hh"
+#include "io/msh_gmshreader.h"
+#include "io/reader_instances.hh"
 
 
 
@@ -52,10 +52,7 @@ public:
     }
 
     void create_mesh(std::string mesh_file_str) {
-        FilePath mesh_file( mesh_file_str, FilePath::input_file);
-        mesh= mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = mesh_full_constructor("{mesh_file=\"" + mesh_file_str + "\"}");
     }
 
     void create_dof_handler(double val1, double val2, double val3) {
@@ -93,9 +90,10 @@ TEST_F(FieldFETest, scalar) {
 	FE_P_disc<1,1,3> fe1;
 	FE_P_disc<1,2,3> fe2;
 	FE_P_disc<1,3,3> fe3;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     ScalarField field;
 
-    dh->distribute_dofs(fe1, fe2, fe3);
+    dh->distribute_dofs(ds);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
 
@@ -119,9 +117,10 @@ TEST_F(FieldFETest, vector) {
     FE_RT0<1,3> fe1;
 	FE_RT0<2,3> fe2;
 	FE_RT0<3,3> fe3;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     VecField field;
 
-    dh->distribute_dofs(fe1, fe2, fe3);
+    dh->distribute_dofs(ds);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
 

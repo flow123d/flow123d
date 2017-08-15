@@ -35,7 +35,7 @@
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
@@ -283,7 +283,8 @@ void TransportDG<Model>::initialize()
     int max_edg_sides = max(Model::mesh_->max_edge_sides(1), max(Model::mesh_->max_edge_sides(2), Model::mesh_->max_edge_sides(3)));
     mm_coef.resize(qsize);
     ret_coef.resize(Model::n_substances());
-    sorption_sources.resize(Model::n_substances());
+    ret_sources.resize(Model::n_substances());
+    ret_sources_prev.resize(Model::n_substances());
     ad_coef.resize(Model::n_substances());
     dif_coef.resize(Model::n_substances());
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -343,6 +344,7 @@ void TransportDG<Model>::initialize()
     ls    = new LinSys*[Model::n_substances()];
     ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
+    ret_vec = new Vec[Model::n_substances()];
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
     	ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
@@ -351,6 +353,8 @@ void TransportDG<Model>::initialize()
     	ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
     	( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
     	solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
+        
+        VecDuplicate(ls[sbi]->get_solution(), &ret_vec[sbi]);
     }
     stiffness_matrix = new Mat[Model::n_substances()];
     mass_matrix = new Mat[Model::n_substances()];
@@ -382,6 +386,7 @@ TransportDG<Model>::~TransportDG()
             MatDestroy(&mass_matrix[i]);
             VecDestroy(&rhs[i]);
             VecDestroy(&mass_vec[i]);
+            VecDestroy(&ret_vec[i]);
         }
         delete[] ls;
         delete[] solution_elem_;
@@ -390,6 +395,7 @@ TransportDG<Model>::~TransportDG()
         delete[] mass_matrix;
         delete[] rhs;
         delete[] mass_vec;
+        delete[] ret_vec;
         delete feo;
 
     }
@@ -440,13 +446,7 @@ void TransportDG<Model>::zero_time_step()
         Model::balance_->calculate_instant(Model::subst_idx[sbi], ls[sbi]->get_solution());
 
         // add sources due to sorption
-        vector<double> masses(Model::mesh_->region_db().bulk_size());
-        double mass = 0;
-        Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution(), masses);
-        for (auto reg_mass : masses)
-            mass += reg_mass;
-
-        sorption_sources[sbi] = mass;
+        ret_sources_prev[sbi] = 0;
     }
 
     output_data();
@@ -467,11 +467,17 @@ void TransportDG<Model>::preallocate()
 		// preallocate mass matrix
 		ls_dt[i]->start_allocation();
 		mass_matrix[i] = NULL;
+        VecZeroEntries(ret_vec[i]);
 	}
 	assemble_stiffness_matrix();
 	assemble_mass_matrix();
 	set_sources();
 	set_boundary_conditions();
+    for (unsigned int i=0; i<Model::n_substances(); i++)
+    {
+      VecAssemblyBegin(ret_vec[i]);
+      VecAssemblyEnd(ret_vec[i]);
+    }
 
 	allocation_done = true;
 }
@@ -497,22 +503,19 @@ void TransportDG<Model>::update_solution()
         {
             ls_dt[i]->start_add_assembly();
             ls_dt[i]->mat_zero_entries();
+            VecZeroEntries(ret_vec[i]);
         }
         assemble_mass_matrix();
         for (unsigned int i=0; i<Model::n_substances(); i++)
         {
             ls_dt[i]->finish_assembly();
+            VecAssemblyBegin(ret_vec[i]);
+            VecAssemblyEnd(ret_vec[i]);
             // construct mass_vec for initial time
             if (mass_matrix[i] == NULL)
             {
                 VecDuplicate(ls[i]->get_solution(), &mass_vec[i]);
                 MatMult(*(ls_dt[i]->get_matrix()), ls[i]->get_solution(), mass_vec[i]);
-                if (Model::balance_->cumulative())
-                {
-                    double total_mass = 0;
-                    VecSum(mass_vec[i], &total_mass);
-                    sorption_sources[i] -= total_mass;
-                }
                 MatConvert(*( ls_dt[i]->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &mass_matrix[i]);
             }
             else
@@ -564,7 +567,7 @@ void TransportDG<Model>::update_solution()
     		VecCopy(*( ls[i]->get_rhs() ), rhs[i]);
     	}
     }
-
+    
     Model::flux_changed = false;
 
 
@@ -634,7 +637,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
 			break;
     	}
 
-    	unsigned int dof_indices[n_dofs];
+    	std::vector<int> dof_indices(n_dofs);
     	feo->dh()->get_dof_indices(elem, dof_indices);
 
     	for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
@@ -687,17 +690,11 @@ void TransportDG<Model>::calculate_cumulative_balance()
     	{
     		Model::balance_->calculate_cumulative(Model::subst_idx[sbi], ls[sbi]->get_solution());
 
-    		// add sources due to sorption
-    		vector<double> masses(Model::mesh_->region_db().bulk_size());
-    		double mass = 0;
-    		Model::balance_->calculate_mass(Model::subst_idx[sbi], ls[sbi]->get_solution(), masses);
-    		for (auto reg_mass : masses)
-    			mass += reg_mass;
-    		double total_mass = 0;
-    		VecSum(mass_vec[sbi], &total_mass);
+            // update source increment due to retardation
+            VecDot(ret_vec[sbi], ls[sbi]->get_solution(), &ret_sources[sbi]);
 
-    		Model::balance_->add_cumulative_source(Model::subst_idx[sbi], mass-total_mass-sorption_sources[sbi]);
-    		sorption_sources[sbi] = mass - total_mass;
+            Model::balance_->add_cumulative_source(Model::subst_idx[sbi], (ret_sources[sbi]-ret_sources_prev[sbi])/Model::time_->dt());
+            ret_sources_prev[sbi] = ret_sources[sbi];
     	}
     }
 }
@@ -722,7 +719,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<int> dof_indices(ndofs);
-    PetscScalar local_mass_matrix[ndofs*ndofs];
+    PetscScalar local_mass_matrix[ndofs*ndofs], local_retardation_balance_vector[ndofs];
     vector<PetscScalar> local_mass_balance_vector(ndofs);
 
     // assemble integral over elements
@@ -732,7 +729,7 @@ void TransportDG<Model>::assemble_mass_matrix()
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, (unsigned int*)&(dof_indices[0]));
+        feo->dh()->get_dof_indices(cell, dof_indices);
         ElementAccessor<3> ele_acc = cell->element_accessor();
 
         Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
@@ -754,12 +751,17 @@ void TransportDG<Model>::assemble_mass_matrix()
             for (unsigned int i=0; i<ndofs; i++)
             {
                     local_mass_balance_vector[i] = 0;
+                    local_retardation_balance_vector[i] = 0;
                     for (unsigned int k=0; k<qsize; k++)
+                    {
                         local_mass_balance_vector[i] += mm_coef[k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                        local_retardation_balance_vector[i] -= ret_coef[sbi][k]*fe_values.shape_value(i,k)*fe_values.JxW(k);
+                    }
             }
             
             Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
 			ls_dt[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
+            VecSetValues(ret_vec[sbi], ndofs, &(dof_indices[0]), local_retardation_balance_vector, ADD_VALUES);
         }
     }
 }
@@ -808,7 +810,7 @@ void TransportDG<Model>::assemble_volume_integrals()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    unsigned int dof_indices[ndofs];
+    std::vector<int> dof_indices(ndofs);
     vector<arma::vec3> velocity(qsize);
     vector<arma::vec> sources_sigma(qsize, arma::vec(Model::n_substances()));
     PetscScalar local_matrix[ndofs*ndofs];
@@ -848,7 +850,7 @@ void TransportDG<Model>::assemble_volume_integrals()
 												   +sources_sigma[k][sbi]*fe_values.shape_value(j,k)*fe_values.shape_value(i,k))*fe_values.JxW(k);
 				}
 			}
-			ls[sbi]->mat_set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, local_matrix);
+			ls[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_matrix);
         }
     }
 }
@@ -888,7 +890,7 @@ void TransportDG<Model>::set_sources()
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, (unsigned int *)&(dof_indices[0]));
+        feo->dh()->get_dof_indices(cell, dof_indices);
 
         Model::compute_source_coefficients(fe_values.point_list(), cell->element_accessor(), sources_conc, sources_density, sources_sigma);
 
@@ -933,7 +935,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     		update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size(),
     		n_max_sides = ad_coef_edg.size();
-    vector<unsigned int*> side_dof_indices;
+    vector< vector<int> > side_dof_indices;
     PetscScalar local_matrix[ndofs*ndofs];
     vector<vector<arma::vec3> > side_velocity(n_max_sides);
     vector<arma::vec> dg_penalty(n_max_sides);
@@ -941,7 +943,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
     for (unsigned int sid=0; sid<n_max_sides; sid++)
     {
-    	side_dof_indices.push_back(new unsigned int[ndofs]);
+    	side_dof_indices.push_back( vector<int>(ndofs) );
     	fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     			update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
     }
@@ -1036,7 +1038,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 									}
 								}
 							}
-							ls[sbi]->mat_set_values(fe_values[sd[n]]->n_dofs(), (int *)side_dof_indices[sd[n]], fe_values[sd[m]]->n_dofs(), (int *)side_dof_indices[sd[m]], local_matrix);
+							ls[sbi]->mat_set_values(fe_values[sd[n]]->n_dofs(), &(side_dof_indices[sd[n]][0]), fe_values[sd[m]]->n_dofs(), &(side_dof_indices[sd[m]][0]), local_matrix);
 						}
 					}
 #undef AVERAGE
@@ -1050,7 +1052,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     for (unsigned int i=0; i<n_max_sides; i++)
     {
         delete fe_values[i];
-        delete[] side_dof_indices[i];
     }
 }
 
@@ -1064,7 +1065,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
     		update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
-    unsigned int side_dof_indices[ndofs];
+    std::vector<int> side_dof_indices(ndofs);
     PetscScalar local_matrix[ndofs*ndofs];
     vector<arma::vec3> side_velocity;
     vector<double> robin_sigma(qsize);
@@ -1152,7 +1153,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 				}
 			}
 
-			ls[sbi]->mat_set_values(ndofs, (int *)side_dof_indices, ndofs, (int *)side_dof_indices, local_matrix);
+			ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
         }
     }
 }
@@ -1176,7 +1177,9 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
-    unsigned int side_dof_indices[2*ndofs], n_dofs[2];
+    int side_dof_indices[2*ndofs];
+    vector<int> indices(ndofs);
+    unsigned int n_dofs[2], n_indices;
 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<arma::vec> frac_sigma(qsize, arma::vec(Model::n_substances()));
 	vector<double> csection_lower(qsize), csection_higher(qsize);
@@ -1196,12 +1199,18 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         if (nb->element()->dim() != dim-1) continue;
 
 		typename DOFHandlerBase::CellIterator cell_sub = Model::mesh_->element.full_iter(nb->element());
-		feo->dh()->get_dof_indices(cell_sub, side_dof_indices);
+		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
+		for(unsigned int i=0; i<n_indices; ++i) {
+			side_dof_indices[i] = indices[i];
+		}
 		fe_values_vb.reinit(cell_sub);
 		n_dofs[0] = fv_sb[0]->n_dofs();
 
 		typename DOFHandlerBase::CellIterator cell = nb->side()->element();
-		feo->dh()->get_dof_indices(cell, side_dof_indices+n_dofs[0]);
+		n_indices = feo->dh()->get_dof_indices(cell, indices);
+		for(unsigned int i=0; i<n_indices; ++i) {
+			side_dof_indices[i+n_dofs[0]] = indices[i];
+		}
 		fe_values_side.reinit(cell, nb->side()->el_idx());
 		n_dofs[1] = fv_sb[1]->n_dofs();
 
@@ -1258,7 +1267,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 								        comm_flux[m][n]*fv_sb[m]->shape_value(j,k)*fv_sb[n]->shape_value(i,k);
 				}
 			}
-			ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], (int *)side_dof_indices, n_dofs[0]+n_dofs[1], (int *)side_dof_indices, local_matrix);
+			ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], side_dof_indices, n_dofs[0]+n_dofs[1], side_dof_indices, local_matrix);
 		}
     }
 
@@ -1338,7 +1347,7 @@ void TransportDG<Model>::set_boundary_conditions()
 			// different bc_type for each substance.
 			data_.bc_dirichlet_value.value_list(fe_values_side.point_list(), ele_acc, bc_values);
 
-			feo->dh()->get_dof_indices(cell, (unsigned int *)&(side_dof_indices[0]));
+			feo->dh()->get_dof_indices(cell, side_dof_indices);
 
 			for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 			{
@@ -1627,7 +1636,7 @@ void TransportDG<Model>::prepare_initial_condition()
 	FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
 			update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    unsigned int dof_indices[ndofs];
+    std::vector<int> dof_indices(ndofs);
     double matrix[ndofs*ndofs], rhs[ndofs];
     std::vector<arma::vec> init_values(qsize);
 
@@ -1666,7 +1675,7 @@ void TransportDG<Model>::prepare_initial_condition()
     				rhs[i] += fe_values.shape_value(i,k)*rhs_term;
     			}
     		}
-    		ls[sbi]->set_values(ndofs, (int *)dof_indices, ndofs, (int *)dof_indices, matrix, rhs);
+    		ls[sbi]->set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), matrix, rhs);
     	}
     }
 }
@@ -1703,7 +1712,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 				break;
 			}
 
-			unsigned int dof_indices[n_dofs];
+			std::vector<int> dof_indices(n_dofs);
 			feo->dh()->get_dof_indices(elem, dof_indices);
 
 			for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)

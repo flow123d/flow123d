@@ -426,36 +426,46 @@ void DOFHandlerMultiDim::create_sequential()
 
 
 
-void DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, unsigned int indices[]) const
+unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const
 {
+  unsigned int ndofs = 0;
   if ( cell_starts_seq.size() > 0 && dof_indices_seq.size() > 0)
   {
-    for (unsigned int k=0; k<cell_starts_seq[row_4_el[cell.index()]+1]-cell_starts_seq[row_4_el[cell.index()]]; k++)
+    ndofs = cell_starts_seq[row_4_el[cell.index()]+1]-cell_starts_seq[row_4_el[cell.index()]];
+    for (unsigned int k=0; k<ndofs; k++)
       indices[k] = dof_indices_seq[cell_starts_seq[row_4_el[cell.index()]]+k];
   }
   else
   {
     OLD_ASSERT(el_is_local(cell.index()), "Attempt to use DOF handler on nonlocal element!");
-    for (unsigned int k=0; k<cell_starts[row_4_el[cell.index()]+1]-cell_starts[row_4_el[cell.index()]]; k++)
+    ndofs = cell_starts_seq[row_4_el[cell.index()]+1]-cell_starts_seq[row_4_el[cell.index()]];
+    for (unsigned int k=0; k<ndofs; k++)
       indices[k] = dof_indices[cell_starts[row_4_el[cell.index()]]+k];
   }
+  
+  return ndofs;
 }
 
 
 
-void DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const
 {
+  unsigned int ndofs = 0;
   if ( cell_starts_seq.size() > 0 && dof_indices_seq.size() > 0)
   {
-    for (unsigned int k=0; k<cell_starts_seq[row_4_el[cell.index()]+1]-cell_starts_seq[row_4_el[cell.index()]]; k++)
+    ndofs = cell_starts_seq[row_4_el[cell.index()]+1]-cell_starts_seq[row_4_el[cell.index()]];
+    for (unsigned int k=0; k<ndofs; k++)
       indices[k] = dof_indices_seq[cell_starts_seq[row_4_el[cell.index()]]+k] - loffset_;
   }
   else
   {
     OLD_ASSERT(el_is_local(cell.index()), "Attempt to use DOF handler on nonlocal element!");
-    for (unsigned int k=0; k<cell_starts[row_4_el[cell.index()]+1]-cell_starts[row_4_el[cell.index()]]; k++)
+    ndofs = cell_starts_seq[row_4_el[cell.index()]+1]-cell_starts_seq[row_4_el[cell.index()]];
+    for (unsigned int k=0; k<ndofs; k++)
       indices[k] = dof_indices[cell_starts[row_4_el[cell.index()]]+k] - loffset_;
   }
+
+  return ndofs;
 }
 
 // void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[]) const
@@ -595,6 +605,11 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 bool DOFHandlerMultiDim::el_is_local(int index) const
 {
 	return el_ds_->is_local(row_4_el[index]);
+}
+
+
+std::size_t DOFHandlerMultiDim::hash() const {
+	return this->n_global_dofs_;
 }
 
 

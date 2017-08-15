@@ -7,76 +7,7 @@
 #include "fem/dofhandler.hh"
 
 
-// simple mesh consisting of 4 triangles and 1 line element
-//
-//  4---------------5
-//  | \           / |
-//  |   \   5   1   |
-//  |     \   /     |
-//  |  3    3    4  |
-//  |     /   \     |
-//  |   /   2   \   |
-//  | /           \ |
-//  1---------------2
-string small_mesh = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-5
-1 0 0 0
-2 2 0 0
-3 1 1 0
-4 0 2 0
-5 2 2 0
-$EndNodes
-$Elements
-5
-1 1 2 1 1 3 5
-2 2 2 2 2 1 2 3
-3 2 2 2 2 1 3 4
-4 2 2 2 2 3 2 5
-5 2 2 2 2 3 5 4
-$EndElements
-)CODE";
 
-
-// simple mesh consisting of 4 triangles and 1 line element
-//
-//  5---------------6
-//  | \           / |
-//  |   2   7   3   |
-//  |     \   /   8 |
-//  |  5    3-------4
-//  |     /   \   6 |
-//  |   1   4   \   |
-//  | /           \ |
-//  1---------------2
-string small_mesh_junction = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-6
-1 0 0 0
-2 2 0 0
-3 1 1 0
-4 2 1 0
-5 0 2 0
-6 2 2 0
-$EndNodes
-$Elements
-8
-1 1 2 1 1 1 3
-2 1 2 1 1 3 5
-3 1 2 1 1 3 6
-4 2 2 2 2 1 2 3
-5 2 2 2 2 1 3 5
-6 2 2 2 2 3 2 4
-7 2 2 2 2 3 6 5
-8 2 2 2 2 3 4 6
-$EndElements
-)CODE";
 
 
 TEST(DOFHandler, test_all) {
@@ -87,9 +18,19 @@ TEST(DOFHandler, test_all) {
   // except for the dofs lying on line 1
   // without the center point X.
   {
-    Mesh * mesh = mesh_constructor("{mesh_file=\"\"}", Input::FileFormat::format_JSON, MPI_COMM_WORLD);
-    stringstream in(small_mesh.c_str());
-    mesh->read_gmsh_from_stream(in);
+    // simple mesh consisting of 4 triangles and 1 line element
+    //
+    //  4---------------5
+    //  | \           / |
+    //  |   \   5   1   |
+    //  |     \   /     |
+    //  |  3    3    4  |
+    //  |     /   \     |
+    //  |   /   2   \   |
+    //  | /           \ |
+    //  1---------------2
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
     
     FE_P<1,1,3> fe1;
     FE_P<1,2,3> fe2;
@@ -100,9 +41,12 @@ TEST(DOFHandler, test_all) {
     
     EXPECT_EQ( 8, dh.n_global_dofs() );
     
-    unsigned int indices[5][dh.max_elem_dofs()];
+    std::vector<int> indices[5];
     for (unsigned int i=0; i<5; i++)
+    {
+      indices[i].resize(dh.max_elem_dofs());
       dh.get_dof_indices(mesh->element.find_id(i+1), indices[i]);
+    }
     
     // dof at node 1 is shared by elements 2, 3
     EXPECT_EQ( indices[1][0], indices[2][0] );
@@ -139,9 +83,19 @@ TEST(DOFHandler, test_all) {
   // shared by adjacent elements
   // except for the dofs separated by line elements.
   {
-    Mesh * mesh = mesh_constructor("{mesh_file=\"\"}", Input::FileFormat::format_JSON, MPI_COMM_WORLD);
-    stringstream in(small_mesh_junction.c_str());
-    mesh->read_gmsh_from_stream(in);
+    // simple mesh consisting of 4 triangles and 1 line element
+    //
+    //  5---------------6
+    //  | \           / |
+    //  |   2   7   3   |
+    //  |     \   /   8 |
+    //  |  5    3-------4
+    //  |     /   \   6 |
+    //  |   1   4   \   |
+    //  | /           \ |
+    //  1---------------2
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
     FE_P<1,1,3> fe1;
     FE_P<1,2,3> fe2;
@@ -152,9 +106,12 @@ TEST(DOFHandler, test_all) {
     
     EXPECT_EQ( 15, dh.n_global_dofs() );
     
-    unsigned int indices[mesh->n_elements()][dh.max_elem_dofs()];
+    std::vector<int> indices[mesh->n_elements()];
     for (unsigned int i=0; i<mesh->n_elements(); i++)
+    {
+      indices[i].resize(dh.max_elem_dofs());
       dh.get_dof_indices(mesh->element.find_id(i+1), indices[i]);
+    }
     
     // dof at node 1 is not shared by elements 1, 4, 5
     EXPECT_NE( indices[0][0], indices[3][0] );

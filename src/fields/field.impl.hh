@@ -22,10 +22,13 @@
 
 #include "field.hh"
 #include "field_algo_base.impl.hh"
+#include "field_fe.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
 #include "io/observe.hh"
+#include "io/output_mesh.hh"
+#include "io/output_element.hh"
 
 
 /******************************************************************************************
@@ -328,18 +331,47 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
-	if (!is_bc())
-		stream->register_data(this->output_type(), *this);
+	if (!is_bc()) {
+		unsigned int ids;
+		const OutputTime::DiscreteSpace type = this->output_type();
+
+		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
+
+		OutputTime::DiscreteSpaceFlags flags = 1 << type;
+	    for(ids=0; ids < OutputTime::N_DISCRETE_SPACES - 1; ids++)
+	        if (flags & (1 << ids))
+	        	this->compute_field_data( OutputTime::DiscreteSpace(ids), stream);
+	    ids = OutputTime::NATIVE_DATA;
+	    if (flags & (1 << ids))
+	    	this->compute_native_data( OutputTime::DiscreteSpace(ids), stream);
+	}
 }
 
 
 template<int spacedim, class Value>
 void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
-    observe->compute_field_values(*this);
+	typedef typename Value::element_type ElemType;
+
+    if (observe->points().size() == 0) return;
+
+    ElementDataCache<ElemType> &output_data = observe->prepare_compute_data<ElemType>(this->name(), this->time(),
+    						(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+
+    unsigned int i_data=0;
+    for(const ObservePoint &o_point : observe->points()) {
+        unsigned int ele_index = o_point.element_idx();
+        const Value &obs_value =
+                        Value( const_cast<typename Value::return_type &>(
+                                this->value(o_point.global_coords(),
+                                        ElementAccessor<spacedim>(this->mesh(), ele_index, false)) ));
+        ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
+        output_data.store_value(i_data,  obs_value.mem_ptr());
+        i_data++;
+    }
 }
 
 
@@ -550,6 +582,149 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
 	}
 
 }
+
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+	typedef typename Value::element_type ElemType;
+
+	ASSERT(space_type != OutputTime::NATIVE_DATA).error();
+
+    /* It's possible now to do output to the file only in the first process */
+    if( stream->get_rank() != 0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
+    ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
+    		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+
+
+    /* Copy data to array */
+    switch(space_type) {
+    case OutputTime::NODE_DATA: {
+        // set output data to zero
+        vector<unsigned int> count(output_data.n_values(), 0);
+        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
+            output_data.zero(idx);
+
+        std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
+        for(const auto & ele : *output_mesh )
+        {
+            std::vector<Space<3>::Point> vertices = ele.vertex_list();
+            for(unsigned int i=0; i < ele.n_nodes(); i++)
+            {
+                unsigned int node_index = ele.node_index(i);
+                const Value &node_value =
+                        Value( const_cast<typename Value::return_type &>(
+                                this->value(vertices[i],
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                             );
+                output_data.add(node_index, node_value.mem_ptr() );
+                count[node_index]++;
+            }
+        }
+
+        // Compute mean values at nodes
+        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
+            output_data.normalize(idx, count[idx]);
+    }
+    break;
+    case OutputTime::CORNER_DATA: {
+    	std::shared_ptr<OutputMeshDiscontinuous> output_mesh_disc
+			= std::dynamic_pointer_cast<OutputMeshDiscontinuous>( stream->get_output_mesh_ptr(true) );
+        for(const auto & ele : *output_mesh_disc )
+        {
+            std::vector<Space<3>::Point> vertices = ele.vertex_list();
+            for(unsigned int i=0; i < ele.n_nodes(); i++)
+            {
+                unsigned int node_index = ele.node_index(i);
+                const Value &node_value =
+                        Value( const_cast<typename Value::return_type &>(
+                        		this->value(vertices[i],
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                             );
+                ASSERT_EQ(output_data.n_elem(), node_value.n_rows()*node_value.n_cols()).error();
+                output_data.store_value(node_index, node_value.mem_ptr() );
+            }
+        }
+    }
+    break;
+    case OutputTime::ELEM_DATA: {
+    	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
+        for(const auto & ele : *output_mesh )
+        {
+            unsigned int ele_index = ele.idx();
+            const Value &ele_value =
+                        Value( const_cast<typename Value::return_type &>(
+                        		this->value(ele.centre(),
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
+                                                                        )
+                             );
+            ASSERT_EQ(output_data.n_elem(), ele_value.n_rows()*ele_value.n_cols()).error();
+            output_data.store_value(ele_index, ele_value.mem_ptr() );
+        }
+    }
+    break;
+    case OutputTime::NATIVE_DATA:
+        //should not happen
+    break;
+    }
+
+    /* Set the last time */
+    stream->update_time(this->time());
+
+}
+
+
+template<int spacedim, class Value>
+void Field<spacedim,Value>::compute_native_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+	ASSERT_EQ(space_type, OutputTime::NATIVE_DATA).error();
+
+    /* It's possible now to do output to the file only in the first process */
+    if( stream->get_rank() != 0) {
+        /* TODO: do something, when support for Parallel VTK is added */
+        return;
+    }
+
+    std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+    if (field_fe_ptr) {
+        ElementDataCache<double> &output_data = stream->prepare_compute_data<double>(this->name(), space_type,
+                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+        field_fe_ptr->fill_data_to_cache(output_data);
+    } else {
+        WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+    }
+
+    /* Set the last time */
+    stream->update_time(this->time());
+
+}
+
+
+template<int spacedim, class Value>
+std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
+	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
+	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+
+	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
+
+	bool is_fe = (region_fields_.size()>0); // indicate if FieldFE is defined on all bulk regions
+	is_fe = is_fe && region_fields_[1] && (typeid(*region_fields_[1]) == typeid(FieldFE<spacedim, Value>));
+	for (unsigned int i=3; i<2*this->mesh()->region_db().bulk_size(); i+=2)
+		if (!region_fields_[i] || (region_fields_[i] != region_fields_[1])) {
+			is_fe = false;
+			break;
+		}
+	if (is_fe) {
+		field_fe_ptr = std::dynamic_pointer_cast<  FieldFE<spacedim, Value> >( region_fields_[1] );
+	}
+
+	return field_fe_ptr;
+}
+
 
 
 

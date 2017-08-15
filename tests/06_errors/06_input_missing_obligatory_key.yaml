@@ -1,0 +1,25 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: "Missing obligatory key mesh_file at address: /problem/mesh"
+  mesh:
+### ERROR missing obligatory key mesh_file
+  flow_equation: !Flow_Darcy_MH
+    time: 
+        end_time: 0.5
+        max_dt: 0.01
+        min_dt: 0.01
+    input_fields:
+      - region: ALL
+        storativity: 1.0
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    n_schurs: 2
+    output:
+      fields:
+        - pressure_p0
+    balance: {}
+    output_stream: 
+      file: ./test10.pvd
+      format: !vtk
+        variant: ascii

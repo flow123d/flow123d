@@ -85,20 +85,20 @@ public:
     Mesh *mesh() const { return mesh_; }
 
     /**
-     * @brief Returns the global indices of dofs associated to the @p cell.
+     * @brief Fill vector of the global indices of dofs associated to the @p cell.
      *
      * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param indices Vector of dof indices on the cell.
      */
-    virtual void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const = 0;
+    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const = 0;
 
     /**
-     * @brief Returns the indices of dofs associated to the @p cell on the local process.
+     * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
      *
      * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param indices Vector of dof indices on the cell.
      */
-    virtual void get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const =0;
+    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const =0;
     
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -109,6 +109,11 @@ public:
      */
 //     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
 //             double local_values[]) const = 0;
+
+    /**
+     * @brief Compute hash value of DOF handler.
+     */
+    virtual std::size_t hash() const =0;
 
     /// Destructor.
     virtual ~DOFHandlerBase();
@@ -290,7 +295,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
+    unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const override;
     
     /**
      * @brief Returns the indices of dofs associated to the @p cell on the local process.
@@ -298,7 +303,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    void get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
+    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -350,6 +355,11 @@ public:
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
     FiniteElement<dim,3> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
+
+    /**
+     * Implements @p DOFHandlerBase::hash.
+     */
+    std::size_t hash() const override;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
