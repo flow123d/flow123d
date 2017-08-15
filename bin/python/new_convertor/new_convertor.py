@@ -154,6 +154,8 @@ def enlist(s):
         return s
 
 
+
+
 class Changes:    
     def __init__(self):
         self.current_version=None
@@ -274,6 +276,7 @@ class Changes:
     ACTIONS, __get_attr__ provides related method without underscore to add the action into changes.
     In general actions do not raise erros but report warnings and just skip the conversion for actual path.
     '''
+
     def _add_key_to_map(self, paths, key, value, reversed):
         '''
         ACTION.
@@ -357,6 +360,7 @@ class Changes:
         '''
     """
 
+
     def __brace_substitution(self, old, new):
         """
         Subsititute {} in new by corresponding {...} in 'old'.
@@ -383,6 +387,10 @@ class Changes:
         old = re.sub("[{}]", "", old)
         assert not re.findall("[{}]", new)
         return old, new
+
+
+    def _copy_value(self, new_paths, old_paths, reversed):
+        pass
 
     def _move_value(self, new_paths, old_paths, reversed):
         """
@@ -434,7 +442,7 @@ class Changes:
 
                 for match in path_match[::-1]:
                     nodes, addr = match
-                    value = self.__remove_value(nodes, addr.strip('/').split('/'))
+                    value = self.__remove_value(nodes, addr)
                     cases.append( (value, n_alt, nodes, addr) )
 
         for case in cases:
@@ -448,14 +456,14 @@ class Changes:
     def __remove_value(self, nodes, addr_list):
         # remove value
         assert len(nodes) > 1
-        key = addr_list[-1].split('!')[0]
+        key = addr_list[-1][0]
 
         if is_map_node(nodes[-2]):
             assert is_map_key(key)
             value = nodes[-2].pop(key)
         elif is_list_node(nodes[-2]):
-            assert key.isdigit()
-            value = nodes[-2].pop(int(key))
+            assert type(key) == int
+            value = nodes[-2].pop(key)
         else:
             assert False
 
@@ -540,7 +548,7 @@ class Changes:
             if not is_map_node(curr):
                 logging.warning("Expecting map at path: {}".format(address))
                 continue
-                            
+
             if not old_key in curr:
                 logging.warning("No key {} to rename at {}.".format(old_key, address))
                 continue
@@ -592,6 +600,10 @@ class Changes:
         If regexp is None, then substitute is tuple for the manual conversion.
         :return: None
         """
+        if reversed:
+            regexp = re_backward
+        else:
+            regexp = re_forward
         for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_scalar_node(curr):
@@ -605,17 +617,25 @@ class Changes:
                 continue
 
             self.changed = True
-            if reversed:
-                if re_backward[0] is None:
-                    self.__apply_manual_conv(nodes, address, re_backward[1])    # manual
-                else:
-                    curr.value = re.sub(re_backward[0], re_backward[1], curr.value)
+            if regexp[0] is None:
+                self.__apply_manual_conv(nodes, address, regexp[1])    # manual
             else:
-                if re_forward[0] is None:
-                    self.__apply_manual_conv(nodes, address, re_forward[1])  # manual
-                else:
-                    curr.value = re.sub(re_forward[0], re_forward[1], curr.value)
+                curr.value = re.sub(regexp[0], regexp[1], curr.value)
 
+    
+    def _change_value(self, paths, old_val, new_val, reversed):
+        """
+        ACTION.
+        For every path in 'paths' change value equal to 'old_val' into 'new_val'
+        and vice versa for 'reversed'.
+        """
+        if reversed:
+            old_val, new_val = new_val, old_val
+            
+        for nodes, address in PathSet(paths).iterate(self.tree):
+            if nodes[-1] == old_val:
+                key = address[-1][0]
+                nodes[-2][key] = new_val
 
     def _scale_scalar(self, paths, multiplicator, reversed):
         '''
@@ -649,8 +669,7 @@ class Changes:
         if len(nodes) < 2 or not is_map_node(nodes[-2]):
             return
 
-        key = address.strip('/').split('/')[-1]
-        key = key.split('!')[0]
+        key = address[-1][0]
         map_of_key = nodes[-2]
         assert is_map_node(map_of_key)
 
@@ -671,6 +690,15 @@ class Changes:
             del map_of_key[key]
 
 
+
+class Address(list):
+    def add(self, key, tag):
+        x = Address(self)
+        x.append( (key, tag) )
+        return x
+
+    def __str__(self):
+        return "/" + "/".join([ str(key) + "!" + str(tag) for key, tag in self ])
 
 
 class PathSet(object):
@@ -718,7 +746,10 @@ class PathSet(object):
             self.path_patterns = path_patterns
 
         self.patterns=[]
+
         for p in self.path_patterns:
+            p = p.strip('/')
+            p = p + '/'
             for pp in self.expand_alternatives(p):
                 # '**' = any number of levels, any key or index per level
                 pp = re.sub('\*\*', '[a-zA-Z0-9_]@(/[a-zA-Z0-9_]@)@',pp)
@@ -730,6 +761,7 @@ class PathSet(object):
                 pp = re.sub('/', '(![a-zA-Z0-9_]@)?/', pp)
                 # return back all starts
                 pp = re.sub('@', '*', pp)
+                pp = pp.strip('/')
                 pp = "^" + pp + "$"
                 self.patterns.append(pp)
         #logging.debug("Patterns: " + str(self.patterns) )
@@ -748,7 +780,7 @@ class PathSet(object):
         """
         logging.debug("Patterns: {}".format(self.patterns))
 
-        yield from self.dfs_iterate( [tree], "")
+        yield from self.dfs_iterate( [tree], Address())
 
     @staticmethod
     def get_node_tag(node):
@@ -758,29 +790,32 @@ class PathSet(object):
                 return tag
         return ""
 
-    @staticmethod
-    def node_has_tag(node, tag):
-        return tag is None or PathSet.get_node_tag(node) == tag
+    #@staticmethod
+    #def node_has_tag(node, tag):
+    #    return tag is None or PathSet.get_node_tag(node) == tag
 
     def dfs_iterate(self, nodes, address):
         current = nodes[-1]
-        tag = self.get_node_tag(current)
-        address += tag + "/"
-
         logging.debug("DFS at: " + str(address))
-        if self.match(nodes, address):
+        if self.match(nodes, str(address)):
             # terminate recursion in every node
             self.matches+=[current]
             yield (nodes, address)
+
         if is_list_node(current):
-            for idx, child in enumerate(current):
-                yield from self.dfs_iterate(nodes + [ child ], address  + str(idx)  )
+            iterable =  enumerate(current)
         elif is_map_node(current):
-            for key, child in current.items():
-                yield from self.dfs_iterate(nodes + [ child ] , address  + str(key) )
+            iterable = current.items()
+        else:
+            return
+
+        for key, child in iterable:
+            tag = self.get_node_tag(child)[1:]
+            yield from self.dfs_iterate(nodes + [child], address.add(key, tag))
 
 
     def match(self, data_path, path):
+        path = path.strip('/')
         for pattern in self.patterns:
             if re.match(pattern, path) != None:
                 logging.debug("Match path")
@@ -920,17 +955,14 @@ changes.rename_key("/**/input_fields/*/", old_key="r_set", new_key="region")
 changes.set_tag_from_key("/problem/mesh/regions/#/", key='id', tag='From_ID')
 changes.set_tag_from_key("/problem/mesh/regions/#/", key='element_list', tag='From_Elements')
 
-
-changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'region_ids', tag = 'Union')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'region_labels', tag = 'Union')
-changes.move_value("/problem/mesh/sets/#/", old_key='region_labels', new_key='regions')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'union', tag = 'Union')
-changes.rename_key("/problem/mesh/sets/#/", old_key='union', new_key='regions')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'intersection', tag = 'Intersection' )
-changes.set_tag_from_key("/problem/mesh/sets/#/", key = 'difference', tag = 'Difference' )
-changes.move_value("{/problem/mesh}/sets/#/", "{}/regions/#/")
-
-
+changes.set_tag_from_key("/problem/mesh/sets/#/", key='region_ids', tag='Union')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key='region_labels', tag='Union')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key='union', tag='Union')
+changes.rename_key("/problem/mesh/sets/#!Union/", old_key='region_labels', new_key='regions')
+changes.rename_key("/problem/mesh/sets/#!Union/", old_key='union', new_key='regions')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key='intersection', tag='Intersection')
+changes.set_tag_from_key("/problem/mesh/sets/#/", key='difference', tag='Difference')
+changes.move_value("{/problem/mesh}/sets/#{!(Union|Intersection|Difference)}/", "{}/regions/#{}/")
 
 
 '''
@@ -1255,6 +1287,11 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
         "new_name": "Coupling_Sequential"
       }
     },
+'''
+changes.rename_key("/problem/", "primary_equation", "flow_equation")
+changes.move_value("/problem/secondary_equation!Coupling_OperatorSplitting", "/problem/solute_equation!Coupling_OperatorSplitting")
+changes.move_value("/problem/secondary_equation!Heat_AdvectionDiffusion_DG", "/problem/heat_equation!Heat_AdvectionDiffusion_DG")
+'''
     {
       "NAME": "Rename sequential coupling keys",
       "action": "move-key",
@@ -1281,7 +1318,10 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
         "type-filter": "Heat_AdvectionDiffusion_DG"
       }
     },
-
+'''
+changes.move_value("/problem/flow_equation/output/raw_flow_output/", "/problem/flow_equation/output_specific/raw_flow_output/")
+changes.move_value("/problem/flow_equation/output/compute_errors/", "/problem/flow_equation/output_specific/compute_errors/")
+'''
     {
       "NAME": "Make output-specific key.",
       "action": "add-key",
@@ -1308,6 +1348,28 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
         "create_path":true
       }
     },
+'''
+
+changes.move_value("{/problem/flow_equation}/output/output_stream/", "{}/output_stream/")
+
+equations = "(flow_equation|" \
+            "solute_equation/transport|" \
+            "solute_equation/reaction_term|" \
+            "solute_equation/reaction_term/reaction_mobile|" \
+            "solute_equation/reaction_term/reaction_immobile|" \
+            "heat_equation)"
+changes.rename_key("{/problem/" + equations + "}/output/", old_key="output_fields", new_key="fields")
+
+changes.move_value("{/problem/(flow_equation|solute_equation|heat_equation)/output_stream}/time_list/#/","{}/times/#/")     
+changes.move_value("{/problem/(flow_equation|solute_equation|heat_equation)/output_stream}/time_step/","{}/times/0/step/")
+
+changes.move_value("{/problem/(flow_equation|solute_equation|heat_equation)}/output_stream/add_input_times/","{}/output/add_input_times/")
+changes.copy_value("{/problem/solute_equation/output/add_input_times/", 
+                   "/problem/{solute_equation/reaction_term|"
+                   "solute_equation/reaction_term/reaction_mobile|"
+                   "solute_equation/reaction_term/reaction_immobile"
+                   "}/output/add_input_times/")
+'''
     {
       "NAME": "Move DarcyFlow output_stream.",
       "action": "move-key",
@@ -1392,6 +1454,8 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
         "create_path":true
       }
     },
+    
+    
     {
       "NAME": "Make time step for transport output stream.",
       "action": "move-key",
@@ -1410,6 +1474,8 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
         "destination_path": "/problem/solute_equation/output_stream/times"
       }
     },    
+    
+    
     {
       "NAME": "Move add_input_times for transport.",
       "action": "move-key",
@@ -1490,6 +1556,13 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
         "create_path":true
       }
     },    
+'''    
+    
+empty_map = CommentedMap()    
+changes.change_value("/problem/(flow_equation|solute_equation|heat_equation)/balance", True, empty_map)
+    
+    
+'''    
     {
         "NAME": "Change balance:true",
         "action": "change-value",
@@ -1516,7 +1589,10 @@ changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag
           "old_value" : "true",
           "new_value" : "{}"
         }
-    },    
+    },
+'''
+
+'''
     {
         "NAME": "Change balance:true",
         "action": "change-value",

@@ -27,6 +27,7 @@ class TestActions(unittest.TestCase):
         changes.add_key_to_map("/", key="flow123d_version", value="2.0.0")
         self.perform(changes)
 
+
     def test_manual_change(self):
         changes=Changes()
         changes.new_version("A")
@@ -39,6 +40,7 @@ class TestActions(unittest.TestCase):
                               message_backward="Change sign of this field manually.")
         self.perform(changes)
 
+
     def test_rename_key(self):
         changes=Changes()
         changes.new_version("A")
@@ -48,6 +50,7 @@ class TestActions(unittest.TestCase):
         changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
         self.perform(changes)
 
+
     def test_set_tag_from_key(self):
         changes=Changes()
         changes.new_version("A")
@@ -55,6 +58,7 @@ class TestActions(unittest.TestCase):
         # Set  to DG transport
         changes.set_tag_from_key("/problem/*/", key='dg_penalty',  tag='TransportDG')
         self.perform(changes)
+
 
     def test_rename_tag(self):
         changes=Changes()
