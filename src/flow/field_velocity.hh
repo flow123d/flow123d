@@ -56,8 +56,6 @@ public:
         Value flux; flux.zeros();
         
         if(enr_ && elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
-//             if(mh_dh_->single_enr) flux = value_vector_xfem_single(ele_ac, p); 
-//             else flux =  value_vector_xfem(ele_ac);
             flux =  value_vector_xfem(ele_ac);
         }
         else if(reg_){
@@ -84,9 +82,6 @@ public:
         fv_rt_ = std::make_shared<FEValues<dim,3>>(map_, quad_, fe_rt_, update_values);
         fv_rt_->reinit(ele);
         
-//         unsigned int li = 0;
-//         flux += flux += mh_dh_->side_flux( *(ele->side( li ) ) ) * fv_rt_->shape_vector(li,0);
-            
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
 //             DBGCOUT(<< "ele " << ele->index() << " flux " << mh_dh_->side_flux( *(ele->side( li ) ) ) 
 //                 << " [" << fv_rt_->shape_vector(li,0)(0) << " " << fv_rt_->shape_vector(li,0)(1) << " " << fv_rt_->shape_vector(li,0)(2) << "]\n");
@@ -99,7 +94,31 @@ public:
     
     Value value_vector_xfem(LocalElementAccessorBase<3> ele_ac){
         Value flux;
-        ASSERT_DBG(0).error("Not implemented!");
+        flux.zeros();
+        ElementFullIter ele = ele_ac.full_iter();
+        
+        XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
+        if(mh_dh_->single_enr) fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM_S<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
+        else fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
+        
+        fv_rt_xfem_ = std::make_shared<FEValues<dim,3>>(map_,quad_, *fe_rt_xfem_, update_values);
+        fv_rt_xfem_->reinit(ele);
+        
+        int dofs[fv_rt_xfem_->n_dofs()];
+        int ndofs = ele_ac.get_dofs_vel(dofs);
+        ASSERT_DBG(fv_rt_xfem_->n_dofs() == ndofs);
+        
+    //     DBGCOUT("####################### DOFS\n");
+    //     for(int i =0; i < ndofs; i++) cout << dofs[i] << " ";
+    //     cout << "\n";
+        
+        unsigned int li = 0;
+        if(!reg_) li = fe_rt_xfem_->n_regular_dofs();  //skip regular part
+        for (; li < ndofs; li++) {
+            flux += mh_dh_->mh_solution[dofs[li]]
+                        * fv_rt_xfem_->shape_vector(li,0);
+        }
+        
         return flux;
     }
     
@@ -135,7 +154,7 @@ public:
     : FieldAlgorithmBase<3, FieldValue<3>::VectorFixed>(0),
       fe_val_1d_(mh_dh),
       fe_val_2d_(mh_dh, enriched_part, regular_part),
-      fe_val_3d_(mh_dh),
+      fe_val_3d_(mh_dh, enriched_part, regular_part),
       cross_section_(cross_section)
     {}
 
@@ -186,41 +205,5 @@ private:
     /// Registrar of class to factory
     static const int registrar;
 };
-
-
-
-
-template<> inline
-auto FieldVelocityInternal<2>::value_vector_xfem(LocalElementAccessorBase<3> ele_ac) -> Value
-{
-    Value flux, temp;
-    flux.zeros();
-    ElementFullIter ele = ele_ac.full_iter();
-    
-    XFEMElementSingularData<2> * xdata = ele_ac.xfem_data_sing<2>();
-    if(mh_dh_->single_enr) fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM_S<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
-    else fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
-//     fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt_,xdata->enrichment_func_vec());
-    
-    fv_rt_xfem_ = std::make_shared<FEValues<2,3>>(map_,quad_, *fe_rt_xfem_, update_values);
-    fv_rt_xfem_->reinit(ele);
-    
-    int dofs[fv_rt_xfem_->n_dofs()];
-    int ndofs = ele_ac.get_dofs_vel(dofs);
-    ASSERT_DBG(fv_rt_xfem_->n_dofs() == ndofs);
-    
-//     DBGCOUT("####################### DOFS\n");
-//     for(int i =0; i < ndofs; i++) cout << dofs[i] << " ";
-//     cout << "\n";
-    
-    unsigned int li = 0;
-    if(!reg_) li = fe_rt_xfem_->n_regular_dofs();  //skip regular part
-    for (; li < ndofs; li++) {
-        flux += mh_dh_->mh_solution[dofs[li]]
-                    * fv_rt_xfem_->shape_vector(li,0);
-    }
-    
-    return flux;
-}
 
 #endif /* FIELD_VELOCITY_HH_ */
