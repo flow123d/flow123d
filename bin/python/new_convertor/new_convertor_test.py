@@ -135,6 +135,8 @@ class TestActions(unittest.TestCase):
         changes.set_tag_from_key("/problem/mesh/sets/#/", key='difference', tag='Difference')
         changes.move_value("{/problem/mesh}/sets/#{!(Union|Intersection|Difference)}/", "{}/regions/#{}/")
 
+        # copy values
+        changes.copy_value("{/problem}/secondary_equation_2/substances", "{}/secondary_equation_3/substances")
         self.perform(changes)
 
 

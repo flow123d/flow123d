@@ -23,7 +23,7 @@ import fnmatch
 import types
 import logging
 import itertools
-#import copy
+import copy
 
 
 
@@ -390,9 +390,9 @@ class Changes:
 
 
     def _copy_value(self, new_paths, old_paths, reversed):
-        pass
+        self._move_value(new_paths, old_paths, reversed, copy_val=True)
 
-    def _move_value(self, new_paths, old_paths, reversed):
+    def _move_value(self, new_paths, old_paths, reversed, copy_val=False):
         """
         ACTION.
         Move a values from 'new_paths' to 'old_paths'.
@@ -442,7 +442,10 @@ class Changes:
 
                 for match in path_match[::-1]:
                     nodes, addr = match
-                    value = self.__remove_value(nodes, addr)
+                    if copy_val:
+                        value = copy.deepcopy(nodes[-1])
+                    else:
+                        value = self.__remove_value(nodes, addr)
                     cases.append( (value, n_alt, nodes, addr) )
 
         for case in cases:
