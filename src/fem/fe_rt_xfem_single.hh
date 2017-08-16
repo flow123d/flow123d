@@ -112,12 +112,16 @@ private:
     struct EleCache{
         unsigned int last_ele_index;
         std::vector<std::vector<double>> enr_dof_val;
-    } ele_cache_;
+        EleCache()
+        { last_ele_index = std::numeric_limits<unsigned int>::max();}
+    };
+    static EleCache ele_cache_;
     
 };
 
 
-
+template <unsigned int dim, unsigned int spacedim>
+typename FE_RT0_XFEM_S<dim,spacedim>::EleCache FE_RT0_XFEM_S<dim,spacedim>::ele_cache_;
 
 
 
@@ -132,7 +136,6 @@ FE_RT0_XFEM_S<dim,spacedim>::FE_RT0_XFEM_S(FE_RT0<dim,spacedim>* fe,
     // regular + enriched from every singularity
     number_of_dofs = n_regular_dofs_ + enr.size();
     number_of_single_dofs[dim] = number_of_dofs;
-    ele_cache_.last_ele_index = std::numeric_limits<unsigned int>::max();
 }
 
 
@@ -184,13 +187,14 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
         }
         
         if(ele_cache_.last_ele_index != ele->index()){
+//             DBGCOUT(<<"qxfem_side on ele " << ele->index() << ";  cache ele " << ele_cache_.last_ele_index << "\n");
             enr_dof_val.resize(enr.size());
             for (unsigned int w=0; w<enr.size(); w++)
                 enr_dof_val[w].resize(RefElement<dim>::n_sides);
             
             // for SGFEM we need to compute fluxes of glob. enr. function over faces
             for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
-                
+//                 DBGCOUT(<<"qxfem_side on ele " << ele->index() << " s" << j << "\n");
                 std::shared_ptr<QXFEM<dim,3>> q_side = qxfem_side(ele, j);
                 
                 double side_measure = ele->side(j)->measure();
@@ -210,9 +214,6 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
                 }
             }
             ele_cache_.last_ele_index = ele->index();
-        }
-        else{
-            enr_dof_val = ele_cache_.enr_dof_val;
         }
 //         // for SGFEM we need to compute fluxes of glob. enr. function over faces
 //         ASSERT(dim == 2);
@@ -326,6 +327,12 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             fv_data.shape_divergence[q] = divs;
         }
     }
+}
+
+template<>
+inline std::shared_ptr<QXFEM<1,3>> FE_RT0_XFEM_S<1,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
+{
+    return std::make_shared<QXFEM<1,3>>();
 }
 
 template<>

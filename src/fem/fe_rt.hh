@@ -206,7 +206,11 @@ template<unsigned int dim, unsigned int spacedim>
 double FE_RT0<dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     ASSERT_DBG(i<n_raw_functions).error("Index of basis function is out of range.");
-    return dim;
+    //dim factorial
+    double res = 1.0;
+    for(unsigned int i = 2; i < dim+1; i++)
+        res = res * i;
+    return res;
 }
 
 
