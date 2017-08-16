@@ -1610,6 +1610,9 @@ changes.change_value("/problem/(flow_equation|solute_equation|heat_equation)/bal
         }
     },
 '''
+false_map = CommentedMap()
+false_map['add_output_times'] = False
+changes.change_value("/problem/(flow_equation|solute_equation|heat_equation)/balance", False, false_map)
 
 '''
     {
@@ -1639,6 +1642,12 @@ changes.change_value("/problem/(flow_equation|solute_equation|heat_equation)/bal
           "new_value" : "{add_output_times: false}"
         }
     },
+'''
+changes.change_value("/problem/**/input_fields/#/region", "BOUNDARY", ".BOUNDARY")
+changes.change_value("/problem/**/input_fields/#/region", "IMPLICIT_BOUNDARY", ".IMPLICIT_BOUNDARY")
+
+
+'''
     {
         "NAME": "Change BOUNDARY to .BOUNDARY",
         "action": "change-value",
