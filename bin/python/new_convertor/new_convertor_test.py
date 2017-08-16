@@ -90,6 +90,14 @@ class TestActions(unittest.TestCase):
             re_backward=(None, "Select either 'robin' or 'neumann' according to the value of 'bc_flux', 'bc_pressure', 'bc_sigma'."))
         self.perform(changes)
 
+    def test_change_value(self):
+        changes=Changes()
+        changes.new_version("A")
+
+        # Rename equations and couplings
+        changes.change_value("/(problem|sec)/a", old_val=1, new_val="one")
+        changes.change_value("/(problem|sec)/b", old_val=True, new_val=CommentedMap())
+        self.perform(changes)
 
     def test_scale_scalar(self):
         changes=Changes()

@@ -443,10 +443,14 @@ class Changes:
                 for match in path_match[::-1]:
                     nodes, addr = match
                     if copy_val:
-                        value = copy.deepcopy(nodes[-1])
+                        if rev:
+                            self.__remove_value(nodes, addr)
+                        else:
+                            value = copy.deepcopy(nodes[-1])
+                            cases.append((value, n_alt, nodes, addr))
                     else:
                         value = self.__remove_value(nodes, addr)
-                    cases.append( (value, n_alt, nodes, addr) )
+                        cases.append( (value, n_alt, nodes, addr) )
 
         for case in cases:
             value_to_move, new, nodes, addr = case
@@ -625,7 +629,19 @@ class Changes:
             else:
                 curr.value = re.sub(regexp[0], regexp[1], curr.value)
 
-    
+    def commented_value(self, x):
+        if is_map_node(x):
+            return dict(x)
+        elif is_list_node(x):
+            return list(x)
+        elif type(x) == CommentedScalar:
+            return x.value
+        else:
+            return x
+
+    def commented_cmp(self, a, b):
+        return self.commented_value(a) == self.commented_value(b)
+
     def _change_value(self, paths, old_val, new_val, reversed):
         """
         ACTION.
@@ -636,9 +652,9 @@ class Changes:
             old_val, new_val = new_val, old_val
             
         for nodes, address in PathSet(paths).iterate(self.tree):
-            if nodes[-1] == old_val:
+            if self.commented_cmp(nodes[-1],  old_val):
                 key = address[-1][0]
-                nodes[-2][key] = new_val
+                nodes[-2][key] = copy.deepcopy(new_val)
 
     def _scale_scalar(self, paths, multiplicator, reversed):
         '''
