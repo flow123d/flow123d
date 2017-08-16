@@ -21,6 +21,14 @@ namespace IT = Input::Type;
 
 IT::Record &EquationOutput::get_input_type() {
 
+    static const IT::Selection &discrete_sel =
+        IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
+            .add_value(OutputTime::NODE_DATA,   "node_data",   "Node data / point data.")
+			.add_value(OutputTime::CORNER_DATA, "corner_data", "Corner data.")
+			.add_value(OutputTime::ELEM_DATA,   "elem_data",   "Element data / point data.")
+			.add_value(OutputTime::NATIVE_DATA, "native_data", "Native data (Flow123D data).")
+			.close();
+
     static const IT::Record &field_output_setting =
         IT::Record("FieldOutputSetting", "Setting of the field output. The field name, output times, output interpolation (future).")
             .allow_auto_conversion("field")
@@ -28,7 +36,8 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            //.declare_key("interpolation", ...)
+            .declare_key("discrete", discrete_sel, IT::Default::read_time("Discrete type of output data."),
+					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
     return IT::Record("EquationOutput",
