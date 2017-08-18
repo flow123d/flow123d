@@ -16,7 +16,7 @@ problem: !SequentialCoupling
         format: !vtk
           variant: ascii
         name: flow_output_stream
-      output_fields:
+      fields:
       - pressure_p0
       - pressure_p1
       - velocity_p0
@@ -43,6 +43,9 @@ problem: !SequentialCoupling
         variant: ascii
       time_step: 0.5
       name: transport_output_stream
+    output:
+      fields:
+      - conc
     time:
       end_time: 15.0
     reaction_term: !RadioactiveDecay
@@ -53,3 +56,6 @@ problem: !SequentialCoupling
       - half_life: 0.2
         radionuclide: A
         products: [As-lin]
+      output:
+        fields:
+        - conc

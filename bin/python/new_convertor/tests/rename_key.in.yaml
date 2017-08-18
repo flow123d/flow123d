@@ -43,6 +43,9 @@ problem: !SequentialCoupling
         variant: ascii
       time_step: 0.5
       name: transport_output_stream
+    output:
+      output_fields:
+          - conc
     time:
       end_time: 15.0
     reaction_term: !RadioactiveDecay
@@ -53,3 +56,7 @@ problem: !SequentialCoupling
         - half_life: 0.2
           radionuclide: A
           products:  [ As-lin ]  
+      output:
+        output_fields:
+          - conc
+    

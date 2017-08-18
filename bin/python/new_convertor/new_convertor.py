@@ -17,7 +17,7 @@ from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 import re
 import os
-#import sys
+import sys
 import argparse
 import fnmatch
 import types
@@ -35,9 +35,10 @@ class CommentedScalar:
     """
     original_constructors={}
 
-
+    def __str__(self):
+        return str(self.value)
     def __repr__(self):
-        str(self.value)
+        return str(self.value)
 
     @classmethod
     def to_yaml(cls, dumper, data):
@@ -156,7 +157,14 @@ def enlist(s):
 
 
 
-class Changes:    
+class Changes:
+
+    ALPHABETIC = 0
+    BEGINNING = 1
+    # Possible values of self.map_insert. Determine insertion of new keys into a commented, ordered map.
+    # SORTED - before first item that has key greater then inserted item
+    # BEGINNING - at beginning of the map
+
     def __init__(self):
         self.current_version=None
         self._version_changes=None
@@ -204,7 +212,7 @@ class Changes:
     def unify_trees(self, trees):
         return [ (fname, self.unify_tree_dfs(tree)) for fname, tree in trees ]
 
-    def apply_changes(self, trees, in_version, out_version,  reversed=False, warn=True):
+    def apply_changes(self, trees, in_version, out_version,  reversed=False, warn=True, map_insert=None):
         """
         Apply initailized list of actions to the data tree 'root'.
         :param root: Input data tree.
@@ -212,10 +220,18 @@ class Changes:
         :param reversed: Produce backward conversion from the target version to the initial version.
         :return: Data tree after conversion.
         """
+        if map_insert is not None:
+            self.map_insert = map_insert
+        else:
+            self.map_insert = self.ALPHABETIC
         trees = self.unify_trees(trees)
 
         # close last list
         self.new_version(None)
+        if in_version is None:
+            in_version = self._changes[0][0]
+        if out_version is None:
+            out_version = self._changes[-1][0]
 
         # reverse
         if reversed:
@@ -225,9 +241,9 @@ class Changes:
 
         active = False
         for version, change_list in self._changes:
-            if version == in_version:
+            if version >= in_version:
                 active = True
-            if version == out_version:
+            if version >= out_version:
                 break
             if active:
                 for forward, backward, ac_name in change_list:
@@ -271,7 +287,51 @@ class Changes:
         else:
             return object.__getattribute__(self, item)
 
+    def __idx_for_key(self, map, key, equal=False):
+        '''
+        Returns index of a key equal or larger then given 'key'.
+        :param map: CommentedSeq
+        :param key: String key.
+        :return: index
+        '''
+        index = len(map.keys())
+        for idx, dict_key in enumerate(map.keys()):
+            if (equal and str(dict_key) == str(key)) \
+               or (not equal and str(dict_key) >= str(key)):
+                index = idx
+                break
+        return index
 
+    def __set_map(self, map, key, value, **kwargs):
+        '''
+        Unified method how to insert new keys into maps. Particular method may be
+        determined by parameter 'map_insert' of apply_changes.
+        :param map: CommentedMap
+        :param key:
+        :param value:
+        :return:
+        '''
+        assert is_map_node(map)
+        assert is_map_key(key)
+        if key in map:
+            map[key] = value
+
+        # insert new key
+        if 'hint_idx' in kwargs:
+            index = kwargs['hint_idx']
+        elif 'hint_key' in kwargs:
+            index = self.__idx_for_key(map, kwargs['hint_key'])
+        else:
+            if self.map_insert == self.ALPHABETIC:
+                index=self.__idx_for_key(map, key)
+            elif self.map_insert == self.BEGINNING:
+                index=0
+            else:
+                assert False
+        map.insert(index, key, value)
+        print("map:")
+        for k, v in map.items():
+            print(k, ":", v)
     '''
     ACTIONS, __get_attr__ provides related method without underscore to add the action into changes.
     In general actions do not raise erros but report warnings and just skip the conversion for actual path.
@@ -298,10 +358,7 @@ class Changes:
                     self.changed=True
             else:
                 assert(not key in curr)
-                for idx, dict_key in enumerate(curr.keys()):
-                    if str(dict_key) > str(key):
-                        break
-                curr.insert(idx, key, value)
+                self.__set_map(curr, key, value)
                 self.changed = True
 
     def _set_tag_from_key(self, paths, key, tag, reversed):
@@ -315,13 +372,14 @@ class Changes:
         :param reversed:
         :return:
         '''
-        print("set_tag_from_key: {} {}", tag, key)
+
         for nodes, address in PathSet(paths).iterate(self.tree):
 
             assert is_map_node(nodes[-1]), "Node: {}".format(nodes[-1])
             if not key in nodes[-1]:
                 continue
-            logging.debug("addr: {}".format(address))
+
+            self.changed = True
             if reversed:
                 curr_tag = nodes[-1].tag.value
                 if curr_tag and curr_tag != '!' + tag:
@@ -341,6 +399,7 @@ class Changes:
         For every path P in the path set 'path', make the same, but use message_backward for the comment.
         '''
         for nodes, address in PathSet(paths).iterate(self.tree):
+            self.changed = True
             if reversed:
                 self.__apply_manual_conv(nodes, address, message_backward)
             else:
@@ -368,7 +427,6 @@ class Changes:
         :param new:
         :return: old, new ... changed
         """
-
         old_braces = re.findall('{[^}]*}', old)
 
         while True:
@@ -453,6 +511,7 @@ class Changes:
                         cases.append( (value, n_alt, nodes, addr) )
 
         for case in cases:
+            self.changed = True
             value_to_move, new, nodes, addr = case
 
             # create list of (key, tag); tag=None if no tag is specified
@@ -519,8 +578,8 @@ class Changes:
                 i = len(nodes[-1])
             new_value = self.__move_value(value, None, path_list)
             self.__set_tag(new_value, tag)
-
             nodes[-1].insert(i, new_value)
+
         elif is_map_key(key) :
             if nodes is None:
                 nodes = [ CommentedMap() ]
@@ -532,7 +591,10 @@ class Changes:
                 nodes_plus = None
             new_value = self.__move_value(value, nodes_plus, path_list)
             self.__set_tag(new_value, tag)
+
+            # CMP AUX
             nodes[-1][key] = new_value
+            #self.__set_map(nodes[-1], key, new_value)
         else:
             raise Exception("Wrong key: {}".format(key))
         return nodes[-1]
@@ -561,7 +623,10 @@ class Changes:
                 continue
 
             self.changed = True
-            curr[new_key] = curr.pop(old_key)
+
+            orig_idx = self.__idx_for_key(curr, old_key, equal = True)
+            value = curr.pop(old_key)
+            self.__set_map(curr, new_key, value, hint_idx=orig_idx)
 
     def _rename_tag(self, paths, old_tag, new_tag, reversed):
         '''
@@ -783,8 +848,7 @@ class PathSet(object):
                 pp = pp.strip('/')
                 pp = "^" + pp + "$"
                 self.patterns.append(pp)
-        #logging.debug("Patterns: " + str(self.patterns) )
-        print("Patterns: " + str(self.patterns))
+        logging.debug("Patterns: " + str(self.patterns) )
         #self.options=kwds
         self.matches = []
 
@@ -895,824 +959,15 @@ class PathSet(object):
 Implement 'has_key', make tests of this class.
 """
 
-changes = Changes()    
-    
-    
-    
-# Add header key 'flow123d_version'
-changes.new_version("1.8.2")
-changes.add_key_to_map(path = "/", key = "flow123d_version", value = "2.0.0")
-
-# Change degree keys in PadeApproximant
-path_set = PathSet(["/problem/secondary_equation/**/ode_solver!PadeApproximant/"])
-
-changes.rename_key(path_set, old_key="denominator_degree", new_key="pade_denominator_degree")
-changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
-
-# Change sign of boundary fluxes
-path_set = PathSet([
-    "/problem/secondary_equation/input_fields/*/bc_flux/",
-    "/problem/primary_equation/input_fields/*/bc_flux/",
-    "/problem/secondary_equation/input_fields/*/bc_flux/#/",
-    "/problem/primary_equation/input_fields/*/bc_flux/#/",
-    "/problem/secondary_equation/input_fields/*/bc_flux!FieldConstant/value/",
-    "/problem/primary_equation/input_fields/*/bc_flux!FieldConstant/value/"
-    ])
-changes.scale_scalar(path_set, multiplicator=-1)
-
-# Change sign of boundary fluxes formulas
-path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux!FieldFormula/value/",
-                    "/problem/primary_equation/input_fields/*/bc_flux!FieldFormula/value/"])
-
-changes.replace_value(path_set,
-                      re_forward=('^(.*)$', '-(\\1)'),
-                      re_backward=('^(.*)$', '-(\\1)'))
-
-# Change sign of oter fields manually
-path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)",
-             "/problem/primary_equation/input_fields/*/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)"])
-
-changes.manual_change(path_set,
-    message_forward="Change sign of this field manually.",
-    message_backward="Change sign of this field manually.")
-
-
-# Merge robin and neumann BC types into total_flux
-path_set = PathSet(["/problem/secondary_equation/input_fields/*/bc_type/",
-                    "/problem/primary_equation/input_fields/*/bc_type/"])
-
-changes.replace_value(path_set,
-                      re_forward=("^(robin|neumann)$", "total_flux"),
-                      re_backward=(None,
-                                   "Select either 'robin' or 'neumann' according to the value of 'bc_flux', 'bc_pressure', 'bc_sigma'."))
-
-
-changes.new_version("2.0.0")
-
-
-# Transport, proposed simplified syntax:
-path_in = PathSet(["/problem/secondary_equation!TransportOperatorSplitting/{(output_fields|input_fields)}/"])
-path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!Solute_Advection_FV/{}/"])
-changes.move_value( path_in, path_out)
-
-
-# DG transport, proposed simplified syntax:
-path_in = PathSet(["/problem/secondary_equation!SoluteTransport_DG/{(input_fields|output_fields|solver|dg_order|dg_variant|solvent_density)}/"])
-path_out = PathSet(["/problem/secondary_equation!Coupling_OperatorSplitting/transport!SoluteTransport_DG/{}/"])
-changes.move_value( path_in, path_out)
-
-
-# Heat transport, proposed simplified syntax:
-changes.move_value("/problem/secondary_equation!HeatTransfer_DG/", "/problem/secondary_equation!Heat_AdvectionDiffusion_DG/")
-
-
-# Remove r_set, use region instead
-# Reversed change is not unique
-changes.rename_key("/**/input_fields/*/", old_key="r_set", new_key="region")
-
-# Changes in mesh record
-changes.set_tag_from_key("/problem/mesh/regions/#/", key='id', tag='From_ID')
-changes.set_tag_from_key("/problem/mesh/regions/#/", key='element_list', tag='From_Elements')
-
-changes.set_tag_from_key("/problem/mesh/sets/#/", key='region_ids', tag='Union')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key='region_labels', tag='Union')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key='union', tag='Union')
-changes.rename_key("/problem/mesh/sets/#!Union/", old_key='region_labels', new_key='regions')
-changes.rename_key("/problem/mesh/sets/#!Union/", old_key='union', new_key='regions')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key='intersection', tag='Intersection')
-changes.set_tag_from_key("/problem/mesh/sets/#/", key='difference', tag='Difference')
-changes.move_value("{/problem/mesh}/sets/#{!(Union|Intersection|Difference)}/", "{}/regions/#{}/")
-
-
-'''
-     { 
-      "NAME" : "mesh sets setup, name",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"/problem/mesh/sets/*/name",
-        "destination_path":"/problem/mesh/sets_new/$1/name",
-          "create_path":true
-      }
-    },   
-    { 
-      "NAME" : "mesh sets setup, elementary regions setup, region_ids",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"/problem/mesh/sets/*/region_ids",
-        "destination_path":"/problem/mesh/sets_new/$1/region_ids",
-        "set_type_path":"/problem/mesh/sets_new/$1",
-        "new_type":"Union",
-        "create_path":true  
-      }
-    },
-    { 
-      "NAME" : "mesh sets setup, elementary regions setup, region_labels",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"/problem/mesh/sets/*/region_labels",
-        "destination_path":"/problem/mesh/sets_new/$1/regions",
-        "set_type_path":"/problem/mesh/sets_new/$1",
-        "new_type":"Union", 
-        "create_path":true 
-      }
-    },
-    { 
-      "NAME" : "mesh sets setup, elementary regions setup, union",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"/problem/mesh/sets/*/union",
-        "destination_path":"/problem/mesh/sets_new/$1/regions",
-        "set_type_path":"/problem/mesh/sets_new/$1",
-        "new_type":"Union",
-        "create_path":true  
-      }
-    },
-    { 
-      "NAME" : "mesh sets setup, elementary regions setup, intersection",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"/problem/mesh/sets/*/intersection",
-        "destination_path":"/problem/mesh/sets_new/$1/regions",
-        "set_type_path":"/problem/mesh/sets_new/$1",
-        "new_type":"Intersection",
-        "create_path":true  
-      }
-    },
-    { 
-      "NAME" : "mesh sets setup, elementary regions setup, difference",
-      "action": "move-key",
-      "parameters": {
-        "source_path":"/problem/mesh/sets/*/difference",
-        "destination_path":"/problem/mesh/sets_new/$1/regions",
-        "set_type_path":"/problem/mesh/sets_new/$1",
-        "new_type":"Difference",
-        "create_path":true  
-      }
-    },
-    {
-      "action": "delete-key",
-      "parameters": {
-        "path": "/problem/mesh/sets/*",
-        "deep": false   
-      }
-    },
-    {
-      "action": "delete-key",
-      "parameters": {
-        "path": "/problem/mesh/sets",
-        "deep": false   
-      }
-    },
-    {
-      "action": "delete-key",
-      "parameters": {
-        "path": "/problem/mesh/regions/*",
-        "deep": false
-      }
-    },
-    {
-      "action": "delete-key",
-      "parameters": {
-        "path": "/problem/mesh/regions",
-        "deep": false
-      }
-    },
-    {
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path":"/problem/mesh/regions_elementary",
-        "addition_path":"/problem/mesh/sets_new",
-        "destination_path":"/problem/mesh/regions"        
-      }
-    },           
-    {
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path":"/problem/mesh/sets_new",
-        "addition_path":"/problem/mesh/regions_elementary",
-        "destination_path":"/problem/mesh/regions"        
-      }
-    },
-'''
-
-changes.move_value("{/problem/primary_equation}/solver", "{}/nonlinear_solver/linear_solver")
-
-'''
-    {
-      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem/primary_equation",
-        "key": "nonlinear_solver"
-      }
-    }, 
-    {
-      "NAME": "Move linear_solver under nonlinear_solver in DarcyFlow.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/primary_equation/solver",
-        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
-        "create_path":true  
-      }
-    },
-    {
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/primary_equation/solver",
-        "destination_path": "/problem/primary_equation/nonlinear_solver/linear_solver",
-        "create_path":true  
-      }
-    },
-'''
-
-stor_map=CommentedMap()
-stor_map['region']=CommentedScalar(None, 'ALL')
-stor_map['storativity']=CommentedScalar(None, 1.0)
-changes.add_key_to_map("/problem/primary_equation!(Unsteady_LMH|Unsteady_MH)/",
-                        key="aux_storativity",
-                        value=stor_map)
-changes.move_value("{/problem/primary_equation!(Unsteady_LMH|Unsteady_MH)}/aux_storativity", "{}/input_fields/0")
-'''
-    {
-      "NAME": "Set storativity for Unsteady_LMH.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem/primary_equation",        
-        "key": "aux_region_key",
-        "value": "ALL",
-        "path-type-filter" : "Unsteady_LMH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_LMH.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem/primary_equation",        
-        "key": "aux_storativity_key",
-        "value": "1.0",
-        "path-type-filter" : "Unsteady_LMH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_LMH.",
-      "action" : "move-key",
-      "parameters": {
-        "source_path":"/problem/primary_equation/aux_region_key",
-        "destination_path":"/problem/primary_equation/_input_fields/0/region",
-        "path-type-filter" : "Unsteady_LMH",
-        "path-type-filter-path" : "/problem/primary_equation",
-        "create_path":true
-      }  
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_LMH.",
-      "action" : "move-key",
-      "parameters": {
-        "source_path":"/problem/primary_equation/aux_storativity_key",
-        "destination_path":"/problem/primary_equation/_input_fields/0/storativity",
-        "path-type-filter" : "Unsteady_LMH",
-        "path-type-filter-path" : "/problem/primary_equation",
-        "create_path":true
-      }  
-    },
-    {
-      "NAME": "Set storativity for Unsteady_LMH.",
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path":"/problem/primary_equation/_input_fields",
-        "addition_path":"/problem/primary_equation/input_fields",
-        "destination_path":"/problem/primary_equation/input_fields",
-        "path-type-filter" : "Unsteady_LMH",
-        "path-type-filter-path" : "/problem/primary_equation"     
-      }
-    },
-    {
-      "NAME": "Set storativity for Unsteady_LMH.",
-      "action" : "move-key-forward",
-      "parameters": {
-        "path":"/problem/primary_equation/input_fields",
-        "path-type-filter" : "Unsteady_LMH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },
-    {
-      "NAME": "Set storativity for Unsteady_MH.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem/primary_equation",        
-        "key": "aux_region_key",
-        "value": "ALL",
-        "path-type-filter" : "Unsteady_MH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_MH.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem/primary_equation",        
-        "key": "aux_storativity_key",
-        "value": "1.0",
-        "path-type-filter" : "Unsteady_MH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_MH.",
-      "action" : "move-key",
-      "parameters": {
-        "source_path":"/problem/primary_equation/aux_region_key",
-        "destination_path":"/problem/primary_equation/_input_fields/0/region",
-        "path-type-filter" : "Unsteady_MH",
-        "path-type-filter-path" : "/problem/primary_equation",
-        "create_path":true  
-            
-      }
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_MH.",
-      "action" : "move-key",
-      "parameters": {
-        "source_path":"/problem/primary_equation/aux_storativity_key",
-        "destination_path":"/problem/primary_equation/_input_fields/0/storativity",
-        "path-type-filter" : "Unsteady_MH",
-        "path-type-filter-path" : "/problem/primary_equation",
-        "create_path":true  
-            
-      }
-    },      
-    {
-      "NAME": "Set storativity for Unsteady_MH.",
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path":"/problem/primary_equation/_input_fields",
-        "addition_path":"/problem/primary_equation/input_fields",
-        "destination_path":"/problem/primary_equation/input_fields",
-        "path-type-filter" : "Unsteady_MH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },            
-    {
-      "NAME": "Set storativity for Unsteady_MH.",
-      "action" : "move-key-forward",
-      "parameters": {
-        "path":"/problem/primary_equation/input_fields",
-        "path-type-filter" : "Unsteady_MH",
-        "path-type-filter-path" : "/problem/primary_equation"
-      }
-    },
-'''
-
-changes.rename_tag("/problem/primary_equation/", old_tag="Steady_MH", new_tag="Flow_Darcy_MH")
-changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_MH", new_tag="Flow_Darcy_MH")
-changes.rename_tag("/problem/primary_equation/", old_tag="Unsteady_LMH", new_tag="Flow_Richards_LMH")
-
-'''
-    {
-      "NAME": "Use time aware Darcy_MH instead of Steady.",
-      "action": "rename-type",
-      "parameters": {
-        "path": "/problem/primary_equation",
-        "old_name": "Steady_MH",
-        "new_name": "Flow_Darcy_MH"
-      }
-    },
-        {
-      "NAME": "Use time aware Darcy_MH instead of Steady.",
-      "action": "rename-type",
-      "parameters": {
-        "path": "/problem/primary_equation",
-        "old_name": "Unsteady_MH",
-        "new_name": "Flow_Darcy_MH"
-      }
-    },
-    {
-      "NAME": "Use time aware Darcy_MH instead of Steady.",
-      "action": "rename-type",
-      "parameters": {
-        "path": "/problem/primary_equation",
-        "old_name": "Unsteady_LMH",
-        "new_name": "Flow_Richards_LMH"
-      }
-    },
-    {
-      "NAME": "Rename sequential coupling",
-      "action": "rename-type",
-      "parameters": {
-        "path": "/problem",
-        "old_name": "SequentialCoupling",
-        "new_name": "Coupling_Sequential"
-      }
-    },
-'''
-changes.rename_key("/problem/", "primary_equation", "flow_equation")
-changes.move_value("/problem/secondary_equation!Coupling_OperatorSplitting", "/problem/solute_equation!Coupling_OperatorSplitting")
-changes.move_value("/problem/secondary_equation!Heat_AdvectionDiffusion_DG", "/problem/heat_equation!Heat_AdvectionDiffusion_DG")
-'''
-    {
-      "NAME": "Rename sequential coupling keys",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/primary_equation",
-        "destination_path": "/problem/flow_equation"
-      }
-    },
-    {
-      "NAME": "Rename sequential coupling keys",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/secondary_equation",
-        "destination_path": "/problem/solute_equation",
-        "type-filter": "Coupling_OperatorSplitting"
-      }
-    },
-    {
-      "NAME": "Rename sequential coupling keys",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/secondary_equation",
-        "destination_path": "/problem/heat_equation",
-        "type-filter": "Heat_AdvectionDiffusion_DG"
-      }
-    },
-'''
-changes.move_value("/problem/flow_equation/output/raw_flow_output/", "/problem/flow_equation/output_specific/raw_flow_output/")
-changes.move_value("/problem/flow_equation/output/compute_errors/", "/problem/flow_equation/output_specific/compute_errors/")
-'''
-    {
-      "NAME": "Make output-specific key.",
-      "action": "add-key",
-      "parameters": {
-        "path": "/problem/flow_equation",
-        "key": "output_specific"
-      }
-    },
-    {
-      "NAME": "Move to output specific.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output/raw_flow_output",
-        "destination_path": "/problem/flow_equation/output_specific/raw_flow_output",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move to output specific.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output/compute_errors",
-        "destination_path": "/problem/flow_equation/output_specific/compute_errors",
-        "create_path":true
-      }
-    },
-'''
-
-changes.move_value("{/problem/flow_equation}/output/output_stream/", "{}/output_stream/")
-
-equations = "(flow_equation|" \
-            "solute_equation/transport|" \
-            "solute_equation/reaction_term|" \
-            "solute_equation/reaction_term/reaction_mobile|" \
-            "solute_equation/reaction_term/reaction_immobile|" \
-            "heat_equation)"
-changes.rename_key("{/problem/" + equations + "}/output/", old_key="output_fields", new_key="fields")
-
-changes.move_value("{/problem/(flow_equation|solute_equation|heat_equation)/output_stream}/time_list/#/","{}/times/#/")     
-changes.move_value("{/problem/(flow_equation|solute_equation|heat_equation)/output_stream}/time_step/","{}/times/0/step/")
-
-changes.move_value("{/problem/(flow_equation|solute_equation|heat_equation)}/output_stream/add_input_times/","{}/output/add_input_times/")
-changes.copy_value("{/problem/solute_equation/output/add_input_times/", 
-                   "/problem/{solute_equation/reaction_term|"
-                   "solute_equation/reaction_term/reaction_mobile|"
-                   "solute_equation/reaction_term/reaction_immobile"
-                   "}/output/add_input_times/")
-'''
-    {
-      "NAME": "Move DarcyFlow output_stream.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output/output_stream",
-        "destination_path": "/problem/flow_equation/output_stream",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Rename DarcyFlow output_fields.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output/output_fields",
-        "destination_path": "/problem/flow_equation/output/fields"
-      }
-    },
-    {
-      "NAME": "Move time step for DarcyFlow output stream.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output_stream/time_step",
-        "destination_path": "/problem/flow_equation/output_stream/times/0/step",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move time_list for Darcy.",
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output_stream/time_list",
-        "addition_path": "/problem/flow_equation/output_stream/times",        
-        "destination_path": "/problem/flow_equation/output_stream/times"
-      }
-    },    
-    {
-      "NAME": "Move time step for DarcyFlow output stream.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/flow_equation/output_stream/add_input_times",
-        "destination_path": "/problem/flow_equation/output/add_input_times",
-        "create_path":true
-      }
-    },
-
-
-
-
-    {
-      "NAME": "Make output_fields in transport.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/transport/output_fields",
-        "destination_path": "/problem/solute_equation/transport/output/fields",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Make output_fields in dual porosity.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/reaction_term/output_fields",
-        "destination_path": "/problem/solute_equation/reaction_term/output/fields",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Make output_fields in mobile reaction.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/reaction_term/reaction_mobile/output_fields",
-        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/fields",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Make output_fields in immobile reaction.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/reaction_term/reaction_immobile/output_fields",
-        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/fields",
-        "create_path":true
-      }
-    },
-    
-    
-    {
-      "NAME": "Make time step for transport output stream.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/output_stream/time_step",
-        "destination_path": "/problem/solute_equation/output_stream/times/0/step",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move time_list for transport.",
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path": "/problem/solute_equation/output_stream/time_list",
-        "addition_path": "/problem/solute_equation/output_stream/times",        
-        "destination_path": "/problem/solute_equation/output_stream/times"
-      }
-    },    
-    
-    
-    {
-      "NAME": "Move add_input_times for transport.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/output_stream/add_input_times",
-        "destination_path": "/problem/solute_equation/output/add_input_times",
-        "keep_source":true,
-        "create_path":true
-      }
-    },      
-    {
-      "NAME": "Move add_input_times for transport.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/output_stream/add_input_times",
-        "destination_path": "/problem/solute_equation/reaction_term/output/add_input_times",
-        "keep_source":true,
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move add_input_times for transport.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/output_stream/add_input_times",
-        "destination_path": "/problem/solute_equation/reaction_term/reaction_mobile/output/add_input_times",
-        "keep_source":true,
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move add_input_times for transport.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/solute_equation/output_stream/add_input_times",
-        "destination_path": "/problem/solute_equation/reaction_term/reaction_immobile/output/add_input_times",        
-        "create_path":true
-      }
-    },    
-      
-
-
-
-
-    {
-      "NAME": "Rename Heat output_fields.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/heat_equation/output/output_fields",
-        "destination_path": "/problem/heat_equation/output/fields",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move time step for Heat output stream.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/heat_equation/output_stream/time_step",
-        "destination_path": "/problem/heat_equation/output_stream/times/0/step",
-        "create_path":true
-      }
-    },
-    {
-      "NAME": "Move time_list for Heat.",
-      "action" : "merge-arrays",
-      "parameters": {
-        "source_path": "/problem/heat_equation/output_stream/time_list",
-        "addition_path": "/problem/heat_equation/output_stream/times",        
-        "destination_path": "/problem/heat_equation/output_stream/times"
-      }
-    },    
-    {
-      "NAME": "Move time step for Heat output stream.",
-      "action": "move-key",
-      "parameters": {
-        "source_path": "/problem/heat_equation/output_stream/add_input_times",
-        "destination_path": "/problem/heat_equation/output/add_input_times",
-        "create_path":true
-      }
-    },    
-'''    
-    
-empty_map = CommentedMap()    
-changes.change_value("/problem/(flow_equation|solute_equation|heat_equation)/balance", True, empty_map)
-    
-    
-'''    
-    {
-        "NAME": "Change balance:true",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/flow_equation/balance",
-          "old_value" : "true",
-          "new_value" : "{}"
-        }
-    },
-    {
-        "NAME": "Change balance:true",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/solute_equation/balance",
-          "old_value" : "true",
-          "new_value" : "{}"
-        }
-    },    
-    {
-        "NAME": "Change balance:true",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/heat_equation/balance",
-          "old_value" : "true",
-          "new_value" : "{}"
-        }
-    },
-'''
-false_map = CommentedMap()
-false_map['add_output_times'] = False
-changes.change_value("/problem/(flow_equation|solute_equation|heat_equation)/balance", False, false_map)
-
-'''
-    {
-        "NAME": "Change balance:true",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/flow_equation/balance",
-          "old_value" : "false",
-          "new_value" : "{add_output_times: false}"
-        }
-    },
-    {
-        "NAME": "Change balance:true",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/solute_equation/balance",
-          "old_value" : "false",
-          "new_value" : "{add_output_times: false}"
-        }
-    },    
-    {
-        "NAME": "Change balance:true",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/heat_equation/balance",
-          "old_value" : "false",
-          "new_value" : "{add_output_times: false}"
-        }
-    },
-'''
-changes.change_value("/problem/**/input_fields/#/region", "BOUNDARY", ".BOUNDARY")
-changes.change_value("/problem/**/input_fields/#/region", "IMPLICIT_BOUNDARY", ".IMPLICIT_BOUNDARY")
-
-
-'''
-    {
-        "NAME": "Change BOUNDARY to .BOUNDARY",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/*/input_fields/*/region",
-          "old_value" : "BOUNDARY",
-          "new_value" : ".BOUNDARY"
-        }
-    },
-    {
-        "NAME": "Change BOUNDARY to .BOUNDARY",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/solute_equation/*/input_fields/*/region",
-          "old_value" : "BOUNDARY",
-          "new_value" : ".BOUNDARY"
-        }
-    },
-    {
-        "NAME": "Change BOUNDARY to .BOUNDARY",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
-          "old_value" : "BOUNDARY",
-          "new_value" : ".BOUNDARY"
-        }
-    },
-    {
-        "NAME": "Change BOUNDARY to .BOUNDARY, hack to deal with substitution matching the substrings",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/*/input_fields/*/region",
-          "old_value" : "IMPLICIT .BOUNDARY",
-          "new_value" : ".IMPLICIT_BOUNDARY"
-        }
-    },
-    {
-        "NAME": "Change BOUNDARY to .BOUNDARY",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/solute_equation/*/input_fields/*/region",
-          "old_value" : "IMPLICIT .BOUNDARY",
-          "new_value" : ".IMPLICIT_BOUNDARY"
-        }
-    },
-    {
-        "NAME": "Change BOUNDARY to .BOUNDARY",
-        "action": "change-value",
-        "parameters":{
-          "path" : "/problem/solute_equation/reaction_term/*/input_fields/*/region",
-          "old_value" : "IMPLICIT .BOUNDARY",
-          "new_value" : ".IMPLICIT_BOUNDARY"
-        }
-    }
-            
-             
-  ]
-}
-
-'''
 
 if __name__ == "__main__":
+    logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+    from change_rules import make_changes
+    changes = make_changes()
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--from-version", help="Version of the input file.")
-    parser.add_argument("-t", "--to-version", help="Version of the output.")
+    parser.add_argument("-f", "--from-version", default="0", help="Version of the input file.")
+    parser.add_argument("-t", "--to-version", default="ZZZZZZZ", help="Version of the output.")
     parser.add_argument("-r", "--reverse", action='store_true', help="Perform reversed conversion. Input file is in 'to-version'.")
     parser.add_argument('in_file', help="Input YAML (or CON) file(s). Wildcards accepted.")
 
@@ -1738,17 +993,18 @@ if __name__ == "__main__":
             if os.path.isdir(path):
                 dirs.append(path)
             elif os.path.isfile(path):
-                files.append(path)
+                if not path.endswith(".new.yaml"):
+                    files.append(path)
             else:
                 assert False, "Path neither dir nor file."
 
-    print(files)
+    #print(files)
     trees = []
     for fname in files:
         with open(fname, "r") as f:
             trees.append( ( fname, yml.load(f)) )
 
-    changes.apply_changes(trees, args.from_version, args.to_version, reversed=args.reverse)
+    changes.apply_changes(trees, args.from_version, args.to_version, reversed=args.reverse, map_insert=Changes.BEGINNING)
 
     for fname, tree in trees:
         base=os.path.splitext(fname)[0]

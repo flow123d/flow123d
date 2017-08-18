@@ -43,13 +43,19 @@ problem: !SequentialCoupling
         variant: ascii
       time_step: 0.5
       name: transport_output_stream
+    output:
+      output_fields:
+      - conc
     time:
       end_time: 15.0
     reaction_term: !RadioactiveDecay
       ode_solver: !PadeApproximant
-        nominator_degree: 3
         denominator_degree: 2
+        nominator_degree: 3
       decays:
       - half_life: 0.2
         radionuclide: A
         products: [As-lin]
+      output:
+        output_fields:
+        - conc
