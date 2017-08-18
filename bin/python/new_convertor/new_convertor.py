@@ -24,6 +24,7 @@ import types
 import logging
 import itertools
 import copy
+import inspect
 
 
 
@@ -172,11 +173,17 @@ class Changes:
 
     def new_version(self, version):
         """
-        Close list of changes form previous version, open new change list.
-        :param version: Version tag, e.g. "major.minor. patch"
+        1. Add chenge rule for the flow123d_version key, set its value to 'version'.
+        2. Close list of changes form previous version.
+        3. Open new change list.
+        :param version: Version tag, e.g. "major.minor.patch"
         :return: None
         """
+
         if self.current_version :
+            if version:
+                assert re.match('[^.]*\.[^.]*\.[^.]*', version)
+                self.add_key_to_map("/", key="flow123d_version", value=version)
             self._changes.append( (self.current_version, self._version_changes) )
         self.current_version=version
         self._version_changes=[]
@@ -209,60 +216,69 @@ class Changes:
             assert False, "Unsupported node type: {}".format(type(node))
         return node
 
-    def unify_trees(self, trees):
-        return [ (fname, self.unify_tree_dfs(tree)) for fname, tree in trees ]
+    def close_changes(self):
+        if hasattr(self, '_reversed'):
+            return
+        # close last list version
+        assert len(self._version_changes) == 0, "Missing final version of changes (call new_version after all changes)."
+        self.new_version(None)
 
-    def apply_changes(self, trees, in_version, out_version,  reversed=False, warn=True, map_insert=None):
+        self._reversed = reversed(self._changes)
+        for version, list in self._reversed:
+            list.reverse()
+
+    def apply_changes(self, tree, out_version,  reversed=False, warn=True, map_insert=None):
         """
         Apply initailized list of actions to the data tree 'root'.
-        :param root: Input data tree.
+        :param tree: Input data tree.
+        :param out_version: Target version tag, we apply all changes for versions less then this one.
+        and greater or equal to the version of the file.
         :param warn: Produce wranings for nondeterministic conversions.
         :param reversed: Produce backward conversion from the target version to the initial version.
-        :return: Data tree after conversion.
+        :param map_insert: Method where to insert new values into maps.
+        :return: List of used actions
         """
+        self.close_changes()
+
         if map_insert is not None:
             self.map_insert = map_insert
         else:
             self.map_insert = self.ALPHABETIC
-        trees = self.unify_trees(trees)
+        tree = self.unify_tree_dfs(tree)
 
-        # close last list
-        self.new_version(None)
-        if in_version is None:
-            in_version = self._changes[0][0]
+
+        assert is_map_node(tree)
+        in_version = tree.get('flow123d_version', '0.0.0')
         if out_version is None:
             out_version = self._changes[-1][0]
 
         # reverse
-        if reversed:
-            self._changes.reverse()
-            for version, list in self._changes:
-                list.reverse()
+        if not reversed:
+            changes = self._changes
+        else:
+            changes = self._reversed
 
         active = False
-        for version, change_list in self._changes:
+        actions=[]
+        self.tree = tree
+        for version, change_list in changes:
             if version >= in_version:
                 active = True
             if version >= out_version:
                 break
             if active:
-                for forward, backward, ac_name in change_list:
+                for forward, backward, ac_name, line_num in change_list:
                     if reversed:
                         action=backward
                     else:
                         action=forward
-                    changed_files=[]
-                    for fname, tree in trees:
-                        self.tree = tree
-                        logging.debug("Action: "+ac_name)
-                        self.changed=False
-                        action()
-                        if self.changed:
-                            changed_files.append(fname)
-                    if changed_files:
-                        print("Action: ", ac_name)
-                        print("Applied to: ", changed_files)
-                    trees = self.unify_trees(trees)
+                    self.changed=False
+                    action()
+                    if self.changed:
+                        actions.append( (ac_name, line_num) )
+                    self.tree = self.unify_tree_dfs(self.tree)
+        return actions
+
 
     def __getattribute__(self, item):
         """
@@ -277,12 +293,13 @@ class Changes:
         except AttributeError:
             func=None
         if func:
+            line_number = inspect.getouterframes(inspect.currentframe())[1][2]
             def wrap(*args, **kargs):
                 def forward():
                     func(*args, reversed=False, **kargs)
                 def backward():
                     func(*args, reversed=True, **kargs)
-                self._version_changes.append( (forward, backward, func.__name__) )
+                self._version_changes.append( (forward, backward, func.__name__, line_number) )
             return wrap
         else:
             return object.__getattribute__(self, item)
@@ -329,9 +346,7 @@ class Changes:
             else:
                 assert False
         map.insert(index, key, value)
-        print("map:")
-        for k, v in map.items():
-            print(k, ":", v)
+
     '''
     ACTIONS, __get_attr__ provides related method without underscore to add the action into changes.
     In general actions do not raise erros but report warnings and just skip the conversion for actual path.
@@ -350,15 +365,19 @@ class Changes:
         for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_map_node(curr):
-                logging.warning("Expecting map at path: {}".format(address))
+                logging.warning("Expecting map at path: {}".format(address.s()))
                 continue
             if reversed:
                 if key in curr:
                     del curr[key]
                     self.changed=True
             else:
-                assert(not key in curr)
-                self.__set_map(curr, key, value)
+                if key in curr:
+                    logging.warning("Overwriting key: %s == %s"%(address.s() + '/' + key, curr[key]))
+                # Must make deep copy otherwise we share value accross all changed trees
+                # which may cause spurious values in empy maps going form other files.
+                new_val = copy.deepcopy(value)
+                self.__set_map(curr, key, new_val)
                 self.changed = True
 
     def _set_tag_from_key(self, paths, key, tag, reversed):
@@ -615,11 +634,11 @@ class Changes:
         for nodes, address in PathSet(paths).iterate(self.tree):
             curr=nodes[-1]
             if not is_map_node(curr):
-                logging.warning("Expecting map at path: {}".format(address))
+                logging.info("Expecting map at path: {}".format(address))
                 continue
 
             if not old_key in curr:
-                logging.warning("No key {} to rename at {}.".format(old_key, address))
+                logging.info("No key {} to rename at {}.".format(old_key, address))
                 continue
 
             self.changed = True
@@ -776,13 +795,33 @@ class Changes:
 
 
 class Address(list):
+    '''
+    Class to represent an address in the yaml file including the tag info.
+    '''
     def add(self, key, tag):
+        '''
+        Return new address object for given key and tag.
+        :param key:
+        :param tag:
+        :return:
+        '''
         x = Address(self)
         x.append( (key, tag) )
         return x
 
     def __str__(self):
+        '''
+        Full string representation.
+        :return:
+        '''
         return "/" + "/".join([ str(key) + "!" + str(tag) for key, tag in self ])
+
+    def s(self):
+        '''
+        Representation without tag info.
+        :return:
+        '''
+        return "/" + "/".join([ str(key) for key, tag in self ])
 
 
 class PathSet(object):
@@ -961,53 +1000,63 @@ Implement 'has_key', make tests of this class.
 
 
 if __name__ == "__main__":
+
+    def expand_wild_pattern(pattern):
+        path_wild = pattern.split('/')
+        if path_wild[0]:
+            # relative path
+            dirs = ["."]
+        else:
+            # absloute
+            dirs = ["/"]
+
+        files = []
+        for wild_name in path_wild:
+            # separate dirs and files
+            paths = []
+            for dir in dirs:
+                paths += [dir + "/" + f for f in os.listdir(dir) if fnmatch.fnmatch(f, wild_name)]
+            dirs = []
+            for path in paths:
+                if os.path.isdir(path):
+                    dirs.append(path)
+                elif os.path.isfile(path):
+                    if not path.endswith(".new.yaml"):
+                        files.append(path)
+                else:
+                    assert False, "Path neither dir nor file."
+        return files
+
+
     logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
     from change_rules import make_changes
     changes = make_changes()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", "--from-version", default="0", help="Version of the input file.")
-    parser.add_argument("-t", "--to-version", default="ZZZZZZZ", help="Version of the output.")
+    #parser.add_argument("-f", "--from-version", default="0.0.0", help="Version of the input file. ")
+    parser.add_argument("-t", "--to-version", default="ZZ.ZZ.ZZ", help="Version of the output.")
     parser.add_argument("-r", "--reverse", action='store_true', help="Perform reversed conversion. Input file is in 'to-version'.")
     parser.add_argument('in_file', help="Input YAML (or CON) file(s). Wildcards accepted.")
 
     args = parser.parse_args()
+    files = expand_wild_pattern(args.in_file)
+    if not files:
+        raise Exception("No file to convert for pattern: %s"%args.in_file)
 
-
-    path_wild = args.in_file.split('/')
-    if path_wild[0]:
-        # relative path
-        dirs = ["."]
-    else:
-        # absloute
-        dirs = ["/"]
-
-    files=[]
-    for wild_name in path_wild:
-        # separate dirs and files
-        paths=[]
-        for dir in dirs:
-            paths += [ dir + "/" + f for f in os.listdir(dir) if fnmatch.fnmatch(f, wild_name) ]
-        dirs=[]
-        for path in paths:
-            if os.path.isdir(path):
-                dirs.append(path)
-            elif os.path.isfile(path):
-                if not path.endswith(".new.yaml"):
-                    files.append(path)
-            else:
-                assert False, "Path neither dir nor file."
-
-    #print(files)
-    trees = []
+    action_files={}
     for fname in files:
+        base = os.path.splitext(fname)[0]
         with open(fname, "r") as f:
-            trees.append( ( fname, yml.load(f)) )
+            tree = yml.load(f)
+            actions = changes.apply_changes(tree, args.to_version, reversed=args.reverse, map_insert=Changes.BEGINNING)
+            for act in actions:
+                action_files.setdefault(act, {})
+                action_files[act][fname]=True
 
-    changes.apply_changes(trees, args.from_version, args.to_version, reversed=args.reverse, map_insert=Changes.BEGINNING)
-
-    for fname, tree in trees:
-        base=os.path.splitext(fname)[0]
         out_fname = base + ".new.yaml"
         with open(out_fname, "w") as f:
             yml.dump(tree, f)
+
+    action_list = [ (line, act, f_dict.keys()) for (act, line), f_dict in action_files.items()]
+    for l,a,f in sorted(action_list, key=lambda x:x[0]):
+        print( "Line: %4d Action: %12s Files: %s"%(l,a,f) )
