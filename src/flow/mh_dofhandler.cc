@@ -117,7 +117,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
 //     // convert row_4_id arrays from separate numberings to global numbering of rows
 //     make_row_numberings();
     
-    create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
+//     create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
     create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
     
     // distribute FE enriched dofs
@@ -494,7 +494,19 @@ void MH_DofHandler::create_testing_singularities<Singularity0D>(std::vector< Sin
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
 
-    find_ele_to_enrich(singularities.back(), 0, ele2d, enr_radius, new_enrich_node_idx);
+//     find_ele_to_enrich(singularities.back(), 0, ele2d, enr_radius, new_enrich_node_idx);
+    enrich_ele(sing, singularities_12d_.size()-1, xfem_data_2d, 0, ele2d, new_enrich_node_idx);
+    
+    //flag the element
+    mesh_flags_[ele2d->index()] = true;
+    for(unsigned int n=0; n < ele2d->n_sides(); n++) {
+        Edge* edge = ele2d->side(n)->edge();
+        for(int j=0; j < edge->n_sides;j++) {
+            if (edge->side(j)->element() != ele2d && edge->side(j)->element()->dim() == 2){
+                find_ele_to_enrich(sing,0,edge->side(j)->element(),enr_radius, new_enrich_node_idx);
+            }
+        }
+    }
     
     //create singularity
 //     Space<3>::Point center2 ({2.08, 4.42, 0}); //triangle
@@ -542,7 +554,7 @@ void MH_DofHandler::create_testing_singularities<Singularity1D>(std::vector< Sin
     double radius = 0.03,
            sigma_const = 10.0,
            pressure = 100;
-    unsigned int n = 100, m = 20;
+    unsigned int n = 300, m = 1000;
     
     Point center = a;
     bool found = false;
@@ -815,9 +827,9 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
                                int& new_enrich_node_idx)
 {
     DBGVAR(ele->index());
-        
+    
     XFEMElementSingularData<dim> * xdata;
-        
+    
     if(ele->xfem_data == nullptr){   //possibly create new one
         xfem_data.push_back(XFEMElementSingularData<dim>());
         xdata = & xfem_data.back();
@@ -839,7 +851,7 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
         xdata->print(cout);
         ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMElementSingularData<dim> Type!");
     }
-        
+    
     xdata->add_data(sing, sing_idx);
     
     //HACK for xfem without enriching:
@@ -902,7 +914,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
         for(unsigned int n=0; n < ele->n_sides(); n++) {
             Edge* edge = ele->side(n)->edge();
             for(int j=0; j < edge->n_sides;j++) {
-                if (edge->side(j)->element() != ele && edge->side(j)->element()->dim() == 3){
+                if (edge->side(j)->element() != ele && edge->side(j)->element()->dim() == 2){
 //                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
                     find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
                 }
