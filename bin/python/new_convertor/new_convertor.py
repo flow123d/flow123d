@@ -171,7 +171,7 @@ class Changes:
         self._version_changes=None
         self._changes=[]
 
-    def new_version(self, version):
+    def new_version(self, version, automatic_rule=True):
         """
         1. Add chenge rule for the flow123d_version key, set its value to 'version'.
         2. Close list of changes form previous version.
@@ -180,11 +180,19 @@ class Changes:
         :return: None
         """
 
-        if self.current_version :
-            if version:
+        if self.current_version is not None:
+            # not the first call, so we have both initial and final version of current changes frame
+            assert version is not None
+            assert self.current_version < version
+            if automatic_rule and version is not None:
                 assert re.match('[^.]*\.[^.]*\.[^.]*', version)
-                self.add_key_to_map("/", key="flow123d_version", value=version)
-            self._changes.append( (self.current_version, self._version_changes) )
+                assert re.match('[^.]*\.[^.]*\.[^.]*', self.current_version)
+                if self.current_version == "0.0.0":
+                    self.add_key_to_map("/", key="flow123d_version", value=version)
+                else:
+                    self.change_value("/flow123d_version", old_val=self.current_version, new_val=version)
+
+            self._changes.append( (self.current_version, version, self._version_changes) )
         self.current_version=version
         self._version_changes=[]
 
@@ -221,13 +229,28 @@ class Changes:
             return
         # close last list version
         assert len(self._version_changes) == 0, "Missing final version of changes (call new_version after all changes)."
-        self.new_version(None)
+        #self.new_version(None)
 
-        self._reversed = reversed(self._changes)
-        for version, list in self._reversed:
-            list.reverse()
+        self._reversed = copy.deepcopy(self._changes)
+        self._reversed.reverse()
+        for v0, v1, changes in self._reversed:
+            changes.reverse()
 
-    def apply_changes(self, tree, out_version,  reversed=False, warn=True, map_insert=None):
+
+    def intersecting_intervals(self, a, b):
+        '''
+        Returns true if interval a intersect interval b.
+        :param a: Tuple, a= (a0, a1), limits of the interval.
+        :param b: Tuple, limits of the interval b.
+        :return: bool
+        '''
+        a0, a1 = a
+        b0, b1 = b
+        return not (b1 < a0 or a1 < b0)
+
+
+    def apply_changes(self, tree, out_version,  \
+                      reversed=False, warn=True, map_insert=None):
         """
         Apply initailized list of actions to the data tree 'root'.
         :param tree: Input data tree.
@@ -248,9 +271,23 @@ class Changes:
 
 
         assert is_map_node(tree)
-        in_version = tree.get('flow123d_version', '0.0.0')
+
+
+        in_version = tree.get('flow123d_version', None)
+        if in_version is not None:
+            in_version = in_version.value
+        if reversed :
+            in_version, out_version = out_version, in_version
+        # in_version is always the smaller one
+
+        if in_version is None:
+            in_version = self._changes[0][0]
         if out_version is None:
             out_version = self._changes[-1][0]
+
+
+        if in_version > out_version:
+            raise Exception("Wrong versions order, in_version: %s, out_version: %s."%(in_version, out_version))
 
         # reverse
         if not reversed:
@@ -261,12 +298,8 @@ class Changes:
         active = False
         actions=[]
         self.tree = tree
-        for version, change_list in changes:
-            if version >= in_version:
-                active = True
-            if version >= out_version:
-                break
-            if active:
+        for v0, v1, change_list in changes:
+            if self.intersecting_intervals( (in_version, out_version), (v0, v1)):
                 for forward, backward, ac_name, line_num in change_list:
                     if reversed:
                         action=backward
@@ -612,8 +645,8 @@ class Changes:
             self.__set_tag(new_value, tag)
 
             # CMP AUX
-            nodes[-1][key] = new_value
-            #self.__set_map(nodes[-1], key, new_value)
+            #nodes[-1][key] = new_value
+            self.__set_map(nodes[-1], key, new_value)
         else:
             raise Exception("Wrong key: {}".format(key))
         return nodes[-1]

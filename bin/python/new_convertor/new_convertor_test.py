@@ -4,8 +4,6 @@ from shutil import copyfile
 from new_convertor import *
 import sys
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-logging.debug("First debug message.")
 def files_cmp(ref,out):
     with open(ref, "r") as f:
         t=ruml.load(f, Loader=ruml.RoundTripLoader)
@@ -23,14 +21,14 @@ class TestActions(unittest.TestCase):
 
     def test_add_key(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
         changes.add_key_to_map("/", key="flow123d_version", value="2.0.0")
         self.perform(changes)
 
 
     def test_manual_change(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
         # Change sign of oter fields manually
         path_set = PathSet(
             ["/problem/secondary_equation/input_fields/#/bc_flux!(FieldElementwise|FieldInterpolatedP0|FieldPython)/",
@@ -43,17 +41,23 @@ class TestActions(unittest.TestCase):
 
     def test_rename_key(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
         # Change degree keys in PadeApproximant
         path_set = "/problem/secondary_equation/**/ode_solver!PadeApproximant/"
         changes.rename_key(path_set, old_key="denominator_degree", new_key="pade_denominator_degree")
         changes.rename_key(path_set, old_key="nominator_degree", new_key="pade_nominator_degree")
+
+        equations = "(primary_equation|" \
+                    "secondary_equation|" \
+                    "secondary_equation/reaction_term)"
+        changes.rename_key("/problem/" + equations + "/output/", old_key="output_fields", new_key="fields")
+
         self.perform(changes)
 
 
     def test_set_tag_from_key(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
 
         # Set  to DG transport
         changes.set_tag_from_key("/problem/*/", key='dg_penalty',  tag='TransportDG')
@@ -62,7 +66,7 @@ class TestActions(unittest.TestCase):
 
     def test_rename_tag(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
 
         # Rename equations and couplings
         path = "/problem/secondary_equation/"
@@ -72,7 +76,7 @@ class TestActions(unittest.TestCase):
 
     def test_replace_value(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
 
 
         # Change sign of boundary fluxes
@@ -92,7 +96,7 @@ class TestActions(unittest.TestCase):
 
     def test_change_value(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
 
         # Rename equations and couplings
         changes.change_value("/(problem|sec)/a", old_val=1, new_val="one")
@@ -101,7 +105,7 @@ class TestActions(unittest.TestCase):
 
     def test_scale_scalar(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
 
         # Change sign of boundary fluxes
         path_set = [
@@ -115,7 +119,7 @@ class TestActions(unittest.TestCase):
 
     def test_move_value(self):
         changes=Changes()
-        changes.new_version("A")
+        changes.new_version("0.0.0")
 
         # Move FV transport
         path_in = "/problem/secondary_equation_1!TransportOperatorSplitting/{(output_fields|input_fields)}/"
@@ -166,20 +170,31 @@ class TestActions(unittest.TestCase):
         rev_file = self.make_test_file(".rev.yaml")
         rrf_file = self.make_test_file(".rrf.yaml")
 
+        changes.new_version("ZZ.ZZ.ZZ", automatic_rule=False)
         with open(in_file, "r") as f:
             root = yml.load(f)
-        changes.apply_changes([ (in_file, root) ],"A",None,reversed=False)
+        changes.apply_changes( root, None , reversed=False)
         with open(out_file, "w") as f:
             yml.dump(root, f)
         self.assertTrue(files_cmp(ref_file, out_file))
 
         with open(ref_file, "r") as f:
             root = yml.load(f)
-        changes.apply_changes([ (ref_file, root) ],"A",None,reversed=True)
+        changes.apply_changes(root, None, reversed=True)
         with open(rev_file, "w") as f:
             yml.dump(root, f)
         self.assertTrue(files_cmp(rrf_file, rev_file))
 
 
+class TestAllRules(unittest.TestCase):
+    '''
+    Integration test to test correct conversion of all yaml files
+    from dir: 'yaml_old' to dir 'yaml_new' and back to 'yaml_rev'
+    '''
+
+
 if __name__ == '__main__':
+    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+    logging.debug("First debug message.")
+
     unittest.main()

@@ -86,8 +86,8 @@ problem: !SequentialCoupling
     - rid: 20
       init_conc: 0
       diff_m: 0.1
-    substances:
-    - A
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
+    substances:
+    - A

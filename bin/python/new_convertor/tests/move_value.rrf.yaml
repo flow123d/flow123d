@@ -20,6 +20,13 @@ problem: !SequentialCoupling
     - name: H
       difference: [G, E]
   secondary_equation_1: !TransportOperatorSplitting
+    input_fields:
+    - region: domain
+      init_conc: 0
+    - region: .left
+      bc_type: dirichlet
+      bc_conc: 10
+      time: 0.0
     output_stream:
       file: ./transport.pvd
       format: !vtk
@@ -35,27 +42,7 @@ problem: !SequentialCoupling
     balance:
       cumulative: true
 
-    input_fields:
-    - region: domain
-      init_conc: 0
-    - region: .left
-      bc_type: dirichlet
-      bc_conc: 10
-      time: 0.0
   secondary_equation_2: !SoluteTransport_DG
-    output_stream:
-      file: ./transport-implicit.pvd
-      format: !vtk
-        variant: ascii
-      time_step: 0.001
-      name: transport_output_stream
-    substances:
-    - A
-    time:
-      end_time: 0.01
-      max_dt: 0.001
-    balance:
-      cumulative: true
     input_fields:
     - r_set: BOUNDARY
       bc_conc: 0
@@ -68,9 +55,22 @@ problem: !SequentialCoupling
       dg_penalty: 100
     - rid: 30
       init_conc: 1
+    output_stream:
+      file: ./transport-implicit.pvd
+      format: !vtk
+        variant: ascii
+      time_step: 0.001
+      name: transport_output_stream
     solver: !Petsc
       a_tol: 1.0e-12
       r_tol: 1.0e-12
+    substances:
+    - A
+    time:
+      end_time: 0.01
+      max_dt: 0.001
+    balance:
+      cumulative: true
   secondary_equation_3: !HeatTransfer_DG
     input_fields:
     - r_set: BOUNDARY
