@@ -508,7 +508,7 @@ typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
  * */
 
 struct DiffData {
-    double pressure_error[2], velocity_error[2], div_error[2];
+    double pressure_error[3], velocity_error[3], div_error[3];
     double mask_vel_error;
     VectorSeqDouble pressure_diff;
     VectorSeqDouble velocity_diff;
@@ -637,7 +637,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
     
-    int dofs_vel[20];
+    int dofs_vel[100];
     unsigned int ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
     
     // get values on the current element
@@ -736,48 +736,85 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 
 }
 
-
-
-void DarcyFlowMHOutput::compute_l2_difference() {
-	DebugOut() << "l2 norm output\n";
-    ofstream os( FilePath("solution_error", FilePath::output_file) );
-
-    const unsigned int order = 4; // order of Gauss quadrature
-
+template<int dim>
+struct FEDiffData{
+    FEDiffData()
+    : order(4), quad(order),
+      fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
+      fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points),
+      qfactory(13-2*dim)
+    {};
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<0,1,3> fe_1d;
-    FE_P_disc<0,2,3> fe_2d;
+    FE_P_disc<0,dim,3> fe_p0;
 
-    QGauss<1> quad_1d( order );
-    QGauss<2> quad_2d( order );
+    const unsigned int order; // order of Gauss quadrature
+    QGauss<dim> quad;
 
-    MappingP1<1,3> mapp_1d;
-    MappingP1<2,3> mapp_2d;
+    MappingP1<dim,3> mapp;
 
-    FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
-    FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
+    FEValues<dim,3> fe_values;
     
     // FEValues for velocity.
-    FE_RT0<1,3> fe_rt1d;
-    FE_RT0<2,3> fe_rt2d;
-    FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
-    FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
+    FE_RT0<dim,3> fe_rt;
+    FEValues<dim,3> fv_rt;
 
     
     // XFEM stuff ...
     QXFEMFactory qfactory;
-    shared_ptr<QXFEM<2,3>> qxfem;
+    shared_ptr<QXFEM<dim,3>> qxfem;
     
-    shared_ptr<FiniteElementEnriched<2,3>> fe_rt_xfem;
-    shared_ptr<FEValues<2,3>> fe_values_rt_xfem;
-    shared_ptr<FESideValues<2,3>> fv_side_xfem;
+    shared_ptr<FiniteElementEnriched<dim,3>> fe_rt_xfem;
+    shared_ptr<FEValues<dim,3>> fv_rt_xfem;
+    shared_ptr<FESideValues<dim,3>> fv_side_xfem;
     
-    shared_ptr<FiniteElementEnriched<2,3>> fe_p0_xfem;
-    shared_ptr<FEValues<2,3>> fe_values_p0_xfem;
+    shared_ptr<FiniteElementEnriched<dim,3>> fe_p0_xfem;
+    shared_ptr<FEValues<dim,3>> fv_p0_xfem;
     
-    shared_ptr<FEValues<2,3>> fv_rt_sing;
+    shared_ptr<FEValues<dim,3>> fv_rt_sing;
     // end XFEM stuff ...
+    
+    shared_ptr<QXFEM<dim,3>> create_qxfem(ElementFullIter ele, XFEMElementSingularData<dim>* xd);
+    
+    void prepare_xfem(LocalElementAccessorBase<3> ele_ac, bool single_enr)
+    {
+        ElementFullIter ele = ele_ac.full_iter();
+        XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
+        
+        qxfem = create_qxfem(ele, xdata);
+        
+        if(single_enr) fe_rt_xfem = std::make_shared<FE_RT0_XFEM_S<dim,3>>(&fe_rt,xdata->enrichment_func_vec());
+        else fe_rt_xfem = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt,xdata->enrichment_func_vec());
+        
+        
+        fv_rt_xfem = std::make_shared<FEValues<dim,3>> 
+                            (mapp, *qxfem, *fe_rt_xfem, update_values |
+                                                        update_JxW_values | update_jacobians |
+                                                        update_inverse_jacobians | update_quadrature_points 
+                                                        | update_divergence);
+        
+        fe_p0_xfem = std::make_shared<FE_P0_XFEM<dim,3>>(&fe_p0,xdata->enrichment_func_vec());
+        fv_p0_xfem = std::make_shared<FEValues<dim,3>> 
+                            (mapp, *qxfem, *fe_p0_xfem, update_values |
+                                                        update_JxW_values |
+                                                        update_quadrature_points);
+    }
+};
+
+template<> shared_ptr<QXFEM<2,3>> FEDiffData<2>::create_qxfem(ElementFullIter ele,
+                                                XFEMElementSingularData<2>* xd)
+{ return qfactory.create_singular(xd->sing_vec<Singularity0D>(), ele); }
+template<> shared_ptr<QXFEM<3,3>> FEDiffData<3>::create_qxfem(ElementFullIter ele,
+                                                XFEMElementSingularData<3>* xd)
+{ return qfactory.create_singular(xd->sing_vec<Singularity1D>(), ele); }
+    
+void DarcyFlowMHOutput::compute_l2_difference() {
+	DebugOut() << "l2 norm output\n";
+    ofstream os( FilePath("solution_error", FilePath::output_file) );
+
+    FEDiffData<1> fe_data_1d;
+    FEDiffData<2> fe_data_2d;
+    FEDiffData<3> fe_data_3d;
     
     
 //     FilePath source_file( "analytical_module_2w_koeppl.py", FilePath::input_file);
@@ -788,6 +825,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     ExactSolution anal_sol_2d(5);
     anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
 
+    ExactSolution anal_sol_3d(5);
+    anal_sol_3d.set_python_field_from_file( source_file, "all_values_3d");
 
     DiffData result;
     result.dh = &( darcy_flow->get_mh_dofhandler());
@@ -839,59 +878,46 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     if(result.darcy->use_xfem){
         for (unsigned int i_loc = 0; i_loc < result.dh->el_ds->lsize(); i_loc++) {
-//             DBGVAR(i_loc);
+            DBGVAR(i_loc);
             auto ele_ac = const_cast<MH_DofHandler*>(result.dh)->accessor(i_loc);
             ElementFullIter ele = ele_ac.full_iter();
             unsigned int dim = ele_ac.dim();
             
-            // prepare xfem
-            if(dim == 2 && ele->xfem_data != nullptr){
-                XFEMElementSingularData<2> * xdata = ele_ac.xfem_data_sing<2>();
-        
-                std::shared_ptr<Singularity0D> func = std::static_pointer_cast<Singularity0D>(xdata->enrichment_func(0));
-                
-                qxfem = qfactory.create_singular({func}, ele);
-                
-                if(result.dh->single_enr) fe_rt_xfem = std::make_shared<FE_RT0_XFEM_S<2,3>>(&fe_rt2d,xdata->enrichment_func_vec());
-                else fe_rt_xfem = std::make_shared<FE_RT0_XFEM<2,3>>(&fe_rt2d,xdata->enrichment_func_vec());
-                
-                
-                fe_values_rt_xfem = std::make_shared<FEValues<2,3>> 
-                                    (mapp_2d, *qxfem, *fe_rt_xfem, update_values |
-                                                                update_JxW_values | update_jacobians |
-                                                                update_inverse_jacobians | update_quadrature_points 
-                                                                | update_divergence);
-                
-                fe_p0_xfem = std::make_shared<FE_P0_XFEM<2,3>>(&fe_2d,xdata->enrichment_func_vec());
-                fe_values_p0_xfem = std::make_shared<FEValues<2,3>> 
-                                    (mapp_2d, *qxfem, *fe_p0_xfem, update_values |
-                                                                update_JxW_values |
-                                                                update_quadrature_points);
-                l2_diff_local_xfem<2>( ele_ac, *fe_values_p0_xfem, *fe_values_rt_xfem, anal_sol_2d, result);
-            }
-            else{
-                switch (dim) {
-                case 1:
-
-                    l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
-                    break;
-                case 2:
-                    l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
-                    break;
+            switch (dim) {
+            case 1:
+                l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
+                break;
+            case 2:
+                if(ele->xfem_data != nullptr){
+                    fe_data_2d.prepare_xfem(ele_ac,result.dh->single_enr);
+                    l2_diff_local_xfem<2>(ele_ac, *fe_data_2d.fv_p0_xfem, *fe_data_2d.fv_rt_xfem,
+                                          anal_sol_2d, result);
                 }
+                else
+                    l2_diff_local<2>(ele, fe_data_2d.fe_values, fe_data_2d.fv_rt,
+                                     anal_sol_2d, result);
+                break;
+            case 3:
+                if(ele->xfem_data != nullptr){
+                    fe_data_3d.prepare_xfem(ele_ac,result.dh->single_enr);
+                    l2_diff_local_xfem<3>(ele_ac, *fe_data_3d.fv_p0_xfem, *fe_data_3d.fv_rt_xfem,
+                                          anal_sol_3d, result);
+                }
+                else
+                    l2_diff_local<3>(ele, fe_data_3d.fe_values, fe_data_3d.fv_rt,
+                                     anal_sol_3d, result);
+                break;
             }
         }
     }
     else{
     FOR_ELEMENTS( mesh_, ele) {
-            
     	switch (ele->dim()) {
         case 1:
-
-            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
+            l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
+            l2_diff_local<2>( ele, fe_data_2d.fe_values, fe_data_2d.fv_rt, anal_sol_2d, result);
             break;
         }
     }
