@@ -1,6 +1,7 @@
 #include "xfem_element_data.hh"
 #include "singularity.hh"
 #include "quadrature/qxfem.hh"
+#include "quadrature/qxfem_factory.hh"
 
 #include <armadillo>
 #include "mapping_p1.hh"
@@ -118,6 +119,13 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
         this->enrichment_intersects_[w] = (qxfem.size() > 0);
         
         DBGCOUT(<< "quad[" << this->global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
+        
+//         if(qxfem.size() > 0){
+//             QXFEMFactory qfact;
+//             qfact.gnuplot_refinement<dim>(ele,
+//                                 FilePath("qxfem/", FilePath::output_file),
+//                                 qxfem);
+//         }
     }
 }
 
