@@ -188,19 +188,24 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->output_type();
+		unsigned int ids;
+		const OutputTime::DiscreteSpace type = (discrete == OutputTime::DiscreteSpace::UNDEFINED) ? this->output_type() : discrete;
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 
 		OutputTime::DiscreteSpaceFlags flags = 1 << type;
-	    for (unsigned long index=0; index < this->size(); index++)
-	        for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
+	    for (unsigned long index=0; index < this->size(); index++) {
+	        for(ids=0; ids < OutputTime::N_DISCRETE_SPACES - 1; ids++)
 	            if (flags & (1 << ids))
 	                    sub_fields_[index].compute_field_data( OutputTime::DiscreteSpace(ids), stream );
+	        ids = OutputTime::NATIVE_DATA;
+	        if (flags & (1 << ids))
+	        	sub_fields_[index].compute_native_data( OutputTime::DiscreteSpace(ids), stream);
+	    }
 	}
 }
 

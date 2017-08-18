@@ -94,7 +94,8 @@ public:
         NODE_DATA   = 0,
         CORNER_DATA = 1,
         ELEM_DATA   = 2,
-        NATIVE_DATA = 3
+        NATIVE_DATA = 3,
+		UNDEFINED   = 10
     };
 
     /**

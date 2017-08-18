@@ -331,12 +331,12 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
 		unsigned int ids;
-		const OutputTime::DiscreteSpace type = this->output_type();
+		const OutputTime::DiscreteSpace type = (discrete == OutputTime::DiscreteSpace::UNDEFINED) ? this->output_type() : discrete;
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 
@@ -589,7 +589,7 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-	ASSERT(space_type != OutputTime::NATIVE_DATA).error();
+	ASSERT(space_type != OutputTime::NATIVE_DATA)(this->name()).error();
 
     /* It's possible now to do output to the file only in the first process */
     if( stream->get_rank() != 0) {
@@ -668,6 +668,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::NATIVE_DATA:
+    case OutputTime::UNDEFINED:
         //should not happen
     break;
     }
