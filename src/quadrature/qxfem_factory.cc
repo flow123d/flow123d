@@ -173,7 +173,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
           v1 = s.nodes[2] - s.nodes[1];   // 1. edge of triangle
     if(v0[1]*v1[2] - v0[2]*v1[1] + v0[2]*v1[0] - v0[0]*v1[2] + v0[0]*v1[1] - v0[1]*v1[0] < 0)
     {
-        DebugOut() << "change node order\n";
+//         DebugOut() << "change node order\n";
         std::swap(s.nodes[0],s.nodes[1]);
     }
     
@@ -903,26 +903,46 @@ void QXFEMFactory::refine_simplex(const AuxSimplex& aux_simplex)
                               n_old_nodes = RefElement<dim>::n_nodes,
                               n_new_nodes = RefElement<dim>::n_lines; // new points are in the center of lines
     
-    //TODO: make this RefElement dependent
     static const std::vector<unsigned int> conn[] = {
         {}, //0D
         
+        //1D:
         {0, 2,
          2, 1},
-         
+        
+        //2D:
         {0, 3, 4,
          3, 1, 5,
          4, 5, 2,
          3, 5, 4},
+        
+        //3D:
+        {1, 7, 4, 8,
+         7, 2, 5, 9,
+         4, 5, 0, 6,
+         8, 9, 6, 3,
+         7, 4, 8, 9, // 4-9 octahedron diagonal
+         7, 4, 5, 9,
+         4, 8, 9, 6,
+         4, 5, 9, 6},
+        
+        {1, 7, 4, 8,
+         7, 2, 5, 9,
+         4, 5, 0, 6,
+         8, 9, 6, 3,
+         8, 5, 4, 6, // 5-8 octahedron diagonal
+         5, 8, 9, 6,
+         5, 8, 4, 7,
+         8, 5, 9, 7},
          
-        {0, 4, 5, 6,
-         4, 1, 7, 8,
-         5, 7, 2, 9,
-         6, 8, 9, 3,
-         4, 6, 8, 9,
-         4, 7, 8, 9,
-         4, 6, 5, 9,
-         4, 5, 7, 9}
+        {1, 7, 4, 8,
+         7, 2, 5, 9,
+         4, 5, 0, 6,
+         8, 9, 6, 3,
+         6, 8, 7, 9, // 6-7 octahedron diagonal
+         8, 6, 7, 4,
+         6, 5, 7, 4,
+         5, 6, 7, 9}
     }; 
 //     DebugOut().fmt("level = {}, {}\n", aux_simplex.level, max_refinement_level_);
  
@@ -940,6 +960,22 @@ void QXFEMFactory::refine_simplex(const AuxSimplex& aux_simplex)
         nodes.push_back( p / 2.0);
     }
    
+    unsigned int diagonal = 0;
+    // find shortest diagonal: [0]:4-9, [1]:5-8 or [2]:6-7
+    if(dim == 3){
+        double min_diagonal = arma::norm(nodes[4]-nodes[9],2);
+        double d = arma::norm(nodes[5]-nodes[8],2);
+        if(d < min_diagonal){
+            min_diagonal = d;
+            diagonal = 1;
+        }
+        d = arma::norm(nodes[6]-nodes[7],2);
+        if(d < min_diagonal){
+            min_diagonal = d;
+            diagonal = 2;
+        }
+        
+    }
     
     for(unsigned int i=0; i < n_subelements; i++)
     {
@@ -953,7 +989,7 @@ void QXFEMFactory::refine_simplex(const AuxSimplex& aux_simplex)
         for(unsigned int j=0; j < n_old_nodes; j++)
         {
             unsigned int conn_id = (n_old_nodes)*i + j;
-            s.nodes[j] = nodes[conn[dim][conn_id]];
+            s.nodes[j] = nodes[conn[dim+diagonal][conn_id]];
         }
     }
 }
@@ -1080,13 +1116,22 @@ void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
     if (felements_file.is_open()) 
     {
         for(unsigned int j=0; j<ele->n_nodes(); j++) {
-            felements_file << ele->node[j]->getX() << " "
-                << ele->node[j]->getY() << " " 
-                << ele->node[j]->getZ() << "\n";
+            Point p = ele->node[j]->point();
+            felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
         }
-        felements_file << ele->node[0]->getX() << " "
-                << ele->node[0]->getY() << " " 
-                << ele->node[0]->getZ() << "\n\n";
+        if(ele->n_nodes() > 2){
+            Point p = ele->node[0]->point();
+            felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+        }
+        if(ele->n_nodes() > 3){
+            Point p = ele->node[2]->point();
+            felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+            p = ele->node[1]->point();
+            felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+            p = ele->node[3]->point();
+            felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
+        }
+        felements_file << "\n\n";
     }
     else 
     { 
@@ -1104,15 +1149,15 @@ void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
             {
                 for (unsigned int j = 0; j < simplices_[i].nodes.size(); j++) 
                 {
-                    Point &p = simplices_[i].nodes[j];
+                    Point p = simplices_[i].nodes[j];
                     myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
                 }
                 if(simplices_[i].nodes.size() > 2){
-                    Point &p = simplices_[i].nodes[0];
+                    Point p = simplices_[i].nodes[0];
                     myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
                 }
                 if(simplices_[i].nodes.size() > 3){
-                    Point &p = simplices_[i].nodes[2];
+                    Point p = simplices_[i].nodes[2];
                     myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
                     p = simplices_[i].nodes[1];
                     myfile1 << p[0] << " " << p[1] << " " << p[2] << "\n";
