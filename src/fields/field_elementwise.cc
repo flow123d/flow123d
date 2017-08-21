@@ -119,7 +119,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
+    data_ = ReaderInstance::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
     return true;
@@ -147,7 +147,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     }
 
     if ( reader_file_ == FilePath() ) return;
-    ReaderInstances::instance()->get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
+    ReaderInstance::get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 
 
