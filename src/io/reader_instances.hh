@@ -64,25 +64,4 @@ private:
 };
 
 
-class ReaderInstances {
-public:
-	typedef std::map< string, std::shared_ptr<BaseMeshReader> > ReaderTable;
-
-	/// Returns singleton instance
-	static ReaderInstances * instance();
-
-	/**
-	 * Returns mesh reader of get filepath. If reader doesn't exist, creates its.
-	 */
-	std::shared_ptr<BaseMeshReader> get_reader(const FilePath &file_name);
-
-private:
-	/// Constructor
-	ReaderInstances() {};
-
-	/// Table of readers
-	ReaderTable reader_table_;
-};
-
-
 #endif /* READER_INSTANCES_HH_ */

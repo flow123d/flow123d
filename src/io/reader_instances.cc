@@ -73,33 +73,3 @@ ReaderInstance::ReaderData ReaderInstance::get_instance(const FilePath &file_pat
 	}
 }
 
-
-/***********************************************************************************************
- * Implementation of ReaderInstances
- */
-
-ReaderInstances * ReaderInstances::instance() {
-	static ReaderInstances *instance = new ReaderInstances;
-	return instance;
-}
-
-std::shared_ptr<BaseMeshReader> ReaderInstances::get_reader(const FilePath &file_name) {
-	ReaderTable::iterator it = reader_table_.find( string(file_name) );
-	if (it == reader_table_.end()) {
-		std::shared_ptr<BaseMeshReader> reader_ptr;
-		if ( file_name.extension() == ".msh" ) {
-			reader_ptr = std::make_shared<GmshMeshReader>(file_name);
-		} else if ( file_name.extension() == ".vtu" ) {
-			reader_ptr = std::make_shared<VtkMeshReader>(file_name);
-		} else if ( file_name.extension() == ".pvd" ) {
-			reader_ptr = std::make_shared<PvdMeshReader>(file_name);
-		} else {
-			THROW(BaseMeshReader::ExcWrongExtension()
-				<< BaseMeshReader::EI_FileExtension(file_name.extension()) << BaseMeshReader::EI_MeshFile((string)file_name) );
-		}
-		reader_table_.insert( std::pair<string, std::shared_ptr<BaseMeshReader>>(string(file_name), reader_ptr) );
-		return reader_ptr;
-	} else {
-		return (*it).second;
-	}
-}
