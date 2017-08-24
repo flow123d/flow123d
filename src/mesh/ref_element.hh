@@ -396,6 +396,36 @@ private:
 
 
 
+
+
+
+template<> const IdxVector<2> RefElement<1>::line_nodes_[];
+template<> const IdxVector<2> RefElement<2>::line_nodes_[];
+template<> const IdxVector<2> RefElement<3>::line_nodes_[];
+
+template<> const IdxVector<1> RefElement<1>::node_lines_[];
+template<> const IdxVector<2> RefElement<2>::node_lines_[];
+template<> const IdxVector<3> RefElement<3>::node_lines_[];
+
+template<> const IdxVector<3> RefElement<3>::side_nodes_[];
+template<> const IdxVector<3> RefElement<3>::node_sides_[];
+
+template<> const IdxVector<2> RefElement<3>::line_sides_[];
+
+template<> const IdxVector<3> RefElement<3>::side_lines_[];
+
+template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side];
+template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side];
+template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side];
+
+template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
+template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
+
+
+
+
+
+
 /************************* template implementation ****************************/
 
 template<unsigned int dim>
