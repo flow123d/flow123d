@@ -39,7 +39,7 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
     return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field interpolated from external mesh data and piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-        .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
+        .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
@@ -71,7 +71,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	// read mesh, create tree
     {
        source_mesh_ = new Mesh( Input::Record() );
-       reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
+       reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
        auto reader = ReaderInstances::instance()->get_reader(reader_file_ );
        reader->read_raw_mesh( source_mesh_ );
        reader->check_compatible_mesh( *source_mesh_ );
