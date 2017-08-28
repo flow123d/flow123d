@@ -57,6 +57,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
 {
     clear();
     std::shared_ptr<QXFEM<2,3>> qxfem = make_shared<QXFEM<2,3>>();
+    qxfem->jacobian_det_ = ele->measure() * 2;
     
     //create first auxsimplex:
     AuxSimplex s;
@@ -117,6 +118,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
 {
     clear();
     std::shared_ptr<QXFEM<3,3>> qxfem = make_shared<QXFEM<3,3>>();
+    qxfem->jacobian_det_ = ele->measure() * 6;
     
     //create first auxsimplex:
     AuxSimplex s;
@@ -162,6 +164,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
 {
     clear();
     std::shared_ptr<QXFEM<3,3>> qxfem = make_shared<QXFEM<3,3>>();
+    qxfem->jacobian_det_ = ele->side(side_idx)->measure() * 2;
     
     //create first auxsimplex:
     AuxSimplex s;
@@ -207,6 +210,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
 {
     clear();
     std::shared_ptr<QXFEM<2,3>> qxfem = make_shared<QXFEM<2,3>>();
+    qxfem->jacobian_det_ = ele->side(side_idx)->measure();
     
     //create first auxsimplex:
     AuxSimplex s;

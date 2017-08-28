@@ -60,9 +60,14 @@ public:
     /// Hides the original function. Resizes also the real poitns.
     void resize(const unsigned int n_q);
     
+    ///Temporary solution to avoid FESideValues for XFEM.
+    double JxW(unsigned int i);
+    
 private:
     /// Vector of quadrature points in real coordinates.
     std::vector<Point> real_points_;
+    
+    double jacobian_det_;
     
     friend class QXFEMFactory;
 };
@@ -106,6 +111,14 @@ void QXFEM<dim,spacedim>::resize(const unsigned int n_q)
     Point vv;
     vv.fill(0);
     real_points_.resize(n_q, vv);
+}
+
+
+template<int dim, int spacedim>
+double QXFEM<dim,spacedim>::JxW(unsigned int i)
+{
+    ASSERT_DBG(i < this->weights.size());
+    return jacobian_det_ * this->weights[i];
 }
 
 #endif // QXFEM_HH_

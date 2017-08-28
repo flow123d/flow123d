@@ -197,16 +197,15 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
 //                 DBGCOUT(<<"qxfem_side on ele " << ele->index() << " s" << j << "\n");
                 std::shared_ptr<QXFEM<dim,3>> q_side = qxfem_side(ele, j);
                 
-                double side_measure = ele->side(j)->measure();
-                
                 for (unsigned int w=0; w<enr.size(); w++){
                     double val = 0;
     //                 DBGCOUT("edge quad [" << j << "]\n");
                     for(unsigned int q=0; q < q_side->size(); q++){
                         val += arma::dot(enr[w]->vector(q_side->real_point(q)),normals[j])
                             // this makes JxW on the triangle side:
-                            * q_side->weight(q)
-                            * side_measure;
+//                             * q_side->weight(q)
+//                             * side_measure * size_of_ref_element;
+                               * q_side->JxW(q);
                     }
                     enr_dof_val[w][j] = val;
 //                     DBGVAR(val);
