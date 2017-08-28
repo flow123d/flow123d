@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Steady flow + transport with source
   mesh:
@@ -28,7 +28,7 @@ problem: !Coupling_Sequential
       end_time: 5.7
       max_dt: 1.0
       min_dt: 1.0
-    output_stream: 
+    output_stream:
       file: ./flow_test16.pvd
       format: !vtk
         variant: ascii
@@ -42,15 +42,15 @@ problem: !Coupling_Sequential
           init_conc: 0
           porosity: 1
           sources_density: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+            mesh_data_file: 02_input_sources.msh
             field_name: density
           sources_sigma: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+            mesh_data_file: 02_input_sources.msh
             field_name: sigma
           sources_conc: !FieldElementwise
-            gmsh_file: 02_input_sources.msh
+            mesh_data_file: 02_input_sources.msh
             field_name: concentration
-    output_stream: 
+    output_stream:
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
