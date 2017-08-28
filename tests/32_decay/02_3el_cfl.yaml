@@ -1,7 +1,6 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test12 - demonstration of unstability of reaction solver without CFL condition
-    (exact solution (50+5*exp(-55*t))/55)
+  description: Test12 - demonstration of unstability of reaction solver without CFL condition (exact solution (50+5*exp(-55*t))/55)
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
@@ -21,7 +20,7 @@ problem: !Coupling_Sequential
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
-    output_stream: 
+    output_stream:
       file: ./decay.pvd
       format: !vtk
         variant: ascii
@@ -37,12 +36,12 @@ problem: !Coupling_Sequential
           bc_conc:
             - 1
             - 0
-    output_stream: 
+    output_stream:
       file: ./transport_decay.pvd
       format: !vtk
         variant: ascii
       times:
-        - step: 2e-0
+        - step: 2e+0
     substances:
       - A
       - B

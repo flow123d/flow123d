@@ -1,12 +1,10 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 output_streams:
-  - &anchor1
-    file: test_20.pvd
+  - file: test_20.pvd
     format: !vtk
       variant: ascii
     name: flow_output_stream
-  - &anchor2
-    file: transport_test_20.pvd
+  - file: transport_test_20.pvd
     format: !vtk
       variant: ascii
     time_step: 0.5
@@ -33,7 +31,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: test_20.pvd
       format: !vtk
         variant: ascii
@@ -52,7 +50,7 @@ problem: !Coupling_Sequential
       - As-lin
       - Bs-lang
       - Cs-freund
-    output_stream: 
+    output_stream:
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii

@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test of boundary conditions for transport
   mesh:
@@ -19,7 +19,7 @@ problem: !Coupling_Sequential
         - pressure_p0
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./flow.pvd
       format: !vtk
         variant: ascii
@@ -33,7 +33,7 @@ problem: !Coupling_Sequential
           bc_conc: 2
         - region: .top
           bc_conc: 3
-    output_stream: 
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
