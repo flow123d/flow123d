@@ -11,11 +11,11 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    reader_instances.cc
+ * @file    reader_cache.cc
  * @brief   
  */
 
-#include "io/reader_instances.hh"
+#include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
 #include "io/msh_pvdreader.hh"
@@ -23,20 +23,20 @@
 
 
 /***********************************************************************************************
- * Implementation of ReaderInstance
+ * Implementation of ReaderCache
  */
 
-ReaderInstance * ReaderInstance::instance() {
-	static ReaderInstance *instance = new ReaderInstance;
+ReaderCache * ReaderCache::instance() {
+	static ReaderCache *instance = new ReaderCache;
 	return instance;
 }
 
-std::shared_ptr<BaseMeshReader> ReaderInstance::get_reader(const FilePath &file_path) {
-	return ReaderInstance::get_reader_data(file_path)->second.reader_;
+std::shared_ptr<BaseMeshReader> ReaderCache::get_reader(const FilePath &file_path) {
+	return ReaderCache::get_reader_data(file_path)->second.reader_;
 }
 
-std::shared_ptr<Mesh> ReaderInstance::get_mesh(const FilePath &file_path) {
-	auto it = ReaderInstance::get_reader_data(file_path);
+std::shared_ptr<Mesh> ReaderCache::get_mesh(const FilePath &file_path) {
+	auto it = ReaderCache::get_reader_data(file_path);
 	// Create and fill mesh if doesn't exist
 	if ( (*it).second.mesh_ == nullptr ) {
 		(*it).second.mesh_ = std::make_shared<Mesh>( Input::Record() );
@@ -47,9 +47,9 @@ std::shared_ptr<Mesh> ReaderInstance::get_mesh(const FilePath &file_path) {
 	return (*it).second.mesh_;
 }
 
-ReaderInstance::ReaderTable::iterator ReaderInstance::get_reader_data(const FilePath &file_path) {
-	ReaderTable::iterator it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
-	if (it == ReaderInstance::instance()->reader_table_.end()) {
+ReaderCache::ReaderTable::iterator ReaderCache::get_reader_data(const FilePath &file_path) {
+	ReaderTable::iterator it = ReaderCache::instance()->reader_table_.find( string(file_path) );
+	if (it == ReaderCache::instance()->reader_table_.end()) {
 		ReaderData reader_data;
 		if ( file_path.extension() == ".msh" ) {
 			reader_data.reader_ = std::make_shared<GmshMeshReader>(file_path);
@@ -61,8 +61,8 @@ ReaderInstance::ReaderTable::iterator ReaderInstance::get_reader_data(const File
 			THROW(BaseMeshReader::ExcWrongExtension()
 				<< BaseMeshReader::EI_FileExtension(file_path.extension()) << BaseMeshReader::EI_MeshFile((string)file_path) );
 		}
-		ReaderInstance::instance()->reader_table_.insert( std::pair<string, ReaderData>(string(file_path), reader_data) );
-		it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
+		ReaderCache::instance()->reader_table_.insert( std::pair<string, ReaderData>(string(file_path), reader_data) );
+		it = ReaderCache::instance()->reader_table_.find( string(file_path) );
 	}
 	return it;
 }

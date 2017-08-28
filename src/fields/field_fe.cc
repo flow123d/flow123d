@@ -22,7 +22,7 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
-#include "io/reader_instances.hh"
+#include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
 
 
@@ -206,11 +206,11 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
 
-		std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
+		std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
-		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
+		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
 				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_);
 		this->interpolate(data_vec);
 
@@ -223,7 +223,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
-	std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
+	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection

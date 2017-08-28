@@ -21,7 +21,7 @@
 #include "system/system.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
-#include "io/reader_instances.hh"
+#include "io/reader_cache.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
@@ -71,7 +71,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	// read mesh, create tree
     {
        reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-       source_mesh_ = ReaderInstance::get_mesh(reader_file_ );
+       source_mesh_ = ReaderCache::get_mesh(reader_file_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bih_tree_ = new BIHTree( source_mesh_.get() );
@@ -100,7 +100,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
     bool boundary_domain_ = false;
-    data_ = ReaderInstance::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
+    data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(),
     		boundary_domain_, this->component_idx_);
     this->scale_data();

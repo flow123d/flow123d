@@ -21,7 +21,7 @@
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "io/msh_gmshreader.h"
-#include "io/reader_instances.hh"
+#include "io/reader_cache.hh"
 
 /// Implementation.
 
@@ -119,7 +119,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    data_ = ReaderInstance::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
+    data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
     return true;
@@ -147,7 +147,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     }
 
     if ( reader_file_ == FilePath() ) return;
-    ReaderInstance::get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
+    ReaderCache::get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 
 
