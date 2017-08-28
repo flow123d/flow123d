@@ -55,6 +55,7 @@ problem: !Coupling_Sequential
       add_output_times: true
       times:
         - 4.0
+      cumulative: true  
     output_stream: 
       file: ./transport.pvd
       format: !vtk
@@ -68,5 +69,3 @@ problem: !Coupling_Sequential
       - tracer
     time:
       end_time: 5
-    balance:
-      cumulative: true
