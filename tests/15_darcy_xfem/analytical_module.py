@@ -166,7 +166,12 @@ def all_values_2d( xx, yy, zz ):
     vy2 = Parameters.vy2_fce_value(params,xx,yy)
     return (p2, vx2, vy2, 0.0, 1.0) 
     
-
+def all_values_3d( xx, yy, zz ):
+    p3 = Parameters.p2_fce_value(params,xx,yy)
+    vx3 = Parameters.vx2_fce_value(params,xx,yy)
+    vy3 = Parameters.vy2_fce_value(params,xx,yy)
+    vz3 = 0.0
+    return (p3, vx3, vy3, vz3, 1.0) 
       
       
 ################################################

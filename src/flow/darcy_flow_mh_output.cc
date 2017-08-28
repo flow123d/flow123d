@@ -845,12 +845,11 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     result.velocity_diff.resize( mesh_->n_elements() );
     result.div_diff.resize( mesh_->n_elements() );
 
-    result.pressure_error[0] = 0;
-    result.velocity_error[0] = 0;
-    result.div_error[0] = 0;
-    result.pressure_error[1] = 0;
-    result.velocity_error[1] = 0;
-    result.div_error[1] = 0;
+    for(unsigned int j=0; j<3; j++){
+        result.pressure_error[j] = 0;
+        result.velocity_error[j] = 0;
+        result.div_error[j] = 0;
+    }
     result.mask_vel_error=0;
 
     //result.ele_flux = &( ele_flux );
@@ -928,11 +927,14 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     os 	<< "l2 norm output\n\n"
     	<< "pressure error 1d: " << sqrt(result.pressure_error[0]) << endl
     	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
+    	<< "pressure error 3d: " << sqrt(result.pressure_error[2]) << endl
     	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
     	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
+    	<< "velocity error 3d: " << sqrt(result.velocity_error[2]) << endl
     	<< "masked vel error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
-    	<< "div error 2d: " << sqrt(result.div_error[1]);
+    	<< "div error 2d: " << sqrt(result.div_error[1]) << endl
+    	<< "div error 3d: " << sqrt(result.div_error[2]);
         
     if(darcy_flow->use_xfem){
         os << endl
