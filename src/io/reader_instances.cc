@@ -32,16 +32,11 @@ ReaderInstance * ReaderInstance::instance() {
 }
 
 std::shared_ptr<BaseMeshReader> ReaderInstance::get_reader(const FilePath &file_path) {
-	return ReaderInstance::get_instance(file_path).reader_;
+	return ReaderInstance::get_reader_data(file_path)->second.reader_;
 }
 
 std::shared_ptr<Mesh> ReaderInstance::get_mesh(const FilePath &file_path) {
-	// First, we must check if reader instance item exists in table
-	ReaderTable::iterator it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
-	if (it == ReaderInstance::instance()->reader_table_.end()) {
-		ReaderInstance::get_instance(file_path); // add new reader instance to table
-		it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
-	}
+	auto it = ReaderInstance::get_reader_data(file_path);
 	// Create and fill mesh if doesn't exist
 	if ( (*it).second.mesh_ == nullptr ) {
 		(*it).second.mesh_ = std::make_shared<Mesh>( Input::Record() );
@@ -52,7 +47,7 @@ std::shared_ptr<Mesh> ReaderInstance::get_mesh(const FilePath &file_path) {
 	return (*it).second.mesh_;
 }
 
-ReaderInstance::ReaderData ReaderInstance::get_instance(const FilePath &file_path) {
+ReaderInstance::ReaderTable::iterator ReaderInstance::get_reader_data(const FilePath &file_path) {
 	ReaderTable::iterator it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
 	if (it == ReaderInstance::instance()->reader_table_.end()) {
 		ReaderData reader_data;
@@ -67,9 +62,8 @@ ReaderInstance::ReaderData ReaderInstance::get_instance(const FilePath &file_pat
 				<< BaseMeshReader::EI_FileExtension(file_path.extension()) << BaseMeshReader::EI_MeshFile((string)file_path) );
 		}
 		ReaderInstance::instance()->reader_table_.insert( std::pair<string, ReaderData>(string(file_path), reader_data) );
-		return reader_data;
-	} else {
-		return (*it).second;
+		it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
 	}
+	return it;
 }
 

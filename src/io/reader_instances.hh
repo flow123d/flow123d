@@ -57,7 +57,7 @@ private:
 	ReaderInstance() {};
 
 	/// Returns instance of given FilePath. If reader doesn't exist, creates new ReaderData object.
-	static ReaderData get_instance(const FilePath &file_path);
+	static ReaderTable::iterator get_reader_data(const FilePath &file_path);
 
 	/// Table of readers
 	ReaderTable reader_table_;
