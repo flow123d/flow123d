@@ -21,12 +21,12 @@ namespace IT = Input::Type;
 
 IT::Record &EquationOutput::get_input_type() {
 
-    static const IT::Selection &discrete_sel =
+    static const IT::Selection &interpolation_sel =
         IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
-            .add_value(OutputTime::NODE_DATA,   "node_data",   "Node data / point data.")
-			.add_value(OutputTime::CORNER_DATA, "corner_data", "Corner data.")
-			.add_value(OutputTime::ELEM_DATA,   "elem_data",   "Element data / point data.")
-			.add_value(OutputTime::NATIVE_DATA, "native_data", "Native data (Flow123D data).")
+            .add_value(OutputTime::NODE_DATA,   "P1_average", "Node data / point data.")
+			.add_value(OutputTime::CORNER_DATA, "D1_value",   "Corner data.")
+			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / point data.")
+			.add_value(OutputTime::NATIVE_DATA, "Native",     "Native data (Flow123D data).")
 			.close();
 
     static const IT::Record &field_output_setting =
@@ -36,7 +36,7 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            .declare_key("discrete", discrete_sel, IT::Default::read_time("Discrete type of output data."),
+            .declare_key("interpolation", interpolation_sel, IT::Default::read_time("Interpolation type of output data."),
 					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
@@ -134,14 +134,14 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
-        OutputTime::DiscreteSpace disc = it->val<OutputTime::DiscreteSpace>("discrete", OutputTime::UNDEFINED);
+        OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
             field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name] = OutputTimeData(field_times, disc);
+            field_output_times_[field_name] = OutputTimeData(field_times, interpolation);
         } else {
-            field_output_times_[field_name] = OutputTimeData(common_output_times_, disc);
+            field_output_times_[field_name] = OutputTimeData(common_output_times_, interpolation);
         }
         // Add init time as the output time for every output field.
         field_output_times_[field_name].output_times.add(tg.init_time(), equation_fixed_type_);

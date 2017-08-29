@@ -24,7 +24,7 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - velocity_p0
-        - { field: conductivity, discrete: native_data }
+        - { field: conductivity, interpolation: Native }
         - region_id
     balance: {}
     output_stream: 
