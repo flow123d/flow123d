@@ -50,7 +50,7 @@ TEST(ReaderInstances, get_bulk_element_data) {
 
     // read data by components for MultiField
     BaseMeshReader::DiscretizationParams disc_params;
-    disc_params.discretization = BaseMeshReader::Discretization::element_data;
+    disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
     for (i=0; i<3; ++i) {
     	ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.0, disc_params);
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
@@ -91,7 +91,7 @@ TEST(ReaderInstances, get_boundary_element_data) {
 
     // read data by components for MultiField
     BaseMeshReader::DiscretizationParams disc_params;
-    disc_params.discretization = BaseMeshReader::Discretization::element_data;
+    disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
     for (i=0; i<3; ++i) {
     	ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.0, disc_params);
         typename ElementDataCache<int>::ComponentDataPtr multifield_data =
@@ -133,7 +133,7 @@ TEST(ReaderInstances, find_header) {
     unsigned int n_elements=9;
     unsigned int n_comp=3;
     BaseMeshReader::DiscretizationParams disc_params;
-    disc_params.discretization = BaseMeshReader::Discretization::element_data;
+    disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
     std::shared_ptr< std::vector<double> > data;
 
     ReaderInstances::instance()->get_reader(file_name)->set_actual_data_header("vector_fixed", 0.0, disc_params);

@@ -40,7 +40,7 @@ TEST(PVDReader, read_pvd) {
     FilePath mesh_file("mesh/pvd-test.pvd", FilePath::input_file);
 
 	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = BaseMeshReader::Discretization::mesh_definition;
+	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
 
     PvdMeshReaderTest reader(mesh_file);
     reader.test_find_header(0.0,  0.0, "offsets", disc_params);
@@ -71,7 +71,7 @@ TEST(PVDReader, get_element_data) {
     }
 
     BaseMeshReader::DiscretizationParams disc_params;
-    disc_params.discretization = BaseMeshReader::Discretization::element_data;
+    disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
 
     for (unsigned int i=0; i<3; ++i) {
     	reader.set_actual_data_header("scalar_field", i*0.1, disc_params);

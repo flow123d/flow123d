@@ -61,10 +61,10 @@ const Input::Type::Selection & FieldFE<spacedim, Value>::get_disc_selection_inpu
 {
 	return it::Selection("FE_discretization",
 			"Specify the section in mesh input file where field data is listed.\nSome sections are specific to file format.")
-		.add_value(BaseMeshReader::Discretization::node_data, "node_data", "point_data (VTK) / node_data (GMSH)")
-		.add_value(BaseMeshReader::Discretization::element_data, "element_data", "cell_data (VTK) / element_data (GMSH)")
-		.add_value(BaseMeshReader::Discretization::element_node_data, "element_node_data", "element_node_data (only for GMSH)")
-		.add_value(BaseMeshReader::Discretization::native_data, "native_data", "native_data (only for VTK)")
+		.add_value(OutputTime::DiscreteSpace::NODE_DATA, "node_data", "point_data (VTK) / node_data (GMSH)")
+		.add_value(OutputTime::DiscreteSpace::ELEM_DATA, "element_data", "cell_data (VTK) / element_data (GMSH)")
+		.add_value(OutputTime::DiscreteSpace::CORNER_DATA, "element_node_data", "element_node_data (only for GMSH)")
+		.add_value(OutputTime::DiscreteSpace::NATIVE_DATA, "native_data", "native_data (only for VTK)")
 		.close();
 }
 
@@ -109,7 +109,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
 	value_handler3_.initialize(init_data, map3);
 
 	// set discretization
-	discretization_ = BaseMeshReader::Discretization::undefined;
+	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 }
 
 
@@ -171,8 +171,8 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	// read data from input record
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 	field_name_ = rec.val<std::string>("field_name");
-	if (! rec.opt_val<BaseMeshReader::Discretization>("input_discretization", discretization_) ) {
-		discretization_ = BaseMeshReader::Discretization::undefined;
+	if (! rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization_) ) {
+		discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 	}
 }
 
@@ -235,7 +235,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		disc_params.discretization = this->discretization_;
 		ReaderInstance::get_reader(reader_file_)->set_actual_data_header(field_name_, time.end(), disc_params);
 
-		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {
+		if (disc_params.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
 			if (disc_params.dof_handler_hash != dh_->hash()) {
 				THROW(ExcInvalidDofHandler() << EI_FieldName(field_name_) << EI_MeshDataFile((string)reader_file_) );
 			}

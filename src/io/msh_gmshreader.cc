@@ -241,7 +241,7 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
         }
         for(;n_int>0;n_int--) tok_.next_line(false);
         head.position = tok_.get_position();
-        head.discretization = Discretization::element_data;
+        head.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
     } catch (bad_lexical_cast &) {
     	THROW(ExcWrongFormat() << EI_Type("$ElementData header") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
@@ -323,13 +323,13 @@ void GmshMeshReader::make_header_table()
 BaseMeshReader::MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name, BaseMeshReader::DiscretizationParams &disc_params)
 {
 	// check discretization, only type element_data or undefined is supported
-	if (disc_params.discretization != BaseMeshReader::Discretization::element_data) {
-		if (disc_params.discretization != BaseMeshReader::Discretization::undefined) {
+	if (disc_params.discretization != OutputTime::DiscreteSpace::ELEM_DATA) {
+		if (disc_params.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
 			WarningOut().fmt(
-					"Unsupported discretization for field '{}', time: {} and GMSH format.\nType 'element_data' of discretization will be used.\n",
+					"Unsupported discretization for field '{}', time: {} and GMSH format.\nType 'ELEM_DATA' of discretization will be used.\n",
 	                field_name, time);
 		}
-		disc_params.discretization = BaseMeshReader::Discretization::element_data;
+		disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
 	}
 
 	HeaderTable::iterator table_it = header_table_.find(field_name);

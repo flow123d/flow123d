@@ -151,7 +151,7 @@ Tokenizer::Position VtkMeshReader::get_appended_position() {
 
 
 BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos,
-		Discretization disc)
+		OutputTime::DiscreteSpace disc)
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
@@ -162,7 +162,7 @@ BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node,
         e << EI_SectionTypeName("DataArray " + header.field_name);
     }
     header.discretization = disc;
-    if (disc == Discretization::native_data) {
+    if (disc == OutputTime::DiscreteSpace::NATIVE_DATA) {
         header.n_components = node.attribute("n_dofs_per_element").as_uint();
     	header.dof_handler_hash = node.attribute("dof_handler_hash").as_uint();
     } else {
@@ -221,34 +221,34 @@ void VtkMeshReader::make_header_table()
 
 	// create headers of Points and Cells DataArrays
 	auto points_header = create_header( node.child("Points").child("DataArray"), n_nodes, appended_pos,
-			Discretization::mesh_definition );
+			OutputTime::DiscreteSpace::MESH_DEFINITION );
 	points_header.field_name = "Points";
 	header_table_.insert( std::pair<std::string, MeshDataHeader>("Points", points_header) );
 	auto con_header = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"),
-			n_elements, appended_pos, Discretization::mesh_definition );
+			n_elements, appended_pos, OutputTime::DiscreteSpace::MESH_DEFINITION );
 	header_table_.insert( std::pair<std::string, MeshDataHeader>("connectivity", con_header) );
 	auto offsets_header = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"),
-			n_elements, appended_pos, Discretization::mesh_definition );
+			n_elements, appended_pos, OutputTime::DiscreteSpace::MESH_DEFINITION );
 	header_table_.insert( std::pair<std::string, MeshDataHeader>("offsets", offsets_header) );
 	auto types_header = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements,
-			appended_pos, Discretization::mesh_definition );
+			appended_pos, OutputTime::DiscreteSpace::MESH_DEFINITION );
 	header_table_.insert( std::pair<std::string, MeshDataHeader>("types", types_header) );
 
 	pugi::xml_node point_node = node.child("PointData");
 	for (pugi::xml_node subnode = point_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_nodes, appended_pos, Discretization::node_data );
+		auto header = create_header( subnode, n_nodes, appended_pos, OutputTime::DiscreteSpace::NODE_DATA );
 		header_table_.insert( std::pair<std::string, MeshDataHeader>(header.field_name, header) );
 	}
 
 	pugi::xml_node cell_node = node.child("CellData");
 	for (pugi::xml_node subnode = cell_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_elements, appended_pos, Discretization::element_data );
+		auto header = create_header( subnode, n_elements, appended_pos, OutputTime::DiscreteSpace::ELEM_DATA );
 		header_table_.insert( std::pair<std::string, MeshDataHeader>(header.field_name, header) );
 	}
 
 	pugi::xml_node native_node = node.child("Flow123dData");
 	for (pugi::xml_node subnode = native_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_elements, appended_pos, Discretization::native_data );
+		auto header = create_header( subnode, n_elements, appended_pos, OutputTime::DiscreteSpace::NATIVE_DATA );
 		header_table_.insert( std::pair<std::string, MeshDataHeader>(header.field_name, header) );
 	}
 }
@@ -266,7 +266,7 @@ BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(double time, std::st
 
 		// check discretization
 		if (disc_params.discretization != table_it->second.discretization) {
-			if (disc_params.discretization != BaseMeshReader::Discretization::undefined) {
+			if (disc_params.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
 				WarningOut().fmt(
 						"Invalid value of 'input_discretization' for field '{}', time: {}.\nCorrect discretization type will be used.\n",
 		                field_name, time);
@@ -455,7 +455,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     std::vector<unsigned int> offsets_vec; // value of offset section in VTK file
 
 	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = BaseMeshReader::Discretization::mesh_definition;
+	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
 	bulk_elements_id_.clear();
 
     {
@@ -584,7 +584,7 @@ void VtkMeshReader::read_physical_names(Mesh * mesh) {
 
 void VtkMeshReader::read_nodes(Mesh * mesh) {
 	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = BaseMeshReader::Discretization::mesh_definition;
+	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
 	auto actual_header = this->find_header(0.0, "Points", disc_params);
 
 	bulk_elements_id_.resize(actual_header.n_entities);
@@ -612,7 +612,7 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 
 void VtkMeshReader::read_elements(Mesh * mesh) {
 	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = BaseMeshReader::Discretization::mesh_definition;
+	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
 
 	// read offset data section into offsets_vec vector, it's used for reading connectivity
     MeshDataHeader offset_header = this->find_header(0.0, "offsets", disc_params);

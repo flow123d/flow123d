@@ -168,7 +168,7 @@ private:
 	std::string field_name_;
 
 	/// Specify section where to find the field data in input mesh file
-	BaseMeshReader::Discretization discretization_;
+	OutputTime::DiscreteSpace discretization_;
 
 	/// Field flags.
 	FieldFlag::Flags flags_;
