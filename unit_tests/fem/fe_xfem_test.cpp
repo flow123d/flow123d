@@ -246,7 +246,7 @@ TEST(fe_xfem, fe_rt_xfem_edges) {
                           ele->node[2]->point() - ele->node[0]->point());
     
 //     auto func = std::make_shared<Singularity0D<3>>(arma::vec({0.3,0.3,2}),0.1,arma::vec({0,0,1}),n);
-    auto func = std::make_shared<Singularity0D>(arma::vec({3.3,3.3,0}),0.02,arma::vec({0,0,1}),n);
+    auto func = std::make_shared<Singularity0D>(arma::vec({3.3,3.3,0}),0.02,arma::vec({0,0,1}),n, 100);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
     
     MappingP1<2,3> map;

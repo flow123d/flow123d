@@ -194,7 +194,7 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
 TEST(ShapeFunctionOutput, rt_xfem_shape_2d) {
     
     auto func = std::make_shared<Singularity0D>(arma::vec({0.2,0.2,0}),0.05,
-                                                   arma::vec({0, 0, 1}), arma::vec({0, 0, 1}));
+                                                arma::vec({0, 0, 1}), arma::vec({0, 0, 1}), 100);
     
     FE_RT0<1,3> fe_rt1;
     FE_RT0<2,3> fe_rt2;
@@ -239,7 +239,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_2d) {
 
 TEST(ShapeFunctionOutput, rt_xfem_shape_3d) {
     
-    auto func = std::make_shared<Singularity1D>(arma::vec({0.2,0.2,0}),arma::vec({0.2,0.2,1.0}),0.05);
+    auto func = std::make_shared<Singularity1D>(arma::vec({0.2,0.2,0}),arma::vec({0.2,0.2,1.0}),0.05, 50, 20);
     
     FE_RT0<1,3> fe_rt1;
     FE_RT0<2,3> fe_rt2;
