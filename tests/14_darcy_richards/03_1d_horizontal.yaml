@@ -15,8 +15,8 @@ problem: !Coupling_Sequential
     time: # time in hours (consistent with conductivity)
       end_time: 1500       # original experiment from UGN up to time 6000 h
       init_dt: 0.1         # s
-        # current time step enlargement logic do not allow to extent time step up to the output timestep
-        # maximum timestep wil be just 50.
+      # current time step enlargement logic do not allow to extent time step up to the output timestep
+      # maximum timestep wil be just 50.
       max_dt: 20
       min_dt: 0.1
 

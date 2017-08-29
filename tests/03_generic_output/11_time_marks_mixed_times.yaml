@@ -55,7 +55,6 @@ problem: !Coupling_Sequential
       add_output_times: true
       times:
         - 4.0
-      cumulative: true
     output_stream:
       file: ./transport.pvd
       format: !vtk
