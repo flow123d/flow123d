@@ -236,8 +236,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		ReaderInstance::get_reader(reader_file_)->set_actual_data_header(field_name_, time.end(), disc_params);
 
 		if (disc_params.discretization == BaseMeshReader::Discretization::native_data) {
-			ASSERT_EQ(disc_params.dof_handler_hash, dh_->hash())(disc_params.dof_handler_hash)(dh_->hash())
-					.error("Invalid DOF handler!\n");
+			if (disc_params.dof_handler_hash != dh_->hash()) {
+				THROW(ExcInvalidDofHandler() << EI_FieldName(field_name_) << EI_MeshDataFile((string)reader_file_) );
+			}
 			auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
 					n_components, boundary_domain, this->component_idx_);
 			this->calculate_native_values(data_vec);
@@ -309,6 +310,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
+	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
 	data_vec_->fill(0.0);
