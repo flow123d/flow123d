@@ -126,7 +126,7 @@ public:
 		field.output_type(OutputTime::NATIVE_DATA);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
-		field.compute_native_data(NATIVE_DATA, shared_from_this());
+		field.compute_field_data(NATIVE_DATA, shared_from_this());
 	}
 
 	// check result
