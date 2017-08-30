@@ -72,90 +72,6 @@ public:
 			<< "Unsupported extension " << EI_FileExtension::qval << " of the input file: " << EI_MeshFile::qval);
 
 
-	/**
-	 * Store base data that determines native data of VTK file.
-	 *
-	 * Structure is filled in get_element data and has effect only for VTK files.
-	 */
-	struct DiscretizationParams {
-		OutputTime::DiscreteSpace discretization; ///< Flag marks native data of VTK file
-        std::size_t dof_handler_hash;             ///< Hash of DOF handler object
-	};
-
-	/// Constructor
-	BaseMeshReader(const FilePath &file_name);
-
-    /**
-     * This static method gets file path object of reader,
-     * dispatch to correct constructor and initialize appropriate function object from the input.
-     * Returns shared pointer to BaseMeshReader.
-     */
-    static std::shared_ptr< BaseMeshReader > reader_factory(const FilePath &file_name);
-
-    /**
-     * This static method gets accessor to record with function input,
-     * dispatch to correct constructor and initialize appropriate function object from the input.
-     * Returns pointer to Mesh.
-     */
-    static Mesh * mesh_factory(const Input::Record &input_mesh_rec);
-
-    /**
-     * Reads @p raw data of mesh (only nodes and elements) from the GMSH or VTKfile.
-     * Input of the mesh allows changing regions within the input file.
-     *
-     */
-    void read_raw_mesh(Mesh * mesh);
-
-    /**
-     * Read regions from the mesh file and save the physical sections as regions in the RegionDB.
-     */
-    virtual void read_physical_names(Mesh * mesh)=0;
-
-    /**
-     * Prepare data header for reading ElementData sections of opened mesh file. The file is searched for the \\$ElementData
-     * (GMSH) or DataArray (VTK) section with header that match the given @p field_name, @p time and discretization of the
-     * next section is the first greater then that given in input parameters).
-     *
-     * This method must be call before \p get_element_data method!
-     *
-     *  @param field_name field name
-     *  @param time searched time
-     *  @param disc_params struct with parameters 'discretization' (can be define on input) and 'dof_handler_hash' used only for native data
-     */
-    void set_actual_data_header( std::string field_name, double time, DiscretizationParams &disc_params);
-
-    /**
-     *  Reads ElementData sections of opened mesh file. Method must be call after \p set_data_header method. If such section
-     *  has not been yet read, we read the data section into raw buffer @p data. The buffer must have size at least
-     *  @p n_components * @p n_entities. Indexes in the map must be smaller then @p n_entities.
-     *
-     *  Possible optimizations:
-     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
-     *  and just check that they comes in in correct order.
-     *
-     *  @param n_entities count of entities (elements)
-     *  @param n_components count of components (size of returned data is given by n_entities*n_components)
-     *  @param boundary_domain flag determines that data is read for boundary or bulk elements
-     *  @param component_idx component index of MultiField
-	 */
-    template<typename T>
-    typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
-    		bool boundary_domain, unsigned int component_idx);
-
-    /**
-     * Check if nodes and elements of reader mesh is compatible with \p mesh.
-     */
-    virtual void check_compatible_mesh(Mesh &mesh)=0;
-
-    /**
-     * Returns vector of boundary or bulk element ids by parameter boundary_domain
-     */
-    std::vector<int> const & get_element_vector(bool boundary_domain);
-
-protected:
-    typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
-    typedef std::map< string, ElementDataPtr > ElementDataFieldMap;
-
     /***********************************
      * Structure to store the information from a header of \\$ElementData (GMSH file) or DataArray (VTK file) section.
      *
@@ -201,6 +117,88 @@ protected:
         std::size_t dof_handler_hash;
     };
 
+	/**
+	 * Store base data that allows search mesh data header.
+	 *
+	 * Data members discretization and dof_handler_hash are specific for VTK files.
+	 */
+	struct HeaderQuery {
+		/// Constructor
+		HeaderQuery(std::string name, double t, OutputTime::DiscreteSpace disc, std::size_t hash=0)
+		: field_name(name), time(t), discretization(disc), dof_handler_hash(hash) {};
+
+    	std::string field_name;                   ///< Name of field
+        double time;                              ///< Time of field data (used only for GMSH and PVD reader)
+		OutputTime::DiscreteSpace discretization; ///< Flag determinate type of discrete of Field (typically is used for native data of VTK)
+        std::size_t dof_handler_hash;             ///< Hash of DOF handler object
+	};
+
+	/// Constructor
+	BaseMeshReader(const FilePath &file_name);
+
+    /**
+     * This static method gets file path object of reader,
+     * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Returns shared pointer to BaseMeshReader.
+     */
+    static std::shared_ptr< BaseMeshReader > reader_factory(const FilePath &file_name);
+
+    /**
+     * This static method gets accessor to record with function input,
+     * dispatch to correct constructor and initialize appropriate function object from the input.
+     * Returns pointer to Mesh.
+     */
+    static Mesh * mesh_factory(const Input::Record &input_mesh_rec);
+
+    /**
+     * Reads @p raw data of mesh (only nodes and elements) from the GMSH or VTKfile.
+     * Input of the mesh allows changing regions within the input file.
+     *
+     */
+    void read_raw_mesh(Mesh * mesh);
+
+    /**
+     * Read regions from the mesh file and save the physical sections as regions in the RegionDB.
+     */
+    virtual void read_physical_names(Mesh * mesh)=0;
+
+    /**
+     *  Reads ElementData sections of opened mesh file. Method must be call after \p set_data_header method. If such section
+     *  has not been yet read, we read the data section into raw buffer @p data. The buffer must have size at least
+     *  @p n_components * @p n_entities. Indexes in the map must be smaller then @p n_entities.
+     *
+     *  Possible optimizations:
+     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
+     *  and just check that they comes in in correct order.
+     *
+     *  @param n_entities count of entities (elements)
+     *  @param n_components count of components (size of returned data is given by n_entities*n_components)
+     *  @param boundary_domain flag determines that data is read for boundary or bulk elements
+     *  @param component_idx component index of MultiField
+	 */
+    template<typename T>
+    typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
+    		bool boundary_domain, unsigned int component_idx);
+
+    /**
+     * Check if nodes and elements of reader mesh is compatible with \p mesh.
+     */
+    virtual void check_compatible_mesh(Mesh &mesh)=0;
+
+    /**
+     * Returns vector of boundary or bulk element ids by parameter boundary_domain
+     */
+    std::vector<int> const & get_element_vector(bool boundary_domain);
+
+    /**
+	 * Find data header for time and field given by header_query.
+	 */
+    virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
+
+protected:
+    typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
+    typedef std::map< string, ElementDataPtr > ElementDataFieldMap;
+
 	/// Constructor
 	BaseMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values);
 
@@ -213,11 +211,6 @@ protected:
      * Method for reading of elements.
      */
     virtual void read_elements(Mesh * mesh)=0;
-
-    /**
-	 * Find data header for given time and field.
-	 */
-	virtual MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params)=0;
 
     /**
      * Reads table of data headers specific for each descendants.

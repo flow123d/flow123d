@@ -82,16 +82,12 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 }
 
 
-void BaseMeshReader::set_actual_data_header( std::string field_name, double time, DiscretizationParams &disc_params) {
-	actual_header_ = this->find_header(time, field_name, disc_params);
-}
-
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( unsigned int n_entities, unsigned int n_components,
 		bool boundary_domain, unsigned int component_idx) {
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
-	ASSERT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call set_actual_data_header?\n");
+	ASSERT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call find_header?\n");
 
     std::string field_name = actual_header_.field_name;
 

@@ -231,14 +231,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
-		BaseMeshReader::DiscretizationParams disc_params;
-		disc_params.discretization = this->discretization_;
-		ReaderInstance::get_reader(reader_file_)->set_actual_data_header(field_name_, time.end(), disc_params);
+		BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), this->discretization_, dh_->hash());
+		ReaderInstance::get_reader(reader_file_)->find_header(header_query);
 
-		if (disc_params.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
-			if (disc_params.dof_handler_hash != dh_->hash()) {
-				THROW(ExcInvalidDofHandler() << EI_FieldName(field_name_) << EI_MeshDataFile((string)reader_file_) );
-			}
+		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
 			auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
 					n_components, boundary_domain, this->component_idx_);
 			this->calculate_native_values(data_vec);

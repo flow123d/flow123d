@@ -320,23 +320,23 @@ void GmshMeshReader::make_header_table()
 
 
 
-BaseMeshReader::MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_name, BaseMeshReader::DiscretizationParams &disc_params)
+BaseMeshReader::MeshDataHeader & GmshMeshReader::find_header(BaseMeshReader::HeaderQuery &header_query)
 {
 	// check discretization, only type element_data or undefined is supported
-	if (disc_params.discretization != OutputTime::DiscreteSpace::ELEM_DATA) {
-		if (disc_params.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
+	if (header_query.discretization != OutputTime::DiscreteSpace::ELEM_DATA) {
+		if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
 			WarningOut().fmt(
 					"Unsupported discretization for field '{}', time: {} and GMSH format.\nType 'ELEM_DATA' of discretization will be used.\n",
-	                field_name, time);
+					header_query.field_name, header_query.time);
 		}
-		disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
+		header_query.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
 	}
 
-	HeaderTable::iterator table_it = header_table_.find(field_name);
+	HeaderTable::iterator table_it = header_table_.find(header_query.field_name);
 
 	if (table_it == header_table_.end()) {
 		// no data found
-        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_MeshFile(tok_.f_name()));
+        THROW( ExcFieldNameNotFound() << EI_FieldName(header_query.field_name) << EI_MeshFile(tok_.f_name()));
 	}
 
 	auto comp = [](double t, const MeshDataHeader &a) {
@@ -345,16 +345,17 @@ BaseMeshReader::MeshDataHeader &  GmshMeshReader::find_header(double time, std::
 
 	std::vector<MeshDataHeader>::iterator headers_it = std::upper_bound(table_it->second.begin(),
 			table_it->second.end(),
-			time,
+			header_query.time,
 			comp);
 
 	if (headers_it == table_it->second.begin()) {
-		THROW( ExcFieldNameNotFound() << EI_FieldName(field_name)
-				                      << EI_MeshFile(tok_.f_name()) << EI_Time(time));
+		THROW( ExcFieldNameNotFound() << EI_FieldName(header_query.field_name)
+				                      << EI_MeshFile(tok_.f_name()) << EI_Time(header_query.time));
 	}
 
 	--headers_it;
-	return *headers_it;
+	actual_header_ = *headers_it;
+	return actual_header_;
 }
 
 void GmshMeshReader::check_compatible_mesh(Mesh &mesh)

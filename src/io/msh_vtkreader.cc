@@ -254,38 +254,43 @@ void VtkMeshReader::make_header_table()
 }
 
 
-BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(double time, std::string field_name, BaseMeshReader::DiscretizationParams &disc_params)
+BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::HeaderQuery &header_query)
 {
-	unsigned int count = header_table_.count(field_name);
+	unsigned int count = header_table_.count(header_query.field_name);
 
 	if (count == 0) {
 		// no data found
-        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_MeshFile(tok_.f_name()));
+        THROW( ExcFieldNameNotFound() << EI_FieldName(header_query.field_name) << EI_MeshFile(tok_.f_name()));
 	} else if (count == 1) {
-		HeaderTable::iterator table_it = header_table_.find(field_name);
+		HeaderTable::iterator table_it = header_table_.find(header_query.field_name);
 
 		// check discretization
-		if (disc_params.discretization != table_it->second.discretization) {
-			if (disc_params.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
+		if (header_query.discretization != table_it->second.discretization) {
+			if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
 				WarningOut().fmt(
 						"Invalid value of 'input_discretization' for field '{}', time: {}.\nCorrect discretization type will be used.\n",
-		                field_name, time);
+						header_query.field_name, header_query.time);
 			}
-			disc_params.discretization = table_it->second.discretization;
+			header_query.discretization = table_it->second.discretization;
 		}
 
-	    disc_params.dof_handler_hash = table_it->second.dof_handler_hash;
-		return table_it->second;
+		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA)
+			if (header_query.dof_handler_hash != table_it->second.dof_handler_hash) {
+				THROW(ExcInvalidDofHandler() << EI_FieldName(header_query.field_name) << EI_VTKFile(tok_.f_name()) );
+			}
+		actual_header_ = table_it->second;
 	} else {
 		HeaderTable::iterator table_it;
-		for (table_it=header_table_.equal_range(field_name).first; table_it!=header_table_.equal_range(field_name).second; ++table_it) {
-			if (disc_params.discretization != table_it->second.discretization) {
-			    disc_params.dof_handler_hash = table_it->second.dof_handler_hash;
-				return table_it->second;
+		for (table_it=header_table_.equal_range(header_query.field_name).first; table_it!=header_table_.equal_range(header_query.field_name).second; ++table_it) {
+			if (header_query.discretization != table_it->second.discretization) {
+				header_query.dof_handler_hash = table_it->second.dof_handler_hash;
+				actual_header_ = table_it->second;
 			}
 		}
-		THROW( ExcMissingFieldDiscretization() << EI_FieldName(field_name) << EI_Time(time) << EI_MeshFile(tok_.f_name()));
+		THROW( ExcMissingFieldDiscretization() << EI_FieldName(header_query.field_name) << EI_Time(header_query.time) << EI_MeshFile(tok_.f_name()));
 	}
+
+	return actual_header_;
 }
 
 
@@ -454,8 +459,6 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     std::vector<unsigned int> node_ids; // allow mapping ids of nodes from VTK mesh to GMSH
     std::vector<unsigned int> offsets_vec; // value of offset section in VTK file
 
-	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
 	bulk_elements_id_.clear();
 
     {
@@ -466,7 +469,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         unsigned int i_node, i_elm_node;
         const BIHTree &bih_tree=mesh.get_bih_tree();
 
-		MeshDataHeader point_header = this->find_header(0.0, "Points", disc_params);
+    	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+		MeshDataHeader point_header = this->find_header(header_params);
         ASSERT_EQ(3, point_header.n_components).error();
         node_ids.resize(point_header.n_entities);
         // fill vectors necessary for correct reading of data, we read all data same order as data is stored
@@ -512,7 +516,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 
     {
         // read offset data section into offsets_vec vector, it's used for reading connectivity
-        MeshDataHeader offset_header = this->find_header(0.0, "offsets", disc_params);
+    	HeaderQuery header_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+        MeshDataHeader offset_header = this->find_header(header_params);
         for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
         	bulk_elements_id_.push_back(i);
         }
@@ -528,7 +533,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         // read connectivity data section, find corresponding elements in GMSH
         // cells in data section and elements in GMSH must be in ratio 1:1
         // store orders (mapping between VTK and GMSH file) into bulk_elements_id_ vector
-        MeshDataHeader con_header = this->find_header(0.0, "connectivity", disc_params);
+    	HeaderQuery header_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+        MeshDataHeader con_header = this->find_header(header_params);
         con_header.n_entities = offsets_vec[offsets_vec.size()-1];
         for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
         	bulk_elements_id_.push_back(i);
@@ -583,9 +589,8 @@ void VtkMeshReader::read_physical_names(Mesh * mesh) {
 
 
 void VtkMeshReader::read_nodes(Mesh * mesh) {
-	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-	auto actual_header = this->find_header(0.0, "Points", disc_params);
+	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+	auto actual_header = this->find_header(header_params);
 
 	bulk_elements_id_.resize(actual_header.n_entities);
 	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
@@ -611,11 +616,10 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 
 
 void VtkMeshReader::read_elements(Mesh * mesh) {
-	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
+	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
 
 	// read offset data section into offsets_vec vector, it's used for reading connectivity
-    MeshDataHeader offset_header = this->find_header(0.0, "offsets", disc_params);
+    MeshDataHeader offset_header = this->find_header(offsets_params);
     for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
     	bulk_elements_id_.push_back(i);
     }
@@ -627,7 +631,8 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
     std::vector<unsigned int> &offsets_vec = *(offset_cache.get_component_data(0) ); // values of offset section in VTK file
 
     // read connectivity data section
-    MeshDataHeader con_header = this->find_header(0.0, "connectivity", disc_params);
+    HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    MeshDataHeader con_header = this->find_header(con_params);
     con_header.n_entities = offsets_vec[offsets_vec.size()-1];
     for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
     	bulk_elements_id_.push_back(i);

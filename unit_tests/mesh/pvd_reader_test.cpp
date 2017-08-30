@@ -24,8 +24,9 @@ public:
 	PvdMeshReaderTest(const FilePath &file_name)
 	: PvdMeshReader(file_name) {}
 
-	void test_find_header(double time, double expected_time, std::string field_name, DiscretizationParams &disc_params) {
-		MeshDataHeader &header = this->find_header(time, field_name, disc_params);
+	void test_find_header(double time, double expected_time, std::string field_name, OutputTime::DiscreteSpace disc) {
+		HeaderQuery header_params(field_name, time, disc);
+		MeshDataHeader &header = this->find_header(header_params);
 		EXPECT_DOUBLE_EQ(expected_time, header.time);
 		EXPECT_EQ(field_name, header.field_name);
 	}
@@ -39,14 +40,11 @@ TEST(PVDReader, read_pvd) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     FilePath mesh_file("mesh/pvd-test.pvd", FilePath::input_file);
 
-	BaseMeshReader::DiscretizationParams disc_params;
-	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-
     PvdMeshReaderTest reader(mesh_file);
-    reader.test_find_header(0.0,  0.0, "offsets", disc_params);
-    reader.test_find_header(0.05, 0.0, "offsets", disc_params);
-    reader.test_find_header(0.11, 0.1, "offsets", disc_params);
-    reader.test_find_header(0.21, 0.2, "offsets", disc_params);
+    reader.test_find_header(0.0,  0.0, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
+    reader.test_find_header(0.05, 0.0, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
+    reader.test_find_header(0.11, 0.1, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
+    reader.test_find_header(0.21, 0.2, "offsets", OutputTime::DiscreteSpace::MESH_DEFINITION);
 }
 
 
@@ -70,11 +68,9 @@ TEST(PVDReader, get_element_data) {
         delete source_mesh;
     }
 
-    BaseMeshReader::DiscretizationParams disc_params;
-    disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
-
     for (unsigned int i=0; i<3; ++i) {
-    	reader.set_actual_data_header("scalar_field", i*0.1, disc_params);
+    	BaseMeshReader::HeaderQuery header_params("scalar_field", i*0.1, OutputTime::DiscreteSpace::ELEM_DATA);
+    	reader.find_header(header_params);
         typename ElementDataCache<double>::ComponentDataPtr scalar_data = reader.get_element_data<double>(6, 1, false, 0);
         std::vector<double> &vec = *( scalar_data.get() );
         EXPECT_EQ(6, vec.size());
@@ -84,7 +80,8 @@ TEST(PVDReader, get_element_data) {
     }
 
     for (unsigned int i=0; i<3; ++i) {
-    	reader.set_actual_data_header("vector_field", i*0.1, disc_params);
+    	BaseMeshReader::HeaderQuery header_params("vector_field", i*0.1, OutputTime::DiscreteSpace::ELEM_DATA);
+    	reader.find_header(header_params);
         typename ElementDataCache<double>::ComponentDataPtr vector_data = reader.get_element_data<double>(6, 3, false, 0);
         std::vector<double> &vec = *( vector_data.get() );
         EXPECT_EQ(18, vec.size());

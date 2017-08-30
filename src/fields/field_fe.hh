@@ -46,11 +46,6 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
-    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
-    TYPEDEF_ERR_INFO(EI_MeshDataFile, std::string);
-    DECLARE_EXCEPTION(ExcInvalidDofHandler,
-            << "Invalid DOF handler hash for field: " << EI_FieldName::qval << " in file: " << EI_MeshDataFile::qval << ".\n");
-
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */

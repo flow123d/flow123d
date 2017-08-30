@@ -51,6 +51,8 @@ public:
 			<< "Incompatible meshes, " << EI_ErrMessage::val << "\n" << "for VTK input file: " << EI_VTKFile::qval);
 	DECLARE_EXCEPTION(ExcMissingTag,
 			<< "Missing " << EI_TagType::val << " " << EI_TagName::val << "\n" << " in the input file: " << EI_VTKFile::qval);
+    DECLARE_EXCEPTION(ExcInvalidDofHandler,
+            << "Invalid DOF handler hash for field: " << EI_FieldName::qval << " in the input file: " << EI_VTKFile::qval << ".\n");
 
 	/// Possible data sections in UnstructuredGrid - Piece node.
 	enum DataSections {
@@ -89,6 +91,11 @@ public:
 	 */
 	void check_compatible_mesh(Mesh &mesh) override;
 
+    /**
+	 * Find header of DataArray section of VTK file by field name given by header_query.
+	 */
+    MeshDataHeader & find_header(HeaderQuery &header_query) override;
+
 protected:
 	/**
 	 * Map of DataArray sections in VTK file.
@@ -115,13 +122,6 @@ protected:
      * Input of the mesh allows changing regions within the input file.
      */
     void read_elements(Mesh * mesh);
-
-    /**
-	 * Find header of DataArray section of VTK file given by field_name.
-	 *
-	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
-	 */
-	MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params) override;
 
     /// Reads table of DataArray headers through pugixml interface
     void make_header_table() override;

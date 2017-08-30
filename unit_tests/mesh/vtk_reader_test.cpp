@@ -44,9 +44,8 @@ public:
 
 	void read_nodes(Mesh* mesh)
 	{
-    	DiscretizationParams disc_params;
-    	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-		auto actual_header = this->find_header(0.0, "Points", disc_params);
+		HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+		auto actual_header = this->find_header(header_params);
 
 		bulk_elements_id_.resize(actual_header.n_entities);
 		for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
@@ -90,10 +89,6 @@ public:
 		bulk_elements_id_.clear();
 	    delete current_cache;
 	}
-
-	MeshDataHeader & find_header(double time, std::string field_name, DiscretizationParams &disc_params) {
-		return VtkMeshReader::find_header(time, field_name, disc_params);
-	}
 };
 
 
@@ -122,7 +117,6 @@ TEST(VtkReaderTest, read_ascii_vtu) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     std::string mesh_in_string = "{mesh_file=\"output/test_output_vtk_ascii_ref.vtu\"}";
     auto reader = VtkMeshReaderTest::test_factory(mesh_in_string);
-	BaseMeshReader::DiscretizationParams disc_params;
 
 	Mesh * mesh = mesh_constructor(mesh_in_string);
 
@@ -134,8 +128,8 @@ TEST(VtkReaderTest, read_ascii_vtu) {
 
     {
     	// test of connectivity data array
-    	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-    	auto data_attr = reader->find_header(0.0, "connectivity", disc_params);
+    	BaseMeshReader::HeaderQuery header_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    	auto data_attr = reader->find_header(header_params);
     	EXPECT_EQ( DataType::uint32, data_attr.type );
     	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
@@ -145,8 +139,8 @@ TEST(VtkReaderTest, read_ascii_vtu) {
 
     {
     	// test of connectivity data array
-    	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-    	auto data_attr = reader->find_header(0.0, "flow_data", disc_params);
+    	BaseMeshReader::HeaderQuery header_params("flow_data", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    	auto data_attr = reader->find_header(header_params);
     	EXPECT_EQ( DataType::float64, data_attr.type );
     	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
@@ -174,9 +168,8 @@ TEST(VtkReaderTest, read_binary_vtu) {
 
     {
     	// test of connectivity data array
-    	BaseMeshReader::DiscretizationParams disc_params;
-    	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-    	auto data_attr = reader->find_header(0.0, "connectivity", disc_params);
+    	BaseMeshReader::HeaderQuery header_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    	auto data_attr = reader->find_header(header_params);
     	EXPECT_EQ( DataType::uint32, data_attr.type );
     	EXPECT_EQ( VtkMeshReader::DataFormat::binary_uncompressed, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
@@ -201,11 +194,10 @@ TEST(VtkReaderTest, read_binary_vtu) {
 
 
     bool boundary_domain = false; // bulk data
-    BaseMeshReader::DiscretizationParams disc_params;
-    disc_params.discretization = OutputTime::DiscreteSpace::ELEM_DATA;
+    BaseMeshReader::HeaderQuery vector_header_params("vector_field", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
     // read data by components for MultiField
     for (i=0; i<3; ++i) {
-    	reader->set_actual_data_header("vector_field", 0.0, disc_params);
+    	reader->find_header(vector_header_params);
         typename ElementDataCache<double>::ComponentDataPtr multifield_data =
         		reader->get_element_data<double>(6, 1, boundary_domain, i);
     	std::vector<double> &vec = *( multifield_data.get() );
@@ -216,9 +208,10 @@ TEST(VtkReaderTest, read_binary_vtu) {
     }
 
     // read data to one vector for Field
+    BaseMeshReader::HeaderQuery tensor_header_params("tensor_field", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     {
     	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
-    	reader->set_actual_data_header("tensor_field", 1.0, disc_params);
+    	reader->find_header(tensor_header_params);
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
     			reader->get_element_data<double>(6, 9, boundary_domain, 0);
     	std::vector<double> &vec = *( field_data.get() );
@@ -247,9 +240,8 @@ TEST(VtkReaderTest, read_compressed_vtu) {
 
     {
     	// test of connectivity data array
-    	BaseMeshReader::DiscretizationParams disc_params;
-    	disc_params.discretization = OutputTime::DiscreteSpace::MESH_DEFINITION;
-    	auto data_attr = reader->find_header(0.0, "connectivity", disc_params);
+    	BaseMeshReader::HeaderQuery header_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    	auto data_attr = reader->find_header(header_params);
     	EXPECT_EQ( DataType::uint32, data_attr.type );
     	EXPECT_EQ( VtkMeshReader::DataFormat::binary_zlib, reader->get_data_format() );
     	EXPECT_EQ( 1, data_attr.n_components );
