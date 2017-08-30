@@ -139,7 +139,7 @@ TEST(VtkReaderTest, read_ascii_vtu) {
 
     {
     	// test of connectivity data array
-    	BaseMeshReader::HeaderQuery header_params("flow_data", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    	BaseMeshReader::HeaderQuery header_params("flow_data", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION, 6);
     	auto data_attr = reader->find_header(header_params);
     	EXPECT_EQ( DataType::float64, data_attr.type );
     	EXPECT_EQ( VtkMeshReader::DataFormat::ascii, reader->get_data_format() );
