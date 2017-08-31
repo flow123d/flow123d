@@ -143,7 +143,8 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     std::unordered_set<unsigned int> closed_elements(1023);
 
     // search for the initial element
-    bih_tree.find_point(input_point_, candidate_list);
+    auto projected_point = bih_tree.tree_box().project_point(input_point_);
+    bih_tree.find_point( projected_point, candidate_list );
     process_list.swap(candidate_list);
     candidate_list.clear();
 
@@ -247,6 +248,11 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) << EI_NLevels(max_levels_) );
     }
     snap( mesh );
+    Element & elm = mesh.element[element_idx_];
+    double dist = arma::norm(elm.centre() - input_point_, 2);
+    double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
+    if (dist > 2*elm_norm)
+    	WarningOut().fmt("Observe point ({}) is too distant from the mesh.\n", name_);
 }
 
 
