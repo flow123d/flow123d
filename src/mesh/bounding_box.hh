@@ -246,12 +246,28 @@ public:
     /**
      * Return index of the axis in which the box has longest projection.
      */
-   unsigned char longest_axis() const {
+    unsigned char longest_axis() const {
 	   auto diff=max_vertex_ - min_vertex_;
 	   return (diff[1] > diff[0])
 			   	   ?  ( diff[2] > diff[1] ? 2 : 1 )
 			   	   :  ( diff[2] > diff[0] ? 2 : 0 );
-   }
+    }
+
+    /**
+     * Project point to bounding box.
+     *
+     * If point is in bounding box, returns its.
+     */
+    Point project_point(const Point &point) const {
+        Point projected_point;
+        for (unsigned int i=0; i<dimension; ++i) {
+            if ( projection_gt(i, point[i]) ) projected_point[i] = min_vertex_(i);
+            else if ( projection_lt(i, point[i]) ) projected_point[i] = max_vertex_(i);
+            else projected_point[i] = point[i];
+        }
+
+        return projected_point;
+    }
 
 
 private:
