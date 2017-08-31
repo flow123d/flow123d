@@ -82,7 +82,6 @@
 ##      output_stream:
 ##        file: flow.msh
 ##        format: !gmsh
-##          variant: ascii
 ##
 ##The list of fields (solution components, input fields etc.) to be saved is specified by:
 ##
@@ -120,7 +119,7 @@
 ##Control file ```02_column_transport.yaml``` contains modified boundary conditions and solute transport model for the same physical problem.
 ##
 ##
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model
   mesh:
@@ -142,7 +141,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
     output:
       fields:
         - piezo_head_p0

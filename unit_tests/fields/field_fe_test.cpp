@@ -27,8 +27,8 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
-#include "mesh/reader_instances.hh"
+#include "io/msh_gmshreader.h"
+#include "io/reader_instances.hh"
 
 
 
@@ -52,10 +52,7 @@ public:
     }
 
     void create_mesh(std::string mesh_file_str) {
-        FilePath mesh_file( mesh_file_str, FilePath::input_file);
-        mesh= mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = mesh_full_constructor("{mesh_file=\"" + mesh_file_str + "\"}");
     }
 
     void create_dof_handler(double val1, double val2, double val3) {

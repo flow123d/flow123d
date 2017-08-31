@@ -1,11 +1,11 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
     mesh_file: ../00_mesh/rectangle_16x1_str.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
-      raw_flow_output: ./raw_output.txt  
+      raw_flow_output: ./raw_output.txt
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -35,7 +35,7 @@ problem: !Coupling_Sequential
     time:
       end_time: 2.0
       max_dt: 0.1
-    output_stream: 
+    output_stream:
       file: ./test15.pvd
       format: !vtk
         variant: ascii
@@ -58,7 +58,7 @@ problem: !Coupling_Sequential
       solver: !Petsc
         a_tol: 1.0e-07
         r_tol: 1.0e-07
-    output_stream: 
+    output_stream:
       file: ./transport-implicit.pvd
       format: !vtk
         variant: ascii

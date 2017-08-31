@@ -16,11 +16,14 @@
  */
 
 
+#include <limits>
+
 #include "fields/field_fe.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
-#include "mesh/reader_instances.hh"
+#include "io/reader_instances.hh"
+#include "io/msh_gmshreader.h"
 
 
 
@@ -59,7 +62,6 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   data_vec_(nullptr),
-  dof_indices(nullptr),
   field_name_("")
 {}
 
@@ -75,7 +77,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
     data_vec_ = data;
 
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
-    dof_indices = new unsigned int[ndofs];
+    dof_indices.resize(ndofs);
 
     // initialization data of value handlers
 	FEValueInitData init_data;
@@ -174,7 +176,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
-    dof_indices = new unsigned int[ndofs];
+    dof_indices.resize(ndofs);
 
     // allocate data_vec_
 	unsigned int data_size = dh_->n_global_dofs();
@@ -206,19 +208,13 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
 
-		GMSH_DataHeader search_header;
-		search_header.actual = false;
-		search_header.field_name = field_name_;
-		search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-		search_header.n_entities = source_mesh->element.size();
-		search_header.time = time.end();
-
-		bool boundary_domain_ = false;
-		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(search_header,
-				source_mesh->elements_id_maps(boundary_domain_), this->component_idx_);
+		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
+		bool boundary_domain = false;
+		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
+				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_);
 		this->interpolate(data_vec);
 
-		return search_header.actual;
+		return true;
 	} else return false;
 
 }
@@ -276,12 +272,29 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 }
 
 
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &output_data_cache) {
+	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_elem(), dh_->n_global_dofs()).error();
+	ASSERT_EQ(output_data_cache.n_elem(), dof_indices.size()).error();
+	double loc_values[output_data_cache.n_elem()];
+	unsigned int i, dof_filled_size;
+
+	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
+	FOR_ELEMENTS( dh_->mesh(), ele ) {
+		dof_filled_size = dh_->get_loc_dof_indices( ele, dof_indices);
+		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices[0] ];
+		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
+		output_data_cache.store_value( ele.index(), loc_values );
+	}
+
+	output_data_cache.set_dof_handler_hash( dh_->hash() );
+}
+
+
 
 template <int spacedim, class Value>
 FieldFE<spacedim, Value>::~FieldFE()
-{
-	if (dof_indices != nullptr) delete[] dof_indices;
-}
+{}
 
 
 // Instantiations of FieldFE

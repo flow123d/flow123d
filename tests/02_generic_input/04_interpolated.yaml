@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Interpolated boundary condition - small cube
   mesh:
@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
       - region: .IMPLICIT_BOUNDARY
         bc_type: dirichlet
         bc_piezo_head: !FieldInterpolatedP0
-          gmsh_file: ref_out/05_interpolation_large_cube/large_cube.msh
+          mesh_data_file: ref_out/05_interpolation_large_cube/large_cube.msh
           field_name: piezo_head_p0
       - region: BULK
         anisotropy: 1
@@ -25,7 +25,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./small_cube.pvd
       format: !vtk
         variant: ascii

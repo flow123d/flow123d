@@ -1,0 +1,24 @@
+# problem
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: 'Can not determine type of the Abstract at address: /problem/solute_equation/transport'
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+### ERROR Can not determine type of the Abstract
+  flow_equation:
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: ALL
+        conductivity: 10
+    output:
+      fields:
+        - pressure_p0
+    balance: {}
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii

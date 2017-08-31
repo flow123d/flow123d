@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Interpolated boundary condition - small cube
   mesh:
@@ -27,7 +27,7 @@ problem: !Coupling_Sequential
         - conductivity
         - region_id
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./small_cube.pvd
       format: !vtk
         variant: ascii

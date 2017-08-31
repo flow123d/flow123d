@@ -173,88 +173,88 @@ void print_fv_side(ElementFullIter ele, FESideValues<2,3>& fv_side, unsigned int
 
 
 
-// simplest mesh
-string ref_element_mesh2 = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-3
-1 2.5 1.875 0
-2 2.5 2.5 0
-3 1.875 2.5 0
-$EndNodes
-$Elements
-1
-1 2 2 39 40 1 3 2
-$EndElements
-)CODE";
+// // simplest mesh
+// string ref_element_mesh2 = R"CODE(
+// $MeshFormat
+// 2.2 0 8
+// $EndMeshFormat
+// $Nodes
+// 3
+// 1 2.5 1.875 0
+// 2 2.5 2.5 0
+// 3 1.875 2.5 0
+// $EndNodes
+// $Elements
+// 1
+// 1 2 2 39 40 1 3 2
+// $EndElements
+// )CODE";
 
 // 1 0 0 0
 // 2 2 0 0
 // 3 0 2 0
 
-void enriched_side_edge(ElementFullIter ele, FE_RT0_XFEM<2,3>* fe_rt_xfem_, unsigned int local_side){
-        double val;
-        DBGVAR(local_side);
-        MappingP1<2,3> map;
-        
-        QGauss<1> auxq(1);
-        auto fv_side = std::make_shared<FESideValues<2,3>>(map, auxq, *fe_rt_xfem_, update_normal_vectors);
-        fv_side->reinit(ele, local_side);
-        
-        const unsigned int qsize = 100;
-        QXFEM<2,3> qside_xfem(QMidpoint(qsize), local_side, *ele->permutation_idx_); // mapped side quadrature to 2d coords
-        DBGVAR(*ele->permutation_idx_);
-        for(unsigned int q=0; q < qside_xfem.size(); q++){   // map to real coords
-            arma::vec real_point = map.project_unit_to_real(RefElement<2>::local_to_bary(qside_xfem.point(q)),map.element_map(*ele));
-            qside_xfem.set_real_point(q,real_point);
-        }
-        
-        auto fv_xfem = std::make_shared<FEValues<2,3>>(map, qside_xfem, *fe_rt_xfem_, update_values);
-        fv_xfem->reinit(ele);
-        
-        for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
-            double sum_val = 0;
-            double side_measure = ele->side(local_side)->measure();
-            for(unsigned int q=0; q < qside_xfem.size(); q++){
-//                 auto qp = qside_xfem.real_point(q);
-//                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
-//                 auto fv = fv_xfem->shape_vector(j,q);
-//                 cout << fv(0) << " " << fv(1) << " " << fv(2) << "\n";
-                val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(0))
-                      // this makes JxW on the triangle side:
-                      * qside_xfem.weight(q)
-                      * side_measure;
-                      
-                sum_val += val;
-            }
-            DBGVAR(sum_val);
-        }           
-    }
-    
-TEST(fe_xfem, fe_rt_xfem_edges) {
-
-    QXFEMFactory qfactory;
-    
-    // read mesh - simplset cube from test1
-    Mesh* mesh = mesh_constructor();
-    stringstream in(ref_element_mesh2.c_str());
-    mesh->read_gmsh_from_stream(in);
-    ElementFullIter ele = mesh->element(0);
-    Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
-                          ele->node[2]->point() - ele->node[0]->point());
-    
-//     auto func = std::make_shared<Singularity0D<3>>(arma::vec({0.3,0.3,2}),0.1,arma::vec({0,0,1}),n);
-    auto func = std::make_shared<Singularity0D>(arma::vec({3.3,3.3,0}),0.02,arma::vec({0,0,1}),n, 100);
-    shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
-    
-    MappingP1<2,3> map;
-    
-    FE_RT0<2,3> fe_rt;
-    FE_RT0_XFEM<2,3> fe_rt_xfem(&fe_rt,{func});
-    
-    for(unsigned int j=0; j<3; j++){
-        enriched_side_edge(ele, &fe_rt_xfem, j);
-    }
-}
+// void enriched_side_edge(ElementFullIter ele, FE_RT0_XFEM<2,3>* fe_rt_xfem_, unsigned int local_side){
+//         double val;
+//         DBGVAR(local_side);
+//         MappingP1<2,3> map;
+//         
+//         QGauss<1> auxq(1);
+//         auto fv_side = std::make_shared<FESideValues<2,3>>(map, auxq, *fe_rt_xfem_, update_normal_vectors);
+//         fv_side->reinit(ele, local_side);
+//         
+//         const unsigned int qsize = 100;
+//         QXFEM<2,3> qside_xfem(QMidpoint(qsize), local_side, *ele->permutation_idx_); // mapped side quadrature to 2d coords
+//         DBGVAR(*ele->permutation_idx_);
+//         for(unsigned int q=0; q < qside_xfem.size(); q++){   // map to real coords
+//             arma::vec real_point = map.project_unit_to_real(RefElement<2>::local_to_bary(qside_xfem.point(q)),map.element_map(*ele));
+//             qside_xfem.set_real_point(q,real_point);
+//         }
+//         
+//         auto fv_xfem = std::make_shared<FEValues<2,3>>(map, qside_xfem, *fe_rt_xfem_, update_values);
+//         fv_xfem->reinit(ele);
+//         
+//         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
+//             double sum_val = 0;
+//             double side_measure = ele->side(local_side)->measure();
+//             for(unsigned int q=0; q < qside_xfem.size(); q++){
+// //                 auto qp = qside_xfem.real_point(q);
+// //                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
+// //                 auto fv = fv_xfem->shape_vector(j,q);
+// //                 cout << fv(0) << " " << fv(1) << " " << fv(2) << "\n";
+//                 val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(0))
+//                       // this makes JxW on the triangle side:
+//                       * qside_xfem.weight(q)
+//                       * side_measure;
+//                       
+//                 sum_val += val;
+//             }
+//             DBGVAR(sum_val);
+//         }           
+//     }
+//     
+// TEST(fe_xfem, fe_rt_xfem_edges) {
+// 
+//     QXFEMFactory qfactory;
+//     
+//     // read mesh - simplset cube from test1
+//     Mesh* mesh = mesh_constructor();
+//     stringstream in(ref_element_mesh2.c_str());
+//     mesh->read_gmsh_from_stream(in);
+//     ElementFullIter ele = mesh->element(0);
+//     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
+//                           ele->node[2]->point() - ele->node[0]->point());
+//     
+// //     auto func = std::make_shared<Singularity0D<3>>(arma::vec({0.3,0.3,2}),0.1,arma::vec({0,0,1}),n);
+//     auto func = std::make_shared<Singularity0D>(arma::vec({3.3,3.3,0}),0.02,arma::vec({0,0,1}),n, 100);
+//     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
+//     
+//     MappingP1<2,3> map;
+//     
+//     FE_RT0<2,3> fe_rt;
+//     FE_RT0_XFEM<2,3> fe_rt_xfem(&fe_rt,{func});
+//     
+//     for(unsigned int j=0; j<3; j++){
+//         enriched_side_edge(ele, &fe_rt_xfem, j);
+//     }
+// }

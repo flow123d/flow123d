@@ -331,7 +331,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
     n_dofs = next_free_dof - offset;
 }
 
-void DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, unsigned int indices[]) const
+unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const
 {
 	unsigned int dim = cell->dim();
     unsigned int n_objects_dofs;
@@ -349,11 +349,15 @@ void DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, unsigned int 
 		break;
 	}
 	
+	ASSERT_LE(n_objects_dofs, indices.size()).error();
+
 	for (unsigned int k = 0; k < n_objects_dofs; k++)
         indices[k] = object_dofs[cell.index()][dim][k];
+
+	return n_objects_dofs;
 }
 
-void DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const
 {
     unsigned int dim = cell->dim();
     unsigned int n_objects_dofs;
@@ -369,10 +373,14 @@ void DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, unsigned 
     case 3:
         n_objects_dofs = fe3d_->n_object_dofs(dim,DOF_SINGLE);
         break;
-    }    
+    }
+
+    ASSERT_LE(n_objects_dofs, indices.size()).error();
 
     for (unsigned int k = 0; k < n_objects_dofs; k++)
         indices[k] = object_dofs[cell.index()][dim][k] - loffset_;
+
+    return n_objects_dofs;
 }
 
 void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[]) const
@@ -392,10 +400,10 @@ void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &val
 		break;
 	}
 
-    unsigned int indices[ndofs];
+    std::vector<int> indices(ndofs);
 
     get_dof_indices(cell, indices);
-    VecGetValues(values, ndofs, (PetscInt *)indices, local_values);
+    VecGetValues(values, ndofs, (PetscInt *)indices[0], local_values);
 }
 
 DOFHandlerMultiDim::~DOFHandlerMultiDim()
@@ -450,6 +458,11 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 bool DOFHandlerMultiDim::el_is_local(int index) const
 {
 	return el_ds_->is_local(row_4_el[index]);
+}
+
+
+std::size_t DOFHandlerMultiDim::hash() const {
+	return this->n_dofs;
 }
 
 

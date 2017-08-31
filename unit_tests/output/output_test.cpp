@@ -14,11 +14,12 @@
 #include <mesh_constructor.hh>
 
 #include "io/output_time.hh"
-#include "io/output_data_base.hh"
+#include "io/element_data_cache_base.hh"
 #include "io/output_mesh.hh"
 #include "tools/time_governor.hh"
 
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -205,24 +206,24 @@ static const Input::Type::Selection & get_test_selection() {
 		.close();
 }
 
-class TestOutputTime : public testing::Test,
-                       public OutputTime
+class TestOutputTime : //public testing::Test,
+                       public OutputTime,
+					   public std::enable_shared_from_this<TestOutputTime>
 {
 public:
 	TestOutputTime()
 	: OutputTime()
 
 	{
-	    my_mesh = mesh_constructor();
+	    Profiler::initialize();
+		// read simple mesh
+	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+	    my_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
+
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
 	    this->init_from_input("dummy_equation", *my_mesh, in_rec);
-	    Profiler::initialize();
-		// read simple mesh
-	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    ifstream in(string(mesh_file).c_str());
-	    my_mesh->read_gmsh_from_stream(in);
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
@@ -257,11 +258,11 @@ public:
         this->output_mesh_discont_->create_mesh(this->output_mesh_);
         
 		{
-			this->compute_field_data(ELEM_DATA, field);
+        	field.compute_field_data(ELEM_DATA, shared_from_this());
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
-			EXPECT_EQ(my_mesh->n_elements(), data->n_values);
-			for(unsigned int i=0;  i < data->n_values; i++) {
+			EXPECT_EQ(my_mesh->n_elements(), data->n_values());
+			for(unsigned int i=0;  i < data->n_values(); i++) {
 				std::stringstream ss;
 				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
@@ -269,11 +270,11 @@ public:
 		}
 
 		{
-			this->compute_field_data(NODE_DATA, field);
+			field.compute_field_data(NODE_DATA, shared_from_this());
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
-			EXPECT_EQ(my_mesh->n_nodes(), data->n_values);
-			for(unsigned int i=0;  i < data->n_values; i++) {
+			EXPECT_EQ(my_mesh->n_nodes(), data->n_values());
+			for(unsigned int i=0;  i < data->n_values(); i++) {
 				std::stringstream ss;
 				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
@@ -281,11 +282,11 @@ public:
 		}
 
 		{
-			this->compute_field_data(CORNER_DATA, field);
+			field.compute_field_data(CORNER_DATA, shared_from_this());
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
-			//EXPECT_EQ(my_mesh->n_elements(), data->n_values);
-			for(unsigned int i=0;  i < data->n_values; i++) {
+			//EXPECT_EQ(my_mesh->n_elements(), data->n_values());
+			for(unsigned int i=0;  i < data->n_values(); i++) {
 				std::stringstream ss;
 				data->print_ascii(ss, i);
 				EXPECT_EQ(result, ss.str() );
@@ -310,50 +311,65 @@ public:
 */
 	}
 
+	std::string base_filename() {
+		return string(this->_base_filename);
+	}
+
+	void base_filename(std::string file_name) {
+		this->_base_filename = FilePath(file_name, FilePath::output_file);
+	}
+
+	void test_fix_main_file_extension(std::string extension) {
+		this->fix_main_file_extension(extension);
+	}
+
 	Mesh * my_mesh;
 	std::vector<string> component_names;
 };
 
 
 
-TEST_F(TestOutputTime, fix_main_file_extension)
+TEST(TestOutputTime, fix_main_file_extension)
 {
-    this->_base_filename=FilePath("test.pvd", FilePath::output_file);
-    this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", string(this->_base_filename));
+    std::shared_ptr<TestOutputTime> output_time = std::make_shared<TestOutputTime>();
 
-    this->_base_filename=FilePath("test", FilePath::output_file);
-    this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", string(this->_base_filename));
+    output_time->base_filename("test.pvd");
+    output_time->test_fix_main_file_extension(".pvd"); // call protected fix_main_file_extension
+    EXPECT_EQ("test.pvd", output_time->base_filename());
 
-    this->_base_filename=FilePath("test.msh", FilePath::output_file);
-    this->fix_main_file_extension(".pvd");
-    EXPECT_EQ("test.pvd", string(this->_base_filename));
+    output_time->base_filename("test");
+    output_time->test_fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.pvd", output_time->base_filename());
 
-    this->_base_filename=FilePath("test.msh", FilePath::output_file);
-    this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", string(this->_base_filename));
+    output_time->base_filename("test.msh");
+    output_time->test_fix_main_file_extension(".pvd");
+    EXPECT_EQ("test.pvd", output_time->base_filename());
 
-    this->_base_filename=FilePath("test", FilePath::output_file);
-    this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", string(this->_base_filename));
+    output_time->base_filename("test.msh");
+    output_time->test_fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", output_time->base_filename());
 
-    this->_base_filename=FilePath("test.pvd", FilePath::output_file);
-    this->fix_main_file_extension(".msh");
-    EXPECT_EQ("test.msh", string(this->_base_filename));
+    output_time->base_filename("test");
+    output_time->test_fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", output_time->base_filename());
+
+    output_time->base_filename("test.pvd");
+    output_time->test_fix_main_file_extension(".msh");
+    EXPECT_EQ("test.msh", output_time->base_filename());
 
 }
 
 
 #define FV FieldValue
-TEST_F(TestOutputTime, compute_field_data) {
-	test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
-	test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
-	test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
-	test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
-	//test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
-	test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 3], [4, 5, 6], [7, 8, 9]]", "1 2 3 4 5 6 7 8 9 ");
-	//test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
+TEST(TestOutputTime, compute_field_data) {
+	std::shared_ptr<TestOutputTime> output_time = std::make_shared<TestOutputTime>();
+	output_time->test_compute_field_data< Field<3,FV<0>::Scalar> > ("1.3", "1.3 ");
+	output_time->test_compute_field_data< Field<3,FV<0>::Enum> > ("\"white\"", "3 ");
+	output_time->test_compute_field_data< Field<3,FV<0>::Integer> > ("3", "3 ");
+	output_time->test_compute_field_data< Field<3,FV<3>::VectorFixed> > ("[1.2, 3.4, 5.6]", "1.2 3.4 5.6 ");
+	//output_time->test_compute_field_data< Field<3,FV<2>::VectorFixed> > ("[1.2, 3.4]", "1.2 3.4 0 ");
+	output_time->test_compute_field_data< Field<3,FV<3>::TensorFixed> > ("[[1, 2, 0], [2, 4, 3], [0, 3, 5]]", "1 2 0 2 4 3 0 3 5 ");
+	//output_time->test_compute_field_data< Field<3,FV<2>::TensorFixed> > ("[[1, 2], [4,5]]", "1 2 0 4 5 0 0 0 0 ");
 }
 
 
@@ -416,8 +432,8 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     ASSERT_EQ(output_time->elem_data.size(), 2);
 
     /* Get first registered data */
-    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->elem_data.begin();
-    OutputDataBase *output_data = *output_data_iter;
+    std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->elem_data.begin();
+    ElementDataCacheBase *output_data = *output_data_iter;
 
     /* Number of items should be equal to number of mesh elements */
     EXPECT_EQ(output_data->items_count, mesh.n_elements());
@@ -497,8 +513,8 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     ASSERT_EQ(output_time->corner_data.size(), 2);
 
     /* Get first registered corner data */
-    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->corner_data.begin();
-    OutputDataBase *output_data = *output_data_iter;
+    std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->corner_data.begin();
+    ElementDataCacheBase *output_data = *output_data_iter;
 
     /* All values has to be equal 20.0 */
     ElementFullIter ele = ELEMENT_FULL_ITER(&mesh, NULL);
@@ -594,8 +610,8 @@ TEST_F( OutputTest, test_register_node_fields_data ) {
     ASSERT_EQ(output_time->node_data.size(), 2);
 
     /* Get first registered corner data */
-    std::vector<OutputDataBase*>::iterator output_data_iter = output_time->node_data.begin();
-    OutputDataBase *output_data = *output_data_iter;
+    std::vector<ElementDataCacheBase*>::iterator output_data_iter = output_time->node_data.begin();
+    ElementDataCacheBase *output_data = *output_data_iter;
 
     /* Number of items should be equal to number of mesh nodes */
     EXPECT_EQ(output_data->items_count, mesh.n_nodes());

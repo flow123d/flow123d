@@ -9,8 +9,6 @@
 
 #include "arma_expect.hh"
 
-#include "mesh/point.hh"
-#include "mesh/elements.h"
 #include "mesh/mesh.h"
 #include "mesh_constructor.hh"
 
@@ -19,36 +17,21 @@
 #include "quadrature/qxfem.hh"
 #include "quadrature/qxfem_factory.hh"
 
+
+
+
 typedef Space<3>::Point Point;
-
-// simplest mesh
-string ref_element_mesh = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-3
-1 0 0 0
-2 3 0 2
-3 0 6 4
-$EndNodes
-$Elements
-1
-1 2 2 39 40 1 3 2
-$EndElements
-)CODE";
-
-
-
 
 TEST(qxfem, qxfem_factory) {
 
     QXFEMFactory qfactory(12);
     
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
     // read mesh
-    Mesh* mesh = mesh_constructor();
-    stringstream in(ref_element_mesh.c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"triangle.msh\"}");
+    
     ElementFullIter ele = mesh->element(0);
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
@@ -229,10 +212,12 @@ TEST(qxfem, qxfem_factory_two) {
 
     QXFEMFactory qfactory(12);
     
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
     // read mesh
-    Mesh* mesh = mesh_constructor();
-    stringstream in(ref_element_mesh.c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"triangle.msh\"}");
+    
     ElementFullIter ele = mesh->element(0);
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
@@ -301,37 +286,14 @@ TEST(qxfem, qxfem_factory_two) {
 
 
 
-
-
-
-
-// simplest mesh
-string mesh_tetrahedron = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-4
-1 0 0 0
-2 2 0 0
-3 0 2 0
-4 0 0 2
-$EndNodes
-$Elements
-1
-1 4 2 39 40 1 2 3 4
-$EndElements
-)CODE";
-
-
 TEST(qxfem, qxfem_factory_3d) {
 
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-    
     // read mesh
-    Mesh* mesh = mesh_constructor();
-    stringstream in(mesh_tetrahedron.c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"tetrahedron.msh\"}");
+    
     ElementFullIter ele = mesh->element(0);
     
     unsigned int n = 50, m = 20;
@@ -388,12 +350,12 @@ TEST(qxfem, qxfem_factory_3d) {
 
 TEST(qxfem, qxfem_factory_3d_side) {
 
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
-    
     // read mesh
-    Mesh* mesh = mesh_constructor();
-    stringstream in(mesh_tetrahedron.c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"tetrahedron.msh\"}");
+    
     ElementFullIter ele = mesh->element(0);
     
     unsigned int n = 50, m = 20;
@@ -463,10 +425,12 @@ TEST(qxfem, qxfem_factory_3d_side) {
 
 TEST(qxfem, qxfem_factory_2d_side) {
 
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
     // read mesh
-    Mesh* mesh = mesh_constructor();
-    stringstream in(ref_element_mesh.c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"triangle.msh\"}");
+    
     ElementFullIter ele = mesh->element(0);
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
@@ -479,7 +443,6 @@ TEST(qxfem, qxfem_factory_2d_side) {
     QXFEMFactory qfactory(i);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_side_singular({func},ele,sid);
     
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
 //     qfactory.gnuplot_refinement<2>(ele, dir_name, *qxfem);
     
 //     std::ofstream q_points_file;

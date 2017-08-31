@@ -9,7 +9,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
@@ -55,40 +55,8 @@ const std::string input_rt = R"INPUT(
 }
 )INPUT";
 
-// simplest mesh
-string ref_element_mesh_2d = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-3
-1 0 0 0
-2 1 0 0
-3 0 1 0
-$EndNodes
-$Elements
-1
-1 2 2 39 40 1 2 3
-$EndElements
-)CODE";
-
-// simplest mesh
-string ref_element_mesh_3d = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-4
-1 0 0 0
-2 1 0 0
-3 0 1 0
-4 0 0 1
-$EndNodes
-$Elements
-1
-1 4 2 39 40 1 2 3 4
-$EndElements
-)CODE";
+const std::string mesh_file_2d = "ref_element_mesh_2d.msh";
+const std::string mesh_file_3d = "ref_element_mesh_3d.msh";
 
 bool replace_string(std::string& str, const std::string& from, const std::string& to) {
     size_t start_pos = str.find(from);
@@ -105,17 +73,17 @@ void output_field_fe(FiniteElement<1,3>& fe_1,
                      const std::map<unsigned int, double>& dof_values,
                      bool is_scalar,
                      std::string file_name,
-                     std::string mesh_record)
+                     std::string input_mesh_file)
 {
     // replace correct output file name in input record string
     std::string input_json = input_rt;
     bool res = replace_string(input_json, "test_shape" ,file_name);
     ASSERT(res);
     
+    // setup FilePath directories
+    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
     // read mesh
-    Mesh* mesh = mesh_constructor();
-    stringstream in(mesh_record.c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\""+input_mesh_file+"\"}");
     
     shared_ptr<DOFHandlerMultiDim> dofhandler = std::make_shared<DOFHandlerMultiDim>(*mesh);
        
@@ -207,7 +175,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_2d) {
     std::string filename = "test_rt_2d_";
     for(unsigned int i=0; i < fe_rt_xfem.n_dofs(); i++){
         dof_values = {{i, 1.0}};  //select only one shape function
-        output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, filename + std::to_string(i), ref_element_mesh_2d);
+        output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, filename + std::to_string(i), mesh_file_2d);
     }
     
 //     //     //precise enrichment function approx.
@@ -233,7 +201,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_2d) {
         { 3, 1.0 }
     };
     
-    output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt_2d",  ref_element_mesh_2d);
+    output_field_fe(fe_rt1, fe_rt_xfem, fe_rt3, dof_values, false, "test_rt_2d",  mesh_file_2d);
 }
 
 
@@ -252,7 +220,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_3d) {
     std::string filename = "test_rt__3d_";
 //     for(unsigned int i=0; i < fe_rt_xfem.n_dofs(); i++){
 //         dof_values = {{i, 1.0}};  //select only one shape function
-//         output_field_fe(fe_rt1, fe_rt2, fe_rt_xfem, dof_values, false, filename + std::to_string(i), ref_element_mesh_3d);
+//         output_field_fe(fe_rt1, fe_rt2, fe_rt_xfem, dof_values, false, filename + std::to_string(i), mesh_file_3d);
 //     }
     
 //     //     //precise enrichment function approx.
@@ -279,7 +247,7 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_3d) {
         { 4, 1.0 }
     };
     
-    output_field_fe(fe_rt1, fe_rt2, fe_rt_xfem, dof_values, false, "test_rt_3d", ref_element_mesh_3d);
+    output_field_fe(fe_rt1, fe_rt2, fe_rt_xfem, dof_values, false, "test_rt_3d", mesh_file_3d);
 }
 
 // TEST(ShapeFunctionOutput, p0_xfem) {
