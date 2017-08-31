@@ -185,7 +185,7 @@ unsigned int BIHTree::get_element_count() {
 }
 
 
-const BoundingBox &BIHTree::tree_box() {
+const BoundingBox &BIHTree::tree_box() const {
 	return main_box_;
 }
 
