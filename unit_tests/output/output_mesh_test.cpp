@@ -8,6 +8,8 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include "arma_expect.hh"
+
 #include <mesh_constructor.hh>
 #include "io/output_time.hh"
 #include "io/output_vtk.hh"
@@ -70,10 +72,8 @@ TEST(OutputMesh, create_identical)
         std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
-        EXPECT_EQ(ele.dim(), ele_acc.dim());
-        EXPECT_EQ(ele.centre()[0], ele_acc.centre()[0]);
-        EXPECT_EQ(ele.centre()[1], ele_acc.centre()[1]);
-        EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
+        EXPECT_EQ(ele_acc.dim(), ele.dim());
+        EXPECT_ARMA_EQ(ele_acc.centre(), ele.centre());
     }
     
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
@@ -95,10 +95,8 @@ TEST(OutputMesh, create_identical)
         std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
-        EXPECT_EQ(ele.dim(), ele_acc.dim());
-        EXPECT_EQ(ele.centre()[0], ele_acc.centre()[0]);
-        EXPECT_EQ(ele.centre()[1], ele_acc.centre()[1]);
-        EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
+        EXPECT_EQ(ele_acc.dim(), ele.dim());
+        EXPECT_ARMA_EQ(ele_acc.centre(), ele.centre());
     }
     
     delete mesh;
@@ -226,7 +224,7 @@ public:
         std::vector<unsigned int> disc_connectivity;
         
         this->refine_by_error_ = false;
-        this->refine_aux_element<dim>(el, refs, ElementAccessor<3>(), nullptr);
+        this->refine_aux_element<dim>(el, refs, ElementAccessor<3>());
         
         disc_coords.resize(spacedim * (dim+1) * refs.size());
         disc_connectivity.resize((dim+1) * refs.size());

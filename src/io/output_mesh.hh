@@ -123,9 +123,9 @@ protected:
     /// Refinement error control field.
     ErrorControlFieldPtr error_control_field_;
 
-    bool is_refined_;
-    bool refine_by_error_;
-    double refinement_error_tolerance_;
+    bool is_refined_;                   ///< True, if output mesh is refined.
+    bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
+    double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
     
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
@@ -169,27 +169,31 @@ public:
     void create_refined_mesh() override;
     
 protected:
-    
+    ///Auxiliary structure defining element of refined output mesh.
     struct AuxElement{
         std::vector<Space<spacedim>::Point> nodes;
         unsigned int level;
     };
     
-    bool refinement_criterion_uniform(const AuxElement& ele);
-    bool refinement_criterion_error(const AuxElement& ele,
-                                    const Space<spacedim>::Point &centre,
-                                    const ElementAccessor<spacedim> &ele_acc,
-                                    ErrorControlFieldPtr error_control_field
-                                   );
-    
+    ///Performs the actual refinement of AuxElement. Recurrent.
     template<int dim>
     void refine_aux_element(const AuxElement& aux_element,
                             std::vector< AuxElement >& refinement,
-                            const ElementAccessor<spacedim> &ele_acc,
-                            ErrorControlFieldPtr error_control_field
+                            const ElementAccessor<spacedim> &ele_acc
                            );
     
-    bool refinement_criterion();
+    /// Collects different refinement criteria results.
+    bool refinement_criterion(const AuxElement& ele,
+                              const ElementAccessor<spacedim> &ele_acc);
+    
+    /// Refinement flag - checks only maximal level of refinement.
+    bool refinement_criterion_uniform(const AuxElement& ele);
+    
+    /// Refinement flag - measures discretisation error according to error control field.
+    bool refinement_criterion_error(const AuxElement& ele,
+                                    const Space<spacedim>::Point &centre,
+                                    const ElementAccessor<spacedim> &ele_acc
+                                   );
 };
 
 #endif  // OUTPUT_MESH_HH_

@@ -269,12 +269,6 @@ void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
 }
 
 
-bool OutputMeshDiscontinuous::refinement_criterion()
-{
-    ASSERT(0).error("Not implemented yet.");
-    return false;
-}
-
 void OutputMeshDiscontinuous::create_refined_mesh()
 {
     DebugOut() << "Create refined discontinuous outputmesh.\n";
@@ -315,9 +309,9 @@ void OutputMeshDiscontinuous::create_refined_mesh()
         std::vector<AuxElement> refinement;
         
         switch(dim){
-            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele->element_accessor(), error_control_field_); break;
-            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele->element_accessor(), error_control_field_); break;
-            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele->element_accessor(), error_control_field_); break;
+            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele->element_accessor()); break;
+            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele->element_accessor()); break;
+            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele->element_accessor()); break;
             default: ASSERT(0 < dim && dim < 4);
         }
         
@@ -377,8 +371,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
 template<int dim>
 void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::AuxElement& aux_element,
                                                  std::vector< OutputMeshDiscontinuous::AuxElement >& refinement,
-                                                 const ElementAccessor<spacedim> &ele_acc,
-                                                 ErrorControlFieldPtr error_control_field )
+                                                 const ElementAccessor<spacedim> &ele_acc)
 {
     static const unsigned int n_subelements = 1 << dim;  //2^dim
     
@@ -426,22 +419,9 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
 //     DBGMSG("level = %d, %d\n", aux_element.level, max_refinement_level_);
  
     ASSERT_DBG(dim == aux_element.nodes.size()-1);
-
-    // check refinement criterion
-    bool is_refined_enough;
-    if(refine_by_error_)
-    {
-        // compute centre of aux element
-        Space<spacedim>::Point centre({0,0,0});
-        for(auto& v : aux_element.nodes ) centre += v;
-        centre = centre/aux_element.nodes.size();
-        is_refined_enough = ! refinement_criterion_error(aux_element, centre, ele_acc, error_control_field);
-    }   
-    else
-        is_refined_enough = ! refinement_criterion_uniform(aux_element);
     
     // if not refining any further, push into final vector
-    if( is_refined_enough ) {
+    if( ! refinement_criterion(aux_element, ele_acc) ) {
         refinement.push_back(aux_element);
         return;
     }
@@ -495,13 +475,35 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
             sub_ele.nodes[j] = nodes[conn[dim+diagonal][conn_id]];
         }
         
-        refine_aux_element<dim>(sub_ele, refinement, ele_acc, error_control_field);
+        refine_aux_element<dim>(sub_ele, refinement, ele_acc);
     }
 }
 
-template void OutputMeshDiscontinuous::refine_aux_element<1>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &, Field<3, FieldValue<3>::Scalar> *);
-template void OutputMeshDiscontinuous::refine_aux_element<2>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &, Field<3, FieldValue<3>::Scalar> *);
-template void OutputMeshDiscontinuous::refine_aux_element<3>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &, Field<3, FieldValue<3>::Scalar> *);
+template void OutputMeshDiscontinuous::refine_aux_element<1>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);
+template void OutputMeshDiscontinuous::refine_aux_element<2>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);
+template void OutputMeshDiscontinuous::refine_aux_element<3>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);
+
+
+bool OutputMeshDiscontinuous::refinement_criterion(const AuxElement& aux_ele,
+                                                   const ElementAccessor<spacedim> &ele_acc)
+{
+    // check refinement criteria:
+    
+    //first check max. level
+    bool refine = refinement_criterion_uniform(aux_ele);
+    
+    //if max. level not reached and refinement by error is set
+    if(refine && refine_by_error_)
+    {
+        // compute centre of aux element
+        Space<spacedim>::Point centre({0,0,0});
+        for(auto& v : aux_ele.nodes ) centre += v;
+        centre = centre/aux_ele.nodes.size();
+        return refinement_criterion_error(aux_ele, centre, ele_acc);
+    }
+    
+    return refine;
+}
 
 bool OutputMeshDiscontinuous::refinement_criterion_uniform(const OutputMeshDiscontinuous::AuxElement& ele)
 {
@@ -510,26 +512,26 @@ bool OutputMeshDiscontinuous::refinement_criterion_uniform(const OutputMeshDisco
 
 bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscontinuous::AuxElement& ele,
                                             const Space<spacedim>::Point &centre,
-                                            const ElementAccessor<spacedim> &ele_acc,
-                                            ErrorControlFieldPtr error_control_field
+                                            const ElementAccessor<spacedim> &ele_acc
                                            )
 {
-    ASSERT_DBG(error_control_field).error("Error control field not set!");
-    if(ele.level  < max_level_)
-    {
-        std::vector<double> nodes_val(ele.nodes.size());
-        error_control_field->value_list(ele.nodes, ele_acc, nodes_val);
-        
-        double average_val = 0.0;
-        for(double& v: nodes_val) 
-            average_val += v;
-        average_val = average_val / ele.nodes.size();
-        
-        double centre_val = error_control_field->value(centre,ele_acc);
-        double diff = std::abs((average_val - centre_val)/centre_val);
-//         DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, centre_val);
-        return ( diff > refinement_error_tolerance_);
-    }
-    else
-        return false;
+    ASSERT_DBG(error_control_field_).error("Error control field not set!");
+
+    std::vector<double> nodes_val(ele.nodes.size());
+    error_control_field_->value_list(ele.nodes, ele_acc, nodes_val);
+    
+    //TODO: compute L1 or L2 error using standard quadrature
+    
+    //compare average value at nodes with value at center
+    
+    double average_val = 0.0;
+    for(double& v: nodes_val)
+        average_val += v;
+    average_val = average_val / ele.nodes.size();
+    
+    double centre_val = error_control_field_->value(centre,ele_acc);
+    double diff = std::abs((average_val - centre_val)/centre_val);
+//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, centre_val);
+    return ( diff > refinement_error_tolerance_);
+
 }
