@@ -331,22 +331,14 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		unsigned int ids;
-		const OutputTime::DiscreteSpace type = this->output_type();
+		const OutputTime::DiscreteSpace type = (discrete == OutputTime::DiscreteSpace::UNDEFINED) ? this->output_type() : discrete;
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-
-		OutputTime::DiscreteSpaceFlags flags = 1 << type;
-	    for(ids=0; ids < OutputTime::N_DISCRETE_SPACES - 1; ids++)
-	        if (flags & (1 << ids))
-	        	this->compute_field_data( OutputTime::DiscreteSpace(ids), stream);
-	    ids = OutputTime::NATIVE_DATA;
-	    if (flags & (1 << ids))
-	    	this->compute_native_data( OutputTime::DiscreteSpace(ids), stream);
+		this->compute_field_data( type, stream);
 	}
 }
 
@@ -589,8 +581,6 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-	ASSERT(space_type != OutputTime::NATIVE_DATA).error();
-
     /* It's possible now to do output to the file only in the first process */
     if( stream->get_rank() != 0) {
         /* TODO: do something, when support for Parallel VTK is added */
@@ -667,35 +657,22 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         }
     }
     break;
-    case OutputTime::NATIVE_DATA:
+    case OutputTime::NATIVE_DATA: {
+        std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+        if (field_fe_ptr) {
+            ElementDataCache<double> &native_output_data = stream->prepare_compute_data<double>(this->name(), space_type,
+                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            field_fe_ptr->fill_data_to_cache(native_output_data);
+        } else {
+            WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+        }
+    }
+    break;
+    case OutputTime::MESH_DEFINITION:
+    case OutputTime::UNDEFINED:
         //should not happen
     break;
-    }
-
-    /* Set the last time */
-    stream->update_time(this->time());
-
-}
-
-
-template<int spacedim, class Value>
-void Field<spacedim,Value>::compute_native_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
-	ASSERT_EQ(space_type, OutputTime::NATIVE_DATA).error();
-
-    /* It's possible now to do output to the file only in the first process */
-    if( stream->get_rank() != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
-        return;
-    }
-
-    std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
-
-    if (field_fe_ptr) {
-        ElementDataCache<double> &output_data = stream->prepare_compute_data<double>(this->name(), space_type,
-                (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-        field_fe_ptr->fill_data_to_cache(output_data);
-    } else {
-        WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
     }
 
     /* Set the last time */

@@ -74,6 +74,14 @@ public:
 	}
 
 
+	/// Fill all values of data vector with given value.
+	void fill(double value)
+	{
+		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+		std::fill(data_ptr_->begin(), data_ptr_->end(), value);
+	}
+
+
 	/// Create and return shared pointer to FieldElementwise object
 	template <int spacedim, class Value>
 	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)

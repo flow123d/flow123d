@@ -106,7 +106,7 @@ void PvdMeshReader::make_header_table() {
 }
 
 
-BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::string field_name) {
+BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(BaseMeshReader::HeaderQuery &header_query) {
 	auto comp = [](double t, const VtkFileData &a) {
 		return t * (1.0 + 2.0*numeric_limits<double>::epsilon()) < a.time;
 	};
@@ -114,7 +114,7 @@ BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::st
 	// find iterator to data of VTK file
 	list_it_ = std::upper_bound(file_list_.begin(),
 			file_list_.end(),
-			time,
+			header_query.time,
 			comp);
 	--list_it_;
 
@@ -126,6 +126,7 @@ BaseMeshReader::MeshDataHeader & PvdMeshReader::find_header(double time, std::st
 		list_it_->reader->has_compatible_mesh_ = true;
 	}
 
-	return list_it_->reader->find_header(time, field_name);
+	actual_header_ = list_it_->reader->find_header(header_query);
+	return actual_header_;
 }
 

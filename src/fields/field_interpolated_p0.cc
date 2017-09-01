@@ -100,9 +100,10 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
     bool boundary_domain_ = false;
+    BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
+    ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(),
-    		boundary_domain_, this->component_idx_);
+    		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
     this->scale_data();
 
     return true;
