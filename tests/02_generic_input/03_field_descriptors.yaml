@@ -13,6 +13,13 @@ problem: !Coupling_Sequential
     input_fields:
       - region: bulk
         conductivity: 1
+        cross_section: !FieldFE
+          mesh_data_file: ./03_field_descriptors-000000.vtu
+          field_name: cross_section
+        sigma: !FieldFE
+          mesh_data_file: ./03_field_descriptors-000000.vtu
+          field_name: sigma
+          input_discretization: native_data
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
@@ -23,6 +30,8 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
+        - cross_section
+        - sigma
     balance: {}
     output_stream:
       file: ./test14.pvd

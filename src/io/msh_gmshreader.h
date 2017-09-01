@@ -72,6 +72,11 @@ public:
      */
     void check_compatible_mesh(Mesh &mesh) override;
 
+    /**
+     * Finds GMSH data header for ElementData given by time and field_name and stores it as \p actual_header_.
+     */
+    MeshDataHeader & find_header(HeaderQuery &header_query) override;
+
 protected:
 	/**
 	 * Map of ElementData sections in GMSH file.
@@ -102,10 +107,6 @@ protected:
      * Reads table of ElementData headers from the tokenizer file.
      */
     void make_header_table() override;
-    /**
-     * Finds GMSH data header for ElementData given by time and field_name and return it as the first parameter.
-     */
-    MeshDataHeader & find_header(double time, std::string field_name) override;
     /**
      * Implements @p BaseMeshReader::read_element_data.
      */

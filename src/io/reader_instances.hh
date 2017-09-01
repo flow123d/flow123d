@@ -26,8 +26,6 @@
 #include <memory>
 
 
-class GmshMeshReader;
-
 
 /**
  * Auxiliary class to map filepaths to instances of readers.
@@ -35,7 +33,7 @@ class GmshMeshReader;
 class ReaderInstance {
 public:
 	struct ReaderData {
-		std::shared_ptr<GmshMeshReader> reader_;
+		std::shared_ptr<BaseMeshReader> reader_;
 		std::shared_ptr<Mesh> mesh_;
 	};
 
@@ -44,7 +42,7 @@ public:
 	/**
 	 * Returns reader of given FilePath.
 	 */
-	static std::shared_ptr<GmshMeshReader> get_reader(const FilePath &file_path);
+	static std::shared_ptr<BaseMeshReader> get_reader(const FilePath &file_path);
 
 	/**
 	 * Returns mesh of given FilePath.

@@ -119,8 +119,10 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
+    BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
+    ReaderInstances::instance()->get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_);
+    		n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
     return true;
 }
