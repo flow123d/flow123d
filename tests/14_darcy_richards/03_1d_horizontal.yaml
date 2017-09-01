@@ -3,7 +3,7 @@
 # there is a hole at the top side so the air can vent out freely.
 # 
 # 
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Horizontal infiltration into dry sample. Should end in the steady state pressure 10m.
   mesh:
@@ -11,19 +11,18 @@ problem: !Coupling_Sequential
     #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
     output_specific:
-    soil_model: { model_type: irmay, cut_fraction: 0.9999 }
+    soil_model: {model_type: irmay, cut_fraction: 0.9999}
     time: # time in hours (consistent with conductivity)
-        end_time: 1500     # original experiment from UGN up to time 6000 h
-        init_dt: 0.1       # s
-        # current time step enlargement logic do not allow to extent time step up to the output timestep
-        # maximum timestep wil be just 50.
-        max_dt: 20        
-        min_dt: 0.1
+      end_time: 1500       # original experiment from UGN up to time 6000 h
+      init_dt: 0.1         # s
+      # current time step enlargement logic do not allow to extent time step up to the output timestep
+      # maximum timestep wil be just 50.
+      max_dt: 20
+      min_dt: 0.1
 
     input_fields:
       - region: plane
         init_pressure: -6619             # m
-        
 
         # Bentonite, parameters similar to the vertical test, based on the experiment.
         water_content_saturated: 0.5    # m^3 / m^3 
@@ -31,7 +30,6 @@ problem: !Coupling_Sequential
         conductivity: 100e-10           # m/s 
         genuchten_n_exponent: 1.24
         genuchten_p_head_scale: 1e-4    # 1/m
-        
         # effective Dirichlet BC
       - region: .right
         bc_type: dirichlet
@@ -42,30 +40,29 @@ problem: !Coupling_Sequential
       max_it: 20 # should stop after 5 iterations due to stagnation
       min_it: 2
       converge_on_stagnation: false
-      linear_solver: !Petsc 
+      linear_solver: !Petsc
         a_tol: 1e-11
     n_schurs: 2
     output:
       fields:
-        - pressure_p0        
+        - pressure_p0
         - velocity_p0
-      observe_fields: [ pressure_p0, velocity_p0 ]  
+      observe_fields: [pressure_p0, velocity_p0]
     balance:
       cumulative: true
-    
-    output_stream: 
+
+    output_stream:
       file: ./flow.msh
       format: !gmsh
         variant: ascii
       times:
         - step: 100
       observe_points:
-        - [ 0.0, 0, 0 ]
-        - [ 0.1, 0, 0 ]
-        - [ 0.2, 0, 0 ]
-        - [ 0.5, 0, 0 ]
-        - [ 0.7, 0, 0 ]
-        - [ 0.8, 0, 0 ]
-        - [ 0.9, 0, 0 ]
-        - [ 1, 0, 0.0 ]
-        
+        - [0.0, 0, 0]
+        - [0.1, 0, 0]
+        - [0.2, 0, 0]
+        - [0.5, 0, 0]
+        - [0.7, 0, 0]
+        - [0.8, 0, 0]
+        - [0.9, 0, 0]
+        - [1, 0, 0.0]

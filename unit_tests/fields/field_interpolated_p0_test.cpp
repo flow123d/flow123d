@@ -51,28 +51,28 @@ string input = R"CODE(
 {   
    scalar={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="scalar"
    },
    scalar_unit_conversion={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="scalar",
        unit="km"
    },
    scalar_large={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/bigger_3d_cube_0.5.msh",
+       mesh_data_file="fields/bigger_3d_cube_0.5.msh",
        field_name="scalar"
    },
    vector_fixed={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="vector_fixed"
    },
    tensor_fixed={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="tensor_fixed"
    }
 }
