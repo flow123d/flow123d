@@ -116,14 +116,15 @@ void MH_DofHandler::reinit(Mesh *mesh,
     
 //     // convert row_4_id arrays from separate numberings to global numbering of rows
 //     make_row_numberings();
-    
-//     create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
-    create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
-    
-    // distribute FE enriched dofs
-    distribute_enriched_dofs();
-    // correct standard dofs:
-    update_standard_dofs();
+    if(enrich_velocity || enrich_pressure){
+        create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
+    //     create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
+        
+        // distribute FE enriched dofs
+        distribute_enriched_dofs();
+        // correct standard dofs:
+        update_standard_dofs();
+    }
     
     //HACK for a single processor
     unsigned int rows_starts = total_size();
@@ -461,7 +462,7 @@ void MH_DofHandler::create_testing_singularities<Singularity0D>(std::vector< Sin
            pressure = 100;
     Space<3>::Point direction_vector ({0,0,1});
     Space<3>::Point n;
-    unsigned int n_qpoints = 100;
+    unsigned int n_qpoints = 1000;
     
     bool found = false;
     ElementFullIter ele2d(mesh_->element.begin());

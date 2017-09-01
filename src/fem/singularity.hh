@@ -67,7 +67,7 @@ public:
     /// @name Geometry implementation.
     //@{
     Point dist_vector(const Point &p) const override
-    { return center_-p;}
+    { return p-center_;}
     
     double distance(const Point &p) const override
     { return arma::norm(dist_vector(p),2);}

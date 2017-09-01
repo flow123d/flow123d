@@ -736,75 +736,130 @@ void AssemblyMHXFEM<3>::prepare_xfem(LocalElementAccessorBase<3> ele_ac){
 //     }
 // }
 
+// template<> inline
+// void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+// 
+// //     ElementFullIter ele = ele_ac.full_iter();
+//     XFEMElementSingularData<2> * xd = ele_ac.xfem_data_sing<2>();
+//     
+//     //as long as pressure is not enriched and is P0
+//     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
+// //     double temp = 1.0;
+// //     int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+//     
+// //     int nvals = loc_vel_dofs.size();
+// //     double val;
+//     
+//     
+//     for(unsigned int w=0; w < xd->n_enrichments(); w++){
+//         if(xd->enrichment_intersects(w)){
+// //             auto quad = xd->sing_quadrature(w);
+// //             fv_rt_sing_ = std::make_shared<FEValues<2,3>> 
+// //                             (map_, quad, *fe_rt_xfem_, update_values);
+// 
+// //             fv_rt_sing_->reinit(ele);
+//             auto sing = static_pointer_cast<Singularity0D>(xd->enrichment_func(w));
+// //             temp = 1.0 / sing->sigma();
+//             
+// //             vector<double> sum(nvals,0);
+// //             arma::mat matt(nvals, nvals+1);
+//             
+// //             for(unsigned int q=0; q < quad.size();q++){
+// //                 arma::vec n = sing->center() - quad.real_point(q);
+// //                 n = n / arma::norm(n,2);
+// //                 for (int i=0; i < nvals; i++){
+//                     // int B_w 1/sigma * (u.n)*(v.n)
+// //                     for (int j=0; j < nvals; j++){
+// //                         val = temp 
+// //                             * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+// //                             * arma::dot(fv_rt_sing_->shape_vector(j,q),n)
+// //                             * quad.weight(q);
+// //                         loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
+// // //                         loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
+// //                         matt(i,j) += val;
+// //                         
+// //                     }
+//                     //dirichlet on the RHS
+// //                     val = - sing->pressure() * arma::dot(fv_rt_sing_->shape_vector(i,q),n) * quad.weight(q);
+// //                     if(i==3) DBGVAR(val);
+// //                     sum[i] += val;
+// //                     loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[i], 0.0, val);
+// //                     matt(i,nvals) = val;
+// //                     sum[i] += val;
+// //                 }
+// //             }
+// //             DBGCOUT(<< "\n" << matt);
+// //             DBGVAR(sum[0]);
+// //             DBGVAR(sum[1]);
+// //             DBGVAR(sum[2]);
+// //             DBGVAR(sum[3]);
+// 
+//             unsigned int loc_sing_dof = loc_edge_dofs[0] + loc_edge_dofs.size() + w;
+//             unsigned int loc_enr_vel_dof = loc_vel_dofs[fe_rt_xfem_->n_regular_dofs()] + w;
+//             DBGVAR(loc_sing_dof);
+//             DBGVAR(loc_enr_vel_dof);
+//             // robin like condition with sigma
+//             // well lagrange multiplier test function is 1
+//             double effective_surface = sing->geometry().effective_surface();
+//             double sing_flow = arma::norm(sing->vector(xd->sing_quadrature(w).real_point(0)),2) * effective_surface;
+//             DBGVAR(sing_flow);
+//             loc_system_.add_value(loc_enr_vel_dof, loc_sing_dof, sing_flow, 0);
+//             loc_system_.add_value(loc_sing_dof, loc_enr_vel_dof, sing_flow, 0);
+//             
+//             loc_system_.add_value(loc_sing_dof, loc_sing_dof,
+//                                   - effective_surface * sing->sigma(),
+//                                   - effective_surface * sing->sigma() * sing->pressure());
+//         }
+//     }
+// }
+
 template<> inline
 void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
 
-//     ElementFullIter ele = ele_ac.full_iter();
     XFEMElementSingularData<2> * xd = ele_ac.xfem_data_sing<2>();
+    ElementFullIter ele = ele_ac.full_iter();
     
     //as long as pressure is not enriched and is P0
     ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
-//     double temp = 1.0;
-//     int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
-    
-//     int nvals = loc_vel_dofs.size();
-//     double val;
-    
+
+    double val;
     
     for(unsigned int w=0; w < xd->n_enrichments(); w++){
         if(xd->enrichment_intersects(w)){
-//             auto quad = xd->sing_quadrature(w);
-//             fv_rt_sing_ = std::make_shared<FEValues<2,3>> 
-//                             (map_, quad, *fe_rt_xfem_, update_values);
-
-//             fv_rt_sing_->reinit(ele);
             auto sing = static_pointer_cast<Singularity0D>(xd->enrichment_func(w));
-//             temp = 1.0 / sing->sigma();
-            
-//             vector<double> sum(nvals,0);
-//             arma::mat matt(nvals, nvals+1);
-            
-//             for(unsigned int q=0; q < quad.size();q++){
-//                 arma::vec n = sing->center() - quad.real_point(q);
-//                 n = n / arma::norm(n,2);
-//                 for (int i=0; i < nvals; i++){
-                    // int B_w 1/sigma * (u.n)*(v.n)
-//                     for (int j=0; j < nvals; j++){
-//                         val = temp 
-//                             * arma::dot(fv_rt_sing_->shape_vector(i,q),n)
-//                             * arma::dot(fv_rt_sing_->shape_vector(j,q),n)
-//                             * quad.weight(q);
-//                         loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[j], val, 0.0);
-// //                         loc_system_.add_value(loc_vel_dofs[j], loc_vel_dofs[i], val, 0.0);
-//                         matt(i,j) += val;
-//                         
-//                     }
-                    //dirichlet on the RHS
-//                     val = - sing->pressure() * arma::dot(fv_rt_sing_->shape_vector(i,q),n) * quad.weight(q);
-//                     if(i==3) DBGVAR(val);
-//                     sum[i] += val;
-//                     loc_system_.add_value(loc_vel_dofs[i], loc_vel_dofs[i], 0.0, val);
-//                     matt(i,nvals) = val;
-//                     sum[i] += val;
-//                 }
-//             }
-//             DBGCOUT(<< "\n" << matt);
-//             DBGVAR(sum[0]);
-//             DBGVAR(sum[1]);
-//             DBGVAR(sum[2]);
-//             DBGVAR(sum[3]);
+
+            auto quad = xd->sing_quadrature(w);
+            fv_rt_sing_ = std::make_shared<FEValues<2,3>>
+                            (map_, quad, *fe_rt_xfem_, update_values);
+
+            fv_rt_sing_->reinit(ele);
 
             unsigned int loc_sing_dof = loc_edge_dofs[0] + loc_edge_dofs.size() + w;
-            unsigned int loc_enr_vel_dof = loc_vel_dofs[fe_rt_xfem_->n_regular_dofs()] + w;
-            DBGVAR(loc_sing_dof);
-            DBGVAR(loc_enr_vel_dof);
+//             DBGVAR(loc_sing_dof);
+            
             // robin like condition with sigma
             // well lagrange multiplier test function is 1
-            double effective_surface = sing->geometry().effective_surface();
-            double sing_flow = arma::norm(sing->vector(xd->sing_quadrature(w).real_point(0)),2) * effective_surface;
-            DBGVAR(sing_flow);
-            loc_system_.add_value(loc_enr_vel_dof, loc_sing_dof, sing_flow, 0);
-            loc_system_.add_value(loc_sing_dof, loc_enr_vel_dof, sing_flow, 0);
+            
+            // local part of the effective_surface in the element
+            double effective_surface = 0;
+            for(unsigned int q=0; q < quad.size();q++)
+                effective_surface += quad.weight(q);
+            
+            for(unsigned int q=0; q < quad.size();q++){
+                // outer normal is opposite to distance vector
+                arma::vec n = - sing->geometry().dist_vector(quad.real_point(q));
+                n = n / arma::norm(n,2);
+                
+                // assembly well boundary integral
+                
+                for (int i=0; i < loc_vel_dofs.size(); i++){
+                    val = arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+                          * quad.weight(q);
+                    
+                    loc_system_.add_value(loc_vel_dofs[i], loc_sing_dof, val, 0.0);
+                    loc_system_.add_value(loc_sing_dof, loc_vel_dofs[i], val, 0.0);
+                }
+            }
             
             loc_system_.add_value(loc_sing_dof, loc_sing_dof,
                                   - effective_surface * sing->sigma(),
@@ -812,7 +867,6 @@ void AssemblyMHXFEM<2>::assemble_singular_velocity(LocalElementAccessorBase<3> e
         }
     }
 }
-
 
 template<> inline
 void AssemblyMHXFEM<3>::assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
