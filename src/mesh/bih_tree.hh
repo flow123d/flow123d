@@ -64,7 +64,7 @@ public:
     /**
      * Main bounding box of the whole tree.
      */
-    const BoundingBox &tree_box();
+    const BoundingBox &tree_box() const;
 
 	/**
 	 * Gets elements which can have intersection with bounding box
