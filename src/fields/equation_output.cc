@@ -21,6 +21,14 @@ namespace IT = Input::Type;
 
 IT::Record &EquationOutput::get_input_type() {
 
+    static const IT::Selection &interpolation_sel =
+        IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
+            .add_value(OutputTime::NODE_DATA,   "P1_average", "Node data / point data.")
+			.add_value(OutputTime::CORNER_DATA, "D1_value",   "Corner data.")
+			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / point data.")
+			.add_value(OutputTime::NATIVE_DATA, "Native",     "Native data (Flow123D data).")
+			.close();
+
     static const IT::Record &field_output_setting =
         IT::Record("FieldOutputSetting", "Setting of the field output. The field name, output times, output interpolation (future).")
             .allow_auto_conversion("field")
@@ -28,7 +36,8 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            //.declare_key("interpolation", ...)
+            .declare_key("interpolation", interpolation_sel, IT::Default::read_time("Interpolation type of output data."),
+					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
     return IT::Record("EquationOutput",
@@ -125,16 +134,17 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
+        OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
             field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name] = field_times;
+            field_output_times_[field_name] = OutputTimeData(field_times, interpolation);
         } else {
-            field_output_times_[field_name] = common_output_times_;
+            field_output_times_[field_name] = OutputTimeData(common_output_times_, interpolation);
         }
         // Add init time as the output time for every output field.
-        field_output_times_[field_name].add(tg.init_time(), equation_fixed_type_);
+        field_output_times_[field_name].output_times.add(tg.init_time(), equation_fixed_type_);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
@@ -150,8 +160,17 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
     if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
-    return (field_times_it->second.contains(*current_mark_it) );
+    return (field_times_it->second.output_times.contains(*current_mark_it) );
 }
+
+
+OutputTime::DiscreteSpace EquationOutput::get_field_discrete_space(const FieldCommon &field) const
+{
+	auto field_times_it = field_output_times_.find(field.name());
+	ASSERT(field_times_it != field_output_times_.end())(field.name()).error("Unknown Field!\n");
+	return field_times_it->second.discrete;
+}
+
 
 void EquationOutput::output(TimeStep step)
 {
@@ -161,7 +180,7 @@ void EquationOutput::output(TimeStep step)
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->field_output(stream_);
+                field->field_output(stream_, get_field_discrete_space(*field));
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {

@@ -31,7 +31,7 @@ ReaderInstance * ReaderInstance::instance() {
 	return instance;
 }
 
-std::shared_ptr<GmshMeshReader> ReaderInstance::get_reader(const FilePath &file_path) {
+std::shared_ptr<BaseMeshReader> ReaderInstance::get_reader(const FilePath &file_path) {
 	return ReaderInstance::get_instance(file_path).reader_;
 }
 
@@ -43,9 +43,19 @@ ReaderInstance::ReaderData ReaderInstance::get_instance(const FilePath &file_pat
 	ReaderTable::iterator it = ReaderInstance::instance()->reader_table_.find( string(file_path) );
 	if (it == ReaderInstance::instance()->reader_table_.end()) {
 		ReaderData reader_data;
-		reader_data.reader_ = std::make_shared<GmshMeshReader>(file_path);
+		if ( file_path.extension() == ".msh" ) {
+			reader_data.reader_ = std::make_shared<GmshMeshReader>(file_path);
+		} else if ( file_path.extension() == ".vtu" ) {
+			reader_data.reader_ = std::make_shared<VtkMeshReader>(file_path);
+		} else if ( file_path.extension() == ".pvd" ) {
+			reader_data.reader_ = std::make_shared<PvdMeshReader>(file_path);
+		} else {
+			THROW(BaseMeshReader::ExcWrongExtension()
+				<< BaseMeshReader::EI_FileExtension(file_path.extension()) << BaseMeshReader::EI_MeshFile((string)file_path) );
+		}
 		reader_data.mesh_ = std::make_shared<Mesh>( Input::Record() );
 		reader_data.reader_->read_raw_mesh( reader_data.mesh_.get() );
+		reader_data.mesh_->setup_topology();
 		reader_data.reader_->check_compatible_mesh( *(reader_data.mesh_) );
 		ReaderInstance::instance()->reader_table_.insert( std::pair<string, ReaderData>(string(file_path), reader_data) );
 		return reader_data;

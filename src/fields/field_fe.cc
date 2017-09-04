@@ -46,9 +46,26 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "GMSH mesh with data. Can be different from actual computational mesh.")
+        .declare_key("input_discretization", FieldFE<spacedim, Value>::get_disc_selection_input_type(), IT::Default::optional(),
+                "Section where to find the field, some sections are specific to file format \n"
+        		"point_data/node_data, cell_data/element_data, -/element_node_data, native/-.\n"
+        		"If not given by user we try to find the field in all sections, but report error \n"
+        		"if it is found in more the one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .close();
+}
+
+template <int spacedim, class Value>
+const Input::Type::Selection & FieldFE<spacedim, Value>::get_disc_selection_input_type()
+{
+	return it::Selection("FE_discretization",
+			"Specify the section in mesh input file where field data is listed.\nSome sections are specific to file format.")
+		.add_value(OutputTime::DiscreteSpace::NODE_DATA, "node_data", "point_data (VTK) / node_data (GMSH)")
+		.add_value(OutputTime::DiscreteSpace::ELEM_DATA, "element_data", "cell_data (VTK) / element_data (GMSH)")
+		.add_value(OutputTime::DiscreteSpace::CORNER_DATA, "element_node_data", "element_node_data (only for GMSH)")
+		.add_value(OutputTime::DiscreteSpace::NATIVE_DATA, "native_data", "native_data (only for VTK)")
+		.close();
 }
 
 template <int spacedim, class Value>
@@ -90,6 +107,9 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
 	value_handler1_.initialize(init_data, map1);
 	value_handler2_.initialize(init_data, map2);
 	value_handler3_.initialize(init_data, map3);
+
+	// set discretization
+	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 }
 
 
@@ -151,6 +171,9 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	// read data from input record
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 	field_name_ = rec.val<std::string>("field_name");
+	if (! rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization_) ) {
+		discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
+	}
 }
 
 
@@ -206,13 +229,21 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		ASSERT_PTR(dh_)(field_name_).error("Null target mesh pointer of finite element field, did you call set_mesh()?\n");
 		if ( reader_file_ == FilePath() ) return false;
 
-		std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
-
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
-		auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(field_name_, time.end(),
-				source_mesh->element.size(), n_components, boundary_domain, this->component_idx_);
-		this->interpolate(data_vec);
+		BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), this->discretization_, dh_->hash());
+		ReaderInstance::get_reader(reader_file_)->find_header(header_query);
+
+		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+			auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
+					n_components, boundary_domain, this->component_idx_);
+			this->calculate_native_values(data_vec);
+		} else {
+			std::shared_ptr<Mesh> source_mesh = ReaderInstance::get_mesh(reader_file_);
+			auto data_vec = ReaderInstance::get_reader(reader_file_)->template get_element_data<double>(source_mesh->element.size(),
+					n_components, boundary_domain, this->component_idx_);
+			this->interpolate(data_vec);
+		}
 
 		return true;
 	} else return false;
@@ -268,6 +299,32 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		dh_->get_loc_dof_indices( ele, dof_indices);
 		ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
 		(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
+	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+{
+	// Same algorithm as in output of Node_data. Possibly code reuse.
+	unsigned int dof_size, data_vec_i;
+	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
+	data_vec_->fill(0.0);
+	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
+
+	// iterate through elements, assembly global vector and count number of writes
+	FOR_ELEMENTS( dh_->mesh(), ele ) {
+		dof_size = dh_->get_loc_dof_indices( ele, dof_indices );
+		data_vec_i = ele.index() * dof_indices.size();
+		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+			(*data_vector)[ dof_indices[i] ] += (*data_cache)[data_vec_i];
+			++count_vector[ dof_indices[i] ];
+		}
+	}
+
+	// compute averages of values
+	for (unsigned int i=0; i<data_vec_->size(); ++i) {
+		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
 	}
 }
 

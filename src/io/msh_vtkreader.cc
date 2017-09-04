@@ -150,7 +150,8 @@ Tokenizer::Position VtkMeshReader::get_appended_position() {
 }
 
 
-BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos)
+BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos,
+		OutputTime::DiscreteSpace disc)
 {
 	MeshDataHeader header;
     header.field_name = node.attribute("Name").as_string();
@@ -160,7 +161,13 @@ BaseMeshReader::MeshDataHeader VtkMeshReader::create_header(pugi::xml_node node,
     } catch(ExcWrongType &e) {
         e << EI_SectionTypeName("DataArray " + header.field_name);
     }
-    header.n_components = node.attribute("NumberOfComponents").as_uint(1);
+    header.discretization = disc;
+    if (disc == OutputTime::DiscreteSpace::NATIVE_DATA) {
+        header.n_components = node.attribute("n_dofs_per_element").as_uint();
+    	header.dof_handler_hash = node.attribute("dof_handler_hash").as_uint();
+    } else {
+        header.n_components = node.attribute("NumberOfComponents").as_uint(1);
+    }
     header.n_entities = n_entities;
     std::string format = node.attribute("format").as_string();
     if (format=="appended") {
@@ -213,33 +220,77 @@ void VtkMeshReader::make_header_table()
 	header_table_.clear();
 
 	// create headers of Points and Cells DataArrays
-	header_table_["Points"] = create_header( node.child("Points").child("DataArray"), n_nodes, appended_pos );
-	header_table_["Points"].field_name = "Points";
-	header_table_["connectivity"]
-			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"), n_elements, appended_pos );
-	header_table_["offsets"]
-			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"), n_elements, appended_pos );
-	header_table_["types"]
-			= create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements, appended_pos );
+	auto points_header = create_header( node.child("Points").child("DataArray"), n_nodes, appended_pos,
+			OutputTime::DiscreteSpace::MESH_DEFINITION );
+	points_header.field_name = "Points";
+	header_table_.insert( std::pair<std::string, MeshDataHeader>("Points", points_header) );
+	auto con_header = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "connectivity"),
+			n_elements, appended_pos, OutputTime::DiscreteSpace::MESH_DEFINITION );
+	header_table_.insert( std::pair<std::string, MeshDataHeader>("connectivity", con_header) );
+	auto offsets_header = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "offsets"),
+			n_elements, appended_pos, OutputTime::DiscreteSpace::MESH_DEFINITION );
+	header_table_.insert( std::pair<std::string, MeshDataHeader>("offsets", offsets_header) );
+	auto types_header = create_header( node.child("Cells").find_child_by_attribute("DataArray", "Name", "types"), n_elements,
+			appended_pos, OutputTime::DiscreteSpace::MESH_DEFINITION );
+	header_table_.insert( std::pair<std::string, MeshDataHeader>("types", types_header) );
 
-	node = node.child("CellData");
-	for (pugi::xml_node subnode = node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
-		auto header = create_header( subnode, n_elements, appended_pos );
-		header_table_[header.field_name] = header;
+	pugi::xml_node point_node = node.child("PointData");
+	for (pugi::xml_node subnode = point_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+		auto header = create_header( subnode, n_nodes, appended_pos, OutputTime::DiscreteSpace::NODE_DATA );
+		header_table_.insert( std::pair<std::string, MeshDataHeader>(header.field_name, header) );
+	}
+
+	pugi::xml_node cell_node = node.child("CellData");
+	for (pugi::xml_node subnode = cell_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+		auto header = create_header( subnode, n_elements, appended_pos, OutputTime::DiscreteSpace::ELEM_DATA );
+		header_table_.insert( std::pair<std::string, MeshDataHeader>(header.field_name, header) );
+	}
+
+	pugi::xml_node native_node = node.child("Flow123dData");
+	for (pugi::xml_node subnode = native_node.child("DataArray"); subnode; subnode = subnode.next_sibling("DataArray")) {
+		auto header = create_header( subnode, n_elements, appended_pos, OutputTime::DiscreteSpace::NATIVE_DATA );
+		header_table_.insert( std::pair<std::string, MeshDataHeader>(header.field_name, header) );
 	}
 }
 
 
-BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(double time, std::string field_name)
+BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::HeaderQuery &header_query)
 {
-	HeaderTable::iterator table_it = header_table_.find(field_name);
+	unsigned int count = header_table_.count(header_query.field_name);
 
-	if (table_it == header_table_.end()) {
+	if (count == 0) {
 		// no data found
-        THROW( ExcFieldNameNotFound() << EI_FieldName(field_name) << EI_MeshFile(tok_.f_name()));
+        THROW( ExcFieldNameNotFound() << EI_FieldName(header_query.field_name) << EI_MeshFile(tok_.f_name()));
+	} else if (count == 1) {
+		HeaderTable::iterator table_it = header_table_.find(header_query.field_name);
+
+		// check discretization
+		if (header_query.discretization != table_it->second.discretization) {
+			if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
+				WarningOut().fmt(
+						"Invalid value of 'input_discretization' for field '{}', time: {}.\nCorrect discretization type will be used.\n",
+						header_query.field_name, header_query.time);
+			}
+			header_query.discretization = table_it->second.discretization;
+		}
+
+		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA)
+			if (header_query.dof_handler_hash != table_it->second.dof_handler_hash) {
+				THROW(ExcInvalidDofHandler() << EI_FieldName(header_query.field_name) << EI_VTKFile(tok_.f_name()) );
+			}
+		actual_header_ = table_it->second;
+	} else {
+		HeaderTable::iterator table_it;
+		for (table_it=header_table_.equal_range(header_query.field_name).first; table_it!=header_table_.equal_range(header_query.field_name).second; ++table_it) {
+			if (header_query.discretization != table_it->second.discretization) {
+				header_query.dof_handler_hash = table_it->second.dof_handler_hash;
+				actual_header_ = table_it->second;
+			}
+		}
+		THROW( ExcMissingFieldDiscretization() << EI_FieldName(header_query.field_name) << EI_Time(header_query.time) << EI_MeshFile(tok_.f_name()));
 	}
 
-	return table_it->second;
+	return actual_header_;
 }
 
 
@@ -408,6 +459,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     std::vector<unsigned int> node_ids; // allow mapping ids of nodes from VTK mesh to GMSH
     std::vector<unsigned int> offsets_vec; // value of offset section in VTK file
 
+	bulk_elements_id_.clear();
+
     {
         // read points data section, find corresponding nodes in GMSH trough BIH tree
         // points in data section and nodes in GMSH must be in ratio 1:1
@@ -416,7 +469,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         unsigned int i_node, i_elm_node;
         const BIHTree &bih_tree=mesh.get_bih_tree();
 
-        MeshDataHeader point_header = this->find_header(0.0, "Points");
+    	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+		MeshDataHeader point_header = this->find_header(header_params);
         ASSERT_EQ(3, point_header.n_components).error();
         node_ids.resize(point_header.n_entities);
         // fill vectors necessary for correct reading of data, we read all data same order as data is stored
@@ -462,7 +516,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 
     {
         // read offset data section into offsets_vec vector, it's used for reading connectivity
-        MeshDataHeader offset_header = this->find_header(0.0, "offsets");
+    	HeaderQuery header_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+        MeshDataHeader offset_header = this->find_header(header_params);
         for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
         	bulk_elements_id_.push_back(i);
         }
@@ -478,7 +533,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         // read connectivity data section, find corresponding elements in GMSH
         // cells in data section and elements in GMSH must be in ratio 1:1
         // store orders (mapping between VTK and GMSH file) into bulk_elements_id_ vector
-        MeshDataHeader con_header = this->find_header(0.0, "connectivity");
+    	HeaderQuery header_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+        MeshDataHeader con_header = this->find_header(header_params);
         con_header.n_entities = offsets_vec[offsets_vec.size()-1];
         for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
         	bulk_elements_id_.push_back(i);
@@ -533,13 +589,76 @@ void VtkMeshReader::read_physical_names(Mesh * mesh) {
 
 
 void VtkMeshReader::read_nodes(Mesh * mesh) {
-	ASSERT(false).error("Reading of VTK mesh is not supported yet!");
-	// will be implemented later
+	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+	auto actual_header = this->find_header(header_params);
+
+	bulk_elements_id_.resize(actual_header.n_entities);
+	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
+
+	// set new cache, read node data
+	ElementDataCache<double> node_cache(actual_header.field_name, actual_header.time, 1,
+    		actual_header.n_components*actual_header.n_entities);
+    this->read_element_data(node_cache, actual_header, actual_header.n_components, false);
+
+	// create nodes of mesh
+    mesh->reserve_node_size(actual_header.n_entities);
+	std::vector<double> &vect = *( node_cache.get_component_data(0).get() );
+	arma::vec3 point;
+	for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
+        point(0)=vect[ivec]; ++ivec;
+        point(1)=vect[ivec]; ++ivec;
+        point(2)=vect[ivec]; ++ivec;
+        mesh->add_node(i, point);
+	}
+
+	bulk_elements_id_.clear();
 }
 
 
 void VtkMeshReader::read_elements(Mesh * mesh) {
-	// will be implemented later
+	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+
+	// read offset data section into offsets_vec vector, it's used for reading connectivity
+    MeshDataHeader offset_header = this->find_header(offsets_params);
+    for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
+    	bulk_elements_id_.push_back(i);
+    }
+
+    ElementDataCache<unsigned int> offset_cache(offset_header.field_name, offset_header.time, 1,
+    		offset_header.n_components*offset_header.n_entities);
+    this->read_element_data(offset_cache, offset_header, offset_header.n_components, false);
+
+    std::vector<unsigned int> &offsets_vec = *(offset_cache.get_component_data(0) ); // values of offset section in VTK file
+
+    // read connectivity data section
+    HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    MeshDataHeader con_header = this->find_header(con_params);
+    con_header.n_entities = offsets_vec[offsets_vec.size()-1];
+    for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
+    	bulk_elements_id_.push_back(i);
+    }
+
+    ElementDataCache<unsigned int> con_cache(con_header.field_name, con_header.time, 1, con_header.n_components*con_header.n_entities);
+    this->read_element_data(con_cache, con_header, con_header.n_components, false);
+
+    std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );
+
+    // iterate trough connectivity data, create bulk elements
+    // fill bulk_elements_id_ vector
+    bulk_elements_id_.clear();
+    bulk_elements_id_.resize(offsets_vec.size());
+    unsigned int i_con = 0, last_offset=0, dim;
+    vector<unsigned int> node_list;
+    for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element
+    	dim = offsets_vec[i] - last_offset - 1; // dimension of vtk element
+        for ( ; i_con<offsets_vec[i]; ++i_con ) { // iterate trough all nodes of any element
+            node_list.push_back( connectivity_vec[i_con] );
+        }
+		mesh->add_element(i, dim, dim, 0, node_list); // TODO need to set region_id (3rd parameter, now is created from dim)
+        bulk_elements_id_[i] = i;
+        node_list.clear();
+        last_offset = offsets_vec[i];
+    }
 }
 
 
