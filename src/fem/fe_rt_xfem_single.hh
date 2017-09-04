@@ -337,9 +337,9 @@ inline std::shared_ptr<QXFEM<1,3>> FE_RT0_XFEM_S<1,3>::qxfem_side(ElementFullIte
 template<>
 inline std::shared_ptr<QXFEM<2,3>> FE_RT0_XFEM_S<2,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
 {
-    std::vector<std::shared_ptr<Singularity0D>> vec(enr.size());
+    std::vector<std::shared_ptr<Singularity<0>>> vec(enr.size());
     for(unsigned int w=0; w<enr.size(); w++){
-        vec[w] = static_pointer_cast<Singularity0D>(enr[w]);
+        vec[w] = static_pointer_cast<Singularity<0>>(enr[w]);
     }
     QXFEMFactory qfact(12);
     return qfact.create_side_singular(vec, ele, sid);
@@ -348,9 +348,9 @@ inline std::shared_ptr<QXFEM<2,3>> FE_RT0_XFEM_S<2,3>::qxfem_side(ElementFullIte
 template<>
 inline std::shared_ptr<QXFEM<3,3>> FE_RT0_XFEM_S<3,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
 {
-    std::vector<std::shared_ptr<Singularity1D>> vec(enr.size());
+    std::vector<std::shared_ptr<Singularity<1>>> vec(enr.size());
     for(unsigned int w=0; w<enr.size(); w++){
-        vec[w] = static_pointer_cast<Singularity1D>(enr[w]);
+        vec[w] = static_pointer_cast<Singularity<1>>(enr[w]);
     }
     QXFEMFactory qfact(12);
     return qfact.create_side_singular(vec, ele, sid);

@@ -36,7 +36,7 @@ TEST(qxfem, qxfem_factory) {
     Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
                           ele->node[2]->point() - ele->node[0]->point());
     
-    auto func = std::make_shared<Singularity0D>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n, 100);
+    auto func = std::make_shared<Singularity<0>>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n, 100);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
     
 //     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output/";
@@ -69,7 +69,7 @@ TEST(qxfem, qxfem_factory) {
 //     q_points_file.open (dir_name + "q_points.dat");
 //     if (q_points_file.is_open()) 
 //     {
-//         for(const Singularity0D::Point &p : func.q_points())
+//         for(const Singularity<0>::Point &p : func.q_points())
 //         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
 //     }
 //     else 
@@ -86,7 +86,7 @@ class TestQXFEMFactory : public testing::Test, public QXFEMFactory {
 public:
     TestQXFEMFactory(unsigned int max_level = 10) : QXFEMFactory(max_level) {}
 
-    void test_distance(const Singularity0D& sing, AuxSimplex& s, const Point& u)
+    void test_distance(const Singularity<0>& sing, AuxSimplex& s, const Point& u)
     {
         double computed_distance_sqr = -1.0;
 //         double max_h = s.compute_max_h<2>();
@@ -165,7 +165,7 @@ TEST_F(TestQXFEMFactory, distance) {
         c = m + u;
 
     //     DBGMSG("k0 = %f\n",arma::dot(m-s.nodes[0], m-s.nodes[0]));
-        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
+        test_distance(Singularity<0>(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity v1
         m = s.nodes[1] + 0.33*v1;
@@ -173,7 +173,7 @@ TEST_F(TestQXFEMFactory, distance) {
         c = m + u;
 
     //     DBGMSG("k2 = %f\n",arma::dot(m-s.nodes[2], m-s.nodes[2]));
-        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
+        test_distance(Singularity<0>(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity v2
         m = s.nodes[2] + 0.6*v2;
@@ -181,28 +181,28 @@ TEST_F(TestQXFEMFactory, distance) {
         c = m + u;
 
     //     DBGMSG("k1 = %f\n",arma::dot(m-s.nodes[1], m-s.nodes[1]));
-        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
+        test_distance(Singularity<0>(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity node0
         m = s.nodes[0];
         u = -f*n1;
         c = m + u;
 
-        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
+        test_distance(Singularity<0>(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity node1
         m = s.nodes[1];
         u = -f*n2;
         c = m + u;
 
-        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
+        test_distance(Singularity<0>(c,radius,dv,nn,n_qpoints), s, u);
         
         // Singularity node2
         m = s.nodes[2];
         u = -f*n0;
         c = m + u;
 
-        test_distance(Singularity0D(c,radius,dv,nn,n_qpoints), s, u);
+        test_distance(Singularity<0>(c,radius,dv,nn,n_qpoints), s, u);
     }
 }
 
@@ -223,8 +223,8 @@ TEST(qxfem, qxfem_factory_two) {
                           ele->node[2]->point() - ele->node[0]->point());
     unsigned int n_qpoints = 100;
     
-    auto func1 = std::make_shared<Singularity0D>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n,n_qpoints);
-    auto func2 = std::make_shared<Singularity0D>(arma::vec({2,1,2}),0.05,arma::vec({0,0,1}),n,n_qpoints);
+    auto func1 = std::make_shared<Singularity<0>>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n,n_qpoints);
+    auto func2 = std::make_shared<Singularity<0>>(arma::vec({2,1,2}),0.05,arma::vec({0,0,1}),n,n_qpoints);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func1, func2},ele);
     
 //     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/fem/qxfem_output_two/";
@@ -259,7 +259,7 @@ TEST(qxfem, qxfem_factory_two) {
 //     q_points_file.open (dir_name + "q_points.dat");
 //     if (q_points_file.is_open()) 
 //     {
-//         for(const Singularity0D::Point &p : func.q_points())
+//         for(const Singularity<0>::Point &p : func.q_points())
 //         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
 //     }
 //     else 
@@ -298,8 +298,8 @@ TEST(qxfem, qxfem_factory_3d) {
     
     unsigned int n = 50, m = 20;
     
-//     auto func = std::make_shared<Singularity1D>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
-    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.5,0}), arma::vec({0.5,0.5,2}),0.05,n,m);
+//     auto func = std::make_shared<Singularity<1>>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
+    auto func = std::make_shared<Singularity<1>>(arma::vec({0.5,0.5,0}), arma::vec({0.5,0.5,2}),0.05,n,m);
     
 //     for(unsigned int i=4; i<10; i++)
     unsigned int i = 9;
@@ -337,7 +337,7 @@ TEST(qxfem, qxfem_factory_3d) {
 //     q_points_file.open (dir_name + "q_points.dat");
 //     if (q_points_file.is_open()) 
 //     {
-//         for(const Singularity1D::Point &p : func->q_points())
+//         for(const Singularity<1>::Point &p : func->q_points())
 //         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
 //     }
 //     else 
@@ -360,8 +360,8 @@ TEST(qxfem, qxfem_factory_3d_side) {
     
     unsigned int n = 50, m = 20;
     
-//     auto func = std::make_shared<Singularity1D>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
-    auto func = std::make_shared<Singularity1D>(arma::vec({0.5,0.2,0}), arma::vec({0.2,0.5,2}),0.05,n,m);
+//     auto func = std::make_shared<Singularity<1>>(arma::vec({0.75,0.5,0}), arma::vec({0.75,0.5,3}),0.2);
+    auto func = std::make_shared<Singularity<1>>(arma::vec({0.5,0.2,0}), arma::vec({0.2,0.5,2}),0.05,n,m);
     
 //     for(unsigned int i=6; i<7; i++)
     unsigned int sid = 3;
@@ -411,7 +411,7 @@ TEST(qxfem, qxfem_factory_3d_side) {
 //     q_points_file.open (dir_name + "q_points.dat");
 //     if (q_points_file.is_open()) 
 //     {
-//         for(const Singularity1D::Point &p : func->q_points())
+//         for(const Singularity<1>::Point &p : func->q_points())
 //         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
 //     }
 //     else 
@@ -436,7 +436,7 @@ TEST(qxfem, qxfem_factory_2d_side) {
                           ele->node[2]->point() - ele->node[0]->point());
     
     unsigned int n_qpoints = 100;
-    auto func = std::make_shared<Singularity0D>(arma::vec({1.4,2.9,3}),0.1,arma::vec({1.4,2.9,0}),n,n_qpoints);
+    auto func = std::make_shared<Singularity<0>>(arma::vec({1.4,2.9,3}),0.1,arma::vec({1.4,2.9,0}),n,n_qpoints);
     
     unsigned int sid = 2;
     unsigned int i = 12;
@@ -474,7 +474,7 @@ TEST(qxfem, qxfem_factory_2d_side) {
 //     q_points_file.open (dir_name + "q_points.dat");
 //     if (q_points_file.is_open()) 
 //     {
-//         for(const Singularity0D::Point &p : func->q_points())
+//         for(const Singularity<0>::Point &p : func->q_points())
 //         q_points_file << p[0] << " " << p[1] << " " << p[2] << "\n";
 //     }
 //     else 

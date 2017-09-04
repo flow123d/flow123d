@@ -54,6 +54,26 @@
 //     virtual double div(const Point &x) const = 0;
 // };
 
+template<int> class Singularity;
+
+class SingularityBase
+{
+public:
+    /// Value of the permeability coefficient between dimensions.
+    double sigma() const
+    { return sigma_;}
+    void set_sigma(double s)
+    { sigma_ = s;}
+    
+    double pressure() const
+    { return pressure_;}
+    void set_pressure(double p)
+    { pressure_ = p;}
+private:    
+    /// Value of the permeability coefficient between dimensions.
+    double sigma_;
+    double pressure_;
+};
 
 ///@brief Auxilliary class with geometric data and operations for singularity.
 class CircleEllipseProjection : public Geometry
@@ -154,15 +174,16 @@ protected:
  *   (we suppose always circular cross section of 1D-2D)
  * 
  */
-class Singularity0D : public GlobalEnrichmentFunc<2,3>
+template<>
+class Singularity<0> : public SingularityBase, public GlobalEnrichmentFunc<2,3>
 {
 public:
     typedef Space<3>::Point Point;
     
-    Singularity0D(const Point& center, double radius,
-                  const Point& direction_vector,
-                  const Point& normal_vector,
-                  unsigned int n_qpoints);
+    Singularity(const Point& center, double radius,
+                const Point& direction_vector,
+                const Point& normal_vector,
+                unsigned int n_qpoints);
     
     /// @name GlobalEnrichmentFunc implementation.
     //@{
@@ -177,29 +198,14 @@ public:
     const CircleEllipseProjection & geometry_ellipse() const
     { return geom_;}
     
-    /// Value of the permeability coefficient between dimensions.
-    double sigma() const
-    { return sigma_;}
-    void set_sigma(double s)
-    { sigma_ = s;}
-    
-    double pressure() const
-    { return pressure_;}
-    void set_pressure(double p)
-    { pressure_ = p;}
-    
 private:
     /// Geometry fucnctionality - plane projections.
     CircleEllipseProjection geom_;
-    
-    /// Value of the permeability coefficient between dimensions.
-    double sigma_;
-    double pressure_;
-    
+
     double radius_rounding_low_bound_;
 };
 
-inline double Singularity0D::value(const Point& x) const
+inline double Singularity<0>::value(const Point& x) const
 {
     double distance = geom_.distance(x);
     if (distance >= radius_rounding_low_bound_)
@@ -208,7 +214,7 @@ inline double Singularity0D::value(const Point& x) const
     return std::log(geom_.radius());
 }
 
-inline Singularity0D::Point Singularity0D::grad(const Point &x) const
+inline Singularity<0>::Point Singularity<0>::grad(const Point &x) const
 {
     Point grad; //initialize all entries with zero
     grad.zeros();
@@ -222,13 +228,13 @@ inline Singularity0D::Point Singularity0D::grad(const Point &x) const
     return grad;  //returns zero if  (distance <= radius)
 }
 
-inline Singularity0D::Point Singularity0D::vector(const Point &x) const
+inline Singularity<0>::Point Singularity<0>::vector(const Point &x) const
 {
     const double t = -1.0 / geom_.effective_surface();
     return t * this->grad(x);
 }
 
-inline double Singularity0D::div(const Point& x) const
+inline double Singularity<0>::div(const Point& x) const
 {
     return 0;
 }
@@ -334,13 +340,14 @@ protected:
  *   (we suppose always circular cross section of 1D-2D)
  * 
  */
-class Singularity1D : public GlobalEnrichmentFunc<3,3>
+template<>
+class Singularity<1> : public SingularityBase, public GlobalEnrichmentFunc<3,3>
 {
 public:
     typedef Space<3>::Point Point;
     
-    Singularity1D(const Point& a, const Point& b, double radius,
-                  unsigned int n, unsigned int m);
+    Singularity(const Point& a, const Point& b, double radius,
+                unsigned int n, unsigned int m);
     
     /// @name GlobalEnrichmentFunc implementation.
     //@{
@@ -355,30 +362,15 @@ public:
     const CylinderGeometry & geometry_cylinder() const
     { return geom_;}
     
-    /// Value of the permeability coefficient between dimensions.
-    double sigma() const
-    { return sigma_;}
-    void set_sigma(double s)
-    { sigma_ = s;}
-    
-    double pressure() const
-    { return pressure_;}
-    void set_pressure(double p)
-    { pressure_ = p;}
-    
 private:    
     /// Geometry fucnctionality - plane projections.
     CylinderGeometry geom_;
-    
-    /// Value of the permeability coefficient between dimensions.
-    double sigma_;
-    double pressure_;
     
     double radius_rounding_low_bound_;
 };
 
 
-inline double Singularity1D::value(const Point& x) const
+inline double Singularity<1>::value(const Point& x) const
 {
     double distance = geom_.distance(x);
     if (distance >= radius_rounding_low_bound_)
@@ -387,7 +379,7 @@ inline double Singularity1D::value(const Point& x) const
     return std::log(geom_.radius());
 }
 
-inline Space<3>::Point Singularity1D::grad(const Point &x) const
+inline Space<3>::Point Singularity<1>::grad(const Point &x) const
 {
     Point grad = geom_.dist_vector(x);    
     double distance = arma::norm(grad,2);
@@ -403,13 +395,13 @@ inline Space<3>::Point Singularity1D::grad(const Point &x) const
     return grad;  //returns zero if  (distance <= radius)
 }
 
-inline Space<3>::Point Singularity1D::vector(const Point &x) const
+inline Space<3>::Point Singularity<1>::vector(const Point &x) const
 {
     const double t = -1.0 / geom_.effective_surface();
     return t * this->grad(x);
 }
 
-inline double Singularity1D::div(const Point& x) const
+inline double Singularity<1>::div(const Point& x) const
 {
     return 0;
 }

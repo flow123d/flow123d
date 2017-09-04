@@ -254,35 +254,17 @@ class XFEMElementSingularData : public XFEMElementData<dim,3>
     void create_sing_quads(ElementFullIter ele);
     
     //TODO: get rid of this hack
-    template<class Enr>
-    std::vector<std::shared_ptr<Enr>> sing_vec();
+    std::vector<std::shared_ptr<Singularity<dim-2>>> sing_vec(){
+        std::vector<std::shared_ptr<Singularity<dim-2>>> res(this->enrichment_func_.size());
+        for(unsigned int i=0; i<this->enrichment_func_.size(); i++){
+            res[i] = std::static_pointer_cast<Singularity<dim-2>>(this->enrichment_func_[i]);
+        }
+        return res;
+    }
   private:
     
     std::vector<QXFEM<dim,3>> sing_quads_;
 };
-
-
-template<>
-template<>
-inline std::vector< std::shared_ptr< Singularity0D > > XFEMElementSingularData<2>::sing_vec< Singularity0D >()
-{
-    std::vector<std::shared_ptr<Singularity0D>> res(this->enrichment_func_.size());
-    for(unsigned int i=0; i<this->enrichment_func_.size(); i++){
-        res[i] = std::static_pointer_cast<Singularity0D>(this->enrichment_func_[i]);
-    }
-    return res;
-}
-
-template<>
-template<>
-inline std::vector< std::shared_ptr< Singularity1D > > XFEMElementSingularData<3>::sing_vec< Singularity1D >()
-{
-    std::vector<std::shared_ptr<Singularity1D>> res(this->enrichment_func_.size());
-    for(unsigned int i=0; i<this->enrichment_func_.size(); i++){
-        res[i] = std::static_pointer_cast<Singularity1D>(this->enrichment_func_[i]);
-    }
-    return res;
-}
 
 
 #endif // XFEM_ELEMENT_DATA_HH_

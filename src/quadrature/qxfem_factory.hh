@@ -49,8 +49,8 @@
 class QXFEMFactory {
 public:
     typedef typename Space<3>::Point Point;
-    typedef typename std::shared_ptr<Singularity0D> Singularity0DPtr;
-    typedef typename std::shared_ptr<Singularity1D> Singularity1DPtr;
+    typedef typename std::shared_ptr<Singularity<0>> Singularity0DPtr;
+    typedef typename std::shared_ptr<Singularity<1>> Singularity1DPtr;
     /**
      * @brief Create a formula of given order.
      *
@@ -138,7 +138,7 @@ protected:
      * @return intersection type:
      * 
      */
-    int sigularity0D_distance(const Singularity0D& w,
+    int sigularity0D_distance(const Singularity<0>& w,
                               const AuxSimplex &s,
                               double& distance);
     
@@ -151,14 +151,14 @@ protected:
      * 2:   singularity is inside tetrahedron
      * 3:   distance is less then radius
      */
-    int distance_13d(const Singularity1D& w,
+    int distance_13d(const Singularity<1>& w,
                      const AuxSimplex &s,
                      double& distance);
     
-    int distance_12d(const Singularity1D& w,
+    int distance_12d(const Singularity<1>& w,
                      const AuxSimplex &s,
                      double& distance);
-    int distance_01d(const Singularity0D& w,
+    int distance_01d(const Singularity<0>& w,
                      const AuxSimplex &s,
                      double& distance);
     

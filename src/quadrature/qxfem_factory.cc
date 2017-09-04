@@ -443,7 +443,7 @@ unsigned int QXFEMFactory::mark_refinement_3D(const std::vector<Singularity1DPtr
     return n_simplices_to_refine;
 }
 
-int QXFEMFactory::distance_12d(const Singularity1D& w,
+int QXFEMFactory::distance_12d(const Singularity<1>& w,
                                const QXFEMFactory::AuxSimplex& s,
                                double& distance)
 {
@@ -511,7 +511,7 @@ int QXFEMFactory::distance_12d(const Singularity1D& w,
     }
 }
 
-int QXFEMFactory::distance_01d(const Singularity0D& w,
+int QXFEMFactory::distance_01d(const Singularity<0>& w,
                                const QXFEMFactory::AuxSimplex& s,
                                double& distance)
 {
@@ -577,7 +577,7 @@ int QXFEMFactory::distance_01d(const Singularity0D& w,
     }
 }
 
-int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
+int QXFEMFactory::sigularity0D_distance(const Singularity<0>& w,
                                         const AuxSimplex& s,
                                         double& distance_sqr)
 {
@@ -727,7 +727,7 @@ int QXFEMFactory::sigularity0D_distance(const Singularity0D& w,
 //   return c;
 // }
 
-int QXFEMFactory::distance_13d(const Singularity1D& w,
+int QXFEMFactory::distance_13d(const Singularity<1>& w,
                                const QXFEMFactory::AuxSimplex& s,
                                double& distance)
 {

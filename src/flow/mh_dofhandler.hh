@@ -45,8 +45,7 @@ class LocalElementAccessorBase;
 #include "fem/xfem_element_data.hh"
 
 template<int> class XFEMElementSingularData;
-class Singularity0D;
-class Singularity1D;
+template <int> class Singularity;
 
 
 /// temporary solution to provide access to results
@@ -118,8 +117,8 @@ public:
     // XFEM:
 public:
     
-    typedef typename std::shared_ptr<Singularity0D> Singularity0DPtr;
-    typedef typename std::shared_ptr<Singularity1D> Singularity1DPtr;
+    typedef typename std::shared_ptr<Singularity<0>> Singularity0DPtr;
+    typedef typename std::shared_ptr<Singularity<1>> Singularity1DPtr;
     
     void reinit(Mesh *mesh,
                 Field<3, FieldValue<3>::Scalar>& cross_section,
@@ -146,8 +145,8 @@ public:
 protected:
     static const int empty_node_idx;
     
-    template<int dim, class Enr>
-    void create_enrichment(std::vector<std::shared_ptr<Enr>> &singularities,
+    template<int dim>
+    void create_enrichment(std::vector<std::shared_ptr<Singularity<dim-2>>> &singularities,
                            std::vector<XFEMElementSingularData<dim>>& xfem_data,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);

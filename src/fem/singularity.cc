@@ -237,7 +237,7 @@ void CylinderGeometry::evaluate_q_points(unsigned int n, unsigned int m)
 
 
 
-Singularity0D::Singularity0D(const Point& center, double radius,
+Singularity<0>::Singularity(const Point& center, double radius,
                              const Point& direction_vector,
                              const Point& normal_vector,
                              unsigned int n)
@@ -247,7 +247,7 @@ Singularity0D::Singularity0D(const Point& center, double radius,
     geom_.evaluate_q_points(n);
 }
 
-Singularity1D::Singularity1D(const Point& a, const Point& b, double radius,
+Singularity<1>::Singularity(const Point& a, const Point& b, double radius,
                              unsigned int n, unsigned int m)
 :   geom_(a,b,radius)
 {

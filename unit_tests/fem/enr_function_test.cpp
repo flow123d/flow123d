@@ -211,7 +211,7 @@ TEST(qxfem, singularity0D) {
     Point direction_vector({0,0,1});
     unsigned int n_qpoints = 10;
     
-    Singularity0D func(center, radius, direction_vector, n, n_qpoints);
+    Singularity<0> func(center, radius, direction_vector, n, n_qpoints);
     const CircleEllipseProjection & geom = func.geometry_ellipse();
     
     EXPECT_EQ(n_qpoints, geom.q_points().size());
@@ -253,7 +253,7 @@ TEST(qxfem, singularity1D) {
     double radius = 0.1;
     unsigned int n = 100, m = 10;
     
-    Singularity1D func(a, b, radius, n, m);
+    Singularity<1> func(a, b, radius, n, m);
     const CylinderGeometry & geom = func.geometry_cylinder();
     
     EXPECT_EQ(n*m, geom.q_points().size());

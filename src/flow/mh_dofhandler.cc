@@ -448,8 +448,8 @@ void MH_DofHandler::update_standard_dofs()
 
 
 template<>
-void MH_DofHandler::create_testing_singularities<Singularity0D>(std::vector< Singularity0DPtr >& singularities,
-                                                                int & new_enrich_node_idx)
+void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Singularity0DPtr >& singularities,
+                                                                 int & new_enrich_node_idx)
 {
     //create singularity
 //     Space<3>::Point center ({4.42, 2.08, 0}); //triangle
@@ -483,7 +483,7 @@ void MH_DofHandler::create_testing_singularities<Singularity0D>(std::vector< Sin
                 
     DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
                 
-    auto sing = std::make_shared<Singularity0D>(center, radius, direction_vector, n, n_qpoints);
+    auto sing = std::make_shared<Singularity<0>>(center, radius, direction_vector, n, n_qpoints);
     // set sigma of 1d element
     sing->set_sigma(sigma_const);
     sing->set_pressure(pressure);
@@ -545,7 +545,7 @@ void MH_DofHandler::create_testing_singularities<Singularity0D>(std::vector< Sin
 
 
 template<>
-void MH_DofHandler::create_testing_singularities<Singularity1D>(std::vector< Singularity1DPtr >& singularities,
+void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Singularity1DPtr >& singularities,
                                                                 int & new_enrich_node_idx)
 {
     typedef Space<3>::Point Point;
@@ -574,7 +574,7 @@ void MH_DofHandler::create_testing_singularities<Singularity1D>(std::vector< Sin
                 
     DBGCOUT("singularity: 3d: " << ele3d->index() << "\n");
                 
-    auto sing = std::make_shared<Singularity1D>(a,b,radius,n,m);
+    auto sing = std::make_shared<Singularity<1>>(a,b,radius,n,m);
     // set sigma of 1d element
     sing->set_sigma(sigma_const);
     sing->set_pressure(pressure);
@@ -602,8 +602,8 @@ void MH_DofHandler::create_testing_singularities<Singularity1D>(std::vector< Sin
 }
 
 
-template<int dim, class Enr>
-void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Enr>>& singularities,
+template<int dim>
+void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<dim-2>>>& singularities,
                                       std::vector<XFEMElementSingularData<dim>>& xfem_data,
                                       Field<3, FieldValue<3>::Scalar>& cross_section,
                                       Field<3, FieldValue<3>::Scalar>& sigma)

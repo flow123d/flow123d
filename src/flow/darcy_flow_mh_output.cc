@@ -774,14 +774,12 @@ struct FEDiffData{
     shared_ptr<FEValues<dim,3>> fv_rt_sing;
     // end XFEM stuff ...
     
-    shared_ptr<QXFEM<dim,3>> create_qxfem(ElementFullIter ele, XFEMElementSingularData<dim>* xd);
-    
     void prepare_xfem(LocalElementAccessorBase<3> ele_ac, bool single_enr)
     {
         ElementFullIter ele = ele_ac.full_iter();
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
         
-        qxfem = create_qxfem(ele, xdata);
+        qxfem = qfactory.create_singular(xdata->sing_vec(), ele);
         
         if(single_enr) fe_rt_xfem = std::make_shared<FE_RT0_XFEM_S<dim,3>>(&fe_rt,xdata->enrichment_func_vec());
         else fe_rt_xfem = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt,xdata->enrichment_func_vec());
@@ -800,13 +798,6 @@ struct FEDiffData{
                                                         update_quadrature_points);
     }
 };
-
-template<> shared_ptr<QXFEM<2,3>> FEDiffData<2>::create_qxfem(ElementFullIter ele,
-                                                XFEMElementSingularData<2>* xd)
-{ return qfactory.create_singular(xd->sing_vec<Singularity0D>(), ele); }
-template<> shared_ptr<QXFEM<3,3>> FEDiffData<3>::create_qxfem(ElementFullIter ele,
-                                                XFEMElementSingularData<3>* xd)
-{ return qfactory.create_singular(xd->sing_vec<Singularity1D>(), ele); }
     
 void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
