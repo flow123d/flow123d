@@ -110,10 +110,8 @@ private:
      * This optimization is necessary when outputing on refined output meshes.
      */
     struct EleCache{
-        unsigned int last_ele_index;
-        std::vector<std::vector<double>> enr_dof_val;
-        EleCache()
-        { last_ele_index = std::numeric_limits<unsigned int>::max();}
+        typedef std::vector<std::vector<double>> EnrDofValues;
+        std::map<unsigned int, EnrDofValues> enr_dof_values;
     };
     static EleCache ele_cache_;
     
@@ -173,7 +171,8 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
     unsigned int j;
 
     vector<arma::vec::fixed<spacedim>> normals;
-    vector<vector<double>>& enr_dof_val = ele_cache_.enr_dof_val;
+//     vector<vector<double>>& enr_dof_val = ele_cache_.enr_dof_val;
+    vector<vector<double>> enr_dof_val;
     
     if (fv_data.update_flags & (update_values | update_divergence | update_gradients))
     {
@@ -186,8 +185,13 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
 //             normals[j].print(cout, "internal normal");
         }
         
-        if(ele_cache_.last_ele_index != ele->index()){
-//             DBGCOUT(<<"qxfem_side on ele " << ele->index() << ";  cache ele " << ele_cache_.last_ele_index << "\n");
+        auto search = ele_cache_.enr_dof_values.find(ele->index());
+        if(search != ele_cache_.enr_dof_values.end()){ // cached
+            enr_dof_val = search->second;
+//             DBGCOUT(<<"use cached enr dofs on ele " << search->first << "\n");
+        }
+        else{
+//             DBGCOUT(<<"create enr dofs on ele " << ele->index() << "\n");
             enr_dof_val.resize(enr.size());
             for (unsigned int w=0; w<enr.size(); w++)
                 enr_dof_val[w].resize(RefElement<dim>::n_sides);
@@ -212,7 +216,8 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
 //                     cout << setprecision(16) << "val  " << val << endl;
                 }
             }
-            ele_cache_.last_ele_index = ele->index();
+            //copy to cache
+            ele_cache_.enr_dof_values[ele->index()] = enr_dof_val;
         }
 //         // for SGFEM we need to compute fluxes of glob. enr. function over faces
 //         ASSERT(dim == 2);
