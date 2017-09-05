@@ -106,6 +106,9 @@ public:
     DECLARE_INPUT_EXCEPTION( ExcAutomaticConversionError, << "Error during automatic conversion of "
     		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
 
+    TYPEDEF_ERR_INFO( EI_Tag, string);
+    DECLARE_INPUT_EXCEPTION( ExcForbiddenAbstractTag, << "Forbidden tag " << EI_Tag::qval << " of Abstract type.\n" );
+
 
     /**
      * @brief Read a storage from input stream.
