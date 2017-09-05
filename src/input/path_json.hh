@@ -90,7 +90,9 @@ public:
     bool is_record_type() const override;                             ///< Implements @p PathBase::is_record_type
     bool is_array_type() const override;                              ///< Implements @p PathBase::is_array_type
     PathJSON * clone() const override;                                ///< Implements @p PathBase::clone
-    std::string get_record_name() const override;                     ///< Implements @p PathBase::get_record_name
+
+    /// Implements @p PathBase::get_record_tag
+    void get_record_tag(RecordTagType &tag_type, std::string &tag_value) const override;
 
     /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
