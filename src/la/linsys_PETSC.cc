@@ -433,6 +433,7 @@ LinSys_PETSC::~LinSys_PETSC( )
     if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
+    if (residual_ != NULL) VecDestroy(&residual_);
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 

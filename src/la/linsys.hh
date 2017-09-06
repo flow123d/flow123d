@@ -591,6 +591,7 @@ public:
        PetscErrorCode ierr;
        if ( solution_ ) { ierr = VecDestroy(&solution_); CHKERRV( ierr ); }
        if ( own_solution_ ) delete[] v_solution_;
+       if ( rows_ds_ ) delete rows_ds_;
     }
 
 protected:

@@ -545,6 +545,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it:{} (reason: {}) residual: {}\n",
         		nonlinear_iteration_, l_it, convergedReason, residual_norm);
     }
+    VecDestroy(&save_solution);
     this -> postprocess();
 
     // adapt timestep
@@ -1179,6 +1180,13 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
+    
+    VecDestroy(&previous_solution);
+    VecDestroy(&steady_diagonal);
+    VecDestroy(&new_diagonal);
+    VecDestroy(&steady_rhs);
+    
+    
     if (schur0 != NULL) {
         delete schur0;
         VecScatterDestroy(&par_to_all);
@@ -1191,7 +1199,8 @@ DarcyMH::~DarcyMH() {
 
 	if (output_object)	delete output_object;
 
-
+    if(time_ != nullptr)
+        delete time_;
     
 }
 
