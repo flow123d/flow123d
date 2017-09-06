@@ -199,8 +199,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
 	p.get_record_tag(tag_type, record_name_from_tag);
 	switch (tag_type) {
 		case PathBase::RecordTagType::include: {
-			ASSERT(false).error("Include of YAML/JSON is not supported yet.\n");
-			break;
+			return make_include_storage(p, record);
 		}
 		case PathBase::RecordTagType::include_csv: {
 			ASSERT(false).error("Include of CSV is not supported yet.\n");
@@ -703,6 +702,32 @@ StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::
 		p.up();
 		return storage;
 	}
+
+	return NULL;
+}
+
+
+
+StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Record *record)
+{
+    std::string include_path;
+    if ( p.down("file") ) {
+    	include_path = p.get_string_value();
+    	p.up();
+    } else {
+    	THROW( ExcInputError() << EI_Specification("Missing key 'file' defines including input file.")
+    			               << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
+    }
+
+    FilePath fpath(include_path, FilePath::FileType::input_file);
+    try {
+    	ReaderToStorage include_reader(fpath, *(const_cast<Type::Record *>(record)) );
+        return include_reader.get_storage();
+    } catch (ReaderToStorage::ExcInputError &e ) {
+      e << ReaderToStorage::EI_File(fpath); throw;
+    } catch (ReaderToStorage::ExcNotJSONFormat &e) {
+      e << ReaderToStorage::EI_File(fpath); throw;
+    }
 
 	return NULL;
 }
