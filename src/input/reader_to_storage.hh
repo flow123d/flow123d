@@ -184,6 +184,9 @@ protected:
     /// Dispatch according to @p type and create corresponding storage from the given string.
     StorageBase * make_storage_from_default( const string &dflt_str, std::shared_ptr<Type::TypeBase> type);
 
+    /// Create storage of included YAML or JSON input file
+    StorageBase * make_include_storage(PathBase &p, const Type::Record *record);
+
 
     /// Storage of the read and checked input data
     StorageBase *storage_;
