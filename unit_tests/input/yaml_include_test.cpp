@@ -75,6 +75,18 @@ sub_rec: !include
 int_key: 10
 )YAML";
 
+const string import_yaml_auto_conversion = R"YAML(
+sub_rec: !include
+  include_simple.yaml
+int_key: 10
+)YAML";
+
+const string import_json_auto_conversion = R"YAML(
+sub_rec: !include
+  include_simple.con
+int_key: 10
+)YAML";
+
 const string import_yaml_to_json = R"JSON(
 {
   sub_rec = { TYPE="include", file="include_simple.yaml" },
@@ -98,6 +110,18 @@ TEST_F(ReaderIncludeTest, include_yaml_to_yaml) {
 
 TEST_F(ReaderIncludeTest, include_json_to_yaml) {
     stringstream ss( import_json_to_yaml );
+    read_stream(ss, ReaderIncludeTest::get_input_record(), FileFormat::format_YAML);
+    check_simple_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_yaml_auto_conversion) {
+    stringstream ss( import_yaml_auto_conversion );
+    read_stream(ss, ReaderIncludeTest::get_input_record(), FileFormat::format_YAML);
+    check_simple_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_json_auto_conversion) {
+    stringstream ss( import_json_auto_conversion );
     read_stream(ss, ReaderIncludeTest::get_input_record(), FileFormat::format_YAML);
     check_simple_storage();
 }
