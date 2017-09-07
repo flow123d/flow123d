@@ -711,12 +711,37 @@ StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::
 StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Record *record)
 {
     std::string include_path;
-    if ( p.down("file") ) {
-    	include_path = p.get_string_value();
-    	p.up();
+    if ( p.is_record_type() ) {
+        // include is set as record with tag and file key
+        if ( p.down("file") ) {
+        	try { // TODO: move try-catch block to separate method after implementation CSV include
+        		include_path = p.get_string_value();
+        	}
+        	catch (ExcInputError & e) {
+        		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+                e << EI_ErrorAddress(p.as_string());
+                e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+        		e << EI_InputType("path to included file");
+        		throw;
+        	}
+            p.up();
+        } else {
+    	    THROW( ExcInputError() << EI_Specification("Missing key 'file' defines including input file.")
+                               << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
+        }
     } else {
-    	THROW( ExcInputError() << EI_Specification("Missing key 'file' defines including input file.")
-    			               << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
+    	// include is set only with name of file (similarly as auto conversion)
+    	// this case may occur only for YAML input
+    	try { // TODO: same as previous try-catch block
+    		include_path = p.get_string_value();
+    	}
+    	catch (ExcInputError & e) {
+    		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+            e << EI_ErrorAddress(p.as_string());
+            e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+    		e << EI_InputType("path to included file");
+    		throw;
+    	}
     }
 
     FilePath fpath(include_path, FilePath::FileType::input_file);
