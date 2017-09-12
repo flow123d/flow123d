@@ -184,7 +184,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->make_dof_handler(mesh);
-		ReaderCache::get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
+		ReaderCache::get_reader(reader_file_)->check_compatible_mesh( *(dh_->mesh()) );
 	}
 }
 
@@ -245,7 +245,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 					n_components, boundary_domain, this->component_idx_);
 			this->interpolate(data_vec);
 		}
-//>>>>>>> 3.0.0_dev*/
 
 		return true;
 	} else return false;
