@@ -78,6 +78,32 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
 //     (center+b_*eb_).print(cout,"b");
 }
 
+double CircleEllipseProjection::effective_surface() const
+{
+    //https://en.wikipedia.org/wiki/Ellipse#Circumference
+    
+    double h = (a_-b_)*(a_-b_) / (a_+b_) / (a_+b_);
+    double n = 1,   //double factorial
+           m = 1,   //factorial
+           t = 2,   //2^i
+           hi = h,  //h^i
+           sum = 0,
+           p,j;
+    for(unsigned int i = 2; i <= 15; i++){
+        p = n/m/t;
+        j = 2*i-1;
+        sum += p*p * hi/j/j;
+        n *= j;
+        m *= i;
+        t *= 2;
+        hi *= h;
+//         cout << setprecision(16) << M_PI * (a_+b_) * (1 + sum) << endl;
+    }
+    
+    return M_PI * (a_+b_) * (1 + sum);
+}
+
+
 bool CircleEllipseProjection::point_in_circle(const CircleEllipseProjection::Point& p) const
 {
     // distance of point is less than radius

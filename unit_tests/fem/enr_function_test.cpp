@@ -55,6 +55,8 @@ TEST_F(TestProjection, project_circle_ellipse) {
     
     EXPECT_EQ(M_PI * r * r / cos_a, this->ellipse_area());
     
+    EXPECT_EQ(25.770786812644734, this->effective_surface());
+    
     std::vector<Point> ell_points, c_points;
     ell_points.push_back(c + ea_ + eb_);
     ell_points.push_back(c + b_*eb_);

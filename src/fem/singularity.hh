@@ -92,9 +92,7 @@ public:
     double distance(const Point &p) const override
     { return arma::norm(dist_vector(p),2);}
     
-    double effective_surface() const override
-    { //TODO: https://en.wikipedia.org/wiki/Ellipse#Circumference
-      return 2 * M_PI * radius_;}
+    double effective_surface() const override;
     
     double volume() const override
     { return ellipse_area();}
