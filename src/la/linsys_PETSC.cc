@@ -238,6 +238,7 @@ void LinSys_PETSC::preallocate_matrix()
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
 
     delete[] on_nz;
     delete[] off_nz;
