@@ -33,7 +33,7 @@ Input::Record get_input_record(const std::string &input_str, Input::FileFormat f
 }
 
 
-TEST(ReaderCache, get_bulk_element_data) {
+TEST(ReaderCache, get_bulk_element_) {
 	Profiler::initialize();
 	unsigned int i, j;
 
@@ -48,24 +48,24 @@ TEST(ReaderCache, get_bulk_element_data) {
     reader->read_raw_mesh(mesh);
     reader->check_compatible_mesh(*mesh);
 
-    // read data by components for MultiField
+    // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
     for (i=0; i<3; ++i) {
     	ReaderCache::get_reader(file_name)->find_header(header_params);
-        typename ElementDataCache<int>::ComponentDataPtr multifield_data =
+        typename ElementDataCache<int>::ComponentDataPtr multifield_ =
         		ReaderCache::get_reader(file_name)->get_element_data<int>(9, 1, false, i);
-    	std::vector<int> &vec = *( multifield_data.get() );
+    	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(9, vec.size());
     	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] );
     }
 
-    // read data to one vector for Field
+    // read  to one vector for Field
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	ReaderCache::get_reader(file_name)->find_header(header_params);
-    	typename ElementDataCache<int>::ComponentDataPtr field_data =
+    	typename ElementDataCache<int>::ComponentDataPtr field_ =
     			ReaderCache::get_reader(file_name)->get_element_data<int>(9, 3, false, 0);
-    	std::vector<int> &vec = *( field_data.get() );
+    	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(27, vec.size());
     	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] );
     }
@@ -74,7 +74,7 @@ TEST(ReaderCache, get_bulk_element_data) {
 }
 
 
-TEST(ReaderCache, get_boundary_element_data) {
+TEST(ReaderCache, get_boundary_element_) {
 	Profiler::initialize();
 	unsigned int i, j;
 
@@ -89,24 +89,24 @@ TEST(ReaderCache, get_boundary_element_data) {
     reader->read_raw_mesh(mesh);
     reader->check_compatible_mesh(*mesh);
 
-    // read data by components for MultiField
+    // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
     for (i=0; i<3; ++i) {
     	ReaderCache::get_reader(file_name)->find_header(header_params);
-        typename ElementDataCache<int>::ComponentDataPtr multifield_data =
+        typename ElementDataCache<int>::ComponentDataPtr multifield_ =
         		ReaderCache::get_reader(file_name)->get_element_data<int>(4, 1, true, i);
-    	std::vector<int> &vec = *( multifield_data.get() );
+    	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(4, vec.size());
     	for (j=0; j<mesh->bc_elements.size(); j++) EXPECT_EQ( i+4, vec[j] );
     }
 
-    // read data to one vector for Field
+    // read  to one vector for Field
     {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	ReaderCache::get_reader(file_name)->find_header(header_params);
-    	typename ElementDataCache<int>::ComponentDataPtr field_data =
+    	typename ElementDataCache<int>::ComponentDataPtr field_ =
     			ReaderCache::get_reader(file_name)->get_element_data<int>(4, 3, true, 0);
-    	std::vector<int> &vec = *( field_data.get() );
+    	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(12, vec.size());
     	for (j=0; j<3*mesh->bc_elements.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
@@ -130,65 +130,55 @@ TEST(ReaderCache, find_header) {
     reader->check_compatible_mesh(*mesh);
     delete mesh;
 
-    unsigned int n_elements=9;
-    unsigned int n_comp=3;
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
-    std::shared_ptr< std::vector<double> > data;
 
-	ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(1.0, (*data)[0]);
-    EXPECT_EQ(2.0, (*data)[1]);
-    EXPECT_EQ(3.0, (*data)[2]);
-    EXPECT_EQ(3.0, (*data)[3*8+2]);
+    {
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+	EXPECT_EQ( header.field_name, "vector_fixed" );
+	EXPECT_EQ( header.time, 0.0 );
+    }
 
+    {
     header_params.time = 0.1;
-    ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(1.0, (*data)[0]);
-    EXPECT_EQ(2.0, (*data)[1]);
-    EXPECT_EQ(3.0, (*data)[2]);
-    EXPECT_EQ(3.0, (*data)[3*8+2]);
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+	EXPECT_EQ( header.field_name, "vector_fixed" );
+	EXPECT_EQ( header.time, 0.0 );
+    }
 
+    {
     header_params.time = 0.9;
-    ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(1.0, (*data)[0]);
-    EXPECT_EQ(2.0, (*data)[1]);
-    EXPECT_EQ(3.0, (*data)[2]);
-    EXPECT_EQ(3.0, (*data)[3*8+2]);
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+	EXPECT_EQ( header.field_name, "vector_fixed" );
+	EXPECT_EQ( header.time, 0.0 );
+    }
 
+    {
     header_params.time = 1.0;
-    ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(2.0, (*data)[0]);
-    EXPECT_EQ(3.0, (*data)[1]);
-    EXPECT_EQ(4.0, (*data)[2]);
-    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+    EXPECT_EQ( header.field_name, "vector_fixed" );
+    EXPECT_EQ( header.time, 1.0 );
+    }
 
-    header_params.time = 1.1;
-    ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(2.0, (*data)[0]);
-    EXPECT_EQ(3.0, (*data)[1]);
-    EXPECT_EQ(4.0, (*data)[2]);
-    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    {
+   	header_params.time = 1.1;
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+    EXPECT_EQ( header.field_name, "vector_fixed" );
+    EXPECT_EQ( header.time, 1.0 );
+    }
 
+    {
     header_params.time = 2.1;
-    ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(2.0, (*data)[0]);
-    EXPECT_EQ(3.0, (*data)[1]);
-    EXPECT_EQ(4.0, (*data)[2]);
-    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+    EXPECT_EQ( header.field_name, "vector_fixed" );
+    EXPECT_EQ( header.time, 1.0 );
+    }
 
+    {
     header_params.time = 200;
-    ReaderCache::get_reader(file_name)->find_header(header_params);
-    data = ReaderCache::get_reader(file_name)->get_element_data<double>(n_elements, n_comp, false, 0);
-    EXPECT_EQ(2.0, (*data)[0]);
-    EXPECT_EQ(3.0, (*data)[1]);
-    EXPECT_EQ(4.0, (*data)[2]);
-    EXPECT_EQ(4.0, (*data)[3*8+2]);
+    BaseMeshReader::MeshDataHeader &header = ReaderCache::get_reader(file_name)->find_header(header_params);
+    EXPECT_EQ( header.field_name, "vector_fixed" );
+    EXPECT_EQ( header.time, 1.0 );
+    }
 
 }
 
