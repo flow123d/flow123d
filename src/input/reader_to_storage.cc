@@ -194,95 +194,88 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::TypeBase *t
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *record)
 {
 	// control test, check correct tag (or TYPE key) if Record is derived from Abstract
-	PathBase::RecordTagType tag_type;
-	string record_name_from_tag;
-	p.get_record_tag(tag_type, record_name_from_tag);
-	switch (tag_type) {
-		case PathBase::RecordTagType::include: {
-			return make_include_storage(p, record);
+	string record_name_from_tag = p.get_record_tag();
+	if (record_name_from_tag == "include") {
+		return make_include_storage(p, record);
+	} else if (record_name_from_tag == "include_csv") {
+		ASSERT(false).error("Include of CSV is not supported yet.\n");
+	} else {
+		if ( record_name_from_tag != "" ) {
+			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
 		}
-		case PathBase::RecordTagType::include_csv: {
-			ASSERT(false).error("Include of CSV is not supported yet.\n");
-			break;
-		}
-		default: {
-			if ( record_name_from_tag != "" ) {
-				ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
-			}
-			std::set<string> keys_to_process;
-			bool effectively_null = p.is_effectively_null();
-			if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
-		        std::set<string>::iterator set_it;
+		std::set<string> keys_to_process;
+		bool effectively_null = p.is_effectively_null();
+		if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
+	        std::set<string>::iterator set_it;
 
-		        /*Type::Record::KeyIter key_it;
-		        if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
-		            PathBase *type_path = p->clone();
-		            if ( type_path.down( "TYPE" ) ) {
-		                try {
-		                	ASSERT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
-		                		.error("Invalid value of TYPE key of record");
-		                    make_storage(type_path, key_it->type_.get() )->get_int();
-		                } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
-		                	return record_automatic_conversion(p, record);
-		                }
-		            }
-		            else {  // automatic conversion
-		            	return record_automatic_conversion(p, record);
-		            }
-		        }*/
+	        /*Type::Record::KeyIter key_it;
+	        if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
+	            PathBase *type_path = p->clone();
+	            if ( type_path.down( "TYPE" ) ) {
+	                try {
+	                	ASSERT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
+	                		.error("Invalid value of TYPE key of record");
+	                    make_storage(type_path, key_it->type_.get() )->get_int();
+	                } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
+	                	return record_automatic_conversion(p, record);
+	                }
+	            }
+	            else {  // automatic conversion
+	            	return record_automatic_conversion(p, record);
+	            }
+	        }*/
 
-		        StorageArray *storage_array = new StorageArray(record->size());
-		        // check individual keys
-		        for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
-		        	// remove processed key from keys_to_process
-		        	set_it = keys_to_process.find(it->key_);
-		        	if (set_it != keys_to_process.end()) {
-		        		keys_to_process.erase(set_it);
-		        	}
+	        StorageArray *storage_array = new StorageArray(record->size());
+	        // check individual keys
+	        for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+	        	// remove processed key from keys_to_process
+	        	set_it = keys_to_process.find(it->key_);
+	        	if (set_it != keys_to_process.end()) {
+	        		keys_to_process.erase(set_it);
+	        	}
 
-		            if ( !effectively_null && p.down(it->key_) ) {
-		                // key on input => check & use it
-		                // check for obsolete key
+	            if ( !effectively_null && p.down(it->key_) ) {
+	                // key on input => check & use it
+	                // check for obsolete key
 
-		                auto obsolete_it = it->attributes.find( Type::Attribute::obsolete() );
-		                if ( obsolete_it != it->attributes.end()) {
-		                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
-		                }
+	                auto obsolete_it = it->attributes.find( Type::Attribute::obsolete() );
+	                if ( obsolete_it != it->attributes.end()) {
+	                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
+	                }
 
-		                StorageBase *storage = make_storage(p, it->type_.get());
-		                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
-		                	delete storage;
-		                	storage = make_storage_from_default( it->default_.value(), it->type_ );
-		                }
-		                storage_array->new_item( it->key_index, storage );
-		                p.up();
-		            } else {
-		                // key not on input
-		                if (it->default_.is_obligatory() ) {
-		                    THROW( ExcInputError() << EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
-		                            << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
-		                } else if (it->default_.has_value_at_declaration() ) {
-		                   storage_array->new_item(it->key_index,
-		                           make_storage_from_default( it->default_.value(), it->type_ ) );
-		                } else { // defalut - optional or default at read time
-		                    // set null
-		                    storage_array->new_item(it->key_index, new StorageNull() );
-		                }
-		            }
-		        }
+	                StorageBase *storage = make_storage(p, it->type_.get());
+	                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
+	                	delete storage;
+	                	storage = make_storage_from_default( it->default_.value(), it->type_ );
+	                }
+	                storage_array->new_item( it->key_index, storage );
+	                p.up();
+	            } else {
+	                // key not on input
+	                if (it->default_.is_obligatory() ) {
+	                    THROW( ExcInputError() << EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
+	                            << EI_ErrorAddress(p.as_string()) << EI_InputType(record->desc()) );
+	                } else if (it->default_.has_value_at_declaration() ) {
+	                   storage_array->new_item(it->key_index,
+	                           make_storage_from_default( it->default_.value(), it->type_ ) );
+	                } else { // defalut - optional or default at read time
+	                    // set null
+	                    storage_array->new_item(it->key_index, new StorageNull() );
+	                }
+	            }
+	        }
 
-		        for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
-		        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
-		        			<< " '" << p.as_string() << "'." << std::endl;
-		        }
+	        for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
+	        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
+	        			<< " '" << p.as_string() << "'." << std::endl;
+	        }
 
-		        return storage_array;
+	        return storage_array;
 
-		    } else { // automatic conversion
-		    	return record_automatic_conversion(p, record);
-		    }
-		    // possibly construction of reduced record
-		}
+	    } else { // automatic conversion
+	    	return record_automatic_conversion(p, record);
+	    }
+	    // possibly construction of reduced record
 	}
 
 	return NULL;
@@ -328,30 +321,25 @@ StorageBase * ReaderToStorage::record_automatic_conversion(PathBase &p, const Ty
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
-	PathBase::RecordTagType tag_type;
-	string record_name;
-	p.get_record_tag(tag_type, record_name);
-	switch (tag_type) {
-		case PathBase::RecordTagType::undefined: {
-			if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-				THROW( ExcInputError() << EI_Specification("Can not determine type of the Abstract.") << EI_ErrorAddress(p.as_string())
-						<< EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
-			} else { // auto conversion
-				return abstract_automatic_conversion(p, abstr_rec);
-			}
+	string record_name = p.get_record_tag();
+	if (record_name == "") {
+		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
+			THROW( ExcInputError() << EI_Specification("Can not determine type of the Abstract.") << EI_ErrorAddress(p.as_string())
+					<< EI_JSON_Type( p.get_node_type(p.get_node_type_index()) ) << EI_InputType(abstr_rec->desc()) );
+		} else { // auto conversion
+			return abstract_automatic_conversion(p, abstr_rec);
 		}
-		case PathBase::RecordTagType::other_value: {
-			try {
-				return make_storage(p, &( abstr_rec->get_descendant(record_name) ) );
-			} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-				THROW( ExcInputError() << EI_Specification("Wrong value '" + record_name + "' of the Selection.")
-						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
-			}
-		}
-		default: {
-			THROW( ExcForbiddenAbstractTag() << EI_Tag(record_name) );
+	} else if ((record_name == "include") || (record_name == "include_csv")) {
+		THROW( ExcForbiddenAbstractTag() << EI_Tag(record_name) );
+	} else {
+		try {
+			return make_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			THROW( ExcInputError() << EI_Specification("Wrong value '" + record_name + "' of the Selection.")
+					<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(abstr_rec->get_type_selection().desc()) );
 		}
 	}
+
 
 	return NULL;
 }

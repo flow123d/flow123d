@@ -94,7 +94,7 @@ public:
     PathBase * find_ref_node() override;
 
     /// Implements @p PathBase::get_record_tag
-    void get_record_tag(RecordTagType &tag_type, std::string &tag_value) const override;
+    std::string get_record_tag() const override;
 
 protected:
 

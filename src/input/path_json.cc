@@ -295,7 +295,8 @@ PathJSON * PathJSON::clone() const {
 
 
 
-void PathJSON::get_record_tag(RecordTagType &tag_type, std::string &tag_value) const {
+std::string PathJSON::get_record_tag() const {
+	std::string tag_value;
 	if ( this->is_record_type() ) {
 		PathJSON type_path(*this);
 		if ( type_path.down("TYPE") ) {
@@ -307,15 +308,12 @@ void PathJSON::get_record_tag(RecordTagType &tag_type, std::string &tag_value) c
 		    } else {
 		    	tag_value = type_path.get_string_value();
 			}
-			if (tag_value == "include") tag_type = RecordTagType::include;
-			else if (tag_value == "include_csv") tag_type = RecordTagType::include_csv;
-			else tag_type = RecordTagType::other_value;
-		    return;
 		}
+	} else {
+		tag_value = "";
 	}
 
-	tag_type = RecordTagType::undefined;
-	tag_value = "";
+	return tag_value;
 }
 
 

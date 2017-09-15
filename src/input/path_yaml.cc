@@ -194,16 +194,12 @@ PathBase * PathYAML::find_ref_node()
 
 
 
-void PathYAML::get_record_tag(RecordTagType &tag_type, std::string &tag_value) const {
+std::string PathYAML::get_record_tag() const {
 	std::string tag = head().Tag();
 	if ( (tag == "?") || (tag.size() == 0) ) {
-		tag_type = RecordTagType::undefined;
-		tag_value = "";
+		return "";
 	} else {
-		tag_value = tag.erase(0, 1); // tag starts with '!' char
-		if (tag_value == "include") tag_type = RecordTagType::include;
-		else if (tag_value == "include_csv") tag_type = RecordTagType::include_csv;
-		else tag_type = RecordTagType::other_value;
+		return tag.erase(0, 1); // tag starts with '!' char
 	}
 }
 

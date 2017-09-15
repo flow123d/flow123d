@@ -54,16 +54,6 @@ public:
             << "Error in input file: " << EI_JsonFile::qval << "\nReference {REF=\"" << EI_RefStr::val << "\"} at address " << EI_RefAddress::qval << " not found.\n"
             << "failed to follow at address: " << EI_ErrorAddress::qval << " because " << EI_Specification::val);
 
-    /**
-     * Enum allows to distinguish record tags by type
-     */
-    enum RecordTagType {
-		include,       ///< Tag of include of other YAML or JSON file
-		include_csv,   ///< Tag of include of CSV file
-		other_value,   ///< Tag with other non-empty value (typically type name of record)
-		undefined      ///< No tag of record
-	};
-
     /// Must have virtual destructor to call the right one form child.
     virtual ~PathBase() {};
 
@@ -159,7 +149,7 @@ public:
      *
      * Typically is used for getting descendant or for include of other input file.
      */
-    virtual void get_record_tag(RecordTagType &tag_type, std::string &tag_value) const =0;
+    virtual std::string get_record_tag() const =0;
 
 protected:
     /// Forbid default constructor.
