@@ -150,7 +150,9 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        
+        //due to time dependent flow, fill the whole diagonal (otherwise it is allocated)
+        for(unsigned int i=0; i<size(); i++)
+            if(loc_system_.get_matrix()(i,i)==0) loc_system_.add_value(i,i,loc_system_.artificial_zero);
 
         ad_->lin_sys->set_local_system(loc_system_);
 
