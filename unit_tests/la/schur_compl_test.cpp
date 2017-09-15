@@ -135,7 +135,7 @@ TEST(schur, complement) {
 		const PetscScalar *vals;
 		for (unsigned int i=0; i<block_size; i++) {
 			MatGetRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
-			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[i] );
+			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[0] );
 			MatRestoreRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
 		}
 		MatGetRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);
