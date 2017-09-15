@@ -28,6 +28,8 @@ class LocalSystem
 public:
     typedef arma::uvec DofVec;
     
+    static constexpr double artificial_zero = std::numeric_limits<double>::min();
+    
     /**
      * Global row and col indices.  Are public and can be freely set.
      * Nevertheless one can also provide reference to already existing arrays through

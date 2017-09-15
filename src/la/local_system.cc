@@ -115,14 +115,14 @@ void LocalSystem::eliminate_solution()
     for(ic=0; ic < n_elim_cols; ic++) {
         col = elim_cols[ic];
         tmp_rhs -= solution_cols[ic] * tmp_mat.col( col );
-        tmp_mat.col( col ).zeros();
+        tmp_mat.col( col ).fill(artificial_zero);
     }
 
     // eliminate rows
     for(ir=0; ir < n_elim_rows; ir++) {
         row = elim_rows[ir];
         tmp_rhs( row ) = 0.0;
-        tmp_mat.row( row ).zeros();
+        tmp_mat.row( row ).fill(artificial_zero);
 
         // fix global diagonal
         for(ic=0; ic < n_elim_cols; ic++) {
