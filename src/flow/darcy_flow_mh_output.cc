@@ -439,18 +439,12 @@ void DarcyFlowMHOutput::output_internal_flow_data()
             raw_output_file << ele_flux[3*cit+i] << " ";
 
         raw_output_file << ele->n_sides() << " ";
-        std::vector< std::vector<unsigned int > > old_to_new_side =
-        { {0, 1},
-          {0, 1, 2},
-          {0, 1, 2, 3}
-        };
+
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            raw_output_file << dh.side_scalar( *(ele->side(i_new_side) ) ) << " ";
+            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
         }
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            raw_output_file << dh.side_flux( *(ele->side(i_new_side) ) ) << " ";
+            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
         }
 
         raw_output_file << endl;
@@ -693,4 +687,5 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
 }
+
 
