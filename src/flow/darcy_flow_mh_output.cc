@@ -426,7 +426,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     
     //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
+    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]    ns_side_neighbors[n]    neighbors[n*ns]\n";
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
@@ -445,7 +445,20 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
         }
-
+        
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            unsigned int n_side_neighs = ele->side(i)->edge()->n_sides-1;  //n_sides - the current one
+            raw_output_file << n_side_neighs << " ";
+        }
+        
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            Edge* edge = ele->side(i)->edge();
+            for (unsigned int j = 0; j < edge->n_sides; j++) {
+                if(edge->side(j) != ele->side(i))
+                    raw_output_file << edge->side(j)->element()->id() << " ";
+            }
+        }
+        
         raw_output_file << endl;
         cit ++;
     }
