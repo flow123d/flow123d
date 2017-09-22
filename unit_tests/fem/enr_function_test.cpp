@@ -194,6 +194,26 @@ TEST(CircleEllipseProjection, parallel){
     proj.project_to_ellipse_plane(points);
     for(unsigned int i=0; i<points.size(); i++)
         EXPECT_ARMA_EQ(orig[i],points[i]);
+    
+    
+    // TEST when direction and normal are opposite
+    u = {3,-2,5};
+    n = {-3,2,-5};
+    proj = CircleEllipseProjection(c,r,u,n);
+    
+    EXPECT_EQ(M_PI * r * r, proj.circle_area());
+//     DBGMSG("%e\n",proj.circle_area()- proj.ellipse_area());
+    EXPECT_DOUBLE_EQ(proj.circle_area(), proj.ellipse_area());
+    
+    points = orig;
+    
+    proj.project_to_circle_plane(points);
+    for(unsigned int i=0; i<points.size(); i++)
+        EXPECT_ARMA_EQ(orig[i],points[i]);
+    
+    proj.project_to_ellipse_plane(points);
+    for(unsigned int i=0; i<points.size(); i++)
+        EXPECT_ARMA_EQ(orig[i],points[i]);
 }
 
 

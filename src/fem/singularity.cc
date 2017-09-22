@@ -43,7 +43,7 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
     
     // ellipse axes sizes
     a_ = radius;
-    b_ = radius / cos_a;
+    b_ = std::abs(radius / cos_a);
        
     // ellipse axes unit vectors
     if(sin_a > std::numeric_limits<double>::epsilon()){
@@ -71,6 +71,7 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
     ea_ = ea_ / arma::norm(ea_,2);
     eb_ = eb_ / arma::norm(eb_,2);
     
+    compute_effective_surface();
 //     (center + u).print(cout,"direction");
 //     (center + n/arma::norm(n,2)).print(cout,"normal");
 //     center.print(cout,"center");
@@ -78,10 +79,9 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
 //     (center+b_*eb_).print(cout,"b");
 }
 
-double CircleEllipseProjection::effective_surface() const
+void CircleEllipseProjection::compute_effective_surface()
 {
     //https://en.wikipedia.org/wiki/Ellipse#Circumference
-    
     double h = (a_-b_)*(a_-b_) / (a_+b_) / (a_+b_);
     double n = 1,   //double factorial
            m = 1,   //factorial
@@ -97,10 +97,10 @@ double CircleEllipseProjection::effective_surface() const
         m *= i;
         t *= 2;
         hi *= h;
-//         cout << setprecision(16) << M_PI * (a_+b_) * (1 + sum) << endl;
+//         cout <<  "effective_surface: " << setprecision(16) << M_PI * (a_+b_) * (1 + sum) << endl;
     }
     
-    return M_PI * (a_+b_) * (1 + sum);
+    effective_surface_ = M_PI * (a_+b_) * (1 + sum);
 }
 
 

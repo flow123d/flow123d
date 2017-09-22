@@ -92,7 +92,8 @@ public:
     double distance(const Point &p) const override
     { return arma::norm(dist_vector(p),2);}
     
-    double effective_surface() const override;
+    double effective_surface() const override
+    { return effective_surface_;}
     
     double volume() const override
     { return ellipse_area();}
@@ -142,6 +143,8 @@ public:
     
 protected:
     
+    void compute_effective_surface();
+    
     Point center_,          ///< Center of the circle.
         direction_vector_,  ///< Direction vector of the singularity (1d element).
         normal_vector_;     ///< Normal vector of the plain (2d element).
@@ -149,6 +152,8 @@ protected:
     double radius_;         ///< Radius of the circle.
     double a_,b_;           ///< Axes sizes of the ellipse.
     Point ea_,eb_;          ///< Unit vectors defining axes of the ellipse.
+    
+    double effective_surface_;  ///< Effective surface (circle or ellipse length.)
     
     /// Auxilliary precomputed values for projection; angle between direction and normal vector.
     double cos_a, sin_a, tan_a;
