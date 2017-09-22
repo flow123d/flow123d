@@ -538,6 +538,7 @@ protected:
         //as long as pressure is not enriched and is P0
         ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
 
+        double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
         double val;
         
         for(unsigned int w=0; w < xd->n_enrichments(); w++){
@@ -560,6 +561,8 @@ protected:
                 double effective_surface = 0;
                 for(unsigned int q=0; q < quad.size();q++)
                     effective_surface += quad.weight(q);
+                
+                effective_surface = cs * effective_surface;
                 
                 for(unsigned int q=0; q < quad.size();q++){
                     // outer normal is opposite to distance vector
