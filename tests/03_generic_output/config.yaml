@@ -8,5 +8,9 @@ test_cases:
   check_rules:
       - ndiff:
             files: ["mass_balance.txt", "water_balance.txt"]       # higher abs tolerance for energy balance
+- files: 
+  - 13_vtk_nodes_output.yaml
+  - 14_vtk_corners_output.yaml
+  proc: [ 1 ]
             
   
