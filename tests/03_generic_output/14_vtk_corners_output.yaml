@@ -1,0 +1,93 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Test of VTK output, output of selected fields is redirected to corner or CellData section 
+  mesh:
+    mesh_file: ../00_mesh/square_0.2x0.2.msh
+  # steady velocity field, with velocity v:0.1
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: bulk
+        conductivity: 1
+        cross_section: 0.02
+        init_pressure: !FieldFE
+          mesh_data_file: ../00_mesh/square_0.3x0.3.msh
+          field_name: init_pressure
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 0.1*x
+    n_schurs: 2
+    output:
+      fields:
+        - { field: pressure_p0, interpolation: D1_value }
+        - { field: velocity_p0, interpolation: D1_value }
+    balance: {}
+    output_stream:
+      file: ./flow.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: .BOUNDARY
+          bc_conc: 0
+        - region: bulk
+          init_conc: !FieldFE
+            mesh_data_file: ../00_mesh/square_0.3x0.3.msh
+            field_name: init_conc
+      output:
+        fields:
+          - { field: conc, interpolation: D1_value }
+    output_stream:
+      file: ./transport.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.2
+    substances:
+      - A
+    balance:
+      cumulative: true
+    time:
+      end_time: 1.0
+  heat_equation: !Heat_AdvectionDiffusion_DG
+    balance:
+      cumulative: true
+    output_stream:
+      file: heat.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 1
+    time:
+      end_time: 10
+    input_fields:
+      - region: bulk
+        fluid_density: 1000
+        fluid_heat_capacity: 4200
+        fluid_heat_conductivity: 0.58
+        init_temperature: !FieldFE
+          mesh_data_file: ../00_mesh/square_0.3x0.3.msh
+          field_name: temperature
+        disp_l: 1e1
+        disp_t: 5e0
+        solid_density: 2500.0
+        solid_heat_capacity: 900
+        solid_heat_conductivity: 2
+        porosity: 0.01
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_temperature: 288
+    output:
+      fields:
+        - { field: temperature, interpolation: P0_value }
+        - region_id
+    solver: !Petsc
+      a_tol: 1.0e-14
+      r_tol: 1.0e-14
