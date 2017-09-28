@@ -146,6 +146,13 @@ public:
 
 protected:
 
+    /// Allow to sign reading the part of input file with atypical algorithm of reading.
+    typedef enum {
+    	none,         ///< Ordinary part of input.
+		transposed,   ///< Processing transposed part of input tree.
+		csv_include   ///< Processing part of input tree included in CSV file.
+    } TryRead;
+
     /// Getter for root of the storage tree.
     StorageBase *get_storage();
 
@@ -195,7 +202,9 @@ protected:
     const Type::TypeBase *root_type_;
 
     /**
-     * @brief Flag signed that "expected" transposed part of input tree is processed.
+     * @brief Flag signed that "special" part of input tree is processed.
+     *
+     * A. <b>Transposed part of input tree:</b>
      *
      * We set this flag if input tree contains another type at position where Array
      * is expected. This type must correspond with type_of_value of Array.
@@ -214,8 +223,13 @@ protected:
      *    type.
      * 5. We repeat paragraph 2 for all items of transposed Array (gradual increase of
      *    @p transpose_index_).
+     *
+     *
+     * B. <b>Include of CSV file to input tree:</b>
+     *
+     * Not implemented yet.
      */
-    bool try_transpose_read_;
+    TryRead try_read_;
 
     /// Index of processed item in transposed part of input tree.
     unsigned int transpose_index_;
