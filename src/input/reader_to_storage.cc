@@ -40,7 +40,7 @@ using namespace internal;
 ReaderToStorage::ReaderToStorage()
 : storage_(nullptr),
   root_type_(nullptr),
-  try_transpose_read_(false),
+  try_read_(TryRead::none),
   transpose_index_(0)
 {}
 
@@ -383,14 +383,14 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
         }
     } else {
     	// if transposition is carried, only conversion to array with one element is allowed
-    	if (try_transpose_read_) {
+    	if (try_read_ == TryRead::transposed) {
 			// try automatic conversion to array with one element
     		const Type::TypeBase &sub_type = array->get_sub_type();
     		StorageBase *one_element_storage = make_storage(p, &sub_type);
     		return make_autoconversion_array_storage(p, array, one_element_storage);
         } else {
 			// set variables managed transposition
-			try_transpose_read_ = true;
+			try_read_ = TryRead::transposed;
 			transpose_index_ = 0;
 			transpose_array_sizes_.clear();
 
@@ -409,7 +409,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 
 			// automatic conversion to array with one element
 			if (transpose_array_sizes_.size() == 0) {
-				try_transpose_read_ = false;
+				try_read_ = TryRead::none;
 				return make_autoconversion_array_storage(p, array, first_item_storage);
 			} else {
 
@@ -444,7 +444,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 						}
 					}
 
-					try_transpose_read_ = false;
+					try_read_ = TryRead::none;
 					return storage_array;
 				} else {
 					THROW( ExcInputError()
@@ -514,7 +514,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *selection)
 {
-	if ( try_transpose_read_ && p.is_array_type() ) {
+	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, selection);
 	}
@@ -541,7 +541,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_type)
 {
-	if ( try_transpose_read_ && p.is_array_type() ) {
+	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, bool_type);
 	}
@@ -562,7 +562,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *int_type)
 {
-	if ( try_transpose_read_ && p.is_array_type() ) {
+	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, int_type);
 	}
@@ -593,7 +593,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *in
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *double_type)
 {
-	if ( try_transpose_read_ && p.is_array_type() ) {
+	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, double_type);
 	}
@@ -624,7 +624,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *string_type)
 {
-	if ( try_transpose_read_ && p.is_array_type() ) {
+	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, string_type);
 	}
@@ -633,7 +633,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 		value = p.get_string_value();
 	}
 	catch (ExcInputError & e) {
-		if (try_transpose_read_) {
+		if ((try_read_ == TryRead::transposed)) {
 			return this->make_transposed_storage(p, string_type);
 		}
 		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
@@ -676,7 +676,7 @@ StorageBase * ReaderToStorage::make_storage_from_default(const string &dflt_str,
 
 
 StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
-	ASSERT(try_transpose_read_).error();
+	ASSERT(try_read_ == TryRead::transposed).error();
 	ASSERT(p.is_array_type()).error();
 
 	int arr_size = p.get_array_size();
