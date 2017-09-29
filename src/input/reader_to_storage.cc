@@ -361,6 +361,11 @@ StorageBase * ReaderToStorage::abstract_automatic_conversion(PathBase &p, const 
 
 StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *array)
 {
+	if ( try_read_ == TryRead::csv_include) {
+		THROW( ExcInputError() << EI_Specification("Array type in CSV-included part of IST is forbidden!\n")
+						   << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+	}
+
 	int arr_size;
 	if ( (arr_size = p.get_array_size()) != -1 ) {
         if ( array->match_size( arr_size ) ) {
@@ -382,77 +387,90 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
                     << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
         }
     } else {
-    	// if transposition is carried, only conversion to array with one element is allowed
-    	if (try_read_ == TryRead::transposed) {
-			// try automatic conversion to array with one element
-    		const Type::TypeBase &sub_type = array->get_sub_type();
-    		StorageBase *one_element_storage = make_storage(p, &sub_type);
-    		return make_autoconversion_array_storage(p, array, one_element_storage);
-        } else {
-			// set variables managed transposition
-			try_read_ = TryRead::transposed;
-			transpose_index_ = 0;
-			transpose_array_sizes_.clear();
-
-			const Type::TypeBase &sub_type = array->get_sub_type();
-			StorageBase *first_item_storage;
-			try {
-				first_item_storage = make_storage(p, &sub_type);
-			} catch (ExcInputError &e) {
-	    		if ( !array->match_size(1) ) {
-	    			e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
-	    		}
-				e << EI_TransposeIndex(transpose_index_);
-				e << EI_TransposeAddress(p.as_string());
-				throw;
+        switch (try_read_) {
+			case TryRead::transposed: {
+				// if transposition is carried, only conversion to array with one element is allowed
+				// try automatic conversion to array with one element
+				const Type::TypeBase &sub_type = array->get_sub_type();
+				StorageBase *one_element_storage = make_storage(p, &sub_type);
+				return make_autoconversion_array_storage(p, array, one_element_storage);
 			}
+			case TryRead::csv_include: {
+				// Case doesn't happen. See at the begin of this method.
+				break;
+			}
+			default: {
+				if (p.get_record_tag() == "include_csv") {
+					try_read_ = TryRead::csv_include;
+					return this->make_include_csv_storage(p, array);
+				} else {
+					// set variables managed transposition
+					try_read_ = TryRead::transposed;
+					transpose_index_ = 0;
+					transpose_array_sizes_.clear();
 
-			// automatic conversion to array with one element
-			if (transpose_array_sizes_.size() == 0) {
-				try_read_ = TryRead::none;
-				return make_autoconversion_array_storage(p, array, first_item_storage);
-			} else {
-
-				// check sizes of arrays stored in transpose_array_sizes_
-				transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
-											  transpose_array_sizes_.end() );
-				if (transpose_array_sizes_.size() == 1) {
-					unsigned int sizes = transpose_array_sizes_[0]; // sizes of transposed
-
-					// array size out of bounds
-					if ( !array->match_size( sizes ) ) {
-						stringstream ss;
-						ss << sizes;
-						THROW( ExcInputError() << EI_Specification("Result of transpose auto-conversion do not fit the size " + ss.str() + " of the Array.")
-								<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+					const Type::TypeBase &sub_type = array->get_sub_type();
+					StorageBase *first_item_storage;
+					try {
+						first_item_storage = make_storage(p, &sub_type);
+					} catch (ExcInputError &e) {
+						if ( !array->match_size(1) ) {
+							e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
+						}
+						e << EI_TransposeIndex(transpose_index_);
+						e << EI_TransposeAddress(p.as_string());
+						throw;
 					}
 
-					// create storage of array
-					StorageArray *storage_array = new StorageArray(sizes);
-					storage_array->new_item(0, first_item_storage);
-					if (sizes>1) {
-						++transpose_index_;
-						while (transpose_index_ < sizes) {
-							try {
-								storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
-							} catch (ExcInputError &e) {
-								e << EI_TransposeIndex(transpose_index_);
-								e << EI_TransposeAddress(p.as_string());
-								throw;
+					// automatic conversion to array with one element
+					if (transpose_array_sizes_.size() == 0) {
+						try_read_ = TryRead::none;
+						return make_autoconversion_array_storage(p, array, first_item_storage);
+					} else {
+
+						// check sizes of arrays stored in transpose_array_sizes_
+						transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
+													  transpose_array_sizes_.end() );
+						if (transpose_array_sizes_.size() == 1) {
+							unsigned int sizes = transpose_array_sizes_[0]; // sizes of transposed
+
+							// array size out of bounds
+							if ( !array->match_size( sizes ) ) {
+								stringstream ss;
+								ss << sizes;
+								THROW( ExcInputError() << EI_Specification("Result of transpose auto-conversion do not fit the size " + ss.str() + " of the Array.")
+										<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
 							}
-							++transpose_index_;
+
+							// create storage of array
+							StorageArray *storage_array = new StorageArray(sizes);
+							storage_array->new_item(0, first_item_storage);
+							if (sizes>1) {
+								++transpose_index_;
+								while (transpose_index_ < sizes) {
+									try {
+										storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
+									} catch (ExcInputError &e) {
+										e << EI_TransposeIndex(transpose_index_);
+										e << EI_TransposeAddress(p.as_string());
+										throw;
+									}
+									++transpose_index_;
+								}
+							}
+
+							try_read_ = TryRead::none;
+							return storage_array;
+						} else {
+							THROW( ExcInputError()
+									<< EI_Specification("Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'")
+									<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
 						}
 					}
-
-					try_read_ = TryRead::none;
-					return storage_array;
-				} else {
-					THROW( ExcInputError()
-							<< EI_Specification("Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'")
-							<< EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
 				}
-        	}
-    	}
+				break;
+			}
+        }
 
     }
 
@@ -544,7 +562,18 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, bool_type);
-	}
+	} else if (try_read_ == TryRead::csv_include)
+		try {
+			// read index of column in CSV file
+			return new StorageInt( p.get_int_value() );
+		} catch (ExcInputError & e) {
+			e << EI_Specification("The value in definition of CSV format should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+			e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+			e << EI_ErrorAddress(p.as_string());
+			e << EI_InputType(bool_type->desc());
+			throw;
+		}
+
 	try {
 		return new StorageBool( p.get_bool_value() );
 	}
@@ -596,9 +625,20 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, double_type);
+	} else if (try_read_ == TryRead::csv_include) {
+		try {
+			// read index of column in CSV file
+			return new StorageInt( p.get_int_value() );
+		} catch (ExcInputError & e) {
+			e << EI_Specification("The value in definition of CSV format should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+			e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+			e << EI_ErrorAddress(p.as_string());
+			e << EI_InputType(double_type->desc());
+			throw;
+		}
 	}
-    double value;
 
+    double value;
 	try {
 		value = p.get_double_value();
 	}
@@ -631,8 +671,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 	string value;
 	try {
 		value = p.get_string_value();
-	}
-	catch (ExcInputError & e) {
+	} catch (ExcInputError & e) {
 		if ((try_read_ == TryRead::transposed)) {
 			return this->make_transposed_storage(p, string_type);
 		}
@@ -742,6 +781,48 @@ StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Rec
       e << ReaderToStorage::EI_File(fpath); throw;
     }
 
+	return NULL;
+}
+
+
+StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type::Array *array)
+{
+	if ( p.is_record_type() ) { // sub-type must be record type
+		// load path to CSV file
+		std::string include_path;
+        if ( p.down("file") ) {
+        	try { // TODO: move try-catch block to separate method after implementation CSV include
+        		include_path = p.get_string_value();
+        	}
+        	catch (ExcInputError & e) {
+        		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+                e << EI_ErrorAddress(p.as_string());
+                e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+        		e << EI_InputType("path to included file");
+        		throw;
+        	}
+            p.up();
+        } else {
+    	    THROW( ExcInputError() << EI_Specification("Missing key 'file' defines including input file.")
+                               << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+        }
+
+        // sub-type of array
+        const Type::TypeBase &sub_type = array->get_sub_type();
+        // for every leaf of input subtree holds index of columns in CSV file
+        StorageBase *storage_map;
+        if ( p.down("format") ) {
+            storage_map = make_storage(p, &sub_type);
+            //storage_map->print(std::cout);
+            p.up();
+        } else {
+    	    THROW( ExcInputError() << EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
+                               << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+        }
+	} else {
+	    THROW( ExcInputError() << EI_Specification("Invalid definition of CSV include.")
+                           << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+	}
 	return NULL;
 }
 

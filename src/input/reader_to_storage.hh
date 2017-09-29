@@ -194,6 +194,9 @@ protected:
     /// Create storage of included YAML or JSON input file
     StorageBase * make_include_storage(PathBase &p, const Type::Record *record);
 
+    /// Create storage of included CSV input file
+    StorageBase * make_include_csv_storage(PathBase &p, const Type::Array *array);
+
 
     /// Storage of the read and checked input data
     StorageBase *storage_;
