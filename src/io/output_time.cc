@@ -127,6 +127,7 @@ std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_inp
 
 std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr(bool discont) {
 	if (discont) {
+        compute_discontinuous_output_mesh();
 		return output_mesh_discont_;
 	} else {
 		return output_mesh_;
@@ -144,7 +145,8 @@ void OutputTime::update_time(double field_time) {
 void OutputTime::compute_discontinuous_output_mesh()
 {
     ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_discont_->create_mesh(output_mesh_);
+    if( ! output_mesh_discont_->is_refined())
+        output_mesh_discont_->create_mesh(output_mesh_);
 }
 
 

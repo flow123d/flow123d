@@ -24,9 +24,12 @@
 #include "input/accessors.hh"
 
 #include "tools/general_iterator.hh"
+#include "fields/field.hh"
+#include "mesh/point.hh"
 
 class Mesh;
 template<class T> class ElementDataCache;
+template<int> class ElementAccessor;
 
 class OutputElement;
 typedef GeneralIterator<OutputElement> OutputElementIterator;
@@ -62,6 +65,8 @@ class OutputMeshDiscontinuous;
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
 public:
+    typedef Field<3, FieldValue<3>::Scalar> * ErrorControlFieldPtr;
+    
     /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment. 
     static const unsigned int spacedim = 3;
     
@@ -77,6 +82,8 @@ public:
      */
     static const Input::Type::Record & get_input_type();
     
+    bool is_refined();
+    
     /// Gives iterator to the FIRST element of the output mesh.
     OutputElementIterator begin();
     /// Gives iterator to the LAST element of the output mesh.
@@ -85,10 +92,8 @@ public:
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
-    /// Returns \p error_control_field_name_
-    inline std::string error_control_field_name() {
-    	return error_control_field_name_;
-    }
+    /// Selects the error control field out of output field set according to input record.
+    void set_error_control_field(ErrorControlFieldPtr error_control_field);
 
     /// Vector of element indices in the computational mesh. (Important when refining.)
     std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
@@ -115,9 +120,13 @@ protected:
     /// Maximal level of refinement.
     const unsigned int max_level_;
     
-    /// Refinement error control field name.
-    std::string error_control_field_name_;
+    /// Refinement error control field.
+    ErrorControlFieldPtr error_control_field_;
 
+    bool is_refined_;                   ///< True, if output mesh is refined.
+    bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
+    double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
+    
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
 };
@@ -160,7 +169,31 @@ public:
     void create_refined_mesh() override;
     
 protected:
-    bool refinement_criterion();
+    ///Auxiliary structure defining element of refined output mesh.
+    struct AuxElement{
+        std::vector<Space<spacedim>::Point> nodes;
+        unsigned int level;
+    };
+    
+    ///Performs the actual refinement of AuxElement. Recurrent.
+    template<int dim>
+    void refine_aux_element(const AuxElement& aux_element,
+                            std::vector< AuxElement >& refinement,
+                            const ElementAccessor<spacedim> &ele_acc
+                           );
+    
+    /// Collects different refinement criteria results.
+    bool refinement_criterion(const AuxElement& ele,
+                              const ElementAccessor<spacedim> &ele_acc);
+    
+    /// Refinement flag - checks only maximal level of refinement.
+    bool refinement_criterion_uniform(const AuxElement& ele);
+    
+    /// Refinement flag - measures discretisation error according to error control field.
+    bool refinement_criterion_error(const AuxElement& ele,
+                                    const Space<spacedim>::Point &centre,
+                                    const ElementAccessor<spacedim> &ele_acc
+                                   );
 };
 
 #endif  // OUTPUT_MESH_HH_

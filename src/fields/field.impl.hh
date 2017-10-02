@@ -590,7 +590,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-
     /* Copy data to array */
     switch(space_type) {
     case OutputTime::NODE_DATA: {
@@ -642,7 +641,10 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::ELEM_DATA: {
-    	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
+        std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr(true);
+        if(! output_mesh->is_refined())
+            output_mesh = stream->get_output_mesh_ptr();
+        
         for(const auto & ele : *output_mesh )
         {
             unsigned int ele_index = ele.idx();

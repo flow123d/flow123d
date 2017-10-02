@@ -194,9 +194,9 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 
 
-std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
+std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data(std::shared_ptr<OutputMeshBase> om)
 {    
-    auto &offsets = *( output_mesh_->offsets_->get_component_data(0).get() );
+    auto &offsets = *( om->offsets_->get_component_data(0).get() );
     unsigned int n_elements = offsets.size();
     
     auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
@@ -497,70 +497,46 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write header */
     this->write_vtk_vtu_head();
 
-    /* When there is no discontinuous data, then write classical vtu */
-    if ( this->output_data_vec_[CORNER_DATA].empty() )
-    {
-        /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
 
-        /* Write VTK Geometry */
-        file << "<Points>" << endl;
-            write_vtk_data(output_mesh_->nodes_);
-        file << "</Points>" << endl;
-    
-        
-        /* Write VTK Topology */
-        file << "<Cells>" << endl;
-            write_vtk_data(output_mesh_->connectivity_);
-            write_vtk_data(output_mesh_->offsets_);
-            auto types = fill_element_types_data();
-           	write_vtk_data( types );
-        file << "</Cells>" << endl;
-
-        /* Write VTK scalar and vector data on nodes to the file */
-        this->write_vtk_node_data();
-
-        /* Write VTK data on elements */
-        this->write_vtk_element_data();
-
-        /* Write own VTK native data (skipped by Paraview) */
-        this->write_vtk_native_data();
-
-        /* Write Piece end */
-        file << "</Piece>" << endl;
-
-    } else {
-        /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_discont_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
-
-        /* Write VTK Geometry */
-        file << "<Points>" << endl;
-            write_vtk_data(output_mesh_discont_->nodes_);
-        file << "</Points>" << endl;
-
-        /* Write VTK Topology */
-        file << "<Cells>" << endl;
-            write_vtk_data(output_mesh_discont_->connectivity_);
-            write_vtk_data(output_mesh_discont_->offsets_);
-            auto types = fill_element_types_data();
-           	write_vtk_data( types );
-        file << "</Cells>" << endl;
-
-        /* Write VTK scalar and vector data on nodes to the file */
-        this->write_vtk_node_data();
-
-        /* Write VTK data on elements */
-        this->write_vtk_element_data();
-
-        /* Write own VTK native data (skipped by Paraview) */
-        this->write_vtk_native_data();
-
-        /* Write Piece end */
-        file << "</Piece>" << endl;
+    // select which output mesh to use
+    std::shared_ptr<OutputMeshBase> om;
+    ASSERT_PTR(output_mesh_);
+    ASSERT_PTR(output_mesh_discont_);
+    if(output_mesh_discont_->is_refined() || ! this->output_data_vec_[CORNER_DATA].empty()){
+        om = output_mesh_discont_;
     }
+    else om = output_mesh_;
+    
+    /* Write Piece begin */
+    file << "<Piece NumberOfPoints=\"" << om->n_nodes()
+                << "\" NumberOfCells=\"" << om->n_elements() <<"\">" << endl;
 
+    /* Write VTK Geometry */
+    file << "<Points>" << endl;
+        write_vtk_data(om->nodes_);
+    file << "</Points>" << endl;
+
+    
+    /* Write VTK Topology */
+    file << "<Cells>" << endl;
+        write_vtk_data(om->connectivity_);
+        write_vtk_data(om->offsets_);
+        auto types = fill_element_types_data(om);
+        write_vtk_data(types);
+    file << "</Cells>" << endl;
+
+    /* Write VTK scalar and vector data on nodes to the file */
+    this->write_vtk_node_data();
+
+    /* Write VTK data on elements */
+    this->write_vtk_element_data();
+
+        /* Write own VTK native data (skipped by Paraview) */
+        this->write_vtk_native_data();
+
+    /* Write Piece end */
+    file << "</Piece>" << endl;
+        
     /* Write tail */
     this->write_vtk_vtu_tail();
 }

@@ -81,12 +81,19 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     if(space_type == CORNER_DATA)
         compute_discontinuous_output_mesh();
 
+    std::shared_ptr<OutputMeshBase> om;
+    if(output_mesh_discont_->is_refined() || space_type == CORNER_DATA){
+        ASSERT(space_type != NODE_DATA).error("Refined output mesh not implemented for NODE DATA!");
+        om = output_mesh_discont_;
+    }
+    else om = output_mesh_;
+    
     // get possibly existing data for the same field, check both name and type
     std::vector<unsigned int> size(N_DISCRETE_SPACES);
-    size[NODE_DATA] = output_mesh_->n_nodes();
-    size[ELEM_DATA] = output_mesh_->n_elements();
-    size[CORNER_DATA] = output_mesh_discont_->n_nodes();
-    size[NATIVE_DATA] = output_mesh_->n_elements();
+    size[NODE_DATA] = om->n_nodes();
+    size[ELEM_DATA] = om->n_elements();
+    size[CORNER_DATA] = om->n_nodes();
+    size[NATIVE_DATA] = om->n_elements();
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
@@ -96,6 +103,7 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
         it=--od_vec.end();
     }
     return dynamic_cast<ElementDataCache<T> &>(*(*it));
+//             DebugOut() << "ele " << ele.idx() << "\n";
 }
 
 #endif
