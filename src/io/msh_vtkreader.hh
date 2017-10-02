@@ -123,6 +123,11 @@ protected:
      */
     void read_elements(Mesh * mesh);
 
+    /**
+     * create data caches of node and elements DataArray tags
+     */
+    void create_node_element_caches();
+
     /// Reads table of DataArray headers through pugixml interface
     void make_header_table() override;
 

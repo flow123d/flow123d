@@ -11,12 +11,12 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    reader_instances.hh
+ * @file    reader_cache.hh
  * @brief   
  */
 
-#ifndef READER_INSTANCES_HH_
-#define READER_INSTANCES_HH_
+#ifndef READER_CACHE_HH_
+#define READER_CACHE_HH_
 
 
 #include "io/msh_basereader.hh"
@@ -30,7 +30,7 @@
 /**
  * Auxiliary class to map filepaths to instances of readers.
  */
-class ReaderInstance {
+class ReaderCache {
 public:
 	struct ReaderData {
 		std::shared_ptr<BaseMeshReader> reader_;
@@ -51,38 +51,17 @@ public:
 
 private:
 	/// Returns singleton instance
-	static ReaderInstance * instance();
+	static ReaderCache * instance();
 
 	/// Constructor
-	ReaderInstance() {};
+	ReaderCache() {};
 
 	/// Returns instance of given FilePath. If reader doesn't exist, creates new ReaderData object.
-	static ReaderData get_instance(const FilePath &file_path);
+	static ReaderTable::iterator get_reader_data(const FilePath &file_path);
 
 	/// Table of readers
 	ReaderTable reader_table_;
 };
 
 
-class ReaderInstances {
-public:
-	typedef std::map< string, std::shared_ptr<BaseMeshReader> > ReaderTable;
-
-	/// Returns singleton instance
-	static ReaderInstances * instance();
-
-	/**
-	 * Returns mesh reader of get filepath. If reader doesn't exist, creates its.
-	 */
-	std::shared_ptr<BaseMeshReader> get_reader(const FilePath &file_name);
-
-private:
-	/// Constructor
-	ReaderInstances() {};
-
-	/// Table of readers
-	ReaderTable reader_table_;
-};
-
-
-#endif /* READER_INSTANCES_HH_ */
+#endif /* READER_CACHE_HH_ */
