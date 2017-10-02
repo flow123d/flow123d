@@ -141,6 +141,8 @@ public:
     unsigned int n_enrichments();
     
     bool enrich_velocity, enrich_pressure, continuous_pu, single_enr;
+    int xfem_dim;
+    double enr_radius;
     
 protected:
     static const int empty_node_idx;

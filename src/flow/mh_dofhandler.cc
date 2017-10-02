@@ -117,8 +117,10 @@ void MH_DofHandler::reinit(Mesh *mesh,
 //     // convert row_4_id arrays from separate numberings to global numbering of rows
 //     make_row_numberings();
     if(enrich_velocity || enrich_pressure){
-        create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
-    //     create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
+        if(xfem_dim == 2)
+            create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
+        if(xfem_dim == 3)
+            create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
         
         // distribute FE enriched dofs
         distribute_enriched_dofs();
@@ -491,7 +493,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
 
     //TODO: suggest proper enrichment radius
 //     double enr_radius = 1.3*std::sqrt(ele2d->measure());
-    double enr_radius = 2.0;
+//     double enr_radius = 2.0;
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
 
@@ -581,8 +583,6 @@ void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Si
     singularities.push_back(sing);
 
     //TODO: suggest proper enrichment radius
-
-    double enr_radius = 2.0;
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
 

@@ -135,6 +135,8 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("enrich_pressure", it::Bool(), it::Default("false"), "Use enrichment for pressure.")
         .declare_key("continuous_pu", it::Bool(), it::Default("false"), "Set true for continuous partition of unity.")
         .declare_key("single", it::Bool(), it::Default("false"), "Type of enrichment.")
+        .declare_key("dim", it::Integer(2,3), it::Default("2"), "Dimension allowed.")
+        .declare_key("enr_radius", it::Double(0.0), it::Default("0.0"), "Enrichment radius.")
         .close();
         
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
@@ -366,16 +368,18 @@ void DarcyMH::initialize() {
         mh_dh.enrich_pressure = xfem_rec.val<bool>("enrich_pressure");
         mh_dh.continuous_pu = xfem_rec.val<bool>("continuous_pu");
         mh_dh.single_enr = xfem_rec.val<bool>("single");
+        mh_dh.xfem_dim = xfem_rec.val<int>("dim");
+        mh_dh.enr_radius = xfem_rec.val<double>("enr_radius");
+        
+        ASSERT(mh_dh.enr_radius > 0.0).error("Invalid enrichment radius set.\n");
         
         DBGVAR(mh_dh.enrich_velocity);
         DBGVAR(mh_dh.enrich_pressure);
         DBGVAR(mh_dh.continuous_pu);
         DBGVAR(mh_dh.single_enr);
-        
-//         // intersections
-//         intersections_ = std::make_shared<computeintersection::InspectElements>(data_->mesh);
-//         intersections_->compute_intersections(computeintersection::IntersectionType::d12_2);
-        
+        DBGVAR(mh_dh.xfem_dim);
+        DBGVAR(mh_dh.enr_radius);
+                
         // init dofhandler including enrichments
         mh_dh.reinit(mesh_, data_->cross_section, data_->sigma);
         
