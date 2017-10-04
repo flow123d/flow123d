@@ -211,6 +211,9 @@ protected:
     /// Helper method. Get string value of included file or throw exception if reading failed.
     std::string get_included_file(PathBase &p);
 
+    /// Set storage of simple input type with value given from CSV file.
+    void set_storage_from_csv(unsigned int column_index, StorageBase * item_storage, StorageBase * new_storage);
+
 
     /// Storage of the read and checked input data
     StorageBase *storage_;

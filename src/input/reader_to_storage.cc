@@ -19,6 +19,7 @@
 #include <limits>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
@@ -819,6 +820,8 @@ StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Rec
 
 StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type::Array *array)
 {
+	using namespace boost;
+
 	if ( p.is_record_type() ) { // sub-type must be record type
 		// load path to CSV file
 		std::string included_file;
@@ -846,28 +849,73 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         	p.up();
         }
 
-        // open CSV file, skip head lines
-        FilePath fp((included_file), FilePath::input_file);
-        Tokenizer tok( fp );
-        for (unsigned int i=0; i<n_head_lines; i++) {
-        	tok.next_line(false);
-        }
-
         // sub-type of array
         const Type::TypeBase &sub_type = array->get_sub_type();
         // for every leaf of input subtree holds index of columns in CSV file
-        StorageBase *storage_map;
+        StorageBase *item_storage;
         csv_storage_indexes_.clear();
         csv_columns_map_.clear();
         if ( p.down("format") ) {
-            storage_map = make_storage(p, &sub_type);
-            //storage_map->print(std::cout);
+            item_storage = make_storage(p, &sub_type);
             p.up();
         } else {
     	    THROW( ExcInputError() << EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
                                << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
         }
         ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
+
+        // open CSV file, get number of lines, skip head lines
+        FilePath fp((included_file), FilePath::input_file);
+        Tokenizer tok( fp );
+        unsigned int n_lines = 0; // number of lines
+        while ( !tok.eof() ) {
+        	tok.next_line(false);
+        	n_lines++;
+        }
+        if (tok.line().size()==0) n_lines--; // removes last line if it is empty
+        n_lines -= n_head_lines; // subtracts number of skipped head lines
+        tok.set_position( Tokenizer::Position() );
+        for (unsigned int i=0; i<n_head_lines; i++) { // skip head lines
+        	tok.next_line(false);
+        }
+
+        StorageArray *storage_array = new StorageArray(n_lines);
+        for( unsigned int arr_item=0; arr_item < n_lines; ++arr_item) {
+        	tok.next_line();
+        	for (unsigned int i_col=0; !tok.eol(); ++i_col, ++tok) {
+        		map<unsigned int, IncludeCsvData>::iterator it = csv_columns_map_.find(i_col);
+        		if (it != csv_columns_map_.end()) {
+        			switch (it->second.data_type) {
+						case IncludeDataTypes::type_int: {
+							int val = lexical_cast<int>(*tok);
+							set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
+							break;
+						}
+						case IncludeDataTypes::type_double: {
+							double val = lexical_cast<double>(*tok);
+							set_storage_from_csv( i_col, item_storage, new StorageDouble(val) );
+							break;
+						}
+						case IncludeDataTypes::type_bool: {
+							int val = lexical_cast<int>(*tok);
+							set_storage_from_csv( i_col, item_storage, new StorageBool(val) );
+							break;
+						}
+						case IncludeDataTypes::type_string: {
+							set_storage_from_csv( i_col, item_storage, new StorageString(*tok) );
+							break;
+						}
+        			}
+        		} else {
+        			// add to warning
+        		}
+        	}
+
+            storage_array->new_item(arr_item, item_storage->deep_copy() );
+        }
+        try_read_ = TryRead::none;
+        return storage_array;
+
 	} else {
 	    THROW( ExcInputError() << EI_Specification("Invalid definition of CSV include.")
                            << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
@@ -889,6 +937,19 @@ std::string ReaderToStorage::get_included_file(PathBase &p)
 		e << EI_InputType("path to included file");
 		throw;
 	}
+}
+
+
+
+void ReaderToStorage::set_storage_from_csv(unsigned int column_index, StorageBase * item_storage, StorageBase * new_storage)
+{
+	map<unsigned int, IncludeCsvData>::iterator it = csv_columns_map_.find(column_index);
+	ASSERT(it!=csv_columns_map_.end()).error();
+
+	unsigned int i;
+	StorageBase *loop_storage = item_storage;
+	for (i=0; i<it->second.storage_indexes.size()-1; ++i) loop_storage = loop_storage->get_item( it->second.storage_indexes[i] );
+	loop_storage->set_item( it->second.storage_indexes[i], new_storage );
 }
 
 
