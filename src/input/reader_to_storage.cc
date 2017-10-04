@@ -25,6 +25,7 @@
 #include "input/path_yaml.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "system/tokenizer.hh"
 
 
 namespace Input {
@@ -243,12 +244,14 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
 	                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
 	                }
 
+	                if (try_read_ == TryRead::csv_include) csv_storage_indexes_.push_back(it->key_index);
 	                StorageBase *storage = make_storage(p, it->type_.get());
 	                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
 	                	delete storage;
 	                	storage = make_storage_from_default( it->default_.value(), it->type_ );
 	                }
 	                storage_array->new_item( it->key_index, storage );
+	                if (try_read_ == TryRead::csv_include) csv_storage_indexes_.pop_back();
 	                p.up();
 	            } else {
 	                // key not on input
@@ -489,12 +492,14 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Tuple *tupl
 		for ( Type::Record::KeyIter it= tuple->begin(); it != tuple->end(); ++it) {
         	if ( p.down(it->key_index) ) {
                 // key on input => check & use it
+        		if (try_read_ == TryRead::csv_include) csv_storage_indexes_.push_back(it->key_index);
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;
                 	storage = make_storage_from_default( it->default_.value(), it->type_ );
                 }
                 storage_array->new_item( it->key_index, storage );
+                if (try_read_ == TryRead::csv_include) csv_storage_indexes_.pop_back();
                 p.up();
         	} else {
                 // key not on input
@@ -564,8 +569,16 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 		return this->make_transposed_storage(p, bool_type);
 	} else if (try_read_ == TryRead::csv_include)
 		try {
-			// read index of column in CSV file
-			return new StorageInt( p.get_int_value() );
+			unsigned int pos = p.get_int_value();
+			IncludeCsvData include_data;
+			include_data.data_type = IncludeDataTypes::type_bool;
+			include_data.storage_indexes = csv_storage_indexes_;
+			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+				ASSERT(false).error("Change to exception");
+			} else {
+				csv_columns_map_[pos] = include_data;
+			}
+			return new StorageBool( false );
 		} catch (ExcInputError & e) {
 			e << EI_Specification("The value in definition of CSV format should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
 			e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
@@ -607,6 +620,18 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *in
 		throw;
 	}
 
+	if (try_read_ == TryRead::csv_include) {
+		IncludeCsvData include_data;
+		include_data.data_type = IncludeDataTypes::type_int;
+		include_data.storage_indexes = csv_storage_indexes_;
+		if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
+			ASSERT(false).error("Change to exception");
+		} else {
+			csv_columns_map_[value] = include_data;
+		}
+		return new StorageInt( 0 );
+	}
+
 	if ( int_type->match(value) )
 	{
 		return new StorageInt( value );
@@ -628,7 +653,16 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 	} else if (try_read_ == TryRead::csv_include) {
 		try {
 			// read index of column in CSV file
-			return new StorageInt( p.get_int_value() );
+			unsigned int pos = p.get_int_value();
+			IncludeCsvData include_data;
+			include_data.data_type = IncludeDataTypes::type_double;
+			include_data.storage_indexes = csv_storage_indexes_;
+			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+				ASSERT(false).error("Change to exception");
+			} else {
+				csv_columns_map_[pos] = include_data;
+			}
+			return new StorageDouble( 0.0 );
 		} catch (ExcInputError & e) {
 			e << EI_Specification("The value in definition of CSV format should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
 			e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
@@ -667,6 +701,22 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, string_type);
+	} else if (try_read_ == TryRead::csv_include) {
+		try {
+			// read index of column in CSV file
+			unsigned int pos = p.get_int_value();
+			IncludeCsvData include_data;
+			include_data.data_type = IncludeDataTypes::type_string;
+			include_data.storage_indexes = csv_storage_indexes_;
+			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+				ASSERT(false).error("Change to exception");
+			} else {
+				csv_columns_map_[pos] = include_data;
+			}
+			return new StorageString("");
+		} catch (ExcInputError & e) {
+			// no error, string value is not forbidden in CSV include
+		}
 	}
 	string value;
 	try {
@@ -737,20 +787,11 @@ StorageBase * ReaderToStorage::make_transposed_storage(PathBase &p, const Type::
 
 StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Record *record)
 {
-    std::string include_path;
+    std::string included_path;
     if ( p.is_record_type() ) {
         // include is set as record with tag and file key
         if ( p.down("file") ) {
-        	try { // TODO: move try-catch block to separate method after implementation CSV include
-        		include_path = p.get_string_value();
-        	}
-        	catch (ExcInputError & e) {
-        		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
-                e << EI_ErrorAddress(p.as_string());
-                e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-        		e << EI_InputType("path to included file");
-        		throw;
-        	}
+        	included_path = get_included_file(p);
             p.up();
         } else {
     	    THROW( ExcInputError() << EI_Specification("Missing key 'file' defines including input file.")
@@ -759,19 +800,10 @@ StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Rec
     } else {
     	// include is set only with name of file (similarly as auto conversion)
     	// this case may occur only for YAML input
-    	try { // TODO: same as previous try-catch block
-    		include_path = p.get_string_value();
-    	}
-    	catch (ExcInputError & e) {
-    		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
-            e << EI_ErrorAddress(p.as_string());
-            e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-    		e << EI_InputType("path to included file");
-    		throw;
-    	}
+    	included_path = get_included_file(p);
     }
 
-    FilePath fpath(include_path, FilePath::FileType::input_file);
+    FilePath fpath(included_path, FilePath::FileType::input_file);
     try {
     	ReaderToStorage include_reader(fpath, *(const_cast<Type::Record *>(record)) );
         return include_reader.get_storage();
@@ -789,28 +821,44 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 {
 	if ( p.is_record_type() ) { // sub-type must be record type
 		// load path to CSV file
-		std::string include_path;
+		std::string included_file;
         if ( p.down("file") ) {
-        	try { // TODO: move try-catch block to separate method after implementation CSV include
-        		include_path = p.get_string_value();
-        	}
-        	catch (ExcInputError & e) {
-        		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
-                e << EI_ErrorAddress(p.as_string());
-                e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-        		e << EI_InputType("path to included file");
-        		throw;
-        	}
+       		included_file = get_included_file(p);
             p.up();
         } else {
     	    THROW( ExcInputError() << EI_Specification("Missing key 'file' defines including input file.")
                                << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
         }
 
+        // number of head lines to skip
+        unsigned int n_head_lines = 0;
+        if ( p.down("n_head_lines") ) {
+        	try {
+        		n_head_lines = p.get_int_value();
+        	}
+			catch (ExcInputError & e) {
+				e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+				e << EI_ErrorAddress(p.as_string());
+				e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+				e << EI_InputType("number of lines to skip");
+				throw;
+			}
+        	p.up();
+        }
+
+        // open CSV file, skip head lines
+        FilePath fp((included_file), FilePath::input_file);
+        Tokenizer tok( fp );
+        for (unsigned int i=0; i<n_head_lines; i++) {
+        	tok.next_line(false);
+        }
+
         // sub-type of array
         const Type::TypeBase &sub_type = array->get_sub_type();
         // for every leaf of input subtree holds index of columns in CSV file
         StorageBase *storage_map;
+        csv_storage_indexes_.clear();
+        csv_columns_map_.clear();
         if ( p.down("format") ) {
             storage_map = make_storage(p, &sub_type);
             //storage_map->print(std::cout);
@@ -819,11 +867,28 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
     	    THROW( ExcInputError() << EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
                                << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
         }
+        ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
 	} else {
 	    THROW( ExcInputError() << EI_Specification("Invalid definition of CSV include.")
                            << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
 	}
 	return NULL;
+}
+
+
+
+std::string ReaderToStorage::get_included_file(PathBase &p)
+{
+	try {
+		return p.get_string_value();
+	}
+	catch (ExcInputError & e) {
+		e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+        e << EI_ErrorAddress(p.as_string());
+        e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << EI_InputType("path to included file");
+		throw;
+	}
 }
 
 

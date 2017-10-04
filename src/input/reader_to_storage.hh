@@ -153,6 +153,17 @@ protected:
 		csv_include   ///< Processing part of input tree included in CSV file.
     } TryRead;
 
+    /// List of data types, used for mapping columns in CSV include.
+    typedef enum {
+    	type_int, type_double, type_bool, type_string
+    } IncludeDataTypes;
+
+    /// Data of one column of including CSV file.
+    struct IncludeCsvData {
+    	IncludeDataTypes data_type;
+    	vector<unsigned int> storage_indexes;
+    };
+
     /// Getter for root of the storage tree.
     StorageBase *get_storage();
 
@@ -197,6 +208,9 @@ protected:
     /// Create storage of included CSV input file
     StorageBase * make_include_csv_storage(PathBase &p, const Type::Array *array);
 
+    /// Helper method. Get string value of included file or throw exception if reading failed.
+    std::string get_included_file(PathBase &p);
+
 
     /// Storage of the read and checked input data
     StorageBase *storage_;
@@ -239,6 +253,12 @@ protected:
 
     /// Helper vector what allows check sizes of all transposed Arrays.
     vector<unsigned int> transpose_array_sizes_;
+
+    /// Helper vector which contains actual indexes of subtree imported in CSV file.
+    vector<unsigned int> csv_storage_indexes_;
+
+    /// Map of columns in CSV file to storage of subtree
+    map<unsigned int, IncludeCsvData> csv_columns_map_;
 
     friend class Type::Default;
 
