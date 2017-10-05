@@ -549,7 +549,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *
 			include_data.storage_indexes = csv_storage_indexes_;
 			include_data.type = selection;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-				ASSERT(false).error("Change to exception");
+				THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 			} else {
 				csv_columns_map_[pos] = include_data;
 			}
@@ -597,7 +597,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 			include_data.storage_indexes = csv_storage_indexes_;
 			include_data.type = bool_type;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-				ASSERT(false).error("Change to exception");
+				THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 			} else {
 				csv_columns_map_[pos] = include_data;
 			}
@@ -649,7 +649,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *in
 		include_data.storage_indexes = csv_storage_indexes_;
 		include_data.type = int_type;
 		if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
-			ASSERT(false).error("Change to exception");
+			THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(value) << EI_ErrorAddress(p.as_string()) );
 		} else {
 			csv_columns_map_[value] = include_data;
 		}
@@ -683,7 +683,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 			include_data.storage_indexes = csv_storage_indexes_;
 			include_data.type = double_type;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-				ASSERT(false).error("Change to exception");
+				THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 			} else {
 				csv_columns_map_[pos] = include_data;
 			}
@@ -735,7 +735,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 			include_data.storage_indexes = csv_storage_indexes_;
 			include_data.type = string_type;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-				ASSERT(false).error("Change to exception");
+				THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 			} else {
 				csv_columns_map_[pos] = include_data;
 			}
@@ -874,21 +874,6 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         	p.up();
         }
 
-        // sub-type of array
-        const Type::TypeBase &sub_type = array->get_sub_type();
-        // for every leaf of input subtree holds index of columns in CSV file
-        StorageBase *item_storage;
-        csv_storage_indexes_.clear();
-        csv_columns_map_.clear();
-        if ( p.down("format") ) {
-            item_storage = make_storage(p, &sub_type);
-            p.up();
-        } else {
-    	    THROW( ExcInputError() << EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
-                               << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
-        }
-        ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
-
         // open CSV file, get number of lines, skip head lines
         FilePath fp((included_file), FilePath::input_file);
         Tokenizer tok( fp );
@@ -904,7 +889,26 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         	tok.next_line(false);
         }
 
+        const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
+        StorageBase *item_storage; // storage of sub-type record of included array
+        csv_storage_indexes_.clear();
+        csv_columns_map_.clear();
+        if ( p.down("format") ) {
+			try {
+				item_storage = make_storage(p, &sub_type);
+			} catch (ExcMultipleDefinitionCsvColumn &e) {
+				e << EI_File(tok.f_name());
+				throw;
+			}
+            p.up();
+        } else {
+    	    THROW( ExcInputError() << EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
+                               << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+        }
+        ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
+
         StorageArray *storage_array = new StorageArray(n_lines);
+        std::set<unsigned int> unused_columns;
         for( unsigned int arr_item=0; arr_item < n_lines; ++arr_item) {
         	tok.next_line();
         	for (unsigned int i_col=0; !tok.eol(); ++i_col, ++tok) {
@@ -912,52 +916,89 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         		if (it != csv_columns_map_.end()) {
         			switch (it->second.data_type) {
 						case IncludeDataTypes::type_int: {
-							int val = lexical_cast<int>(*tok);
+							int val;
+							try {
+								val = lexical_cast<int>(*tok);
+							} catch (bad_lexical_cast &) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong integer value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
+
+							const Type::Integer *int_type = static_cast<const Type::Integer *>(it->second.type);
+							if ( !int_type->match(val) ) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Integer value out of bounds")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
 							set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
 							break;
 						}
 						case IncludeDataTypes::type_double: {
-							double val = lexical_cast<double>(*tok);
+							double val;
+							try {
+								val = lexical_cast<double>(*tok);
+							} catch (bad_lexical_cast &) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong double value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
+
+							const Type::Double *double_type = static_cast<const Type::Double *>(it->second.type);
+							if ( !double_type->match(val) ) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Double value out of bounds")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
 							set_storage_from_csv( i_col, item_storage, new StorageDouble(val) );
 							break;
 						}
 						case IncludeDataTypes::type_bool: {
-							int val = lexical_cast<int>(*tok);
+							int val;
+							try {
+								val = lexical_cast<int>(*tok);
+							} catch (bad_lexical_cast &) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong boolean value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
 							set_storage_from_csv( i_col, item_storage, new StorageBool(val) );
 							break;
 						}
 						case IncludeDataTypes::type_string: {
-							set_storage_from_csv( i_col, item_storage, new StorageString(*tok) );
+							try {
+								set_storage_from_csv( i_col, item_storage, new StorageString(*tok) );
+							} catch (bad_lexical_cast &) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong string value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
 							break;
 						}
 						case IncludeDataTypes::type_sel: {
 							std::string item_name;
 							const Type::Selection *selection = static_cast<const Type::Selection *>(it->second.type);
-							{
+							try {
 								item_name = *tok;
 								int val = selection->name_to_int( item_name );
 								set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
-							}
-							/*catch (ExcInputError & e) {
-								e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
-						        e << EI_ErrorAddress(p.as_string());
-						        e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-								e << EI_InputType(selection->desc());
-								throw;
+							} catch (bad_lexical_cast &) {
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong selection value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
 							} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-								THROW( ExcInputError() << EI_Specification("Wrong value '" + item_name + "' of the Selection.")
-										<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(selection->desc()) );
-							}*/
-							// TODO complete try-catch blocks in all tokenizer readings
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong selection value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							}
 							break;
 						}
         			}
         		} else {
-        			// add to warning
+        			// add index of unused column
+        			unused_columns.insert(i_col);
         		}
         	}
-
             storage_array->new_item(arr_item, item_storage->deep_copy() );
+        }
+
+        if (unused_columns.size()) { // print warning with indexes of unused columns
+        	stringstream ss;
+        	for (std::set<unsigned int>::iterator it=unused_columns.begin(); it!=unused_columns.end(); ++it)
+        		ss << (*it) << " ";
+            WarningOut().fmt("Unused columns: {}\nin imported CSV input file: {}\n", ss.str(), tok.f_name());
         }
         try_read_ = TryRead::none;
         return storage_array;

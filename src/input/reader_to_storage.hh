@@ -109,6 +109,13 @@ public:
     TYPEDEF_ERR_INFO( EI_Tag, string);
     DECLARE_INPUT_EXCEPTION( ExcForbiddenAbstractTag, << "Forbidden tag " << EI_Tag::qval << " of Abstract type.\n" );
 
+	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+    DECLARE_INPUT_EXCEPTION(ExcWrongCsvFormat, << EI_Specification::val << ",\n" << EI_TokenizerMsg::val << "\n" );
+
+	TYPEDEF_ERR_INFO(EI_ColumnIndex, unsigned int);
+    DECLARE_INPUT_EXCEPTION(ExcMultipleDefinitionCsvColumn, << "Multiple definition of column with index " << EI_ColumnIndex::qval
+    		<< " in included CSV file:\n" << EI_File::val << ",\n" );
+
 
     /**
      * @brief Read a storage from input stream.
