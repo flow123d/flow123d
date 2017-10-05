@@ -155,13 +155,14 @@ protected:
 
     /// List of data types, used for mapping columns in CSV include.
     typedef enum {
-    	type_int, type_double, type_bool, type_string
+    	type_int, type_double, type_bool, type_string, type_sel
     } IncludeDataTypes;
 
     /// Data of one column of including CSV file.
     struct IncludeCsvData {
     	IncludeDataTypes data_type;
     	vector<unsigned int> storage_indexes;
+    	const Type::TypeBase *type;
     };
 
     /// Getter for root of the storage tree.
