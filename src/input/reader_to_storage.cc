@@ -541,7 +541,28 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Selection *
 	if ( (try_read_ == TryRead::transposed) && p.is_array_type() ) {
 		// transpose auto-conversion for array type
 		return this->make_transposed_storage(p, selection);
+	} else if ( try_read_ == TryRead::csv_include) {
+		try {
+			unsigned int pos = p.get_int_value();
+			IncludeCsvData include_data;
+			include_data.data_type = IncludeDataTypes::type_sel;
+			include_data.storage_indexes = csv_storage_indexes_;
+			include_data.type = selection;
+			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+				ASSERT(false).error("Change to exception");
+			} else {
+				csv_columns_map_[pos] = include_data;
+			}
+			return new StorageInt( 0 );
+		} catch (ExcInputError & e) {
+			e << EI_Specification("The value in definition of CSV format should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+			e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+			e << EI_ErrorAddress(p.as_string());
+			e << EI_InputType(selection->desc());
+			throw;
+		}
 	}
+
     string item_name;
 	try {
 		item_name = p.get_string_value();
@@ -574,6 +595,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Bool *bool_
 			IncludeCsvData include_data;
 			include_data.data_type = IncludeDataTypes::type_bool;
 			include_data.storage_indexes = csv_storage_indexes_;
+			include_data.type = bool_type;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 				ASSERT(false).error("Change to exception");
 			} else {
@@ -625,6 +647,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Integer *in
 		IncludeCsvData include_data;
 		include_data.data_type = IncludeDataTypes::type_int;
 		include_data.storage_indexes = csv_storage_indexes_;
+		include_data.type = int_type;
 		if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
 			ASSERT(false).error("Change to exception");
 		} else {
@@ -658,6 +681,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Double *dou
 			IncludeCsvData include_data;
 			include_data.data_type = IncludeDataTypes::type_double;
 			include_data.storage_indexes = csv_storage_indexes_;
+			include_data.type = double_type;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 				ASSERT(false).error("Change to exception");
 			} else {
@@ -709,6 +733,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::String *str
 			IncludeCsvData include_data;
 			include_data.data_type = IncludeDataTypes::type_string;
 			include_data.storage_indexes = csv_storage_indexes_;
+			include_data.type = string_type;
 			if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 				ASSERT(false).error("Change to exception");
 			} else {
@@ -903,6 +928,27 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 						}
 						case IncludeDataTypes::type_string: {
 							set_storage_from_csv( i_col, item_storage, new StorageString(*tok) );
+							break;
+						}
+						case IncludeDataTypes::type_sel: {
+							std::string item_name;
+							const Type::Selection *selection = static_cast<const Type::Selection *>(it->second.type);
+							{
+								item_name = *tok;
+								int val = selection->name_to_int( item_name );
+								set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
+							}
+							/*catch (ExcInputError & e) {
+								e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+						        e << EI_ErrorAddress(p.as_string());
+						        e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+								e << EI_InputType(selection->desc());
+								throw;
+							} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+								THROW( ExcInputError() << EI_Specification("Wrong value '" + item_name + "' of the Selection.")
+										<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type( "" ) << EI_InputType(selection->desc()) );
+							}*/
+							// TODO complete try-catch blocks in all tokenizer readings
 							break;
 						}
         			}
