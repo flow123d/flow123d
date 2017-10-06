@@ -34,7 +34,9 @@ const IT::Record & OutputMeshBase::get_input_type() {
         .declare_key("error_control_field",IT::String(), IT::Default::optional(),
             "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
         .declare_key("refinement_error_tolerance",IT::Double(0.0), IT::Default("0.01"),
-            "Tolerance for refinement by error.")
+            "Tolerance for element refinement by error. If tolerance is reached, refinement is stopped."
+            "Relative difference between error control field and its linear approximation on element is computed"
+            "and compared with tolerance.")
         .close();
 }
 
