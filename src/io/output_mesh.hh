@@ -85,6 +85,9 @@ public:
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
+    /// Creates sub mesh containing only local elements.
+    virtual void create_sub_mesh()=0;
+
     /// Returns \p error_control_field_name_
     inline std::string error_control_field_name() {
     	return error_control_field_name_;
@@ -137,6 +140,9 @@ public:
     /// Creates refined mesh.
     void create_refined_mesh() override;
     
+    /// Creates sub mesh.
+    void create_sub_mesh() override;
+
 protected:
     bool refinement_criterion();
     
@@ -159,6 +165,9 @@ public:
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
     
+    /// Creates sub mesh.
+    void create_sub_mesh() override;
+
 protected:
     bool refinement_criterion();
 };

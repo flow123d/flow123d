@@ -18,6 +18,7 @@
 #include "output_mesh.hh"
 #include "output_element.hh"
 #include "mesh/mesh.h"
+#include "la/distribution.hh"
 
 namespace IT=Input::Type;
 
@@ -180,6 +181,39 @@ bool OutputMesh::refinement_criterion()
 }
 
 
+void OutputMesh::create_sub_mesh()
+{
+	nodes_.reset();
+	connectivity_.reset();
+	offsets_.reset();
+
+	DebugOut() << "Create output submesh containing only local elements.";
+
+	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(orig_mesh_);
+	int *el_4_loc = orig_mesh_->get_el_4_loc();
+	Distribution *el_ds = orig_mesh_->get_el_ds();
+    const unsigned int n_local_elements = el_ds->lsize();
+
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
+
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
+    Node* node;
+    unsigned int ele_id = 0,
+                 connect_id = 0,
+                 offset = 0,    // offset of node indices of element in node vector
+                 li;            // local node index
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		ele = orig_mesh_->element(el_4_loc[loc_el]);
+        // increase offset by number of nodes of the simplicial element
+        offset += ele->dim() + 1;
+        offset_vec[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = ele_id;
+        ele_id++;
+	}
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -260,5 +294,10 @@ bool OutputMeshDiscontinuous::refinement_criterion()
 {
     ASSERT(0).error("Not implemented yet.");
     return false;
+}
+
+void OutputMeshDiscontinuous::create_sub_mesh()
+{
+    ASSERT(0).error("Not implemented yet.");
 }
 
