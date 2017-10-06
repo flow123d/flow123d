@@ -47,7 +47,7 @@ const IT::Record & OutputTime::get_input_type() {
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
                 "Output mesh record enables output on a refined mesh [EXPERIMENTAL, VTK only]."
                 "Sofar refinement is performed only in discontinous sense."
-                "Therefore only corner and element data can be written on refined output mesh.
+                "Therefore only corner and element data can be written on refined output mesh."
                 "Node data are to be transformed to corner data, native data cannot be written."
                 "Do not include any node or native data in output fields.")
         .declare_key("precision", IT::Integer(0), IT::Default("5"),
