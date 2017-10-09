@@ -91,7 +91,7 @@ public:
      * either tabelator '\\t' or space ' '.
      *
      */
-    Tokenizer(const  FilePath &fp);
+    Tokenizer(const  FilePath &fp, Separator separator = Separator("\\"," \t","\"") );
     /**
      * Construct the tokenizer over given input stream @p in.
      * The stream is read from its actual position. The separator of the tokens is
@@ -102,7 +102,7 @@ public:
      * @code Tokenizer( ifstream("my_file") );
      *
      */
-    Tokenizer( std::istream &in);
+    Tokenizer( std::istream &in, Separator separator = Separator("\\"," \t","\"") );
 
     /**
      * Skip whole line if the beginning of the trimmed line match the given @p pattern string.

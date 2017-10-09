@@ -25,6 +25,11 @@ $EndElements
 something
 )CODE";
 
+string separator_input = R"CODE(
+a,b,c
+"a,b,c",d,e
+)CODE";
+
 
 
 void test_tokenizer(Tokenizer &tok) { 
@@ -99,4 +104,25 @@ TEST(Tokenizer, from_file) {
     EXPECT_FALSE( tok.next_line() );
     EXPECT_EQ(7, tok.line_num());
 
+}
+
+
+
+TEST(Tokenizer, separator) {
+	::testing::FLAGS_gtest_death_test_style = "threadsafe";
+
+    std::stringstream ss(separator_input);
+    Tokenizer::Separator separator("\\",",","\"");
+    Tokenizer tok(ss, separator);
+    tok.next_line();
+    EXPECT_EQ("a", *tok); ++tok;
+    EXPECT_EQ("b", *tok); ++tok;
+    EXPECT_EQ("c", *tok); ++tok;
+    tok.next_line();
+    EXPECT_EQ("a,b,c", *tok); ++tok;
+    EXPECT_EQ("d", *tok); ++tok;
+    EXPECT_EQ("e", *tok); ++tok;
+    EXPECT_FALSE( tok.eof() );
+    EXPECT_FALSE( tok.next_line() ); // no next line
+    EXPECT_TRUE( tok.eof() );
 }
