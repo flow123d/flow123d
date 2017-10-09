@@ -876,7 +876,8 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 
         // open CSV file, get number of lines, skip head lines
         FilePath fp((included_file), FilePath::input_file);
-        Tokenizer tok( fp );
+        Tokenizer::Separator separator("\\",",","\"");
+        Tokenizer tok( fp, separator );
         unsigned int n_lines = 0; // number of lines
         while ( !tok.eof() ) {
         	tok.next_line(false);
