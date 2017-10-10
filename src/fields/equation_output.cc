@@ -210,13 +210,20 @@ void EquationOutput::make_output_mesh()
 
     if(stream_->enable_refinement()) {
         if(it) {
+            // create output meshes from input record
         	auto output_mesh = stream_->create_output_mesh_ptr(true);
         	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
 
+            // possibly set error control field for refinement
             auto ecf = select_error_control_field();
             output_mesh->set_error_control_field(ecf);
             output_mesh_discont->set_error_control_field(ecf);
+            
+            // continuous output mesh:
+            // - refined one is not supported at the moment
+            // - identical one is created below
 //             output_mesh->create_refined_mesh();
+            
             output_mesh_discont->create_refined_mesh();
             return;
         }

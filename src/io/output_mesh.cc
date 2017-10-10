@@ -376,20 +376,51 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
 {
     static const unsigned int n_subelements = 1 << dim;  //2^dim
     
+// The refinement of elements for the output mesh is done using edge splitting
+// technique (so called red refinement). Since we use this only for better output
+// visualization of non-polynomial solutions, we do not care for existence of hanging
+// nodes.
+// In 2D case, it is straightforward process: find the midpoints of all sides,
+// connect them and generate 4 triangles. These triangles are congruent and have
+// equal surface areas.
+// On the other hand, the 3D case is more complicated. After splitting the
+// edges, we obtain 4 tetrahedra at the vertices of the original one. The octahedron
+// that remains in the middle can be subdivided according to one of its three
+// diagonals. Only the choice of the shortest octahedron diagonal leads to a regular
+// tetrahedra decomposition. This algorithm originally comes from Bey.
+//  Bey's algorithm (red refinement of tetrahedron):
+// p.29 https://www5.in.tum.de/pub/Joshi2016_Thesis.pdf
+// p.108 http://www.bcamath.org/documentos_public/archivos/publicaciones/sergey_book.pdf
+// https://www.math.uci.edu/~chenlong/iFEM/doc/html/uniformrefine3doc.html#1
+// J. Bey. Simplicial grid refinement: on Freudenthal's algorithm and the optimal number of congruence classes.
+//    Numer. Math. 85(1):1--29, 2000. p11 Algorithm: RedRefinement3D.
+// p.4 http://www.vis.uni-stuttgart.de/uploads/tx_vispublications/vis97-grosso.pdf
+
+    // connectivity of refined element
+    // these arrays are hardwired to the current reference element
     static const std::vector<unsigned int> conn[] = {
         {}, //0D
         
         //1D:
+        // 0,1 original nodes, 2 is in the middle
+        // get 2 elements
         {0, 2,
          2, 1},
         
         //2D:
+        // 0,1,2 original nodes
+        // 3,4,5 nodes are in the middle of sides 0,1,2 in the respective order
+        // get 4 elements
         {0, 3, 4,
          3, 1, 5,
          4, 5, 2,
          3, 5, 4},
         
         //3D:
+        // 0,1,2,3 original nodes
+        // 4,5,6,7,8,9 are nodes in the middle of edges 0,1,2,3,4,5 in the respective order 
+        // first 4 tetrahedra are at the original nodes
+        // next 4 tetrahedra are from the inner octahedron - 4 choices according to the diagonal
         {1, 7, 4, 8,
          7, 2, 5, 9,
          4, 5, 0, 6,
