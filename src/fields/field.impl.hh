@@ -335,7 +335,7 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, Ou
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = (discrete == OutputTime::DiscreteSpace::UNDEFINED) ? this->output_type() : discrete;
+		const OutputTime::DiscreteSpace type = this->get_output_type(discrete);
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 		this->compute_field_data( type, stream);

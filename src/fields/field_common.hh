@@ -237,8 +237,8 @@ public:
         return shared_->limits_;
     }
 
-    OutputTime::DiscreteSpace output_type() const
-    { return type_of_output_data_; }
+    OutputTime::DiscreteSpace get_output_type(OutputTime::DiscreteSpace user_defined_type = OutputTime::UNDEFINED) const
+    { return (user_defined_type == OutputTime::UNDEFINED) ? type_of_output_data_ : user_defined_type; }
 
     bool is_bc() const
     { return shared_->bc_;}
