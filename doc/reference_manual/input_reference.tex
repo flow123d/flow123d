@@ -2496,21 +2496,21 @@ These times have to form an increasing sequence.}%
 			{disp{\_}l}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Longitudal dispersivity (for each substance). }{$[m]$}% 
+			{{{Longitudal dispersivity in the liquid (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::disp-t}
 			{disp{\_}t}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Transversal dispersivity (for each substance). }{$[m]$}% 
+			{{{Transversal dispersivity in the liquid (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::diff-m}
 			{diff{\_}m}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Molecular diffusivity (for each substance). }{$[m^{2}s^{-1}]$}% 
+			{{{Molecular diffusivity in the liquid (for each substance). }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::rock-density}
@@ -2631,17 +2631,17 @@ The prescribed incoming mass flux due to diffusion can have the general form }{$
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
-			{{{}{$[m]$}{ Input field: Longitudal dispersivity (for each substance).}% 
+			{{{}{$[m]$}{ Input field: Longitudal dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
-			{{{}{$[m]$}{ Input field: Transversal dispersivity (for each substance).}% 
+			{{{}{$[m]$}{ Input field: Transversal dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::diff-m}
 			{diff{\_}m}
-			{{{}{$[m^{2}s^{-1}]$}{ Input field: Molecular diffusivity (for each substance).}% 
+			{{{}{$[m^{2}s^{-1}]$}{ Input field: Molecular diffusivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::rock-density}
@@ -2694,7 +2694,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -2811,7 +2811,7 @@ The default values n=2, d=3 yield relatively good precision while keeping the or
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
+	{\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}
