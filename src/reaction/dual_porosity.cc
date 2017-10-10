@@ -276,11 +276,10 @@ void DualPorosity::set_initial_condition()
   {
     unsigned int index = el_4_loc_[loc_el];
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
-    arma::vec value = data_.init_conc_immobile.value(ele_acc.centre(), ele_acc);
         
     for (unsigned int sbi=0; sbi < substances_.size(); sbi++)
     {
-      conc_immobile[sbi][loc_el] = value(sbi);
+      conc_immobile[sbi][loc_el] = data_.init_conc_immobile[sbi].value(ele_acc.centre(), ele_acc);
     }
   }
 }
@@ -314,7 +313,9 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
   ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
   por_mob = data_.porosity.value(ele->centre(),ele->element_accessor());
   por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
-  arma::Col<double> diff_vec = data_.diffusion_rate_immobile.value(ele->centre(), ele->element_accessor());
+  arma::Col<double> diff_vec(substances_.size());
+  for (sbi=0; sbi<substances_.size(); sbi++)
+    diff_vec[sbi] = data_.diffusion_rate_immobile[sbi].value(ele->centre(), ele->element_accessor());
  
     // if porosity_immobile == 0 then mobile concentration stays the same 
     // and immobile concentration cannot change

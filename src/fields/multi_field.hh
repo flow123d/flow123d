@@ -203,15 +203,15 @@ public:
      * Returns vector of value in one given point @p on an element given by ElementAccessor @p elm.
      * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
      */
-    virtual typename MultiFieldValue::return_type value(const Point &p, const ElementAccessor<spacedim> &elm) const;
+//     virtual typename MultiFieldValue::return_type value(const Point &p, const ElementAccessor<spacedim> &elm) const;
 
     /**
      * Returns std::vector of vector values in several points at once. The base class implements
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-                             std::vector<typename MultiFieldValue::return_type>  &value_list) const;
+//     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+//                              std::vector<typename MultiFieldValue::return_type>  &value_list) const;
 
     void set_input_list(const Input::Array &list) override;
 

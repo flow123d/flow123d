@@ -177,7 +177,7 @@ public:
 
 	void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values) override;
+			std::vector<std::vector<double> > &init_values) override;
 
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
@@ -196,13 +196,13 @@ public:
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_conc,
-				std::vector<arma::vec> &sources_density,
-				std::vector<arma::vec> &sources_sigma) override;
+				std::vector<std::vector<double> > &sources_conc,
+				std::vector<std::vector<double> > &sources_density,
+				std::vector<std::vector<double> > &sources_sigma) override;
 
 	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_sigma) override;
+				std::vector<std::vector<double> > &sources_sigma) override;
 
 	~HeatTransferModel() override;
 
