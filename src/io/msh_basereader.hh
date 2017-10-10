@@ -149,19 +149,22 @@ public:
      *  @param time searched time
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
-     *  @param actual Set to rue if the stream position is just after the header,
-     *                set to false either before first header is found or at EOF
-     *  @param el_ids vector of ids of elements
+     *  @param boundary_domain flag determines that data is read for boundary or bulk elements
      *  @param component_idx component index of MultiField
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( std::string field_name, double time, unsigned int n_entities,
-    		unsigned int n_components, bool &actual, std::vector<int> const & el_ids, unsigned int component_idx);
+    		unsigned int n_components, bool boundary_domain, unsigned int component_idx);
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.
      */
     virtual void check_compatible_mesh(Mesh &mesh)=0;
+
+    /**
+     * Returns vector of boundary or bulk element ids by parameter boundary_domain
+     */
+    std::vector<int> const & get_element_vector(bool boundary_domain);
 
 protected:
     typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
@@ -191,7 +194,7 @@ protected:
      * Read element data to data cache
      */
     virtual void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
-    		std::vector<int> const & el_ids)=0;
+    		bool boundary_domain)=0;
 
     /**
      * Flag stores that check of compatible mesh was performed.
@@ -211,6 +214,10 @@ protected:
 
     /// Input record accessor of mesh.
     Input::Record input_mesh_rec_;
+
+    /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
+    /// in input mesh file and has ID assigned.
+    vector<int> bulk_elements_id_, boundary_elements_id_;
 };
 
 #endif	/* MSH_BASE_READER_HH */

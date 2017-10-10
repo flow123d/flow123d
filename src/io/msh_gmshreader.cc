@@ -39,7 +39,7 @@ GmshMeshReader::GmshMeshReader(const FilePath &file_name)
 {
     tok_.set_comment_pattern( "#");
     data_section_name_ = "$ElementData";
-    has_compatible_mesh_ = true;
+    has_compatible_mesh_ = false;
     make_header_table();
 }
 
@@ -250,9 +250,10 @@ void GmshMeshReader::read_data_header(MeshDataHeader &head) {
 
 
 void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
-		std::vector<int> const & el_ids) {
+		bool boundary_domain) {
     unsigned int id, i_row;
     unsigned int n_read = 0;
+    std::vector<int> const & el_ids = this->get_element_vector(boundary_domain);
     vector<int>::const_iterator id_iter = el_ids.begin();
 
     // read @p data buffer as we have correct header with already passed time
@@ -347,4 +348,7 @@ MeshDataHeader &  GmshMeshReader::find_header(double time, std::string field_nam
 }
 
 void GmshMeshReader::check_compatible_mesh(Mesh &mesh)
-{}
+{
+	mesh.elements_id_maps(bulk_elements_id_, boundary_elements_id_);
+	has_compatible_mesh_ = true;
+}

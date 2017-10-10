@@ -46,27 +46,27 @@ public:
 	{
 		auto actual_header = this->find_header(0.0, "Points");
 
-		vtk_to_gmsh_element_map_.resize(actual_header.n_entities);
-		for (unsigned int i=0; i<vtk_to_gmsh_element_map_.size(); ++i) vtk_to_gmsh_element_map_[i]=i;
+		bulk_elements_id_.resize(actual_header.n_entities);
+		for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
 
 		// set new cache
 	    ElementDataCacheBase *current_cache = new ElementDataCache<double>(actual_header, 1, actual_header.n_components*actual_header.n_entities);
 
 		switch (data_format_) {
 			case DataFormat::ascii: {
-				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position );
+				parse_ascii_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position, false );
 				break;
 			}
 			case DataFormat::binary_uncompressed: {
 				ASSERT_PTR(data_stream_).error();
 				parse_binary_data( *current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						actual_header.type );
+						false, actual_header.type );
 				break;
 			}
 			case DataFormat::binary_zlib: {
 				ASSERT_PTR(data_stream_).error();
 				parse_compressed_data(* current_cache, actual_header.n_components, actual_header.n_entities, actual_header.position,
-						actual_header.type);
+						false, actual_header.type);
 				break;
 			}
 			default: {
@@ -84,7 +84,7 @@ public:
 	        node->point()(2)=vect[ivec]; ++ivec;
 		}
 
-		vtk_to_gmsh_element_map_.clear();
+		bulk_elements_id_.clear();
 	    delete current_cache;
 	}
 
@@ -180,11 +180,11 @@ TEST(VtkReaderTest, read_binary_vtu) {
     for (i=0; i<6; ++i) el_ids.push_back(i);
 
 
+    bool boundary_domain = false; // bulk data
     // read data by components for MultiField
-    bool actual_data = false;
     for (i=0; i<3; ++i) {
         typename ElementDataCache<double>::ComponentDataPtr multifield_data =
-        		reader->get_element_data<double>("vector_field", 0.0, 6, 1, actual_data, el_ids, i);
+        		reader->get_element_data<double>("vector_field", 0.0, 6, 1, boundary_domain, i);
     	std::vector<double> &vec = *( multifield_data.get() );
     	EXPECT_EQ(6, vec.size());
     	for (j=0; j<vec.size(); j++) {
@@ -193,11 +193,10 @@ TEST(VtkReaderTest, read_binary_vtu) {
     }
 
     // read data to one vector for Field
-    actual_data=false;
     {
     	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
-    			reader->get_element_data<double>("tensor_field", 1.0, 6, 9, actual_data, el_ids, 0);
+    			reader->get_element_data<double>("tensor_field", 1.0, 6, 9, boundary_domain, 0);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
     	for (j=0; j<vec.size(); j++) {

@@ -36,7 +36,7 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type()
 {
-    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field interpolated from external mesh data and piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
         .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
@@ -74,6 +74,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
        reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
        auto reader = ReaderInstances::instance()->get_reader(reader_file_ );
        reader->read_raw_mesh( source_mesh_ );
+       reader->check_compatible_mesh( *source_mesh_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
 	bih_tree_ = new BIHTree( source_mesh_ );
@@ -101,14 +102,13 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
-    bool actual_header_data = false;
     bool boundary_domain_ = false;
     data_ = ReaderInstances::instance()->get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), actual_header_data,
-    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
+    		field_name_, time.end(), source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(),
+    		boundary_domain_, this->component_idx_);
     this->scale_data();
 
-    return actual_header_data;
+    return true;
 }
 
 

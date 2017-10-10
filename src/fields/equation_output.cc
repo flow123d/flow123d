@@ -8,8 +8,9 @@
 #include "tools/time_marks.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 #include "io/output_time_set.hh"
+#include "io/output_mesh.hh"
 #include "input/flow_attribute_lib.hh"
 #include <memory>
 
@@ -156,13 +157,13 @@ void EquationOutput::output(TimeStep step)
 {
     // TODO: remove const_cast after resolving problems with const Mesh.
     //Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-    stream_->make_output_mesh(*this);
+	this->make_output_mesh();
 
     for(FieldCommon * field : this->field_list) {
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->output(stream_);
+                field->field_output(stream_);
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
@@ -176,4 +177,74 @@ void EquationOutput::output(TimeStep step)
 void EquationOutput::add_output_times(double begin, double step, double end)
 {
     common_output_times_.add(begin,step, end, equation_fixed_type_ );
+}
+
+
+void EquationOutput::make_output_mesh()
+{
+    // make observe points if not already done
+	stream_->observe();
+
+    // already computed
+    if (stream_->is_output_mesh_init()) return;
+
+    // Read optional error control field name
+    auto it = stream_->get_output_mesh_record();
+
+    if(stream_->enable_refinement()) {
+        if(it) {
+        	auto output_mesh = stream_->create_output_mesh_ptr(true);
+        	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
+        	//TODO solve setting of error_control_field
+        	this->select_error_control_field( output_mesh->error_control_field_name() );
+        	this->select_error_control_field( output_mesh_discont->error_control_field_name() );
+
+            output_mesh->create_refined_mesh();
+            return;
+        }
+    }
+    else
+    {
+        // skip creation of output mesh (use computational one)
+        if(it)
+        	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
+    }
+
+
+	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
+	stream_->create_output_mesh_ptr(false, true);
+
+	output_mesh->create_identical_mesh();
+}
+
+
+void EquationOutput::select_error_control_field(std::string error_control_field_name)
+{
+    if(error_control_field_name!="")
+    {
+        FieldCommon* field =  this->field(error_control_field_name);
+        // throw input exception if the field is unknown
+        if(field == nullptr){
+            THROW(FieldSet::ExcUnknownField()
+                    << FieldCommon::EI_Field(error_control_field_name));
+                    //<< input_record_.ei_address());
+            return;
+        }
+
+        // throw input exception if the field is not scalar
+        if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
+
+            error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+            DebugOut() << "Output mesh will be refined according to field " << error_control_field_name << ".";
+        }
+        else{
+            THROW(ExcFieldNotScalar()
+                    << FieldCommon::EI_Field(error_control_field_name));
+                    //<< input_record_.ei_address());
+        }
+    }
+    else
+    {
+        error_control_field_ = nullptr;
+    }
 }

@@ -21,58 +21,19 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <ostream>
+#include <typeinfo>
 #include "system/system.hh"
 #include "system/tokenizer.hh"
-#include "io/output_data_base.hh"
-
-
-class ElementDataCacheBase {
-public:
-	/// Constructor.
-	ElementDataCacheBase()
-	: time_(-std::numeric_limits<double>::infinity()),
-	  quantity_name_("") {}
-
-	/// Destructor
-	virtual ~ElementDataCacheBase() {}
-
-	/// Getter for time of cache
-	double get_time()
-	{ return time_; }
-
-	/// Getter for quantity name of cache
-	std::string get_quantity_name()
-	{ return quantity_name_; }
-
-	/// Check if cache stored actual data
-	bool is_actual(double time, std::string quantity_name) {
-		return (time_ == time) && (quantity_name_ == quantity_name);
-	}
-
-	/**
-	 * Read ascii data of given \p i_row from tokenizer
-	 */
-	virtual void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row)=0;
-
-	/**
-	 * Read binary data of given \p i_row from data stream
-	 */
-	virtual void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row)=0;
-
-protected:
-	/// time step stored in cache
-	double time_;
-	/// name of quantity stored in cache
-	std::string quantity_name_;
-};
-
+#include "system/global_defs.h"
+#include "io/element_data_cache_base.hh"
 
 
 struct MeshDataHeader;
 
 
 template <typename T>
-class ElementDataCache : public ElementDataCacheBase, public OutputDataBase {
+class ElementDataCache : public ElementDataCacheBase {
 public:
 	typedef std::shared_ptr< std::vector<T> > ComponentDataPtr;
 	typedef std::vector< ComponentDataPtr > CacheData;
@@ -85,7 +46,7 @@ public:
 	 *
 	 * Allows set variable size of cache.
 	 *
-	 * @param data_header   Set data members time_ and quantity_name_
+	 * @param data_header   Set data members time_ and field_name_
 	 * @param size_of_cache Count of columns of data cache
 	 * @param row_vec_size  Count of rows of data cache
 	 */
@@ -170,6 +131,9 @@ public:
      * Find minimal and maximal range of stored data
      */
     void get_min_max_range(double &min, double &max) override;
+
+    /// Access i-th element in the data vector of 0th component.
+    T& operator[](unsigned int i);
 
     /**
      * Declaration of new exception info used in following exception

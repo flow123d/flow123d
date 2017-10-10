@@ -25,7 +25,7 @@
 
 
 #include "mesh/region.hh"
-#include "io/element_data_cache.hh"
+#include "io/element_data_cache_base.hh"
 #include "io/msh_basereader.hh"
 #include "input/input_exception.hh"
 
@@ -110,7 +110,7 @@ protected:
      * Implements @p BaseMeshReader::read_element_data.
      */
     void read_element_data(ElementDataCacheBase &data_cache, MeshDataHeader actual_header, unsigned int n_components,
-    		std::vector<int> const & el_ids) override;
+    		bool boundary_domain) override;
 
 
     /// Table with data of ElementData headers

@@ -243,9 +243,9 @@ TEST(Observe, all) {
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
     {
-    TestObserve obs(*mesh, in_rec.val<Input::Array>("observe_points"));
-    obs.check_points_input();
-    obs.check_observe_points();
+    std::shared_ptr<TestObserve> obs = std::make_shared<TestObserve>(*mesh, in_rec.val<Input::Array>("observe_points"));
+    obs->check_points_input();
+    obs->check_observe_points();
 
     // read fiels
     TimeGovernor tg(0.0, 1.0);
@@ -253,19 +253,19 @@ TEST(Observe, all) {
     field_set.set_input_list( in_rec.val<Input::Array>("input_fields") );
     field_set.set_time(tg.step(), LimitSide::right);
 
-    obs.compute_field_values(field_set.scalar_field);
-    obs.compute_field_values(field_set.enum_field);
-    obs.compute_field_values(field_set.vector_field);
-    obs.compute_field_values(field_set.tensor_field);
-    obs.output_time_frame( tg.t() );
+    field_set.scalar_field.observe_output(obs);
+    field_set.enum_field.observe_output(obs);
+    field_set.vector_field.observe_output(obs);
+    field_set.tensor_field.observe_output(obs);
+    obs->output_time_frame( tg.t() );
 
     tg.next_time();
     field_set.set_time( tg.step(), LimitSide::right);
-    obs.compute_field_values(field_set.scalar_field);
-    obs.compute_field_values(field_set.enum_field);
-    obs.compute_field_values(field_set.vector_field);
-    obs.compute_field_values(field_set.tensor_field);
-    obs.output_time_frame( tg.t() );
+    field_set.scalar_field.observe_output(obs);
+    field_set.enum_field.observe_output(obs);
+    field_set.vector_field.observe_output(obs);
+    field_set.tensor_field.observe_output(obs);
+    obs->output_time_frame( tg.t() );
     }
     // closed observe file 'test_eq_observe.yaml'
     // check results

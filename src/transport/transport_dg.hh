@@ -25,7 +25,7 @@
 #include "fields/multi_field.hh"
 #include "la/linsys.hh"
 #include "flow/mh_dofhandler.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 
 class Distribution;
 class OutputTime;

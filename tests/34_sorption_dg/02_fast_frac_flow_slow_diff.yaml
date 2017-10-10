@@ -1,0 +1,79 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: |
+    Fast fracture flow + slow diffusion and sorption into rock
+    
+    A substance is injected in a short pulse to the fracture and partially
+    transported to the rock by diffusion and sorption.
+    The problem requires specially refined mesh to capture the thin layer
+    of substance diffused into the rock.
+  mesh:
+    mesh_file: ../00_mesh/rectangle_refined_y.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-15
+        a_tol: 1.0e-15
+    n_schurs: 2
+    input_fields:
+      - region: fracture
+        conductivity: 1
+        cross_section: 1e-3
+      - region: rock
+        conductivity: 1e-12
+      - region: .left
+        bc_type: dirichlet
+        bc_piezo_head: 0
+      - region: .right
+        bc_type: total_flux
+        bc_flux: 1e-6
+    balance: {}
+    output:
+      fields:
+        - piezo_head_p0
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+    output_stream:
+      format: !vtk
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      dg_order: 3
+      input_fields:
+        - region: .right
+          bc_type: dirichlet
+          bc_conc: 0
+        - region: fracture
+          porosity: 1
+          diff_m: 1e-9
+        - region: rock
+          porosity: 1e-3
+          diff_m: 1e-10
+          rock_density: 2700
+          sorption_coefficient: 0.1
+        - region: .right
+          bc_type: total_flux
+          bc_flux: 1
+        - region: .right
+          time: 18000
+          bc_type: inflow
+          bc_conc: 0
+      solver: !Petsc
+        r_tol: 1.0e-20
+        a_tol: 1.0e-20
+      output:
+        fields: [ conc, region_id ]
+    substances:
+      - name: Ba-133
+        molar_mass: 0.133
+    time:
+      end_time: 8640000
+    output_stream:
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 360000
+    balance:
+      cumulative: true

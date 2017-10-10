@@ -26,7 +26,6 @@
 #include "output_mesh.hh"
 #include "io/output_time_set.hh"
 #include "io/observe.hh"
-#include <fields/field_set.hh>
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -108,41 +107,37 @@ Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
 }
 
 
-void OutputTime::make_output_mesh(FieldSet &output_fields)
-{
+Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
+    return input_record_.find<Input::Record>("output_mesh");
+}
 
-    // make observe points if not already done
-    observe();
 
-    // already computed
-    if(output_mesh_) return;
+std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input, bool discont) {
+	if (discont) {
+		if (init_input) output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
+		return output_mesh_discont_;
+	} else {
+		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
+		return output_mesh_;
+	}
+}
 
-    // Read optional error control field name
-    auto it = input_record_.find<Input::Record>("output_mesh");
-    
-    if(enable_refinement_) {
-        if(it) {
-            output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *it);
-            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *it);
-            output_mesh_->select_error_control_field(output_fields);
-            output_mesh_discont_->select_error_control_field(output_fields);
-            
-            output_mesh_->create_refined_mesh();
-            return;
-        }
-    }
-    else
-    {
-        // skip creation of output mesh (use computational one)
-        if(it)
-        	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
-    }
-    
-    
-    output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-    
-    output_mesh_->create_identical_mesh();
+
+std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr(bool discont) {
+	if (discont) {
+		return output_mesh_discont_;
+	} else {
+		return output_mesh_;
+	}
+}
+
+
+void OutputTime::update_time(double field_time) {
+	if (this->time < field_time) {
+		this->time = field_time;
+	}
 }
 
 
@@ -251,41 +246,12 @@ void OutputTime::clear_data(void)
 
 
 
-#define INSTANCE_register_field(spacedim, value) \
-	template  void OutputTime::register_data<spacedim, value> \
-		(const DiscreteSpace ref_type, Field<spacedim, value> &field);
+// explicit instantiation of template methods
+#define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
+template ElementDataCache<TYPE> & OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
+		unsigned int n_rows, unsigned int n_cols)
 
-#define INSTANCE_register_multifield(spacedim, value) \
-	template void OutputTime::register_data<spacedim, value> \
-		(const DiscreteSpace ref_type, MultiField<spacedim, value> &field);
+OUTPUT_PREPARE_COMPUTE_DATA(int);
+OUTPUT_PREPARE_COMPUTE_DATA(unsigned int);
+OUTPUT_PREPARE_COMPUTE_DATA(double);
 
-
-#define INSTANCE_OutputData(spacedim, value) \
-	template class OutputData<value>;
-
-
-#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to) \
-		MACRO(dim_from, FieldValue<dim_to>::VectorFixed ) \
-		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
-
-#define INSTANCE_TO_ALL( MACRO, dim_from) \
-		MACRO(dim_from, FieldValue<0>::Enum ) \
-		MACRO(dim_from, FieldValue<0>::Integer) \
-		MACRO(dim_from, FieldValue<0>::Scalar) \
-        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
-        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
-
-#define INSTANCE_ALL(MACRO) \
-		INSTANCE_TO_ALL( MACRO, 3) \
-		INSTANCE_TO_ALL( MACRO, 2)
-
-
-INSTANCE_ALL( INSTANCE_register_field )
-INSTANCE_ALL( INSTANCE_register_multifield )
-
-//INSTANCE_TO_ALL( INSTANCE_OutputData, 0)
-
-
-//INSTANCE_register_field(3, FieldValue<0>::Scalar)
-//INSTANCE_register_multifield(3, FieldValue<0>::Scalar)
-//INSTANCE_OutputData(3, FieldValue<0>::Scalar)

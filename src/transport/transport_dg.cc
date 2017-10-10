@@ -35,7 +35,7 @@
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
-#include "io/equation_output.hh"
+#include "fields/equation_output.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
@@ -1465,6 +1465,18 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
 }
 
 
+// return the ratio of longest and shortest edge
+double elem_anisotropy(const ElementFullIter &e)
+{
+    double h_max = 0, h_min = numeric_limits<double>::infinity();
+    for (unsigned int i=0; i<e->n_nodes(); i++)
+        for (unsigned int j=i+1; j<e->n_nodes(); j++)
+        {
+            h_max = max(h_max, e->node[i]->distance(*e->node[j]));
+            h_min = min(h_min, e->node[i]->distance(*e->node[j]));
+        }
+    return h_max/h_min;
+}
 
 
 
@@ -1501,6 +1513,10 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
             for (unsigned int j=i+1; j<s->n_nodes(); j++)
                 h = max(h, s->node(i)->distance(*s->node(j)));
     }
+    
+    double aniso1 = elem_anisotropy(edg.side(s1)->element());
+    double aniso2 = elem_anisotropy(edg.side(s2)->element());
+    
 
     // calculate the total in- and out-flux through the edge
     double pflux = 0, nflux = 0;
@@ -1538,7 +1554,7 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
             delta[0] += dot(K1[k]*normal_vector,normal_vector);
         delta[0] /= K_size;
 
-        gamma += local_alpha/h*(delta[0]);
+        gamma += local_alpha/h*aniso1*aniso2*delta[0];
     }
     else
     {
@@ -1554,11 +1570,12 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
 
         double delta_sum = delta[0] + delta[1];
 
-        if (delta_sum > numeric_limits<double>::epsilon())
+//        if (delta_sum > numeric_limits<double>::epsilon())
+        if (fabs(delta_sum) > 0)
         {
             omega[0] = delta[1]/delta_sum;
             omega[1] = delta[0]/delta_sum;
-            gamma += local_alpha/h*(delta[0]*delta[1]/delta_sum);
+            gamma += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
         }
         else
             for (int i=0; i<2; i++) omega[i] = 0;
@@ -1598,7 +1615,7 @@ void TransportDG<Model>::set_DG_parameters_boundary(const SideIter side,
 		delta += dot(K[k]*normal_vector,normal_vector);
 	delta /= K_size;
 
-	gamma = 0.5*fabs(flux) + alpha/h*delta;
+	gamma = 0.5*fabs(flux) + alpha/h*delta*elem_anisotropy(side->element());
 }
 
 
