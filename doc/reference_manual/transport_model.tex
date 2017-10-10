@@ -38,10 +38,10 @@ Other quantities are:
 \item The hydrodynamic dispersivity tensor $\D^i$ \units{}{2}{-1} has the form
 \begin{equation} 
   \label{eqn:transport_disp}
-  \D^i =D_m^i \tau \tn I + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \otimes \vc v}{\abs{\vc v}^2}\right),
+  \D^i =\tau \D_m^i + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \otimes \vc v}{\abs{\vc v}^2}\right),
 \end{equation}
-which represents (isotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
-Here $D_m^i$ \units{}{2}{-1} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::diff-m}{molecular diffusion coefficient} of the $i$-th substance 
+which represents (generally anisotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
+Here $\D_m^i$ \units{}{2}{-1} is the $2^{\text{nd}}$-order \hyperA{Solute-AdvectionDiffusion-DG-Data::diff-m}{molecular diffusion coefficient} of the $i$-th substance 
 (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), 
 $\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::disp-l}{longitudal dispersivity} 
 and the \hyperA{Solute-AdvectionDiffusion-DG-Data::disp-t}{transverse dispersivity}, respectively.
@@ -49,7 +49,7 @@ Note that although we allow dispersivities to have different values for differen
 of the porous medium.
 Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, also called \emph{seepage velocity}, 
 related to the Darcy flux $\vc q$ by the relation $\vc q = \th\delta\vc v$.
-The value of $D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
+The value of $\D_m^i$ for specific substances can be found in literature (see e.g. \cite{cislerova_vogel}).
 For instructions on how to determine $\alpha_L^i$, $\alpha_T^i$ we refer to \cite{marsily,domenico_schwartz}.
 
 \item $F_S^i$ \units{1}{-d}{-1} represents the density of concentration sources in the porous medium.
