@@ -57,7 +57,7 @@ public:
 		/// Transversal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_t;
 		/// Molecular diffusivity (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> diff_m;
+		MultiField<3, FieldValue<3>::TensorFixed> diff_m;
 
 	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
 	    MultiField<3, FieldValue<3>::Scalar > sorption_coefficient;     ///< Coefficient of linear sorption.
@@ -199,7 +199,7 @@ protected:
 	 * @param K         Dispersivity tensor (output).
 	 */
 	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			double Dm,
+			const arma::mat33 &Dm,
 			double alphaL,
 			double alphaT,
 			double water_content,

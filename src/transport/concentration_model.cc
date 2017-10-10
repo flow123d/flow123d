@@ -214,7 +214,7 @@ void ConcentrationTransportModel::compute_retardation_coefficient(const std::vec
 
 
 void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3 &velocity,
-		double Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut, arma::mat33 &K)
+		const arma::mat33 &Dm, double alphaL, double alphaT, double water_content, double porosity, double cross_cut, arma::mat33 &K)
 {
     double vnorm = arma::norm(velocity, 2);
 
@@ -243,7 +243,7 @@ void ConcentrationTransportModel::calculate_dispersivity_tensor(const arma::vec3
 
    // Note that the velocity vector is in fact the Darcian flux,
    // so to obtain |v| we have to divide vnorm by porosity and cross_section.
-   K += (alphaT * vnorm + Dm*tortuosity*cross_cut*water_content)*arma::eye(3,3);
+   K += alphaT*vnorm*arma::eye(3,3) + Dm*(tortuosity*cross_cut*water_content);
 
 }
 
@@ -258,7 +258,8 @@ void ConcentrationTransportModel::compute_advection_diffusion_coefficients(const
 {
 	const unsigned int qsize = point_list.size();
 	const unsigned int n_subst = dif_coef.size();
-	std::vector<double> Dm(qsize), alphaL(qsize), alphaT(qsize), por_m(qsize), csection(qsize), wc(qsize);
+    std::vector<arma::mat33> Dm(qsize);
+	std::vector<double> alphaL(qsize), alphaT(qsize), por_m(qsize), csection(qsize), wc(qsize);
 
 	data().porosity.value_list(point_list, ele_acc, por_m);
 	data().water_content.value_list(point_list, ele_acc, wc);
