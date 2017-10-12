@@ -134,7 +134,10 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
+        FieldCommon *found_field = field(field_name);
         OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
+        // register interpolation type of field to OutputStream
+       	stream_->add_field_interpolation( found_field->get_output_type(interpolation) );
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
@@ -174,8 +177,9 @@ OutputTime::DiscreteSpace EquationOutput::get_field_discrete_space(const FieldCo
 
 void EquationOutput::output(TimeStep step)
 {
-    // TODO: remove const_cast after resolving problems with const Mesh.
-    //Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
+    // make observe points if not already done
+	stream_->observe();
+
 	this->make_output_mesh();
 
     for(FieldCommon * field : this->field_list) {
@@ -201,9 +205,6 @@ void EquationOutput::add_output_times(double begin, double step, double end)
 
 void EquationOutput::make_output_mesh()
 {
-    // make observe points if not already done
-	stream_->observe();
-
     // already computed
     if (stream_->is_output_mesh_init()) return;
 
