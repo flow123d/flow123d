@@ -78,21 +78,16 @@ template <typename T>
 ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
 		unsigned int n_cols)
 {
-    if(space_type == CORNER_DATA)
-        compute_discontinuous_output_mesh();
-
     // get possibly existing data for the same field, check both name and type
     unsigned int size;
     switch (space_type) {
     	case NODE_DATA:
+    	case CORNER_DATA:
     		size = output_mesh_->n_nodes();
     		break;
     	case ELEM_DATA:
     	case NATIVE_DATA:
     		size = output_mesh_->n_elements();
-    		break;
-    	case CORNER_DATA:
-    		size = output_mesh_discont_->n_nodes();
     		break;
     	default:
     		ASSERT(false).error("Should not happen.");

@@ -214,10 +214,7 @@ void EquationOutput::make_output_mesh()
     if(stream_->enable_refinement()) {
         if(it) {
         	auto output_mesh = stream_->create_output_mesh_ptr(true);
-        	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
-        	//TODO solve setting of error_control_field
         	this->select_error_control_field( output_mesh->error_control_field_name() );
-        	this->select_error_control_field( output_mesh_discont->error_control_field_name() );
 
             output_mesh->create_refined_mesh();
             return;
@@ -231,9 +228,7 @@ void EquationOutput::make_output_mesh()
     }
 
 
-	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
-	stream_->create_output_mesh_ptr(false, true);
-
+	std::shared_ptr<OutputMeshBase> output_mesh = stream_->create_output_mesh_ptr(false);
 	output_mesh->create_mesh();
 }
 

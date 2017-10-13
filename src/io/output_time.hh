@@ -154,14 +154,13 @@ public:
      * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
      *
      * @param init_input Call constructor with initialization from Input Record
-     * @param discont    Determines type of output mesh (output_mesh_ or output_mesh_discont_)
      */
-    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input, bool discont = false);
+    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input);
 
     /**
      * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
      */
-    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr(bool discont = false);
+    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
     /**
      * Return MPI rank of process
@@ -197,8 +196,6 @@ public:
 
 protected:
     
-    void compute_discontinuous_output_mesh();
-
     /**
      * Change main filename to have prescribed extension.
      */
@@ -263,9 +260,7 @@ protected:
     Mesh *_mesh;
     
     /// Output mesh.
-    std::shared_ptr<OutputMesh> output_mesh_;
-    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
-    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
+    std::shared_ptr<OutputMeshBase> output_mesh_;
     
     std::shared_ptr<Observe> observe_;
 
