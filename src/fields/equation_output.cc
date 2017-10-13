@@ -234,7 +234,7 @@ void EquationOutput::make_output_mesh()
 	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
 	stream_->create_output_mesh_ptr(false, true);
 
-	output_mesh->create_identical_mesh();
+	output_mesh->create_mesh();
 }
 
 

@@ -110,7 +110,7 @@ OutputMesh::~OutputMesh()
 }
 
 
-void OutputMesh::create_identical_mesh()
+void OutputMesh::create_mesh()
 {
 	nodes_.reset();
 	connectivity_.reset();
