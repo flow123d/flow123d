@@ -77,7 +77,7 @@ TEST(OutputMesh, create_identical)
     }
     
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
-    output_mesh_discont->create_mesh(output_mesh);
+    output_mesh_discont->create_mesh();
     
     MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)

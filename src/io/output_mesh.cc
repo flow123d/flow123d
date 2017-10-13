@@ -199,51 +199,57 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 }
 
 
-void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
+void OutputMeshDiscontinuous::create_mesh()
 {
 	nodes_.reset();
 	connectivity_.reset();
 	offsets_.reset();
 
-    ASSERT_DBG(output_mesh->nodes_->n_values() > 0);   //continuous data already computed
+    ASSERT_DBG(orig_mesh_->n_nodes() > 0);   //continuous data already computed
     
     if (nodes_) return;          //already computed
     
     DebugOut() << "Create discontinuous outputmesh.";
     
-    // connectivity = for every element list the nodes => its length corresponds to discontinuous data
-    const unsigned int n_corners = output_mesh->connectivity_->n_values();
+    const unsigned int n_elements = orig_mesh_->n_elements();
 
-    // these are the same as in continuous case, so we copy the pointer.
-    offsets_ = output_mesh->offsets_;
-    orig_element_indices_ = output_mesh->orig_element_indices_;
-    
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
+
+    unsigned int ele_id = 0,
+                 offset = 0,    // offset of node indices of element in node vector
+                 coord_id = 0,  // coordinate id in vector
+                 corner_id = 0, // corner index (discontinous node)
+                 li = 0;        // local node index
+
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+    FOR_ELEMENTS(orig_mesh_, ele) {
+        // increase offset by number of nodes of the simplicial element
+        offset += ele->dim() + 1;
+        offset_vec[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = ele_id;
+        ele_id++;
+    }
+
+    // connectivity = for every element list the nodes => its length corresponds to discontinuous data
+    const unsigned int n_corners = offset_vec[offset_vec.size()-1];
+
     nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_corners);
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
     		1, n_corners);
 
-    unsigned int coord_id = 0,  // coordinate id in vector
-                 corner_id = 0, // corner index (discontinous node)
-                 li;            // local node index
-
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
-    for(const auto & ele : *output_mesh)
+    Node* node;
+    FOR_ELEMENTS(orig_mesh_, ele)
     {
-        unsigned int n = ele.n_nodes(), 
-                     ele_idx = ele.idx(),
-                     con_off = (* offsets_)[ele_idx];
-                     
-        for(li = 0; li < n; li++)
+        FOR_ELEMENT_NODES(ele, li)
         {
-            // offset of the first coordinate of the first node of the element in nodes_ vector
-            unsigned int off = spacedim * (* output_mesh->connectivity_)[con_off - n + li];
-            auto &d = *( output_mesh->nodes_->get_component_data(0).get() );
-            
-            node_vec[coord_id] = d[off];   ++coord_id;
-            node_vec[coord_id] = d[off+1]; ++coord_id;
-            node_vec[coord_id] = d[off+2]; ++coord_id;
-            
+            node = ele->node[li];
+            node_vec[coord_id] = node->getX();  ++coord_id;
+            node_vec[coord_id] = node->getY();  ++coord_id;
+            node_vec[coord_id] = node->getZ();  ++coord_id;
+
             conn_vec[corner_id] = corner_id;
             corner_id++;
         }

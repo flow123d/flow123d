@@ -55,8 +55,8 @@ class OutputMeshDiscontinuous;
 
     // Construct mesh with discontinuous elements
     std::make_shared<OutputMeshDiscontinuous> output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
-    // Creates mesh from the given continuous one.
-    output_mesh_discont->create_mesh(output_mesh);
+    // Creates mesh from the original my_mesh.
+    output_mesh_discont->create_mesh();
 @endcode
  */
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
@@ -153,8 +153,8 @@ public:
     OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec);
     ~OutputMeshDiscontinuous();
     
-    /// Creates output mesh from the given continuous one.
-    void create_mesh(std::shared_ptr<OutputMesh> output_mesh);
+    /// Creates output mesh from orig_mesh_.
+    void create_mesh();
     
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;

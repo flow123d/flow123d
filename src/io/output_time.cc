@@ -145,8 +145,7 @@ void OutputTime::update_time(double field_time) {
 
 void OutputTime::compute_discontinuous_output_mesh()
 {
-    ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_discont_->create_mesh(output_mesh_);
+    output_mesh_discont_->create_mesh();
 }
 
 
