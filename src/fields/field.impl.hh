@@ -331,11 +331,11 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->get_output_type(discrete);
+		const OutputTime::DiscreteSpace type = this->get_output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 		this->compute_field_data( type, stream);
