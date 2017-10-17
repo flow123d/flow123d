@@ -142,7 +142,7 @@ public:
     std::string as_string() const;
 
     /**
-     * @brief Gets type and value of record tag
+     * @brief Gets value of the record tag, which determines its type.
      *
      * - for JSON gets value of TYPE key
      * - for YAML gets value of tag

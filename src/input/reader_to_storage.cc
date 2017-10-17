@@ -200,7 +200,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Record *rec
 	if (record_name_from_tag == "include") {
 		return make_include_storage(p, record);
 	} else if (record_name_from_tag == "include_csv") {
-		ASSERT(false).error("Include of CSV is not supported yet.\n");
+		THROW( ExcForbiddenTag() << EI_Tag("include_csv") << EI_Specification("can be used only with arrays.") );
 	} else {
 		if ( record_name_from_tag != "" ) {
 			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
@@ -334,7 +334,7 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Abstract *a
 			return abstract_automatic_conversion(p, abstr_rec);
 		}
 	} else if ((record_name == "include") || (record_name == "include_csv")) {
-		THROW( ExcForbiddenAbstractTag() << EI_Tag(record_name) );
+		THROW( ExcForbiddenTag() << EI_Tag(record_name) << EI_Specification("can't be used with abstract type.") );
 	} else {
 		try {
 			return make_storage(p, &( abstr_rec->get_descendant(record_name) ) );
@@ -405,7 +405,6 @@ StorageBase * ReaderToStorage::make_storage(PathBase &p, const Type::Array *arra
 			}
 			default: {
 				if (p.get_record_tag() == "include_csv") {
-					try_read_ = TryRead::csv_include;
 					return this->make_include_csv_storage(p, array);
 				} else {
 					// set variables managed transposition
@@ -896,7 +895,9 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         csv_columns_map_.clear();
         if ( p.down("format") ) {
 			try {
+				try_read_ = TryRead::csv_include;
 				item_storage = make_storage(p, &sub_type);
+		        try_read_ = TryRead::none;
 			} catch (ExcMultipleDefinitionCsvColumn &e) {
 				e << EI_File(tok.f_name());
 				throw;
@@ -1001,7 +1002,6 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         		ss << (*it) << " ";
             WarningOut().fmt("Unused columns: {}\nin imported CSV input file: {}\n", ss.str(), tok.f_name());
         }
-        try_read_ = TryRead::none;
         return storage_array;
 
 	} else {
