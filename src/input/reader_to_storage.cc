@@ -909,12 +909,18 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         }
         ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
 
+        // get value of maximal column index in map
+        map<unsigned int, IncludeCsvData>::iterator it;
+        it = csv_columns_map_.end(); --it;
+        unsigned int max_column_index = it->first;
+
         StorageArray *storage_array = new StorageArray(n_lines);
         std::set<unsigned int> unused_columns;
         for( unsigned int arr_item=0; arr_item < n_lines; ++arr_item) {
+        	unsigned int i_col;
         	tok.next_line();
-        	for (unsigned int i_col=0; !tok.eol(); ++i_col, ++tok) {
-        		map<unsigned int, IncludeCsvData>::iterator it = csv_columns_map_.find(i_col);
+        	for (i_col=0; !tok.eol(); ++i_col, ++tok) {
+        		it = csv_columns_map_.find(i_col);
         		if (it != csv_columns_map_.end()) {
         			switch (it->second.data_type) {
 						case IncludeDataTypes::type_int: {
@@ -993,6 +999,10 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         			unused_columns.insert(i_col);
         		}
         	}
+    		if ( max_column_index > (i_col-1) ) {
+				THROW( ExcInputError() << EI_Specification("Count of columns in CSV file is less than expected index, defined on input.")
+								   << EI_ErrorAddress(p.as_string()) << EI_InputType(array->desc()) );
+    		}
             storage_array->new_item(arr_item, item_storage->deep_copy() );
         }
 
