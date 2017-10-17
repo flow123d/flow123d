@@ -154,14 +154,13 @@ public:
      * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
      *
      * @param init_input Call constructor with initialization from Input Record
-     * @param discont    Determines type of output mesh (output_mesh_ or output_mesh_discont_)
      */
-    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input, bool discont = false);
+    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input);
 
     /**
      * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
      */
-    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr(bool discont = false);
+    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
     /**
      * Return MPI rank of process
@@ -191,11 +190,12 @@ public:
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
+    /// Add given space type to set of used interpolations.
+    void add_field_interpolation(DiscreteSpace space_type);
+
 
 protected:
     
-    void compute_discontinuous_output_mesh();
-
     /**
      * Change main filename to have prescribed extension.
      */
@@ -260,14 +260,19 @@ protected:
     Mesh *_mesh;
     
     /// Output mesh.
-    std::shared_ptr<OutputMesh> output_mesh_;
-    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
-    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
+    std::shared_ptr<OutputMeshBase> output_mesh_;
     
     std::shared_ptr<Observe> observe_;
 
     /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
+
+    /**
+     * Set of interpolations which are used in performed fields.
+     *
+     * Allow determine type of output mesh.
+     */
+    std::set<DiscreteSpace> used_interpolations_;
 };
 
 

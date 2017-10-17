@@ -112,25 +112,21 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input, bool discont) {
+std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input) {
+	bool discont = (used_interpolations_.find(DiscreteSpace::CORNER_DATA) != used_interpolations_.end());
 	if (discont) {
-		if (init_input) output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-		return output_mesh_discont_;
+		if (init_input) output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
 	} else {
 		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
 		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-		return output_mesh_;
 	}
+	return output_mesh_;
 }
 
 
-std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr(bool discont) {
-	if (discont) {
-		return output_mesh_discont_;
-	} else {
-		return output_mesh_;
-	}
+std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr() {
+	return output_mesh_;
 }
 
 
@@ -139,14 +135,6 @@ void OutputTime::update_time(double field_time) {
 		this->time = field_time;
 	}
 }
-
-
-void OutputTime::compute_discontinuous_output_mesh()
-{
-    ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_discont_->create_mesh(output_mesh_);
-}
-
 
 
 void OutputTime::fix_main_file_extension(std::string extension)
@@ -216,9 +204,8 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // invalidate output meshes after the time frame written
+            // invalidate output mesh after the time frame written
             output_mesh_.reset();
-            output_mesh_discont_.reset();
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
@@ -242,6 +229,11 @@ std::shared_ptr<Observe> OutputTime::observe()
 void OutputTime::clear_data(void)
 {
     for(auto &map : output_data_vec_)  map.clear();
+}
+
+
+void OutputTime::add_field_interpolation(DiscreteSpace space_type) {
+	used_interpolations_.insert(space_type);
 }
 
 

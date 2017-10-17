@@ -72,7 +72,7 @@ public:
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
-        this->output_mesh_->create_identical_mesh();
+        this->output_mesh_->create_mesh();
 
     }
 
@@ -91,10 +91,10 @@ public:
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-        this->output_mesh_->create_identical_mesh();
+        this->output_mesh_->create_mesh();
 
-        this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
-        this->output_mesh_discont_->create_mesh(this->output_mesh_);
+        //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
+        //this->output_mesh_discont_->create_mesh();
 
 		field.compute_field_data(ELEM_DATA, shared_from_this());
 	}

@@ -40,7 +40,7 @@ TEST(OutputMesh, create_identical)
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
     
     auto output_mesh = std::make_shared<OutputMesh>(*mesh);
-    output_mesh->create_identical_mesh();
+    output_mesh->create_mesh();
     
     std::cout << "nodes: ";
     output_mesh->nodes_->print_ascii_all(std::cout);
@@ -77,7 +77,7 @@ TEST(OutputMesh, create_identical)
     }
     
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
-    output_mesh_discont->create_mesh(output_mesh);
+    output_mesh_discont->create_mesh();
     
     MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)
