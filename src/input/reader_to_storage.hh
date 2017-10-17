@@ -107,7 +107,7 @@ public:
     		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
 
     TYPEDEF_ERR_INFO( EI_Tag, string);
-    DECLARE_INPUT_EXCEPTION( ExcForbiddenAbstractTag, << "Forbidden tag " << EI_Tag::qval << " of Abstract type.\n" );
+    DECLARE_INPUT_EXCEPTION( ExcForbiddenTag, << "Tag " << EI_Tag::qval << " " << EI_Specification::val << "\n" );
 
 	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
     DECLARE_INPUT_EXCEPTION(ExcWrongCsvFormat, << EI_Specification::val << ",\n" << EI_TokenizerMsg::val << "\n" );
