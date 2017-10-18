@@ -134,6 +134,8 @@ add_library(input_lib
     input/type_output.cc
     
     input/accessors.cc
+    
+    input/csv_tokenizer.cc
 )
 target_link_libraries(input_lib 
     system_lib json_spirit
