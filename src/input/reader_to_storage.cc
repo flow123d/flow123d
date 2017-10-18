@@ -19,14 +19,13 @@
 #include <limits>
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include "reader_to_storage.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "system/tokenizer.hh"
+#include "input/csv_tokenizer.hh"
 
 
 namespace Input {
@@ -844,8 +843,6 @@ StorageBase * ReaderToStorage::make_include_storage(PathBase &p, const Type::Rec
 
 StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type::Array *array)
 {
-	using namespace boost;
-
 	if ( p.is_record_type() ) { // sub-type must be record type
 		// load path to CSV file
 		std::string included_file;
@@ -875,19 +872,7 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 
         // open CSV file, get number of lines, skip head lines
         FilePath fp((included_file), FilePath::input_file);
-        Tokenizer::Separator separator("\\",",","\"");
-        Tokenizer tok( fp, separator );
-        unsigned int n_lines = 0; // number of lines
-        while ( !tok.eof() ) {
-        	tok.next_line(false);
-        	n_lines++;
-        }
-        if (tok.line().size()==0) n_lines--; // removes last line if it is empty
-        n_lines -= n_head_lines; // subtracts number of skipped head lines
-        tok.set_position( Tokenizer::Position() );
-        for (unsigned int i=0; i<n_head_lines; i++) { // skip head lines
-        	tok.next_line(false);
-        }
+        CSVTokenizer tok( fp );
 
         const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
         StorageBase *item_storage; // storage of sub-type record of included array
@@ -914,6 +899,7 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         it = csv_columns_map_.end(); --it;
         unsigned int max_column_index = it->first;
 
+        unsigned int n_lines = tok.get_n_lines(n_head_lines); // number of lines
         StorageArray *storage_array = new StorageArray(n_lines);
         std::set<unsigned int> unused_columns;
         for( unsigned int arr_item=0; arr_item < n_lines; ++arr_item) {
@@ -926,10 +912,11 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 						case IncludeDataTypes::type_int: {
 							int val;
 							try {
-								val = lexical_cast<int>(*tok);
-							} catch (bad_lexical_cast &) {
-								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong integer value")
-										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+								val = tok.get_int_val();
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong integer value");
+								e << EI_ErrorAddress(p.as_string());
+								throw;
 							}
 
 							const Type::Integer *int_type = static_cast<const Type::Integer *>(it->second.type);
@@ -943,10 +930,10 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 						case IncludeDataTypes::type_double: {
 							double val;
 							try {
-								val = lexical_cast<double>(*tok);
-							} catch (bad_lexical_cast &) {
-								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong double value")
-										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+								val = tok.get_double_val();
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_ErrorAddress(p.as_string());
+								throw;
 							}
 
 							const Type::Double *double_type = static_cast<const Type::Double *>(it->second.type);
@@ -960,33 +947,35 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
 						case IncludeDataTypes::type_bool: {
 							int val;
 							try {
-								val = lexical_cast<int>(*tok);
-							} catch (bad_lexical_cast &) {
-								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong boolean value")
-										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+								val = tok.get_int_val();
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong boolean value");
+								e << EI_ErrorAddress(p.as_string());
+								throw;
 							}
 							set_storage_from_csv( i_col, item_storage, new StorageBool(val) );
 							break;
 						}
 						case IncludeDataTypes::type_string: {
 							try {
-								set_storage_from_csv( i_col, item_storage, new StorageString(*tok) );
-							} catch (bad_lexical_cast &) {
-								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong string value")
-										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+								set_storage_from_csv( i_col, item_storage, new StorageString(tok.get_string_val()) );
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong string value");
+								e << EI_ErrorAddress(p.as_string());
+								throw;
 							}
 							break;
 						}
 						case IncludeDataTypes::type_sel: {
-							std::string item_name;
 							const Type::Selection *selection = static_cast<const Type::Selection *>(it->second.type);
 							try {
-								item_name = *tok;
+								std::string item_name = tok.get_string_val();
 								int val = selection->name_to_int( item_name );
 								set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
-							} catch (bad_lexical_cast &) {
-								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong selection value")
-										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong selection value");
+								e << EI_ErrorAddress(p.as_string());
+								throw;
 							} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
 								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong selection value")
 										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );

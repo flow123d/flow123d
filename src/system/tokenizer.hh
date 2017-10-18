@@ -30,8 +30,8 @@ class FilePath;
  *
  * Boost library provides nice tokenizer. The string is viewed as a container of tokens and
  * you can iterate over them. This class simplify the usage of the boost's tokenizer and further simplify
- * reading of the text files. Actual tokenizer use backslash '\\' as the escape character, double quotas '"'as quotation
- * character, and space ' ' or tabelator '\\t' as the separator of tokens.
+ * reading of the text files. Actual tokenizer use backslash '\\' as the escape character and double quotas '"' as quotation
+ * character. The separator of tokens can be set in constructor, default value is space ' ' or tabelator '\\t'.
  *
  * !! Used token separator @p escaped_list_separator do not provide possibility to merge several consecutive
  * separator characters into one separator. Consequently, there appears empty tokens when there more spaces
@@ -87,15 +87,15 @@ public:
     /**
      * Opens a file given by file path @p fp. And construct the tokenizer over the
      * input stream for this file.
-     * The stream is read from its actual position. The separator of the tokens is
-     * either tabelator '\\t' or space ' '.
+     * The stream is read from its actual position. Default value of the separator of the tokens is
+     * either tabelator '\\t' or space ' ' and can be overwrite.
      *
      */
     Tokenizer(const  FilePath &fp, Separator separator = Separator("\\"," \t","\"") );
     /**
      * Construct the tokenizer over given input stream @p in.
-     * The stream is read from its actual position. The separator of the tokens is
-     * either tabelator '\\t' or space ' '.
+     * The stream is read from its actual position. Default value of the separator of the tokens is
+     * either tabelator '\\t' or space ' ' and can be overwrite.
      *
      * Unfortunately, std::istream can not be passed by value nor by const reference. Thus you can not write, e.g.
      *
@@ -211,7 +211,7 @@ public:
      */
     ~Tokenizer();
 
-private:
+protected:
     // reset tokenizer for actual line
     void set_tokenizer();
     
