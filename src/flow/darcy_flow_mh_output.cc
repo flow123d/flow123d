@@ -427,12 +427,36 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     
     //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]    ns_side_neighbors[n]    neighbors[n*ns]\n";
+    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     ;
     int cit = 0;
+    
+    // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
+    unsigned int undefined_ele_id = -1;
+    std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
+    FOR_ELEMENTS( mesh_,  ele ) {
+        if(ele->n_neighs_vb > 0){
+            for (unsigned int i = 0; i < ele->n_neighs_vb; i++){
+                ElementFullIter higher_ele = ele->neigh_vb[i]->side()->element();
+                
+                auto search = neigh_vb_map.find(higher_ele->id());
+                if(search != neigh_vb_map.end()){
+                    // if found, add id to correct locel side idx
+                    search->second[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
+                }
+                else{
+                    // if not found, create new vector, each side can have one vb neighbour
+                    std::vector<unsigned int> higher_ele_side_ngh(higher_ele->n_sides(), undefined_ele_id);
+                    higher_ele_side_ngh[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
+                    neigh_vb_map[higher_ele->id()] = higher_ele_side_ngh;
+                }
+            }
+        }
+    }
+    
     FOR_ELEMENTS( mesh_,  ele ) {
         raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
@@ -447,18 +471,41 @@ void DarcyFlowMHOutput::output_internal_flow_data()
             raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
         }
         
+        auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             unsigned int n_side_neighs = ele->side(i)->edge()->n_sides-1;  //n_sides - the current one
+            // check vb neighbors (lower dimension)
+            if(n_side_neighs == 0){
+                //update search
+                if(search_neigh == neigh_vb_map.end())
+                    search_neigh = neigh_vb_map.find(ele->id());
+                
+                if(search_neigh != neigh_vb_map.end())
+                    if(search_neigh->second[i] != undefined_ele_id)
+                        n_side_neighs = 1;
+            }
             raw_output_file << n_side_neighs << " ";
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             Edge* edge = ele->side(i)->edge();
-            for (unsigned int j = 0; j < edge->n_sides; j++) {
-                if(edge->side(j) != ele->side(i))
-                    raw_output_file << edge->side(j)->element()->id() << " ";
+            if(ele->side(i)->edge()->n_sides > 1){
+                for (unsigned int j = 0; j < edge->n_sides; j++) {
+                    if(edge->side(j) != ele->side(i))
+                        raw_output_file << edge->side(j)->element()->id() << " ";
+                }
+            }
+            //check vb neighbour
+            else if(search_neigh != neigh_vb_map.end() 
+                    && search_neigh->second[i] != undefined_ele_id){
+                raw_output_file << search_neigh->second[i] << " ";
             }
         }
+        
+        // list higher dim neighbours
+        raw_output_file << ele->n_neighs_vb << " ";
+        for (unsigned int i = 0; i < ele->n_neighs_vb; i++)
+            raw_output_file << ele->neigh_vb[i]->side()->element()->id() << " ";
         
         raw_output_file << endl;
         cit ++;
