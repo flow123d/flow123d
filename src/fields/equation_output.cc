@@ -134,21 +134,28 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
+        FieldCommon *found_field = field(field_name);
         OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
+        found_field->output_type(interpolation);
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
             field_times.read_from_input(field_times_array, tg);
-            field_output_times_[field_name] = OutputTimeData(field_times, interpolation);
+            field_output_times_[field_name] = field_times;
         } else {
-            field_output_times_[field_name] = OutputTimeData(common_output_times_, interpolation);
+            field_output_times_[field_name] = common_output_times_;
         }
         // Add init time as the output time for every output field.
-        field_output_times_[field_name].output_times.add(tg.init_time(), equation_fixed_type_);
+        field_output_times_[field_name].add(tg.init_time(), equation_fixed_type_);
     }
     auto observe_fields_array = in_rec.val<Input::Array>("observe_fields");
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
+    }
+
+    // register interpolation type of fields to OutputStream
+    for(FieldCommon * field : this->field_list) {
+        stream_->add_field_interpolation( field->get_output_type() );
     }
 }
 
@@ -160,27 +167,22 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
     ASSERT( step.eq(field.time()) )(step.end())(field.time())(field.name()).error("Field is not set to the output time.");
     auto current_mark_it = marks.current(step, equation_type_ | marks.type_output() );
     if (current_mark_it == marks.end(equation_type_ | marks.type_output()) ) return false;
-    return (field_times_it->second.output_times.contains(*current_mark_it) );
-}
-
-
-OutputTime::DiscreteSpace EquationOutput::get_field_discrete_space(const FieldCommon &field) const
-{
-	auto field_times_it = field_output_times_.find(field.name());
-	ASSERT(field_times_it != field_output_times_.end())(field.name()).error("Unknown Field!\n");
-	return field_times_it->second.discrete;
+    return (field_times_it->second.contains(*current_mark_it) );
 }
 
 
 void EquationOutput::output(TimeStep step)
 {
+    // make observe points if not already done
+	stream_->observe();
+
 	this->make_output_mesh();
 
     for(FieldCommon * field : this->field_list) {
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->field_output(stream_, get_field_discrete_space(*field));
+                field->field_output(stream_);
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
@@ -199,9 +201,6 @@ void EquationOutput::add_output_times(double begin, double step, double end)
 
 void EquationOutput::make_output_mesh()
 {
-    // make observe points if not already done
-	stream_->observe();
-
     // already computed
     if (stream_->is_output_mesh_init()) return;
 
@@ -212,19 +211,13 @@ void EquationOutput::make_output_mesh()
         if(it) {
             // create output meshes from input record
         	auto output_mesh = stream_->create_output_mesh_ptr(true);
-        	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
 
             // possibly set error control field for refinement
             auto ecf = select_error_control_field();
             output_mesh->set_error_control_field(ecf);
-            output_mesh_discont->set_error_control_field(ecf);
             
-            // continuous output mesh:
-            // - refined one is not supported at the moment
-            // - identical one is created below
-//             output_mesh->create_refined_mesh();
-            
-            output_mesh_discont->create_refined_mesh();
+            // actually compute refined mesh
+            output_mesh->create_refined_mesh();
             return;
         }
     }
@@ -236,10 +229,9 @@ void EquationOutput::make_output_mesh()
     }
 
 
-	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
-	stream_->create_output_mesh_ptr(false, true);
-
-	output_mesh->create_identical_mesh();
+    // create output mesh identical with the computational one
+	std::shared_ptr<OutputMeshBase> output_mesh = stream_->create_output_mesh_ptr(false);
+	output_mesh->create_mesh();
 }
 
 

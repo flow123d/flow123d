@@ -54,12 +54,12 @@ class OutputMeshDiscontinuous;
     // Construct mesh with continuous elements
     std::make_shared<OutputMesh> output_mesh = std::make_shared<OutputMesh>(*my_mesh);
     // Creates the mesh identical to the computational one.
-    output_mesh->create_identical_mesh();
+    output_mesh->create_mesh();
 
     // Construct mesh with discontinuous elements
     std::make_shared<OutputMeshDiscontinuous> output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
-    // Creates mesh from the given continuous one.
-    output_mesh_discont->create_mesh(output_mesh);
+    // Creates mesh from the original my_mesh.
+    output_mesh_discont->create_mesh();
 @endcode
  */
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
@@ -89,6 +89,9 @@ public:
     /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
+    /// Creates the output mesh identical to the orig mesh.
+    virtual void create_mesh()=0;
+
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
@@ -140,8 +143,8 @@ public:
     OutputMesh(Mesh &mesh, const Input::Record &in_rec);
     ~OutputMesh();
     
-    /// Creates the output mesh identical to the computational one.
-    void create_identical_mesh();
+    /// Creates the output mesh identical to the orig mesh.
+    void create_mesh() override;
     
     /// Creates refined mesh.
     void create_refined_mesh() override;
@@ -162,8 +165,8 @@ public:
     OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec);
     ~OutputMeshDiscontinuous();
     
-    /// Creates output mesh from the given continuous one.
-    void create_mesh(std::shared_ptr<OutputMesh> output_mesh);
+    /// Creates the output mesh identical to the orig mesh.
+    void create_mesh() override;
     
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
