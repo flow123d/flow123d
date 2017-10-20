@@ -34,6 +34,9 @@ namespace Input {
 
 using namespace std;
 
+class ReaderInternalBase;
+class ReaderInternalCsvInclude;
+
 
 
 /// Possible formats of input files.
@@ -272,6 +275,8 @@ protected:
     map<unsigned int, IncludeCsvData> csv_columns_map_;
 
     friend class Type::Default;
+    friend class ReaderInternalBase;
+    friend class ReaderInternalCsvInclude;
 
 };
 

@@ -1,0 +1,820 @@
+/*!
+ *
+﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License version 3 as published by the
+ * Free Software Foundation. (http://www.gnu.org/licenses/gpl-3.0.en.html)
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ *
+ * @file    reader_internal.cc
+ * @brief
+ */
+
+
+#include "input/reader_internal.hh"
+#include "input/reader_to_storage.hh"
+#include "input/input_type.hh"
+#include "input/accessors.hh"
+
+namespace Input {
+
+using namespace std;
+
+
+/*******************************************************************
+ * implementation of ReaderInternalBase
+ */
+
+ReaderInternalBase::ReaderInternalBase()
+{}
+
+StorageBase * ReaderInternalBase::make_storage(PathBase &p, const Type::TypeBase *type)
+{
+	ASSERT_PTR(type).error("Can not dispatch, NULL pointer to TypeBase.");
+
+    // find reference node, if doesn't exist return NULL
+    PathBase * ref_path = p.find_ref_node();
+    if (ref_path) {
+        // todo: mark passed references and check cyclic references
+
+        // dereference and take data from there
+    	StorageBase * storage = make_storage( *ref_path, type );
+    	delete ref_path;
+        return storage;
+    }
+
+    // dispatch types - complex types
+    if (typeid(*type) == typeid(Type::Tuple)) {
+        return make_sub_storage(p, static_cast<const Type::Tuple *>(type) );
+    } else
+    if (typeid(*type) == typeid(Type::Record)) {
+        return make_sub_storage(p, static_cast<const Type::Record *>(type) );
+    } else
+    if (typeid(*type) == typeid(Type::Array)) {
+        return make_sub_storage(p, static_cast<const Type::Array *>(type) );
+    } else {
+    	const Type::Abstract * abstract_record_type = dynamic_cast<const Type::Abstract *>(type);
+    	if (abstract_record_type != NULL ) return make_sub_storage(p, abstract_record_type );
+    }
+
+    // return Null storage if there is null on the current location
+	if (p.is_null_type()) {
+		return new StorageNull();
+	}
+
+    // dispatch types - scalar types
+    if (typeid(*type) == typeid(Type::Integer)) {
+        return make_sub_storage(p, static_cast<const Type::Integer *>(type) );
+    } else
+    if (typeid(*type) == typeid(Type::Double)) {
+        return make_sub_storage(p, static_cast<const Type::Double *>(type) );
+    } else
+    if (typeid(*type) == typeid(Type::Bool)) {
+        return make_sub_storage(p, static_cast<const Type::Bool *>(type) );
+    } else
+    if (typeid(*type) == typeid(Type::Selection)) {
+        return make_sub_storage(p, static_cast<const Type::Selection *>(type) );
+    } else {
+        const Type::String * string_type = dynamic_cast<const Type::String *>(type);
+        if (string_type != NULL ) return make_sub_storage(p, string_type );
+
+        // default -> error
+        THROW( Type::ExcUnknownDescendant() << Type::EI_TypeName(typeid(type).name()) );
+    }
+
+    return new StorageNull();
+}
+
+StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Record *record)
+{
+	// control test, check correct tag (or TYPE key) if Record is derived from Abstract
+	string record_name_from_tag = p.get_record_tag();
+	if (record_name_from_tag == "include") {
+		return make_include_storage(p, record);
+	} else if (record_name_from_tag == "include_csv") {
+		THROW( ReaderToStorage::ExcForbiddenTag() << ReaderToStorage::EI_Tag("include_csv")
+			<< ReaderToStorage::EI_Specification("can be used only with arrays.") );
+	} else {
+		if ( record_name_from_tag != "" ) {
+			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
+		}
+		std::set<string> keys_to_process;
+		bool effectively_null = p.is_effectively_null();
+		if ( p.get_record_key_set(keys_to_process) || effectively_null ) {
+	        std::set<string>::iterator set_it;
+
+	        /*Type::Record::KeyIter key_it;
+	        if ( record->has_key_iterator("TYPE", key_it) && record->auto_conversion_key_iter() != record->end() ) {
+	            PathBase *type_path = p->clone();
+	            if ( type_path.down( "TYPE" ) ) {
+	                try {
+	                	ASSERT( type_path.get_string_value() == record->type_name() )(type_path.get_string_value())(record->type_name())
+	                		.error("Invalid value of TYPE key of record");
+	                    make_storage(type_path, key_it->type_.get() )->get_int();
+	                } catch(Type::Selection::ExcSelectionKeyNotFound &e) {
+	                	return record_automatic_conversion(p, record);
+	                }
+	            }
+	            else {  // automatic conversion
+	            	return record_automatic_conversion(p, record);
+	            }
+	        }*/
+
+	        StorageArray *storage_array = new StorageArray(record->size());
+	        // check individual keys
+	        for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+	        	// remove processed key from keys_to_process
+	        	set_it = keys_to_process.find(it->key_);
+	        	if (set_it != keys_to_process.end()) {
+	        		keys_to_process.erase(set_it);
+	        	}
+
+	            if ( !effectively_null && p.down(it->key_) ) {
+	                // key on input => check & use it
+	                // check for obsolete key
+
+	                auto obsolete_it = it->attributes.find( Type::Attribute::obsolete() );
+	                if ( obsolete_it != it->attributes.end()) {
+	                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
+	                }
+
+	                this->push_storage_index_to_vector(it->key_index);
+	                StorageBase *storage = make_storage(p, it->type_.get());
+	                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
+	                	delete storage;
+	                	storage = make_storage_from_default( it->default_.value(), it->type_ );
+	                }
+	                storage_array->new_item( it->key_index, storage );
+	                this->pop_storage_index_from_vector();
+	                p.up();
+	            } else {
+	                // key not on input
+	                if (it->default_.is_obligatory() ) {
+	                    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
+	                            << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(record->desc()) );
+	                } else if (it->default_.has_value_at_declaration() ) {
+	                   storage_array->new_item(it->key_index,
+	                           make_storage_from_default( it->default_.value(), it->type_ ) );
+	                } else { // defalut - optional or default at read time
+	                    // set null
+	                    storage_array->new_item(it->key_index, new StorageNull() );
+	                }
+	            }
+	        }
+
+	        for( set_it = keys_to_process.begin(); set_it != keys_to_process.end(); ++set_it) {
+	        	WarningOut() << "Unprocessed key '" << (*set_it) << "' in " << record->class_name()
+	        			<< " '" << p.as_string() << "'." << std::endl;
+	        }
+
+	        return storage_array;
+
+	    } else { // automatic conversion
+	    	return record_automatic_conversion(p, record);
+	    }
+	    // possibly construction of reduced record
+	}
+
+	return NULL;
+}
+
+StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Tuple *tuple)
+{
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+
+		StorageArray *storage_array = new StorageArray(tuple->size());
+        // check individual keys
+		for ( Type::Record::KeyIter it= tuple->begin(); it != tuple->end(); ++it) {
+        	if ( p.down(it->key_index) ) {
+                // key on input => check & use it
+        		this->push_storage_index_to_vector(it->key_index);
+                StorageBase *storage = make_storage(p, it->type_.get());
+                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
+                	delete storage;
+                	storage = make_storage_from_default( it->default_.value(), it->type_ );
+                }
+                storage_array->new_item( it->key_index, storage );
+                this->pop_storage_index_from_vector();
+                p.up();
+        	} else {
+                // key not on input
+                if (it->default_.is_obligatory() ) {
+                	stringstream ss;
+                	ss << tuple->obligatory_keys_count();
+                    THROW( ReaderToStorage::ExcInputError()
+                    		<< ReaderToStorage::EI_Specification("Too small size of '" + p.get_node_type(ValueTypes::array_type) + "' defining Tuple with "
+                    							+ ss.str() + " obligatory keys.")
+                            << ReaderToStorage::EI_ErrorAddress(p.as_string())
+							<< ReaderToStorage::EI_InputType(tuple->desc()) );
+                } else if (it->default_.has_value_at_declaration() ) {
+                   storage_array->new_item(it->key_index,
+                           make_storage_from_default( it->default_.value(), it->type_ ) );
+                } else { // default - optional or default at read time
+                    // set null
+                    storage_array->new_item(it->key_index, new StorageNull() );
+                }
+        	}
+        }
+
+		if ( arr_size > (int)tuple->size() ) {
+			WarningOut().fmt("Unprocessed keys in tuple '{}', tuple has {} keys but the input is specified by {} values.\n",
+                    p.as_string().c_str(), tuple->size(), arr_size );
+		}
+
+        return storage_array;
+
+	} else {
+		return make_sub_storage(p, static_cast<const Type::Record *>(tuple) );
+	}
+}
+
+StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abstract *abstr_rec)
+{
+	string record_name = p.get_record_tag();
+	if (record_name == "") {
+		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
+			THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Can not determine type of the Abstract.")
+					<< ReaderToStorage::EI_ErrorAddress(p.as_string())
+					<< ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
+					<< ReaderToStorage::EI_InputType(abstr_rec->desc()) );
+		} else { // auto conversion
+			return abstract_automatic_conversion(p, abstr_rec);
+		}
+	} else if ((record_name == "include") || (record_name == "include_csv")) {
+		THROW( ReaderToStorage::ExcForbiddenTag() << ReaderToStorage::EI_Tag(record_name)
+			<< ReaderToStorage::EI_Specification("can't be used with abstract type.") );
+	} else {
+		try {
+			return make_sub_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Wrong value '" + record_name + "' of the Selection.")
+					<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( "" )
+					<< ReaderToStorage::EI_InputType(abstr_rec->get_type_selection().desc()) );
+		}
+	}
+	return NULL;
+}
+
+StorageBase * ReaderInternalBase::record_automatic_conversion(PathBase &p, const Type::Record *record)
+{
+	Type::Record::KeyIter auto_key_it = record->auto_conversion_key_iter();
+	if ( auto_key_it != record->end() ) {
+	    try {
+			StorageArray *storage_array = new StorageArray(record->size());
+			for( Type::Record::KeyIter it= record->begin(); it != record->end(); ++it) {
+				if ( it == auto_key_it ) {
+					// one key is initialized by input
+					storage_array->new_item(it->key_index, make_storage(p, it->type_.get()) );
+				} else if (it->default_.has_value_at_declaration() ) {
+					// other key from default values
+					storage_array->new_item(it->key_index,
+							make_storage_from_default( it->default_.value(), it->type_ ) );
+				 } else { // defalut - optional or default at read time
+					 ASSERT(! it->default_.is_obligatory())(it->key_).error("Obligatory key in auto-convertible Record.");
+					 // set null
+					 storage_array->new_item(it->key_index, new StorageNull() );
+				 }
+			}
+
+			return storage_array;
+	    } catch (ReaderToStorage::ExcInputError &e ) {
+	        THROW( ReaderToStorage::ExcAutomaticConversionError() << ReaderToStorage::EI_RecordName(record->type_name())
+	        	<< ReaderToStorage::EI_InputErrorMessage(e.what()) );
+	    }
+
+	} else {
+	    THROW( ReaderToStorage::ExcInputError()
+	    		<< ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
+	            << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
+				<< ReaderToStorage::EI_InputType( record->desc()) );
+	}
+
+	return NULL;
+}
+
+StorageBase * ReaderInternalBase::abstract_automatic_conversion(PathBase &p, const Type::Abstract *abstr_rec)
+{
+    // perform automatic conversion
+    const Type::Record *default_child = abstr_rec->get_default_descendant();
+    if (! default_child) THROW(ReaderToStorage::ExcInputError()
+    		<< ReaderToStorage::EI_Specification("Auto conversion of Abstract not allowed.\n")
+    		<< ReaderToStorage::EI_ErrorAddress(p.as_string())
+    		<< ReaderToStorage::EI_InputType(abstr_rec->desc())
+    		);
+    return make_sub_storage(p, default_child );
+}
+
+StorageBase * ReaderInternalBase::make_array_storage(PathBase &p, const Type::Array *array, int arr_size)
+{
+	ASSERT(p.is_array_type()).error();
+
+    if ( array->match_size( arr_size ) ) {
+      // copy the array and check type of values
+      StorageArray *storage_array = new StorageArray(arr_size);
+      for( int idx=0; idx < arr_size; idx++)  {
+          p.down(idx);
+          const Type::TypeBase &sub_type = array->get_sub_type();
+          storage_array->new_item(idx, make_storage(p, &sub_type) );
+          p.up();
+      }
+      return storage_array;
+
+    } else {
+    	stringstream ss;
+    	ss << arr_size;
+        THROW( ReaderToStorage::ExcInputError()
+                << ReaderToStorage::EI_Specification("Do not fit the size " + ss.str() + " of the Array.")
+                << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+    }
+}
+
+StorageBase * ReaderInternalBase::make_storage_from_default(const string &dflt_str, std::shared_ptr<Type::TypeBase> type) {
+    try {
+    	// default strings must be valid JSON
+    	Type::Default dflt(dflt_str);
+    	return dflt.get_storage(type);
+
+    } catch (Input::Type::ExcWrongDefault & e) {
+        // message to distinguish exceptions thrown during Default value check at declaration
+    	e << Type::EI_Desc("Wrong default value while reading an input stream:\n");
+        e << EI_KeyName("UNKNOWN KEY");
+        throw;
+    } catch (Input::Type::ExcWrongDefaultJSON & e) {
+        e << EI_KeyName("UNKNOWN KEY");
+        throw;
+    }
+
+    return NULL;
+}
+
+StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::Record *record)
+{
+    std::string included_path;
+    if ( p.is_record_type() ) {
+        // include is set as record with tag and file key
+        if ( p.down("file") ) {
+        	included_path = get_included_file(p);
+            p.up();
+        } else {
+    	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing key 'file' defines including input file.")
+                               << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(record->desc()) );
+        }
+    } else {
+    	// include is set only with name of file (similarly as auto conversion)
+    	// this case may occur only for YAML input
+    	included_path = get_included_file(p);
+    }
+
+    FilePath fpath(included_path, FilePath::FileType::input_file);
+    try {
+    	ReaderToStorage include_reader(fpath, *(const_cast<Type::Record *>(record)) );
+        return include_reader.get_storage();
+    } catch (ReaderToStorage::ExcInputError &e ) {
+      e << ReaderToStorage::EI_File(fpath); throw;
+    } catch (ReaderToStorage::ExcNotJSONFormat &e) {
+      e << ReaderToStorage::EI_File(fpath); throw;
+    }
+
+	return NULL;
+}
+
+bool ReaderInternalBase::read_bool_value(PathBase &p, const Type::TypeBase *type)
+{
+	bool value;
+	try {
+		value = p.get_bool_value();
+	}
+	catch (ReaderToStorage::ExcInputError & e) {
+		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::bool_type) + "', but we found: ");
+		e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+		e << ReaderToStorage::EI_InputType(type->desc());
+		throw;
+	}
+
+	return value;
+}
+
+std::int64_t ReaderInternalBase::read_int_value(PathBase &p, const Type::TypeBase *type)
+{
+	std::int64_t value;
+	try {
+		value = p.get_int_value();
+	}
+	catch (ReaderToStorage::ExcInputError & e) {
+		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+		e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+		e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << ReaderToStorage::EI_InputType(type->desc());
+		throw;
+	}
+
+	return value;
+}
+
+double ReaderInternalBase::read_double_value(PathBase &p, const Type::TypeBase *type)
+{
+    double value;
+	try {
+		value = p.get_double_value();
+	}
+	catch (ReaderToStorage::ExcInputError & e) {
+		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::real_type) + "', but we found: ");
+		e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+		e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << ReaderToStorage::EI_InputType(type->desc());
+		throw;
+	}
+
+	return value;
+}
+
+std::string ReaderInternalBase::read_string_value(PathBase &p, const Type::TypeBase *type)
+{
+	string value;
+	try {
+		value = p.get_string_value();
+	} catch (ReaderToStorage::ExcInputError & e) {
+		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+        e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+        e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << ReaderToStorage::EI_InputType(type->desc());
+		throw;
+	}
+
+    return value;
+}
+
+std::string ReaderInternalBase::get_included_file(PathBase &p)
+{
+	try {
+		return p.get_string_value();
+	}
+	catch (ReaderToStorage::ExcInputError & e) {
+		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
+        e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+        e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+		e << ReaderToStorage::EI_InputType("path to included file");
+		throw;
+	}
+}
+
+void ReaderInternalBase::push_storage_index_to_vector(unsigned int index)
+{}
+
+void ReaderInternalBase::pop_storage_index_from_vector()
+{}
+
+
+/*******************************************************************
+ * implementation of ReaderInternal
+ */
+
+ReaderInternal::ReaderInternal()
+{}
+
+StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Array *array)
+{
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+		return this->make_array_storage(p, array, arr_size);
+	} else {
+		// TODO
+		return NULL;
+	}
+}
+
+StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Selection *selection)
+{
+    string item_name = read_string_value(p, selection);
+	try {
+		int value = selection->name_to_int( item_name );
+		return new StorageInt( value );
+	} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Wrong value '" + item_name + "' of the Selection.")
+				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( "" )
+				<< ReaderToStorage::EI_InputType(selection->desc()) );
+	}
+
+    return NULL;
+}
+
+StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Bool *bool_type)
+{
+	return new StorageBool( read_bool_value(p, bool_type) );
+}
+
+StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Integer *int_type)
+{
+	std::int64_t value = read_int_value(p, int_type);
+
+	if ( int_type->match(value) )
+	{
+		return new StorageInt( value );
+	} else {
+		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
+				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(int_type->desc()) );
+	}
+	return NULL;
+}
+
+StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Double *double_type)
+{
+    double value = read_double_value(p, double_type);
+
+    if (double_type->match(value)) {
+        return new StorageDouble( value );
+    } else {
+        THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
+        		<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(double_type->desc()) );
+    }
+
+    return NULL;
+}
+
+StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::String *string_type)
+{
+	string value = read_string_value(p, string_type);
+
+	if (string_type->match(value))
+		return new StorageString( value );
+	else
+		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Output file can not be given by absolute path: '" + value + "'")
+						<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type("") << ReaderToStorage::EI_InputType(string_type->desc()) );
+
+	return NULL;
+}
+
+
+/*******************************************************************
+ * implementation of ReaderInternalTranspose
+ */
+
+ReaderInternalTranspose::ReaderInternalTranspose()
+{}
+
+StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Array *array)
+{
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+		return this->make_array_storage(p, array, arr_size);
+	} else {
+		// if transposition is carried, only conversion to array with one element is allowed
+		// try automatic conversion to array with one element
+		const Type::TypeBase &sub_type = array->get_sub_type();
+		StorageBase *one_element_storage = this->make_storage(p, &sub_type);
+		return make_autoconversion_array_storage(p, array, one_element_storage);
+	}
+}
+
+StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Selection *selection)
+{
+	if ( p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, selection);
+	} else {
+	    string item_name = read_string_value(p, selection);
+		try {
+			int value = selection->name_to_int( item_name );
+			return new StorageInt( value );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Wrong value '" + item_name + "' of the Selection.")
+					<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( "" )
+					<< ReaderToStorage::EI_InputType(selection->desc()) );
+		}
+	}
+
+    return NULL;
+}
+
+StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Bool *bool_type)
+{
+	if ( p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, bool_type);
+	} else {
+		return new StorageBool( read_bool_value(p, bool_type) );
+	}
+}
+
+StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Integer *int_type)
+{
+	if ( p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, int_type);
+	}
+	std::int64_t value = read_int_value(p, int_type);
+
+	if ( int_type->match(value) )
+	{
+		return new StorageInt( value );
+	} else {
+		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
+				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(int_type->desc()) );
+	}
+	return NULL;
+}
+
+StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Double *double_type)
+{
+	if ( p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, double_type);
+	} else {
+	    double value = read_double_value(p, double_type);
+
+	    if (double_type->match(value)) {
+	        return new StorageDouble( value );
+	    } else {
+	        THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
+	        		<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(double_type->desc()) );
+	    }
+	}
+
+    return NULL;
+}
+
+StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::String *string_type)
+{
+	if ( p.is_array_type() ) {
+		// transpose auto-conversion for array type
+		return this->make_transposed_storage(p, string_type);
+	} else {
+		return new StorageString( read_string_value(p, string_type) );
+	}
+}
+
+StorageBase * ReaderInternalTranspose::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
+	ASSERT(p.is_array_type()).error();
+
+	// TODO
+	/*int arr_size = p.get_array_size();
+	if ( arr_size == 0 ) {
+		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Empty array during transpose auto-conversion.")
+			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(type->desc()) );
+	} else {
+		if (transpose_index_ == 0) transpose_array_sizes_.push_back( arr_size );
+		p.down(transpose_index_);
+		StorageBase *storage = make_storage(p, type);
+		p.up();
+		return storage;
+	}*/
+
+	return NULL;
+}
+
+StorageBase * ReaderInternalTranspose::make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item)
+{
+	if ( array->match_size( 1 ) ) {
+		StorageArray *storage_array = new StorageArray(1);
+		storage_array->new_item(0, item);
+
+		return storage_array;
+	} else {
+		THROW( ReaderToStorage::ExcInputError()
+				<< ReaderToStorage::EI_Specification("During transpose auto-conversion, the conversion to the single element array not allowed. Require type: '" + p.get_node_type(ValueTypes::array_type) + "'\nFound on input: ")
+				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
+				<< ReaderToStorage::EI_InputType(array->desc()) );
+	}
+
+	return NULL;
+}
+
+
+
+
+/*******************************************************************
+ * implementation of ReaderInternalCsvInclude
+ */
+
+ReaderInternalCsvInclude::ReaderInternalCsvInclude()
+{}
+
+StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Array *array)
+{
+	THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Array type in CSV-included part of IST is forbidden!\n")
+					   << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+    return NULL;
+}
+
+StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Selection *selection)
+{
+	const Type::Integer *format_int = new Type::Integer(0);
+	std::int64_t pos = read_int_value(p, format_int);
+
+	ReaderToStorage::IncludeCsvData include_data;
+	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_sel;
+	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.type = selection;
+	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
+			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+	} else {
+		csv_columns_map_[pos] = include_data;
+	}
+	delete format_int;
+	return new StorageInt( 0 );
+}
+
+StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Bool *bool_type)
+{
+	const Type::Integer *format_int = new Type::Integer(0);
+	std::int64_t pos = read_int_value(p, format_int);
+
+	ReaderToStorage::IncludeCsvData include_data;
+	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_bool;
+	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.type = bool_type;
+	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
+			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+	} else {
+		csv_columns_map_[pos] = include_data;
+	}
+	delete format_int;
+
+	return new StorageBool( false );
+}
+
+StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Integer *int_type)
+{
+	const Type::Integer *format_int = new Type::Integer(0);
+	std::int64_t value = read_int_value(p, format_int);
+
+	ReaderToStorage::IncludeCsvData include_data;
+	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_int;
+	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.type = int_type;
+	if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
+		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(value)
+			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+	} else {
+		csv_columns_map_[value] = include_data;
+	}
+	delete format_int;
+
+	return new StorageInt( 0 );
+}
+
+StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Double *double_type)
+{
+	const Type::Integer *format_int = new Type::Integer(0);
+	std::int64_t pos = read_int_value(p, format_int);
+
+	ReaderToStorage::IncludeCsvData include_data;
+	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_double;
+	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.type = double_type;
+	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
+			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+	} else {
+		csv_columns_map_[pos] = include_data;
+	}
+	delete format_int;
+
+	return new StorageDouble( 0.0 );
+}
+
+StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::String *string_type)
+{
+	try {
+		const Type::Integer *format_int = new Type::Integer(0);
+		std::int64_t pos = read_int_value(p, format_int);
+
+		ReaderToStorage::IncludeCsvData include_data;
+		include_data.data_type = ReaderToStorage::IncludeDataTypes::type_string;
+		include_data.storage_indexes = csv_storage_indexes_;
+		include_data.type = string_type;
+		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+			THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
+				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+		} else {
+			csv_columns_map_[pos] = include_data;
+		}
+		delete format_int;
+
+		return new StorageString("");
+	} catch (ReaderToStorage::ExcInputError & e) {
+		// no error, string value is not forbidden in CSV include
+		return new StorageString( read_string_value(p, string_type) );
+	}
+}
+
+void ReaderInternalCsvInclude::push_storage_index_to_vector(unsigned int index)
+{
+	csv_storage_indexes_.push_back(index);
+}
+
+void ReaderInternalCsvInclude::pop_storage_index_from_vector()
+{
+	csv_storage_indexes_.pop_back();
+}
+
+} // namespace Input
