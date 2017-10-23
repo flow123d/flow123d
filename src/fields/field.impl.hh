@@ -590,7 +590,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
-
     /* Copy data to array */
     switch(space_type) {
     case OutputTime::NODE_DATA: {

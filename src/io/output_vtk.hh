@@ -28,6 +28,8 @@
 
 using namespace std;
 
+class OutputMeshBase;
+
 /**
  * \brief This class is used for output data to VTK file format
  */
