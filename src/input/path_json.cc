@@ -86,7 +86,7 @@ bool PathJSON::down(unsigned int index)
 }
 
 
-bool PathJSON::down(const string& key)
+bool PathJSON::down(const string& key, int index)
 {
     const Node * head_node = nodes_.back();
     const json_spirit::mObject &obj = head_node->get_obj(); // the type should be checked in make_storage
@@ -95,7 +95,7 @@ bool PathJSON::down(const string& key)
     if (it == obj.end()) {
         return false;
     } else {
-        path_.push_back( make_pair( (int)(-1), key) );
+        path_.push_back( make_pair( index, key) );
         nodes_.push_back( &( it->second ) );
     }
     return true;

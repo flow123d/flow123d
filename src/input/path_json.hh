@@ -68,7 +68,7 @@ public:
      *
      * Implements @p PathBase::down(const std::string&)
      */
-    bool down(const std::string& key) override;
+    bool down(const std::string& key, int index = -1) override;
 
     /// Return one level up in the hierarchy.
     void up() override;

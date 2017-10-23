@@ -28,6 +28,8 @@
 
 namespace Input {
 
+class ReaderInternalBase;
+
 
 /**
  * @brief Base abstract class used by ReaderToStorage class to iterate over the input tree.
@@ -130,7 +132,7 @@ public:
      *
      * Store current path and returns true if pointer to new node is not NULL.
      */
-    virtual bool down(const std::string& key) =0;
+    virtual bool down(const std::string& key, int index = -1) =0;
 
     /// Return one level up in the hierarchy.
     virtual void up() =0;
@@ -172,6 +174,7 @@ protected:
      */
     std::vector<std::string> json_type_names;
 
+    friend class ReaderInternalCsvInclude;
 };
 
 
