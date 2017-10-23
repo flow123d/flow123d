@@ -134,7 +134,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 	        		keys_to_process.erase(set_it);
 	        	}
 
-	            if ( !effectively_null && p.down(it->key_) ) {
+	            if ( !effectively_null && p.down(it->key_, it->key_index) ) {
 	                // key on input => check & use it
 	                // check for obsolete key
 
@@ -143,14 +143,12 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 	                    WarningOut() << "Usage of the obsolete key: '" << it->key_ << "'\n" << obsolete_it -> second;
 	                }
 
-	                this->push_storage_index_to_vector(it->key_index);
 	                StorageBase *storage = make_storage(p, it->type_.get());
 	                if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
 	                	delete storage;
 	                	storage = make_storage_from_default( it->default_.value(), it->type_ );
 	                }
 	                storage_array->new_item( it->key_index, storage );
-	                this->pop_storage_index_from_vector();
 	                p.up();
 	            } else {
 	                // key not on input
@@ -193,14 +191,12 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Tupl
 		for ( Type::Record::KeyIter it= tuple->begin(); it != tuple->end(); ++it) {
         	if ( p.down(it->key_index) ) {
                 // key on input => check & use it
-        		this->push_storage_index_to_vector(it->key_index);
                 StorageBase *storage = make_storage(p, it->type_.get());
                 if ( (typeid(*storage) == typeid(StorageNull)) && it->default_.has_value_at_declaration() ) {
                 	delete storage;
                 	storage = make_storage_from_default( it->default_.value(), it->type_ );
                 }
                 storage_array->new_item( it->key_index, storage );
-                this->pop_storage_index_from_vector();
                 p.up();
         	} else {
                 // key not on input
@@ -465,12 +461,6 @@ std::string ReaderInternalBase::get_included_file(PathBase &p)
 	}
 }
 
-void ReaderInternalBase::push_storage_index_to_vector(unsigned int index)
-{}
-
-void ReaderInternalBase::pop_storage_index_from_vector()
-{}
-
 
 /*******************************************************************
  * implementation of ReaderInternal
@@ -710,7 +700,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 
 	ReaderToStorage::IncludeCsvData include_data;
 	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_sel;
-	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = selection;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
@@ -729,7 +719,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 
 	ReaderToStorage::IncludeCsvData include_data;
 	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_bool;
-	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = bool_type;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
@@ -749,7 +739,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 
 	ReaderToStorage::IncludeCsvData include_data;
 	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_int;
-	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = int_type;
 	if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
 		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(value)
@@ -769,7 +759,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 
 	ReaderToStorage::IncludeCsvData include_data;
 	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_double;
-	include_data.storage_indexes = csv_storage_indexes_;
+	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = double_type;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
@@ -790,7 +780,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 
 		ReaderToStorage::IncludeCsvData include_data;
 		include_data.data_type = ReaderToStorage::IncludeDataTypes::type_string;
-		include_data.storage_indexes = csv_storage_indexes_;
+		include_data.storage_indexes = create_indexes_vector(p);
 		include_data.type = string_type;
 		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
 			THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
@@ -807,14 +797,14 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	}
 }
 
-void ReaderInternalCsvInclude::push_storage_index_to_vector(unsigned int index)
+vector<unsigned int> ReaderInternalCsvInclude::create_indexes_vector(PathBase &p)
 {
-	csv_storage_indexes_.push_back(index);
-}
-
-void ReaderInternalCsvInclude::pop_storage_index_from_vector()
-{
-	csv_storage_indexes_.pop_back();
+	vector<unsigned int> csv_storage_indexes( p.path_.size()-csv_subtree_depth_ );
+	for (unsigned int i_source=csv_subtree_depth_, i_target=0; i_source<p.path_.size(); ++i_source, ++i_target ) {
+		ASSERT_GE(p.path_[i_source].first, 0).error();
+		csv_storage_indexes[i_target] = p.path_[i_source].first;
+	}
+	return csv_storage_indexes;
 }
 
 } // namespace Input

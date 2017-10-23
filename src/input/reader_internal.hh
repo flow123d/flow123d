@@ -81,12 +81,6 @@ protected:
     /// Helper method. Get string value of included file or throw exception if reading failed.
     std::string get_included_file(PathBase &p);
 
-    /// Empty method, has effect only for ReaderInternalCsvInclude descendant.
-    virtual void push_storage_index_to_vector(unsigned int index);
-
-    /// Empty method, has effect only for ReaderInternalCsvInclude descendant.
-    virtual void pop_storage_index_from_vector();
-
 };
 
 
@@ -141,11 +135,11 @@ protected:
     StorageBase * make_sub_storage(PathBase &p, const Type::Double *double_type) override;    ///< Create storage of Type::Double type
     StorageBase * make_sub_storage(PathBase &p, const Type::String *string_type) override;    ///< Create storage of Type::String type
 
-    /// Add index to csv_storage_indexes_ vector.
-    void push_storage_index_to_vector(unsigned int index) override;
+    /// Create vector which contains actual indexes of subtree imported in CSV file.
+    vector<unsigned int> create_indexes_vector(PathBase &p);
 
-    /// Remove last index from csv_storage_indexes_ vector.
-    void pop_storage_index_from_vector() override;
+    /// Depth of CSV included subtree
+    unsigned int csv_subtree_depth_;
 
     /// Helper vector which contains actual indexes of subtree imported in CSV file.
     vector<unsigned int> csv_storage_indexes_;

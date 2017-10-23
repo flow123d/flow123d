@@ -899,7 +899,8 @@ StorageBase * ReaderToStorage::make_include_csv_storage(PathBase &p, const Type:
         it = csv_columns_map_.end(); --it;
         unsigned int max_column_index = it->first;
 
-        unsigned int n_lines = tok.get_n_lines(n_head_lines); // number of lines
+        unsigned int n_lines = tok.get_n_lines() - n_head_lines;
+        tok.skip_header(n_head_lines);
         StorageArray *storage_array = new StorageArray(n_lines);
         std::set<unsigned int> unused_columns;
         for( unsigned int arr_item=0; arr_item < n_lines; ++arr_item) {

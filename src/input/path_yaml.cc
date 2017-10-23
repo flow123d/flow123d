@@ -59,11 +59,11 @@ bool PathYAML::down(unsigned int index) {
 }
 
 
-bool PathYAML::down(const string& key) {
+bool PathYAML::down(const string& key, int index) {
 	ASSERT(head().IsMap()).error("Head node must be of type Record.");
 
     if ( head()[key] ) {
-    	path_.push_back( make_pair( (int)(-1), key) );
+    	path_.push_back( make_pair( index, key) );
     	nodes_.push_back( head()[key] );
     } else {
         return false;
