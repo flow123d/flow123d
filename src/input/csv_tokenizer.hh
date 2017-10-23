@@ -42,14 +42,15 @@ public:
      */
 	CSVTokenizer(std::istream &in);
 
+	/// Get count of lines in CSV file.
+	unsigned int get_n_lines();
+
 	/**
-	 * @brief Get count of active lines (without head lines) in CSV file.
-	 *
-	 * Return count of active lines and set position of tokenizer to first active lines.
+	 * @brief Skip header lines of CSV file.
 	 *
 	 * @param n_head_lines number of head lines given by user
 	 */
-	unsigned int get_n_lines(unsigned int n_head_lines);
+	void skip_header(unsigned int n_head_lines);
 
 	/// Cast token on actual position to integer value and return its.
 	int get_int_val();

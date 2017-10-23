@@ -34,20 +34,25 @@ CSVTokenizer::CSVTokenizer( std::istream &in)
 {}
 
 
-unsigned int CSVTokenizer::get_n_lines(unsigned int n_head_lines)
+unsigned int CSVTokenizer::get_n_lines()
 {
     unsigned int n_lines = 0; // number of lines
+    this->set_position( Tokenizer::Position() );
     while ( !this->eof() ) {
     	this->next_line(false);
     	n_lines++;
     }
     if (this->line().size()==0) n_lines--; // removes last line if it is empty
-    n_lines -= n_head_lines; // subtracts number of skipped head lines
+	return n_lines;
+}
+
+
+void CSVTokenizer::skip_header(unsigned int n_head_lines)
+{
     this->set_position( Tokenizer::Position() );
-    for (unsigned int i=0; i<n_head_lines; i++) { // skip head lines
+    for (unsigned int i=0; i<n_head_lines; i++) {
     	this->next_line(false);
     }
-	return n_lines;
 }
 
 
