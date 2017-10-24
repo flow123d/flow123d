@@ -11,27 +11,12 @@
 #include "arma_expect.hh"
 
 #include <mesh_constructor.hh>
-#include "io/output_time.hh"
-#include "io/output_vtk.hh"
 #include "mesh/mesh.h"
-#include "io/msh_gmshreader.h"
-#include "input/reader_to_storage.hh"
-#include "system/sys_profiler.hh"
-
-#include "fields/field_constant.hh"
-#include "fields/field.hh"
-#include "fields/field_set.hh"
-#include <fields/equation_output.hh>
-#include "fields/field_common.hh"
 #include "input/input_type.hh"
-
 #include "input/accessors.hh"
 
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
-
-
-FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 
 
 
@@ -42,7 +27,7 @@ TEST(OutputMesh, create_identical)
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
     
     auto output_mesh = std::make_shared<OutputMesh>(*mesh);
-    output_mesh->create_identical_mesh();
+    output_mesh->create_mesh();
     
     std::cout << "nodes: ";
     output_mesh->nodes_->print_ascii_all(std::cout);
@@ -77,7 +62,7 @@ TEST(OutputMesh, create_identical)
     }
     
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
-    output_mesh_discont->create_mesh(output_mesh);
+    output_mesh_discont->create_mesh();
     
     MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)
@@ -104,102 +89,9 @@ TEST(OutputMesh, create_identical)
 
 
 
-
-
-
-
-
-const string input = R"INPUT(
-{   
-   conc={ // formula on 3d 
-       TYPE="FieldFormula",
-       value="1/((x^2+y^2+z^2)^0.5)"
-       //value="log((x^2+y^2+z^2)^0.5)"
-       //value="x+y+z"
-   },
-   output_stream = {
-    file = "test1.pvd", 
-    format = {
-        TYPE = "vtk", 
-        variant = "ascii"
-    },
-    output_mesh = {
-        max_level = 3,
-        refine_by_error = true,
-        error_control_field = "conc"
-    }
-  }
-  ,output = {fields = ["conc"]}
-}
-)INPUT";
-
-
-TEST(OutputMesh, write_on_output_mesh) {
-    
-    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > AlgScalarField;
-    typedef Field<3,FieldValue<3>::Scalar> ScalarField;
-  
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
-
-    // read mesh - simplset cube from test1
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"../mesh/simplest_cube.msh\"}");
-    
-    
-    // create scalar field out of FieldAlgorithmBase field
-    ScalarField scalar_field;
-    scalar_field.set_mesh(*mesh);
-    
-    // create field set of output fields
-    EquationOutput output_fields;
-    output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
-    
-    // create input record
-    Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
-        .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
-        .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
-        .close();
-
-
-    // read input string
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
-    Input::Record in_rec=reader.get_root_interface<Input::Record>();
-
-    // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData init_data("conc", 1, UnitSI::dimensionless());
-    auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), init_data);
-    
-    // create field from FieldAlgorithmBase
-    scalar_field.set_field(mesh->region_db().get_region_set("ALL"), alg_field, 0);
-    //scalar_field.output_type(OutputTime::NODE_DATA);
-    scalar_field.output_type(OutputTime::CORNER_DATA);
-    
-    // set time to all fields
-    output_fields.set_time(0.0, LimitSide::right);
-    
-    // create output
-    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
-    output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
-    output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
-    
-    EXPECT_EQ(1,output_fields.size());
-    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
-    
-    // register output fields, compute and write data
-    output_fields.output(0.0);
-    output->write_time_frame();
-
-    delete mesh;
-}
-
-
-
 const string input_om = R"INPUT(
 {   
-    max_level = 2,
-    refine_by_error = true,
-    error_control_field = "conc"
+    max_level = 2
 }
 )INPUT";
 
@@ -350,92 +242,4 @@ TEST_F(TestOutputMesh, refine) {
     AuxElement el3;
     el3.nodes = {{0, 0, 0}, {a, 0, 0}, {0, a, 0}, {0, 0, a}};
     this->refine_single_element<3>(el3);
-}
-
-
-
-const string input_refine = R"INPUT(
-{   
-   conc={ // formula on 3d 
-       TYPE="FieldFormula",
-       value="if((x^2+y^2+z^2)^0.5 > 0.01, log((x^2+y^2+z^2)^0.5), log(0.01))"
-   },
-   output_stream = {
-    file = "test_refine.pvd",
-    format = {
-        TYPE = "vtk", 
-        variant = "ascii"
-    },
-    output_mesh = {
-        max_level = 3
-        refine_by_error = true
-        error_control_field = "conc"
-    }
-  }
-  ,output = {fields = ["conc"]}
-}
-)INPUT";
-
-TEST(OutputMesh, write_on_refined_mesh) {
-    
-    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > AlgScalarField;
-    typedef Field<3,FieldValue<3>::Scalar> ScalarField;
-    
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
-
-    // read mesh - simplset cube from test1
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"../mesh/simplest_cube.msh\"}");
-    
-    // create scalar field out of FieldAlgorithmBase field
-    ScalarField scalar_field;
-    scalar_field.set_mesh(*mesh);
-    
-    // create field set of output fields
-    EquationOutput output_fields;
-    output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
-    
-    // create input record
-    Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
-        .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
-        .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
-        .close();
-
-    // read input string
-    Input::ReaderToStorage reader( input_refine, rec_type, Input::FileFormat::format_JSON );
-    Input::Record in_rec=reader.get_root_interface<Input::Record>();
-
-    // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData field_algo_init_data("conc",1, UnitSI::one());
-    auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), field_algo_init_data);
-    
-    // create field from FieldAlgorithmBase
-    scalar_field.set_field(mesh->region_db().get_region_set("ALL"), alg_field, 0);
-//     scalar_field.output_type(OutputTime::NODE_DATA);
-    scalar_field.output_type(OutputTime::CORNER_DATA);
-    
-    // set time to all fields
-    output_fields.set_time(0.0, LimitSide::right);
-    
-    // create output
-    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
-    output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
-    output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
-    
-    EXPECT_EQ(1,output_fields.size());
-    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
-    
-    //test select_error_control_field exception
-    // no field 'conc' is to be found
-    output_fields.field("conc")->name("conc_error");
-    EXPECT_THROW( output_fields.select_error_control_field(); ,
-                  FieldSet::ExcUnknownField);
-    output_fields.field("conc_error")->name("conc");
-    
-    // register output fields, compute and write data
-    output_fields.output(0.0);
-    output->write_time_frame();
-
-    delete mesh;
 }

@@ -134,8 +134,7 @@ protected:
     /**
      * \brief Fills the data cache with VTK element types indicators.
      */
-    //void fill_element_types_vector(std::vector<unsigned int> &data, std::shared_ptr<OutputMeshBase> output_mesh);
-    std::shared_ptr<ElementDataCache<unsigned int>> fill_element_types_data(std::shared_ptr<OutputMeshBase> output_mesh);
+    std::shared_ptr<ElementDataCache<unsigned int>> fill_element_types_data();
 
     /**
      * Write registered data of all components of given Field to output stream

@@ -250,7 +250,7 @@ add_library(io_lib
     io/msh_vtkreader.cc
     io/msh_pvdreader.cc
     io/element_data_cache.cc
-    io/reader_instances.cc
+    io/reader_cache.cc
 
     io/output_time.cc
     io/output_vtk.cc

@@ -139,7 +139,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete) override;
+    void field_output(std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().

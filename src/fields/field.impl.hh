@@ -331,11 +331,11 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = (discrete == OutputTime::DiscreteSpace::UNDEFINED) ? this->output_type() : discrete;
+		const OutputTime::DiscreteSpace type = this->get_output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 		this->compute_field_data( type, stream);
@@ -598,7 +598,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         for(unsigned int idx=0; idx < output_data.n_values(); idx++)
             output_data.zero(idx);
 
-        std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
+        std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -621,9 +621,8 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::CORNER_DATA: {
-    	std::shared_ptr<OutputMeshDiscontinuous> output_mesh_disc
-			= std::dynamic_pointer_cast<OutputMeshDiscontinuous>( stream->get_output_mesh_ptr(true) );
-        for(const auto & ele : *output_mesh_disc )
+    	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+        for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
@@ -641,10 +640,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::ELEM_DATA: {
-        std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr(true);
-        if(! output_mesh->is_refined())
-            output_mesh = stream->get_output_mesh_ptr();
-        
+    	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
         for(const auto & ele : *output_mesh )
         {
             unsigned int ele_index = ele.idx();

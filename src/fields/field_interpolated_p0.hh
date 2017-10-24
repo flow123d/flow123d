@@ -71,7 +71,7 @@ protected:
     void scale_data();
 
     /// mesh, which is interpolated
-	Mesh* source_mesh_;
+	std::shared_ptr<Mesh> source_mesh_;
 
 	/// mesh reader file
 	FilePath reader_file_;

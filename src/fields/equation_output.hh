@@ -56,18 +56,6 @@ public:
     Field<3, FieldValue<3>::Scalar> * select_error_control_field();
     
 private:
-    /// Store pair of OutputTimeSet and DiscreteSpace data of Field
-    struct OutputTimeData {
-    	/// Empty constructor
-    	OutputTimeData() {}
-    	/// Constructor
-    	OutputTimeData(OutputTimeSet times, OutputTime::DiscreteSpace disc)
-    	: output_times(times), discrete(disc) {}
-
-    	OutputTimeSet output_times;          ///< Time set of Field
-    	OutputTime::DiscreteSpace discrete;  ///< Discrete space (can be set by user)
-    };
-
     /**
      * Input type of the configuration record.
      */
@@ -91,12 +79,6 @@ private:
      */
     void make_output_mesh();
 
-    /**
-     * Get DiscreteSpace type of given field.
-     */
-    OutputTime::DiscreteSpace get_field_discrete_space(const FieldCommon &field) const;
-
-
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
@@ -107,7 +89,7 @@ private:
     OutputTimeSet common_output_times_;
 
     /// Time sets of individual fields.
-    std::unordered_map<string, OutputTimeData> field_output_times_;
+    std::unordered_map<string, OutputTimeSet> field_output_times_;
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;

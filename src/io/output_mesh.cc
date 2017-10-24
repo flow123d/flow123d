@@ -34,7 +34,9 @@ const IT::Record & OutputMeshBase::get_input_type() {
         .declare_key("error_control_field",IT::String(), IT::Default::optional(),
             "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
         .declare_key("refinement_error_tolerance",IT::Double(0.0), IT::Default("0.01"),
-            "Tolerance for refinement by error.")
+            "Tolerance for element refinement by error. If tolerance is reached, refinement is stopped."
+            "Relative difference between error control field and its linear approximation on element is computed"
+            "and compared with tolerance.")
         .close();
 }
 
@@ -72,7 +74,7 @@ OutputMeshBase::~OutputMeshBase()
 
 OutputElementIterator OutputMeshBase::begin()
 {
-    ASSERT_PTR(offsets_);
+    ASSERT_PTR_DBG(offsets_);
 //     ASSERT_DBG(offsets_->n_values() > 0);
     return OutputElementIterator(OutputElement(0, shared_from_this()));
 }
@@ -89,7 +91,7 @@ void OutputMeshBase::set_error_control_field(ErrorControlFieldPtr error_control_
 {
     error_control_field_ = error_control_field;
 }
- 
+
 bool OutputMeshBase::is_refined()
 {
     return is_refined_;
@@ -127,7 +129,7 @@ OutputMesh::~OutputMesh()
 }
 
 
-void OutputMesh::create_identical_mesh()
+void OutputMesh::create_mesh()
 {
 	nodes_.reset();
 	connectivity_.reset();
@@ -181,7 +183,6 @@ void OutputMesh::create_identical_mesh()
         }
         
     }
-//     connectivity_->get_component_data(0)->shrink_to_fit();
 }
 
 void OutputMesh::create_refined_mesh()
@@ -216,52 +217,57 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 }
 
 
-void OutputMeshDiscontinuous::create_mesh(shared_ptr< OutputMesh > output_mesh)
+void OutputMeshDiscontinuous::create_mesh()
 {
 	nodes_.reset();
 	connectivity_.reset();
 	offsets_.reset();
 
-    ASSERT_DBG(output_mesh->nodes_->n_values() > 0);   //continuous data already computed
+    ASSERT_DBG(orig_mesh_->n_nodes() > 0);   //continuous data already computed
     
     if (nodes_) return;          //already computed
     
     DebugOut() << "Create discontinuous outputmesh.";
     
-    // connectivity = for every element list the nodes => its length corresponds to discontinuous data
-    const unsigned int n_corners = output_mesh->connectivity_->n_values();
+    const unsigned int n_elements = orig_mesh_->n_elements();
 
-    // these are the same as in continuous case, so we copy the pointer.
-    offsets_ = output_mesh->offsets_;
-    orig_element_indices_ = output_mesh->orig_element_indices_;
-    
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
+
+    unsigned int ele_id = 0,
+                 offset = 0,    // offset of node indices of element in node vector
+                 coord_id = 0,  // coordinate id in vector
+                 corner_id = 0, // corner index (discontinous node)
+                 li = 0;        // local node index
+
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+    FOR_ELEMENTS(orig_mesh_, ele) {
+        // increase offset by number of nodes of the simplicial element
+        offset += ele->dim() + 1;
+        offset_vec[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = ele_id;
+        ele_id++;
+    }
+
+    // connectivity = for every element list the nodes => its length corresponds to discontinuous data
+    const unsigned int n_corners = offset_vec[offset_vec.size()-1];
+
     nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_corners);
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
     		1, n_corners);
 
-    unsigned int coord_id = 0,  // coordinate id in vector
-                 corner_id = 0, // corner index (discontinous node)
-                 li;            // local node index
-
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
-    
-    for(const auto & ele : *output_mesh)
+    Node* node;
+    FOR_ELEMENTS(orig_mesh_, ele)
     {
-        unsigned int n = ele.n_nodes(), 
-                     ele_idx = ele.idx(),
-                     con_off = (* offsets_)[ele_idx];
-                     
-        for(li = 0; li < n; li++)
+        FOR_ELEMENT_NODES(ele, li)
         {
-            // offset of the first coordinate of the first node of the element in nodes_ vector
-            unsigned int off = spacedim * (* output_mesh->connectivity_)[con_off - n + li];
-            auto &d = *( output_mesh->nodes_->get_component_data(0).get() );
-            
-            node_vec[coord_id] = d[off];   ++coord_id;
-            node_vec[coord_id] = d[off+1]; ++coord_id;
-            node_vec[coord_id] = d[off+2]; ++coord_id;
-            
+            node = ele->node[li];
+            node_vec[coord_id] = node->getX();  ++coord_id;
+            node_vec[coord_id] = node->getY();  ++coord_id;
+            node_vec[coord_id] = node->getZ();  ++coord_id;
+
             conn_vec[corner_id] = corner_id;
             corner_id++;
         }
@@ -291,7 +297,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     
 //     DebugOut() << "start refinement\n";
     FOR_ELEMENTS(orig_mesh_, ele) {
-        const unsigned int 
+        const unsigned int
             dim = ele->dim(),
             ele_idx = ele->index();
 //         DebugOut() << "ele index " << ele_idx << "\n";
@@ -334,7 +340,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
             {
                 unsigned int con = i*(dim+1) + j;
                 conn_vec[con_offset + con] = con_offset + con;
-                               
+                
                 for(unsigned int k=0; k < spacedim; k++) {
                     node_vec[node_offset + con*spacedim + k] = refinement[i].nodes[j][k];
                 }
@@ -353,13 +359,13 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     is_refined_ = true;
 //     for(unsigned int i=0; i< nodes_->n_values; i++)
 //     {
-//         cout << i << "  "; 
+//         cout << i << "  ";
 //         for(unsigned int k=0; k<spacedim; k++){
-//             nodes_->print(cout, i*spacedim+k); 
+//             nodes_->print(cout, i*spacedim+k);
 //             cout << " ";
 //         }
 //         cout << endl;
-//     } 
+//     }
 //     cout << "\n\n";
 // //     nodes_->print_all(cout);
 // //     cout << "\n\n";
@@ -375,20 +381,51 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
 {
     static const unsigned int n_subelements = 1 << dim;  //2^dim
     
+// The refinement of elements for the output mesh is done using edge splitting
+// technique (so called red refinement). Since we use this only for better output
+// visualization of non-polynomial solutions, we do not care for existence of hanging
+// nodes.
+// In 2D case, it is straightforward process: find the midpoints of all sides,
+// connect them and generate 4 triangles. These triangles are congruent and have
+// equal surface areas.
+// On the other hand, the 3D case is more complicated. After splitting the
+// edges, we obtain 4 tetrahedra at the vertices of the original one. The octahedron
+// that remains in the middle can be subdivided according to one of its three
+// diagonals. Only the choice of the shortest octahedron diagonal leads to a regular
+// tetrahedra decomposition. This algorithm originally comes from Bey.
+//  Bey's algorithm (red refinement of tetrahedron):
+// p.29 https://www5.in.tum.de/pub/Joshi2016_Thesis.pdf
+// p.108 http://www.bcamath.org/documentos_public/archivos/publicaciones/sergey_book.pdf
+// https://www.math.uci.edu/~chenlong/iFEM/doc/html/uniformrefine3doc.html#1
+// J. Bey. Simplicial grid refinement: on Freudenthal's algorithm and the optimal number of congruence classes.
+//    Numer. Math. 85(1):1--29, 2000. p11 Algorithm: RedRefinement3D.
+// p.4 http://www.vis.uni-stuttgart.de/uploads/tx_vispublications/vis97-grosso.pdf
+
+    // connectivity of refined element
+    // these arrays are hardwired to the current reference element
     static const std::vector<unsigned int> conn[] = {
         {}, //0D
         
         //1D:
+        // 0,1 original nodes, 2 is in the middle
+        // get 2 elements
         {0, 2,
          2, 1},
         
         //2D:
+        // 0,1,2 original nodes
+        // 3,4,5 nodes are in the middle of sides 0,1,2 in the respective order
+        // get 4 elements
         {0, 3, 4,
          3, 1, 5,
          4, 5, 2,
          3, 5, 4},
         
         //3D:
+        // 0,1,2,3 original nodes
+        // 4,5,6,7,8,9 are nodes in the middle of edges 0,1,2,3,4,5 in the respective order 
+        // first 4 tetrahedra are at the original nodes
+        // next 4 tetrahedra are from the inner octahedron - 4 choices according to the diagonal
         {1, 7, 4, 8,
          7, 2, 5, 9,
          4, 5, 0, 6,
@@ -415,7 +452,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
          8, 6, 7, 4,
          6, 5, 7, 4,
          5, 6, 7, 9}
-    }; 
+    };
 //     DBGMSG("level = %d, %d\n", aux_element.level, max_refinement_level_);
  
     ASSERT_DBG(dim == aux_element.nodes.size()-1);
@@ -459,7 +496,6 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
             min_diagonal = d;
             diagonal = 2;
         }
-        
     }
     
     for(unsigned int i=0; i < n_subelements; i++)
@@ -474,7 +510,6 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
             unsigned int conn_id = (n_old_nodes)*i + j;
             sub_ele.nodes[j] = nodes[conn[dim+diagonal][conn_id]];
         }
-        
         refine_aux_element<dim>(sub_ele, refinement, ele_acc);
     }
 }
