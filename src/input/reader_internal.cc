@@ -20,6 +20,7 @@
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
+#include "input/csv_tokenizer.hh"
 
 namespace Input {
 
@@ -469,15 +470,25 @@ std::string ReaderInternalBase::get_included_file(PathBase &p)
 ReaderInternal::ReaderInternal()
 {}
 
+StorageBase * ReaderInternal::read_storage(PathBase &p, const Type::TypeBase *type)
+{
+	return this->make_storage(p, type);
+}
+
 StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Array *array)
 {
 	int arr_size;
 	if ( (arr_size = p.get_array_size()) != -1 ) {
 		return this->make_array_storage(p, array, arr_size);
+	} else if (p.get_record_tag() == "include_csv") {
+		ReaderInternalCsvInclude reader_csv;
+		return reader_csv.read_storage(p, array);
 	} else {
-		// TODO
-		return NULL;
+		ReaderInternalTranspose reader_transpose;
+		return reader_transpose.read_storage(p, array);
 	}
+
+	return NULL;
 }
 
 StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Selection *selection)
@@ -547,7 +558,68 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::String *
  */
 
 ReaderInternalTranspose::ReaderInternalTranspose()
+: transpose_index_(0)
 {}
+
+StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Array *array)
+{
+	const Type::TypeBase &sub_type = array->get_sub_type();
+	StorageBase *first_item_storage;
+	try {
+		first_item_storage = make_storage(p, &sub_type);
+	} catch (ReaderToStorage::ExcInputError &e) {
+		if ( !array->match_size(1) ) {
+			e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
+		}
+		e << ReaderToStorage::EI_TransposeIndex(transpose_index_);
+		e << ReaderToStorage::EI_TransposeAddress(p.as_string());
+		throw;
+	}
+
+	// automatic conversion to array with one element
+	if (transpose_array_sizes_.size() == 0) {
+		return make_autoconversion_array_storage(p, array, first_item_storage);
+	} else {
+
+		// check sizes of arrays stored in transpose_array_sizes_
+		transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
+									  transpose_array_sizes_.end() );
+		if (transpose_array_sizes_.size() == 1) {
+			unsigned int sizes = transpose_array_sizes_[0]; // sizes of transposed
+
+			// array size out of bounds
+			if ( !array->match_size( sizes ) ) {
+				stringstream ss;
+				ss << sizes;
+				THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Result of transpose auto-conversion do not fit the size " + ss.str() + " of the Array.")
+						<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+			}
+
+			// create storage of array
+			StorageArray *storage_array = new StorageArray(sizes);
+			storage_array->new_item(0, first_item_storage);
+			if (sizes>1) {
+				++transpose_index_;
+				while (transpose_index_ < sizes) {
+					try {
+						storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
+					} catch (ReaderToStorage::ExcInputError &e) {
+						e << ReaderToStorage::EI_TransposeIndex(transpose_index_);
+						e << ReaderToStorage::EI_TransposeAddress(p.as_string());
+						throw;
+					}
+					++transpose_index_;
+				}
+			}
+
+			return storage_array;
+		} else {
+			THROW( ReaderToStorage::ExcInputError()
+					<< ReaderToStorage::EI_Specification("Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'")
+					<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+		}
+	}
+}
 
 StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Array *array)
 {
@@ -643,8 +715,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 StorageBase * ReaderInternalTranspose::make_transposed_storage(PathBase &p, const Type::TypeBase *type) {
 	ASSERT(p.is_array_type()).error();
 
-	// TODO
-	/*int arr_size = p.get_array_size();
+	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
 		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Empty array during transpose auto-conversion.")
 			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(type->desc()) );
@@ -654,7 +725,7 @@ StorageBase * ReaderInternalTranspose::make_transposed_storage(PathBase &p, cons
 		StorageBase *storage = make_storage(p, type);
 		p.up();
 		return storage;
-	}*/
+	}
 
 	return NULL;
 }
@@ -686,6 +757,175 @@ StorageBase * ReaderInternalTranspose::make_autoconversion_array_storage(PathBas
 ReaderInternalCsvInclude::ReaderInternalCsvInclude()
 {}
 
+StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Array *array)
+{
+	if ( p.is_record_type() ) { // sub-type must be record type
+		// load path to CSV file
+		std::string included_file;
+        if ( p.down("file") ) {
+       		included_file = get_included_file(p);
+            p.up();
+        } else {
+    	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing key 'file' defines including input file.")
+                               << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+        }
+
+        // number of head lines to skip
+        unsigned int n_head_lines = 0;
+        if ( p.down("n_head_lines") ) {
+        	try {
+        		n_head_lines = p.get_int_value();
+        	}
+			catch (ReaderToStorage::ExcInputError & e) {
+				e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
+				e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+				e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
+				e << ReaderToStorage::EI_InputType("number of lines to skip");
+				throw;
+			}
+        	p.up();
+        }
+
+        // open CSV file, get number of lines, skip head lines
+        FilePath fp((included_file), FilePath::input_file);
+        CSVTokenizer tok( fp );
+
+        const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
+        StorageBase *item_storage; // storage of sub-type record of included array
+        csv_storage_indexes_.clear();
+        csv_columns_map_.clear();
+        if ( p.down("format") ) {
+			try {
+				csv_subtree_depth_ = p.path_.size();
+				item_storage = make_storage(p, &sub_type);
+			} catch (ReaderToStorage::ExcMultipleDefinitionCsvColumn &e) {
+				e << ReaderToStorage::EI_File(tok.f_name());
+				throw;
+			}
+            p.up();
+        } else {
+    	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
+                               << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+        }
+        ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
+
+        // get value of maximal column index in map
+        map<unsigned int, IncludeCsvData>::iterator it;
+        it = csv_columns_map_.end(); --it;
+        unsigned int max_column_index = it->first;
+
+        unsigned int n_lines = tok.get_n_lines() - n_head_lines;
+        tok.skip_header(n_head_lines);
+        StorageArray *storage_array = new StorageArray(n_lines);
+        std::set<unsigned int> unused_columns;
+        for( unsigned int arr_item=0; arr_item < n_lines; ++arr_item) {
+        	unsigned int i_col;
+        	tok.next_line();
+        	for (i_col=0; !tok.eol(); ++i_col, ++tok) {
+        		it = csv_columns_map_.find(i_col);
+        		if (it != csv_columns_map_.end()) {
+        			switch (it->second.data_type) {
+						case IncludeDataTypes::type_int: {
+							int val;
+							try {
+								val = tok.get_int_val();
+							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
+								e << ReaderToStorage::EI_Specification("Wrong integer value");
+								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+								throw;
+							}
+
+							const Type::Integer *int_type = static_cast<const Type::Integer *>(it->second.type);
+							if ( !int_type->match(val) ) {
+								THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Integer value out of bounds")
+										<< ReaderToStorage::EI_TokenizerMsg(tok.position_msg()) << ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+							}
+							set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
+							break;
+						}
+						case IncludeDataTypes::type_double: {
+							double val;
+							try {
+								val = tok.get_double_val();
+							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
+								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+								throw;
+							}
+
+							const Type::Double *double_type = static_cast<const Type::Double *>(it->second.type);
+							if ( !double_type->match(val) ) {
+								THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Double value out of bounds")
+										<< ReaderToStorage::EI_TokenizerMsg(tok.position_msg()) << ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+							}
+							set_storage_from_csv( i_col, item_storage, new StorageDouble(val) );
+							break;
+						}
+						case IncludeDataTypes::type_bool: {
+							int val;
+							try {
+								val = tok.get_int_val();
+							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
+								e << ReaderToStorage::EI_Specification("Wrong boolean value");
+								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+								throw;
+							}
+							set_storage_from_csv( i_col, item_storage, new StorageBool(val) );
+							break;
+						}
+						case IncludeDataTypes::type_string: {
+							try {
+								set_storage_from_csv( i_col, item_storage, new StorageString(tok.get_string_val()) );
+							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
+								e << ReaderToStorage::EI_Specification("Wrong string value");
+								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+								throw;
+							}
+							break;
+						}
+						case IncludeDataTypes::type_sel: {
+							const Type::Selection *selection = static_cast<const Type::Selection *>(it->second.type);
+							try {
+								std::string item_name = tok.get_string_val();
+								int val = selection->name_to_int( item_name );
+								set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
+							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
+								e << ReaderToStorage::EI_Specification("Wrong selection value");
+								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+								throw;
+							} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+								THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Wrong selection value")
+										<< ReaderToStorage::EI_TokenizerMsg(tok.position_msg()) << ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+							}
+							break;
+						}
+        			}
+        		} else {
+        			// add index of unused column
+        			unused_columns.insert(i_col);
+        		}
+        	}
+    		if ( max_column_index > (i_col-1) ) {
+				THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Count of columns in CSV file is less than expected index, defined on input.")
+								   << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+    		}
+            storage_array->new_item(arr_item, item_storage->deep_copy() );
+        }
+
+        if (unused_columns.size()) { // print warning with indexes of unused columns
+        	stringstream ss;
+        	for (std::set<unsigned int>::iterator it=unused_columns.begin(); it!=unused_columns.end(); ++it)
+        		ss << (*it) << " ";
+            WarningOut().fmt("Unused columns: {}\nin imported CSV input file: {}\n", ss.str(), tok.f_name());
+        }
+        return storage_array;
+
+	} else {
+	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Invalid definition of CSV include.")
+                           << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+	}
+	return NULL;
+}
+
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Array *array)
 {
 	THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Array type in CSV-included part of IST is forbidden!\n")
@@ -698,8 +938,8 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	const Type::Integer *format_int = new Type::Integer(0);
 	std::int64_t pos = read_int_value(p, format_int);
 
-	ReaderToStorage::IncludeCsvData include_data;
-	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_sel;
+	IncludeCsvData include_data;
+	include_data.data_type = IncludeDataTypes::type_sel;
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = selection;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
@@ -717,8 +957,8 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	const Type::Integer *format_int = new Type::Integer(0);
 	std::int64_t pos = read_int_value(p, format_int);
 
-	ReaderToStorage::IncludeCsvData include_data;
-	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_bool;
+	IncludeCsvData include_data;
+	include_data.data_type = IncludeDataTypes::type_bool;
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = bool_type;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
@@ -737,8 +977,8 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	const Type::Integer *format_int = new Type::Integer(0);
 	std::int64_t value = read_int_value(p, format_int);
 
-	ReaderToStorage::IncludeCsvData include_data;
-	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_int;
+	IncludeCsvData include_data;
+	include_data.data_type = IncludeDataTypes::type_int;
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = int_type;
 	if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
@@ -757,8 +997,8 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	const Type::Integer *format_int = new Type::Integer(0);
 	std::int64_t pos = read_int_value(p, format_int);
 
-	ReaderToStorage::IncludeCsvData include_data;
-	include_data.data_type = ReaderToStorage::IncludeDataTypes::type_double;
+	IncludeCsvData include_data;
+	include_data.data_type = IncludeDataTypes::type_double;
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = double_type;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
@@ -778,8 +1018,8 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 		const Type::Integer *format_int = new Type::Integer(0);
 		std::int64_t pos = read_int_value(p, format_int);
 
-		ReaderToStorage::IncludeCsvData include_data;
-		include_data.data_type = ReaderToStorage::IncludeDataTypes::type_string;
+		IncludeCsvData include_data;
+		include_data.data_type = IncludeDataTypes::type_string;
 		include_data.storage_indexes = create_indexes_vector(p);
 		include_data.type = string_type;
 		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
@@ -805,6 +1045,17 @@ vector<unsigned int> ReaderInternalCsvInclude::create_indexes_vector(PathBase &p
 		csv_storage_indexes[i_target] = p.path_[i_source].first;
 	}
 	return csv_storage_indexes;
+}
+
+void ReaderInternalCsvInclude::set_storage_from_csv(unsigned int column_index, StorageBase * item_storage, StorageBase * new_storage)
+{
+	map<unsigned int, IncludeCsvData>::iterator it = csv_columns_map_.find(column_index);
+	ASSERT(it!=csv_columns_map_.end()).error();
+
+	unsigned int i;
+	StorageBase *loop_storage = item_storage;
+	for (i=0; i<it->second.storage_indexes.size()-1; ++i) loop_storage = loop_storage->get_item( it->second.storage_indexes[i] );
+	loop_storage->set_item( it->second.storage_indexes[i], new_storage );
 }
 
 } // namespace Input
