@@ -26,6 +26,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/csv_tokenizer.hh"
+#include "input/reader_internal.hh"
 
 
 namespace Input {
@@ -111,7 +112,8 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 
     root_type_ = &root_type;
 	try {
-	    storage_ = make_storage(*root_path_ptr, root_type_);
+		ReaderInternal ri;
+	    storage_ = ri.read_storage(*root_path_ptr, root_type_);
 	} catch (ExcInputError &e) {
 		if (format == FileFormat::format_JSON) {
 			e << EI_Format("JSON");

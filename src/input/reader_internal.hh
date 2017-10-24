@@ -89,6 +89,9 @@ public:
 	/// Constructor
 	ReaderInternal();
 
+	/// Create storage of given @p type.
+    StorageBase * read_storage(PathBase &p, const Type::TypeBase *type);
+
 protected:
     StorageBase * make_sub_storage(PathBase &p, const Type::Array *array) override;           ///< Create storage of Type::Array type
     StorageBase * make_sub_storage(PathBase &p, const Type::Selection *selection) override;   ///< Create storage of Type::Selection type
@@ -105,6 +108,9 @@ public:
 	/// Constructor
 	ReaderInternalTranspose();
 
+	/// Create storage of given @p type.
+    StorageBase * read_storage(PathBase &p, const Type::Array *array);
+
 protected:
     StorageBase * make_sub_storage(PathBase &p, const Type::Array *array) override;           ///< Create storage of Type::Array type
     StorageBase * make_sub_storage(PathBase &p, const Type::Selection *selection) override;   ///< Create storage of Type::Selection type
@@ -119,6 +125,12 @@ protected:
     /// Apply conversion to one element storage of Type::Array type
     StorageBase * make_autoconversion_array_storage(PathBase &p, const Type::Array *array, StorageBase *item);
 
+    /// Index of processed item in transposed part of input tree.
+    unsigned int transpose_index_;
+
+    /// Helper vector what allows check sizes of all transposed Arrays.
+    vector<unsigned int> transpose_array_sizes_;
+
 };
 
 
@@ -127,7 +139,22 @@ public:
 	/// Constructor
 	ReaderInternalCsvInclude();
 
+	/// Create storage of given @p type.
+    StorageBase * read_storage(PathBase &p, const Type::Array *array);
+
 protected:
+    /// List of data types, used for mapping columns in CSV include.
+    typedef enum {
+    	type_int, type_double, type_bool, type_string, type_sel
+    } IncludeDataTypes;
+
+    /// Data of one column of including CSV file.
+    struct IncludeCsvData {
+    	IncludeDataTypes data_type;
+    	vector<unsigned int> storage_indexes;
+    	const Type::TypeBase *type;
+    };
+
     StorageBase * make_sub_storage(PathBase &p, const Type::Array *array) override;           ///< Create storage of Type::Array type
     StorageBase * make_sub_storage(PathBase &p, const Type::Selection *selection) override;   ///< Create storage of Type::Selection type
     StorageBase * make_sub_storage(PathBase &p, const Type::Bool *bool_type) override;        ///< Create storage of Type::Bool type
@@ -138,6 +165,9 @@ protected:
     /// Create vector which contains actual indexes of subtree imported in CSV file.
     vector<unsigned int> create_indexes_vector(PathBase &p);
 
+    /// Set storage of simple input type with value given from CSV file.
+    void set_storage_from_csv(unsigned int column_index, StorageBase * item_storage, StorageBase * new_storage);
+
     /// Depth of CSV included subtree
     unsigned int csv_subtree_depth_;
 
@@ -145,7 +175,7 @@ protected:
     vector<unsigned int> csv_storage_indexes_;
 
     /// Map of columns in CSV file to storage of subtree
-    map<unsigned int, ReaderToStorage::IncludeCsvData> csv_columns_map_;
+    map<unsigned int, IncludeCsvData> csv_columns_map_;
 
 };
 
