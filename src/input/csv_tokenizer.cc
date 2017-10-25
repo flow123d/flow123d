@@ -16,7 +16,7 @@
  */
 
 #include "input/csv_tokenizer.hh"
-#include "input/reader_to_storage.hh"
+#include "input/reader_internal.hh"
 #include <boost/lexical_cast.hpp>
 
 using namespace boost;
@@ -61,7 +61,7 @@ int CSVTokenizer::get_int_val()
 	try {
 		return lexical_cast<int>( *(*this) );
 	} catch (bad_lexical_cast &) {
-		THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_TokenizerMsg(this->position_msg()) );
+		THROW( ReaderInternalBase::ExcWrongCsvFormat() << ReaderInternalBase::EI_TokenizerMsg(this->position_msg()) );
 	}
 }
 
@@ -71,8 +71,8 @@ double CSVTokenizer::get_double_val()
 	try {
 		return lexical_cast<double>( *(*this) );
 	} catch (bad_lexical_cast &) {
-		THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Wrong double value")
-				<< ReaderToStorage::EI_TokenizerMsg(this->position_msg()) );
+		THROW( ReaderInternalBase::ExcWrongCsvFormat() << ReaderInternalBase::EI_Specification("Wrong double value")
+				<< ReaderInternalBase::EI_TokenizerMsg(this->position_msg()) );
 	}
 }
 
@@ -82,6 +82,6 @@ std::string CSVTokenizer::get_string_val()
 	try {
 		return *(*this);
 	} catch (bad_lexical_cast &) {
-		THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_TokenizerMsg(this->position_msg()) );
+		THROW( ReaderInternalBase::ExcWrongCsvFormat() << ReaderInternalBase::EI_TokenizerMsg(this->position_msg()) );
 	}
 }

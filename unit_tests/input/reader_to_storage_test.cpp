@@ -16,6 +16,7 @@
 
 
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal.hh"
 #include "input/accessors.hh"
 
 using namespace std;
@@ -53,15 +54,15 @@ TEST_F(InputReaderToStorageTest, Integer) {
     }
     {
         stringstream ss("5000000000");
-        EXPECT_THROW_WHAT( {read_stream(ss, any_int);} , ExcInputError, "Value out of bounds.");
+        EXPECT_THROW_WHAT( {read_stream(ss, any_int);} , ReaderInternalBase::ExcInputError, "Value out of bounds.");
     }
     {
         stringstream ss("0");
-        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "Value out of bounds.");
+        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ReaderInternalBase::ExcInputError, "Value out of bounds.");
     }
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ExcInputError, "The value should be 'JSON int', but we found.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, int_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON int', but we found.* 'JSON object'");
     }
 }
 
@@ -93,12 +94,12 @@ TEST_F(InputReaderToStorageTest, Double) {
 
     {
         stringstream ss("0");
-        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ExcInputError, "Value out of bounds.");
+        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ReaderInternalBase::ExcInputError, "Value out of bounds.");
     }
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, dbl_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 }
 
@@ -119,12 +120,12 @@ TEST_F(InputReaderToStorageTest, Selection) {
 
     {
         stringstream ss("\"red\"");
-        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ExcInputError, "Wrong value 'red' of the Selection.");
+        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ReaderInternalBase::ExcInputError, "Wrong value 'red' of the Selection.");
     }
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, sel_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
     }
 }
 
@@ -141,7 +142,7 @@ TEST_F(InputReaderToStorageTest, String) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, str_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON string', but we found:.* 'JSON object'");
     }
 }
 
@@ -158,7 +159,7 @@ TEST_F(InputReaderToStorageTest, Bool) {
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ExcInputError, "The value should be 'JSON bool', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, bool_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON bool', but we found:.* 'JSON object'");
     }
 }
 
@@ -196,27 +197,27 @@ TEST_F(InputReaderToStorageTest, Array) {
 
     {  //JSON format
         stringstream ss("[ 3.2 ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Do not fit the size 1 of the Array.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "Do not fit the size 1 of the Array.");
     }
 
     {  //YAML format
         stringstream ss("- 3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ExcInputError, "Do not fit the size 1 of the Array.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type, FileFormat::format_YAML);} , ReaderInternalBase::ExcInputError, "Do not fit the size 1 of the Array.");
     }
 
     {
         stringstream ss("{}");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "The value should be 'JSON array', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON array', but we found:.* 'JSON object'");
     }
 
     {
         stringstream ss("[ 3.2, {} ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 
     {
         stringstream ss("[ 3.0, 3.9 ]");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ExcInputError, "Value out of bounds.");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);} , ReaderInternalBase::ExcInputError, "Value out of bounds.");
     }
 
     // test automatic conversion
@@ -230,13 +231,13 @@ TEST_F(InputReaderToStorageTest, Array) {
         EXPECT_EQ(3.2, storage_->get_item(0)->get_double() );
 
         stringstream ss1("{ key=3.2}");
-        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ExcInputError , "The value should be 'JSON real', but we found:.* 'JSON object'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, darr_type);}, ReaderInternalBase::ExcInputError , "The value should be 'JSON real', but we found:.* 'JSON object'");
     }
 
     // test auto conversion failed
     {
         stringstream ss("3.2");
-        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ExcInputError , "conversion to the single element array not allowed. Require type: 'JSON array'.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss, darr_type);}, ReaderInternalBase::ExcInputError , "conversion to the single element array not allowed. Require type: 'JSON array'.* 'JSON real'");
     }
 }
 
@@ -272,22 +273,22 @@ TEST_F(InputReaderToStorageTest, Record) {
 
     { // JSON format
         stringstream ss("{ str_key=\"ahoj\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Missing obligatory key 'int_key'.");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ReaderInternalBase::ExcInputError, "Missing obligatory key 'int_key'.");
     }
 
     { // YAML format
         stringstream ss("str_key: ahoj}");
-        EXPECT_THROW_WHAT( {read_stream(ss, rec_type, FileFormat::format_YAML);} , ExcInputError, "Missing obligatory key 'int_key'.");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type, FileFormat::format_YAML);} , ReaderInternalBase::ExcInputError, "Missing obligatory key 'int_key'.");
     }
 
     {
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ReaderInternalBase::ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
     }
 
     {
         stringstream ss("{ int_key=6 }");
-        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ExcInputError, "Value out of bounds.");
+        EXPECT_THROW_WHAT( {read_stream(ss, rec_type);} , ReaderInternalBase::ExcInputError, "Value out of bounds.");
     }
 
     // test auto conversion
@@ -309,7 +310,7 @@ TEST_F(InputReaderToStorageTest, Record) {
         EXPECT_EQ(123, storage_->get_item(2)->get_int() );
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcAutomaticConversionError , "The value should be 'JSON int', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ReaderInternalBase::ExcAutomaticConversionError , "The value should be 'JSON int', but we found:.* 'JSON real'");
     }
 
     {
@@ -318,7 +319,7 @@ TEST_F(InputReaderToStorageTest, Record) {
         sub_rec.finish();
 
         stringstream ss1("1.23");
-        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ExcInputError , "The value should be 'JSON object', but we found:.* 'JSON real'");
+        EXPECT_THROW_WHAT( {read_stream(ss1, sub_rec);}, ReaderInternalBase::ExcInputError , "The value should be 'JSON object', but we found:.* 'JSON real'");
     }
 
     // Test automatic conversion from record
@@ -472,25 +473,25 @@ TEST_F(InputReaderToStorageTest, AbstractRec) {
 
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
 
     }
 
     {   // Missing TYPE
         stringstream ss("{ c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Can not determine type of the Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Abstract.");
 
     }
 
     {   // Wrong value of TYPE
         stringstream ss("{ TYPE=\"EqTrans\", c_val=4, a_val=\"prime\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Wrong value 'EqTrans' of the Selection.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "Wrong value 'EqTrans' of the Selection.");
 
     }
 
     {   // Wrong derived value type
         stringstream ss("[]");
-        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ExcInputError, "Can not determine type of the Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, a_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Abstract.");
 
     }
 
@@ -637,12 +638,12 @@ TEST_F(InputReaderToStorageTest, AdHocAbstract) {
 
     {   // Missing TYPE
         stringstream ss("{ b_val=4, a_val=\"Some text\", mesh=\"some.msh\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "Can not determine type of the Abstract.");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ReaderInternalBase::ExcInputError, "Can not determine type of the Abstract.");
     }
 
     {   // Wrong derived value type
         stringstream ss("{ TYPE=\"EqTransp\", c_val=4, a_val=\"prime\" }");
-        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
+        EXPECT_THROW_WHAT( {read_stream(ss, ah_rec);}, ReaderInternalBase::ExcInputError, "The value should be 'JSON real', but we found:.* 'JSON string'");
     }
 }
 
@@ -726,7 +727,7 @@ TEST_F(InputReaderToStorageTest, Tuple) {
     { // YAML format, Tuple defined as single value throws exception
         stringstream ss("- 5");
         EXPECT_THROW_WHAT( { read_stream(ss, int_tuple_type, FileFormat::format_YAML); },
-        		ExcInputError, "Tuple with 2 obligatory keys" );
+        		ReaderInternalBase::ExcInputError, "Tuple with 2 obligatory keys" );
     }
 
 }
@@ -997,22 +998,22 @@ TEST_F(InputReaderToStorageTest, storage_transpose) {
 
     {   // Incorrect type - empty sub-array
     	stringstream ss("{ set={ one=[], two=[2,3], three={key_a=[\"A\",\"B\",\"C\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Empty array during transpose auto-conversion.");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ReaderInternalBase::ExcInputError, "Empty array during transpose auto-conversion.");
     }
 
     {   // Incorrect type - unequal sizes of sub-arrays
     	stringstream ss("{ set={ one=[1,2,3], two=[2,3], three={key_a=[\"A\",\"B\"], key_b=false}, four=[1.5, 2.5, 3.5], five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Unequal sizes of sub-arrays during transpose auto-conversion");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ReaderInternalBase::ExcInputError, "Unequal sizes of sub-arrays during transpose auto-conversion");
     }
 
     {   // Incorrect type - transposition of Record is not allowed
         stringstream ss("{ set={ one=[1,2], two=[2,3], three=[{key_a=\"A\", key_b=false}, {key_a=\"B\", key_b=false}], four=1.5, five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ReaderInternalBase::ExcInputError, "The value should be 'JSON object', but we found:.* 'JSON array'");
     }
 
     {   // Incorrect type - array is greater than size limit
         stringstream ss("{ set={ one=[1,2,3,4], two=[2,3], three={key_a=\"B\", key_b=false}, four=1.5, five=\"one\" }, default=true }");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ExcInputError, "Result of transpose auto-conversion do not fit the size 4 of the Array");
+        EXPECT_THROW_WHAT( {read_stream(ss, root_record);}, ReaderInternalBase::ExcInputError, "Result of transpose auto-conversion do not fit the size 4 of the Array");
     }
 
 }
@@ -1109,7 +1110,7 @@ TEST_F(InputReaderToStorageTest, Abstract_auto_conversion) {
 
     { // YAML format, DescendantC with autoconversion
         stringstream ss("pressure: !DescendantC 0.5");
-        EXPECT_THROW_WHAT( {read_stream(ss, root_rec, FileFormat::format_YAML);}, ExcInputError,
+        EXPECT_THROW_WHAT( {read_stream(ss, root_rec, FileFormat::format_YAML);}, ReaderInternalBase::ExcInputError,
         		"The value should be 'YAML map', but we found");
     }
 

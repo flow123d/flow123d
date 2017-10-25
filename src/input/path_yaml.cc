@@ -17,6 +17,7 @@
 
 #include "input/path_yaml.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal.hh"
 
 #include "system/global_defs.h"
 #include "system/system.hh"
@@ -90,10 +91,10 @@ bool PathYAML::get_bool_value() const {
 		try {
 			return head().as<bool>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return false;
 }
@@ -104,10 +105,10 @@ std::int64_t PathYAML::get_int_value() const {
 		try {
 			return head().as<std::int64_t>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return 0;
 }
@@ -118,10 +119,10 @@ double PathYAML::get_double_value() const {
 		try {
 			return head().as<double>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return 0.0;
 }
@@ -132,10 +133,10 @@ std::string PathYAML::get_string_value() const {
 		try {
 			return head().as<std::string>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return "";
 }

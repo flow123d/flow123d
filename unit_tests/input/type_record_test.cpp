@@ -12,6 +12,7 @@
 
 
 #include <input/type_record.hh>
+#include <input/reader_internal.hh>
 
 // Test of correct includes in type_record.hh
 TEST(InputTypeRecord, includes) {
@@ -192,7 +193,7 @@ using namespace Input::Type;
     	.declare_key("sub_rec_dflt", sub_rec, Default("123"), "")
 		.declare_key("sub_rec_dflt2", sub_rec, Default("2.3"), "")
     	.close();
-    EXPECT_THROW_WHAT( { record_record2.finish(); } , Input::ReaderToStorage::ExcAutomaticConversionError,
+    EXPECT_THROW_WHAT( { record_record2.finish(); } , Input::ReaderInternalBase::ExcAutomaticConversionError,
             "Error during automatic conversion of SubRecord record" );
 
 

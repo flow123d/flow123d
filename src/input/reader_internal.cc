@@ -98,8 +98,8 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 	if (record_name_from_tag == "include") {
 		return make_include_storage(p, record);
 	} else if (record_name_from_tag == "include_csv") {
-		THROW( ReaderToStorage::ExcForbiddenTag() << ReaderToStorage::EI_Tag("include_csv")
-			<< ReaderToStorage::EI_Specification("can be used only with arrays.") );
+		THROW( ExcForbiddenTag() << EI_Tag("include_csv")
+			<< EI_Specification("can be used only with arrays.") );
 	} else {
 		if ( record_name_from_tag != "" ) {
 			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
@@ -154,8 +154,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 	            } else {
 	                // key not on input
 	                if (it->default_.is_obligatory() ) {
-	                    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing obligatory key '"+ it->key_ +"'.")
-	                            << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(record->desc()) );
+	                	this->generate_input_error(p, record, "Missing obligatory key '"+ it->key_ +"'.", false);
 	                } else if (it->default_.has_value_at_declaration() ) {
 	                   storage_array->new_item(it->key_index,
 	                           make_storage_from_default( it->default_.value(), it->type_ ) );
@@ -203,12 +202,9 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Tupl
                 // key not on input
                 if (it->default_.is_obligatory() ) {
                 	stringstream ss;
-                	ss << tuple->obligatory_keys_count();
-                    THROW( ReaderToStorage::ExcInputError()
-                    		<< ReaderToStorage::EI_Specification("Too small size of '" + p.get_node_type(ValueTypes::array_type) + "' defining Tuple with "
-                    							+ ss.str() + " obligatory keys.")
-                            << ReaderToStorage::EI_ErrorAddress(p.as_string())
-							<< ReaderToStorage::EI_InputType(tuple->desc()) );
+                	ss << "Too small size of '" << p.get_node_type(ValueTypes::array_type) << "' defining Tuple with "
+                			<< tuple->obligatory_keys_count() << " obligatory keys.";
+                	this->generate_input_error(p, tuple, ss.str(), false);
                 } else if (it->default_.has_value_at_declaration() ) {
                    storage_array->new_item(it->key_index,
                            make_storage_from_default( it->default_.value(), it->type_ ) );
@@ -236,23 +232,18 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abst
 	string record_name = p.get_record_tag();
 	if (record_name == "") {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
-			THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Can not determine type of the Abstract.")
-					<< ReaderToStorage::EI_ErrorAddress(p.as_string())
-					<< ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
-					<< ReaderToStorage::EI_InputType(abstr_rec->desc()) );
+			this->generate_input_error(p, abstr_rec, "Can not determine type of the Abstract.", true);
 		} else { // auto conversion
 			return abstract_automatic_conversion(p, abstr_rec);
 		}
 	} else if ((record_name == "include") || (record_name == "include_csv")) {
-		THROW( ReaderToStorage::ExcForbiddenTag() << ReaderToStorage::EI_Tag(record_name)
-			<< ReaderToStorage::EI_Specification("can't be used with abstract type.") );
+		THROW( ExcForbiddenTag() << EI_Tag(record_name)
+			<< EI_Specification("can't be used with abstract type.") );
 	} else {
 		try {
 			return make_sub_storage(p, &( abstr_rec->get_descendant(record_name) ) );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Wrong value '" + record_name + "' of the Selection.")
-					<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( "" )
-					<< ReaderToStorage::EI_InputType(abstr_rec->get_type_selection().desc()) );
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_name + "' of the Selection.", false);
 		}
 	}
 	return NULL;
@@ -280,16 +271,13 @@ StorageBase * ReaderInternalBase::record_automatic_conversion(PathBase &p, const
 			}
 
 			return storage_array;
-	    } catch (ReaderToStorage::ExcInputError &e ) {
-	        THROW( ReaderToStorage::ExcAutomaticConversionError() << ReaderToStorage::EI_RecordName(record->type_name())
-	        	<< ReaderToStorage::EI_InputErrorMessage(e.what()) );
+	    } catch (ExcInputError &e ) {
+	        THROW( ExcAutomaticConversionError() << EI_RecordName(record->type_name())
+	        	<< EI_InputErrorMessage(e.what()) );
 	    }
 
 	} else {
-	    THROW( ReaderToStorage::ExcInputError()
-	    		<< ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ")
-	            << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
-				<< ReaderToStorage::EI_InputType( record->desc()) );
+		this->generate_input_error(p, record, "The value should be '" + p.get_node_type(ValueTypes::obj_type) + "', but we found: ", true);
 	}
 
 	return NULL;
@@ -299,11 +287,8 @@ StorageBase * ReaderInternalBase::abstract_automatic_conversion(PathBase &p, con
 {
     // perform automatic conversion
     const Type::Record *default_child = abstr_rec->get_default_descendant();
-    if (! default_child) THROW(ReaderToStorage::ExcInputError()
-    		<< ReaderToStorage::EI_Specification("Auto conversion of Abstract not allowed.\n")
-    		<< ReaderToStorage::EI_ErrorAddress(p.as_string())
-    		<< ReaderToStorage::EI_InputType(abstr_rec->desc())
-    		);
+    if (! default_child)
+    	this->generate_input_error(p, abstr_rec, "Auto conversion of Abstract not allowed.\n", false);
     return make_sub_storage(p, default_child );
 }
 
@@ -324,10 +309,8 @@ StorageBase * ReaderInternalBase::make_array_storage(PathBase &p, const Type::Ar
 
     } else {
     	stringstream ss;
-    	ss << arr_size;
-        THROW( ReaderToStorage::ExcInputError()
-                << ReaderToStorage::EI_Specification("Do not fit the size " + ss.str() + " of the Array.")
-                << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+    	ss << "Do not fit the size " << arr_size << " of the Array.";
+    	this->generate_input_error(p, array, ss.str(), false);
     }
 }
 
@@ -359,8 +342,7 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
         	included_path = get_included_file(p);
             p.up();
         } else {
-    	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing key 'file' defines including input file.")
-                               << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(record->desc()) );
+        	this->generate_input_error(p, record, "Missing key 'file' defines including input file.", false);
         }
     } else {
     	// include is set only with name of file (similarly as auto conversion)
@@ -372,10 +354,10 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
     try {
     	ReaderToStorage include_reader(fpath, *(const_cast<Type::Record *>(record)) );
         return include_reader.get_storage();
-    } catch (ReaderToStorage::ExcInputError &e ) {
-      e << ReaderToStorage::EI_File(fpath); throw;
-    } catch (ReaderToStorage::ExcNotJSONFormat &e) {
-      e << ReaderToStorage::EI_File(fpath); throw;
+    } catch (ExcInputError &e ) {
+      e << EI_File(fpath); throw;
+    } catch (ExcNotJSONFormat &e) {
+      e << EI_File(fpath); throw;
     }
 
 	return NULL;
@@ -387,11 +369,9 @@ bool ReaderInternalBase::read_bool_value(PathBase &p, const Type::TypeBase *type
 	try {
 		value = p.get_bool_value();
 	}
-	catch (ReaderToStorage::ExcInputError & e) {
-		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::bool_type) + "', but we found: ");
-		e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-		e << ReaderToStorage::EI_ErrorAddress(p.as_string());
-		e << ReaderToStorage::EI_InputType(type->desc());
+	catch (ExcInputError & e) {
+		complete_input_error(e, p, ValueTypes::bool_type);
+		e << EI_InputType(type->desc());
 		throw;
 	}
 
@@ -404,11 +384,9 @@ std::int64_t ReaderInternalBase::read_int_value(PathBase &p, const Type::TypeBas
 	try {
 		value = p.get_int_value();
 	}
-	catch (ReaderToStorage::ExcInputError & e) {
-		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
-		e << ReaderToStorage::EI_ErrorAddress(p.as_string());
-		e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-		e << ReaderToStorage::EI_InputType(type->desc());
+	catch (ExcInputError & e) {
+		complete_input_error(e, p, ValueTypes::int_type);
+		e << EI_InputType(type->desc());
 		throw;
 	}
 
@@ -421,11 +399,9 @@ double ReaderInternalBase::read_double_value(PathBase &p, const Type::TypeBase *
 	try {
 		value = p.get_double_value();
 	}
-	catch (ReaderToStorage::ExcInputError & e) {
-		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::real_type) + "', but we found: ");
-		e << ReaderToStorage::EI_ErrorAddress(p.as_string());
-		e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-		e << ReaderToStorage::EI_InputType(type->desc());
+	catch (ExcInputError & e) {
+		complete_input_error(e, p, ValueTypes::real_type);
+		e << EI_InputType(type->desc());
 		throw;
 	}
 
@@ -437,11 +413,9 @@ std::string ReaderInternalBase::read_string_value(PathBase &p, const Type::TypeB
 	string value;
 	try {
 		value = p.get_string_value();
-	} catch (ReaderToStorage::ExcInputError & e) {
-		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
-        e << ReaderToStorage::EI_ErrorAddress(p.as_string());
-        e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-		e << ReaderToStorage::EI_InputType(type->desc());
+	} catch (ExcInputError & e) {
+		complete_input_error(e, p, ValueTypes::str_type);
+		e << EI_InputType(type->desc());
 		throw;
 	}
 
@@ -453,13 +427,28 @@ std::string ReaderInternalBase::get_included_file(PathBase &p)
 	try {
 		return p.get_string_value();
 	}
-	catch (ReaderToStorage::ExcInputError & e) {
-		e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::str_type) + "', but we found: ");
-        e << ReaderToStorage::EI_ErrorAddress(p.as_string());
-        e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-		e << ReaderToStorage::EI_InputType("path to included file");
+	catch (ExcInputError & e) {
+		complete_input_error(e, p, ValueTypes::str_type);
+		e << EI_InputType("path to included file");
 		throw;
 	}
+}
+
+void ReaderInternalBase::generate_input_error(PathBase &p, const Type::TypeBase *type, std::string spec, bool add_type)
+{
+	if (add_type)
+		THROW( ExcInputError() << EI_Specification(spec) << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
+            << EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
+	else
+		THROW( ExcInputError() << EI_Specification(spec) << EI_JSON_Type( "" )
+            << EI_ErrorAddress(p.as_string()) << EI_InputType(type->desc()) );
+}
+
+void ReaderInternalBase::complete_input_error(ExcInputError & e, PathBase &p, ValueTypes value_type)
+{
+	e << EI_Specification("The value should be '" + p.get_node_type(value_type) + "', but we found: ");
+    e << EI_ErrorAddress(p.as_string());
+    e << EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
 }
 
 
@@ -487,8 +476,6 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Array *a
 		ReaderInternalTranspose reader_transpose;
 		return reader_transpose.read_storage(p, array);
 	}
-
-	return NULL;
 }
 
 StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Selection *selection)
@@ -498,9 +485,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Selectio
 		int value = selection->name_to_int( item_name );
 		return new StorageInt( value );
 	} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Wrong value '" + item_name + "' of the Selection.")
-				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( "" )
-				<< ReaderToStorage::EI_InputType(selection->desc()) );
+		this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
 	}
 
     return NULL;
@@ -519,8 +504,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Integer 
 	{
 		return new StorageInt( value );
 	} else {
-		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
-				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(int_type->desc()) );
+		this->generate_input_error(p, int_type, "Value out of bounds.", false);
 	}
 	return NULL;
 }
@@ -532,8 +516,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Double *
     if (double_type->match(value)) {
         return new StorageDouble( value );
     } else {
-        THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
-        		<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(double_type->desc()) );
+    	this->generate_input_error(p, double_type, "Value out of bounds.", false);
     }
 
     return NULL;
@@ -546,8 +529,8 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::String *
 	if (string_type->match(value))
 		return new StorageString( value );
 	else
-		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Output file can not be given by absolute path: '" + value + "'")
-						<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type("") << ReaderToStorage::EI_InputType(string_type->desc()) );
+		THROW( ExcInputError() << EI_Specification("Output file can not be given by absolute path: '" + value + "'")
+						<< EI_ErrorAddress(p.as_string()) << EI_JSON_Type("") << EI_InputType(string_type->desc()) );
 
 	return NULL;
 }
@@ -567,12 +550,12 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 	StorageBase *first_item_storage;
 	try {
 		first_item_storage = make_storage(p, &sub_type);
-	} catch (ReaderToStorage::ExcInputError &e) {
+	} catch (ExcInputError &e) {
 		if ( !array->match_size(1) ) {
-			e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
+			e << EI_Specification("The value should be '" + p.get_node_type(ValueTypes::array_type) + "', but we found: ");
 		}
-		e << ReaderToStorage::EI_TransposeIndex(transpose_index_);
-		e << ReaderToStorage::EI_TransposeAddress(p.as_string());
+		e << EI_TransposeIndex(transpose_index_);
+		e << EI_TransposeAddress(p.as_string());
 		throw;
 	}
 
@@ -590,9 +573,8 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 			// array size out of bounds
 			if ( !array->match_size( sizes ) ) {
 				stringstream ss;
-				ss << sizes;
-				THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Result of transpose auto-conversion do not fit the size " + ss.str() + " of the Array.")
-						<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+				ss << "Result of transpose auto-conversion do not fit the size " << sizes << " of the Array.";
+				this->generate_input_error(p, array, ss.str(), false);
 			}
 
 			// create storage of array
@@ -603,9 +585,9 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 				while (transpose_index_ < sizes) {
 					try {
 						storage_array->new_item(transpose_index_, make_storage(p, &sub_type));
-					} catch (ReaderToStorage::ExcInputError &e) {
-						e << ReaderToStorage::EI_TransposeIndex(transpose_index_);
-						e << ReaderToStorage::EI_TransposeAddress(p.as_string());
+					} catch (ExcInputError &e) {
+						e << EI_TransposeIndex(transpose_index_);
+						e << EI_TransposeAddress(p.as_string());
 						throw;
 					}
 					++transpose_index_;
@@ -614,11 +596,11 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 
 			return storage_array;
 		} else {
-			THROW( ReaderToStorage::ExcInputError()
-					<< ReaderToStorage::EI_Specification("Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'")
-					<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+			this->generate_input_error(p, array, "Unequal sizes of sub-arrays during transpose auto-conversion of '" + p.get_node_type(ValueTypes::array_type) + "'", false);
 		}
 	}
+
+	return NULL;
 }
 
 StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type::Array *array)
@@ -646,9 +628,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 			int value = selection->name_to_int( item_name );
 			return new StorageInt( value );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Wrong value '" + item_name + "' of the Selection.")
-					<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( "" )
-					<< ReaderToStorage::EI_InputType(selection->desc()) );
+			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
 		}
 	}
 
@@ -677,8 +657,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 	{
 		return new StorageInt( value );
 	} else {
-		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
-				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(int_type->desc()) );
+		this->generate_input_error(p, int_type, "Value out of bounds.", false);
 	}
 	return NULL;
 }
@@ -694,8 +673,7 @@ StorageBase * ReaderInternalTranspose::make_sub_storage(PathBase &p, const Type:
 	    if (double_type->match(value)) {
 	        return new StorageDouble( value );
 	    } else {
-	        THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Value out of bounds.")
-	        		<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(double_type->desc()) );
+	    	this->generate_input_error(p, double_type, "Value out of bounds.", false);
 	    }
 	}
 
@@ -717,8 +695,7 @@ StorageBase * ReaderInternalTranspose::make_transposed_storage(PathBase &p, cons
 
 	int arr_size = p.get_array_size();
 	if ( arr_size == 0 ) {
-		THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Empty array during transpose auto-conversion.")
-			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(type->desc()) );
+		this->generate_input_error(p, type, "Empty array during transpose auto-conversion.", false);
 	} else {
 		if (transpose_index_ == 0) transpose_array_sizes_.push_back( arr_size );
 		p.down(transpose_index_);
@@ -738,10 +715,7 @@ StorageBase * ReaderInternalTranspose::make_autoconversion_array_storage(PathBas
 
 		return storage_array;
 	} else {
-		THROW( ReaderToStorage::ExcInputError()
-				<< ReaderToStorage::EI_Specification("During transpose auto-conversion, the conversion to the single element array not allowed. Require type: '" + p.get_node_type(ValueTypes::array_type) + "'\nFound on input: ")
-				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) )
-				<< ReaderToStorage::EI_InputType(array->desc()) );
+		this->generate_input_error(p, array, "During transpose auto-conversion, the conversion to the single element array not allowed. Require type: '" + p.get_node_type(ValueTypes::array_type) + "'\nFound on input: ", true);
 	}
 
 	return NULL;
@@ -766,8 +740,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
        		included_file = get_included_file(p);
             p.up();
         } else {
-    	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing key 'file' defines including input file.")
-                               << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+        	this->generate_input_error(p, array, "Missing key 'file' defines including input file.", false);
         }
 
         // number of head lines to skip
@@ -776,11 +749,9 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         	try {
         		n_head_lines = p.get_int_value();
         	}
-			catch (ReaderToStorage::ExcInputError & e) {
-				e << ReaderToStorage::EI_Specification("The value should be '" + p.get_node_type(ValueTypes::int_type) + "', but we found: ");
-				e << ReaderToStorage::EI_ErrorAddress(p.as_string());
-				e << ReaderToStorage::EI_JSON_Type( p.get_node_type(p.get_node_type_index()) );
-				e << ReaderToStorage::EI_InputType("number of lines to skip");
+			catch (ExcInputError & e) {
+				complete_input_error(e, p, ValueTypes::int_type);
+				e << EI_InputType("number of lines to skip");
 				throw;
 			}
         	p.up();
@@ -792,22 +763,19 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 
         const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
         StorageBase *item_storage; // storage of sub-type record of included array
-        csv_storage_indexes_.clear();
         csv_columns_map_.clear();
         if ( p.down("format") ) {
 			try {
 				csv_subtree_depth_ = p.path_.size();
 				item_storage = make_storage(p, &sub_type);
-			} catch (ReaderToStorage::ExcMultipleDefinitionCsvColumn &e) {
-				e << ReaderToStorage::EI_File(tok.f_name());
+			} catch (ExcMultipleDefinitionCsvColumn &e) {
+				e << EI_File(tok.f_name());
 				throw;
 			}
             p.up();
         } else {
-    	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Missing key 'format' defines mapping column of CSV file to input subtree.")
-                               << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+        	this->generate_input_error(p, array, "Missing key 'format' defines mapping column of CSV file to input subtree.", false);
         }
-        ASSERT_EQ(csv_storage_indexes_.size(), 0).error();
 
         // get value of maximal column index in map
         map<unsigned int, IncludeCsvData>::iterator it;
@@ -829,16 +797,16 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 							int val;
 							try {
 								val = tok.get_int_val();
-							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
-								e << ReaderToStorage::EI_Specification("Wrong integer value");
-								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong integer value");
+								e << EI_ErrorAddress(p.as_string());
 								throw;
 							}
 
 							const Type::Integer *int_type = static_cast<const Type::Integer *>(it->second.type);
 							if ( !int_type->match(val) ) {
-								THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Integer value out of bounds")
-										<< ReaderToStorage::EI_TokenizerMsg(tok.position_msg()) << ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+								THROW( ExcWrongCsvFormat() << EI_Specification("Integer value out of bounds")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
 							}
 							set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
 							break;
@@ -847,15 +815,15 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 							double val;
 							try {
 								val = tok.get_double_val();
-							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
-								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_ErrorAddress(p.as_string());
 								throw;
 							}
 
 							const Type::Double *double_type = static_cast<const Type::Double *>(it->second.type);
 							if ( !double_type->match(val) ) {
-								THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Double value out of bounds")
-										<< ReaderToStorage::EI_TokenizerMsg(tok.position_msg()) << ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+								THROW( ExcWrongCsvFormat() << EI_Specification("Double value out of bounds")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
 							}
 							set_storage_from_csv( i_col, item_storage, new StorageDouble(val) );
 							break;
@@ -864,9 +832,9 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 							int val;
 							try {
 								val = tok.get_int_val();
-							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
-								e << ReaderToStorage::EI_Specification("Wrong boolean value");
-								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong boolean value");
+								e << EI_ErrorAddress(p.as_string());
 								throw;
 							}
 							set_storage_from_csv( i_col, item_storage, new StorageBool(val) );
@@ -875,9 +843,9 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 						case IncludeDataTypes::type_string: {
 							try {
 								set_storage_from_csv( i_col, item_storage, new StorageString(tok.get_string_val()) );
-							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
-								e << ReaderToStorage::EI_Specification("Wrong string value");
-								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong string value");
+								e << EI_ErrorAddress(p.as_string());
 								throw;
 							}
 							break;
@@ -888,13 +856,13 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 								std::string item_name = tok.get_string_val();
 								int val = selection->name_to_int( item_name );
 								set_storage_from_csv( i_col, item_storage, new StorageInt(val) );
-							} catch (ReaderToStorage::ExcWrongCsvFormat &e) {
-								e << ReaderToStorage::EI_Specification("Wrong selection value");
-								e << ReaderToStorage::EI_ErrorAddress(p.as_string());
+							} catch (ExcWrongCsvFormat &e) {
+								e << EI_Specification("Wrong selection value");
+								e << EI_ErrorAddress(p.as_string());
 								throw;
 							} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-								THROW( ReaderToStorage::ExcWrongCsvFormat() << ReaderToStorage::EI_Specification("Wrong selection value")
-										<< ReaderToStorage::EI_TokenizerMsg(tok.position_msg()) << ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+								THROW( ExcWrongCsvFormat() << EI_Specification("Wrong selection value")
+										<< EI_TokenizerMsg(tok.position_msg()) << EI_ErrorAddress(p.as_string()) );
 							}
 							break;
 						}
@@ -905,8 +873,7 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         		}
         	}
     		if ( max_column_index > (i_col-1) ) {
-				THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Count of columns in CSV file is less than expected index, defined on input.")
-								   << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+    			this->generate_input_error(p, array, "Count of columns in CSV file is less than expected index, defined on input.", false);
     		}
             storage_array->new_item(arr_item, item_storage->deep_copy() );
         }
@@ -920,16 +887,14 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         return storage_array;
 
 	} else {
-	    THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Invalid definition of CSV include.")
-                           << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+		this->generate_input_error(p, array, "Invalid definition of CSV include.", false);
 	}
 	return NULL;
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Array *array)
 {
-	THROW( ReaderToStorage::ExcInputError() << ReaderToStorage::EI_Specification("Array type in CSV-included part of IST is forbidden!\n")
-					   << ReaderToStorage::EI_ErrorAddress(p.as_string()) << ReaderToStorage::EI_InputType(array->desc()) );
+	this->generate_input_error(p, array, "Array type in CSV-included part of IST is forbidden!\n", false);
     return NULL;
 }
 
@@ -943,8 +908,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = selection;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
-			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 	} else {
 		csv_columns_map_[pos] = include_data;
 	}
@@ -962,8 +926,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = bool_type;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
-			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 	} else {
 		csv_columns_map_[pos] = include_data;
 	}
@@ -982,8 +945,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = int_type;
 	if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
-		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(value)
-			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(value) << EI_ErrorAddress(p.as_string()) );
 	} else {
 		csv_columns_map_[value] = include_data;
 	}
@@ -1002,8 +964,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 	include_data.storage_indexes = create_indexes_vector(p);
 	include_data.type = double_type;
 	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-		THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
-			<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 	} else {
 		csv_columns_map_[pos] = include_data;
 	}
@@ -1023,15 +984,14 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 		include_data.storage_indexes = create_indexes_vector(p);
 		include_data.type = string_type;
 		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-			THROW( ReaderToStorage::ExcMultipleDefinitionCsvColumn() << ReaderToStorage::EI_ColumnIndex(pos)
-				<< ReaderToStorage::EI_ErrorAddress(p.as_string()) );
+			THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
 		} else {
 			csv_columns_map_[pos] = include_data;
 		}
 		delete format_int;
 
 		return new StorageString("");
-	} catch (ReaderToStorage::ExcInputError & e) {
+	} catch (ExcInputError & e) {
 		// no error, string value is not forbidden in CSV include
 		return new StorageString( read_string_value(p, string_type) );
 	}

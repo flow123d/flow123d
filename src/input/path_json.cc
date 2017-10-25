@@ -17,6 +17,7 @@
 
 #include "input/path_json.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal.hh"
 #include "input/comment_filter.hh"
 #include "system/system.hh"
 
@@ -43,8 +44,8 @@ PathJSON::PathJSON(istream &in)
     try {
         json_spirit::read_or_throw( filter_in, *root_node_);
     } catch (json_spirit::Error_position &e ) {
-        THROW( ReaderToStorage::ExcNotJSONFormat() << ReaderToStorage::EI_JSONLine(e.line_) << ReaderToStorage::EI_JSONColumn(e.column_)
-        	<< ReaderToStorage::EI_JSONReason(e.reason_));
+        THROW( ReaderInternalBase::ExcNotJSONFormat() << ReaderInternalBase::EI_JSONLine(e.line_) << ReaderInternalBase::EI_JSONColumn(e.column_)
+        	<< ReaderInternalBase::EI_JSONReason(e.reason_));
     }
 
     nodes_.push_back( root_node_.get() );
@@ -200,7 +201,7 @@ bool PathJSON::get_bool_value() const {
     if (head()->type() == json_spirit::bool_type) {
         return head()->get_bool();
     } else {
-        THROW( ReaderToStorage::ExcInputError()  );
+        THROW( ReaderInternalBase::ExcInputError()  );
     }
 	return false;
 }
@@ -211,7 +212,7 @@ std::int64_t PathJSON::get_int_value() const {
     if (head()->type() == json_spirit::int_type) {
         return head()->get_int64();
     } else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
     }
 	return 0;
 }
@@ -224,7 +225,7 @@ double PathJSON::get_double_value() const {
          || value_type == json_spirit::int_type) {
         return head()->get_real();
     } else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
     }
 	return 0.0;
 }
@@ -235,7 +236,7 @@ std::string PathJSON::get_string_value() const {
     if (head()->type() == json_spirit::str_type) {
         return head()->get_str();
     } else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
     }
 	return "";
 }
