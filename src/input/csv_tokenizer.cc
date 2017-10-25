@@ -16,7 +16,7 @@
  */
 
 #include "input/csv_tokenizer.hh"
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 #include <boost/lexical_cast.hpp>
 
 using namespace boost;

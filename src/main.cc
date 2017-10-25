@@ -25,7 +25,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 
 #include <iostream>
 #include <fstream>

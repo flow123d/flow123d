@@ -15,7 +15,7 @@
 
 #include "input/comment_filter.hh"
 #include "input/reader_to_storage.hh"
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 
 using namespace std;
 

@@ -16,8 +16,7 @@
  */
 
 #include "input/path_json.hh"
-#include "input/reader_to_storage.hh"
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 #include "input/comment_filter.hh"
 #include "system/system.hh"
 
