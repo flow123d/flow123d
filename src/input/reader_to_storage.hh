@@ -79,46 +79,6 @@ typedef enum {
  */
 class ReaderToStorage {
 public:
-    /*
-     * Exceptions.
-     */
-    /// General exception during conversion from JSON tree to storage.
-    TYPEDEF_ERR_INFO(EI_InputType, string );
-    TYPEDEF_ERR_INFO(EI_File, const string);
-    TYPEDEF_ERR_INFO(EI_Specification, const string);
-    TYPEDEF_ERR_INFO(EI_Format, const string);
-    TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
-    TYPEDEF_ERR_INFO( EI_ErrorAddress, string);
-    TYPEDEF_ERR_INFO( EI_TransposeIndex, unsigned int);
-    TYPEDEF_ERR_INFO( EI_TransposeAddress, string);
-    DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
-                                            << EI_Specification::val << "\n"
-                                            << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"
-                                            << "Expected type:\n" << EI_InputType::val );
-
-
-    TYPEDEF_ERR_INFO( EI_JSONLine, unsigned int);
-    TYPEDEF_ERR_INFO( EI_JSONColumn, unsigned int);
-    TYPEDEF_ERR_INFO( EI_JSONReason, string);
-    DECLARE_INPUT_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at line "
-            << EI_JSONLine::val << " : col " << EI_JSONColumn::val
-            << " ; reason: " << EI_JSONReason::val << "\n" );
-
-    TYPEDEF_ERR_INFO( EI_InputErrorMessage, const string);
-    TYPEDEF_ERR_INFO( EI_RecordName, const string);
-    DECLARE_INPUT_EXCEPTION( ExcAutomaticConversionError, << "Error during automatic conversion of "
-    		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
-
-    TYPEDEF_ERR_INFO( EI_Tag, string);
-    DECLARE_INPUT_EXCEPTION( ExcForbiddenTag, << "Tag " << EI_Tag::qval << " " << EI_Specification::val << "\n" );
-
-	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
-    DECLARE_INPUT_EXCEPTION(ExcWrongCsvFormat, << EI_Specification::val << ",\n" << EI_TokenizerMsg::val << "\n" );
-
-	TYPEDEF_ERR_INFO(EI_ColumnIndex, unsigned int);
-    DECLARE_INPUT_EXCEPTION(ExcMultipleDefinitionCsvColumn, << "Multiple definition of column with index " << EI_ColumnIndex::qval
-    		<< " in included CSV file:\n" << EI_File::val << ",\n" );
-
 
     /**
      * @brief Read a storage from input stream.
@@ -155,25 +115,6 @@ public:
     void read_stream(istream &in, const Type::TypeBase &root_type, FileFormat format);
 
 protected:
-
-    /// Allow to sign reading the part of input file with atypical algorithm of reading.
-    typedef enum {
-    	none,         ///< Ordinary part of input.
-		transposed,   ///< Processing transposed part of input tree.
-		csv_include   ///< Processing part of input tree included in CSV file.
-    } TryRead;
-
-    /// List of data types, used for mapping columns in CSV include.
-    typedef enum {
-    	type_int, type_double, type_bool, type_string, type_sel
-    } IncludeDataTypes;
-
-    /// Data of one column of including CSV file.
-    struct IncludeCsvData {
-    	IncludeDataTypes data_type;
-    	vector<unsigned int> storage_indexes;
-    	const Type::TypeBase *type;
-    };
 
     /// Getter for root of the storage tree.
     StorageBase *get_storage();

@@ -42,6 +42,42 @@ using namespace std;
  */
 class ReaderInternalBase {
 public:
+	/*
+	 * Exceptions.
+	 */
+	TYPEDEF_ERR_INFO(EI_InputType, string );
+	TYPEDEF_ERR_INFO(EI_File, const string);
+	TYPEDEF_ERR_INFO(EI_Specification, const string);
+	TYPEDEF_ERR_INFO(EI_Format, const string);
+	TYPEDEF_ERR_INFO(EI_JSON_Type, const string);
+	TYPEDEF_ERR_INFO(EI_ErrorAddress, string);
+    TYPEDEF_ERR_INFO(EI_TransposeIndex, unsigned int);
+    TYPEDEF_ERR_INFO(EI_TransposeAddress, string);
+    TYPEDEF_ERR_INFO(EI_JSONLine, unsigned int);
+    TYPEDEF_ERR_INFO(EI_JSONColumn, unsigned int);
+    TYPEDEF_ERR_INFO(EI_JSONReason, string);
+    TYPEDEF_ERR_INFO(EI_InputErrorMessage, const string);
+    TYPEDEF_ERR_INFO(EI_RecordName, const string);
+    TYPEDEF_ERR_INFO(EI_Tag, string);
+	TYPEDEF_ERR_INFO(EI_TokenizerMsg, std::string);
+	TYPEDEF_ERR_INFO(EI_ColumnIndex, unsigned int);
+
+	/// General exception during conversion from JSON/YAML tree to storage.
+	DECLARE_INPUT_EXCEPTION( ExcInputError, << "Error in input file: " << EI_File::qval << " at address: " << EI_ErrorAddress::qval << "\n"
+	                                        << EI_Specification::val << "\n"
+	                                        << EI_Format::val << " type: " << EI_JSON_Type::qval << "\n"
+	                                        << "Expected type:\n" << EI_InputType::val );
+
+	DECLARE_INPUT_EXCEPTION( ExcNotJSONFormat, << "Not valid JSON file " << EI_File::qval << ". Error at line "
+            << EI_JSONLine::val << " : col " << EI_JSONColumn::val
+            << " ; reason: " << EI_JSONReason::val << "\n" );
+    DECLARE_INPUT_EXCEPTION( ExcAutomaticConversionError, << "Error during automatic conversion of "
+    		<< EI_RecordName::val << " record.\n " << EI_InputErrorMessage::val << "\n" );
+    DECLARE_INPUT_EXCEPTION( ExcForbiddenTag, << "Tag " << EI_Tag::qval << " " << EI_Specification::val << "\n" );
+    DECLARE_INPUT_EXCEPTION( ExcWrongCsvFormat, << EI_Specification::val << ",\n" << EI_TokenizerMsg::val << "\n" );
+    DECLARE_INPUT_EXCEPTION( ExcMultipleDefinitionCsvColumn, << "Multiple definition of column with index " << EI_ColumnIndex::qval
+    		<< " in included CSV file:\n" << EI_File::val << ",\n" );
+
 	/// Constructor
 	ReaderInternalBase();
 
@@ -94,6 +130,12 @@ protected:
 
     /// Helper method. Get string value of included file or throw exception if reading failed.
     std::string get_included_file(PathBase &p);
+
+    /// Generate @p ExcInputError
+    void generate_input_error(PathBase &p, const Type::TypeBase *type, std::string spec, bool add_type);
+
+    /// Complete specification, error address and JSON type error tags to @p ExcInputError
+    void complete_input_error(ExcInputError & e, PathBase &p, ValueTypes value_type);
 
 };
 
@@ -240,9 +282,6 @@ protected:
 
     /// Depth of CSV included subtree
     unsigned int csv_subtree_depth_;
-
-    /// Helper vector which contains actual indexes of subtree imported in CSV file.
-    vector<unsigned int> csv_storage_indexes_;
 
     /// Map of columns in CSV file to storage of subtree
     map<unsigned int, IncludeCsvData> csv_columns_map_;

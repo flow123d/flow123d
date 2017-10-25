@@ -25,7 +25,6 @@
 #include "input/path_yaml.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
-#include "input/csv_tokenizer.hh"
 #include "input/reader_internal.hh"
 
 
@@ -80,8 +79,8 @@ ReaderToStorage::ReaderToStorage( const string &str, Type::TypeBase &root_type, 
 	try {
 		istringstream is(str);
 		read_stream(is, root_type, format);
-	} catch (ExcNotJSONFormat &e) {
-		e << EI_File("STRING: "+str); throw;
+	} catch (ReaderInternalBase::ExcNotJSONFormat &e) {
+		e << ReaderInternalBase::EI_File("STRING: "+str); throw;
 	}
 }
 
@@ -112,11 +111,11 @@ void ReaderToStorage::read_stream(istream &in, const Type::TypeBase &root_type, 
 	try {
 		ReaderInternal ri;
 	    storage_ = ri.read_storage(*root_path_ptr, root_type_);
-	} catch (ExcInputError &e) {
+	} catch (ReaderInternalBase::ExcInputError &e) {
 		if (format == FileFormat::format_JSON) {
-			e << EI_Format("JSON");
+			e << ReaderInternalBase::EI_Format("JSON");
 		} else {
-			e << EI_Format("YAML");
+			e << ReaderInternalBase::EI_Format("YAML");
 		}
 		throw;
 	}

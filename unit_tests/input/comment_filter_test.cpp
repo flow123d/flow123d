@@ -15,6 +15,7 @@
 
 #include "input/comment_filter.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal.hh"
 
 using namespace std;
 
@@ -60,8 +61,8 @@ void test_input_file(string file_name) {
         json_spirit::read_or_throw( filter_in, main_node);
     } catch (json_spirit::Error_position &e ) {
         cout << "Error. line: " << e.line_ << " col: " << e.column_ << " reason: " << e.reason_ << endl;
-        THROW( Input::ReaderToStorage::ExcNotJSONFormat() << Input::ReaderToStorage::EI_JSONLine(e.line_)
-        		<< Input::ReaderToStorage::EI_JSONColumn(e.column_) << Input::ReaderToStorage::EI_JSONReason(e.reason_));
+        THROW( Input::ReaderInternalBase::ExcNotJSONFormat() << Input::ReaderInternalBase::EI_JSONLine(e.line_)
+        		<< Input::ReaderInternalBase::EI_JSONColumn(e.column_) << Input::ReaderInternalBase::EI_JSONReason(e.reason_));
     }
 }
 
@@ -90,7 +91,7 @@ TEST(Storage, comment_filter) {
     test_input_file("/input/comment_filter_test.con");
 
     // test of file with error in JSON
-    EXPECT_THROW_WHAT( {test_input_file("/input/comment_filter_error_test.con");}, Input::ReaderToStorage::ExcNotJSONFormat,
+    EXPECT_THROW_WHAT( {test_input_file("/input/comment_filter_error_test.con");}, Input::ReaderInternalBase::ExcNotJSONFormat,
                 "Not valid JSON file NO_VALUE. Error at line 102 : col 22 ; reason: not an object");
 }
 

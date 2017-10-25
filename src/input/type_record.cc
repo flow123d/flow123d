@@ -18,6 +18,7 @@
 #include "input_type.hh"
 #include "type_repository.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal.hh"
 #include "attribute_lib.hh"
 
 #include <boost/typeof/typeof.hpp>
@@ -28,6 +29,7 @@ namespace Input {
 namespace Type {
 
 using namespace std;
+
 
 /*******************************************************************
  * implementation of Default
@@ -71,10 +73,10 @@ bool Default::check_validity(std::shared_ptr<TypeBase> type) const
 		reader.read_stream(is, Array(type), FileFormat::format_JSON);
 		storage_ = reader.get_storage()->get_item(0);
 		return true;
-	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
+	} catch ( Input::ReaderInternalBase::ExcNotJSONFormat &e ) {
 		THROW( ExcWrongDefaultJSON() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
 				<< make_nested_ei(e) );
-	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
+	} catch ( Input::ReaderInternalBase::ExcInputError &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
 				<< make_nested_ei(e) );
 	}
