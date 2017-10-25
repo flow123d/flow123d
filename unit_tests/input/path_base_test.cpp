@@ -15,7 +15,7 @@
 #include <fstream>
 
 
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 #include "input/path_base.hh"
 #include "input/path_json.hh"
 #include "input/path_yaml.hh"

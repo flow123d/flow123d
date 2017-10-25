@@ -18,7 +18,7 @@
 #include "input_type.hh"
 #include "type_repository.hh"
 #include "input/reader_to_storage.hh"
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 #include "attribute_lib.hh"
 
 #include <boost/typeof/typeof.hpp>

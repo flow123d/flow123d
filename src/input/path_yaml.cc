@@ -16,8 +16,7 @@
  */
 
 #include "input/path_yaml.hh"
-#include "input/reader_to_storage.hh"
-#include "input/reader_internal.hh"
+#include "input/reader_internal_base.hh"
 
 #include "system/global_defs.h"
 #include "system/system.hh"

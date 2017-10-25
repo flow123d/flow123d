@@ -12,7 +12,7 @@
 
 
 #include <input/type_record.hh>
-#include <input/reader_internal.hh>
+#include <input/reader_internal_base.hh>
 
 // Test of correct includes in type_record.hh
 TEST(InputTypeRecord, includes) {

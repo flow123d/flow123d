@@ -128,7 +128,10 @@ add_library(input_lib
     input/type_tuple.cc
     input/storage.cc
     input/reader_to_storage.cc
+    input/reader_internal_base.cc
     input/reader_internal.cc
+    input/reader_internal_transpose.cc
+    input/reader_internal_csv.cc
     input/path_base.cc
     input/path_json.cc
     input/path_yaml.cc
