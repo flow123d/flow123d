@@ -84,7 +84,6 @@ protected:
     void read_stream(istream &in, Type::TypeBase &root_type, FileFormat format = FileFormat::format_JSON) {
     	this->storage_ = nullptr;
     	this->root_type_ = nullptr;
-    	this->try_read_ = TryRead::none;
     	root_type.finish();
     	ReaderToStorage::read_stream(in, root_type, format);
     };
