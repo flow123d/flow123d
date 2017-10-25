@@ -32,6 +32,14 @@ namespace Input {
 using namespace std;
 
 
+/**
+ *  @brief Internal part of IST reader.
+ *
+ *  This class defines interface for creating storage. Dispatching of storage is ensured by the non-virtual
+ *  method read_storage, different for individual descendants.
+ *
+ *  @ingroup input
+ */
 class ReaderInternalBase {
 public:
 	/// Constructor
@@ -48,9 +56,15 @@ protected:
      */
     StorageBase * make_storage(PathBase &p, const Type::TypeBase *type);
 
-	virtual StorageBase * make_sub_storage(PathBase &p, const Type::Record *record);           ///< Create storage of Type::Record type
-    virtual StorageBase * make_sub_storage(PathBase &p, const Type::Tuple *tuple);             ///< Create storage of Type::Tuple type
-    virtual StorageBase * make_sub_storage(PathBase &p, const Type::Abstract *abstr_rec);      ///< Create storage of Type::Abstract type
+    /// Create storage of Type::Record type. Common method of all descendants.
+	StorageBase * make_sub_storage(PathBase &p, const Type::Record *record);
+
+	/// Create storage of Type::Tuple type. Common method of all descendants.
+    StorageBase * make_sub_storage(PathBase &p, const Type::Tuple *tuple);
+
+    /// Create storage of Type::Abstract type. Common method of all descendants.
+    StorageBase * make_sub_storage(PathBase &p, const Type::Abstract *abstr_rec);
+
     virtual StorageBase * make_sub_storage(PathBase &p, const Type::Array *array)=0;           ///< Create storage of Type::Array type
     virtual StorageBase * make_sub_storage(PathBase &p, const Type::Selection *selection)=0;   ///< Create storage of Type::Selection type
     virtual StorageBase * make_sub_storage(PathBase &p, const Type::Bool *bool_type)=0;        ///< Create storage of Type::Bool type
@@ -84,6 +98,16 @@ protected:
 };
 
 
+/**
+ * @brief Creates storage of IST defined in JSON or YAML file.
+ *
+ * This class works like start point of creating IST storage. Allows to use other descendants
+ * of ReaderInternalBase to construct storage of special parts of IST:
+ *  - transposition of Type::Array type
+ *  - subtree included in CSV file
+ *
+ * @ingroup input
+ */
 class ReaderInternal : public ReaderInternalBase {
 public:
 	/// Constructor
@@ -103,12 +127,37 @@ protected:
 };
 
 
+/**
+ * @brief Creates storage of transposed subtree defined on input.
+ *
+ * We use this class if input tree contains another type at position where Array
+ * is expected. This type must correspond with type_of_value of Array.
+ *
+ * @ingroup input
+ */
 class ReaderInternalTranspose : public ReaderInternalBase {
 public:
 	/// Constructor
 	ReaderInternalTranspose();
 
-	/// Create storage of given @p type.
+	/**
+	 * @brief Create storage of transposed subtree of given @p Array.
+	 *
+	 * Processing of subtree with transposition:
+	 * 1. We set @p transpose_index_ to value '0' (transposition of first Array item).
+	 * 2. We retrieve whole subtree and find Array types that are located at position
+	 *    where other type is expected (type_of_value of found Array must corresponds
+	 *    with excepted type).
+	 *    We create storage corresponding with subtree (unexpected Arrays are replaced
+	 *    by item at position given by @p transpose_index_.
+	 * 3. Together with paragraph 2 we store sizes of found Arrays to
+	 *    @p transpose_array_sizes_.
+	 * 4. We check sizes stored in transpose_array_sizes_ (all must be in equal
+	 *    and may not be equal to zero). This size determines size of transposed Array
+	 *    type.
+	 * 5. We repeat paragraph 2 for all items of transposed Array (gradual increase of
+	 *    @p transpose_index_).
+	 */
     StorageBase * read_storage(PathBase &p, const Type::Array *array);
 
 protected:
@@ -134,12 +183,33 @@ protected:
 };
 
 
+/**
+ * @brief Creates storage of part of subtree defined in CSV file.
+ *
+ * We use this class if input tree contains included CSV file where Array
+ * is expected. This type must correspond with type_of_value of Array of Records.
+ *
+ * @ingroup input
+ */
 class ReaderInternalCsvInclude : public ReaderInternalBase {
 public:
 	/// Constructor
 	ReaderInternalCsvInclude();
 
-	/// Create storage of given @p type.
+	/**
+	 * Create storage of subtree defined in CSV file of given @p array.
+	 *
+	 * Processing of subtree included CSV file:
+	 * 1. We expect Record with special structure and tag 'include_csv' in place of Array.
+	 * 2. We load path to CSV file and number of head lines to skip in this file.
+	 * 3. We load Record 'format' which determines positions of columns in CSV file.
+	 *    Structure of this Record must be equal with subtype of array.
+	 * 4. We fill helper @p csv_columns_map_ which allows mapping between columns in CSV
+	 *    file and storage of array subtype. We return helper storage of this subtype with
+	 *    default values (only determines structure).
+	 * 5. We iterate through CSV file. For every line we fill data into helper storage and
+	 *    copy this helper storage to storage represents included array.
+	 */
     StorageBase * read_storage(PathBase &p, const Type::Array *array);
 
 protected:
