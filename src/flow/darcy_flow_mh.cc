@@ -703,15 +703,15 @@ void DarcyMH::allocate_mh_matrix()
         auto ele_ac = mh_dh.accessor(i_loc);
         nsides = ele_ac.n_sides();
         
-        //allocate at once matrix [sides,ele]x[sides,ele]
+        //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
         loc_size = 1 + 2*nsides;
-        unsigned int i = 0;
+        unsigned int i_side = 0;
         
-        for (; i < nsides; i++) {
-            local_dofs[i] = ele_ac.side_row(i);
-            local_dofs[i+nsides] = ele_ac.edge_row(i);
+        for (; i_side < nsides; i_side++) {
+            local_dofs[i_side] = ele_ac.side_row(i_side);
+            local_dofs[i_side+nsides] = ele_ac.edge_row(i_side);
         }
-        local_dofs[i+nsides] = ele_ac.ele_row();
+        local_dofs[i_side+nsides] = ele_ac.ele_row();
         int * edge_rows = local_dofs + nsides;
         //int ele_row = local_dofs[0];
         
@@ -721,12 +721,12 @@ void DarcyMH::allocate_mh_matrix()
 
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
-        for (i = 0; i < n_neighs; i++) {
+        for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
-            tmp_rows[i] = neigh_edge_row;
+            tmp_rows.push_back(neigh_edge_row);
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
 
