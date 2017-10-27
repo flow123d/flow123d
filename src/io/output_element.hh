@@ -73,6 +73,9 @@ public:
     //@}
     
     void inc();
+
+    unsigned int get_idx() const;
+
     bool operator==(const OutputElement& other);
 private:
     
@@ -188,6 +191,15 @@ inline OutputElement::Point OutputElement::centre() const
     Point res({0,0,0});
     for(auto& v : vertex_list() ) res += v;
     return res/n_nodes();
+}
+
+
+inline unsigned int OutputElement::get_idx() const
+{
+	if (output_mesh_->is_refined())
+		return (*output_mesh_->orig_element_indices_)[ele_idx_];
+	else
+		return ele_idx_;
 }
 
 #endif // OUTPUT_ELEMENT_HH_
