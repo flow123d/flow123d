@@ -946,7 +946,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     vector<vector<double> > dg_penalty(n_max_sides);
     double gamma_l, omega[2], transport_flux;
 
-    for (unsigned int sid=0; sid<n_max_sides; sid++)
+    for (unsigned int sid=0; sid<n_max_sides; sid++) // Optimize: SWAP LOOPS
     {
         side_dof_indices.push_back(new unsigned int[ndofs]);
         fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
@@ -1226,7 +1226,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
         data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
         {
             for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
                 for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
@@ -1657,7 +1657,7 @@ void TransportDG<Model>::prepare_initial_condition()
     double matrix[ndofs*ndofs], rhs[ndofs];
     std::vector<std::vector<double> > init_values(Model::n_substances());
 
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
         init_values[sbi].resize(qsize);
 
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)

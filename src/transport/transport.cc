@@ -238,7 +238,7 @@ void ConvectionTransport::set_initial_condition()
     	unsigned int index = row_4_el[elem.index()] - el_ds->begin();
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 
-		for (unsigned int sbi=0; sbi<n_substances(); sbi++)
+		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
 			conc[sbi][index] = data_.init_conc[sbi].value(elem->centre(), ele_acc);
     }
 
