@@ -25,6 +25,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal_base.hh"
 
 #include <iostream>
 #include <fstream>
@@ -135,10 +136,10 @@ Input::Record Application::read_input() {
     try {
     	Input::ReaderToStorage json_reader(fpath, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
-    } catch (Input::ReaderToStorage::ExcInputError &e ) {
-      e << Input::ReaderToStorage::EI_File(fpath); throw;
-    } catch (Input::ReaderToStorage::ExcNotJSONFormat &e) {
-      e << Input::ReaderToStorage::EI_File(fpath); throw;
+    } catch (Input::ReaderInternalBase::ExcInputError &e ) {
+      e << Input::ReaderInternalBase::EI_File(fpath); throw;
+    } catch (Input::ReaderInternalBase::ExcNotJSONFormat &e) {
+      e << Input::ReaderInternalBase::EI_File(fpath); throw;
     }  
     return root_record;
 }
