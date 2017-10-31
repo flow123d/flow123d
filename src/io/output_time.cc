@@ -117,7 +117,7 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 
 
 std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input) {
-	bool discont = (used_interpolations_.find(DiscreteSpace::CORNER_DATA) != used_interpolations_.end());
+	bool discont = (interpolation_map_.find(DiscreteSpace::CORNER_DATA) != interpolation_map_.end());
 	if (discont || this->get_output_mesh_record()) {
 		if (init_input) output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
 		else output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
@@ -236,8 +236,14 @@ void OutputTime::clear_data(void)
 }
 
 
-void OutputTime::add_field_interpolation(DiscreteSpace space_type) {
-	used_interpolations_.insert(space_type);
+void OutputTime::add_field_interpolation(DiscreteSpace space_type, const std::string &field_name, unsigned int value_type) {
+	auto it = interpolation_map_.find(space_type);
+	if ( it == interpolation_map_.end() ) {
+		std::vector<FieldInterpolationData> in_vec;
+		interpolation_map_[space_type] = in_vec;
+		it = interpolation_map_.find(space_type);
+	}
+	it->second.push_back( std::make_pair(field_name, value_type) );
 }
 
 

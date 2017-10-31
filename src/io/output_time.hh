@@ -111,6 +111,10 @@ public:
     typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
+    /// pair of field name and shape (= Scalar 1, Vector 3, Tensor 9)
+    typedef std::pair< std::string, unsigned int > FieldInterpolationData;
+    typedef std::map< DiscreteSpace, std::vector<FieldInterpolationData> > InterpolationMap;
+
     /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
@@ -190,8 +194,8 @@ public:
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
-    /// Add given space type to set of used interpolations.
-    void add_field_interpolation(DiscreteSpace space_type);
+    /// Add information about field to map of used interpolations.
+    void add_field_interpolation(DiscreteSpace space_type, const std::string &field_name, unsigned int value_type);
 
 
 protected:
@@ -272,7 +276,7 @@ protected:
      *
      * Allow determine type of output mesh.
      */
-    std::set<DiscreteSpace> used_interpolations_;
+    InterpolationMap interpolation_map_;
 };
 
 
