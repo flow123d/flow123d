@@ -153,10 +153,9 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	map2_ = new MappingP1<2,3>;
 	map3_ = new MappingP1<3,3>;
 
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
-	dh_->distribute_dofs(ds_);
+	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
 }
 
 
