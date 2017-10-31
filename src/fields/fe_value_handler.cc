@@ -70,8 +70,7 @@ public:
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
-: dof_indices(nullptr),
-  value_(r_value_),
+: value_(r_value_),
   map_(nullptr)
 {}
 
@@ -79,11 +78,11 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
-	ASSERT(dof_indices == nullptr).error("Multiple initialization.");
+	ASSERT_EQ(dof_indices.size(), 0).error("Multiple initialization.");
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices = new unsigned int[init_data.ndofs];
+    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
 
     if (map == nullptr) {
@@ -118,16 +117,10 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     DOFHandlerBase::CellIterator cell = dh_->mesh()->element( elm.idx() );
 	dh_->get_loc_dof_indices(cell, dof_indices);
 
-	arma::mat::fixed<3,elemdim> m;
-	for (unsigned i=0; i<elemdim; ++i) {
-		m.col(i) = elm.element()->node[i+1]->point() - elm.element()->node[0]->point();
-	}
-	arma::mat::fixed<elemdim,3> im = pinv(m);
-
+    arma::mat map_mat = map_->element_map(*elm.element());
 	for (unsigned int k=0; k<point_list.size(); k++) {
-		Point p_rel = point_list[k] - elm.element()->node[0]->point();
 		Quadrature<elemdim> quad(1);
-		quad.set_point(0, im*p_rel);
+        quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
 		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(cell), update_values);
 		fe_values.reinit(cell);
@@ -146,16 +139,14 @@ bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, E
 {
 	ASSERT_PTR(map_).error();
 
-	arma::vec projection = map_->project_point(point, map_->element_map(elm));
+	arma::vec projection = map_->project_real_to_unit(point, map_->element_map(elm));
 	return (projection.min() >= -BoundingBox::epsilon);
 }
 
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
-{
-	if (dof_indices != nullptr) delete[] dof_indices;
-}
+{}
 
 
 // Instantiations of FEValueHandler and FEShapeHandler

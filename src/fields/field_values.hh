@@ -257,7 +257,9 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() const {
+    	return value_.memptr();
+    }
 
     void init_from_input( AccessType rec ) {
         internal::init_matrix_from_input(value_, rec);
@@ -336,7 +338,7 @@ public:
      * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
      */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
-    const ET * mem_ptr() { return &(value_); }
+    const ET * mem_ptr() const { return &(value_); }
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
@@ -402,7 +404,7 @@ public:
         return std::is_floating_point<element_type>::value;
     }
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() const { return value_.memptr(); }
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
@@ -477,7 +479,7 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() const { return value_.memptr(); }
 
     void init_from_input( AccessType rec ) {
         internal::init_vector_from_input(value_, rec);

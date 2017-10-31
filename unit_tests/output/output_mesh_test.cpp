@@ -8,43 +8,26 @@
 #define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
+#include "arma_expect.hh"
+
 #include <mesh_constructor.hh>
-#include "io/output_time.hh"
-#include "io/output_vtk.hh"
 #include "mesh/mesh.h"
-#include "input/reader_to_storage.hh"
-#include "system/sys_profiler.hh"
-
-#include "fields/field_constant.hh"
-#include <fields/field.hh>
-#include <fields/field_set.hh>
-#include <io/equation_output.hh>
-#include <fields/field_common.hh>
 #include "input/input_type.hh"
-
 #include "input/accessors.hh"
 
 #include "io/output_mesh.hh"
 #include "io/output_element.hh"
 
 
-FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-
-
 
 TEST(OutputMesh, create_identical)
 {
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-
-    // read mesh - simplset cube from test1
+    // read mesh - simplest cube from test1
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
     
     auto output_mesh = std::make_shared<OutputMesh>(*mesh);
-    output_mesh->create_identical_mesh();
+    output_mesh->create_mesh();
     
     std::cout << "nodes: ";
     output_mesh->nodes_->print_ascii_all(std::cout);
@@ -56,8 +39,8 @@ TEST(OutputMesh, create_identical)
     output_mesh->offsets_->print_ascii_all(std::cout);
     std::cout << endl;
     
-    EXPECT_EQ(output_mesh->nodes_->n_values, mesh->n_nodes());
-    EXPECT_EQ(output_mesh->offsets_->n_values, mesh->n_elements());
+    EXPECT_EQ(output_mesh->nodes_->n_values(), mesh->n_nodes());
+    EXPECT_EQ(output_mesh->offsets_->n_values(), mesh->n_elements());
     
     for(const auto &ele : *output_mesh)
     {
@@ -74,14 +57,12 @@ TEST(OutputMesh, create_identical)
         std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
-        EXPECT_EQ(ele.dim(), ele_acc.dim());
-        EXPECT_EQ(ele.centre()[0], ele_acc.centre()[0]);
-        EXPECT_EQ(ele.centre()[1], ele_acc.centre()[1]);
-        EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
+        EXPECT_EQ(ele_acc.dim(), ele.dim());
+        EXPECT_ARMA_EQ(ele_acc.centre(), ele.centre());
     }
     
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
-    output_mesh_discont->create_mesh(output_mesh);
+    output_mesh_discont->create_mesh();
     
     MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)
@@ -99,10 +80,8 @@ TEST(OutputMesh, create_identical)
         std::cout << endl;
         
         ElementAccessor<3> ele_acc = ele.element_accessor();
-        EXPECT_EQ(ele.dim(), ele_acc.dim());
-        EXPECT_EQ(ele.centre()[0], ele_acc.centre()[0]);
-        EXPECT_EQ(ele.centre()[1], ele_acc.centre()[1]);
-        EXPECT_EQ(ele.centre()[2], ele_acc.centre()[2]);
+        EXPECT_EQ(ele_acc.dim(), ele.dim());
+        EXPECT_ARMA_EQ(ele_acc.centre(), ele.centre());
     }
     
     delete mesh;
@@ -110,118 +89,133 @@ TEST(OutputMesh, create_identical)
 
 
 
-
-
-
-
-
-const string input = R"INPUT(
-{   
-   conc={ // formula on 3d 
-       TYPE="FieldFormula",
-       //value="log((x^2+y^2+z^2)^0.5)"
-       value="x+y+z"
-   },
-   output_stream = {
-    file = "test1.pvd", 
-    format = {
-        TYPE = "vtk", 
-        variant = "ascii"
-    }/*,
-    output_mesh = {
-        max_level = 3,
-        refine_by_error = true,
-        error_control_field = "conc"
-    }*/
-  }
-  ,output = {fields = ["conc"]}
-}
-)INPUT";
-
-
-TEST(OutputMesh, write_on_output_mesh) {
-    
-    typedef FieldAlgorithmBase<3, FieldValue<3>::Scalar > AlgScalarField;
-    typedef Field<3,FieldValue<3>::Scalar> ScalarField;
-  
-    // setup FilePath directories
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
-
-    // read mesh - simplset cube from test1
-    FilePath mesh_file( "../mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh* mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
-    
-    
-    // create scalar field out of FieldAlgorithmBase field
-    ScalarField scalar_field;
-    scalar_field.set_mesh(*mesh);
-    
-    // create field set of output fields
-    EquationOutput output_fields;
-    output_fields += scalar_field.name("conc").units(UnitSI::dimensionless()).flags_add(FieldFlag::allow_output);
-    
-    // create input record
-    Input::Type::Record rec_type = Input::Type::Record("ErrorFieldTest","")
-        .declare_key("conc", AlgScalarField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
-        .declare_key("output_stream", OutputTime::get_input_type(), Input::Type::Default::obligatory(), "")
-        .declare_key("output", output_fields.make_output_type("test_eq"), Input::Type::Default::obligatory(), "")
-        .close();
-
-
-    // read input string
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
-    Input::Record in_rec=reader.get_root_interface<Input::Record>();
-
-    // create FieldAlgorithmBase field
-    FieldAlgoBaseInitData init_data("conc", 1, UnitSI::dimensionless());
-    auto alg_field = AlgScalarField::function_factory(in_rec.val<Input::AbstractRecord>("conc"), init_data);
-    
-    // create field from FieldAlgorithmBase
-    scalar_field.set_field(mesh->region_db().get_region_set("ALL"), alg_field, 0);
-    scalar_field.output_type(OutputTime::NODE_DATA);
-    
-    // set time to all fields
-    output_fields.set_time(0.0, LimitSide::right);
-    
-    // create output
-    std::shared_ptr<OutputTime> output = std::make_shared<OutputVTK>();
-    output->init_from_input("dummy_equation", *mesh, in_rec.val<Input::Record>("output_stream"));
-    output_fields.initialize(output, in_rec.val<Input::Record>("output"), TimeGovernor());
-    
-    EXPECT_EQ(1,output_fields.size());
-    EXPECT_TRUE(output_fields.is_field_output_time(*output_fields.field("conc"), 0.0));
-    
-    // register output fields, compute and write data
-    output_fields.output(0.0);
-    output->write_time_frame();
-
-    delete mesh;
-}
-
-
-
-
-
-
-
-
-
 const string input_om = R"INPUT(
 {   
-    max_level = 2,
-    refine_by_error = true,
-    error_control_field = "conc"
+    max_level = 2
 }
 )INPUT";
 
-class TestOutputMesh : public testing::Test, public OutputMesh {
+class TestOutputMesh : public testing::Test, public OutputMeshDiscontinuous {
 public:
     TestOutputMesh()
-    : OutputMesh(*mesh_, Input::ReaderToStorage( input_om, const_cast<Input::Type::Record &>(OutputMeshBase::get_input_type()), Input::FileFormat::format_JSON )
+    : OutputMeshDiscontinuous(*mesh_, Input::ReaderToStorage( input_om, 
+                                                              const_cast<Input::Type::Record &>(
+                                                                    OutputMeshBase::get_input_type()),
+                                                              Input::FileFormat::format_JSON )
                             .get_root_interface<Input::Record>())
     {
+    }
+    
+    template<int dim> void refine_single_element(AuxElement &el)
+    {
+        const int spacedim = 3;
+        el.level = 0;
+        std::vector<AuxElement> refs;
+        
+        std::vector<double> disc_coords;
+        std::vector<unsigned int> disc_connectivity;
+        
+        this->refine_by_error_ = false;
+        this->refine_aux_element<dim>(el, refs, ElementAccessor<3>());
+        
+        disc_coords.resize(spacedim * (dim+1) * refs.size());
+        disc_connectivity.resize((dim+1) * refs.size());
+        
+        //gather coords and connectivity (disccontinous)
+        for(unsigned int i=0; i < refs.size(); i++)
+            for(unsigned int j=0; j < dim+1; j++)
+            {
+                unsigned int con = i*(dim+1) + j;
+                disc_connectivity[con] = con;
+                
+                for(unsigned int k=0; k < spacedim; k++)
+                    disc_coords[spacedim*con + k] = refs[i].nodes[j][k];
+            }
+            
+        // correct data for the given aux element
+        static const std::vector<double> res_coords[] = {
+            {},
+            { 0, 0, 0, 0.75, 0, 0, 0.75, 0, 0, 1.5, 0, 0, 1.5, 0, 0, 2.25, 0, 
+            0, 2.25, 0, 0, 3, 0, 0 },
+            {
+            0, 0, 0, 0.75, 0, 0, 0, 0.75, 0, 0.75, 0, 0, 1.5, 0, 0, 0.75, 0.75, 
+            0, 0, 0.75, 0, 0.75, 0.75, 0, 0, 1.5, 0, 0.75, 0, 0, 0.75, 0.75, 0, 
+            0, 0.75, 0, 1.5, 0, 0, 2.25, 0, 0, 1.5, 0.75, 0, 2.25, 0, 0, 3, 
+            0, 0, 2.25, 0.75, 0, 1.5, 0.75, 0, 2.25, 0.75, 0, 1.5, 1.5, 0, 2.25, 0, 
+            0, 2.25, 0.75, 0, 1.5, 0.75, 0, 0, 1.5, 0, 0.75, 1.5, 0, 0, 2.25, 0, 
+            0.75, 1.5, 0, 1.5, 1.5, 0, 0.75, 2.25, 0, 0, 2.25, 0, 0.75, 2.25, 0, 0, 
+            3, 0, 0.75, 1.5, 0, 0.75, 2.25, 0, 0, 2.25, 0, 1.5, 0, 0, 1.5, 0.75, 
+            0, 0.75, 0.75, 0, 1.5, 0.75, 0, 1.5, 1.5, 0, 0.75, 1.5, 0, 0.75, 0.75, 0, 
+            0.75, 1.5, 0, 0, 1.5, 0, 1.5, 0.75, 0, 0.75, 1.5, 0, 0.75, 0.75, 0 },
+            { 
+            1.5, 1.5, 0, 1.5, 0.75, 0, 2.25, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 0.75, 0, 1.5, 0, 
+            0, 2.25, 0, 0, 1.5, 0, 0.75, 2.25, 0.75, 0, 2.25, 0, 0, 3, 0, 0, 
+            2.25, 0, 0.75, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 2.25, 0, 0.75, 1.5, 0, 1.5, 1.5, 
+            0.75, 0, 2.25, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 1.5, 0.75, 0, 2.25, 0.75, 
+            0, 2.25, 0, 0, 1.5, 0, 0.75, 2.25, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 
+            2.25, 0, 0.75, 2.25, 0.75, 0, 2.25, 0, 0, 1.5, 0, 0.75, 2.25, 0, 0.75, 0, 
+            3, 0, 0, 2.25, 0, 0.75, 2.25, 0, 0, 2.25, 0.75, 0, 2.25, 0, 0, 1.5, 
+            0, 0.75, 1.5, 0, 0, 1.5, 0.75, 0.75, 2.25, 0, 0.75, 1.5, 0, 1.5, 1.5, 0, 
+            0.75, 1.5, 0.75, 0, 2.25, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 0.75, 0, 1.5, 1.5, 0, 
+            2.25, 0, 0.75, 2.25, 0, 0, 2.25, 0.75, 0, 1.5, 0.75, 0, 2.25, 0, 0.75, 2.25, 
+            0, 0.75, 1.5, 0, 0, 1.5, 0.75, 0.75, 2.25, 0, 0, 2.25, 0.75, 0, 1.5, 0.75, 
+            0.75, 1.5, 0.75, 0.75, 2.25, 0, 0.75, 1.5, 0, 0, 1.5, 0.75, 0.75, 1.5, 0.75, 0, 
+            1.5, 0, 0, 0.75, 0, 0.75, 0.75, 0, 0, 0.75, 0.75, 0, 0.75, 0, 0, 0, 
+            0, 0.75, 0, 0, 0, 0, 0.75, 0.75, 0.75, 0, 0.75, 0, 0, 1.5, 0, 0, 
+            0.75, 0, 0.75, 0, 0.75, 0.75, 0, 0, 0.75, 0.75, 0, 0.75, 0, 0, 1.5, 0, 
+            0.75, 0, 0.75, 0.75, 0, 0, 0.75, 0.75, 0, 0, 0.75, 0, 0.75, 0, 0.75, 0.75, 
+            0, 0.75, 0, 0, 0, 0, 0.75, 0.75, 0.75, 0, 0, 0.75, 0.75, 0, 0, 0.75, 
+            0.75, 0, 0.75, 0.75, 0.75, 0, 0.75, 0, 0, 0, 0, 0.75, 0.75, 0, 0.75, 0, 
+            1.5, 1.5, 0, 0.75, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 2.25, 0, 0.75, 1.5, 0, 0, 
+            1.5, 0.75, 0, 1.5, 0, 0, 2.25, 0.75, 0.75, 1.5, 0.75, 0, 1.5, 1.5, 0, 1.5, 
+            0.75, 0, 2.25, 0, 0.75, 2.25, 0, 0, 2.25, 0.75, 0, 2.25, 0, 0, 3, 0, 
+            0.75, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 2.25, 0, 0, 2.25, 0, 0.75, 1.5, 0.75, 0.75, 
+            1.5, 0.75, 0, 1.5, 0, 0, 2.25, 0.75, 0.75, 1.5, 0, 0.75, 2.25, 0, 0, 2.25, 
+            0.75, 0, 2.25, 0.75, 0.75, 1.5, 0.75, 0, 1.5, 0, 0, 2.25, 0.75, 0, 2.25, 1.5, 
+            0, 0, 1.5, 0, 0.75, 1.5, 0.75, 0, 0.75, 0.75, 0.75, 1.5, 0, 0.75, 1.5, 0, 
+            1.5, 1.5, 0.75, 0.75, 0.75, 0.75, 1.5, 1.5, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 1.5, 0, 
+            0.75, 1.5, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 1.5, 0.75, 1.5, 0.75, 0, 1.5, 1.5, 0.75, 
+            0.75, 0.75, 1.5, 0.75, 0.75, 1.5, 0.75, 0, 0.75, 1.5, 0.75, 1.5, 0.75, 0.75, 0.75, 0.75, 
+            0.75, 0.75, 0.75, 1.5, 0.75, 1.5, 0.75, 1.5, 0.75, 0.75, 0.75, 0.75, 0.75, 1.5, 0.75, 0, 
+            1.5, 0, 0.75, 0.75, 0.75, 0.75, 1.5, 0.75, 0.75, 0.75, 0.75, 1.5, 1.5, 0, 0.75, 1.5, 
+            0, 0, 0.75, 0.75, 0, 1.5, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0.75, 0, 0, 1.5, 
+            0, 0.75, 1.5, 0, 0, 1.5, 0.75, 1.5, 0.75, 0, 0.75, 1.5, 0, 1.5, 1.5, 0, 
+            0.75, 1.5, 0.75, 0.75, 0.75, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 0.75, 0, 1.5, 1.5, 0.75, 
+            0.75, 0.75, 0.75, 1.5, 0, 1.5, 0.75, 0, 0.75, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 0.75, 
+            0.75, 0, 1.5, 0.75, 0.75, 1.5, 0.75, 0.75, 1.5, 0, 0.75, 0.75, 0.75, 1.5, 0.75, 0, 
+            0.75, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 1.5, 0, 0, 1.5, 0.75, 0.75, 0.75, 0, 1.5, 
+            0, 1.5, 0.75, 0.75, 1.5, 1.5, 0, 0.75, 0.75, 0, 1.5, 0.75, 0.75, 1.5, 0, 1.5, 
+            1.5, 0.75, 0.75, 0.75, 0, 0.75, 1.5, 1.5, 0, 0.75, 0.75, 0.75, 0.75, 1.5, 0, 0, 
+            0.75, 0, 0.75, 0.75, 0, 1.5, 0, 0.75, 1.5, 0.75, 0, 0.75, 0, 0, 1.5, 0.75, 
+            0, 1.5, 0.75, 0.75, 0.75, 1.5, 0, 0.75, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0.75, 0, 
+            1.5, 0, 0.75, 1.5, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0.75, 0, 1.5, 1.5, 0, 0.75, 
+            0.75, 0.75, 1.5, 0.75, 0, 1.5, 0.75, 0.75, 0.75, 0, 0.75, 1.5, 0.75, 0.75, 1.5, 0, 
+            1.5, 0, 0, 1.5, 0.75, 0.75, 0.75, 0, 0, 0.75, 0.75, 0, 1.5, 0.75, 0, 1.5, 
+            1.5, 0.75, 0.75, 0.75, 0, 0.75, 1.5, 0.75, 0.75, 0, 0.75, 0.75, 0.75, 1.5, 0, 0, 
+            0.75, 0, 0.75, 0, 0.75, 0.75, 0, 0.75, 1.5, 0.75, 0, 0.75, 0, 0, 1.5, 0, 
+            0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0.75, 0, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0, 0.75, 
+            0.75, 0, 0.75, 1.5, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0, 
+            0, 1.5, 0.75, 0, 0.75, 0.75, 0.75, 0.75, 0.75, 0, 0.75, 1.5, 0, 1.5, 0.75
+            }
+        };
+        
+        EXPECT_EQ(disc_coords.size(), res_coords[dim].size());
+        
+        for(unsigned int i=0; i < disc_coords.size(); i++)
+        {
+            EXPECT_DOUBLE_EQ(disc_coords[i], res_coords[dim][i]);
+//             cout << disc_coords[i] << ", ";
+//             if(i>0 && i%16 == 0) cout << endl;
+        }
+//         cout << "\n\n" << endl;
+//         for(unsigned int i=0; i< disc_connectivity.size(); i++)
+//         {
+//             cout << i << "  "; 
+//             for(unsigned int k=0; k<spacedim; k++){
+//                 cout << disc_coords[i*spacedim+k] << " ";
+//             }
+//             cout << endl;
+//         } 
     }
     
     ~TestOutputMesh()
@@ -232,25 +226,20 @@ public:
 };
 
 
-TEST_F(TestOutputMesh, read_input) {
-    EXPECT_EQ(this->max_level_, 2);
-    EXPECT_EQ(this->orig_mesh_, this->mesh_);
-  
-    Field<3,FieldValue<3>::Scalar> scalar_field;
+
+TEST_F(TestOutputMesh, refine) {
     
-    // create field set of output fields
-    EquationOutput output_fields;
-    output_fields += scalar_field.name("conc");
-    this->select_error_control_field(output_fields);
+    const double a = 3.0;
     
-    // no field 'conc' is to be found
-    output_fields.field("conc")->name("conc_error");
-    EXPECT_THROW( this->select_error_control_field(output_fields); ,
-                  FieldSet::ExcUnknownField);
+    AuxElement el1;
+    el1.nodes = {{0, 0, 0}, {a, 0, 0}};
+    this->refine_single_element<1>(el1);
     
-    // 'conc' field is now vector field
-    Field<3,FieldValue<3>::VectorFixed> vector_field;
-    output_fields += vector_field.name("conc");
-    EXPECT_THROW( this->select_error_control_field(output_fields); ,
-                  OutputMeshBase::ExcFieldNotScalar);
+    AuxElement el2;
+    el2.nodes = {{0, 0, 0}, {a, 0, 0}, {0, a, 0}};
+    this->refine_single_element<2>(el2);
+   
+    AuxElement el3;
+    el3.nodes = {{0, 0, 0}, {a, 0, 0}, {0, a, 0}, {0, 0, a}};
+    this->refine_single_element<3>(el3);
 }

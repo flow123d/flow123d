@@ -39,7 +39,7 @@
 #include "input/type_output.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
 
@@ -51,28 +51,28 @@ string input = R"CODE(
 {   
    scalar={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="scalar"
    },
    scalar_unit_conversion={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="scalar",
        unit="km"
    },
    scalar_large={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/bigger_3d_cube_0.5.msh",
+       mesh_data_file="fields/bigger_3d_cube_0.5.msh",
        field_name="scalar"
    },
    vector_fixed={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="vector_fixed"
    },
    tensor_fixed={
        TYPE="FieldInterpolatedP0",
-       gmsh_file="fields/simplest_cube_3d.msh",
+       mesh_data_file="fields/simplest_cube_3d.msh",
        field_name="tensor_fixed"
    }
 }
@@ -131,10 +131,10 @@ public:
 
         Profiler::initialize();
 
-        //FilePath mesh_file( "mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = mesh_constructor();
-        stringstream in(gmsh_mesh.c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = new Mesh();
+        auto mesh_reader = reader_constructor("{mesh_file=\"fields/interpolate_source.msh\"}");
+        mesh_reader->read_physical_names(mesh);
+        mesh_reader->read_raw_mesh(mesh);
 
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
@@ -151,7 +151,7 @@ public:
         test_time[1] = 1.0;
     }
     virtual void TearDown() {
-
+    	delete mesh;
     }
 
     const FieldAlgoBaseInitData& init_data(std::string field_name) {
@@ -160,7 +160,7 @@ public:
     	return init_data;
     }
 
-    Mesh *mesh;
+    Mesh * mesh;
     Input::Record rec;
     Space<3>::Point point;
     double test_time[2];

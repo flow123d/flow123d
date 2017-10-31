@@ -195,7 +195,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     	for (unsigned int pid = 0; pid < RefElement<dim>::n_side_permutations; pid++)
     	{
     		// transform the side quadrature points to the cell quadrature points
-    		this->mapping->transform_subquadrature(sid, pid, *sub_quadrature, side_quadrature[sid][pid]);
+            side_quadrature[sid][pid] = Quadrature<dim>(_sub_quadrature, sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
     		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid], this->data.update_flags);
     	}

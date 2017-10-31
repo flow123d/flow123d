@@ -748,21 +748,36 @@ class StatusPrinter(object):
         case_name = thread.pypy.case.as_string
 
         detail = ''
-        for ti in ['clean', 'pypy', 'comp']:
+        thread_names = ['clean', 'pypy', 'comp']
+        thread_rcs = dict()
+        thread_msg = dict()
+
+        for ti in thread_names:
             subthread = getattr(thread, ti)
-            subthread_rc = subthread.returncode
-            sub_detail = ''
+            thread_rcs[ti] = subthread.returncode
+            thread_msg[ti] = getattr(formatter, 'detail_{}'.format(ti))(thread)
 
-            if hasattr(formatter, 'detail_{}'.format(ti)):
-                sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
-            detail = formatter.errors[ti].format(**locals())
+        # first non zero rc will be formatted
+        # otherwise first non empty detail
+        for ti in thread_names:
+            subthread = getattr(thread, ti)
+            if subthread.returncode.failed:
+                sub_detail = thread_msg[ti]
+                detail = formatter.errors[ti].format(**locals())
+                Printer.all.out(formatter.template.format(**locals()))
+                return
 
-            # break on the first error
+        # first non empty detail
+        for ti in thread_names:
+            subthread = getattr(thread, ti)
+            sub_detail = thread_msg[ti]
             if sub_detail:
-                break
+                detail = formatter.errors[ti].format(**locals())
+                Printer.all.out(formatter.template.format(**locals()))
+                return
 
         Printer.all.out(formatter.template.format(**locals()))
-    
+
     @classmethod
     def print_runner_stat(cls, runner, formatter=RunnerFormatter):
         """

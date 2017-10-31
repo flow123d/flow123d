@@ -28,10 +28,7 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
-#include <boost/tokenizer.hpp>
-#include "boost/lexical_cast.hpp"
-
-
+#include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 
 // think about following dependencies
@@ -50,15 +47,11 @@
 #include "intersection/mixed_mesh_intersections.hh"
 
 
-#include "mesh/mesh.h"
-
-
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
 // instances of a Element valued field
 // concentrations is in fact reimplemented in transport REMOVE it HERE
 
 // After removing non-geometrical things from mesh, this should be part of mash initializing.
-#include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
 #define NDEF  -1
@@ -98,6 +91,14 @@ const IT::Record & Mesh::get_input_type() {
 }
 
 const unsigned int Mesh::undef_idx;
+
+Mesh::Mesh()
+: row_4_el(nullptr),
+  el_4_loc(nullptr),
+  el_ds(nullptr)
+{}
+
+
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
@@ -242,45 +243,6 @@ void Mesh::count_element_types() {
 }
 
 
-void Mesh::read_gmsh_from_stream(istream &in) {
-  
-    START_TIMER("Reading mesh - from_stream");
-    
-    GmshMeshReader reader(in);
-    reader.read_physical_names(this);
-    reader.read_mesh(this);
-    setup_topology();
-    //close region_db_.
-   	region_db_.close();
-}
-
-
-
-void Mesh::init_from_input() {
-    START_TIMER("Reading mesh - init_from_input");
-    
-	try {
-	    Input::Array region_list;
-	    // read raw mesh, add regions from GMSH file
-	    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-	    reader.read_physical_names(this);
-	    // create regions from input
-	    if (in_record_.opt_val("regions", region_list)) {
-	        this->read_regions_from_input(region_list);
-	    }
-	    reader.read_mesh(this);
-	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
-	catch (ExceptionBase const &e) {
-		throw;
-	}
-    // possibly add implicit_boundary region.
-    setup_topology();
-    // finish mesh initialization
-    this->check_and_finish();
-}
-
-
-
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
@@ -337,13 +299,13 @@ void Mesh::count_side_types()
 
 void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
-    node_elements.resize(node_vector.size());
+    node_elements_.resize(node_vector.size());
 
     FOR_ELEMENTS( this, e )
         for (unsigned int n=0; n<e->n_nodes(); n++)
-            node_elements[node_vector.index(e->node[n])].push_back(e->index());
+            node_elements_[node_vector.index(e->node[n])].push_back(e->index());
 
-    for (vector<vector<unsigned int> >::iterator n=node_elements.begin(); n!=node_elements.end(); n++)
+    for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
 }
 
@@ -353,22 +315,22 @@ void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vecto
     if (nodes_list.size() == 0) {
         intersection_element_list.clear();
     } else if (nodes_list.size() == 1) {
-        intersection_element_list = node_elements[ nodes_list[0] ];
+        intersection_element_list = node_elements_[ nodes_list[0] ];
 	} else {
 	    vector<unsigned int>::const_iterator it1=nodes_list.begin();
 	    vector<unsigned int>::const_iterator it2=it1+1;
-	    intersection_element_list.resize( node_elements[*it1].size() ); // make enough space
+	    intersection_element_list.resize( node_elements_[*it1].size() ); // make enough space
 
 	    it1=set_intersection(
-                node_elements[*it1].begin(), node_elements[*it1].end(),
-                node_elements[*it2].begin(), node_elements[*it2].end(),
+                node_elements_[*it1].begin(), node_elements_[*it1].end(),
+                node_elements_[*it2].begin(), node_elements_[*it2].end(),
                 intersection_element_list.begin());
         intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
 
         for(;it2<nodes_list.end();++it2) {
             it1=set_intersection(
                     intersection_element_list.begin(), intersection_element_list.end(),
-                    node_elements[*it2].begin(), node_elements[*it2].end(),
+                    node_elements_[*it2].begin(), node_elements_[*it2].end(),
                     intersection_element_list.begin());
             intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
         }
@@ -714,14 +676,14 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
+void Mesh::elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const
 {
-    if (bulk_elements_id_.size() ==0) {
+    if (bulk_elements_id.size() ==0) {
         std::vector<int>::iterator map_it;
         int last_id;
 
-        bulk_elements_id_.resize(n_elements());
-        map_it = bulk_elements_id_.begin();
+        bulk_elements_id.resize(n_elements());
+        map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
         	int id = element.get_id(idx);
@@ -729,13 +691,13 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
             last_id=*map_it = id;
         }
 
-        boundary_elements_id_.resize(bc_elements.size());
-        map_it = boundary_elements_id_.begin();
+        boundary_elements_id.resize(bc_elements.size());
+        map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
         	int id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
-            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
             if (id < 0) last_id=*map_it=-1;
             else {
@@ -745,8 +707,8 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
         }
     }
 
-    if (boundary_domain) return boundary_elements_id_;
-    return bulk_elements_id_;
+    //if (boundary_domain) return boundary_elements_id_;
+    //return bulk_elements_id_;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)
@@ -803,6 +765,65 @@ const BIHTree &Mesh::get_bih_tree() {
 
 double Mesh::global_observe_radius() const {
 	return in_record_.val<double>("global_observe_search_radius");
+}
+
+void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
+	region_db_.add_region(id, name, dim, "$PhysicalNames");
+}
+
+
+void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
+	NodeFullIter node = node_vector.add_item(node_id);
+	node->point() = coords;
+}
+
+
+void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+		std::vector<unsigned int> node_ids) {
+	Element *ele=nullptr;
+	RegionIdx region_idx = region_db_.get_region( region_id, dim );
+	if ( !region_idx.is_valid() ) {
+		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
+	}
+	region_db_.mark_used_region(region_idx.idx());
+
+	if (region_idx.is_boundary()) {
+		ele = bc_elements.add_item(elm_id);
+	} else {
+		if(dim == 0 ) {
+			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+			return;
+		}
+		else
+			ele = element.add_item(elm_id);
+	}
+	ele->init(dim, this, region_idx);
+	ele->pid = partition_id;
+
+	unsigned int ni;
+	FOR_ELEMENT_NODES(ele, ni) {
+		unsigned int node_id = node_ids[ni];
+		NodeIter node = node_vector.find_id( node_id );
+		INPUT_CHECK( node != node_vector.end(),
+				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
+		ele->node[ni] = node;
+	}
+
+    // check that tetrahedron element is numbered correctly and is not degenerated
+    if(ele->dim() == 3)
+    {
+        double jac = ele->tetrahedron_jacobian();
+        if( ! (jac > 0) )
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
+    }
+}
+
+
+vector<vector<unsigned int> > const & Mesh::node_elements() {
+	if (node_elements_.size() == 0) {
+		this->create_node_element_lists();
+	}
+	return node_elements_;
 }
 
 //-----------------------------------------------------------------------------

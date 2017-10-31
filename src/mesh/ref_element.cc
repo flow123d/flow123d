@@ -34,6 +34,7 @@ std::vector< std::vector<unsigned int> > _array_to_vec( const IdxVector<n> array
     return vec;
 }
 
+
 // template<unsigned int n>
 // std::vector< std::vector<unsigned int> > _array_to_vec( const unsigned int array[][n], unsigned int m) {
 //     std::vector< std::vector<unsigned int> > vec(m);
@@ -43,8 +44,9 @@ std::vector< std::vector<unsigned int> > _array_to_vec( const IdxVector<n> array
 //     return vec;
 // }
 
-    
-    
+
+
+
 template<> const IdxVector<2> RefElement<1>::line_nodes_[] = {
         {0,1}
 };
@@ -56,7 +58,7 @@ template<> const IdxVector<2> RefElement<2>::line_nodes_[] = {
 };
 
 template<> const IdxVector<2> RefElement<3>::line_nodes_[] = {
-        {0,1},	//0
+        {0,1},  //0
         {0,2},  //1
         {0,3},  //2 <-3 (fixed order)
         {1,2},  //3 <-2
@@ -127,12 +129,12 @@ template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_sid
 template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side] = { { 0, 1 }, { 1, 0 } };
 
 template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side] = {
-		{ 0, 1, 2 },
-		{ 0, 2, 1 },
-		{ 1, 0, 2 },
-		{ 1, 2, 0 },
-		{ 2, 0, 1 },
-		{ 2, 1, 0 }
+        { 0, 1, 2 },
+        { 0, 2, 1 },
+        { 1, 0, 2 },
+        { 1, 2, 0 },
+        { 2, 0, 1 },
+        { 2, 1, 0 }
 };
 
 
@@ -165,6 +167,9 @@ template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
     0,
     0}
 };
+
+    
+    
 
 // template<> const unsigned int RefElement<1>::side_nodes[][1] = {
 // 		{ 0 },

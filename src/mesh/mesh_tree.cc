@@ -142,7 +142,7 @@ void MeshTree::duplicate_nodes()
 {
   FOR_NODES(mesh_, n){
     // create list of elements
-    std::vector<unsigned int> node_elements = mesh_->node_elements[n.index()];
+    std::vector<unsigned int> node_elements = mesh_->node_elements()[n.index()];
     
     // create list of edges sharing the node
     std::set<unsigned int> node_edges;

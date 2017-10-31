@@ -1,7 +1,6 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test12 - narrow radioaoctive decay chain, with transport switched enabled
-    but with zero pressure gradient
+  description: Test12 - narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient
   mesh:
     mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
@@ -21,7 +20,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./flow.pvd
       format: !vtk
         variant: ascii
@@ -39,7 +38,7 @@ problem: !Coupling_Sequential
             - 1
             - 0
             - 0
-    output_stream: 
+    output_stream:
       file: ./transport_decay.pvd
       format: !vtk
         variant: ascii

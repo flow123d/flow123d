@@ -22,18 +22,14 @@
 #include <string>
 #include <fstream>
 #include "input/accessors.hh"
+#include "io/element_data_cache.hh"
 
 class FilePath;
 class Observe;
-class OutputDataBase;
+class ElementDataCacheBase;
 class Mesh;
-class FieldCommon; // in fact not necessary, output_data_by_field() can use directly name as parameter
-template <int spacedim, class Value>
-class Field;
-class FieldSet;
-template <int spacedim, class Value>
-class MultiField;
 class TimeGovernor;
+class OutputMeshBase;
 class OutputMesh;
 class OutputMeshDiscontinuous;
 
@@ -72,6 +68,11 @@ public:
     Input::Iterator<Input::Array> get_time_set_array();
 
     /**
+     * Return the input record for the output mesh of the output stream.
+     */
+    Input::Iterator<Input::Record> get_output_mesh_record();
+
+    /**
      * \brief The specification of output stream
      *
      * \return This variable defines record for output stream
@@ -85,13 +86,30 @@ public:
 
     /**
      * Types of reference data
+     *
+     * NATIVE_DATA represents output of FieldFE in our own format, Paraview ignores this format.
      */
-    static const unsigned int N_DISCRETE_SPACES = 3;
+    static const unsigned int N_DISCRETE_SPACES = 4;
     enum DiscreteSpace {
-        NODE_DATA   = 0,
-        CORNER_DATA = 1,
-        ELEM_DATA   = 2
+        NODE_DATA       = 0,
+        CORNER_DATA     = 1,
+        ELEM_DATA       = 2,
+        NATIVE_DATA     = 3,
+		MESH_DEFINITION = 9,
+		UNDEFINED       = 10
     };
+
+    /**
+     * Maps names of output fields required by user to their indices in
+     * output_data_vec_.
+     */
+    typedef unsigned int DiscreteSpaceFlags;
+
+    /**
+     * Map field name to its OutputData object.
+     */
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
+    typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
     /**
      * \brief This method delete all object instances of class OutputTime stored
@@ -106,38 +124,12 @@ public:
     static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
     
     /**
-     * Create the output mesh from the given computational mesh. The field set passed in is used
-     * to select the field used for adaptivity of the output mesh.
-     */
-    void make_output_mesh(FieldSet &output_fields);
-    
-    /**
-     * \brief Generic method for registering output data stored in MultiField
-     *
-     * @param ref_type    Type of output (element, node, corner data).
-     * @param multi_field The actual field for output.
-     */
-    template<int spacedim, class Value>
-    void register_data(const DiscreteSpace type,
-            MultiField<spacedim, Value> &multi_field);
-
-    /**
-     * \brief Generic method for registering of output data stored in Field
-     *
-     * @param ref_type  Type of output (element, node, corner data).
-     * @param field     The actual field for output.
-     */
-    template<int spacedim, class Value>
-    void register_data(const DiscreteSpace ref_type,
-            Field<spacedim, Value> &field);
-
-    /**
      * Write all data registered as a new time frame.
      */
     void write_time_frame();
 
     /**
-     * Getter of the oubserve object.
+     * Getter of the observe object.
      */
     std::shared_ptr<Observe> observe();
 
@@ -147,28 +139,63 @@ public:
     void clear_data(void);
 
     /**
-     * Declaration of new exception info used in following exception
+     * Return if shared pointer to output_mesh_ is created.
      */
-    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
+    inline bool is_output_mesh_init() {
+    	return (bool)(output_mesh_);
+    }
+
+    /// Return auxiliary flag enable_refinement_.
+    inline bool enable_refinement() {
+        return enable_refinement_;
+    }
 
     /**
-     * Declaration of exception
+     * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
+     *
+     * @param init_input Call constructor with initialization from Input Record
      */
-    DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
-            << " returning variable size vectors. Try convert to MultiField.\n");
+    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input);
+
+    /**
+     * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
+     */
+    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
+
+    /**
+     * Return MPI rank of process
+     */
+    inline int get_rank() {
+    	return rank;
+    }
+
+    /**
+     * Update the last time is actual \p time is less than \p field_time
+     */
+    void update_time(double field_time);
+
+    /**
+     * Prepare data for computing field values.
+     *
+     * Method:
+     *  - compute discontinuous mesh if CORNER_DATA is calculated
+     *  - find and return ElementDataCache of given field_name, create its if doesn't exist
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     * @param space_type Output discrete space
+     * @param n_rows     Count of rows of data cache (used only if new cache is created)
+     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     * @param size       Size of data cache (used only if new cache is created and only for native data)
+     */
+    template <typename T>
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
+
+    /// Add given space type to set of used interpolations.
+    void add_field_interpolation(DiscreteSpace space_type);
 
 
 protected:
     
-    void compute_discontinuous_output_mesh();
-    
-    /**
-     * Interpolate given @p field into output discrete @p space and store the values
-     * into private storage for postponed output.
-     */
-    template<int spacedim, class Value>
-    void compute_field_data(DiscreteSpace type, Field<spacedim, Value> &field);
-
     /**
      * Change main filename to have prescribed extension.
      */
@@ -184,12 +211,6 @@ protected:
      * Cached MPI rank of process (is tested in methods)
      */
     int rank;
-
-    /**
-     * Map field name to its OutputData object.
-     */
-    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
-    typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace
@@ -211,12 +232,6 @@ protected:
      * The last time, when data was wrote to this stream
      */
     double write_time;
-
-    /**
-     * Maps names of output fields required by user to their indices in
-     * output_data_vec_.
-     */
-    typedef unsigned int DiscreteSpaceFlags;
 
     /**
      * Record for current output stream
@@ -245,14 +260,19 @@ protected:
     Mesh *_mesh;
     
     /// Output mesh.
-    std::shared_ptr<OutputMesh> output_mesh_;
-    /// Discontinuous (non-conforming) mesh. Used for CORNER_DATA.
-    std::shared_ptr<OutputMeshDiscontinuous> output_mesh_discont_;
+    std::shared_ptr<OutputMeshBase> output_mesh_;
     
     std::shared_ptr<Observe> observe_;
 
-    /// Auxliary flag for refinement enabling, due to gmsh format.
+    /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
+
+    /**
+     * Set of interpolations which are used in performed fields.
+     *
+     * Allow determine type of output mesh.
+     */
+    std::set<DiscreteSpace> used_interpolations_;
 };
 
 

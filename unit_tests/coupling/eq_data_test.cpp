@@ -42,7 +42,7 @@
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/region.hh"
 #include <armadillo>
 
@@ -156,10 +156,7 @@ protected:
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         component_names = { "comp_0", "comp_1", "comp_2" };
 
     }
@@ -202,7 +199,7 @@ protected:
     };
 
 
-    Mesh *mesh;
+    Mesh * mesh;
 };
 
 

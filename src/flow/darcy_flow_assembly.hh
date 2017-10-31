@@ -476,7 +476,7 @@ protected:
                             ele_ac.side_row(i));
                  */
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
-                                                     {ele_ac.side_row(i)}, {1});
+                                                     {(int)(ele_ac.side_row(i))}, {1});
                 ++(ad_->local_boundary_index);
             }
         }

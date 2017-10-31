@@ -27,8 +27,8 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
-#include "mesh/reader_instances.hh"
+#include "io/msh_gmshreader.h"
+#include "io/reader_cache.hh"
 
 
 
@@ -52,10 +52,7 @@ public:
     }
 
     void create_mesh(std::string mesh_file_str) {
-        FilePath mesh_file( mesh_file_str, FilePath::input_file);
-        mesh= mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = mesh_full_constructor("{mesh_file=\"" + mesh_file_str + "\"}");
     }
 
     void create_dof_handler(double val1, double val2, double val3) {
@@ -72,6 +69,13 @@ public:
     const FieldAlgoBaseInitData& init_data(std::string field_name) {
     	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
     	return init_data;
+    }
+
+    static Input::Type::Record &get_input_type() {
+        return Input::Type::Record("Test","")
+            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("native_data", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .close();
     }
 
     Mesh *mesh;
@@ -141,6 +145,11 @@ string input = R"INPUT(
        mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar"
    }
+   native_data={
+       TYPE="FieldFE",
+       mesh_data_file="output/test_output_vtk_ascii_ref.vtu",
+       field_name="flow_data"
+   }
 }
 )INPUT";
 
@@ -149,11 +158,7 @@ string input = R"INPUT(
 TEST_F(FieldFETest, scalar_from_input) {
     create_mesh("fields/simplest_cube_data.msh");
 
-    Input::Type::Record rec_type = Input::Type::Record("Test","")
-        .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-        .close();
-
-    Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
+    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
     Input::Record rec=reader.get_root_interface<Input::Record>();
 
     ScalarField field;
@@ -164,6 +169,24 @@ TEST_F(FieldFETest, scalar_from_input) {
     Space<3>::Point point;
     for(unsigned int i=0; i < mesh->element.size(); i++) {
         EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
+    }
+}
+
+
+TEST_F(FieldFETest, native_data) {
+    create_mesh("fields/simplest_cube_3d.msh");
+
+    Input::ReaderToStorage reader( input, FieldFETest::get_input_type(), Input::FileFormat::format_JSON );
+    Input::Record rec=reader.get_root_interface<Input::Record>();
+
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("native_data"), init_data("native_data"));
+    field.set_mesh(mesh,false);
+    field.set_time(0.0);
+
+    Space<3>::Point point;
+    for(unsigned int i=0; i < mesh->element.size(); i++) {
+        EXPECT_DOUBLE_EQ( i*0.2 , field.value(point, mesh->element_accessor(i)) );
     }
 }
 

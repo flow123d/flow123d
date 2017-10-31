@@ -46,8 +46,6 @@
 #include "fields/field_algo_base.hh"
 #include "input/factory.hh"
 
-class GmshMeshReader;
-
 template <int spacedim, class Value>
 class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>
 {

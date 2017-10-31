@@ -73,7 +73,7 @@ private:
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    unsigned int *dof_indices;
+    std::vector<unsigned int> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;

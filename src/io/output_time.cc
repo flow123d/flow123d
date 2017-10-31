@@ -26,7 +26,6 @@
 #include "output_mesh.hh"
 #include "io/output_time_set.hh"
 #include "io/observe.hh"
-#include <fields/field_set.hh>
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(vtk)
@@ -46,7 +45,11 @@ const IT::Record & OutputTime::get_input_type() {
 		.declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
 		        "Output times used for equations without is own output times key.")
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
-                "Output mesh record enables output on a refined mesh.")
+                "Output mesh record enables output on a refined mesh [EXPERIMENTAL, VTK only]."
+                "Sofar refinement is performed only in discontinous sense."
+                "Therefore only corner and element data can be written on refined output mesh."
+                "Node data are to be transformed to corner data, native data cannot be written."
+                "Do not include any node or native data in output fields.")
         .declare_key("precision", IT::Integer(0), IT::Default("5"),
                 "The number of decimal digits used in output of floating point values.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
@@ -108,50 +111,34 @@ Input::Iterator<Input::Array> OutputTime::get_time_set_array() {
 }
 
 
-void OutputTime::make_output_mesh(FieldSet &output_fields)
-{
-
-    // make observe points if not already done
-    observe();
-
-    // already computed
-    if(output_mesh_) return;
-
-    // Read optional error control field name
-    auto it = input_record_.find<Input::Record>("output_mesh");
-    
-    if(enable_refinement_) {
-        if(it) {
-            output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *it);
-            output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *it);
-            output_mesh_->select_error_control_field(output_fields);
-            output_mesh_discont_->select_error_control_field(output_fields);
-            
-            output_mesh_->create_refined_mesh();
-            return;
-        }
-    }
-    else
-    {
-        // skip creation of output mesh (use computational one)
-        if(it)
-        	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
-    }
-    
-    
-    output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-    output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-    
-    output_mesh_->create_identical_mesh();
+Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
+    return input_record_.find<Input::Record>("output_mesh");
 }
 
 
-void OutputTime::compute_discontinuous_output_mesh()
-{
-    ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_discont_->create_mesh(output_mesh_);
+std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input) {
+	bool discont = (used_interpolations_.find(DiscreteSpace::CORNER_DATA) != used_interpolations_.end());
+	if (discont || this->get_output_mesh_record()) {
+		if (init_input) output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
+	} else {
+		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
+		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
+	}
+	return output_mesh_;
 }
 
+
+std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr() {
+	return output_mesh_;
+}
+
+
+void OutputTime::update_time(double field_time) {
+	if (this->time < field_time) {
+		this->time = field_time;
+	}
+}
 
 
 void OutputTime::fix_main_file_extension(std::string extension)
@@ -221,9 +208,8 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // invalidate output meshes after the time frame written
+            // invalidate output mesh after the time frame written
             output_mesh_.reset();
-            output_mesh_discont_.reset();
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
@@ -250,42 +236,18 @@ void OutputTime::clear_data(void)
 }
 
 
-
-#define INSTANCE_register_field(spacedim, value) \
-	template  void OutputTime::register_data<spacedim, value> \
-		(const DiscreteSpace ref_type, Field<spacedim, value> &field);
-
-#define INSTANCE_register_multifield(spacedim, value) \
-	template void OutputTime::register_data<spacedim, value> \
-		(const DiscreteSpace ref_type, MultiField<spacedim, value> &field);
+void OutputTime::add_field_interpolation(DiscreteSpace space_type) {
+	used_interpolations_.insert(space_type);
+}
 
 
-#define INSTANCE_OutputData(spacedim, value) \
-	template class OutputData<value>;
 
+// explicit instantiation of template methods
+#define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
+template ElementDataCache<TYPE> & OutputTime::prepare_compute_data<TYPE>(std::string field_name, DiscreteSpace space_type, \
+		unsigned int n_rows, unsigned int n_cols)
 
-#define INSTANCE_DIM_DEP_VALUES( MACRO, dim_from, dim_to) \
-		MACRO(dim_from, FieldValue<dim_to>::VectorFixed ) \
-		MACRO(dim_from, FieldValue<dim_to>::TensorFixed )
+OUTPUT_PREPARE_COMPUTE_DATA(int);
+OUTPUT_PREPARE_COMPUTE_DATA(unsigned int);
+OUTPUT_PREPARE_COMPUTE_DATA(double);
 
-#define INSTANCE_TO_ALL( MACRO, dim_from) \
-		MACRO(dim_from, FieldValue<0>::Enum ) \
-		MACRO(dim_from, FieldValue<0>::Integer) \
-		MACRO(dim_from, FieldValue<0>::Scalar) \
-        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 2) \
-        INSTANCE_DIM_DEP_VALUES(MACRO, dim_from, 3) \
-
-#define INSTANCE_ALL(MACRO) \
-		INSTANCE_TO_ALL( MACRO, 3) \
-		INSTANCE_TO_ALL( MACRO, 2)
-
-
-INSTANCE_ALL( INSTANCE_register_field )
-INSTANCE_ALL( INSTANCE_register_multifield )
-
-//INSTANCE_TO_ALL( INSTANCE_OutputData, 0)
-
-
-//INSTANCE_register_field(3, FieldValue<0>::Scalar)
-//INSTANCE_register_multifield(3, FieldValue<0>::Scalar)
-//INSTANCE_OutputData(3, FieldValue<0>::Scalar)

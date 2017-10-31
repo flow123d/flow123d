@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test05 - Steady flow with Dirichlet/Neumann/Newton boundary condition
   mesh:
@@ -34,7 +34,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./test05.pvd
       format: !vtk
         variant: ascii

@@ -5,6 +5,7 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include "system/global_defs.h"
 
@@ -16,7 +17,7 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include "input/reader_to_storage.hh"
 
@@ -129,7 +130,7 @@ TEST(benchmark_meshes, all) {
             MessageOut().fmt("Computing intersection on mesh: {}\n",filenames[s].c_str());
 //             FilePath::set_io_dirs(".","","",".");
             FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
             
             Input::ReaderToStorage input_reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_YAML );
             auto rec = input_reader.get_root_interface<Input::Record>();
@@ -137,8 +138,8 @@ TEST(benchmark_meshes, all) {
             MessageOut() << "IntersectionSearch: " << get_intersection_search_string(mesh.get_intersection_search()) << "\n";
 //             Mesh mesh();
             // read mesh with gmshreader
-            GmshMeshReader reader(mesh_file);
-            reader.read_mesh(&mesh);
+            auto reader = reader_constructor(in_mesh_string);
+            reader->read_raw_mesh(&mesh);
             mesh.setup_topology();
             
             MessageOut() << "==============\n";

@@ -3,7 +3,7 @@
 # Author: Jan Brezina
 # Reference: Just run
 
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Example 1 of real locality - column 1D model
   mesh:
@@ -14,9 +14,9 @@ problem: !Coupling_Sequential
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-            value: "x"
+          value: x
     nonlinear_solver:
-        linear_solver: !Petsc
+      linear_solver: !Petsc
     # this should create, "flow.pvd file and flow directory"
     output_stream:
       file: flow.msh
@@ -32,7 +32,7 @@ problem: !Coupling_Sequential
         - region: .BOUNDARY
           bc_conc: 1
     # this should create, "flow.msh file"
-    output_stream: 
+    output_stream:
       file: flow.msh
       format: !gmsh
         variant: ascii

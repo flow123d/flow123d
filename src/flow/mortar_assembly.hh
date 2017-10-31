@@ -24,7 +24,8 @@ public:
 
     MortarAssemblyBase(AssemblyDataPtr data)
     : data_(data),
-      mixed_mesh_(data->mesh->mixed_intersections())
+      mixed_mesh_(data->mesh->mixed_intersections()),
+      fix_velocity_flag(false)
     {
 
     }

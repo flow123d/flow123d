@@ -4,4 +4,4 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # populated by configure_file call
-python3 ${SCRIPT_DIR}/python/input_convert.py "$@"
+python3 ${SCRIPT_DIR}/yaml_converter/yaml_converter.py "$@"

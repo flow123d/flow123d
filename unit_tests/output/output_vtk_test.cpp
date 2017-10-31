@@ -17,9 +17,15 @@
 #include "io/output_vtk.hh"
 #include "io/output_mesh.hh"
 #include "mesh/mesh.h"
+#include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
-#include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
+#include "fields/field.hh"
+
+#include "fem/mapping_p1.hh"
+#include "fem/dofhandler.hh"
+#include "fem/fe_p.hh"
+#include "fields/field_fe.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
@@ -36,7 +42,7 @@ format: !vtk
 )YAML";
 
 
-class TestOutputVTK : public testing::Test, public OutputVTK {
+class TestOutputVTK : public OutputVTK, public std::enable_shared_from_this<OutputVTK> {
 public:
     TestOutputVTK()
     : OutputVTK()
@@ -45,9 +51,7 @@ public:
         LoggerOptions::get_instance().set_log_file("");
 
         FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/fields/simplest_cube_3d.msh", FilePath::input_file);
-        this->_mesh = mesh_constructor();
-        ifstream in(string(mesh_file).c_str());
-        this->_mesh->read_gmsh_from_stream(in);
+        this->_mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
 
         component_names = { "comp_0", "comp_1", "comp_2" };
     }
@@ -67,7 +71,7 @@ public:
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
-        this->output_mesh_->create_identical_mesh();
+        this->output_mesh_->create_mesh();
 
     }
 
@@ -86,12 +90,42 @@ public:
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-        this->output_mesh_->create_identical_mesh();
+        this->output_mesh_->create_mesh();
 
-        this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
-        this->output_mesh_discont_->create_mesh(this->output_mesh_);
+        //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
+        //this->output_mesh_discont_->create_mesh();
 
-		this->compute_field_data(ELEM_DATA, field);
+		field.compute_field_data(ELEM_DATA, shared_from_this());
+	}
+
+	template <class FieldVal>
+	void set_native_field_data(string field_name, unsigned int size, double step)
+    {
+
+		// make field init it form the init string
+		Field<3, FieldVal> field(field_name, false);
+		field.set_components(component_names);
+		field.set_mesh( *(this->_mesh) );
+		field.units(UnitSI::one());
+
+		std::shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>( *(this->_mesh) );
+		FE_P_disc<0,1,3> fe1;
+		FE_P_disc<0,2,3> fe2;
+		FE_P_disc<0,3,3> fe3;
+		dh->distribute_dofs(fe1, fe2, fe3);
+
+		VectorSeqDouble v;
+        v.resize(size);
+        for (unsigned int i=0; i<size; ++i) v[i] = step*i;
+
+		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
+		native_data_ptr->set_fe_data(dh, &map1, &map2, &map3, &v);
+
+		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
+		field.output_type(OutputTime::NATIVE_DATA);
+		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
+
+		field.compute_field_data(NATIVE_DATA, shared_from_this());
 	}
 
 	// check result
@@ -110,33 +144,58 @@ public:
 	    EXPECT_EQ(str_vtk_file_ref.str(), str_vtk_file.str());
 	}
 
+	void set_current_step(int step) {
+		this->current_step = step;
+	}
+
+	std::string base_filename() {
+		return string(this->_base_filename);
+	}
+
+	std::string main_output_basename() {
+		return this->main_output_basename_;
+	}
+
+	std::string main_output_dir() {
+		return this->main_output_dir_;
+	}
+
 	std::vector<string> component_names;
+	MappingP1<1,3> map1;
+	MappingP1<2,3> map2;
+	MappingP1<3,3> map3;
 };
 
 
-TEST_F(TestOutputVTK, write_data_ascii) {
-	//( const_cast<Input::Type::Instance &>(FieldAlgorithmBase<3, FieldValue<3>::VectorFixed >::get_input_type_instance()) ).finish(Input::Type::FinishType::root_of_generic);
+TEST(TestOutputVTK, write_data_ascii) {
+	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
-	this->init_mesh(test_output_time_ascii);
-    this->current_step=1;
-    this->write_data();
-    EXPECT_EQ("./test1.pvd", string(this->_base_filename));
-    EXPECT_EQ("test1", this->main_output_basename_);
-    EXPECT_EQ(".", this->main_output_dir_);
+	output_vtk->init_mesh(test_output_time_ascii);
+	output_vtk->set_current_step(1);
+	output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+	output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+	output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+	output_vtk->set_native_field_data< FieldValue<0>::Scalar >("flow_data", 6, 0.2);
+	output_vtk->write_data();
+    EXPECT_EQ("./test1.pvd", output_vtk->base_filename());
+    EXPECT_EQ("test1", output_vtk->main_output_basename());
+    EXPECT_EQ(".", output_vtk->main_output_dir());
 
-    check_result_file("test1/test1-000001.vtu", "test_output_vtk_ascii_ref.vtu");
+    output_vtk->check_result_file("test1/test1-000001.vtu", "test_output_vtk_ascii_ref.vtu");
 }
 
 
-TEST_F(TestOutputVTK, write_data_binary) {
-	this->init_mesh(test_output_time_binary);
-    this->current_step=0;
-    set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-    set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-    set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
-    this->write_data();
+TEST(TestOutputVTK, write_data_binary) {
+	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
-    check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
+	output_vtk->init_mesh(test_output_time_binary);
+    output_vtk->set_current_step(0);
+    output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+    output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+    output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+    output_vtk->write_data();
+
+    output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_binary_ref.vtu");
 }
 
 #ifdef FLOW123D_HAVE_ZLIB
@@ -147,15 +206,17 @@ format: !vtk
   variant: binary_zlib
 )YAML";
 
-TEST_F(TestOutputVTK, write_data_compressed) {
-	this->init_mesh(test_output_time_compressed);
-    this->current_step=0;
-    set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
-    set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
-    set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
-    this->write_data();
+TEST(TestOutputVTK, write_data_compressed) {
+	std::shared_ptr<TestOutputVTK> output_vtk = std::make_shared<TestOutputVTK>();
 
-    check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");
+	output_vtk->init_mesh(test_output_time_compressed);
+    output_vtk->set_current_step(0);
+    output_vtk->set_field_data< Field<3,FieldValue<0>::Scalar> > ("scalar_field", "0.5");
+    output_vtk->set_field_data< Field<3,FieldValue<3>::VectorFixed> > ("vector_field", "[0.5, 1.0, 1.5]");
+    output_vtk->set_field_data< Field<3,FieldValue<3>::TensorFixed> > ("tensor_field", "[[1, 2, 3], [4, 5, 6], [7, 8, 9]]");
+    output_vtk->write_data();
+
+    output_vtk->check_result_file("test1/test1-000000.vtu", "test_output_vtk_zlib_ref.vtu");
 }
 
 #endif // FLOW123D_HAVE_ZLIB

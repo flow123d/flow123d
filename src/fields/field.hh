@@ -34,7 +34,7 @@ using namespace std;
 //#include "io/output_time.hh"
 
 class OutputTime;
-
+template<int spacedim, class Value> class FieldFE;
 namespace IT=Input::Type;
 
 /**
@@ -214,7 +214,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -278,6 +278,12 @@ public:
 
     void set_input_list(const Input::Array &list) override;
 
+    /**
+     * Interpolate given field into output discrete @p space_type and store the values
+     * into storage of output time @p stream for postponed output.
+     */
+    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+
 protected:
 
     /**
@@ -292,6 +298,12 @@ protected:
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
      */
     void check_initialized_region_fields_();
+
+    /**
+     * Check that the field is in fact FieldFE set on all bulk regions, return shared pointer to that FieldFE or NULL
+     * if the Field is not FieldFE.
+     */
+    std::shared_ptr< FieldFE<spacedim, Value> > get_field_fe();
 
     /**************** Shared data **************/
 
