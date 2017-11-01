@@ -247,6 +247,10 @@ void OutputTime::add_field_interpolation(DiscreteSpace space_type, const std::st
 }
 
 
+void OutputTime::add_dummy_fields()
+{}
+
+
 
 // explicit instantiation of template methods
 #define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \

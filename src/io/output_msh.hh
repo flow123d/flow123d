@@ -68,6 +68,8 @@ public:
      */
     int write_tail(void);
 
+    /// Complete information about dummy fields that are not in output_data_list_.
+    void add_dummy_fields() override;
 
 private:
 

@@ -272,14 +272,6 @@ void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (Outpu
     auto &dummy_data_list = dummy_data_list_[type_idx];
     auto &data_list = this->output_data_vec_[type_idx];
 
-    if (dummy_data_list.size() == 0) {
-        // Collect all output fields
-        // If more EquationOutput object with different initial times output into same
-        // output stream, we may need to possibly update this list on every output frame.
-        for(auto out_ptr : data_list)
-            dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
-    }
-
 
     auto data_it = data_list.begin();
     for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
@@ -345,5 +337,20 @@ int OutputMSH::write_tail(void)
     return 1;
 }
 
+
+
+void OutputMSH::add_dummy_fields()
+{
+	const std::vector<OutputTime::DiscreteSpace> space_types = {OutputTime::NODE_DATA, OutputTime::CORNER_DATA, OutputTime::ELEM_DATA};
+	for (auto type_idx : space_types) {
+	    auto &dummy_data_list = dummy_data_list_[type_idx];
+	    auto &data_list = this->output_data_vec_[type_idx];
+
+        // Collect all output fields
+		if (dummy_data_list.size() == 0)
+			for(auto out_ptr : data_list)
+				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
+	}
+}
 
 

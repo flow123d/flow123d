@@ -197,6 +197,9 @@ public:
     /// Add information about field to map of used interpolations.
     void add_field_interpolation(DiscreteSpace space_type, const std::string &field_name, unsigned int value_type);
 
+    /// Complete information about dummy fields, method has effect only for GMSH output.
+    virtual void add_dummy_fields();
+
 
 protected:
     
