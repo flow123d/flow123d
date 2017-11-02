@@ -126,12 +126,18 @@ add_library(input_lib
     input/type_tuple.cc
     input/storage.cc
     input/reader_to_storage.cc
+    input/reader_internal_base.cc
+    input/reader_internal.cc
+    input/reader_internal_transpose.cc
+    input/reader_internal_csv.cc
     input/path_base.cc
     input/path_json.cc
     input/path_yaml.cc
     input/type_output.cc
     
     input/accessors.cc
+    
+    input/csv_tokenizer.cc
 )
 target_link_libraries(input_lib 
     system_lib json_spirit
