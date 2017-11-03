@@ -80,8 +80,6 @@
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
-class MeshTree;
-
 
 class BoundarySegment {
 public:
@@ -321,8 +319,6 @@ public:
 
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\
-
-    MeshTree *tree;
 
     /**
      * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.

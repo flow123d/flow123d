@@ -38,7 +38,6 @@
 
 
 #include "mesh/bih_tree.hh"
-#include "mesh/mesh_tree.h"
 
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/abscissa.h"
@@ -105,8 +104,7 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   comm_(com),
   row_4_el(nullptr),
   el_4_loc(nullptr),
-  el_ds(nullptr),
-  tree(nullptr)
+  el_ds(nullptr)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -195,7 +193,6 @@ Mesh::~Mesh() {
     if (row_4_el != nullptr) delete[] row_4_el;
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
-    if (tree != nullptr) delete tree;
 }
 
 
@@ -268,8 +265,6 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
     
-    tree = new MeshTree(this);
-
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements

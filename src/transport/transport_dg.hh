@@ -29,7 +29,6 @@
 #include "fields/equation_output.hh"
 #include "fem/mapping_p1.hh"
 
-class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
@@ -88,8 +87,6 @@ private:
 	MappingP1<2,3> *map2_;
 	MappingP1<3,3> *map3_;
 
-    std::shared_ptr<DiscreteSpace> ds_;
-    
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
