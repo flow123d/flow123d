@@ -32,6 +32,5 @@ define_mpi_test(dofhandler 1)
 #define_mpi_test(dofhandler 2)
 
 define_test(fe_system)
-define_mpi_test(fe_side_values 1)
 
 
