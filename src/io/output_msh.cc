@@ -267,24 +267,6 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << "$EndElementData" << endl;
 }
 
-void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) )
-{
-    auto &dummy_data_list = dummy_data_list_[type_idx];
-    auto &data_list = this->output_data_vec_[type_idx];
-
-
-    auto data_it = data_list.begin();
-    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-    	//DebugOut().fmt("dummy field: {} data field: {}\n", (*dummy_it)->field_input_name_, (*data_it)->field_input_name_);
-        if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
-            (this->*format_fce)(*data_it); ++data_it;
-        } else {
-            (this->*format_fce)(*dummy_it);
-        }
-    }
-    ASSERT( data_it ==  data_list.end() )(data_it - data_list.begin())(data_list.size());
-}
-
 int OutputMSH::write_head(void)
 {
 	LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
@@ -318,9 +300,18 @@ int OutputMSH::write_data(void)
     LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
 
-    this->write_field_data(NODE_DATA, &OutputMSH::write_node_data);
-    this->write_field_data(CORNER_DATA, &OutputMSH::write_corner_data);
-    this->write_field_data(ELEM_DATA, &OutputMSH::write_elem_data);
+    auto &node_data_list = this->output_data_vec_[NODE_DATA];
+    for(auto data_it = node_data_list.begin(); data_it != node_data_list.end(); ++data_it) {
+    	write_node_data(*data_it);
+    }
+    auto &corner_data_list = this->output_data_vec_[CORNER_DATA];
+    for(auto data_it = corner_data_list.begin(); data_it != corner_data_list.end(); ++data_it) {
+    	write_corner_data(*data_it);
+    }
+    auto &elem_data_list = this->output_data_vec_[ELEM_DATA];
+    for(auto data_it = elem_data_list.begin(); data_it != elem_data_list.end(); ++data_it) {
+    	write_elem_data(*data_it);
+    }
 
     // Flush stream to be sure everything is in the file now
     this->_base_file.flush();
@@ -350,6 +341,17 @@ void OutputMSH::add_dummy_fields()
 		if (dummy_data_list.size() == 0)
 			for(auto out_ptr : data_list)
 				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
+
+	    auto data_it = data_list.begin();
+	    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
+	        if ( data_it == data_list.end() ) {
+	        	data_list.push_back( *dummy_it );
+	        } else if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
+	        	++data_it;
+	        } else {
+	        	data_list.push_back( *dummy_it );
+	        }
+	    }
 	}
 }
 

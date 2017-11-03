@@ -85,6 +85,7 @@ private:
     std::vector< std::vector< OutputDataPtr >> dummy_data_list_;
 
     /**
+    /**
      * \brief This function write header of GMSH (.msh) file format
      */
     void write_msh_header(void);
@@ -139,13 +140,6 @@ private:
      * \param[in]   step        The number of steps from start
      */
     void write_elem_data(OutputDataPtr output_data);
-
-    /**
-     * Write fields of single discrete space type, use given format function for the output of single field data.
-     *
-     * At first call it fills dummy_data_list_ (assuming output of all fields at the first output frame).
-     */
-    void write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) );
 
     /**
      * \brief This method add right suffix to .msh GMSH file
