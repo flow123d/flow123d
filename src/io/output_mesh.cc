@@ -109,6 +109,33 @@ unsigned int OutputMeshBase::n_nodes()
     return nodes_->n_values();
 }
 
+std::shared_ptr<ElementDataCacheBase> OutputMeshBase::get_node_ids_cache()
+{
+	if (!node_ids_) {
+		node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
+		unsigned int node_idx[1];
+		for (unsigned int i = 0; i < this->n_nodes(); ++i) {
+			node_idx[0] = i;
+			node_ids_->store_value( i, node_idx );
+		}
+	}
+	return node_ids_;
+}
+
+std::shared_ptr<ElementDataCacheBase> OutputMeshBase::get_element_ids_cache()
+{
+	if (!elem_ids_) {
+		unsigned int elm_idx[1];
+		elem_ids_ = std::make_shared< ElementDataCache<unsigned int> >("elements_ids", (unsigned int)1, 1, this->n_elements());
+		OutputElementIterator it = this->begin();
+		for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
+			elm_idx[0] = it->get_idx();
+			elem_ids_->store_value( i, elm_idx );
+		}
+	}
+	return elem_ids_;
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

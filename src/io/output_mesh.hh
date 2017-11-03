@@ -113,6 +113,11 @@ public:
     /// Returns number of element.
     unsigned int n_elements();
     
+    /// Return data cache of node ids. If doesn't exist create its.
+    std::shared_ptr<ElementDataCacheBase> get_node_ids_cache();
+    /// Return data cache of element ids. If doesn't exist create its.
+	std::shared_ptr<ElementDataCacheBase> get_element_ids_cache();
+
 protected:
     /// Input record for output mesh.
     Input::Record input_record_;
@@ -130,6 +135,11 @@ protected:
     bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
     double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
     
+    /// Vector gets ids of nodes. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
+    /// Vector gets ids of elements. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> elem_ids_;
+
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
 };
