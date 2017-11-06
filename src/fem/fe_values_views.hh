@@ -142,7 +142,7 @@ namespace FEValuesViews {
     /// Base FEValues class for access to the FE.
     FEValuesBase<dim,spacedim> &fe_values_;
     
-    /// Index of the scalar component.
+    /// Index of the first component of the vector.
     unsigned int first_vector_component_;
   };
 

@@ -186,6 +186,8 @@ class FEValuesBase : public FEValuesSpaceBase<spacedim>
 {
 private:
   
+  // internal structure that stores all possible views
+  // for scalar and vector-valued components of the FE
   struct ViewsCache {
     vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
     vector<FEValuesViews::Vector<dim,spacedim> > vectors;

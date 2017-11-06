@@ -24,17 +24,17 @@ using namespace std;
 
 
 
-template<unsigned int dim,unsigned int spacedim>
-std::vector<FiniteElement<dim,spacedim> > expand_fe_vector(const std::vector<std::pair<FiniteElement<dim,spacedim>, unsigned int> > &fe)
-{
-  std::vector<FiniteElement<dim,spacedim> > finite_elements;
-  
-  for (auto fe_pair : fe)
-    for (unsigned int i=0; i<fe_pair.second; i++)
-      finite_elements.push_back(fe_pair.first);
-
-  return finite_elements;
-}
+// template<unsigned int dim,unsigned int spacedim>
+// std::vector<FiniteElement<dim,spacedim> > expand_fe_vector(const std::vector<std::pair<FiniteElement<dim,spacedim>, unsigned int> > &fe)
+// {
+//   std::vector<FiniteElement<dim,spacedim> > finite_elements;
+//   
+//   for (auto fe_pair : fe)
+//     for (unsigned int i=0; i<fe_pair.second; i++)
+//       finite_elements.push_back(fe_pair.first);
+// 
+//   return finite_elements;
+// }
 
 
 
@@ -55,12 +55,16 @@ void FESystem<dim,spacedim>::initialize()
   this->is_primitive_ = false;
   n_components_ = 0;
   
+  // indices of nodal dofs (for each node)
   std::vector<unsigned int> node_basis[dim+1];
+  // indices of cell dofs
   std::vector<unsigned int> cell_basis;
   
   unsigned int fe_index = 0;
   unsigned int comp_offset = 0;
   unsigned basis_offset = 0;
+  // for each base FE add components, support points, and other 
+  // information to the system
   for (auto fe : fe_)
   {
     number_of_dofs += fe->n_dofs();
@@ -82,6 +86,10 @@ void FESystem<dim,spacedim>::initialize()
     for (int i=0; i<fe->n_dofs(); ++i)
       fe_dof_indices_.push_back(DofComponentData(fe_index, i, comp_offset));
     
+    // add indices of the basis functions to the vectors for the particular node
+    // we assume that in the base FE, the nodal dofs are ordered as follows:
+    //   dof 0 for node 0, dof 1 for node 1, ... dof dim for node dim,
+    //   dof dim+1 for node 0, dof dim+2 for node 1, ...
     for (unsigned int i=0; i<fe->n_object_dofs(0, DOF_SINGLE); i++)
       node_basis[i % (dim+1)].push_back(basis_offset+i);
     
@@ -89,6 +97,7 @@ void FESystem<dim,spacedim>::initialize()
                               +fe->n_object_dofs(dim, DOF_PAIR)
                               +fe->n_object_dofs(dim, DOF_TRIPLE)
                               +fe->n_object_dofs(dim, DOF_SEXTUPLE);
+    // in base FE, first come the nodal dofs, then cell dofs
     for (unsigned int i=0; i<n_cell_dofs; i++)
       cell_basis.push_back(basis_offset+fe->n_object_dofs(0,DOF_SINGLE)+i);
     
@@ -97,21 +106,24 @@ void FESystem<dim,spacedim>::initialize()
     basis_offset += fe->n_dofs();
   }
   
+  // make the permutation of dofs: first nodal dofs, then cell dofs
   for (unsigned int i=0; i<dim+1; i++)
     dof_basis_.insert(dof_basis_.end(), node_basis[i].begin(), node_basis[i].end());
   dof_basis_.insert(dof_basis_.end(), cell_basis.begin(), cell_basis.end());
   
-  if (this->is_primitive_)
-  {
-    double dof_index = 0;
-    for (auto fe : fe_)
-    {
-      for (int i=0; i<fe->n_dofs(); ++i)
-        this->component_indices_.push_back(fe_dof_indices_[dof_index++].fe_index);
-    }
-  } else {
+//   if (this->is_primitive_)
+//   {
+//     double dof_index = 0;
+//     // add index of nonzero component for each dof in FESystem
+//     for (auto fe : fe_)
+//     {
+//       for (int i=0; i<fe->n_dofs(); ++i)
+//         this->component_indices_.push_back(fe_dof_indices_[dof_index++].fe_index);
+//     }
+//   } else {
     double dof_index = 0;
     comp_offset = 0;
+    // add footprint of nonzero components for each dof in FESystem
     for (auto fe : fe_)
     {
       for (int i=0; i<fe->n_dofs(); ++i)
@@ -123,7 +135,7 @@ void FESystem<dim,spacedim>::initialize()
       }
       comp_offset += fe->n_components();
     }
-  }
+//   }
 
   compute_node_matrix();
 }
@@ -152,14 +164,15 @@ double FESystem<dim,spacedim>::basis_value_component(const unsigned int i,
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
   
   unsigned int bi = dof_basis_[i];
+  // component index in the base FE
   int l_comp = comp-fe_dof_indices_[bi].component_offset;
-  if (l_comp >= 0 && l_comp < fe_[fe_dof_indices_[bi].fe_index]->n_components())
-    if (fe_[fe_dof_indices_[bi].fe_index]->n_components() == 1)
-      return fe_[fe_dof_indices_[bi].fe_index]->basis_value(fe_dof_indices_[bi].basis_index, p);
-    else
-      return fe_[fe_dof_indices_[bi].fe_index]->basis_value_component(fe_dof_indices_[bi].basis_index, p, l_comp);
-  
-  return 0;
+  OLD_ASSERT(l_comp >= 0 && l_comp < fe_[fe_dof_indices_[bi].fe_index]->n_components(),
+    "Index of component is out of range.");
+
+  if (fe_[fe_dof_indices_[bi].fe_index]->n_components() == 1)
+    return fe_[fe_dof_indices_[bi].fe_index]->basis_value(fe_dof_indices_[bi].basis_index, p);
+
+  return fe_[fe_dof_indices_[bi].fe_index]->basis_value_component(fe_dof_indices_[bi].basis_index, p, l_comp);
 }
 
 template<unsigned int dim, unsigned int spacedim>
@@ -170,14 +183,15 @@ arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad_component(const unsigne
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
   
   unsigned int bi = dof_basis_[i];
+  // component index in the base FE
   int l_comp = comp-fe_dof_indices_[bi].component_offset;
-  if (l_comp >= 0 && l_comp < fe_[fe_dof_indices_[bi].fe_index]->n_components())
-    if (fe_[fe_dof_indices_[bi].fe_index]->n_components() == 1)
-      return fe_[fe_dof_indices_[bi].fe_index]->basis_grad(fe_dof_indices_[bi].basis_index, p);
-    else
-      return fe_[fe_dof_indices_[bi].fe_index]->basis_grad_component(fe_dof_indices_[bi].basis_index, p, l_comp);
+  OLD_ASSERT(l_comp >= 0 && l_comp < fe_[fe_dof_indices_[bi].fe_index]->n_components(),
+    "Index of component is out of range.");
   
-//   return 0;
+  if (fe_[fe_dof_indices_[bi].fe_index]->n_components() == 1)
+    return fe_[fe_dof_indices_[bi].fe_index]->basis_grad(fe_dof_indices_[bi].basis_index, p);
+
+  return fe_[fe_dof_indices_[bi].fe_index]->basis_grad_component(fe_dof_indices_[bi].basis_index, p, l_comp);
 }
 
 
@@ -198,6 +212,9 @@ void FESystem<dim,spacedim>::compute_node_matrix()
 {
   OLD_ASSERT_EQUAL(this->get_generalized_support_points().size(), number_of_dofs);
 
+  // form the node_matrix of the FESystem as block diagonal matrix
+  // composed of node_matrices of each base FE class
+  
   this->node_matrix.resize(number_of_dofs, number_of_dofs);
 
   unsigned int offset = 0;
@@ -214,66 +231,73 @@ void FESystem<dim,spacedim>::compute_node_matrix()
 template<unsigned int dim, unsigned int spacedim>
 FEInternalData *FESystem<dim,spacedim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
 {
-    FEInternalData *data = new FEInternalData;
-    std::vector<FEInternalData *> fe_data;
+  FEInternalData *data = new FEInternalData;
+  std::vector<FEInternalData *> fe_data;
+  
+  // first initialize the base FE
+  if ((flags & update_values) || (flags & update_gradients))
+    for (auto fe : fe_)
+      fe_data.push_back(fe->initialize(q, flags));
+
+  if (flags & update_values)
+  {
+    // fill values of basis functions
+    data->basis_vectors.resize(q.size(), std::vector<arma::vec>(number_of_dofs, arma::vec(n_components_)));
     
-    if ((flags & update_values) || (flags & update_gradients))
-      for (auto fe : fe_)
-        fe_data.push_back(fe->initialize(q, flags));
-
-    if (flags & update_values)
+    unsigned int comp_offset = 0;
+    unsigned int dof_offset = 0;
+    for (unsigned int f=0; f<fe_.size(); f++)
     {
-        data->basis_vectors.resize(q.size(), std::vector<arma::vec>(number_of_dofs, arma::vec(n_components_)));
-        
-        unsigned int comp_offset = 0;
-        unsigned int dof_offset = 0;
-        for (unsigned int f=0; f<fe_.size(); f++)
-        {
-          if (fe_[f]->n_components() == 1)
-          {
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                data->basis_vectors[i][dof_offset+n][comp_offset] = fe_data[f]->basis_values[i][n];
-          }
-          else
-          {
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                data->basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1) = fe_data[f]->basis_vectors[i][n];
-          }
-          comp_offset += fe_[f]->n_components();
-          dof_offset += fe_[f]->n_dofs();
-        }
+      if (fe_[f]->n_components() == 1)
+      {
+        // for scalar base FE copy only one value per point and dof
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            data->basis_vectors[i][dof_offset+n][comp_offset] = fe_data[f]->basis_values[i][n];
+      }
+      else
+      {
+        // for vector-valued base FE copy the values to subvector
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            data->basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1) = fe_data[f]->basis_vectors[i][n];
+      }
+      comp_offset += fe_[f]->n_components();
+      dof_offset += fe_[f]->n_dofs();
     }
+  }
 
-    if (flags & update_gradients)
-    {
-        data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(number_of_dofs, arma::mat(n_components_,dim)));
-        
-        unsigned int comp_offset = 0;
-        unsigned int dof_offset = 0;
-        for (unsigned int f=0; f<fe_.size(); f++)
-        {
-          if (fe_[f]->n_components() == 1)
-          {
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                data->basis_grad_vectors[i][dof_offset+n].row(comp_offset) = fe_data[f]->basis_grads[i].row(n);
-          }
-          else
-          {
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                data->basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1) = fe_data[f]->basis_grad_vectors[i][n];
-          }
-          comp_offset += fe_[f]->n_components();
-          dof_offset += fe_[f]->n_dofs();
-        }
-    }
+  if (flags & update_gradients)
+  {
+    // fill gradients of basis functions
+    data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(number_of_dofs, arma::mat(n_components_,dim)));
     
-    for (auto d : fe_data) delete d;
+    unsigned int comp_offset = 0;
+    unsigned int dof_offset = 0;
+    for (unsigned int f=0; f<fe_.size(); f++)
+    {
+      if (fe_[f]->n_components() == 1)
+      {
+        // for scalar base FE copy values to one row per point and dof
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            data->basis_grad_vectors[i][dof_offset+n].row(comp_offset) = fe_data[f]->basis_grads[i].row(n);
+      }
+      else
+      {
+        // for vector-valued base FE copy the values to submatrix
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            data->basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1) = fe_data[f]->basis_grad_vectors[i][n];
+      }
+      comp_offset += fe_[f]->n_components();
+      dof_offset += fe_[f]->n_dofs();
+    }
+  }
+  
+  for (auto d : fe_data) delete d;
 
-    return data;
+  return data;
 }
 
 template<unsigned int dim, unsigned int spacedim> inline
@@ -282,95 +306,99 @@ void FESystem<dim,spacedim>::fill_fe_values(
         FEInternalData &data,
         FEValuesData<dim,spacedim> &fv_data)
 {
-    if ((fv_data.update_flags & update_values) || (fv_data.update_flags & update_gradients))
-    {
-      std::vector<std::vector<double> > shape_values(q.size(), std::vector<double>(fv_data.shape_values[0].size()));
-      std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients(q.size(), std::vector<arma::vec::fixed<spacedim> >(fv_data.shape_values[0].size()));
-      unsigned int comp_offset = 0;
-      unsigned int dof_offset = 0;
-      unsigned int shape_offset = 0;
-      for (unsigned int f=0; f<fe_.size(); f++)
-      {
-        FEInternalData d;
-        FEValuesData<dim,spacedim> sub_fv_data;
-        
-        if (fv_data.update_flags & update_values)
-        {
-          if (fe_[f]->n_components() == 1)
-          {
-            d.basis_values.resize(q.size(), arma::vec(fe_[f]->n_dofs()));
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                d.basis_values[i].row(n) = data.basis_vectors[i][dof_offset+n].row(comp_offset);
-          }
-          else
-          {
-            d.basis_vectors.resize(q.size(), std::vector<arma::vec>(fe_[f]->n_dofs(), arma::vec(fe_[f]->n_components())));
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                d.basis_vectors[i][n] = data.basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1);
-          }
-        }
-        
-        if (fv_data.update_flags & update_gradients)
-        {
-          if (fe_[f]->n_components() == 1)
-          {
-            d.basis_grads.resize(q.size(), arma::mat(fe_[f]->n_dofs(),dim));
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                d.basis_grads[i].row(n) = data.basis_grad_vectors[i][dof_offset+n].row(comp_offset);
-          }
-          else
-          {
-            d.basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(fe_[f]->n_dofs(), arma::mat(fe_[f]->n_components(),dim)));
-            for (unsigned int i=0; i<q.size(); i++)
-              for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-                d.basis_grad_vectors[i][n] = data.basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1);
-          }
-        }
-        
-        sub_fv_data.allocate(q.size(), fv_data.update_flags, fe_[f]->n_dofs()*fe_[f]->n_components());
-        sub_fv_data.jacobians = fv_data.jacobians;
-        sub_fv_data.inverse_jacobians = fv_data.inverse_jacobians;
-        sub_fv_data.determinants = fv_data.determinants;
-        fe_[f]->fill_fe_values(q, d, sub_fv_data);
-        
-        if (fv_data.update_flags & update_values)
-        {
-          for (unsigned int i=0; i<q.size(); i++)
-            for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-              for (unsigned int c=0; c<fe_[f]->n_components(); c++)
-                shape_values[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_values[i][n];
-        }
-        
-        if (fv_data.update_flags & update_gradients)
-        {
-          for (unsigned int i=0; i<q.size(); i++)
-            for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-              for (unsigned int c=0; c<fe_[f]->n_components(); c++)
-                shape_gradients[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_gradients[i][n];
-        }
-        
-        dof_offset += fe_[f]->n_dofs();
-        comp_offset += fe_[f]->n_components();
-        shape_offset += fe_[f]->n_dofs()*n_components_;
-      }
+  // This method essentially calls fill_fe_values for the FE classes of components
+  // of the FESystem and copies the values to the appropriate structures for FESystem.
+  if (!(fv_data.update_flags & update_values) && !(fv_data.update_flags & update_gradients)) return;
+  
+  std::vector<std::vector<double> > shape_values(q.size(), std::vector<double>(fv_data.shape_values[0].size()));
+  std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients(q.size(), std::vector<arma::vec::fixed<spacedim> >(fv_data.shape_values[0].size()));
+  unsigned int comp_offset = 0;
+  unsigned int dof_offset = 0;
+  unsigned int shape_offset = 0;
+  for (unsigned int f=0; f<fe_.size(); f++)
+  {
+    // create new FEInternalData object for the base FE
+    // and fill its values/gradients
+    FEInternalData d;
+    FEValuesData<dim,spacedim> sub_fv_data;
     
-      // reorder values for compatibility with dof handler
-      for (unsigned int i=0; i<q.size(); i++)
+    if (fv_data.update_flags & update_values)
+    {
+      if (fe_[f]->n_components() == 1)
       {
-        for (unsigned int n=0; n<number_of_dofs; n++)
-          for (unsigned int c=0; c<n_components_; c++)
-          {
-            if (fv_data.update_flags & update_values)
-              fv_data.shape_values[i][n*n_components_+c] = shape_values[i][dof_basis_[n]*n_components_+c];
-            if (fv_data.update_flags & update_gradients)
-              fv_data.shape_gradients[i][n*n_components_+c] = shape_gradients[i][dof_basis_[n]*n_components_+c];
-          }
+        d.basis_values.resize(q.size(), arma::vec(fe_[f]->n_dofs()));
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            d.basis_values[i].row(n) = data.basis_vectors[i][dof_offset+n].row(comp_offset);
       }
-      
+      else
+      {
+        d.basis_vectors.resize(q.size(), std::vector<arma::vec>(fe_[f]->n_dofs(), arma::vec(fe_[f]->n_components())));
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            d.basis_vectors[i][n] = data.basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1);
+      }
     }
+    
+    if (fv_data.update_flags & update_gradients)
+    {
+      if (fe_[f]->n_components() == 1)
+      {
+        d.basis_grads.resize(q.size(), arma::mat(fe_[f]->n_dofs(),dim));
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            d.basis_grads[i].row(n) = data.basis_grad_vectors[i][dof_offset+n].row(comp_offset);
+      }
+      else
+      {
+        d.basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(fe_[f]->n_dofs(), arma::mat(fe_[f]->n_components(),dim)));
+        for (unsigned int i=0; i<q.size(); i++)
+          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+            d.basis_grad_vectors[i][n] = data.basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1);
+      }
+    }
+    
+    // fill fe_values for base FE
+    sub_fv_data.allocate(q.size(), fv_data.update_flags, fe_[f]->n_dofs()*fe_[f]->n_components());
+    sub_fv_data.jacobians = fv_data.jacobians;
+    sub_fv_data.inverse_jacobians = fv_data.inverse_jacobians;
+    sub_fv_data.determinants = fv_data.determinants;
+    fe_[f]->fill_fe_values(q, d, sub_fv_data);
+    
+    // gather fe_values in vectors for FESystem
+    if (fv_data.update_flags & update_values)
+    {
+      for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+          for (unsigned int c=0; c<fe_[f]->n_components(); c++)
+            shape_values[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_values[i][n];
+    }
+    
+    if (fv_data.update_flags & update_gradients)
+    {
+      for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+          for (unsigned int c=0; c<fe_[f]->n_components(); c++)
+            shape_gradients[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_gradients[i][n];
+    }
+    
+    dof_offset += fe_[f]->n_dofs();
+    comp_offset += fe_[f]->n_components();
+    shape_offset += fe_[f]->n_dofs()*n_components_;
+  }
+
+  // reorder values for compatibility with dof handler and fill fv_data
+  for (unsigned int i=0; i<q.size(); i++)
+  {
+    for (unsigned int n=0; n<number_of_dofs; n++)
+      for (unsigned int c=0; c<n_components_; c++)
+      {
+        if (fv_data.update_flags & update_values)
+          fv_data.shape_values[i][n*n_components_+c] = shape_values[i][dof_basis_[n]*n_components_+c];
+        if (fv_data.update_flags & update_gradients)
+          fv_data.shape_gradients[i][n*n_components_+c] = shape_gradients[i][dof_basis_[n]*n_components_+c];
+      }
+  }
 }
 
 
