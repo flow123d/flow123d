@@ -149,7 +149,7 @@ public:
     /**
      * @brief Clears all internal structures.
      */
-    void init();
+    void init(unsigned int n_components = 1, bool primitive = true);
     
     void setup_components();
     

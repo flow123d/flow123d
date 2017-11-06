@@ -36,7 +36,7 @@ FiniteElement<dim,spacedim>::FiniteElement()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init()
+void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive)
 {
     number_of_dofs = 0;
     for (unsigned int i = 0; i <= dim; i++)
@@ -47,8 +47,8 @@ void FiniteElement<dim,spacedim>::init()
         number_of_sextuples[i] = 0;
     }
     
-    is_primitive_ = true;
-    n_components_ = 1;
+    is_primitive_ = primitive;
+    n_components_ = n_components;
 }
 
 

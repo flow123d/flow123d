@@ -27,10 +27,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 {
     arma::vec::fixed<dim> sp;
 
-    this->init();
-    
-    is_primitive_ = false;
-    this->n_components_ = spacedim;
+    this->init(spacedim, false);
     this->component_indices_.clear();
     this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
 
