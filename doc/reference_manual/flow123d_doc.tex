@@ -442,6 +442,17 @@ Directory \verb'bin' contains two \verb'bat' files:
 \textit{Docker Engine daemon has only limited access to your Windows file system. Docker Machine tries to auto-share your}
 \verb'C:\Users' \textit{directory. Directories outside this directory will not be automatically mounted.} 
 
+\subsubsection{Running from other batch file}
+The Windows system calls the batch files in the different way then the binaries. In particular the colling batch file is not processed further after the child batch 
+file is done. In order to do so ane have to use the \verb'CALL' command. This is especially necessary for various calibration tools. The correct calling batch file 
+may look like:
+\begin{verbatim}
+    echo "Starting Flow123d ..."
+    call flow123d.bat a_simulation.yaml 
+    echo "... simulation done."
+\end{verbatim}
+
+
 \subsection{Setting memory of virtual machine}
 The virtual machine (VM) used for running the Docker with Flow123d inside claims predefined portion of the RAM 
 of the host system to be used as the RAM of the guest Docker system. Unfortunately the default size of this memory is
@@ -450,10 +461,13 @@ This is may be enough just for the small problems with thousands of elements. In
 enlarge the RAM size of the guest system. This can be easily done as follows:
 
 \subsection{Issues with Windows 10}
-Starting with Windows 10, the system is updated incrementally. As the Virtual Box deals with very internals of the system
-any such update may broke it. The solution is to install manually the latest available version of VirtualBox. This stands for the 
-fresh installation of Flow123d as well. In particular for the "Creator's update" update, version 1703, you have to install at least version 5.2 
-of the VirtualBox. Yet, starting a virtual machine I end up with error \verb'NtCreateFile(\Device\VBoxDrvStub) failed: Unknown Status -626 ...}'. The workaround is:
+Beginning with Windows 10, Microsoft apply all updates incrementally including major upgrades. As the Virtual Box deals with very internals of the system
+any such update may broke it. The solution is to install manually the latest available version of the VirtualBox. In the case of fresh installation 
+one also can not use automatical installotion of the Virtual Box by the Flow123d installer. An up-to-date version of Virtual Box has to be installed followed by 
+installation of the Flow123d.
+
+In particular for the "Creator's update" update, version 1703, you have to install at least version 5.2 
+of the VirtualBox. Yet, starting the virtual machine it ends up with error \verb'NtCreateFile(\Device\VBoxDrvStub) failed: Unknown Status -626 ...}'. The workaround is:
 uninstall VirtualBox, {\bf reboot}, install VirtualBox 5.2.  
 
  
