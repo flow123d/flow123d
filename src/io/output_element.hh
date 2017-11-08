@@ -197,9 +197,9 @@ inline OutputElement::Point OutputElement::centre() const
 inline unsigned int OutputElement::get_idx() const
 {
 	if (output_mesh_->is_refined())
-		return (*output_mesh_->orig_element_indices_)[ele_idx_];
-	else
 		return ele_idx_;
+	else
+		return this->orig_mesh()->element(ele_idx_).id();
 }
 
 #endif // OUTPUT_ELEMENT_HH_

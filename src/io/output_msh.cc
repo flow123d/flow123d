@@ -16,6 +16,8 @@
  */
 
 #include "output_msh.hh"
+#include "output_mesh.hh"
+#include "output_element.hh"
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
@@ -155,45 +157,32 @@ void OutputMSH::write_msh_topology(void)
 }
 
 
-template<class element>
-void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataPtr output_data)
+void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont)
 {
     ofstream &file = this->_base_file;
+    auto &id_vec = *( id_cache->get_component_data(0).get() );
 
     /* Set precision to max */
     file.precision(std::numeric_limits<double>::digits10);
 
-    for(unsigned int i=0; i < output_data->n_values(); i ++) {
-        file << vec(i).id() << " ";
-        output_data->print_ascii(file, i);
-        file << std::endl;
-    }
-
-}
-
-
-void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
-{
-    Mesh *mesh = this->_mesh;
-    ofstream &file = this->_base_file;
-
-    /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
-
-    /* Write ascii data */
-    unsigned int i_node;
-	unsigned int i_corner = 0;
-    FOR_ELEMENTS(mesh, ele) {
-        file << ele.id() << " " << ele->n_nodes() << " ";
-
-        FOR_ELEMENT_NODES(ele, i_node) {
-            output_data->print_ascii(file, i_corner++);
+    if (discont) { // corner data
+        auto it = this->output_mesh_->begin();
+        unsigned int i_corner = 0;
+        for(unsigned int i=0; i < id_vec.size(); ++i, ++it) {
+            file << id_vec[i] << " " << it->n_nodes() << " ";
+            for (unsigned int j=0; j<it->n_nodes(); j++)
+            	output_data->print_ascii(file, i_corner++);
+            file << std::endl;
+        }
+    } else { // element / node data
+        for(unsigned int i=0; i < id_vec.size(); ++i) {
+            file << id_vec[i] << " ";
+            output_data->print_ascii(file, i);
+            file << std::endl;
         }
 
-        file << std::endl;
     }
 }
-
 
 
 void OutputMSH::write_node_data(OutputDataPtr output_data)
@@ -215,7 +204,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_cont_data(this->_mesh->node_vector, output_data);
+    this->write_msh_ascii_data(this->output_mesh_->get_node_ids_cache(), output_data);
 
     file << "$EndNodeData" << endl;
 }
@@ -239,7 +228,7 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << this->_mesh->n_elements() << endl; // number of values
 
-    this->write_msh_ascii_discont_data(output_data);
+    this->write_msh_ascii_data(this->output_mesh_->get_element_ids_cache(), output_data, true);
 
     file << "$EndElementNodeData" << endl;
 }
@@ -262,7 +251,7 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
+    this->write_msh_ascii_data(this->output_mesh_->get_element_ids_cache(), output_data);
 
     file << "$EndElementData" << endl;
 }

@@ -82,8 +82,12 @@ public:
      */
     static const Input::Type::Record & get_input_type();
     
+    /// Check if output mesh is refined
     bool is_refined();
     
+    /// Check if output mesh is same as original mesh
+    bool is_equal_with_orig();
+
     /// Gives iterator to the FIRST element of the output mesh.
     OutputElementIterator begin();
     /// Gives iterator to the LAST element of the output mesh.
@@ -114,12 +118,27 @@ public:
     unsigned int n_elements();
     
     /// Return data cache of node ids. If doesn't exist create its.
-    std::shared_ptr<ElementDataCacheBase> get_node_ids_cache();
+    std::shared_ptr<ElementDataCache<unsigned int>> get_node_ids_cache();
     /// Return data cache of element ids. If doesn't exist create its.
-	std::shared_ptr<ElementDataCacheBase> get_element_ids_cache();
+	std::shared_ptr<ElementDataCache<unsigned int>> get_element_ids_cache();
 
 protected:
-    /// Input record for output mesh.
+	/**
+	 * Possible types of OutputMesh.
+	 */
+	enum MeshType
+	{
+		orig,     //!< same as original (computational) mesh
+		refined,  //!< refined mesh
+		discont   //!< discontinuous mesh
+	};
+
+
+	/// Create node_ids_ and elem_ids_ data caches
+	void create_id_caches();
+
+
+	/// Input record for output mesh.
     Input::Record input_record_;
     
     /// Pointer to the computational mesh.
@@ -131,7 +150,7 @@ protected:
     /// Refinement error control field.
     ErrorControlFieldPtr error_control_field_;
 
-    bool is_refined_;                   ///< True, if output mesh is refined.
+    MeshType mesh_type_;                ///< Type of OutputMesh
     bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
     double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
     
