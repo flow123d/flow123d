@@ -175,7 +175,7 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
             file << std::endl;
         }
     } else { // element / node data
-        for(unsigned int i=0; i < id_vec.size(); ++i) {
+        for(unsigned int i=0; i < output_data->n_values(); ++i) {
             file << id_vec[i] << " ";
             output_data->print_ascii(file, i);
             file << std::endl;
