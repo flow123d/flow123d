@@ -28,6 +28,8 @@
 
 namespace Input {
 
+class ReaderInternalBase;
+
 
 /**
  * @brief Base abstract class used by ReaderToStorage class to iterate over the input tree.
@@ -130,7 +132,7 @@ public:
      *
      * Store current path and returns true if pointer to new node is not NULL.
      */
-    virtual bool down(const std::string& key) =0;
+    virtual bool down(const std::string& key, int index = -1) =0;
 
     /// Return one level up in the hierarchy.
     virtual void up() =0;
@@ -142,14 +144,14 @@ public:
     std::string as_string() const;
 
     /**
-     * @brief Gets name of descendant Record of Abstract.
+     * @brief Gets value of the record tag, which determines its type.
      *
-     * - for JSON returns value of TYPE key
-     * - for YAML returns value of tag
+     * - for JSON gets value of TYPE key
+     * - for YAML gets value of tag
      *
-     * If descendant name is not found returns empty string.
+     * Typically is used for getting descendant or for include of other input file.
      */
-    virtual std::string get_record_name() const =0;
+    virtual std::string get_record_tag() const =0;
 
 protected:
     /// Forbid default constructor.
@@ -172,6 +174,7 @@ protected:
      */
     std::vector<std::string> json_type_names;
 
+    friend class ReaderInternalCsvInclude;
 };
 
 

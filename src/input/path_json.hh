@@ -68,7 +68,7 @@ public:
      *
      * Implements @p PathBase::down(const std::string&)
      */
-    bool down(const std::string& key) override;
+    bool down(const std::string& key, int index = -1) override;
 
     /// Return one level up in the hierarchy.
     void up() override;
@@ -90,7 +90,9 @@ public:
     bool is_record_type() const override;                             ///< Implements @p PathBase::is_record_type
     bool is_array_type() const override;                              ///< Implements @p PathBase::is_array_type
     PathJSON * clone() const override;                                ///< Implements @p PathBase::clone
-    std::string get_record_name() const override;                     ///< Implements @p PathBase::get_record_name
+
+    /// Implements @p PathBase::get_record_tag
+    std::string get_record_tag() const override;
 
     /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
