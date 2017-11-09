@@ -159,7 +159,7 @@ public:
      * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
     FieldCommon & output_type(OutputTime::DiscreteSpace rt)
-    { type_of_output_data_ = rt; return *this; }
+    { if (rt!=OutputTime::UNDEFINED) type_of_output_data_ = rt; return *this; }
 
     /**
      * Set given mask to the field flags, ignoring default setting.
@@ -237,7 +237,7 @@ public:
         return shared_->limits_;
     }
 
-    OutputTime::DiscreteSpace output_type() const
+    OutputTime::DiscreteSpace get_output_type() const
     { return type_of_output_data_; }
 
     bool is_bc() const
@@ -400,7 +400,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void field_output(std::shared_ptr<OutputTime> stream, OutputTime::DiscreteSpace discrete) =0;
+    virtual void field_output(std::shared_ptr<OutputTime> stream) =0;
 
     /**
      * Perform the observe output of the field.
