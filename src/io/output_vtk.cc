@@ -139,7 +139,7 @@ int OutputVTK::write_data(void)
     /* Strip out relative path and add "base/" string */
     std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
     this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
-            << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
+            << "\" group=\"\" part=\"" << this->rank << "\" file=\"" << relative_frame_file <<"\"/>" << endl;
 
     LogOut() << "O.K.";
 
