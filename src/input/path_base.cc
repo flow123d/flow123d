@@ -35,10 +35,10 @@ void PathBase::output(ostream &stream) const {
     }
 
     for(vector< pair<int, string> >::const_iterator it = path_.begin()+1; it != path_.end(); ++it) {
-        if ( it->first < 0 ) {
-            stream << "/" << it->second;
-        } else {
+        if ( it->second == "" ) {
             stream << "/" << it->first;
+        } else {
+            stream << "/" << it->second;
         }
     }
 }
