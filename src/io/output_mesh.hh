@@ -82,12 +82,6 @@ public:
      */
     static const Input::Type::Record & get_input_type();
     
-    /// Check if output mesh is refined
-    bool is_refined();
-    
-    /// Check if output mesh is same as original mesh
-    bool is_equal_with_orig();
-
     /// Gives iterator to the FIRST element of the output mesh.
     OutputElementIterator begin();
     /// Gives iterator to the LAST element of the output mesh.

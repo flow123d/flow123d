@@ -92,16 +92,6 @@ void OutputMeshBase::set_error_control_field(ErrorControlFieldPtr error_control_
     error_control_field_ = error_control_field;
 }
 
-bool OutputMeshBase::is_refined()
-{
-    return (mesh_type_ == MeshType::refined);
-}
-
-bool OutputMeshBase::is_equal_with_orig()
-{
-	return (mesh_type_ == MeshType::orig);
-}
-
 unsigned int OutputMeshBase::n_elements()
 {
     ASSERT_PTR(offsets_);
@@ -138,12 +128,13 @@ void OutputMeshBase::create_id_caches()
 	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
-		elm_idx[0] = it->get_idx();
+		if (mesh_type_ == MeshType::refined) elm_idx[0] = it->idx();
+		else elm_idx[0] = orig_mesh_->element(it->idx()).id();
 		elem_ids_->store_value( i, elm_idx );
 
 		std::vector< unsigned int > node_list = it->node_list();
 		for (unsigned int j = 0; j < it->n_nodes(); ++j) {
-			if (is_equal_with_orig()) node_idx[0] = orig_mesh_->node_vector(node_list[j]).id();
+			if (mesh_type_ == MeshType::orig) node_idx[0] = orig_mesh_->node_vector(node_list[j]).id();
 			else node_idx[0] = node_list[j];
 			node_ids_->store_value( node_list[j], node_idx );
 		}
