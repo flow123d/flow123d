@@ -52,7 +52,7 @@ public:
      * @param fe Base finite element class.
      * @param n  Multiplicity (number of components).
      */
-    FESystem(FiniteElement<dim,spacedim> *fe, unsigned int n);
+    FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, unsigned int n);
 
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.

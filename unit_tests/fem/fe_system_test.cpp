@@ -73,7 +73,7 @@ TEST(FeSystem, test_all) {
         ElementVector el_vec = make_elements(nodes, { { 0, 1, 2, 3 } });
         ElementFullIter ele( el_vec(0) );
         
-        FESystem<3,3> fe_sys(new FE_P<1,3,3>, 3);
+        FESystem<3,3> fe_sys(std::make_shared<FE_P<1,3,3> >(), 3);
         MappingP1<3,3> map;
         Quadrature<3> q(nodes.size());
         for (unsigned int i=0; i<nodes.size(); i++)

@@ -39,11 +39,10 @@ using namespace std;
 
 
 template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::FESystem(FiniteElement<dim,spacedim> *fe, unsigned int n)
+FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, unsigned int n)
 {
   FiniteElement<dim,spacedim>::init(0, false);
-  std::shared_ptr<FiniteElement<dim,spacedim> > fe_ptr(fe);
-  fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(n, fe_ptr);
+  fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(n, fe);
   initialize();
 }
 
