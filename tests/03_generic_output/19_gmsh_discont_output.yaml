@@ -35,9 +35,9 @@ problem: !Coupling_Sequential
         bc_pressure: 0
     output:
       fields:
-        - pressure_p0
-        - pressure_p1
-        - velocity_p0
+        - { field: pressure_p0, interpolation: D1_value }
+        - { field: pressure_p1, interpolation: D1_value }
+        - { field: velocity_p0, interpolation: D1_value }
     balance: {}
     output_stream:
       file: flow.msh
@@ -58,7 +58,7 @@ problem: !Coupling_Sequential
           porosity: 1
       output:
         fields:
-          - conc
+          - { field: conc, interpolation: D1_value }
     output_stream:
       file: ./transport.msh
       format: !gmsh

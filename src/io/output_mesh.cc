@@ -128,8 +128,8 @@ void OutputMeshBase::create_id_caches()
 	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
-		if (mesh_type_ == MeshType::refined) elm_idx[0] = it->idx();
-		else elm_idx[0] = orig_mesh_->element(it->idx()).id();
+		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element(it->idx()).id();
+		else elm_idx[0] = it->idx();
 		elem_ids_->store_value( i, elm_idx );
 
 		std::vector< unsigned int > node_list = it->node_list();
