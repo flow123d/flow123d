@@ -70,35 +70,3 @@ problem: !Coupling_Sequential
       a_tol: 1.0e-07
     time:
       end_time: 1
-  heat_equation: !Heat_AdvectionDiffusion_DG
-    balance:
-      cumulative: true
-    input_fields:
-      - region: .bottom
-        bc_type: dirichlet
-        bc_temperature: 1
-      - region: ALL
-        fluid_density: 1000.0
-        fluid_heat_capacity: 5
-        fluid_heat_conductivity: 1
-        solid_density: 3000.0
-        solid_heat_capacity: 1
-        solid_heat_conductivity: 3
-      - region: rock
-        porosity: 0.01
-      - region: fracture
-        porosity: 1
-    output:
-      fields:
-        - { field: temperature, interpolation: P0_value }
-    output_stream:
-      file: ./heat.msh
-      format: !gmsh
-        variant: ascii
-      name: transport_output_stream
-      times:
-        - step: 5
-    solver: !Petsc
-      a_tol: 1.0e-07
-    time:
-      end_time: 20
