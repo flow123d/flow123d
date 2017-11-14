@@ -76,10 +76,19 @@ public:
      */
     const unsigned int loffset() const { return loffset_; }
     
+    /**
+     * @brief Returns max. number of dofs on one element.
+     */
     const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
+    /**
+     * @brief Returns the parallel distribution of dofs.
+     */
     Distribution *distr() const { return ds_; }
 
+    /**
+     * @brief Returns the mesh.
+     */
     Mesh *mesh() const { return mesh_; }
 
     /**

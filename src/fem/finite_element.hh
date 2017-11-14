@@ -151,6 +151,9 @@ public:
      */
     void init(unsigned int n_components = 1, bool primitive = true);
     
+    /**
+     * @brief Initialize vectors with information about components of basis functions.
+     */
     void setup_components();
     
     /**
