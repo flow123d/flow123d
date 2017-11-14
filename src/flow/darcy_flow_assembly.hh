@@ -150,9 +150,12 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        //due to time dependent flow, fill the whole diagonal (otherwise it is allocated)
+        // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
+        // all zeros will be thrown away from the system.
+        // Since we need to keep the matrix structure for the schur complements
+        // and time dependent flow, we fill the whole diagonal with artificial zeros.
         for(unsigned int i=0; i<size(); i++)
-            if(loc_system_.get_matrix()(i,i)==0) loc_system_.add_value(i,i,loc_system_.artificial_zero);
+            loc_system_.add_value(i,i,loc_system_.artificial_zero);
 
         ad_->lin_sys->set_local_system(loc_system_);
 
