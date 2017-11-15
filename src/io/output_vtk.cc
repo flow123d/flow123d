@@ -39,8 +39,8 @@ const Record & OutputVTK::get_input_type() {
 		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("\"ascii\""),
 			"Variant of output stream file format.")
 		// The parallel or serial variant
-		//.declare_key("parallel", Bool(), Default("false"),
-		//	"Parallel or serial version of file format.")
+		.declare_key("parallel", Bool(), Default("false"),
+			"Parallel or serial version of file format.")
 		.close();
 }
 
@@ -85,10 +85,11 @@ void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, co
 {
 	OutputTime::init_from_input(equation_name, mesh, in_rec);
 
-    if(this->rank == 0) {
-        auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
-        variant_type_ = format_rec.val<VTKVariant>("variant");
+    auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
+    variant_type_ = format_rec.val<VTKVariant>("variant");
+    parallel_ = format_rec.val<bool>("parallel");
 
+    if(this->rank == 0) {
         this->fix_main_file_extension(".pvd");
         try {
             this->_base_filename.open_stream( this->_base_file );
