@@ -42,9 +42,6 @@ const IT::Record & OutputMeshBase::get_input_type() {
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
-	nodes_( std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 0) ),
-	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
-	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
 	orig_mesh_(&mesh),
     max_level_(0),
     is_refined_(false),
@@ -56,9 +53,6 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 : 
-	nodes_( std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 0) ),
-	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
-	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
     input_record_(in_rec), 
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level")),
@@ -110,6 +104,12 @@ unsigned int OutputMeshBase::n_nodes()
 }
 
 
+bool OutputMeshBase::is_created()
+{
+	return (nodes_ && connectivity_ && offsets_);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -131,9 +131,7 @@ OutputMesh::~OutputMesh()
 
 void OutputMesh::create_mesh()
 {
-	nodes_.reset();
-	connectivity_.reset();
-	offsets_.reset();
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
 	DebugOut() << "Create outputmesh identical to computational one.";
 
@@ -225,9 +223,7 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 
 void OutputMeshDiscontinuous::create_mesh()
 {
-	nodes_.reset();
-	connectivity_.reset();
-	offsets_.reset();
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
     ASSERT_DBG(orig_mesh_->n_nodes() > 0);   //continuous data already computed
     
@@ -522,9 +518,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
 
 void OutputMeshDiscontinuous::create_sub_mesh()
 {
-	nodes_.reset();
-	connectivity_.reset();
-	offsets_.reset();
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
 	DebugOut() << "Create output submesh containing only local elements.";
 

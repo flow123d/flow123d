@@ -116,6 +116,9 @@ public:
     /// Returns number of element.
     unsigned int n_elements();
     
+    /// Check if nodes_, connectivity_ and offsets_ data caches are created
+    bool is_created();
+
 protected:
     /// Input record for output mesh.
     Input::Record input_record_;
