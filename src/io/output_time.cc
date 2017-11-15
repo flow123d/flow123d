@@ -122,8 +122,8 @@ std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_inp
 		if (init_input) output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
 		else output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
 	} else {
-		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
+		ASSERT_DBG(!init_input).error("Forbidden combination of output flags.\n");
+		output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
 	}
 	return output_mesh_;
 }
