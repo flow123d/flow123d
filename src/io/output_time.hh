@@ -151,14 +151,12 @@ public:
     }
 
     /**
-     * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
-     *
-     * @param init_input Call constructor with initialization from Input Record
+     * Set shared pointer of \p output_mesh_.
      */
-    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input);
+    void set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr);
 
     /**
-     * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
+     * Get shared pointer of \p output_mesh_.
      */
     std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
@@ -190,8 +188,9 @@ public:
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
-    /// Add given space type to set of used interpolations.
-    void add_field_interpolation(DiscreteSpace space_type);
+    inline Mesh * get_orig_mesh() {
+    	return _mesh;
+    }
 
 
 protected:
@@ -266,13 +265,6 @@ protected:
 
     /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
-
-    /**
-     * Set of interpolations which are used in performed fields.
-     *
-     * Allow determine type of output mesh.
-     */
-    std::set<DiscreteSpace> used_interpolations_;
 };
 
 

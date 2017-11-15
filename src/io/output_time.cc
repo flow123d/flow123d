@@ -116,16 +116,8 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input) {
-	bool discont = (used_interpolations_.find(DiscreteSpace::CORNER_DATA) != used_interpolations_.end());
-	if (discont || this->get_output_mesh_record()) {
-		if (init_input) output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-	} else {
-		ASSERT_DBG(!init_input).error("Forbidden combination of output flags.\n");
-		output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-	}
-	return output_mesh_;
+void OutputTime::set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	output_mesh_ = mesh_ptr;
 }
 
 
@@ -233,11 +225,6 @@ std::shared_ptr<Observe> OutputTime::observe()
 void OutputTime::clear_data(void)
 {
     for(auto &map : output_data_vec_)  map.clear();
-}
-
-
-void OutputTime::add_field_interpolation(DiscreteSpace space_type) {
-	used_interpolations_.insert(space_type);
 }
 
 
