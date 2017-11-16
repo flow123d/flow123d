@@ -187,6 +187,9 @@ public:
                         ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
+        // in case sigma==0, we might want to keep the zeros in the system
+        // (to keep matrix structure, sigma might change to nonzero later)
+        value += LocalSystem::artificial_zero;
         local_vb[0] = -value;   local_vb[1] = value;
         local_vb[2] = value;    local_vb[3] = -value;
     }
