@@ -155,7 +155,7 @@ public:
         // Since we need to keep the matrix structure for the schur complements
         // and time dependent flow, we fill the whole diagonal with artificial zeros.
         for(unsigned int i=0; i<size(); i++)
-            loc_system_.add_value(i,i,loc_system_.artificial_zero);
+            loc_system_.add_value(i,i,loc_system_.almost_zero);
 
         ad_->lin_sys->set_local_system(loc_system_);
 
@@ -189,7 +189,7 @@ public:
 
         // in case sigma==0, we might want to keep the zeros in the system
         // (to keep matrix structure, sigma might change to nonzero later)
-        value += LocalSystem::artificial_zero;
+        value += LocalSystem::almost_zero;
         local_vb[0] = -value;   local_vb[1] = value;
         local_vb[2] = value;    local_vb[3] = -value;
     }

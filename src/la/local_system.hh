@@ -36,7 +36,7 @@ public:
     // This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
     // Another case is keeping the structure of matrix unchanged for the schur complements - 
     // for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
-    static constexpr double artificial_zero = std::numeric_limits<double>::min();
+    static constexpr double almost_zero = std::numeric_limits<double>::min();
     
     /**
      * Global row and col indices.  Are public and can be freely set.

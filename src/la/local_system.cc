@@ -117,7 +117,7 @@ void LocalSystem::eliminate_solution()
         tmp_rhs -= solution_cols[ic] * tmp_mat.col( col );
         
         for(j=0; j < tmp_mat.n_rows; j++)
-            if(tmp_mat.col(col)(j) != 0) tmp_mat.col(col)(j) = artificial_zero;
+            if(tmp_mat.col(col)(j) != 0) tmp_mat.col(col)(j) = almost_zero;
     }
 
     // eliminate rows
@@ -126,7 +126,7 @@ void LocalSystem::eliminate_solution()
         tmp_rhs( row ) = 0.0;
         
         for(j=0; j < tmp_mat.n_cols; j++)
-            if(tmp_mat.row(row)(j) != 0) tmp_mat.row(row)(j) = artificial_zero;
+            if(tmp_mat.row(row)(j) != 0) tmp_mat.row(row)(j) = almost_zero;
 
         // fix global diagonal
         for(ic=0; ic < n_elim_cols; ic++) {
