@@ -218,9 +218,6 @@ protected:
 
    /// Output format (ascii, binary or binary compressed)
    VTKVariant variant_type_;
-
-   /// Parallel or serial version of file format
-   bool parallel_;
 };
 
 #endif /* OUTPUT_VTK_HH_ */

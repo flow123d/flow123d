@@ -192,6 +192,13 @@ public:
     	return _mesh;
     }
 
+    /**
+     * Return if file format is in parallel / serial version.
+     */
+    inline bool is_parallel() {
+    	return parallel_;
+    }
+
 
 protected:
     
@@ -199,6 +206,16 @@ protected:
      * Change main filename to have prescribed extension.
      */
     void fix_main_file_extension(std::string extension);
+
+
+    /**
+     * \brief Return unique value current step for parallel or serial output.
+     *
+     *  Respect value of \p parallel_ flag:
+     *   - for serial output return actual value of \p current_step
+     *   - for parallel output take unique value with account rank and number of processes
+     */
+    int get_parallel_current_step();
 
 
     /**
@@ -210,6 +227,11 @@ protected:
      * Cached MPI rank of process (is tested in methods)
      */
     int rank;
+
+    /**
+     * Cached MPI number of processes (is tested in methods)
+     */
+    int n_proc;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace
@@ -265,6 +287,9 @@ protected:
 
     /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
+
+    /// Parallel or serial version of file format (parallel has effect only for VTK)
+    bool parallel_;
 };
 
 

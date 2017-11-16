@@ -69,9 +69,11 @@ OutputTime::OutputTime()
 : current_step(0),
   time(-1.0),
   write_time(-1.0),
-  _mesh(nullptr)
+  _mesh(nullptr),
+  parallel_(false)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc);
 }
 
 
@@ -225,6 +227,13 @@ std::shared_ptr<Observe> OutputTime::observe()
 void OutputTime::clear_data(void)
 {
     for(auto &map : output_data_vec_)  map.clear();
+}
+
+
+int OutputTime::get_parallel_current_step()
+{
+	if (parallel_) return n_proc*current_step+rank;
+	else return current_step;
 }
 
 

@@ -87,7 +87,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, co
 
     auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
     variant_type_ = format_rec.val<VTKVariant>("variant");
-    parallel_ = format_rec.val<bool>("parallel");
+    this->parallel_ = format_rec.val<bool>("parallel");
 
     if(this->rank == 0) {
         this->fix_main_file_extension(".pvd");
@@ -119,7 +119,7 @@ int OutputVTK::write_data(void)
 
     ostringstream ss;
     ss << main_output_basename_ << "-"
-       << std::setw(6) << std::setfill('0') << this->current_step
+       << std::setw(6) << std::setfill('0') << this->get_parallel_current_step()
        << ".vtu";
 
 
@@ -144,7 +144,7 @@ int OutputVTK::write_data(void)
 
     LogOut() << "O.K.";
 
-    LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
+    LogOut() << __func__ << ": Writing output (frame " << this->get_parallel_current_step() << ") file " << relative_frame_file << " ... ";
 
     this->write_vtk_vtu();
 
