@@ -155,7 +155,6 @@ class FE_P : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::order;
 
 public:
     /// Constructor.
@@ -216,7 +215,6 @@ class FE_P_disc : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::order;
 
 public:
 
@@ -367,8 +365,6 @@ FE_P<degree,dim,spacedim>::FE_P()
     for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
-    order = degree;
-    
     this->setup_components();
     
     this->compute_node_matrix();
@@ -437,8 +433,6 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
     for (unsigned int i=0; i<dof_distribution.unit_support_points.size(); i++)
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
-    order = degree;
-    
     this->setup_components();
 
     this->compute_node_matrix();

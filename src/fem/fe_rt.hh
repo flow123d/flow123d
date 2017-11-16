@@ -38,7 +38,6 @@ class FE_RT0 : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::generalized_support_points;
-    using FiniteElement<dim,spacedim>::order;
     using FiniteElement<dim,spacedim>::is_primitive_;
     using FiniteElement<dim,spacedim>::node_matrix;
 

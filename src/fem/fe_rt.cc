@@ -43,8 +43,6 @@ FE_RT0<dim,spacedim>::FE_RT0()
         generalized_support_points.push_back(sp);
     }
 
-    order = 1;
-
     compute_node_matrix();
 }
 

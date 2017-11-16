@@ -80,8 +80,6 @@ void FESystem<dim,spacedim>::initialize()
     for (int i=0; i<fe->get_generalized_support_points().size(); i++)
         generalized_support_points.push_back(fe->get_generalized_support_points()[i]);
 
-    if (fe->polynomial_order() > order) order = fe->polynomial_order();
-    
     for (int i=0; i<fe->n_dofs(); ++i)
       fe_dof_indices_.push_back(DofComponentData(fe_index, i, comp_offset));
     

@@ -258,16 +258,6 @@ public:
             FEValuesData<dim,spacedim> &fv_data);
 
     /**
-     * @brief Returns the maximum degree of
-     * space of polynomials contained in the finite element space.
-     *
-     * For possible use in hp methods.
-     */
-    virtual const unsigned int polynomial_order() const {
-        return order;
-    };
-
-    /**
      * @brief Indicates whether the basis functions have one or more
      * nonzero components (scalar FE spaces are always primitive).
      */
@@ -335,11 +325,6 @@ protected:
      * @brief Number of sextuples of dofs associated to one triangle.
      */
     unsigned int number_of_sextuples[dim + 1];
-
-    /**
-     * @brief Polynomial order - to be possibly used in hp methods.
-     */
-    unsigned int order;
 
     /**
      * @brief Primitive FE is using componentwise shape functions,
