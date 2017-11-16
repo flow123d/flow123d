@@ -30,8 +30,10 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-        - cross_section
-        - sigma
+        - field: cross_section
+          interpolation: Native
+        - field: sigma
+          interpolation: Native
     balance: {}
     output_stream:
       file: ./test14.pvd

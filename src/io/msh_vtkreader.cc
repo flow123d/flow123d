@@ -456,6 +456,7 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 
 void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 {
+	this->create_node_element_caches();
     std::vector<unsigned int> node_ids; // allow mapping ids of nodes from VTK mesh to GMSH
     std::vector<unsigned int> offsets_vec; // value of offset section in VTK file
 
@@ -469,24 +470,14 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         unsigned int i_node, i_elm_node;
         const BIHTree &bih_tree=mesh.get_bih_tree();
 
-    	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-		MeshDataHeader point_header = this->find_header(header_params);
-        ASSERT_EQ(3, point_header.n_components).error();
-        node_ids.resize(point_header.n_entities);
-        // fill vectors necessary for correct reading of data, we read all data same order as data is stored
-        for (unsigned int i=0; i<point_header.n_entities; ++i) {
-        	bulk_elements_id_.push_back(i);
-        }
+    	ElementDataFieldMap::iterator field_it=element_data_values_->find("Points");
+    	ASSERT(field_it != element_data_values_->end()).error("Missing cache of Points section. Did you call create_node_element_caches()?\n");
 
-        // create temporary data cache
-        ElementDataCache<double> node_cache(point_header.field_name, point_header.time, 1,
-        		point_header.n_components*point_header.n_entities);
-
-        // check compatible nodes, to each VTK point must exist only one GMSH node
-        this->read_element_data(node_cache, point_header, point_header.n_components, false);
-        std::vector<double> &node_vec = *(node_cache.get_component_data(0) );
-        ASSERT_EQ(node_vec.size(), point_header.n_components*point_header.n_entities).error();
-        for (unsigned int i=0; i<point_header.n_entities; ++i) {
+    	// create nodes of mesh
+    	std::vector<double> &node_vec = *( dynamic_cast<ElementDataCache<double> &>(*(field_it->second)).get_component_data(0).get() );
+    	unsigned int n_nodes = node_vec.size() / 3;
+    	node_ids.resize(n_nodes);
+        for (unsigned int i=0; i<n_nodes; ++i) {
             arma::vec3 point = { node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
             int found_i_node = -1;
             bih_tree.find_point(point, searched_elements);
@@ -515,35 +506,20 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     }
 
     {
-        // read offset data section into offsets_vec vector, it's used for reading connectivity
-    	HeaderQuery header_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-        MeshDataHeader offset_header = this->find_header(header_params);
-        for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
-        	bulk_elements_id_.push_back(i);
-        }
+    	ElementDataFieldMap::iterator field_it=element_data_values_->find("offsets");
+    	ASSERT(field_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
 
-        ElementDataCache<unsigned int> offset_cache(offset_header.field_name, offset_header.time, 1,
-        		offset_header.n_components*offset_header.n_entities);
-        this->read_element_data(offset_cache, offset_header, offset_header.n_components, false);
-
-        offsets_vec = *(offset_cache.get_component_data(0) );
+        offsets_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(field_it->second)).get_component_data(0).get() );
     }
 
     {
         // read connectivity data section, find corresponding elements in GMSH
         // cells in data section and elements in GMSH must be in ratio 1:1
         // store orders (mapping between VTK and GMSH file) into bulk_elements_id_ vector
-    	HeaderQuery header_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-        MeshDataHeader con_header = this->find_header(header_params);
-        con_header.n_entities = offsets_vec[offsets_vec.size()-1];
-        for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
-        	bulk_elements_id_.push_back(i);
-        }
+    	ElementDataFieldMap::iterator field_it=element_data_values_->find("connectivity");
+    	ASSERT(field_it != element_data_values_->end()).error("Missing cache of connectivity section. Did you call create_node_element_caches()?\n");
 
-        ElementDataCache<unsigned int> con_cache(con_header.field_name, con_header.time, 1, con_header.n_components*con_header.n_entities);
-        this->read_element_data(con_cache, con_header, con_header.n_components, false);
-
-        std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );
+        std::vector<unsigned int> &connectivity_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(field_it->second)).get_component_data(0).get() );
         vector<unsigned int> node_list;
         vector<unsigned int> candidate_list; // returned by intersect_element_lists
         vector<unsigned int> result_list; // list of elements with same dimension as vtk element
@@ -589,22 +565,17 @@ void VtkMeshReader::read_physical_names(Mesh * mesh) {
 
 
 void VtkMeshReader::read_nodes(Mesh * mesh) {
-	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-	auto actual_header = this->find_header(header_params);
+	this->create_node_element_caches();
 
-	bulk_elements_id_.resize(actual_header.n_entities);
-	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
-
-	// set new cache, read node data
-	ElementDataCache<double> node_cache(actual_header.field_name, actual_header.time, 1,
-    		actual_header.n_components*actual_header.n_entities);
-    this->read_element_data(node_cache, actual_header, actual_header.n_components, false);
+	ElementDataFieldMap::iterator it=element_data_values_->find("Points");
+	ASSERT(it != element_data_values_->end()).error("Missing cache of Points section. Did you call create_node_element_caches()?\n");
 
 	// create nodes of mesh
-    mesh->reserve_node_size(actual_header.n_entities);
-	std::vector<double> &vect = *( node_cache.get_component_data(0).get() );
+	std::vector<double> &vect = *( dynamic_cast<ElementDataCache<double> &>(*(it->second)).get_component_data(0).get() );
+	unsigned int n_nodes = vect.size()/3;
+    mesh->reserve_node_size(n_nodes);
 	arma::vec3 point;
-	for (unsigned int i=0, ivec=0; i<actual_header.n_entities; ++i) {
+	for (unsigned int i=0, ivec=0; i<n_nodes; ++i) {
         point(0)=vect[ivec]; ++ivec;
         point(1)=vect[ivec]; ++ivec;
         point(2)=vect[ivec]; ++ivec;
@@ -616,32 +587,15 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 
 
 void VtkMeshReader::read_elements(Mesh * mesh) {
-	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-
-	// read offset data section into offsets_vec vector, it's used for reading connectivity
-    MeshDataHeader offset_header = this->find_header(offsets_params);
-    for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) {
-    	bulk_elements_id_.push_back(i);
-    }
-
-    ElementDataCache<unsigned int> offset_cache(offset_header.field_name, offset_header.time, 1,
-    		offset_header.n_components*offset_header.n_entities);
-    this->read_element_data(offset_cache, offset_header, offset_header.n_components, false);
-
-    std::vector<unsigned int> &offsets_vec = *(offset_cache.get_component_data(0) ); // values of offset section in VTK file
+    // read offset section in VTK file
+	ElementDataFieldMap::iterator offset_it=element_data_values_->find("offsets");
+	ASSERT(offset_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
+    std::vector<unsigned int> &offsets_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(offset_it->second)).get_component_data(0).get() );
 
     // read connectivity data section
-    HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
-    MeshDataHeader con_header = this->find_header(con_params);
-    con_header.n_entities = offsets_vec[offsets_vec.size()-1];
-    for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) {
-    	bulk_elements_id_.push_back(i);
-    }
-
-    ElementDataCache<unsigned int> con_cache(con_header.field_name, con_header.time, 1, con_header.n_components*con_header.n_entities);
-    this->read_element_data(con_cache, con_header, con_header.n_components, false);
-
-    std::vector<unsigned int> &connectivity_vec = *(con_cache.get_component_data(0) );
+	ElementDataFieldMap::iterator conn_it=element_data_values_->find("connectivity");
+	ASSERT(conn_it != element_data_values_->end()).error("Missing cache of offsets section. Did you call create_node_element_caches()?\n");
+    std::vector<unsigned int> &connectivity_vec = *( dynamic_cast<ElementDataCache<unsigned int> &>(*(conn_it->second)).get_component_data(0).get() );
 
     // iterate trough connectivity data, create bulk elements
     // fill bulk_elements_id_ vector
@@ -659,6 +613,42 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
         node_list.clear();
         last_offset = offsets_vec[i];
     }
+}
+
+
+void VtkMeshReader::create_node_element_caches() {
+	ElementDataFieldMap::iterator it=element_data_values_->find("Points");
+	if ( it != element_data_values_->end() ) {
+		// prevents repeat call of read_nodes
+		return;
+	}
+
+	ASSERT( !has_compatible_mesh_ ).error();
+
+	has_compatible_mesh_ = true;
+
+	// read Points data section
+	HeaderQuery header_params("Points", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+	auto point_header = this->find_header(header_params);
+	bulk_elements_id_.resize(point_header.n_entities);
+	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
+	this->get_element_data<double>(point_header.n_entities, point_header.n_components, false, 0 );
+
+	// read offset data section
+	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    auto offset_header = this->find_header(offsets_params);
+    for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) bulk_elements_id_.push_back(i);
+    std::vector<unsigned int> &offsets_vec = *( this->get_element_data<unsigned int>(offset_header.n_entities, offset_header.n_components, false, 0 ) );
+
+    // read connectivity data section
+    HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
+    auto & con_header = this->find_header(con_params);
+    con_header.n_entities = offsets_vec[offsets_vec.size()-1];
+    for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) bulk_elements_id_.push_back(i);
+    this->get_element_data<unsigned int>(con_header.n_entities, con_header.n_components, false, 0 );
+
+    has_compatible_mesh_ = false;
+	bulk_elements_id_.clear();
 }
 
 

@@ -19,7 +19,6 @@
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
-#include "system/sys_profiler.hh"
 #include "system/logger_options.hh"
 #include "fields/field.hh"
 
@@ -72,7 +71,7 @@ public:
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
-        this->output_mesh_->create_identical_mesh();
+        this->output_mesh_->create_mesh();
 
     }
 
@@ -91,10 +90,10 @@ public:
 
         // create output mesh identical to computational mesh
         this->output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-        this->output_mesh_->create_identical_mesh();
+        this->output_mesh_->create_mesh();
 
-        this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
-        this->output_mesh_discont_->create_mesh(this->output_mesh_);
+        //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
+        //this->output_mesh_discont_->create_mesh();
 
 		field.compute_field_data(ELEM_DATA, shared_from_this());
 	}
