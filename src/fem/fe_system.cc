@@ -51,10 +51,13 @@ FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > f
 template<unsigned int dim, unsigned int spacedim>
 void FESystem<dim,spacedim>::initialize()
 {
-  // indices of nodal dofs (for each node)
-  std::vector<unsigned int> node_basis[dim+1];
-  // indices of cell dofs
-  std::vector<unsigned int> cell_basis;
+  // indices of dofs
+  // - first index=entity dimension (node, line, triangle, tetrahedron),
+  // - second index=entity,
+  // - third index=basis function
+  std::vector<std::vector<std::vector<unsigned int> > > basis(dim+1);
+  basis[0].resize(dim+1); // nodal dofs
+  basis[dim].resize(1); // cell dofs
   
   unsigned int fe_index = 0;
   unsigned int comp_offset = 0;
@@ -87,7 +90,7 @@ void FESystem<dim,spacedim>::initialize()
     //   dof 0 for node 0, dof 1 for node 1, ... dof dim for node dim,
     //   dof dim+1 for node 0, dof dim+2 for node 1, ...
     for (unsigned int i=0; i<fe->n_object_dofs(0, DOF_SINGLE); i++)
-      node_basis[i % (dim+1)].push_back(basis_offset+i);
+      basis[0][i % (dim+1)].push_back(basis_offset+i);
     
     unsigned int n_cell_dofs = fe->n_object_dofs(dim, DOF_SINGLE)
                               +fe->n_object_dofs(dim, DOF_PAIR)
@@ -95,7 +98,7 @@ void FESystem<dim,spacedim>::initialize()
                               +fe->n_object_dofs(dim, DOF_SEXTUPLE);
     // in base FE, first come the nodal dofs, then cell dofs
     for (unsigned int i=0; i<n_cell_dofs; i++)
-      cell_basis.push_back(basis_offset+fe->n_object_dofs(0,DOF_SINGLE)+i);
+      basis[dim][0].push_back(basis_offset+fe->n_object_dofs(0,DOF_SINGLE)+i);
     
     fe_index++;
     comp_offset += fe->n_components();
@@ -103,9 +106,9 @@ void FESystem<dim,spacedim>::initialize()
   }
   
   // make the permutation of dofs: first nodal dofs, then cell dofs
-  for (unsigned int i=0; i<dim+1; i++)
-    dof_basis_.insert(dof_basis_.end(), node_basis[i].begin(), node_basis[i].end());
-  dof_basis_.insert(dof_basis_.end(), cell_basis.begin(), cell_basis.end());
+  for (auto dim_basis : basis)
+    for (auto entity_basis : dim_basis)
+      dof_basis_.insert(dof_basis_.end(), entity_basis.begin(), entity_basis.end());
   
 //   if (this->is_primitive_)
 //   {
