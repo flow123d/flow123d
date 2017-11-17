@@ -109,51 +109,70 @@ int OutputVTK::write_data(void)
 {
     ASSERT_PTR(output_mesh_).error();
 
-    /* It's possible now to do output to the file only in the first process */
-    if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
+    /* Output of serial format is implemented only in the first process */
+    if ( (this->rank != 0) && (!parallel_) ) {
         return 0;
     }
 
-    ASSERT(this->_base_file.is_open())(this->_base_filename).error();
+    /* Write DataSets to the PVD file only in the first process */
+    if (this->rank == 0) {
+        ASSERT(this->_base_file.is_open())(this->_base_filename).error();
+        LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
-    ostringstream ss;
-    ss << main_output_basename_ << "-"
-       << std::setw(6) << std::setfill('0') << this->get_parallel_current_step()
-       << ".vtu";
+        /* Set floating point precision to max */
+        this->_base_file.precision(std::numeric_limits<double>::digits10);
+    	int current_step = this->get_parallel_current_step();
 
+        if (parallel_) {
+        	for (int i_rank=0; i_rank<n_proc; ++i_rank, ++current_step) {
+                /* Strip out relative path and add "base/" string */
+                ostringstream ss;
+                ss << main_output_basename_ << "/" << main_output_basename_ << "-"
+                   << std::setw(6) << std::setfill('0') << current_step << ".vtu";
+                this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+                        << "\" group=\"\" part=\"" << i_rank << "\" file=\"" << ss.str() <<"\"/>" << endl;
+        	}
+        } else {
+            /* Strip out relative path and add "base/" string */
+            ostringstream ss;
+            ss << main_output_basename_ << "/" << main_output_basename_ << "-"
+               << std::setw(6) << std::setfill('0') << current_step << ".vtu";
+            this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+                    << "\" group=\"\" part=\"0\" file=\"" << ss.str() <<"\"/>" << endl;
+        }
 
-    std::string frame_file_name = ss.str();
-    FilePath frame_file_path({main_output_dir_, main_output_basename_, frame_file_name}, FilePath::output_file);
+        LogOut() << "O.K.";
 
-    /* Set up data file */
-    try {
-        frame_file_path.open_stream(_data_file);
-    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
+    }
 
+    /* write VTU file */
+    {
+        ostringstream ss;
+        ss << main_output_basename_ << "-"
+           << std::setw(6) << std::setfill('0') << this->get_parallel_current_step()
+           << ".vtu";
 
-    LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
+        std::string frame_file_name = ss.str();
+        FilePath frame_file_path({main_output_dir_, main_output_basename_, frame_file_name}, FilePath::output_file);
 
-    /* Set floating point precision to max */
-    this->_base_file.precision(std::numeric_limits<double>::digits10);
+        /* Set up data file */
+        try {
+            frame_file_path.open_stream(_data_file);
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
-    /* Strip out relative path and add "base/" string */
-    std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
-    this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
-            << "\" group=\"\" part=\"" << this->rank << "\" file=\"" << relative_frame_file <<"\"/>" << endl;
+        LogOut() << __func__ << ": Writing output (frame " << this->get_parallel_current_step() << ") file "
+				 << main_output_basename_ << "/" << frame_file_name << " ... ";
 
-    LogOut() << "O.K.";
+        this->write_vtk_vtu();
 
-    LogOut() << __func__ << ": Writing output (frame " << this->get_parallel_current_step() << ") file " << relative_frame_file << " ... ";
+        /* Close stream for file of current frame */
+        _data_file.close();
+        //delete data_file;
+        //this->_data_file = NULL;
 
-    this->write_vtk_vtu();
+        LogOut() << "O.K.";
 
-    /* Close stream for file of current frame */
-    _data_file.close();
-    //delete data_file;
-    //this->_data_file = NULL;
-
-    LogOut() << "O.K.";
+    }
 
     return 1;
 }
@@ -535,9 +554,8 @@ void OutputVTK::write_vtk_vtu(void)
 
 int OutputVTK::write_head(void)
 {
-    /* It's possible now to do output to the file only in the first process */
+    /* Output to PVD file is implemented only in the first process */
     if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
@@ -555,9 +573,8 @@ int OutputVTK::write_head(void)
 
 int OutputVTK::write_tail(void)
 {
-    /* It's possible now to do output to the file only in the first process */
+    /* Output to PVD file is implemented only in the first process */
     if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 

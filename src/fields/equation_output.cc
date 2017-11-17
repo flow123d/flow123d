@@ -232,12 +232,13 @@ void EquationOutput::make_output_mesh()
     // create output mesh identical with the computational one
 	std::shared_ptr<OutputMeshBase> output_mesh;
 	bool discont = (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
-	if (discont || it) {
+	if (discont || it || stream_->is_parallel()) {
 		output_mesh = std::make_shared<OutputMeshDiscontinuous>(*stream_->get_orig_mesh());
 	} else {
 		output_mesh = std::make_shared<OutputMesh>(*stream_->get_orig_mesh());
 	}
-	output_mesh->create_mesh();
+	if (stream_->is_parallel()) output_mesh->create_sub_mesh();
+	else output_mesh->create_mesh();
 	stream_->set_output_mesh_ptr(output_mesh);
 }
 

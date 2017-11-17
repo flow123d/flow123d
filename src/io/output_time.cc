@@ -186,11 +186,10 @@ std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &
 void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
-    /* TODO: do something, when support for Parallel VTK is added */
     if (observe_)
         observe_->output_time_frame(time);
 
-    if (this->rank == 0) {
+    if (this->rank == 0 || this->parallel_) {
 
     	// Write data to output stream, when data registered to this output
 		// streams were changed

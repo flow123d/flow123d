@@ -582,7 +582,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 	typedef typename Value::element_type ElemType;
 
     /* It's possible now to do output to the file only in the first process */
-    if( stream->get_rank() != 0) {
+    if( (stream->get_rank() != 0) && (!stream->is_parallel())) {
         /* TODO: do something, when support for Parallel VTK is added */
         return;
     }
