@@ -109,20 +109,24 @@ void LocalSystem::eliminate_solution()
     arma::mat tmp_mat = matrix;
     arma::vec tmp_rhs = rhs;
     
-    unsigned int ic, ir, row, col;
+    unsigned int ic, ir, row, col, j;
 
     // eliminate columns
     for(ic=0; ic < n_elim_cols; ic++) {
         col = elim_cols[ic];
         tmp_rhs -= solution_cols[ic] * tmp_mat.col( col );
-        tmp_mat.col( col ).zeros();
+        
+        for(j=0; j < tmp_mat.n_rows; j++)
+            if(tmp_mat.col(col)(j) != 0) tmp_mat.col(col)(j) = almost_zero;
     }
 
     // eliminate rows
     for(ir=0; ir < n_elim_rows; ir++) {
         row = elim_rows[ir];
         tmp_rhs( row ) = 0.0;
-        tmp_mat.row( row ).zeros();
+        
+        for(j=0; j < tmp_mat.n_cols; j++)
+            if(tmp_mat.row(row)(j) != 0) tmp_mat.row(row)(j) = almost_zero;
 
         // fix global diagonal
         for(ic=0; ic < n_elim_cols; ic++) {
@@ -134,7 +138,7 @@ void LocalSystem::eliminate_solution()
 
                 if (diag_rows[ir] != 0.0)    // if preferred value is set
                     new_diagonal = diag_rows[ir];
-                else if(new_diagonal == 0.0)      // if an assembled value is not available
+                else if(new_diagonal < 2*almost_zero)      // if an assembled value is not available
                     new_diagonal = 1.0;
                 //                     double new_diagonal = fabs(matrix(sol_row,col));
                 //                     if (new_diagonal == 0.0) {

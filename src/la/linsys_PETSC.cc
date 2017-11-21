@@ -238,6 +238,7 @@ void LinSys_PETSC::preallocate_matrix()
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
 
     delete[] on_nz;
     delete[] off_nz;
@@ -433,6 +434,7 @@ LinSys_PETSC::~LinSys_PETSC( )
     if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
+    if (residual_ != NULL) VecDestroy(&residual_);
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 

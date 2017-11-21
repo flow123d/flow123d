@@ -595,6 +595,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it:{} (reason: {}) residual: {}\n",
         		nonlinear_iteration_, l_it, convergedReason, residual_norm);
     }
+    VecDestroy(&save_solution);
     this -> postprocess();
 
     // adapt timestep
@@ -619,13 +620,15 @@ void DarcyMH::postprocess()
 {
     START_TIMER("postprocess");
 
-    auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
-        unsigned int dim = ele_ac.dim();
-        multidim_assembler[dim-1]->fix_velocity(ele_ac);
+    //fix velocity when mortar method is used
+    if(data_->mortar_method_ != MortarMethod::NoMortar){
+        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+        for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+            auto ele_ac = mh_dh.accessor(i_loc);
+            unsigned int dim = ele_ac.dim();
+            multidim_assembler[dim-1]->fix_velocity(ele_ac);
+        }
     }
-
     //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel
@@ -716,6 +719,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int dim = ele_ac.dim();
+        DBGVAR(ele_ac.ele_global_idx());
         assembler[dim-1]->assemble(ele_ac);
         //temporary
 //         if(ele_ac.is_enriched()){
@@ -752,25 +756,25 @@ void DarcyMH::allocate_mh_matrix()
     data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
    
-    uint nsides;
-//     int ele_row;
-    int *edge_rows; 
 
-    const uint loc_size_max = 200;
+    const unsigned int loc_size_max = 200;
     int local_dofs[loc_size_max];
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
     for(int i=0; i<100000; i++) zeros[i] = 0.0;
 
-//     const unsigned int max_dofs = 100;
-//     int dofs_vel[max_dofs],
-//         dofs_press[max_dofs];
+    std::vector<int> tmp_rows;
+    tmp_rows.reserve(200);
+    
+    unsigned int nsides, loc_size;
+    int* edge_rows;
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
+        nsides = ele_ac.n_sides();
         
-        uint loc_size = ele_ac.get_dofs(local_dofs);
+        loc_size = ele_ac.get_dofs(local_dofs);
         ASSERT_DBG(loc_size < loc_size_max);
         
         nsides = ele_ac.n_sides();
@@ -888,9 +892,6 @@ void DarcyMH::allocate_mh_matrix()
 //         }
         
         
-
-        std::vector<int> tmp_rows;
-        tmp_rows.reserve(200);
 
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
@@ -1174,6 +1175,8 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
 {
     std::string output_file;
     
+    DebugOut() << "Print MH system in matlab format.\n";
+    
     if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
 //         WarningOut() << "Can output matrix only on a single processor.";
 //         output_file = FilePath(matlab_file + "_bddc.m", FilePath::output_file);
@@ -1387,6 +1390,13 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
+    
+    VecDestroy(&previous_solution);
+    VecDestroy(&steady_diagonal);
+    VecDestroy(&new_diagonal);
+    VecDestroy(&steady_rhs);
+    
+    
     if (schur0 != NULL) {
         delete schur0;
         VecScatterDestroy(&par_to_all);
@@ -1399,7 +1409,8 @@ DarcyMH::~DarcyMH() {
 
 	if (output_object)	delete output_object;
 
-
+    if(time_ != nullptr)
+        delete time_;
     
 }
 

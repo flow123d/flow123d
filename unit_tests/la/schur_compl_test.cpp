@@ -133,9 +133,13 @@ TEST(schur, complement) {
 		PetscInt ncols;
 		const PetscInt *cols;
 		const PetscScalar *vals;
+                
+                // schurComplement->get_a_inv() is a sparse diagonal 2x2 matrix
+                MatView(schurComplement->get_a_inv(),PETSC_VIEWER_STDOUT_WORLD);
 		for (unsigned int i=0; i<block_size; i++) {
 			MatGetRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
-			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[i] );
+                        // check diagonal value, ncols is equal 1 (only diagonal entry)
+			EXPECT_FLOAT_EQ( (1.0 / (double)(rank + 2)), vals[0] );
 			MatRestoreRow(schurComplement->get_a_inv(), i + rank*block_size, &ncols, &cols, &vals);
 		}
 		MatGetRow(*(schurComplement->get_system()->get_matrix()), rank, &ncols, &cols, &vals);

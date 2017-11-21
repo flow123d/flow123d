@@ -28,6 +28,16 @@ class LocalSystem
 public:
     typedef arma::uvec DofVec;
     
+    // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
+    // all zeros will be thrown away from the system.
+    // If we do not want some zero entries in the system matrix to be thrown away,
+    // we can set these entries with this almost zero value.
+    //
+    // This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
+    // Another case is keeping the structure of matrix unchanged for the schur complements - 
+    // for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
+    static constexpr double almost_zero = std::numeric_limits<double>::min();
+    
     /**
      * Global row and col indices.  Are public and can be freely set.
      * Nevertheless one can also provide reference to already existing arrays through
