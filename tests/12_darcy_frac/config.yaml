@@ -10,6 +10,10 @@ test_cases:
     #- 16_exact_3d_nc_p1.yaml        
     - 30_surf_cube_cc.yaml
   proc: [1]
+  
+- files:
+    - 07_parallel_2_proc.yaml
+  proc: [2]
 
 # long running tests
 - files:
