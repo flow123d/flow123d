@@ -541,7 +541,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
-        (*orig_element_indices_)[ele_id] = ele_id;
+        (*orig_element_indices_)[ele_id] = el_4_loc[loc_el];
         ele_id++;
 	}
 
