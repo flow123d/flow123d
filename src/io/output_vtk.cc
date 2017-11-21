@@ -88,18 +88,18 @@ void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, co
     auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
     variant_type_ = format_rec.val<VTKVariant>("variant");
     this->parallel_ = format_rec.val<bool>("parallel");
+    this->fix_main_file_extension(".pvd");
 
     if(this->rank == 0) {
-        this->fix_main_file_extension(".pvd");
         try {
             this->_base_filename.open_stream( this->_base_file );
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
-
-        this->make_subdirectory();
-        this->write_head();
     }
+
+    this->make_subdirectory();
+    this->write_head();
 
 }
 
@@ -186,9 +186,11 @@ void OutputVTK::make_subdirectory()
 	main_output_dir_ = this->_base_filename.parent_path();
 	main_output_basename_ = this->_base_filename.stem();
 
-    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
-    FilePath fp(sub_path, FilePath::output_file);
-    fp.create_output_dir();
+	if(this->rank == 0) {
+	    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
+	    FilePath fp(sub_path, FilePath::output_file);
+	    fp.create_output_dir();
+	}
 }
 
 
