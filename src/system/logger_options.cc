@@ -22,7 +22,7 @@
 #include "system/file_path.hh"
 
 #include <time.h>
-
+#include <random>
 
 /*******************************************************************
  * implementation of LoggerOptions

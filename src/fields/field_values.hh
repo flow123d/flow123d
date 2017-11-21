@@ -18,13 +18,15 @@
 #ifndef FIELD_VALUES_HH_
 #define FIELD_VALUES_HH_
 
+#include <cmath>
+#include <cstdlib>
+
 #include <armadillo>
 #include <boost/format.hpp>
 #include <system/exceptions.hh>
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include <ostream>
-#include <cmath>
 
 namespace IT=Input::Type;
 

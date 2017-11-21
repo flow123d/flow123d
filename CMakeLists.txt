@@ -341,7 +341,8 @@ set(Boost_USE_STATIC_LIBS       ON)
 set(Boost_USE_MULTITHREADED     OFF)
 set(Boost_USE_STATIC_RUNTIME    OFF)
 set(EXTERNAL_BOOST_DIR  "${EXTERNAL_PROJECT_DIR}/boost_build")  
-set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
+#set(REQUIRED_Boost_COMPONENTS program_options serialization regex filesystem system)
+set(REQUIRED_Boost_COMPONENTS program_options filesystem) 
  
 # set(Boost_DEBUG TRUE)
 # For some mysterious reason, the second find_package fails to find
@@ -457,14 +458,15 @@ message(STATUS "====== BDDCML =========================================")
 message(STATUS "=======================================================")
 message(STATUS "BDDCML_ROOT = ${BDDCML_ROOT}")
 
-find_package(BDDCML REQUIRED)
-flow_define(HAVE_BDDCML)
-
-message(STATUS "-------------------------------------------------------")
-message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
-message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
-message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
-message(STATUS "=======================================================\n\n") 
+find_package(BDDCML)
+if (BDDCML_FOUND)
+    flow_define(HAVE_BDDCML)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
+    message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
+    message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+endif()
 
 
 #################################################################################
@@ -645,7 +647,8 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
-    ${BDDCML_INCLUDES}
+    ${PYTHON_INCLUDE_DIRS}
+    
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
@@ -657,6 +660,10 @@ include_directories(
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
+if (BDDCML_FOUND)
+    include_directories(${BDDCML_INCLUDES})
+endif()    
+    
 ######################################################################################################################
 # custom targets
 
