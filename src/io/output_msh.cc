@@ -137,24 +137,24 @@ void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->_base_file;
     Mesh* mesh = this->_mesh;
-    unsigned int i,i_elm;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
     auto &id_elem_vec = *( this->output_mesh_->get_element_ids_cache()->get_component_data(0).get() );
 
     // Write information about elements
     file << "$Elements" << endl;
-    file << mesh->n_elements() << endl;
-    i_elm=0;
-    FOR_ELEMENTS(mesh, elm) {
+    file << this->output_mesh_->n_elements() << endl;
+    auto it = this->output_mesh_->begin();
+    ElementAccessor<OutputElement::spacedim> elm;
+    for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm, ++it) {
+    	elm = it->element_accessor();
         // element_id element_type 3_other_tags material region partition
-        file << id_elem_vec[i_elm] //ELEM_FULL_ITER(mesh, elm).id()
-             << " " << gmsh_simplex_types_[ elm->dim() ]
-             << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
+        file << id_elem_vec[i_elm]
+             << " " << gmsh_simplex_types_[ elm.dim() ]
+             << " 3 " << elm.region().id() << " " << elm.region().id() << " " << elm.element()->pid;
 
-        FOR_ELEMENT_NODES(elm, i)
-            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).id();
+        for(unsigned int i=0; i<elm.element()->n_nodes(); i++)
+            file << " " << NODE_FULL_ITER(mesh, elm.element()->node[i]).id();
         file << endl;
-        i_elm++;
     }
     file << "$EndElements" << endl;
 }
