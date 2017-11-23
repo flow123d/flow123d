@@ -122,13 +122,16 @@ void OutputMSH::write_msh_header(void)
 void OutputMSH::write_msh_geometry(void)
 {
     ofstream &file = this->_base_file;
-    Mesh* mesh = this->_mesh;
 
     // Write information about nodes
     file << "$Nodes" << endl;
-    file <<  mesh->node_vector.size() << endl;
-    FOR_NODES(mesh, nod) {
-        file << NODE_FULL_ITER(mesh, nod).id() << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
+    file << this->output_mesh_->n_nodes() << endl;
+    auto &id_node_vec = *( this->output_mesh_->get_node_ids_cache()->get_component_data(0).get() );
+    unsigned int i_node=0;
+    for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
+        file << id_node_vec[i_node] << " ";
+        this->output_mesh_->nodes_->print_ascii(file, i_node);
+        file << endl;
     }
     file << "$EndNodes" << endl;
 }
@@ -136,9 +139,9 @@ void OutputMSH::write_msh_geometry(void)
 void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->_base_file;
-    Mesh* mesh = this->_mesh;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
     auto &id_elem_vec = *( this->output_mesh_->get_element_ids_cache()->get_component_data(0).get() );
+    auto &id_node_vec = *( this->output_mesh_->get_node_ids_cache()->get_component_data(0).get() );
 
     // Write information about elements
     file << "$Elements" << endl;
@@ -152,8 +155,9 @@ void OutputMSH::write_msh_topology(void)
              << " " << gmsh_simplex_types_[ elm.dim() ]
              << " 3 " << elm.region().id() << " " << elm.region().id() << " " << elm.element()->pid;
 
-        for(unsigned int i=0; i<elm.element()->n_nodes(); i++)
-            file << " " << NODE_FULL_ITER(mesh, elm.element()->node[i]).id();
+        for(unsigned int i=0; i<elm.element()->n_nodes(); i++) {
+            file << " " << id_node_vec[it->node_index(i)];
+        }
         file << endl;
     }
     file << "$EndElements" << endl;
@@ -229,7 +233,7 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
     file << output_data->n_elem() << endl;   // number of components
-    file << this->_mesh->n_elements() << endl; // number of values
+    file << this->output_mesh_->n_elements() << endl; // number of values
 
     this->write_msh_ascii_data(this->output_mesh_->get_element_ids_cache(), output_data, true);
 
