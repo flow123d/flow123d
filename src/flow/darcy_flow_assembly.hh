@@ -117,6 +117,9 @@ public:
             loc_edge_dofs[i] = nsides + i + 1;
         }
         //DebugOut() << print_var(this) << print_var(side_quad_.size());
+        
+        // force the local system to keep nonzeros on the global diagonal
+        loc_system_.sparsity_pattern().force_global_diagonal();
 
         if (ad_->mortar_method_ == DarcyMH::MortarP0) {
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
@@ -150,13 +153,6 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
-        // all zeros will be thrown away from the system.
-        // Since we need to keep the matrix structure for the schur complements
-        // and time dependent flow, we fill the whole diagonal with artificial zeros.
-        for(unsigned int i=0; i<size(); i++)
-            loc_system_.add_value(i,i,loc_system_.almost_zero);
-
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);

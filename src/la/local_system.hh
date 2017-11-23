@@ -28,14 +28,58 @@ class LocalSystem
 public:
     typedef arma::uvec DofVec;
     
-    // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
-    // all zeros will be thrown away from the system.
-    // If we do not want some zero entries in the system matrix to be thrown away,
-    // we can set these entries with this almost zero value.
-    //
-    // This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
-    // Another case is keeping the structure of matrix unchanged for the schur complements - 
-    // for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
+    /// Class enables setting the sparsity pattern of the local system matrix.
+    /** 
+     * If we define the sparsity pattern of the local system matrix,
+     * we force the global system matrix NOT to throw away the zeros, since
+     * the LinSys_PETSC has the option MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE) set.
+     * 
+     * This is done by replacing the zero entries with 'almost zero' so that the values are kept.
+     * See @p almost_zero in LocalSystem for additional info.
+     * 
+     * The sparsity pattern entries are only 0 or 1.
+     */
+    class SparsityPattern
+    {
+      public:
+          /// Default constructor.
+          SparsityPattern();
+          /// Constructor taking the size of the system as parameters.
+          SparsityPattern(unsigned int nrows, unsigned int ncols);
+          /// Sets the entry [@p row,@p col] nonzero.
+          void set(unsigned int row, unsigned int col);
+          /// Sets the entry [@p row,@p col] zero.
+          void reset(unsigned int row, unsigned int col);
+          /// Sets all the entries nonzero.
+          void fill_all();
+          /// Sets all the entries zero.
+          void clear_all();
+          /// Tell the local system to make non zeros on the global matrix diagonal.
+          void force_global_diagonal();
+          /// Returns force_global_diagonal flag.
+          bool is_set_global_diagonal();
+          /// Changes the size of the matrix.
+          void resize(unsigned int nrows, unsigned int ncols);
+          /// Gets the sparsity pattern matrix.
+          const arma::umat & get_matrix();
+      private:
+          arma::umat pattern;
+          bool force_global_diagonal_;
+    };
+    
+    SparsityPattern sparisty_pattern()
+    { return sparsity_pattern_; }
+    
+    /// Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
+    /// all zeros will be thrown away from the system.
+    /// If we do not want some zero entries in the system matrix to be thrown away,
+    /// we can set these entries with this almost zero value.
+    ///
+    /// This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
+    /// Another case is keeping the structure of matrix unchanged for the schur complements -
+    /// for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
+    ///
+    /// TODO: think about hiding it private, so the user is forced to use the sparsity_pattern.
     static constexpr double almost_zero = std::numeric_limits<double>::min();
     
     /**
@@ -137,13 +181,15 @@ public:
     void set_matrix(arma::mat matrix);
     void set_rhs(arma::vec rhs);
 
-
+    SparsityPattern & sparsity_pattern();
 
 protected:
     void set_size(unsigned int nrows, unsigned int ncols);
 
     arma::mat matrix;   ///< local system matrix
     arma::vec rhs;      ///< local system RHS
+    
+    SparsityPattern sparsity_pattern_;  ///< sparsity pattern
 
     unsigned int n_elim_rows, n_elim_cols;
     DofVec elim_rows;
