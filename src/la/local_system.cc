@@ -14,7 +14,7 @@ LocalSystem::LocalSystem(unsigned int nrows, unsigned int ncols)
   col_dofs(ncols),
   matrix(nrows, ncols),
   rhs(nrows),
-  sparsity_pattern_(nrows,ncols),
+  sparsity(nrows,ncols),
   elim_rows(nrows),
   elim_cols(ncols),
   solution_rows(nrows),
@@ -35,7 +35,8 @@ void LocalSystem::set_size(unsigned int nrows, unsigned int ncols)
     solution_rows.set_size(nrows);
     solution_cols.set_size(ncols);
     diag_rows.set_size(nrows);
-    sparsity_pattern_.resize(nrows,ncols);
+    // destroy previous sparsity pattern
+    sparsity.zeros(nrows,ncols);
 }
 
 
@@ -55,7 +56,8 @@ void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
     rhs.set_size(nrows);
     row_dofs.resize(matrix.n_rows);
     col_dofs.resize(matrix.n_cols);
-    sparsity_pattern_.resize(nrows,ncols);
+    // destroy previous sparsity pattern
+    sparsity.zeros(nrows,ncols);
     reset();
 }
 
@@ -64,7 +66,6 @@ void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
 void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
 {
     set_size(rdofs.n_rows, cdofs.n_rows);
-    sparsity_pattern_.resize(rdofs.n_rows,cdofs.n_rows);
     reset();
     row_dofs = rdofs;
     col_dofs = cdofs;
@@ -121,20 +122,14 @@ void LocalSystem::eliminate_solution()
         for(ic=0; ic < n_elim_cols; ic++) {
             col = elim_cols[ic];
             tmp_rhs -= solution_cols[ic] * tmp_mat.col( col );
-            
-            // keep the structure of the matrix by setting almost_zero when eliminating dirichlet BC
-            for(j=0; j < tmp_mat.n_rows; j++)
-                if(tmp_mat.col(col)(j) != 0) tmp_mat.col(col)(j) = almost_zero;
+            tmp_mat.col( col ).zeros();
         }
 
         // eliminate rows
         for(ir=0; ir < n_elim_rows; ir++) {
             row = elim_rows[ir];
             tmp_rhs( row ) = 0.0;
-            
-            // keep the structure of the matrix by setting almost_zero when eliminating dirichlet BC
-            for(j=0; j < tmp_mat.n_cols; j++)
-                if(tmp_mat.row(row)(j) != 0) tmp_mat.row(row)(j) = almost_zero;
+            tmp_mat.row( row ).zeros();
 
             // fix global diagonal
             for(ic=0; ic < n_elim_cols; ic++) {
@@ -169,18 +164,9 @@ void LocalSystem::eliminate_solution()
     }
     
     // filling almost_zero according to sparsity pattern
-    for(unsigned int i=0; i < matrix.n_rows; i++)
-        for(unsigned int j=0; j < matrix.n_cols; j++)
-        {
-            // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
-            // all zeros will be thrown away from the system.
-            // Since we need to keep the matrix structure for the schur complements
-            // and time dependent flow, we fill the whole diagonal with artificial zeros.
-            if (sparsity_pattern_.is_set_global_diagonal() && row_dofs[i] == col_dofs[j])
-                matrix(i,j) = matrix(i,j) + almost_zero;
-            else
-                matrix(i,j) = matrix(i,j) + almost_zero * sparsity_pattern_.get_matrix()(i,j);
-        }
+    ASSERT_EQ_DBG(matrix.n_rows, sparsity.n_rows);
+    ASSERT_EQ_DBG(matrix.n_cols, sparsity.n_cols);
+    matrix = matrix + sparsity;
     
     //DebugOut() << matrix;
     //DebugOut() << rhs;
@@ -193,6 +179,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, 
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
+    ASSERT_DBG(sparsity(row,col));
     
     matrix(row, col) += mat_val;
     rhs(row) += rhs_val;
@@ -202,6 +189,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
+    ASSERT_DBG(sparsity(row,col));
     
     matrix(row, col) += mat_val;
 }
@@ -225,64 +213,15 @@ void LocalSystem::set_rhs(arma::vec r) {
     rhs = r;
 }
 
-LocalSystem::SparsityPattern & LocalSystem::sparsity_pattern()
+void LocalSystem::set_sparsity(const arma::umat & sp)
 {
-    return sparsity_pattern_;
+    ASSERT_EQ_DBG(sparsity.n_rows, sp.n_rows);
+    ASSERT_EQ_DBG(sparsity.n_cols, sp.n_cols);
+    
+    sparsity.zeros();
+    for(unsigned int i=0; i < sp.n_rows; i++)
+        for(unsigned int j=0; j < sp.n_cols; j++)
+            if( sp(i,j) != 0 )
+                sparsity(i,j) = almost_zero;
+//     sparsity.print("sparsity");
 }
-
-LocalSystem::SparsityPattern::SparsityPattern()
-  : force_global_diagonal_(false)
-{}
-
-LocalSystem::SparsityPattern::SparsityPattern(unsigned int nrows, unsigned int ncols)
-  : force_global_diagonal_(false)
-{
-    pattern.zeros(nrows,ncols);
-}
-
-void LocalSystem::SparsityPattern::set(unsigned int row, unsigned int col)
-{
-    ASSERT_DBG(row < pattern.n_rows);
-    ASSERT_DBG(col < pattern.n_cols);
-    pattern(row,col) = 1;
-}
-
-void LocalSystem::SparsityPattern::reset(unsigned int row, unsigned int col)
-{
-    ASSERT_DBG(row < pattern.n_rows);
-    ASSERT_DBG(col < pattern.n_cols);
-    pattern(row,col) = 0;
-}
-
-void LocalSystem::SparsityPattern::fill_all()
-{
-    pattern.ones();
-}
-
-void LocalSystem::SparsityPattern::clear_all()
-{
-    pattern.zeros();
-}
-
-
-void LocalSystem::SparsityPattern::force_global_diagonal()
-{
-    force_global_diagonal_ = true;
-}
-
-bool LocalSystem::SparsityPattern::is_set_global_diagonal()
-{
-  return force_global_diagonal_;
-}
-
-void LocalSystem::SparsityPattern::resize(unsigned int nrows, unsigned int ncols)
-{
-    pattern.zeros(nrows,ncols);
-}
-
-const arma::umat & LocalSystem::SparsityPattern::get_matrix()
-{
-    return pattern;
-}
-
-

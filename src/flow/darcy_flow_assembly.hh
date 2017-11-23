@@ -117,12 +117,19 @@ public:
         }
         //DebugOut() << print_var(this) << print_var(side_quad_.size());
         
-        // force the local system to keep nonzeros on the global diagonal
-        loc_system_.sparsity_pattern().force_global_diagonal();
+        // create local sparsity pattern
+        arma::umat sp(size(),size());
+        sp.zeros();
+        sp.submat(0, 0, nsides, nsides).ones();
+        sp.diag().ones();
+        sp.diag(nsides+1).ones();
+        sp.diag(-nsides-1).ones();
+        loc_system_.set_sparsity(sp);
         
         // local system 2x2 for vb neighbourings is full matrix
         // this matrix cannot be influenced by any BC (no elimination can take place)
-        loc_system_vb_.sparsity_pattern().fill_all();
+        sp.ones(2,2);
+        loc_system_vb_.set_sparsity(sp);
 
         if (ad_->mortar_method_ == DarcyMH::MortarP0) {
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
