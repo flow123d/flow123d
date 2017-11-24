@@ -45,13 +45,32 @@ class FESystem : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::generalized_support_points;
 
 public:
+  
+    /**
+     * @brief Constructor. FESystem for vector or tensor created from a scalar FE.
+     * @param fe Base finite element class.
+     * @param t  Type (vector or tensor).
+     */
+    FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t);
     
     /**
      * @brief Constructor. FESystem with @p n components created from a scalar FE.
      * @param fe Base finite element class.
      * @param n  Multiplicity (number of components).
      */
-    FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, unsigned int n);
+    FESystem(const std::shared_ptr<FiniteElement<dim,spacedim> > &fe, unsigned int n);
+    
+    /**
+     * @brief Constructor. FESystem for mixed elements.
+     * @param fe Base finite element classes.
+     */
+    FESystem(std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe);
+    
+    std::vector<unsigned int> get_scalar_components() const
+    { return scalar_components_; }
+    
+    std::vector<unsigned int> get_vector_components() const
+    { return vector_components_; }
 
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.
@@ -127,6 +146,9 @@ private:
   
   /// Information about dofs.
   std::vector<DofComponentData> fe_dof_indices_;
+  
+  std::vector<unsigned int> scalar_components_;
+  std::vector<unsigned int> vector_components_;
   
   /**
    * Auxiliary vector representing permutation of dofs

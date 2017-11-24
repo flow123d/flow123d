@@ -334,20 +334,22 @@ public:
 	
 	/**
      * @brief Accessor to scalar values of multicomponent FE.
-     * @param scalar Scalar component information.
+     * @param i Index of scalar component.
      */
-	const FEValuesViews::Scalar<dim,spacedim> &operator[](const FEValuesExtractors::Scalar &scalar) const
+	const FEValuesViews::Scalar<dim,spacedim> &scalar_view(unsigned int i) const
 	{
-      return views_cache_.scalars[scalar.component_];
+      ASSERT_LT_DBG(i, views_cache_.scalars.size());
+      return views_cache_.scalars[i];
     }
     
     /**
      * @brief Accessor to vector values of multicomponent FE.
-     * @param vector Vector offset information.
+     * @param i Index of first vector component.
      */
-    const FEValuesViews::Vector<dim,spacedim> &operator[](const FEValuesExtractors::Vector &vector) const
+    const FEValuesViews::Vector<dim,spacedim> &vector_view(unsigned int i) const
     {
-      return views_cache_.vectors[vector.first_vector_component_];
+      ASSERT_LT_DBG(i, views_cache_.vectors.size());
+      return views_cache_.vectors[i];
     }
 
     /**

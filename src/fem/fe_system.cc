@@ -37,12 +37,38 @@ using namespace std;
 // }
 
 
+template<unsigned int dim, unsigned int spacedim>
+FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t)
+{
+  OLD_ASSERT(fe->is_primitive(), "FE vector or tensor can olny by created from primitive FE.");
+  OLD_ASSERT(t == FEType::FEVector || t == FEType::FETensor, "This constructor can be used only for vectors or tensors.");
+  
+  FiniteElement<dim,spacedim>::init(0, false, t);
+  
+  if (t == FEType::FEVector)
+    fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim, fe);
+  else
+    fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim*dim, fe);
+  
+  initialize();
+}
+
 
 template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, unsigned int n)
+FESystem<dim,spacedim>::FESystem(const std::shared_ptr<FiniteElement<dim,spacedim> > &fe, unsigned int n)
 {
-  FiniteElement<dim,spacedim>::init(0, false);
+  FiniteElement<dim,spacedim>::init(0, false, FEMixedSystem);
   fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(n, fe);
+  initialize();
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+FESystem<dim,spacedim>::FESystem(std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe)
+{
+  FiniteElement<dim,spacedim>::init(0, false, FEMixedSystem);
+  for (std::shared_ptr<FiniteElement<dim,spacedim> > fe_object : fe)
+    fe_.push_back(fe_object);
   initialize();
 }
 
@@ -68,6 +94,19 @@ void FESystem<dim,spacedim>::initialize()
   {
     number_of_dofs += fe->n_dofs();
     n_components_ += fe->n_components();
+    
+    switch (fe->type_)
+    {
+      case FEType::FEScalar:
+        scalar_components_.push_back(comp_offset);
+        break;
+      case FEType::FEVector:
+        vector_components_.push_back(comp_offset);
+        break;
+      default:
+        OLD_ASSERT(false, "Not implemented.");
+        break;
+    }
 
     for (int i=0; i<=dim; ++i)
     {

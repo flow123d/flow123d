@@ -36,7 +36,7 @@ FiniteElement<dim,spacedim>::FiniteElement()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive)
+void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive, FEType type)
 {
     number_of_dofs = 0;
     for (unsigned int i = 0; i <= dim; i++)
@@ -49,6 +49,7 @@ void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive
     
     is_primitive_ = primitive;
     n_components_ = n_components;
+    type_ = type;
 }
 
 

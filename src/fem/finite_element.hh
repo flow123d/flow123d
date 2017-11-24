@@ -28,6 +28,7 @@
 
 
 template<unsigned int dim, unsigned int spacedim> class FESystem;
+template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 template<unsigned int dim> class Quadrature;
 
@@ -66,6 +67,15 @@ enum DofMultiplicity {
 
 const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
         DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
+
+
+/// Types of FiniteElement: scalar, vector-valued, tensor-valued or mixed system.
+enum FEType {
+  FEScalar = 0,
+  FEVector = 1,
+  FETensor = 2,
+  FEMixedSystem = 3
+};
 
 /**
  * @brief Structure for storing the precomputed finite element data.
@@ -140,7 +150,7 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class FiniteElement {
 public:
-
+  
     /**
      * @brief Constructor.
      */
@@ -149,7 +159,7 @@ public:
     /**
      * @brief Clears all internal structures.
      */
-    void init(unsigned int n_components = 1, bool primitive = true);
+    void init(unsigned int n_components = 1, bool primitive = true, FEType type = FEScalar);
     
     /**
      * @brief Initialize vectors with information about components of basis functions.
@@ -291,7 +301,7 @@ public:
      * or the unit support points.
      */
     const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
-
+    
     /**
      * @brief Destructor.
      */
@@ -325,6 +335,9 @@ protected:
      * @brief Number of sextuples of dofs associated to one triangle.
      */
     unsigned int number_of_sextuples[dim + 1];
+    
+    /// Type of FiniteElement.
+    FEType type_;
 
     /**
      * @brief Primitive FE is using componentwise shape functions,
@@ -368,6 +381,7 @@ protected:
     
     
     friend class FESystem<dim,spacedim>;
+    friend class FEValuesBase<dim,spacedim>;
 };
 
 

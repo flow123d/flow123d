@@ -61,8 +61,7 @@ class FEShapeHandler<1, elemdim, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
-        static FEValuesExtractors::Vector vec(0);
-		return fe_val[vec].value(i_dof, i_qp);
+		return fe_val.vector_view(0).value(i_dof, i_qp);
 	}
 };
 

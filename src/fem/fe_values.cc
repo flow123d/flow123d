@@ -22,6 +22,7 @@
 #include "quadrature/quadrature.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
+#include "fem/fe_system.hh"
 
 
 
@@ -79,10 +80,26 @@ void FEValuesBase<dim,spacedim>::ViewsCache::resize(FEValuesBase<dim,spacedim> &
 {
   scalars.clear();
   vectors.clear();
-  for (unsigned int i=0; i<size; ++i)
-  {
-    scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv, i));
-    vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv, i));
+  switch (fv.get_fe()->type_) {
+    case FEType::FEScalar:
+      scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv, 0));
+      break;
+    case FEType::FEVector:
+      vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv, 0));
+      break;
+    case FEType::FETensor:
+      OLD_ASSERT(false, "Not Implemented.");
+      break;
+    case FEType::FEMixedSystem:
+      FESystem<dim,spacedim> *fe = dynamic_cast<FESystem<dim,spacedim>*>(fv.get_fe());
+      OLD_ASSERT(fe != nullptr, "Mixed system must be represented by FESystem.");
+      std::vector<unsigned int> sc = fe->get_scalar_components();
+      std::vector<unsigned int> vc = fe->get_vector_components();
+      for (auto si : sc)
+        scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv,si));
+      for (auto vi : vc)
+        vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv,vi));
+      break;
   }
 }
 
