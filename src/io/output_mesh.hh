@@ -37,6 +37,8 @@ typedef GeneralIterator<OutputElement> OutputElementIterator;
 class OutputMeshBase;
 class OutputMesh;
 class OutputMeshDiscontinuous;
+class OutputMSH;
+class OutputVTK;
 
 
 /**
@@ -96,16 +98,6 @@ public:
     /// Selects the error control field out of output field set according to input record.
     void set_error_control_field(ErrorControlFieldPtr error_control_field);
 
-    /// Vector of element indices in the computational mesh. (Important when refining.)
-    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
-    
-    /// Vector of node coordinates. [spacedim x n_nodes]
-    std::shared_ptr<ElementDataCache<double>> nodes_;
-    /// Vector maps the nodes to their coordinates in vector @p nodes_.
-    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
-    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
-    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
-    
     /// Returns number of nodes.
     unsigned int n_nodes();
     /// Returns number of element.
@@ -148,6 +140,16 @@ protected:
     bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
     double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
     
+    /// Vector of element indices in the computational mesh. (Important when refining.)
+    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
+
+    /// Vector of node coordinates. [spacedim x n_nodes]
+    std::shared_ptr<ElementDataCache<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+
     /// Vector gets ids of nodes. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
     /// Vector gets ids of elements. Data is used in GMSH output.
@@ -155,6 +157,8 @@ protected:
 
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
+    friend class OutputMSH;
+    friend class OutputVTK;
 };
 
 
