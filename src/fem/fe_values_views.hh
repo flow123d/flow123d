@@ -48,6 +48,8 @@ namespace FEValuesExtractors {
     unsigned int first_vector_component_;
   };
   
+  class Tensor {}; // to be implemented
+  
 };
 
 
@@ -145,6 +147,10 @@ namespace FEValuesViews {
     /// Index of the first component of the vector.
     unsigned int first_vector_component_;
   };
+  
+  
+  template<unsigned int dim, unsigned int spacedim>
+  class Tensor {};
 
 };
 
