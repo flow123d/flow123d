@@ -28,16 +28,6 @@ class LocalSystem
 public:
     typedef arma::uvec DofVec;
     
-    // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
-    // all zeros will be thrown away from the system.
-    // If we do not want some zero entries in the system matrix to be thrown away,
-    // we can set these entries with this almost zero value.
-    //
-    // This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
-    // Another case is keeping the structure of matrix unchanged for the schur complements - 
-    // for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
-    static constexpr double almost_zero = std::numeric_limits<double>::min();
-    
     /**
      * Global row and col indices.  Are public and can be freely set.
      * Nevertheless one can also provide reference to already existing arrays through
@@ -140,7 +130,15 @@ public:
     void set_matrix(arma::mat matrix);
     void set_rhs(arma::vec rhs);
 
-
+    /// Sets the sparsity pattern for the local system.
+    /** Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
+     * all zeros will be thrown away from the system.
+     * If we do not want some zero entries in the system matrix to be thrown away,
+     * we can set these entries with this almost zero value.
+     * 
+     * Almost_zero values will be set in all entries: sp(i,j) != 0
+     */
+    void set_sparsity(const arma::umat & sp);
 
 protected:
     void set_size(unsigned int nrows, unsigned int ncols);
@@ -148,12 +146,24 @@ protected:
     arma::mat matrix;   ///< local system matrix
     arma::vec rhs;      ///< local system RHS
 
+    arma::mat sparsity; ///< sparsity pattern
+
     unsigned int n_elim_rows, n_elim_cols;
     DofVec elim_rows;
     DofVec elim_cols;
     arma::vec solution_rows;
     arma::vec solution_cols;
     arma::vec diag_rows;
+
+    /// Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
+    /// all zeros will be thrown away from the system.
+    /// If we do not want some zero entries in the system matrix to be thrown away,
+    /// we can set these entries with this almost zero value.
+    ///
+    /// This is done for example when BC values are eliminated and later the BC changes to different type (e.g. seepage).
+    /// Another case is keeping the structure of matrix unchanged for the schur complements -
+    /// for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
+    static constexpr double almost_zero = std::numeric_limits<double>::min();
 
     /// vector of global row indices where the solution is set (dirichlet BC)
     //std::vector<unsigned int> loc_solution_dofs;

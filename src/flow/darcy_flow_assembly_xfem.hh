@@ -57,8 +57,23 @@ public:
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
-        loc_system_(size(), size())
+        sparsity_regular(size(), size()),
+        loc_system_(size(), size()),
+        loc_system_vb_(2,2)
     {
+        unsigned int nsides = RefElement<dim>::n_sides;
+        // create regular local sparsity pattern
+        sparsity_regular.zeros();
+        sparsity_regular.submat(0, 0, nsides, nsides).ones();
+        sparsity_regular.diag().ones();
+        sparsity_regular.diag(nsides+1).ones();
+        sparsity_regular.diag(-nsides-1).ones();
+        
+        arma::umat sp(2,2);
+        // local system 2x2 for vb neighbourings is full matrix
+        // this matrix cannot be influenced by any BC (no elimination can take place)
+        sp.ones();
+        loc_system_vb_.set_sparsity(sp);
     }
 
 
@@ -72,7 +87,6 @@ public:
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
         
-//         unsigned int ndofs = ele_ac.n_dofs();
 //         DBGVAR(ele_ac.element_accessor().idx());
         setup_local(ele_ac);
         
@@ -85,10 +99,6 @@ public:
         
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
-        
-        
-//         if(ele_ac.is_enriched())
-//             loc_system_.get_matrix().print(cout, "matrix");
         
         //mast be last due to overriding xfem fe values
         if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
@@ -104,20 +114,10 @@ public:
             loc_system_.get_rhs().print(cout, "rhs");
         }
         
-        // Due to petsc options: MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE)
-        // all zeros will be thrown away from the system.
-        // Since we need to keep the matrix structure for the schur complements
-        // and time dependent flow, we fill the whole diagonal with artificial zeros.
-        for(unsigned int i=0; i<size(); i++)
-            loc_system_.add_value(i,i,loc_system_.almost_zero);
-//         for(unsigned int i=0; i<size(); i++)
-//           for(unsigned int j=0; j<size(); j++)
-//             loc_system_.add_value(i,j,loc_system_.almost_zero);
-        
         ad_->lin_sys->set_local_system(loc_system_);
     }
 
-    void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
+    void assembly_local_vb(ElementFullIter ele, Neighbour *ngh) override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
@@ -136,11 +136,10 @@ public:
                         ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
-        // in case sigma==0, we might want to keep the zeros in the system
-        // (to keep matrix structure, sigma might change to nonzero later)
-        value += LocalSystem::almost_zero;
-        local_vb[0] = -value;   local_vb[1] = value;
-        local_vb[2] = value;    local_vb[3] = -value;
+        loc_system_vb_.add_value(0,0, -value);
+        loc_system_vb_.add_value(0,1,  value);
+        loc_system_vb_.add_value(1,0,  value);
+        loc_system_vb_.add_value(1,1, -value);
     }
 
 
@@ -250,35 +249,49 @@ protected:
 //         cout << "\n";
         
         int ndofs_vel = ele_ac.get_dofs_vel(dofs),
-            ndofs_pre = ele_ac.get_dofs_press(dofs);
+            ndofs_pre = ele_ac.get_dofs_press(dofs),
+            ndofs_lmb = ele_ac.n_sides();
 //         DBGVAR(ndofs_vel);
             
         loc_vel_dofs.resize(ndofs_vel);
         loc_press_dofs.resize(ndofs_pre);
-        loc_edge_dofs.resize(ele_ac.n_sides());
+        loc_edge_dofs.resize(ndofs_lmb);
         for(int j =0; j < ndofs_vel; j++)
             loc_vel_dofs[j] = j;
         
         for(int j =0; j < ndofs_pre; j++)
             loc_press_dofs[j] = ndofs_vel + j;
         
-        for(int j =0; j < ele_ac.n_sides(); j++)
+        for(int j =0; j < ndofs_lmb; j++)
             loc_edge_dofs[j] = ndofs_vel + ndofs_pre + j;
         
         loc_ele_dof = ndofs_vel;
         
-//         //velocity
-//         int ndofs = ele_ac.get_dofs_vel(dof_tmp);
-//         for (unsigned int i = 0; i < ndofs; i++) {
-//             loc_system_.col_dofs[loc_vel_dofs[i]] = dof_tmp[i];
-//         }
-//         
-//         //pressure
-//         ndofs = ele_ac.get_dofs_press(dof_tmp);
-//         for (unsigned int i = 0; i < ndofs; i++) {
-//             loc_system_.col_dofs[loc_press_dofs[i]] = dof_tmp[i];
-//         }
+        if(ele_ac.is_enriched())
+        {
+            int v = ndofs_vel,
+                vp = v + ndofs_pre,
+                vpl = vp + ndofs_lmb;
+            arma::umat sp(ndofs, ndofs);
+            sp.zeros();
+            sp.diag().ones(); // whole diagonal
+            sp.submat(0, 0, v-1, v-1).ones(); // velocity block
             
+            sp.submat(v, 0, vp-1, v-1).ones(); // pressure block
+            sp.submat(0, v, v-1, vp-1).ones(); // pressure block
+            
+            sp.submat(vp, 0, vpl-1, v-1).diag().ones(); // lambda block
+            sp.submat(0, vp, v-1, vpl-1).diag().ones(); // lambda block
+            
+            if(ndofs > vpl){
+                sp.submat(vpl, 0, ndofs-1, v-1).ones(); // lambda_w block
+                sp.submat(0, vpl, v-1, ndofs-1).ones(); // lambda_w block
+            }
+//             sp.print("SP_enriched");
+            loc_system_.set_sparsity(sp);
+        }
+        else
+            loc_system_.set_sparsity(sparsity_regular);
     }
 
     void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
@@ -555,30 +568,32 @@ protected:
     
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
+        ElementFullIter ele = ele_ac.full_iter();
+        
+        // no Neighbours => nothing to asssemble here
+        if(ele->n_neighs_vb == 0) return;
+        
         int ele_row = ele_ac.ele_row();
-        int rows[2];
-        double local_vb[4]; // 2x2 matrix
-
         Neighbour *ngh;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+        for (unsigned int i = 0; i < ele->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            ngh= ele_ac.full_iter()->neigh_vb[i];
-            rows[0]=ele_row;
-            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+            ngh = ele_ac.full_iter()->neigh_vb[i];
+            loc_system_vb_.reset();
+            loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
+            loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
 
+            assembly_local_vb(ele, ngh);
 
-            assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
-
-            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
+            ad_->lin_sys->set_local_system(loc_system_vb_);
 
             // update matrix for weights in BDDCML
             if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-               int ind = rows[1];
+               int ind = loc_system_vb_.row_dofs[1];
                // there is -value on diagonal in block C!
-               double new_val = local_vb[0];
+               double new_val = loc_system_vb_.get_matrix()(0,0);
                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
             }
         }
@@ -681,7 +696,9 @@ protected:
     AssemblyDataPtr ad_;
     std::vector<unsigned int> dirichlet_edge;
 
+    arma::umat sparsity_regular;
     LocalSystem loc_system_;
+    LocalSystem loc_system_vb_;
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;
     

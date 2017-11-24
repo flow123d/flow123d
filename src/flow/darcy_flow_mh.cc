@@ -892,7 +892,6 @@ void DarcyMH::allocate_mh_matrix()
 //         }
         
         
-
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
         for (unsigned int i = 0; i < n_neighs; i++) {
