@@ -179,7 +179,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val, 
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
-    ASSERT_DBG(sparsity(row,col));
+    ASSERT_DBG(sparsity(row,col))(row)(col).error("Violation of sparsity pattern.");
     
     matrix(row, col) += mat_val;
     rhs(row) += rhs_val;
@@ -189,7 +189,7 @@ void LocalSystem::add_value(unsigned int row, unsigned int col, double mat_val)
 {
     ASSERT_DBG(row < matrix.n_rows);
     ASSERT_DBG(col < matrix.n_cols);
-    ASSERT_DBG(sparsity(row,col));
+    ASSERT_DBG(sparsity(row,col))(row)(col).error("Violation of sparsity pattern.");
     
     matrix(row, col) += mat_val;
 }
