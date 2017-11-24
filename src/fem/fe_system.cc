@@ -87,8 +87,9 @@ void FESystem<dim,spacedim>::initialize()
     // we assume that in the base FE, the nodal dofs are ordered as follows:
     //   dof 0 for node 0, dof 1 for node 1, ... dof dim for node dim,
     //   dof dim+1 for node 0, dof dim+2 for node 1, ...
+    unsigned int dofs_per_node = fe->n_object_dofs(0, DOF_SINGLE) / (dim+1);
     for (unsigned int i=0; i<fe->n_object_dofs(0, DOF_SINGLE); i++)
-      basis[0][i % (dim+1)].push_back(basis_offset+i);
+      basis[0][i / dofs_per_node].push_back(basis_offset+i);
     
     unsigned int n_cell_dofs = fe->n_object_dofs(dim, DOF_SINGLE)
                               +fe->n_object_dofs(dim, DOF_PAIR)
@@ -127,8 +128,9 @@ void FESystem<dim,spacedim>::initialize()
       {
         std::vector<bool> nonzeros(n_components_, false);
         for (unsigned int c=0; c<fe->n_components(); c++)\
-          nonzeros[comp_offset+c] = fe->get_nonzero_components(fe_dof_indices_[dof_index++].basis_index)[c];
+          nonzeros[comp_offset+c] = fe->get_nonzero_components(fe_dof_indices_[dof_index].basis_index)[c];
         this->nonzero_components_.push_back(nonzeros);
+        dof_index++;
       }
       comp_offset += fe->n_components();
     }
@@ -307,8 +309,12 @@ void FESystem<dim,spacedim>::fill_fe_values(
   // of the FESystem and copies the values to the appropriate structures for FESystem.
   if (!(fv_data.update_flags & update_values) && !(fv_data.update_flags & update_gradients)) return;
   
-  std::vector<std::vector<double> > shape_values(q.size(), std::vector<double>(fv_data.shape_values[0].size()));
+  std::vector<std::vector<double> > shape_values(q.size(), std::vector<double>(fv_data.shape_values[0].size(), 0.));
   std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients(q.size(), std::vector<arma::vec::fixed<spacedim> >(fv_data.shape_values[0].size()));
+  for (unsigned int k=0; k<q.size(); k++)
+    for (unsigned int i=0; i<fv_data.shape_values[0].size(); i++)
+      shape_gradients[k][i].zeros();
+  
   unsigned int comp_offset = 0;
   unsigned int dof_offset = 0;
   unsigned int shape_offset = 0;
@@ -368,7 +374,7 @@ void FESystem<dim,spacedim>::fill_fe_values(
       for (unsigned int i=0; i<q.size(); i++)
         for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
           for (unsigned int c=0; c<fe_[f]->n_components(); c++)
-            shape_values[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_values[i][n];
+            shape_values[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_values[i][n*fe_[f]->n_components()+c];
     }
     
     if (fv_data.update_flags & update_gradients)
@@ -376,7 +382,7 @@ void FESystem<dim,spacedim>::fill_fe_values(
       for (unsigned int i=0; i<q.size(); i++)
         for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
           for (unsigned int c=0; c<fe_[f]->n_components(); c++)
-            shape_gradients[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_gradients[i][n];
+            shape_gradients[i][shape_offset+n_components_*n+comp_offset+c] = sub_fv_data.shape_gradients[i][n*fe_[f]->n_components()+c];
     }
     
     dof_offset += fe_[f]->n_dofs();
