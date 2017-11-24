@@ -236,10 +236,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline double shape_value(const unsigned int function_no, const unsigned int point_no)
-    {
-        return data.shape_values[point_no][function_no];
-    }
+    double shape_value(const unsigned int function_no, const unsigned int point_no);
 
 
     /**
@@ -249,11 +246,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no)
-    {
-        return data.shape_gradients[point_no][function_no];
-
-    }
+    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -264,12 +257,9 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline double shape_value_component(const unsigned int function_no, 
+    double shape_value_component(const unsigned int function_no, 
                                         const unsigned int point_no, 
-                                        const unsigned int comp) const
-    {
-        return data.shape_values[point_no][function_no*n_components_+comp];
-    }
+                                        const unsigned int comp) const;
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at
@@ -280,12 +270,9 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline arma::vec::fixed<spacedim> shape_grad_component(const unsigned int function_no,
+    arma::vec::fixed<spacedim> shape_grad_component(const unsigned int function_no,
                                                            const unsigned int point_no,
-                                                           const unsigned int comp) const
-    {
-        return data.shape_gradients[point_no][function_no*n_components_+comp];
-    }
+                                                           const unsigned int comp) const;
 
     /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
@@ -297,6 +284,7 @@ public:
      */
     inline double determinant(const unsigned int point_no)
     {
+        ASSERT_LT_DBG(point_no, quadrature->size());
         return data.determinants[point_no];
     }
 
@@ -308,6 +296,7 @@ public:
      */
     inline double JxW(const unsigned int point_no)
     {
+        ASSERT_LT_DBG(point_no, quadrature->size());
         return data.JxW_values[point_no];
     }
 
@@ -318,6 +307,7 @@ public:
      */
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
+        ASSERT_LT_DBG(point_no, quadrature->size());
         return data.points[point_no];
     }
 
@@ -338,6 +328,7 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
+        ASSERT_LT_DBG(point_no, quadrature->size());
 	    return data.normal_vectors[point_no];
 	}
 	

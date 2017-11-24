@@ -134,6 +134,50 @@ UpdateFlags FEValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
 }
 
 
+template<unsigned int dim, unsigned int spacedim>
+double FEValuesBase<dim,spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
+{
+  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(point_no, quadrature->size());
+  return data.shape_values[point_no][function_no];
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
+{
+  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(point_no, quadrature->size());
+  return data.shape_gradients[point_no][function_no];
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+double FEValuesBase<dim,spacedim>::shape_value_component(const unsigned int function_no, 
+                                    const unsigned int point_no, 
+                                    const unsigned int comp) const
+{
+  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(point_no, quadrature->size());
+  ASSERT_LT_DBG(comp, fe->n_components());
+  return data.shape_values[point_no][function_no*n_components_+comp];
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(const unsigned int function_no,
+                                                        const unsigned int point_no,
+                                                        const unsigned int comp) const
+{
+  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(point_no, quadrature->size());
+  ASSERT_LT_DBG(comp, fe->n_components());
+  return data.shape_gradients[point_no][function_no*n_components_+comp];
+}
+
+
+
+
 
 
 

@@ -18,18 +18,24 @@
 
 #include "fem/fe_values_views.hh"
 #include "fem/fe_values.hh"
+#include "fem/finite_element.hh"
+#include "quadrature/quadrature.hh"
 
 using namespace FEValuesViews;
 
 template<unsigned int dim, unsigned int spacedim>
 double FEValuesViews::Scalar<dim,spacedim>::value(unsigned int function_no, unsigned int point_no) const
 {
+  ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
+  ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   return fe_values_.shape_value_component(function_no, point_no, component_);
 }
 
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<spacedim> FEValuesViews::Scalar<dim,spacedim>::grad(unsigned int function_no, unsigned int point_no) const
 {
+  ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
+  ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   return fe_values_.shape_grad_component(function_no, point_no, component_);
 }
 
@@ -43,6 +49,8 @@ FEValuesBase<dim,spacedim> &FEValuesViews::Scalar<dim,spacedim>::base() const
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<spacedim> FEValuesViews::Vector<dim,spacedim>::value(unsigned int function_no, unsigned int point_no) const
 {
+  ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
+  ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   arma::vec::fixed<spacedim> v;
   for (unsigned int c=0; c<spacedim; ++c)
     v(c) = fe_values_.shape_value_component(function_no, point_no, first_vector_component_+c);
@@ -52,6 +60,8 @@ arma::vec::fixed<spacedim> FEValuesViews::Vector<dim,spacedim>::value(unsigned i
 template<unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::grad(unsigned int function_no, unsigned int point_no) const
 {
+  ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
+  ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   arma::mat::fixed<spacedim,spacedim> g;
   for (unsigned int c=0; c<spacedim; ++c)
     g.col(c) = fe_values_.shape_grad_component(function_no, point_no, first_vector_component_+c);
@@ -61,6 +71,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::grad(un
 template<unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::sym_grad(unsigned int function_no, unsigned int point_no) const
 {
+  ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
+  ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   arma::mat::fixed<spacedim,spacedim> g = grad(function_no, point_no);
   return 0.5*(g+trans(g));
 }
@@ -68,6 +80,8 @@ arma::mat::fixed<spacedim,spacedim> FEValuesViews::Vector<dim,spacedim>::sym_gra
 template<unsigned int dim, unsigned int spacedim>
 double FEValuesViews::Vector<dim,spacedim>::divergence(unsigned int function_no, unsigned int point_no) const
 {
+  ASSERT_LT_DBG( function_no, fe_values_.n_dofs() );
+  ASSERT_LT_DBG( point_no, fe_values_.n_points() );
   double div = 0;
   for (unsigned int c=0; c<spacedim; ++c)
     div += fe_values_.shape_grad_component(function_no, point_no, first_vector_component_+c)(first_vector_component_+c);
