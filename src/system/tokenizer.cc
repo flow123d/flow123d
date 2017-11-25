@@ -27,13 +27,13 @@
 
 using namespace std;
 
-Tokenizer::Tokenizer(const FilePath &fp)
+Tokenizer::Tokenizer(const FilePath &fp, Separator separator)
 : f_name_(fp),
   own_stream_(nullptr),
   in_(nullptr),
   comment_pattern_(""),
   position_(0, 0, 0),
-  separator_("\\"," \t","\""),
+  separator_(separator),
   line_tokenizer_(line_,  separator_)
 {
     own_stream_ = new ifstream;
@@ -43,13 +43,13 @@ Tokenizer::Tokenizer(const FilePath &fp)
 
 
 
-Tokenizer::Tokenizer( std::istream &in)
+Tokenizer::Tokenizer( std::istream &in, Separator separator)
 : f_name_("__anonymous_stream__"),
   own_stream_(nullptr),
   in_( &in ),
   comment_pattern_(""),
   position_(0, 0, 0),
-  separator_("\\"," \t","\""),
+  separator_(separator),
   line_tokenizer_(line_,  separator_)
 {}
 
