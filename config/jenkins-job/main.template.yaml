@@ -405,9 +405,9 @@
           url: https://github.com/flow123d/flow123d.git
           branches:
               - master
-              - 2.0.0
               - 2.1.0
               - 2.1.2
+              - 2.2.0
               - 3.0.0_dev
           basedir: flow123d
           browser: githubweb

@@ -2,11 +2,32 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version master
+#Flow123d version 2.2.0
+(2017-11-17)
+
+## User interface
+* Input YAML file supports including of other YAML files and
+  including of tables in CSV files.
+* Support for binary and compressed VTK output.
+* FieldElementwise support for reading VTK files.
+* Summary table for uninitialized fields instead of plenty separate warnings.
+
+### New features
+* Solute_AdvectionDiffusion_DG model supports tensor of diffusion.
+* Anisotropic automatic choice of DG penalty. Helps for pure diffusion into matrix around 
+  fractures with high advection.
+  
 
 ## Bug fixes
 * Fix wrong communication between dimensions when porosities differ
   in heat and solute transport.
+* Fix in batch wrappers for Windows. Return to caller after simulation is done.
+* Fix of minor error in balance file for DG transport model with sorption.
+* Improved options for the linear solver for DG heat and transport.
+
+### Internals:
+* Simplification of output classes.
+* Simplification in Balance
 
 
 #Flow123d version 2.1.2
@@ -46,7 +67,7 @@ List of all changes in user interface and major internal changes.
 
 
 ### New features
-* FiledTimeFunction - field constant in space and interpolated in time from a table of values.
+* FieldTimeFunction - field constant in space and interpolated in time from a table of values.
 * Unit conversion for fields.
 * Support for binary VTK output.
 * Checks for field limits.
