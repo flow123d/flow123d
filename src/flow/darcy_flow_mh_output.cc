@@ -64,6 +64,8 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
     return it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
+        .declare_key("python_solution", it::FileName::input(), it::Default::optional(),
+                        "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data form MH module.")
         .close();
@@ -158,6 +160,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
     if (in_rec_specific) {
         in_rec_specific->opt_val("compute_errors", compute_errors_);
+        if(compute_errors_){
+            in_rec_specific->opt_val("python_solution", python_solution_filename_);
+            ASSERT(python_solution_filename_.exists());
+        }
+        
         if (rank == 0) {
             // optionally open raw output file
             FilePath raw_output_file_path;
@@ -807,17 +814,15 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     FEDiffData<2> fe_data_2d;
     FEDiffData<3> fe_data_3d;
     
-    
-//     FilePath source_file( "analytical_module_2w_koeppl.py", FilePath::input_file);
-    FilePath source_file( "analytical_module.py", FilePath::input_file);
+    ASSERT(python_solution_filename_.exists());
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
-    anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
+    anal_sol_1d.set_python_field_from_file( python_solution_filename_, "all_values_1d");
 
     ExactSolution anal_sol_2d(5);
-    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
+    anal_sol_2d.set_python_field_from_file( python_solution_filename_, "all_values_2d");
 
     ExactSolution anal_sol_3d(5);
-    anal_sol_3d.set_python_field_from_file( source_file, "all_values_3d");
+    anal_sol_3d.set_python_field_from_file( python_solution_filename_, "all_values_3d");
 
     DiffData result;
     result.dh = &( darcy_flow->get_mh_dofhandler());
@@ -855,7 +860,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
     
     std::shared_ptr<ExactVelocity> exact_vel_2d_ptr = std::make_shared<ExactVelocity>(3);
-    exact_vel_2d_ptr->set_python_field_from_file( source_file, "velocity_2d");
+    exact_vel_2d_ptr->set_python_field_from_file( python_solution_filename_, "velocity_2d");
     output_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
 
     output_fields.error_fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);

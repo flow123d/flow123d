@@ -139,6 +139,7 @@ private:
 
     /// Specific experimental error computing.
     bool compute_errors_;
+    FilePath python_solution_filename_;
 
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
