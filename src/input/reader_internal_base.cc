@@ -330,7 +330,7 @@ StorageBase * ReaderInternalBase::make_storage_from_default(const string &dflt_s
     return NULL;
 }
 
-StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::Record *record)
+StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::TypeBase *type)
 {
     std::string included_path;
     if ( p.is_record_type() ) {
@@ -339,7 +339,7 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
         	included_path = get_included_file(p);
             p.up();
         } else {
-        	this->generate_input_error(p, record, "Missing key 'file' defines including input file.", false);
+        	this->generate_input_error(p, type, "Missing key 'file' defines including input file.", false);
         }
     } else {
     	// include is set only with name of file (similarly as auto conversion)
@@ -349,7 +349,7 @@ StorageBase * ReaderInternalBase::make_include_storage(PathBase &p, const Type::
 
     FilePath fpath(included_path, FilePath::FileType::input_file);
     try {
-    	ReaderToStorage include_reader(fpath, *(const_cast<Type::Record *>(record)) );
+    	ReaderToStorage include_reader(fpath, *(const_cast<Type::TypeBase *>(type)) );
         return include_reader.get_storage();
     } catch (ExcInputError &e ) {
       e << EI_File(fpath); throw;

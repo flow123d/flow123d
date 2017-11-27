@@ -93,9 +93,9 @@ protected:
         EXPECT_NE((void *)NULL, storage_);
         EXPECT_EQ(3,   storage_->get_array_size());
         EXPECT_EQ(4,   storage_->get_item(1)->get_array_size() );
-        EXPECT_EQ(3,   storage_->get_item(1)->get_item(1)->get_array_size() );
+        EXPECT_EQ(5,   storage_->get_item(1)->get_item(1)->get_array_size() );
         EXPECT_EQ(1.0, storage_->get_item(1)->get_item(1)->get_item(0)->get_double() );
-        EXPECT_EQ(3,   storage_->get_item(1)->get_item(2)->get_array_size() );
+        EXPECT_EQ(5,   storage_->get_item(1)->get_item(2)->get_array_size() );
         EXPECT_EQ(5,   storage_->get_item(1)->get_item(2)->get_item(1)->get_int() );
         EXPECT_TRUE(   storage_->get_item(1)->get_item(3)->get_bool() );
         EXPECT_EQ(10,  storage_->get_item(2)->get_int() );
@@ -137,77 +137,126 @@ protected:
 };
 
 
-const string import_yaml_to_yaml = R"YAML(
+const string import_record_yaml_to_yaml = R"YAML(
 sub_rec: !include
-  file: include_simple.yaml
+  file: include_record.yaml
 int_key: 10
 )YAML";
 
-const string import_json_to_yaml = R"YAML(
+const string import_record_json_to_yaml = R"YAML(
 sub_rec: !include
-  file: include_simple.con
+  file: include_record.con
 int_key: 10
 )YAML";
 
-const string import_yaml_auto_conversion = R"YAML(
+const string import_record_yaml_auto_conversion = R"YAML(
 sub_rec: !include
-  include_simple.yaml
+  include_record.yaml
 int_key: 10
 )YAML";
 
-const string import_json_auto_conversion = R"YAML(
+const string import_record_json_auto_conversion = R"YAML(
 sub_rec: !include
-  include_simple.con
+  include_record.con
 int_key: 10
 )YAML";
 
-const string import_yaml_to_json = R"JSON(
+const string import_record_yaml_to_json = R"JSON(
 {
-  sub_rec = { TYPE="include", file="include_simple.yaml" },
+  sub_rec = { TYPE="include", file="include_record.yaml" },
   int_key = 10
 }
 )JSON";
 
-const string import_json_to_json = R"JSON(
+const string import_record_json_to_json = R"JSON(
 {
-  sub_rec = { TYPE="include", file="include_simple.con" },
+  sub_rec = { TYPE="include", file="include_record.con" },
+  int_key = 10
+}
+)JSON";
+
+const string import_array_to_yaml = R"YAML(
+sub_rec:
+  a_key: !include
+    file: include_array.con
+  b_key: !include
+    file: include_array.yaml
+  c_key: true
+int_key: 10
+)YAML";
+
+const string import_array_auto_conversion = R"YAML(
+sub_rec:
+  a_key: !include
+    include_array.con
+  b_key: !include
+    include_array.yaml
+  c_key: true
+int_key: 10
+)YAML";
+
+const string import_array_to_json = R"JSON(
+{
+  sub_rec = { 
+    a_key = { TYPE="include", file="include_array.con" },
+    b_key = { TYPE="include", file="include_array.yaml" },
+    c_key = true 
+  },
   int_key = 10
 }
 )JSON";
 
 
-TEST_F(ReaderIncludeTest, include_yaml_to_yaml) {
-    stringstream ss( import_yaml_to_yaml );
+TEST_F(ReaderIncludeTest, include_record_yaml_to_yaml) {
+    stringstream ss( import_record_yaml_to_yaml );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_YAML);
     check_simple_storage();
 }
 
-TEST_F(ReaderIncludeTest, include_json_to_yaml) {
-    stringstream ss( import_json_to_yaml );
+TEST_F(ReaderIncludeTest, include_record_json_to_yaml) {
+    stringstream ss( import_record_json_to_yaml );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_YAML);
     check_simple_storage();
 }
 
-TEST_F(ReaderIncludeTest, include_yaml_auto_conversion) {
-    stringstream ss( import_yaml_auto_conversion );
+TEST_F(ReaderIncludeTest, include_record_yaml_auto_conversion) {
+    stringstream ss( import_record_yaml_auto_conversion );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_YAML);
     check_simple_storage();
 }
 
-TEST_F(ReaderIncludeTest, include_json_auto_conversion) {
-    stringstream ss( import_json_auto_conversion );
+TEST_F(ReaderIncludeTest, include_record_json_auto_conversion) {
+    stringstream ss( import_record_json_auto_conversion );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_YAML);
     check_simple_storage();
 }
 
-TEST_F(ReaderIncludeTest, include_yaml_to_json) {
-    stringstream ss( import_yaml_to_json );
+TEST_F(ReaderIncludeTest, include_record_yaml_to_json) {
+    stringstream ss( import_record_yaml_to_json );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_JSON);
     check_simple_storage();
 }
 
-TEST_F(ReaderIncludeTest, include_json_to_json) {
-    stringstream ss( import_json_to_json );
+TEST_F(ReaderIncludeTest, include_record_json_to_json) {
+    stringstream ss( import_record_json_to_json );
+    read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_JSON);
+    check_simple_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_array_to_yaml) {
+    stringstream ss( import_array_to_yaml );
+    read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_YAML);
+    check_simple_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_array_auto_conversion) {
+    stringstream ss( import_array_auto_conversion );
+    read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_YAML);
+    check_simple_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_array_to_json) {
+    stringstream ss( import_array_to_json );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_JSON);
     check_simple_storage();
 }
