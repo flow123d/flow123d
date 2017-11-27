@@ -1,0 +1,10 @@
+common_config:
+  proc: []
+  memory_limit: 3000
+  time_limit: 600
+  
+test_cases:
+  - files:
+      - 01_2d_single_triangle.yaml
+      - 02_3d_single_tetrahedron3t.yaml
+    proc: [1]
