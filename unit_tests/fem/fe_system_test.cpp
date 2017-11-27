@@ -15,6 +15,7 @@
 #include "system/sys_profiler.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/mesh.h"
@@ -22,7 +23,6 @@
 #include "mesh/region.hh"
 #include "fem/fe_system.hh"
 
-#define INTEGRATE( _func_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point(i) ) * quad.weight(i);
 
 
 NodeVector make_nodes(const std::vector<string> &nodes_str)
@@ -60,48 +60,160 @@ ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vect
   }
   
   return el_vec;
+}
+
+
+
+
+class FESystemTest : public testing::Test {
+public:
+  FESystemTest()
+    : nodes(make_nodes({"0 0 0", "1 0 0", "0 1 0", "0 0 1"})),
+      el_vec(make_elements(nodes, { { 0, 1, 2, 3 } })),
+      ele( el_vec(0) ),
+      q(nodes.size())
+  {
+    for (unsigned int i=0; i<nodes.size(); i++)
+      q.set_point(i, nodes[i].point());
+  }
+  
+protected:
+  NodeVector nodes;
+  ElementVector el_vec;
+  ElementFullIter ele;
+  MappingP1<3,3> map;
+  Quadrature<3> q;
+
 };
 
 
 
 
 
-TEST(FeSystem, test_all) {
-    // Test vector-valued FESystem using P1 element on tetrahedron.
+
+
+
+
+TEST_F(FESystemTest, test_vector) {
+  // Test vector-valued FESystem using P1 element on tetrahedron.
+  FESystem<3,3> fe_sys(std::make_shared<FE_P<1,3,3> >(), FEVector);
+  FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
+  
+  fe_values.reinit(ele);
+  
+  auto vec_view = fe_values.vector_view(0);
+  
+  for (unsigned int k=0; k<q.size(); k++)
+    for (unsigned int i=0; i<fe_sys.n_dofs(); i++)
+      for (unsigned int c=0; c<3; c++)
+      {
+        // check values
+        EXPECT_EQ( ((i/3==k) && (i%3==c))?1:0, vec_view.value(i,k)[c] );
+        //check gradients
+        arma::rowvec gr = vec_view.grad(i,k).row(c);
+        if (i % 3 == c)
+        { // gradient of nonzero component
+          switch (i/3)
+          {
+            case 0:
+              EXPECT_ARMA_EQ( arma::rowvec("-1 -1 -1"), gr );
+              break;
+            case 1:
+              EXPECT_ARMA_EQ( arma::rowvec("1 0 0"), gr );
+              break;
+            case 2:
+              EXPECT_ARMA_EQ( arma::rowvec("0 1 0"), gr );
+              break;
+            case 3:
+              EXPECT_ARMA_EQ( arma::rowvec("0 0 1"), gr );
+              break;
+          }
+        }
+        else
+          EXPECT_ARMA_EQ( arma::rowvec("0 0 0"), gr );
+      }
+}
+
+
+TEST_F(FESystemTest, test_mixed_system) {
+  // Test mixed-system FE using P0, P1^3 and RT0 elements on tetrahedron.
+  // The basis functions are ordered first nodal and then element-supported,
+  // hence the scalar constant function from P0 comes after the linear
+  // functions from P1^3 and the RT0 functions are at the end.
+  FESystem<3,3> fe_vec(std::make_shared<FE_P<1,3,3> >(), FEVector);
+  FESystem<3,3> fe_sys({ std::make_shared<FE_P<0,3,3> >(), std::make_shared<FESystem<3,3> >(fe_vec), std::make_shared<FE_RT0<3,3> >() });
+  FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
+  
+  fe_values.reinit(ele);
+  
+  auto vec_view = fe_values.vector_view(0);
+  auto scalar_view = fe_values.scalar_view(0);
+  auto rt_view = fe_values.vector_view(1);
+  
+  for (unsigned int k=0; k<q.size(); k++)
+  {
+    // check values and gradients of P1^3 function
+    for (unsigned int i=0; i<fe_sys.n_dofs(); i++)
+      for (unsigned int c=0; c<3; c++)
+      {
+        // check values
+        EXPECT_EQ( ((i/3==k) && (i%3==c))?1:0, vec_view.value(i,k)[c] );
+        //check gradients
+        arma::rowvec gr = vec_view.grad(i,k).row(c);
+        if (i % 3 == c)
+        { // gradient of nonzero component
+          switch (i/3)
+          {
+            case 0:
+              EXPECT_ARMA_EQ( arma::rowvec("-1 -1 -1"), gr );
+              break;
+            case 1:
+              EXPECT_ARMA_EQ( arma::rowvec("1 0 0"), gr );
+              break;
+            case 2:
+              EXPECT_ARMA_EQ( arma::rowvec("0 1 0"), gr );
+              break;
+            case 3:
+              EXPECT_ARMA_EQ( arma::rowvec("0 0 1"), gr );
+              break;
+            case 4: // last basis function does not contribute to the vector
+              EXPECT_ARMA_EQ( arma::rowvec("0 0 0"), gr );
+              break;
+          }
+        }
+        else
+          EXPECT_ARMA_EQ( arma::rowvec("0 0 0"), gr );
+      }
+    
+    // check value and gradient of P0 function
+    EXPECT_EQ( 1, scalar_view.value(fe_vec.n_dofs(),k) );
+    EXPECT_ARMA_EQ( arma::vec("0 0 0"), scalar_view.grad(fe_vec.n_dofs(),k) );
+    
+    // check RT0 function
+    unsigned int dof_offset = fe_vec.n_dofs() + 1;
+    for (unsigned int i=0; i<fe_sys.n_dofs(); i++)
     {
-        NodeVector nodes = make_nodes({"0 0 0", "1 0 0", "0 1 0", "0 0 1"});
-        ElementVector el_vec = make_elements(nodes, { { 0, 1, 2, 3 } });
-        ElementFullIter ele( el_vec(0) );
-        
-        FESystem<3,3> fe_sys(std::make_shared<FE_P<1,3,3> >(), 3);
-        MappingP1<3,3> map;
-        Quadrature<3> q(nodes.size());
-        for (unsigned int i=0; i<nodes.size(); i++)
-          q.set_point(i, nodes[i].point());
-        FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
-        FEValuesExtractors::Vector vec(0);
-        
-        fe_values.reinit(ele);
-        
-        EXPECT_ARMA_EQ( arma::vec("1 0 0"), fe_values[vec].value(0,0));
-        EXPECT_ARMA_EQ( arma::vec("0 1 0"), fe_values[vec].value(1,0));
-        EXPECT_ARMA_EQ( arma::vec("0 0 1"), fe_values[vec].value(2,0));
-        
-        EXPECT_ARMA_EQ( arma::vec("1 0 0"), fe_values[vec].value(3,1));
-        EXPECT_ARMA_EQ( arma::vec("0 1 0"), fe_values[vec].value(4,1));
-        EXPECT_ARMA_EQ( arma::vec("0 0 1"), fe_values[vec].value(5,1));
-        
-        EXPECT_ARMA_EQ( arma::vec("1 0 0"), fe_values[vec].value(6,2));
-        EXPECT_ARMA_EQ( arma::vec("0 1 0"), fe_values[vec].value(7,2));
-        EXPECT_ARMA_EQ( arma::vec("0 0 1"), fe_values[vec].value(8,2));
-        
-        EXPECT_ARMA_EQ( arma::vec("1 0 0"), fe_values[vec].value(9,3));
-        EXPECT_ARMA_EQ( arma::vec("0 1 0"), fe_values[vec].value(10,3));
-        EXPECT_ARMA_EQ( arma::vec("0 0 1"), fe_values[vec].value(11,3));
-        
-
+      arma::vec exp_value;
+      switch (i-dof_offset)
+      {
+        case 0:
+          exp_value = q.point(k)*2 - arma::vec("0 0 2");
+          break;
+        case 1:
+          exp_value = q.point(k)*2 - arma::vec("0 2 0");
+          break;
+        case 2:
+          exp_value = q.point(k)*2 - arma::vec("2 0 0");
+          break;
+        case 3:
+          exp_value = q.point(k)*2;
+          break;
+        default:
+          exp_value = arma::vec("0 0 0");
+      }
+      EXPECT_ARMA_EQ( exp_value, rt_view.value(i,k) );
     }
-
+  }
 }
 
 
