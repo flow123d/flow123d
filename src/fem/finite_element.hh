@@ -128,7 +128,25 @@ public:
  * configuration of the entity with respect to the actual cell.
  * For this reason we define the dof multiplicity which allows to
  * group the dofs as described in \ref DofMultiplicity.
- *
+ * 
+ * 
+ * Dof ordering:
+ * 
+ * The dofs and basis functions are ordered as follows:
+ * - all dofs on point 1
+ * - all dofs on point 2
+ * ...
+ * - all dofs on line 1
+ * - all dofs on line 2
+ * ...
+ * - all dofs on triangle 1
+ * - all dofs on triangle 2
+ * ...
+ * - all dofs on tetrahedron
+ * The ordering is important for compatibility with DOFHandler
+ * and FESystem.
+ * 
+ * 
  * Support points:
  *
  * Sometimes it is convenient to describe the function space using
