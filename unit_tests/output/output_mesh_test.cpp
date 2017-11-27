@@ -19,6 +19,31 @@
 #include "io/output_element.hh"
 
 
+class OutputMeshTest : public OutputMesh {
+public:
+	OutputMeshTest(Mesh  &mesh)
+	: OutputMesh(mesh) {}
+
+    void print_and_check_sizes(Mesh *mesh)
+    {
+        std::cout << "nodes: ";
+        this->nodes_->print_ascii_all(std::cout);
+        std::cout << endl;
+        std::cout << "connectivity: ";
+        this->connectivity_->print_ascii_all(std::cout);
+        std::cout << endl;
+        std::cout << "offsets: ";
+        this->offsets_->print_ascii_all(std::cout);
+        std::cout << endl;
+
+        EXPECT_EQ(this->nodes_->n_values(), mesh->n_nodes());
+        EXPECT_EQ(this->offsets_->n_values(), mesh->n_elements());
+    }
+
+    ~OutputMeshTest() {}
+
+};
+
 
 TEST(OutputMesh, create_identical)
 {
@@ -26,21 +51,9 @@ TEST(OutputMesh, create_identical)
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
     
-    auto output_mesh = std::make_shared<OutputMesh>(*mesh);
+    auto output_mesh = std::make_shared<OutputMeshTest>(*mesh);
     output_mesh->create_mesh();
-    
-    std::cout << "nodes: ";
-    output_mesh->nodes_->print_ascii_all(std::cout);
-    std::cout << endl;
-    std::cout << "connectivity: ";
-    output_mesh->connectivity_->print_ascii_all(std::cout);
-    std::cout << endl;
-    std::cout << "offsets: ";
-    output_mesh->offsets_->print_ascii_all(std::cout);
-    std::cout << endl;
-    
-    EXPECT_EQ(output_mesh->nodes_->n_values(), mesh->n_nodes());
-    EXPECT_EQ(output_mesh->offsets_->n_values(), mesh->n_elements());
+    output_mesh->print_and_check_sizes(mesh);
     
     for(const auto &ele : *output_mesh)
     {

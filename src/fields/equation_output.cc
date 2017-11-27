@@ -155,7 +155,7 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
 
     // register interpolation type of fields to OutputStream
     for(FieldCommon * field : this->field_list) {
-        stream_->add_field_interpolation( field->get_output_type() );
+        stream_->add_field_interpolation( field->get_output_type(), field->name(), field->n_comp() );
     }
 }
 
@@ -190,6 +190,9 @@ void EquationOutput::output(TimeStep step)
             }
         }
     }
+
+    // complete information about dummy fields
+    stream_->add_dummy_fields();
 }
 
 
