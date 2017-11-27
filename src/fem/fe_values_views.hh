@@ -25,33 +25,6 @@
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 
 
-/**
- * FEValuesExtractors are auxiliary classes that hold information
- * about the particular scalar component or offset of the first vector,
- * tensor etc. component of the finite element.
- * 
- * The classes are motivated by deal.II.
- */
-namespace FEValuesExtractors {
-
-  class Scalar {
-  public:
-    Scalar(unsigned int comp) : component_(comp) {};
-    
-    unsigned int component_;
-  };
-  
-  class Vector {
-  public:
-    Vector(unsigned int comp) : first_vector_component_(comp) {};
-    
-    unsigned int first_vector_component_;
-  };
-  
-  class Tensor {}; // to be implemented
-  
-};
-
 
 /**
  * FEValuesViews classes realize access to shape functions and their derivatives
