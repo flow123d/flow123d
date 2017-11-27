@@ -52,9 +52,7 @@ public:
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(double *local_vb,
-                                    ElementFullIter ele,
-                                    Neighbour *ngh) = 0;
+    virtual void assembly_local_vb(ElementFullIter ele, Neighbour *ngh) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
@@ -105,7 +103,8 @@ public:
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
-        loc_system_(size(), size())
+        loc_system_(size(), size()),
+        loc_system_vb_(2,2)
     {
         // local numbering of dofs for MH system
         unsigned int nsides = dim+1;
@@ -117,6 +116,20 @@ public:
             loc_edge_dofs[i] = nsides + i + 1;
         }
         //DebugOut() << print_var(this) << print_var(side_quad_.size());
+        
+        // create local sparsity pattern
+        arma::umat sp(size(),size());
+        sp.zeros();
+        sp.submat(0, 0, nsides, nsides).ones();
+        sp.diag().ones();
+        sp.diag(nsides+1).ones();
+        sp.diag(-nsides-1).ones();
+        loc_system_.set_sparsity(sp);
+        
+        // local system 2x2 for vb neighbourings is full matrix
+        // this matrix cannot be influenced by any BC (no elimination can take place)
+        sp.ones(2,2);
+        loc_system_vb_.set_sparsity(sp);
 
         if (ad_->mortar_method_ == DarcyMH::MortarP0) {
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
@@ -150,8 +163,6 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
-        
-
         ad_->lin_sys->set_local_system(loc_system_);
 
         assembly_dim_connections(ele_ac);
@@ -163,7 +174,7 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(double *local_vb,  ElementFullIter ele, Neighbour *ngh) override
+    void assembly_local_vb(ElementFullIter ele, Neighbour *ngh) override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
@@ -182,8 +193,10 @@ public:
                         ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
-        local_vb[0] = -value;   local_vb[1] = value;
-        local_vb[2] = value;    local_vb[3] = -value;
+        loc_system_vb_.add_value(0,0, -value);
+        loc_system_vb_.add_value(0,1,  value);
+        loc_system_vb_.add_value(1,0,  value);
+        loc_system_vb_.add_value(1,1, -value);
     }
 
 
@@ -432,30 +445,32 @@ protected:
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
+        ElementFullIter ele = ele_ac.full_iter();
+        
+        // no Neighbours => nothing to asssemble here
+        if(ele->n_neighs_vb == 0) return;
+        
         int ele_row = ele_ac.ele_row();
-        int rows[2];
-        double local_vb[4]; // 2x2 matrix
-
         Neighbour *ngh;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-        for (unsigned int i = 0; i < ele_ac.full_iter()->n_neighs_vb; i++) {
+        for (unsigned int i = 0; i < ele->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            ngh= ele_ac.full_iter()->neigh_vb[i];
-            rows[0]=ele_row;
-            rows[1]=ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
+            ngh = ele_ac.full_iter()->neigh_vb[i];
+            loc_system_vb_.reset();
+            loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
+            loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
 
+            assembly_local_vb(ele, ngh);
 
-            assembly_local_vb(local_vb, ele_ac.full_iter(), ngh);
-
-            ad_->lin_sys->mat_set_values(2, rows, 2, rows, local_vb);
+            ad_->lin_sys->set_local_system(loc_system_vb_);
 
             // update matrix for weights in BDDCML
             if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-               int ind = rows[1];
+               int ind = loc_system_vb_.row_dofs[1];
                // there is -value on diagonal in block C!
-               double new_val = local_vb[0];
+               double new_val = loc_system_vb_.get_matrix()(0,0);
                static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
             }
         }
@@ -500,6 +515,7 @@ protected:
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
+    LocalSystem loc_system_vb_;
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;

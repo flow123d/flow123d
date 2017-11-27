@@ -545,6 +545,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it:{} (reason: {}) residual: {}\n",
         		nonlinear_iteration_, l_it, convergedReason, residual_norm);
     }
+    VecDestroy(&save_solution);
     this -> postprocess();
 
     // adapt timestep
@@ -570,13 +571,15 @@ void DarcyMH::postprocess()
 {
     START_TIMER("postprocess");
 
-    auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
-        unsigned int dim = ele_ac.dim();
-        multidim_assembler[dim-1]->fix_velocity(ele_ac);
+    //fix velocity when mortar method is used
+    if(data_->mortar_method_ != MortarMethod::NoMortar){
+        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+        for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+            auto ele_ac = mh_dh.accessor(i_loc);
+            unsigned int dim = ele_ac.dim();
+            multidim_assembler[dim-1]->fix_velocity(ele_ac);
+        }
     }
-
     //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
 
     // modify side fluxes in parallel
@@ -691,29 +694,30 @@ void DarcyMH::allocate_mh_matrix()
     double zeros[100000];
     for(int i=0; i<100000; i++) zeros[i] = 0.0;
 
+    std::vector<int> tmp_rows;
+    tmp_rows.reserve(200);
+    
+    unsigned int nsides, loc_size;
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
-        unsigned int nsides = ele_ac.n_sides();
+        nsides = ele_ac.n_sides();
         
-        //allocate at once matrix [sides,ele]x[sides,ele]
-        unsigned int loc_size = 1 + 2*nsides;
-        unsigned int i = 0;
+        //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
+        loc_size = 1 + 2*nsides;
+        unsigned int i_side = 0;
         
-        for (; i < nsides; i++) {
-            local_dofs[i] = ele_ac.side_row(i);
-            local_dofs[i+nsides] = ele_ac.edge_row(i);
+        for (; i_side < nsides; i_side++) {
+            local_dofs[i_side] = ele_ac.side_row(i_side);
+            local_dofs[i_side+nsides] = ele_ac.edge_row(i_side);
         }
-        local_dofs[i+nsides] = ele_ac.ele_row();
+        local_dofs[i_side+nsides] = ele_ac.ele_row();
         int * edge_rows = local_dofs + nsides;
         //int ele_row = local_dofs[0];
         
         // whole local MH matrix
         ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
         
-
-        std::vector<int> tmp_rows;
-        tmp_rows.reserve(200);
 
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
@@ -1179,6 +1183,13 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
+    
+    VecDestroy(&previous_solution);
+    VecDestroy(&steady_diagonal);
+    VecDestroy(&new_diagonal);
+    VecDestroy(&steady_rhs);
+    
+    
     if (schur0 != NULL) {
         delete schur0;
         VecScatterDestroy(&par_to_all);
@@ -1191,7 +1202,8 @@ DarcyMH::~DarcyMH() {
 
 	if (output_object)	delete output_object;
 
-
+    if(time_ != nullptr)
+        delete time_;
     
 }
 
