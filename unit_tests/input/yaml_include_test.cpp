@@ -41,6 +41,23 @@ protected:
     			.close();
     };
 
+    static Type::Record & get_input_include_abstract() {
+    	static Type::Abstract abstr = Type::Abstract("AbstractType", "abstract type")
+    			.close();
+
+    	static Type::Record derived_rec = Type::Record("derived", "Some derived record.")
+    			.derive_from( abstr )
+    			.declare_key("some_double", Type::Double(), Type::Default::obligatory(), "desc.")
+    			.declare_key("some_int", Type::Integer(), Type::Default::obligatory(), "desc.")
+    			.declare_key("some_bool", Type::Bool(), Type::Default::obligatory(), "desc.")
+    			.close();
+
+    	return Type::Record("Root", "Root record.")
+    			.declare_key("sub_rec", abstr, Type::Default::obligatory(), "abstract type.")
+    			.declare_key("double_key", Type::Double(), Type::Default::obligatory(), "desc.")
+    			.close();
+    };
+
     static Type::Record & get_input_include_csv_record() {
     	static Type::Abstract abstr = Type::Abstract("Abstract", "Abstract type.")
 				.close();
@@ -99,6 +116,17 @@ protected:
         EXPECT_EQ(5,   storage_->get_item(1)->get_item(2)->get_item(1)->get_int() );
         EXPECT_TRUE(   storage_->get_item(1)->get_item(3)->get_bool() );
         EXPECT_EQ(10,  storage_->get_item(2)->get_int() );
+    };
+
+    // check storage in test with including abstract with YAML or JSON input file
+    void check_abstract_storage() {
+        EXPECT_NE((void *)NULL, storage_);
+        EXPECT_EQ(3,   storage_->get_array_size());
+        EXPECT_EQ(4,   storage_->get_item(1)->get_array_size() );
+        EXPECT_EQ(2.5, storage_->get_item(1)->get_item(1)->get_double() );
+        EXPECT_EQ(10,  storage_->get_item(1)->get_item(2)->get_int() );
+        EXPECT_TRUE(   storage_->get_item(1)->get_item(3)->get_bool() );
+        EXPECT_EQ(1.0, storage_->get_item(2)->get_double() );
     };
 
     // check storage in test with including CSV input file
@@ -259,6 +287,44 @@ TEST_F(ReaderIncludeTest, include_array_to_json) {
     stringstream ss( import_array_to_json );
     read_stream(ss, ReaderIncludeTest::get_input_include_record(), FileFormat::format_JSON);
     check_simple_storage();
+}
+
+
+const string import_abstract_to_yaml = R"YAML(
+sub_rec: !include:derived
+  file: include_abstract.yaml
+double_key: 1.0
+)YAML";
+
+const string import_abstract_auto_conversion = R"YAML(
+sub_rec: !include:derived
+  include_abstract.yaml
+double_key: 1.0
+)YAML";
+
+const string import_abstract_to_json = R"JSON(
+{
+  sub_rec = { TYPE="include:derived", file="include_abstract.con" },
+  double_key = 1.0
+}
+)JSON";
+
+TEST_F(ReaderIncludeTest, include_abstract_to_yaml) {
+    stringstream ss( import_abstract_to_yaml );
+    read_stream(ss, ReaderIncludeTest::get_input_include_abstract(), FileFormat::format_YAML);
+    check_abstract_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_abstract_auto_conversion) {
+    stringstream ss( import_abstract_auto_conversion );
+    read_stream(ss, ReaderIncludeTest::get_input_include_abstract(), FileFormat::format_YAML);
+    check_abstract_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_abstract_to_json) {
+    stringstream ss( import_abstract_to_json );
+    read_stream(ss, ReaderIncludeTest::get_input_include_abstract(), FileFormat::format_JSON);
+    check_abstract_storage();
 }
 
 

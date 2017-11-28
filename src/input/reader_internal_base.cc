@@ -226,21 +226,28 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Tupl
 
 StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abstract *abstr_rec)
 {
-	string record_name = p.get_record_tag();
-	if (record_name == "") {
+	string record_tag = p.get_record_tag();
+	if (record_tag == "") {
 		if ( ! abstr_rec->get_selection_default().has_value_at_declaration() ) {
 			this->generate_input_error(p, abstr_rec, "Can not determine type of the Abstract.", true);
 		} else { // auto conversion
 			return abstract_automatic_conversion(p, abstr_rec);
 		}
-	} else if ((record_name == "include") || (record_name == "include_csv")) {
-		THROW( ExcForbiddenTag() << EI_Tag(record_name)
+	} else if (record_tag.substr(0,8) == "include:") { // include of abstract is predetermined with tag '!include:record_name'
+		string record_name = record_tag.substr(8);
+		try {
+			return make_include_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.", false);
+		}
+	} else if ((record_tag == "include") || (record_tag == "include_csv")) { // simple '!include' tag is forbidden
+		THROW( ExcForbiddenTag() << EI_Tag(record_tag)
 			<< EI_Specification("can't be used with abstract type.") );
 	} else {
 		try {
-			return make_sub_storage(p, &( abstr_rec->get_descendant(record_name) ) );
+			return make_sub_storage(p, &( abstr_rec->get_descendant(record_tag) ) );
 		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
-			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_name + "' of the Selection.", false);
+			this->generate_input_error(p, abstr_rec, "Wrong value '" + record_tag + "' of the Selection.", false);
 		}
 	}
 	return NULL;
