@@ -52,3 +52,4 @@ problem: !Coupling_Sequential
     output_stream:
       format: !vtk
         variant: ascii
+      precision: 14
