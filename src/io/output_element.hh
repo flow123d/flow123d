@@ -73,6 +73,7 @@ public:
     //@}
     
     void inc();
+
     bool operator==(const OutputElement& other);
 private:
     
