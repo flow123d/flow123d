@@ -43,6 +43,7 @@ problem: !Coupling_Sequential
       name: flow_output_stream
       times:
         - step: 0.1
+      precision: 15
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -63,6 +64,7 @@ problem: !Coupling_Sequential
       name: transport_output_stream
       times:
         - step: 0.1
+      precision: 15  
     substances:
       - conc
     reaction_term: !Sorption

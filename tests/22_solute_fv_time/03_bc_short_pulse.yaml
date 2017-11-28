@@ -57,5 +57,6 @@ problem: !Coupling_Sequential
       name: transport_output_stream
       times:
         - step: 0.1
+      precision: 15  
     balance:
       cumulative: true
