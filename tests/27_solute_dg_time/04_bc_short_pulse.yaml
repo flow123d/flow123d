@@ -64,5 +64,6 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.1
+      precision: 15
     balance:
       cumulative: true
