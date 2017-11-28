@@ -32,7 +32,7 @@ public:
      * Opens a file given by file path @p fp. And construct the CSV tokenizer over the
      * input stream for this file.
      */
-	CSVTokenizer(const FilePath &fp);
+	CSVTokenizer(const FilePath &fp, std::string field_separator = ",");
 
 	/**
      * @brief Construct the CSV tokenizer over given input stream @p in.
@@ -40,7 +40,7 @@ public:
      * @code CSVTokenizer( ifstream("my_file") );
      *
      */
-	CSVTokenizer(std::istream &in);
+	CSVTokenizer(std::istream &in, std::string field_separator = ",");
 
 	/// Get count of lines in CSV file.
 	unsigned int get_n_lines();

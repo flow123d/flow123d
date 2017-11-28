@@ -57,9 +57,25 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         	p.up();
         }
 
+        // separator characters
+        stringstream separator;
+        if ( p.down("separator") ) {
+        	try {
+        		separator << p.get_string_value() << " \t";
+        	}
+			catch (ExcInputError & e) {
+				complete_input_error(e, p, ValueTypes::str_type);
+				e << EI_InputType("invalid separator of included CSV file");
+				throw;
+			}
+        	p.up();
+        } else {
+        	separator << ", \t";
+        }
+
         // open CSV file, get number of lines, skip head lines
         FilePath fp((included_file), FilePath::input_file);
-        CSVTokenizer tok( fp );
+        CSVTokenizer tok( fp, separator.str() );
 
         const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
         StorageBase *item_storage; // storage of sub-type record of included array
@@ -222,6 +238,7 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
 		}
 	}
+	return NULL;
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Bool *bool_type)
