@@ -354,7 +354,7 @@ public:
         uint i;
         for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
         
-        if(is_enriched() && dh->enrich_velocity && ! ele->xfem_data->is_complement()){
+        if(is_enriched() && dh->enrich_velocity){
             XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
                 if(dh->single_enr){
@@ -375,7 +375,7 @@ public:
         dofs[0] = ele_row();
         uint i = 1;
         
-        if(is_enriched() && dh->enrich_pressure && ! ele->xfem_data->is_complement()){
+        if(is_enriched() && dh->enrich_pressure){
             XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
                 if(dh->single_enr){
@@ -398,7 +398,7 @@ public:
         for(uint i=0; i< n_sides(); i++, d++) dofs[d] = edge_row(i);
         
         // singularity lagrange multipliers
-        if(is_enriched() && ! ele->xfem_data->is_complement()){
+        if(is_enriched()){
             XFEMElementDataBase* xd = xfem_data_pointer();
             for(uint w=0; w< xd->n_enrichments(); w++){
                 if(xd->enrichment_intersects(w)){
@@ -414,21 +414,21 @@ public:
     
     unsigned int n_dofs_vel(){
         unsigned int n = n_sides();
-        if(is_enriched() && ! ele->xfem_data->is_complement())
+        if(is_enriched())
             n += xfem_data_sing()->n_enriched_dofs(Quantity::velocity);
         return n;
     }
     
     unsigned int n_dofs_press(){
         unsigned int n = 1;
-        if(is_enriched() && ! ele->xfem_data->is_complement())
+        if(is_enriched())
             n += xfem_data_sing()->n_enriched_dofs(Quantity::pressure);
         return n;
     }
     
     unsigned int n_sing_dofs(){
         unsigned int n = 0;
-        if(is_enriched() && ! ele->xfem_data->is_complement())
+        if(is_enriched())
             n += xfem_data_sing()->n_singularities_inside();
         return n;
     }

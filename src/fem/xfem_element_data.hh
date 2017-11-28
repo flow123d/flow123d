@@ -37,7 +37,7 @@ class XFEMElementDataBase
 public:
     /// Constructor.
     XFEMElementDataBase()
-    : ele_global_idx_(-1),complement_(false)
+    : ele_global_idx_(-1)
     {}
     
     ///Destructor
@@ -56,14 +56,6 @@ public:
     { ele_global_idx_ = global_idx;
       intersection_ele_global_idx_ = intersection_global_idx;
     }
-    
-    void set_complement()
-    { complement_ = true;}
-    
-    bool is_complement()
-    { return complement_;}
-    
-    
     
     ///Returns number of wells comunicating with the cell
     unsigned int n_enrichments() const
@@ -119,8 +111,6 @@ protected:
     unsigned int ele_global_idx_;
     
     unsigned int intersection_ele_global_idx_;
-    
-    bool complement_;
     
     ///global indices of the wells
     std::vector<unsigned int> global_enrichment_indices_;
@@ -212,22 +202,6 @@ protected:
 //     std::vector<std::map<int, Space<3>::Point> > *node_vec_values;
 };
     
-
-
-class XFEMComplementData : public XFEMElementData<2,3>
-{
-public:
-    /// Constructor.
-    XFEMComplementData(EnrichmentPtr enrichment_func,
-                       unsigned int global_enrichment_index)
-    {
-        add_data(enrichment_func, global_enrichment_index);
-    }
-    
-    ///Destructor
-    virtual ~XFEMComplementData()
-    {}
-};
 
 #include "fem/singularity.hh"
 //*************************************************************************************

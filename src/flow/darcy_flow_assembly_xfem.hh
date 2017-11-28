@@ -90,7 +90,7 @@ public:
 //         DBGVAR(ele_ac.element_accessor().idx());
         setup_local(ele_ac);
         
-        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
+        if(ele_ac.is_enriched())
             prepare_xfem(ele_ac);
         
         set_dofs_and_bc(ele_ac);
@@ -101,7 +101,7 @@ public:
         assemble_source_term(ele_ac);
         
         //mast be last due to overriding xfem fe values
-        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
+        if(ele_ac.is_enriched())
             assemble_singular_velocity(ele_ac);
         
         assembly_dim_connections(ele_ac);
@@ -180,7 +180,7 @@ public:
 
         //TODO: use LocalElementAccessor
         
-        if(ele->xfem_data != nullptr && ! ele->xfem_data->is_complement()){
+        if(ele->xfem_data != nullptr){
             // suppose single proc. so we can create accessor with local ele index
             auto ele_ac = LocalElementAccessorBase<3>(ad_->mh_dh, ele->index());
             flux_in_center = make_element_vector_xfem(ele_ac);
@@ -439,7 +439,7 @@ protected:
             
             
 //             if(ad_->mh_dh->single_enr)
-//             if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//             if(ad_->mh_dh->enrich_velocity && ele_ac.is_enriched()){
 //                 assemble_enriched_side_edge(ele_ac, i);
 //             }
         }
@@ -456,7 +456,7 @@ protected:
         double conduct =  ad_->conductivity.value(ele_ac.centre(), ele_ac.element_accessor());
         double scale = 1 / cs /conduct;
         
-        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement())
+        if(ele_ac.is_enriched())
             assemble_sides_scale(ele_ac, scale, *fe_values_rt_xfem_);
         else
             assemble_sides_scale(ele_ac, scale, fe_values_rt_);
@@ -515,7 +515,7 @@ protected:
     
     void assemble_element(LocalElementAccessorBase<3> ele_ac){        
         
-        if(ele_ac.is_enriched() && !ele_ac.xfem_data_pointer()->is_complement()){
+        if(ele_ac.is_enriched()){
                 assemble_element(ele_ac, *fe_values_rt_xfem_, *fe_values_p0_xfem_);
         }
         else 

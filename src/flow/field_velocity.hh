@@ -55,7 +55,7 @@ public:
         update_quad(ele_ac.full_iter(), p);
         Value flux; flux.zeros();
         
-        if(enr_ && elm.element()->xfem_data != nullptr && ! elm.element()->xfem_data->is_complement()){
+        if(enr_ && elm.element()->xfem_data != nullptr){
             flux =  value_vector_xfem(ele_ac);
         }
         else if(reg_){
