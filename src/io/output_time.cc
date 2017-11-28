@@ -93,7 +93,7 @@ void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, c
 
 void OutputTime::set_stream_precision(std::ofstream &stream)
 {
-    stream.setf(std::ios::scientific);
+    //stream.setf(std::ios::scientific);
     stream.precision(this->precision_);
 }
 

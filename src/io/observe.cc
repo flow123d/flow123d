@@ -296,7 +296,7 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
         FilePath observe_file_path(observe_name_ + "_observe.yaml", FilePath::output_file);
         try {
             observe_file_path.open_stream(observe_file_);
-            observe_file_.setf(std::ios::scientific);
+            //observe_file_.setf(std::ios::scientific);
             observe_file_.precision(this->precision_);
 
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_array)
@@ -342,7 +342,7 @@ void Observe::output_header() {
     unsigned int indent = 2;
     observe_file_ << "# Observation file: " << observe_name_ << endl;
     observe_file_ << "time_unit: " << time_unit_str_ << endl;
-    observe_file_ << "time_unit_in_secodns: " << time_unit_seconds_ << endl;
+    observe_file_ << "time_unit_in_seconds: " << time_unit_seconds_ << endl;
     observe_file_ << "points:" << endl;
     for(auto &point : points_)
         point.output(observe_file_, indent, precision_);
