@@ -66,6 +66,8 @@ protected:
     			.derive_from( abstr )
     			.declare_key("some_double", Type::Double(), Type::Default::obligatory(), "desc.")
     			.declare_key("some_int", Type::Integer(), Type::Default::obligatory(), "desc.")
+    			.declare_key("fix_double", Type::Double(), Type::Default::obligatory(), "desc.")
+    			.declare_key("fix_int", Type::Integer(), Type::Default::obligatory(), "desc.")
     			.close();
 
     	static Type::Record coords_rec = Type::Record("Coords", "3D coords.")
@@ -89,6 +91,7 @@ protected:
     			.declare_key("c_key", Type::Bool(), Type::Default::obligatory(), "desc.")
     			.declare_key("d_key", Type::String(), Type::Default::obligatory(), "desc.")
     			.declare_key("e_key", Type::Double(), Type::Default::obligatory(), "desc.")
+    			.declare_key("f_key", Type::String(), Type::Default::obligatory(), "desc.")
     			.close();
 
     	return Type::Record("RootCsv", "Root record with CSV include.")
@@ -141,23 +144,26 @@ protected:
     	EXPECT_EQ(6, storage_->get_item(1)->get_array_size());
     	for (unsigned int i=0; i<storage_->get_item(1)->get_array_size(); ++i) {
     		StorageBase *i_storage = storage_->get_item(1)->get_item(i);
-    		EXPECT_EQ(9,                 i_storage->get_array_size());
+    		EXPECT_EQ(10,                i_storage->get_array_size());
     		EXPECT_EQ("SubRecord",       i_storage->get_item(0)->get_string());
     		EXPECT_EQ(4,                 i_storage->get_item(1)->get_array_size());
     		EXPECT_EQ("Coords",          i_storage->get_item(1)->get_item(0)->get_string());
     		EXPECT_DOUBLE_EQ(0.0,        i_storage->get_item(1)->get_item(1)->get_double());
     		EXPECT_DOUBLE_EQ(0.1*i,      i_storage->get_item(1)->get_item(2)->get_double());
     		EXPECT_DOUBLE_EQ(0.2*(i+1),  i_storage->get_item(1)->get_item(3)->get_double());
-    		EXPECT_EQ(3,                 i_storage->get_item(2)->get_array_size());
+    		EXPECT_EQ(5,                 i_storage->get_item(2)->get_array_size());
     		EXPECT_EQ("DerivedRec",      i_storage->get_item(2)->get_item(0)->get_string());
     		EXPECT_DOUBLE_EQ(0.1*(i+1),  i_storage->get_item(2)->get_item(1)->get_double());
     		EXPECT_EQ(ref_ints[i]+3,     i_storage->get_item(2)->get_item(2)->get_int());
+    		EXPECT_DOUBLE_EQ(0.5,        i_storage->get_item(2)->get_item(3)->get_double());
+    		EXPECT_EQ(5,                 i_storage->get_item(2)->get_item(4)->get_int());
     		EXPECT_EQ(ref_sels[i],       i_storage->get_item(3)->get_int());
     		EXPECT_EQ(ref_ints[i],       i_storage->get_item(4)->get_int());
     		EXPECT_DOUBLE_EQ(0.5*i-0.5,  i_storage->get_item(5)->get_double());
     		EXPECT_FALSE(                i_storage->get_item(6)->get_bool());
     		EXPECT_EQ(ref_strs[i],       i_storage->get_item(7)->get_string());
     		EXPECT_DOUBLE_EQ(0.25*i-1.0, i_storage->get_item(8)->get_double());
+    		EXPECT_EQ("some text",       i_storage->get_item(9)->get_string());
     	}
     	EXPECT_EQ("RootCsv", storage_->get_item(0)->get_string() );
     	EXPECT_EQ("Example of CSV include", storage_->get_item(2)->get_string() );
@@ -333,18 +339,21 @@ sub_rec: !include_csv
   file: include_simple.csv
   format:
     coords:
-      x: 1
-      y: 2
-      z: 3
+      x: '#1'
+      y: '#2'
+      z: '#3'
     abstract_key: !DerivedRec
-      some_double: 9
-      some_int: 10
-    a_key: 0
-    b_key: 4
-    c_key: 6
-    d_key: 7
-    e_key: 5
-    select: 11
+      some_double: '#9'
+      fix_double: 0.5
+      some_int: '#10'
+      fix_int: 5
+    a_key: '#0'
+    b_key: '#4'
+    c_key: '#6'
+    d_key: '#7'
+    e_key: '#5'
+    f_key: 'some text'
+    select: '#11'
 description: Example of CSV include
 )YAML";
 
@@ -354,14 +363,39 @@ const string import_csv_to_json = R"JSON(
     TYPE = "include_csv", 
     file = "include_simple.csv",
     format = { 
-      coords={x=1, y=2, z=3}, 
-      abstract_key={TYPE="DerivedRec", some_double=9, some_int=10}, 
-      a_key=0, b_key=4, c_key=6, d_key=7, e_key=5, select=11
+      coords={x="#1", y="#2", z="#3"}, 
+      abstract_key={TYPE="DerivedRec", some_double="#9", fix_double=0.5, some_int="#10", fix_int=5}, 
+      a_key="#0", b_key="#4", c_key="#6", d_key="#7", e_key="#5", f_key="some text", select="#11"
     }
   },
   description = "Example of CSV include"
 }
 )JSON";
+
+const string import_formatted_csv_to_yaml = R"YAML(
+sub_rec: !include_csv
+  file: include_formatted.csv
+  n_head_lines: 2
+  separator: ' '
+  format:
+    coords:
+      x: '#1'
+      y: '#2'
+      z: '#3'
+    abstract_key: !DerivedRec
+      some_double: '#9'
+      fix_double: 0.5
+      some_int: '#10'
+      fix_int: 5
+    a_key: '#0'
+    b_key: '#4'
+    c_key: '#6'
+    d_key: '#7'
+    e_key: '#5'
+    f_key: 'some text'
+    select: '#11'
+description: Example of CSV include
+)YAML";
 
 TEST_F(ReaderIncludeTest, include_csv_to_yaml) {
     stringstream ss( import_csv_to_yaml );
@@ -372,5 +406,11 @@ TEST_F(ReaderIncludeTest, include_csv_to_yaml) {
 TEST_F(ReaderIncludeTest, include_csv_to_json) {
     stringstream ss( import_csv_to_json );
     read_stream(ss, ReaderIncludeTest::get_input_include_csv_record(), FileFormat::format_JSON);
+    check_csv_storage();
+}
+
+TEST_F(ReaderIncludeTest, include_formatted_csv_to_yaml) {
+    stringstream ss( import_formatted_csv_to_yaml );
+    read_stream(ss, ReaderIncludeTest::get_input_include_csv_record(), FileFormat::format_YAML);
     check_csv_storage();
 }
