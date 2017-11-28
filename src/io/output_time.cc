@@ -35,6 +35,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 namespace IT = Input::Type;
 
 const IT::Record & OutputTime::get_input_type() {
+    stringstream default_prec;
+    default_prec << std::numeric_limits<double>::max_digits10;
     return IT::Record("OutputStream", "Configuration of the spatial output of a single balance equation.")
 		// The stream
 		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
@@ -46,8 +48,9 @@ const IT::Record & OutputTime::get_input_type() {
 		        "Output times used for equations without is own output times key.")
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
                 "Output mesh record enables output on a refined mesh.")
-        .declare_key("precision", IT::Integer(0), IT::Default("5"),
-                "The number of decimal digits used in output of floating point values.")
+        .declare_key("precision", IT::Integer(0), IT::Default(default_prec.str()),
+                "The number of decimal digits used in output of floating point values.\\ "
+                "Default is about 17 decimal digits which is enough to keep double values exect after write-read cycle.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
                 "Array of observe points.")
 		.close();
@@ -83,9 +86,16 @@ void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, c
     // TODO: remove dummy ".xyz" extension after merge with DF
     FilePath output_file_path(equation_name+"_fields", FilePath::output_file);
     input_record_.opt_val("file", output_file_path);
+    this->precision_ = input_record_.val<int>("precision");
     this->_base_filename = output_file_path;
 }
 
+
+void OutputTime::set_stream_precision(std::ofstream &stream)
+{
+    stream.setf(std::ios::scientific);
+    stream.precision(this->precision_);
+}
 
 
 OutputTime::~OutputTime(void)

@@ -160,9 +160,6 @@ void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDa
 {
     ofstream &file = this->_base_file;
 
-    /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
-
     for(unsigned int i=0; i < output_data->n_values(); i ++) {
         file << vec(i).id() << " ";
         output_data->print_ascii(file, i);
@@ -176,9 +173,6 @@ void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
 {
     Mesh *mesh = this->_mesh;
     ofstream &file = this->_base_file;
-
-    /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
 
     /* Write ascii data */
     unsigned int i_node;
@@ -316,6 +310,7 @@ int OutputMSH::write_data(void)
             this->fix_main_file_extension(".msh");
             try {
                 this->_base_filename.open_stream( this->_base_file );
+                this->set_stream_precision(this->_base_file);
             } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
         }
 

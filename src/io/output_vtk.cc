@@ -89,6 +89,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, co
         this->fix_main_file_extension(".pvd");
         try {
             this->_base_filename.open_stream( this->_base_file );
+            this->set_stream_precision(this->_base_file);
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
@@ -98,6 +99,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, co
     }
 
 }
+
 
 
 
@@ -125,17 +127,18 @@ int OutputVTK::write_data(void)
     /* Set up data file */
     try {
         frame_file_path.open_stream(_data_file);
+        this->set_stream_precision(_data_file);
     } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
 
     LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
     /* Set floating point precision to max */
-    this->_base_file.precision(std::numeric_limits<double>::digits10);
+    //this->_base_file.precision(std::numeric_limits<double>::digits10);
 
     /* Strip out relative path and add "base/" string */
     std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
-    this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+    this->_base_file << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
             << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
 
     LogOut() << "O.K.";
@@ -259,7 +262,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
     	// ascii output
     	file << ">" << endl;
-    	file << std::fixed << std::setprecision(10); // Set precision to max
+    	//file << std::fixed << std::setprecision(10); // Set precision to max
     	output_data->print_ascii_all(file);
     	file << "\n</DataArray>" << endl;
     } else {
