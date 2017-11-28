@@ -7,4 +7,7 @@ test_cases:
   - files:
       - 01_2d_single_triangle.yaml
       - 02_3d_single_tetrahedron3t.yaml
+      - 03_2d_single_circle.yaml
+      - 04_2d_single_circle_source.yaml
+      - 05_3d_single_cylinder.yaml
     proc: [1]
