@@ -1,0 +1,16 @@
+output_specific:
+nonlinear_solver:
+  linear_solver: !Petsc
+    a_tol: 1.0e-07
+n_schurs: 2
+input_fields: !include
+  ./includes/include_array.yaml
+output:
+  fields:
+    - piezo_head_p0
+    - pressure_p0
+    - pressure_p1
+    - velocity_p0
+balance: {}
+output_stream: !include
+  file: ./includes/include_rec.yaml 
