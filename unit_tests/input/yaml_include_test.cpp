@@ -339,21 +339,21 @@ sub_rec: !include_csv
   file: include_simple.csv
   format:
     coords:
-      x: '#1'
-      y: '#2'
-      z: '#3'
+      x: $1
+      y: $2
+      z: $3
     abstract_key: !DerivedRec
-      some_double: '#9'
+      some_double: $9
       fix_double: 0.5
-      some_int: '#10'
+      some_int: $10
       fix_int: 5
-    a_key: '#0'
-    b_key: '#4'
-    c_key: '#6'
-    d_key: '#7'
-    e_key: '#5'
+    a_key: $0
+    b_key: $4
+    c_key: $6
+    d_key: $7
+    e_key: $5
     f_key: 'some text'
-    select: '#11'
+    select: $11
 description: Example of CSV include
 )YAML";
 
@@ -363,9 +363,9 @@ const string import_csv_to_json = R"JSON(
     TYPE = "include_csv", 
     file = "include_simple.csv",
     format = { 
-      coords={x="#1", y="#2", z="#3"}, 
-      abstract_key={TYPE="DerivedRec", some_double="#9", fix_double=0.5, some_int="#10", fix_int=5}, 
-      a_key="#0", b_key="#4", c_key="#6", d_key="#7", e_key="#5", f_key="some text", select="#11"
+      coords={x="$1", y="$2", z="$3"}, 
+      abstract_key={TYPE="DerivedRec", some_double="$9", fix_double=0.5, some_int="$10", fix_int=5}, 
+      a_key="$0", b_key="$4", c_key="$6", d_key="$7", e_key="$5", f_key="some text", select="$11"
     }
   },
   description = "Example of CSV include"
@@ -379,21 +379,21 @@ sub_rec: !include_csv
   separator: ' '
   format:
     coords:
-      x: '#1'
-      y: '#2'
-      z: '#3'
+      x: $1
+      y: $2
+      z: $3
     abstract_key: !DerivedRec
-      some_double: '#9'
+      some_double: $9
       fix_double: 0.5
-      some_int: '#10'
+      some_int: $10
       fix_int: 5
-    a_key: '#0'
-    b_key: '#4'
-    c_key: '#6'
-    d_key: '#7'
-    e_key: '#5'
+    a_key: $0
+    b_key: $4
+    c_key: $6
+    d_key: $7
+    e_key: $5
     f_key: 'some text'
-    select: '#11'
+    select: $11
 description: Example of CSV include
 )YAML";
 

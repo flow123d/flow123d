@@ -33,7 +33,7 @@ ReaderInternalCsvInclude::ReaderInternalCsvInclude()
 
 StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Array *array)
 {
-	if ( p.is_record_type() ) { // sub-type must be record type
+	if ( p.is_record_type() ) { // sub-type must be Record or Abstract type
 		// load path to CSV file
 		std::string included_file;
         if ( p.down("file") ) {
@@ -77,7 +77,11 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         FilePath fp((included_file), FilePath::input_file);
         CSVTokenizer tok( fp, separator.str() );
 
-        const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
+        const Type::Abstract * abstract_type = dynamic_cast<const Type::Abstract *>(&array->get_sub_type());
+        std::string record_name = p.get_record_tag().substr(12);
+        const Type::TypeBase &sub_type = (abstract_type != NULL ) ?  // sub-type of array
+        		(abstract_type->get_descendant(record_name)) : (array->get_sub_type());
+
         StorageBase *item_storage; // storage of sub-type record of included array
         csv_columns_map_.clear();
         if ( p.down("format") ) {
@@ -352,8 +356,8 @@ bool ReaderInternalCsvInclude::check_and_read_position_index(PathBase &p, int &p
 		return false;
 	}
 
-	// value must start with '#', follows nonnegative number
-	if ( value.size() && (value.substr(0,1) == "#") ) {
+	// value must start with '$', follows nonnegative number
+	if ( value.size() && (value.substr(0,1) == "$") ) {
 		try {
 			pos = std::stoi( value.substr(1) );
 			return (pos >= 0);

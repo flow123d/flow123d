@@ -45,7 +45,7 @@ StorageBase * ReaderInternal::make_sub_storage(PathBase &p, const Type::Array *a
 		return this->make_array_storage(p, array, arr_size);
 	} else if (p.get_record_tag() == "include") {
 		return make_include_storage(p, array);
-	} else if (p.get_record_tag() == "include_csv") {
+	} else if (p.get_record_tag().substr(0,11) == "include_csv") {
 		ReaderInternalCsvInclude reader_csv;
 		return reader_csv.read_storage(p, array);
 	} else {
