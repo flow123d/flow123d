@@ -73,36 +73,20 @@ public:
     { return vector_components_; }
 
     /**
-     * @brief Returns the @p ith basis function evaluated at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief Returns the gradient of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
      * @brief The vector variant of basis_value must be implemented but need not be used.
      */
-    double basis_value_component(const unsigned int i, 
-                                 const arma::vec::fixed<dim> &p, 
-                                 const unsigned int comp) const override;
+    double basis_value(const unsigned int i, 
+                       const arma::vec::fixed<dim> &p, 
+                       const unsigned int comp) const override;
 
     /**
      * @brief The vector variant of basis_grad must be implemented but need not be used.
      */
-    arma::vec::fixed<dim> basis_grad_component(const unsigned int i, 
-                                               const arma::vec::fixed<dim> &p, 
-                                               const unsigned int comp) const override;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i, 
+                                     const arma::vec::fixed<dim> &p, 
+                                     const unsigned int comp) const override;
 
     UpdateFlags update_each(UpdateFlags flags) override;
-
-    void compute_node_matrix() override;
 
     FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags) override;
 
@@ -140,6 +124,8 @@ private:
   
   /// Initialization of the internal structures from the vector of base FE.
   void initialize();
+  
+  void compute_node_matrix() override;
   
   /// Pointers to base FE objects.
   std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe_;

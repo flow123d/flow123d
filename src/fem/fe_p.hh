@@ -165,28 +165,18 @@ public:
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i,
+                       const arma::vec::fixed<dim> &p,
+                       const unsigned int comp = 0) const override;
 
     /**
      * @brief Returns the gradient of the @p ith basis function at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The vector variant of basis_value must be implemented but may not be used.
-     */
-    double basis_value_component(const unsigned int i,
-                                 const arma::vec::fixed<dim> &p,
-                                 const unsigned int comp) const;
-
-    /**
-     * @brief The vector variant of basis_grad must be implemented but may not be used.
-     */
-    arma::vec::fixed<dim> basis_grad_component(const unsigned int i, 
-                                               const arma::vec::fixed<dim> &p,
-                                               const unsigned int comp) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
+                                     const arma::vec::fixed<dim> &p,
+                                     const unsigned int comp = 0) const override;
 
     virtual ~FE_P();
 
@@ -226,28 +216,18 @@ public:
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i,
+                       const arma::vec::fixed<dim> &p,
+                       const unsigned int comp = 0) const override;
 
     /**
      * @brief Returns the gradient of the @p ith basis function at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The vector variant of basis_value must be implemented but may not be used.
-     */
-    double basis_value_component(const unsigned int i,
-                                 const arma::vec::fixed<dim> &p,
-                                 const unsigned int comp) const;
-
-    /**
-     * @brief The vector variant of basis_grad must be implemented but may not be used.
-     */
-    arma::vec::fixed<dim> basis_grad_component(const unsigned int i, 
-                                               const arma::vec::fixed<dim> &p,
-                                               const unsigned int comp) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
+                                     const arma::vec::fixed<dim> &p,
+                                     const unsigned int comp = 0) const override;
 
     /// Destructor
     virtual ~FE_P_disc();
@@ -371,35 +351,23 @@ FE_P<degree,dim,spacedim>::FE_P()
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, 
+                                              const arma::vec::fixed<dim> &p,
+                                              const unsigned int comp) const
 {
+    ASSERT_EQ_DBG( 0, comp );
 	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i,
+                                                            const arma::vec::fixed<dim> &p,
+                                                            const unsigned int comp) const
 {
+    ASSERT_EQ_DBG( 0, comp );
 	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_grad(i, p);
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P<degree,dim,spacedim>::basis_value_component(const unsigned int i, 
-                                                        const arma::vec::fixed<dim> &p,
-                                                        const unsigned int comp) const
-{
-	OLD_ASSERT(false, "basis_value_component() may not be called for scalar finite element.");
-    return 0;
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad_component(const unsigned int i, 
-                                                                      const arma::vec::fixed<dim> &p, 
-                                                                      const unsigned int comp) const
-{
-	OLD_ASSERT(false, "basis_grad_component() may not be called for scalar finite element.");
-    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -439,35 +407,23 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i,
+                                                   const arma::vec::fixed<dim> &p,
+                                                   const unsigned int comp) const
 {
+    ASSERT_EQ_DBG( 0, comp );
 	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i,
+                                                                 const arma::vec::fixed<dim> &p,
+                                                                 const unsigned int comp) const
 {
+    ASSERT_EQ_DBG( 0, comp );
 	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
     return poly_space.basis_grad(i, p);
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P_disc<degree,dim,spacedim>::basis_value_component(const unsigned int i, 
-                                                        const arma::vec::fixed<dim> &p,
-                                                        const unsigned int comp) const
-{
-    OLD_ASSERT(false, "basis_value_component() may not be called for scalar finite element.");
-    return 0;
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad_component(const unsigned int i, 
-                                                                      const arma::vec::fixed<dim> &p, 
-                                                                      const unsigned int comp) const
-{
-    OLD_ASSERT(false, "basis_grad_component() may not be called for scalar finite element.");
-    return arma::vec::fixed<dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>

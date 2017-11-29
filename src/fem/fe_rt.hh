@@ -52,16 +52,6 @@ public:
     FE_RT0();
 
     /**
-     * @brief The scalar variant of basis_vector must be implemented but may not be used.
-     */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The scalar variant of basis_grad_vector must be implemented but may not be used.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
      * @brief Calculates the value of the @p comp-th component of
      * the @p i-th raw basis function at the
      * point @p p on the reference element (for vector-valued FE).
@@ -70,7 +60,7 @@ public:
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    double basis_value_component(const unsigned int i,
+    double basis_value(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp) const override;
 
     /**
@@ -82,7 +72,7 @@ public:
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    arma::vec::fixed<dim> basis_grad_component(const unsigned int i,
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp) const override;
 
     /**

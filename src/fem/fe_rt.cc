@@ -46,36 +46,9 @@ FE_RT0<dim,spacedim>::FE_RT0()
     compute_node_matrix();
 }
 
-template<unsigned int dim, unsigned int spacedim>
-double FE_RT0<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    OLD_ASSERT(false, "basis_value() may not be called for vectorial finite element.");
-
-    return 0.0;
-}
 
 template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    OLD_ASSERT(false, "basis_grad() may not be called for vectorial finite element.");
-    return arma::vec::fixed<dim>();
-}
-
-// template<unsigned int dim, unsigned int spacedim>
-// arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-// {
-//  OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
-// 
-//     arma::vec::fixed<dim> v(p);
-//     
-//     if (i > 0)
-//      v[i-1] -= 1;
-// 
-//     return v;
-// }
-
-template<unsigned int dim, unsigned int spacedim>
-double FE_RT0<dim,spacedim>::basis_value_component(const unsigned int i,
+double FE_RT0<dim,spacedim>::basis_value(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp) const
 {
   OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
@@ -87,16 +60,9 @@ double FE_RT0<dim,spacedim>::basis_value_component(const unsigned int i,
     return p[comp];
 }
 
-// template<unsigned int dim, unsigned int spacedim>
-// arma::mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-// {
-//     OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
-// 
-//     return arma::eye(dim,dim);
-// }
 
 template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad_component(const unsigned int i,
+arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp) const
 {
   OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
@@ -140,7 +106,7 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
         {
             double dot_product = 0;
             for (unsigned int c=0; c<dim; c++)
-               dot_product += basis_value_component(i,generalized_support_points[j],c)*RefElement<dim>::normal_vector(j)(c);
+               dot_product += basis_value(i,generalized_support_points[j],c)*RefElement<dim>::normal_vector(j)(c);
             F(i,j) = dot_product*RefElement<dim>::side_measure(j);
         }
     }
@@ -166,7 +132,7 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
         {
             for (unsigned int j=0; j<n_raw_functions; j++)
                 for (unsigned int c=0; c<dim; c++)
-                  raw_values(j,c) = basis_value_component(j, q.point(i), c);
+                  raw_values(j,c) = basis_value(j, q.point(i), c);
 
             shape_values = node_matrix * raw_values;
 
@@ -192,7 +158,7 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, Updat
                 grad.zeros();
                 for (unsigned int l=0; l<n_raw_functions; l++)
                   for (unsigned int c=0; c<dim; c++)
-                    grad.col(c) += basis_grad_component(l, q.point(i), c) * node_matrix(k,l);
+                    grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(k,l);
                 grads[k] = grad;
             }
 

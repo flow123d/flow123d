@@ -202,60 +202,28 @@ public:
             DofMultiplicity multiplicity);
 
     /**
-     * @brief Calculates the value of the @p i-th raw basis function at the
-     * point @p p on the reference element.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    virtual double basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const {};
-
-    /**
      * @brief Calculates the value of the @p comp-th component of
      * the @p i-th raw basis function at the
-     * point @p p on the reference element (for vector-valued FE).
+     * point @p p on the reference element.
      *
      * @param i    Number of the basis function.
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    virtual double basis_value_component(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const {};
-
-    /**
-     * @brief Calculates the gradient of the @p i-th raw basis function at the
-     * point @p p on the reference element.
-     *
-     * The gradient components
-     * are relative to the reference cell coordinate system.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const {};
+    virtual double basis_value(const unsigned int i,
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
 
     /**
      * @brief Calculates the @p comp-th component of the gradient
      * of the @p i-th raw basis function at the point @p p on the
-     * reference element (for vector-valued FE).
+     * reference element.
      *
      * @param i    Number of the basis function.
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    virtual arma::vec::fixed<dim> basis_grad_component(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const {};
-
-    /**
-     * @brief Initializes the @p node_matrix for computing the coefficients
-     * of the raw basis functions from values at support points.
-     *
-     * The method is implemented for the case of Langrangean finite
-     * element. In other cases it may be reimplemented.
-     */
-    virtual void compute_node_matrix();
+    virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
 
     /**
      * @brief Calculates the data on the reference cell.
@@ -315,17 +283,27 @@ public:
     }
 
     /**
+     * @brief Destructor.
+     */
+    virtual ~FiniteElement();
+
+protected:
+  
+  
+    /**
      * @brief Returns either the generalized support points (if they are defined)
      * or the unit support points.
      */
     const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
     
     /**
-     * @brief Destructor.
+     * @brief Initializes the @p node_matrix for computing the coefficients
+     * of the raw basis functions from values at support points.
+     *
+     * The method is implemented for the case of Langrangean finite
+     * element. In other cases it may be reimplemented.
      */
-    virtual ~FiniteElement();
-
-protected:
+    virtual void compute_node_matrix();
 
     /**
      * @brief Total number of degrees of freedom at one finite element.

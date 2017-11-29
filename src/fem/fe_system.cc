@@ -24,19 +24,6 @@ using namespace std;
 
 
 
-// template<unsigned int dim,unsigned int spacedim>
-// std::vector<FiniteElement<dim,spacedim> > expand_fe_vector(const std::vector<std::pair<FiniteElement<dim,spacedim>, unsigned int> > &fe)
-// {
-//   std::vector<FiniteElement<dim,spacedim> > finite_elements;
-//   
-//   for (auto fe_pair : fe)
-//     for (unsigned int i=0; i<fe_pair.second; i++)
-//       finite_elements.push_back(fe_pair.first);
-// 
-//   return finite_elements;
-// }
-
-
 template<unsigned int dim, unsigned int spacedim>
 FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t)
 {
@@ -181,23 +168,9 @@ void FESystem<dim,spacedim>::initialize()
 
 
 template<unsigned int dim, unsigned int spacedim>
-double FESystem<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-  OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-  return fe_[fe_dof_indices_[dof_basis_[i]].fe_index]->basis_value(fe_dof_indices_[dof_basis_[i]].basis_index, p);
-}
-
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-  OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-  return fe_[fe_dof_indices_[dof_basis_[i]].fe_index]->basis_grad(fe_dof_indices_[dof_basis_[i]].basis_index, p);
-}
-
-template<unsigned int dim, unsigned int spacedim>
-double FESystem<dim,spacedim>::basis_value_component(const unsigned int i, 
-                                                     const arma::vec::fixed<dim> &p, 
-                                                     const unsigned int comp) const
+double FESystem<dim,spacedim>::basis_value(const unsigned int i, 
+                                           const arma::vec::fixed<dim> &p, 
+                                           const unsigned int comp) const
 {
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
   
@@ -207,16 +180,13 @@ double FESystem<dim,spacedim>::basis_value_component(const unsigned int i,
   OLD_ASSERT(l_comp >= 0 && l_comp < fe_[fe_dof_indices_[bi].fe_index]->n_components(),
     "Index of component is out of range.");
 
-  if (fe_[fe_dof_indices_[bi].fe_index]->n_components() == 1)
-    return fe_[fe_dof_indices_[bi].fe_index]->basis_value(fe_dof_indices_[bi].basis_index, p);
-
-  return fe_[fe_dof_indices_[bi].fe_index]->basis_value_component(fe_dof_indices_[bi].basis_index, p, l_comp);
+  return fe_[fe_dof_indices_[bi].fe_index]->basis_value(fe_dof_indices_[bi].basis_index, p, l_comp);
 }
 
 template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad_component(const unsigned int i, 
-                                                                   const arma::vec::fixed<dim> &p, 
-                                                                   const unsigned int comp) const
+arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad(const unsigned int i, 
+                                                         const arma::vec::fixed<dim> &p, 
+                                                         const unsigned int comp) const
 {
   OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
   
@@ -226,10 +196,7 @@ arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad_component(const unsigne
   OLD_ASSERT(l_comp >= 0 && l_comp < fe_[fe_dof_indices_[bi].fe_index]->n_components(),
     "Index of component is out of range.");
   
-  if (fe_[fe_dof_indices_[bi].fe_index]->n_components() == 1)
-    return fe_[fe_dof_indices_[bi].fe_index]->basis_grad(fe_dof_indices_[bi].basis_index, p);
-
-  return fe_[fe_dof_indices_[bi].fe_index]->basis_grad_component(fe_dof_indices_[bi].basis_index, p, l_comp);
+  return fe_[fe_dof_indices_[bi].fe_index]->basis_grad(fe_dof_indices_[bi].basis_index, p, l_comp);
 }
 
 
