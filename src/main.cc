@@ -29,7 +29,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <boost/regex.hpp>
+#include <regex>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -308,11 +308,11 @@ void Application::run() {
     {
         using namespace Input;
         // check input file version against the version of executable
-        boost::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
-        boost::smatch match;
+        std::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
+        std::smatch match;
         std::string version(FLOW123D_VERSION_NAME_);
         vector<string> ver_fields(3);
-        if ( boost::regex_match(version, match, version_re) ) {
+        if ( std::regex_match(version, match, version_re) ) {
             ver_fields[0]=match[1];
             ver_fields[1]=match[2];
             ver_fields[2]=match[3];
@@ -322,7 +322,7 @@ void Application::run() {
 
         std::string input_version = i_rec.val<string>("flow123d_version");
         vector<string> iver_fields(3);
-        if ( boost::regex_match(input_version, match, version_re) ) {
+        if ( std::regex_match(input_version, match, version_re) ) {
             iver_fields[0]=match[1];
             iver_fields[1]=match[2];
             iver_fields[2]=match[3];
