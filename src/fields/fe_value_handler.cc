@@ -20,6 +20,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/bounding_box.hh"
+#include "fem/fe_values_views.hh"
 
 
 /**
@@ -31,6 +32,7 @@
 template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
 public:
+
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
@@ -59,7 +61,7 @@ class FEShapeHandler<1, elemdim, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
-		return fe_val.shape_vector(i_dof, i_qp);
+		return fe_val.vector_view(0).value(i_dof, i_qp);
 	}
 };
 
@@ -119,7 +121,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-        FEValues<elemdim,3> fe_values(*map_, quad, *dh_->fe<elemdim>(), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(), update_values);
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);

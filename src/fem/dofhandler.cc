@@ -259,6 +259,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
    	fe2d_ = &fe2d;
    	fe3d_ = &fe3d;
     global_dof_offset = offset;
+    max_elem_dofs_ = max(fe1d_->n_dofs(), max(fe2d_->n_dofs(), fe3d_->n_dofs()));
 
     for (unsigned int dm=0; dm <= 1; dm++)
     {

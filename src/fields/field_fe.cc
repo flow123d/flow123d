@@ -93,7 +93,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
     dh_ = dh;
     data_vec_ = data;
 
-    unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
+    unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices.resize(ndofs);
 
     // initialization data of value handlers
@@ -199,7 +199,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
-    unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
+    unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices.resize(ndofs);
 
     // allocate data_vec_

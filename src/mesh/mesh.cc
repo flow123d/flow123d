@@ -264,7 +264,7 @@ void Mesh::setup_topology() {
     element_to_neigh_vb();
     make_edge_permutations();
     count_side_types();
-
+    
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
