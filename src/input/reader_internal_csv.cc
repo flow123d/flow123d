@@ -78,9 +78,15 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         CSVTokenizer tok( fp, separator.str() );
 
         const Type::Abstract * abstract_type = dynamic_cast<const Type::Abstract *>(&array->get_sub_type());
-        std::string record_name = p.get_record_tag().substr(12);
-        const Type::TypeBase &sub_type = (abstract_type != NULL ) ?  // sub-type of array
-        		(abstract_type->get_descendant(record_name)) : (array->get_sub_type());
+        std::string record_name = p.get_record_tag();
+        if ((abstract_type != NULL) && (record_name.size() <= 12)) {
+        	// missing record name for Abstract
+        	this->generate_input_error(p, array,
+        		"Missing record descendant in definition of tag in CSV include of Abstract type. Tag must be in format '!include_csv:Descendant_Name'!",
+				false);
+        }
+        const Type::TypeBase &sub_type = ( abstract_type != NULL ) ?  // sub-type of array
+        		(abstract_type->get_descendant(record_name.substr(12))) : (array->get_sub_type());
 
         StorageBase *item_storage; // storage of sub-type record of included array
         csv_columns_map_.clear();
