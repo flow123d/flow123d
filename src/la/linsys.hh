@@ -85,6 +85,14 @@ public:
         DONE,
         NONE
     } SetValuesMode;
+    
+    struct SolveInfo {
+        SolveInfo(int cr, int nits)
+        : converged_reason(cr), n_iterations(nits)
+        {}
+        int converged_reason;
+        int n_iterations;
+    };
 
 protected:
     typedef std::pair<unsigned,double>       Constraint_;
@@ -464,7 +472,7 @@ public:
     /**
      * Solve the system and return convergence reason.
      */
-    virtual int solve()=0;
+    virtual SolveInfo solve()=0;
 
     /**
      * Returns norm of the initial right hand side

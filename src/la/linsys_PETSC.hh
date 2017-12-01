@@ -110,7 +110,7 @@ public:
 
     void set_initial_guess_nonzero(bool set_nonzero = true);
 
-    int solve() override;
+    LinSys::SolveInfo solve() override;
 
     /**
      * Returns information on absolute solver accuracy

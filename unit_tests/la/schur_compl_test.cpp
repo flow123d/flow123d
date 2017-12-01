@@ -126,7 +126,7 @@ TEST(schur, complement) {
 
 	LinSys * lin_sys = new LinSysPetscTest( schurComplement->make_complement_distribution() );
 	schurComplement->set_complement( (LinSys_PETSC *)lin_sys );
-	schurComplement->solve();
+	LinSys::SolveInfo si = schurComplement->solve();
 
 	// test of computed values
 	{

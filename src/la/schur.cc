@@ -345,7 +345,7 @@ double SchurComplement::get_solution_precision()
 }
 
 
-int SchurComplement::solve() {
+LinSys::SolveInfo SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
     this->form_schur();
     
@@ -357,12 +357,12 @@ int SchurComplement::solve() {
 //     MatView( *const_cast<Mat*>(Compl->get_matrix()), viewer);
 //     VecView( *const_cast<Vec*>(Compl->get_rhs()), viewer);
     
-    int converged_reason = Compl->solve();
+    LinSys::SolveInfo si = Compl->solve();
 //     VecView(Compl->get_solution(), viewer);
 
     // TODO: Resolve step is not necessary inside of nonlinear solver. Can optimize.
     this->resolve();
-	return converged_reason;
+    return si;
 }
 
 
