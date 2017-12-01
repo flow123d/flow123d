@@ -13,8 +13,6 @@ unit_tests/output/test?/
 unit_tests/system/profiler_info*
 unit_tests/system/tokenizer_speed.txt
 bin/tests/makefile
-bin/flow123d
-bin/mpiexec
 tests/*/test_results
 tests/*/output
 
@@ -55,8 +53,6 @@ doc/reference_manual/input_reference.json.tex
 *.pyc
 /.idea/
 bin/pythonenv.sh
-tests/runtest.sh
-bin/runtest.sh
 
 /config/jenkins.ini
 /config/jenkins-job/jobs/*.yaml

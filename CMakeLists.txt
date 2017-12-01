@@ -564,6 +564,10 @@ if (COPY_INSTEAD_OF_SYMLINK)
 	    ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
 	    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	)
+	
+	set(EXECUTABLE_PATH ${MPIEXEC_PATH})
+configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+	
 else()
 	execute_process(COMMAND
 	    ${CMAKE_COMMAND} -E create_symlink ${CMAKE_SOURCE_DIR}/src/python ${CMAKE_SOURCE_DIR}/lib/python/flow123d
@@ -587,9 +591,9 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 
 # use relative path
 set(PYTHON_RUNTEST ../bin/python/runtest.py)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/bin/runtest @ONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests/runtest @ONLY)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/unix_runtest_template ${CMAKE_SOURCE_DIR}/tests_old/runtest @ONLY)
 
 # make shortcut also for exec_parallel.py
 set(PYTHON_RUNTEST ../bin/python/exec_parallel.py)
@@ -754,7 +758,8 @@ if( CYGWIN AND NOT EXISTS ${MPIEXEC_PATH})
 endif()
 
 # create shell script which call correct mpiexec binary
-configure_file(${CMAKE_SOURCE_DIR}/CMake/mpiexec_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
+set(EXECUTABLE_PATH ${MPIEXEC_PATH})
+configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_BINARY_DIR}/bin/mpiexec)
 
 ##################################################################################################################### 
 # Macro to make usefull links in SOURCE_DIR
@@ -787,8 +792,15 @@ macro(make_link_in_source FILE)
   set(SOURCE_TREE_LINKS  ${SOURCE_TREE_LINKS} ${CMAKE_SOURCE_DIR}/${FILE} CACHE INTERNAL "")
 endmacro()
 
-make_link_in_source(bin/flow123d)
-make_link_in_source(bin/mpiexec)
+# use wreappers instead of links (or copy) for executables
+#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/flow123d)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/flow123d)
+#set(EXECUTABLE_PATH ${CMAKE_BINARY_DIR}/bin/mpiexec)
+#configure_file(${CMAKE_SOURCE_DIR}/CMake/executable_link_template ${CMAKE_SOURCE_DIR}/bin/mpiexec)
+
+#make_link_in_source(bin/flow123d)
+#make_link_in_source(bin/mpiexec)
+
 make_link_in_source(bin/tests/Makefile)
 make_link_in_source(unit_tests/Makefile)
 
