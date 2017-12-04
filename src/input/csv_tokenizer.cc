@@ -23,14 +23,14 @@ using namespace boost;
 using namespace Input;
 
 
-CSVTokenizer::CSVTokenizer(const FilePath &fp)
-: Tokenizer(fp, Tokenizer::Separator("\\",",","\""))
+CSVTokenizer::CSVTokenizer(const FilePath &fp, std::string field_separator)
+: Tokenizer(fp, Tokenizer::Separator("\\", field_separator, "\""))
 {}
 
 
 
-CSVTokenizer::CSVTokenizer( std::istream &in)
-: Tokenizer(in, Tokenizer::Separator("\\",",","\""))
+CSVTokenizer::CSVTokenizer( std::istream &in, std::string field_separator)
+: Tokenizer(in, Tokenizer::Separator("\\", field_separator, "\""))
 {}
 
 
