@@ -120,7 +120,7 @@ protected:
     StorageBase * make_storage_from_default( const string &dflt_str, std::shared_ptr<Type::TypeBase> type);
 
     /// Create storage of included YAML or JSON input file
-    StorageBase * make_include_storage(PathBase &p, const Type::Record *record);
+    StorageBase * make_include_storage(PathBase &p, const Type::TypeBase *type);
 
     bool read_bool_value(PathBase &p, const Type::TypeBase *type);           ///< Read boolean value from path
     std::int64_t read_int_value(PathBase &p, const Type::TypeBase *type);    ///< Read integer value from path

@@ -33,7 +33,7 @@ ReaderInternalCsvInclude::ReaderInternalCsvInclude()
 
 StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Array *array)
 {
-	if ( p.is_record_type() ) { // sub-type must be record type
+	if ( p.is_record_type() ) { // sub-type must be Record or Abstract type
 		// load path to CSV file
 		std::string included_file;
         if ( p.down("file") ) {
@@ -57,11 +57,37 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
         	p.up();
         }
 
+        // separator characters
+        stringstream separator;
+        if ( p.down("separator") ) {
+        	try {
+        		separator << p.get_string_value() << " \t";
+        	}
+			catch (ExcInputError & e) {
+				complete_input_error(e, p, ValueTypes::str_type);
+				e << EI_InputType("invalid separator of included CSV file");
+				throw;
+			}
+        	p.up();
+        } else {
+        	separator << ", \t";
+        }
+
         // open CSV file, get number of lines, skip head lines
         FilePath fp((included_file), FilePath::input_file);
-        CSVTokenizer tok( fp );
+        CSVTokenizer tok( fp, separator.str() );
 
-        const Type::TypeBase &sub_type = array->get_sub_type(); // sub-type of array
+        const Type::Abstract * abstract_type = dynamic_cast<const Type::Abstract *>(&array->get_sub_type());
+        std::string record_name = p.get_record_tag();
+        if ((abstract_type != NULL) && (record_name.size() <= 12)) {
+        	// missing record name for Abstract
+        	this->generate_input_error(p, array,
+        		"Missing record descendant in definition of tag in CSV include of Abstract type. Tag must be in format '!include_csv:Descendant_Name'!",
+				false);
+        }
+        const Type::TypeBase &sub_type = ( abstract_type != NULL ) ?  // sub-type of array
+        		(abstract_type->get_descendant(record_name.substr(12))) : (array->get_sub_type());
+
         StorageBase *item_storage; // storage of sub-type record of included array
         csv_columns_map_.clear();
         if ( p.down("format") ) {
@@ -200,85 +226,95 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Selection *selection)
 {
-	const Type::Integer *format_int = new Type::Integer(0);
-	std::int64_t pos = read_int_value(p, format_int);
+	int pos;
+	if ( check_and_read_position_index(p, pos) ) {
+		IncludeCsvData include_data;
+		include_data.data_type = IncludeDataTypes::type_sel;
+		include_data.storage_indexes = create_indexes_vector(p);
+		include_data.type = selection;
+		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+			THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		} else {
+			csv_columns_map_[pos] = include_data;
+		}
 
-	IncludeCsvData include_data;
-	include_data.data_type = IncludeDataTypes::type_sel;
-	include_data.storage_indexes = create_indexes_vector(p);
-	include_data.type = selection;
-	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		return new StorageInt( 0 );
 	} else {
-		csv_columns_map_[pos] = include_data;
+	    string item_name = read_string_value(p, selection);
+		try {
+			int value = selection->name_to_int( item_name );
+			return new StorageInt( value );
+		} catch (Type::Selection::ExcSelectionKeyNotFound &exc) {
+			this->generate_input_error(p, selection, "Wrong value '" + item_name + "' of the Selection.", false);
+		}
 	}
-	delete format_int;
-	return new StorageInt( 0 );
+	return NULL;
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Bool *bool_type)
 {
-	const Type::Integer *format_int = new Type::Integer(0);
-	std::int64_t pos = read_int_value(p, format_int);
+	int pos;
+	if ( check_and_read_position_index(p, pos) ) {
+		IncludeCsvData include_data;
+		include_data.data_type = IncludeDataTypes::type_bool;
+		include_data.storage_indexes = create_indexes_vector(p);
+		include_data.type = bool_type;
+		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+			THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		} else {
+			csv_columns_map_[pos] = include_data;
+		}
 
-	IncludeCsvData include_data;
-	include_data.data_type = IncludeDataTypes::type_bool;
-	include_data.storage_indexes = create_indexes_vector(p);
-	include_data.type = bool_type;
-	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		return new StorageInt( 0 );
 	} else {
-		csv_columns_map_[pos] = include_data;
+		return new StorageInt( read_bool_value(p, bool_type) );
 	}
-	delete format_int;
-
-	return new StorageBool( false );
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Integer *int_type)
 {
-	const Type::Integer *format_int = new Type::Integer(0);
-	std::int64_t value = read_int_value(p, format_int);
+	int pos;
+	if ( check_and_read_position_index(p, pos) ) {
+		IncludeCsvData include_data;
+		include_data.data_type = IncludeDataTypes::type_int;
+		include_data.storage_indexes = create_indexes_vector(p);
+		include_data.type = int_type;
+		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+			THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		} else {
+			csv_columns_map_[pos] = include_data;
+		}
 
-	IncludeCsvData include_data;
-	include_data.data_type = IncludeDataTypes::type_int;
-	include_data.storage_indexes = create_indexes_vector(p);
-	include_data.type = int_type;
-	if (csv_columns_map_.find(value)!=csv_columns_map_.end()) {
-		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(value) << EI_ErrorAddress(p.as_string()) );
+		return new StorageInt( 0 );
 	} else {
-		csv_columns_map_[value] = include_data;
+		return new StorageInt( read_int_value(p, int_type) );
 	}
-	delete format_int;
-
-	return new StorageInt( 0 );
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Double *double_type)
 {
-	const Type::Integer *format_int = new Type::Integer(0);
-	std::int64_t pos = read_int_value(p, format_int);
+	int pos;
+	if ( check_and_read_position_index(p, pos) ) {
+		IncludeCsvData include_data;
+		include_data.data_type = IncludeDataTypes::type_double;
+		include_data.storage_indexes = create_indexes_vector(p);
+		include_data.type = double_type;
+		if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
+			THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		} else {
+			csv_columns_map_[pos] = include_data;
+		}
 
-	IncludeCsvData include_data;
-	include_data.data_type = IncludeDataTypes::type_double;
-	include_data.storage_indexes = create_indexes_vector(p);
-	include_data.type = double_type;
-	if (csv_columns_map_.find(pos)!=csv_columns_map_.end()) {
-		THROW( ExcMultipleDefinitionCsvColumn() << EI_ColumnIndex(pos) << EI_ErrorAddress(p.as_string()) );
+		return new StorageDouble( 0.0 );
 	} else {
-		csv_columns_map_[pos] = include_data;
+		return new StorageDouble( read_double_value(p, double_type) );
 	}
-	delete format_int;
-
-	return new StorageDouble( 0.0 );
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::String *string_type)
 {
-	try {
-		const Type::Integer *format_int = new Type::Integer(0);
-		std::int64_t pos = read_int_value(p, format_int);
-
+	int pos;
+	if ( check_and_read_position_index(p, pos) ) {
 		IncludeCsvData include_data;
 		include_data.data_type = IncludeDataTypes::type_string;
 		include_data.storage_indexes = create_indexes_vector(p);
@@ -288,11 +324,9 @@ StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type
 		} else {
 			csv_columns_map_[pos] = include_data;
 		}
-		delete format_int;
 
 		return new StorageString("");
-	} catch (ExcInputError & e) {
-		// no error, string value is not forbidden in CSV include
+	} else {
 		return new StorageString( read_string_value(p, string_type) );
 	}
 }
@@ -316,6 +350,29 @@ void ReaderInternalCsvInclude::set_storage_from_csv(unsigned int column_index, S
 	StorageBase *loop_storage = item_storage;
 	for (i=0; i<it->second.storage_indexes.size()-1; ++i) loop_storage = loop_storage->get_item( it->second.storage_indexes[i] );
 	loop_storage->set_item( it->second.storage_indexes[i], new_storage );
+}
+
+bool ReaderInternalCsvInclude::check_and_read_position_index(PathBase &p, int &pos)
+{
+	string value;
+	try {
+		value = p.get_string_value();
+	} catch (ExcInputError &) {
+		// value is not string, return false
+		return false;
+	}
+
+	// value must start with '$', follows nonnegative number
+	if ( value.size() && (value.substr(0,1) == "$") ) {
+		try {
+			pos = std::stoi( value.substr(1) );
+			return (pos >= 0);
+		} catch (std::invalid_argument &) {
+			return false;
+		}
+	} else {
+		return false;
+	}
 }
 
 
