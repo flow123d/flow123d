@@ -88,13 +88,6 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
 
-    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags) override;
-
-    void fill_fe_values(
-        const Quadrature<dim> &q,
-        FEInternalData &data,
-        FEValuesData<dim,spacedim> &fv_data) override;
-
     virtual ~FESystem();
 
 private:
@@ -124,6 +117,13 @@ private:
   
   /// Initialization of the internal structures from the vector of base FE.
   void initialize();
+  
+  FEInternalData *initialize(const Quadrature<dim> &q) override;
+
+  void fill_fe_values(
+      const Quadrature<dim> &q,
+      FEInternalData &data,
+      FEValuesData<dim,spacedim> &fv_data) override;
   
   void compute_node_matrix() override;
   

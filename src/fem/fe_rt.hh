@@ -76,6 +76,31 @@ public:
             const arma::vec::fixed<dim> &p, const unsigned int comp) const override;
 
     /**
+     * @brief Decides which additional quantities have to be computed
+     * for each cell.
+     */
+    UpdateFlags update_each(UpdateFlags flags);
+
+    /**
+     * @brief Destructor.
+     */
+    virtual ~FE_RT0() {};
+    
+private:
+  
+    /**
+     * @brief Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure.
+     *
+     * @param q Quadrature.
+     * @param data The precomputed finite element data on the reference cell.
+     * @param fv_data The data to be computed.
+     */
+    virtual void fill_fe_values(const Quadrature<dim> &q,
+            FEInternalData &data,
+            FEValuesData<dim,spacedim> &fv_data);
+
+    /**
      * @brief Computes the conversion matrix from internal basis to shape functions.
      *
      * Initializes the @p node_matrix for computing the coefficients
@@ -91,31 +116,7 @@ public:
      * @param q Quadrature.
      * @param flags Flags that indicate what quantities should be calculated.
      */
-    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
-    
-    /**
-     * @brief Decides which additional quantities have to be computed
-     * for each cell.
-     */
-    UpdateFlags update_each(UpdateFlags flags);
-
-    /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure.
-     *
-     * @param q Quadrature.
-     * @param data The precomputed finite element data on the reference cell.
-     * @param fv_data The data to be computed.
-     */
-    virtual void fill_fe_values(const Quadrature<dim> &q,
-            FEInternalData &data,
-            FEValuesData<dim,spacedim> &fv_data);
-
-    /**
-     * @brief Destructor.
-     */
-    virtual ~FE_RT0() {};
-
+    FEInternalData *initialize(const Quadrature<dim> &q) override;
 };
 
 

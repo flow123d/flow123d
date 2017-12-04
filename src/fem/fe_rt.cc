@@ -116,54 +116,48 @@ void FE_RT0<dim,spacedim>::compute_node_matrix()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
+FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
 {
     FEInternalData *data = new FEInternalData;
 
-    if (flags & update_values)
+    arma::mat::fixed<n_raw_functions,dim> raw_values;
+    arma::mat::fixed<dim+1,dim> shape_values;
+    vector<arma::vec> values;
+
+    data->basis_vectors.resize(q.size());
+    values.resize(dim+1);
+    for (unsigned int i=0; i<q.size(); i++)
     {
-        arma::mat::fixed<n_raw_functions,dim> raw_values;
-        arma::mat::fixed<dim+1,dim> shape_values;
-        vector<arma::vec> values;
+        for (unsigned int j=0; j<n_raw_functions; j++)
+            for (unsigned int c=0; c<dim; c++)
+              raw_values(j,c) = basis_value(j, q.point(i), c);
 
-        data->basis_vectors.resize(q.size());
-        values.resize(dim+1);
-        for (unsigned int i=0; i<q.size(); i++)
-        {
-            for (unsigned int j=0; j<n_raw_functions; j++)
-                for (unsigned int c=0; c<dim; c++)
-                  raw_values(j,c) = basis_value(j, q.point(i), c);
+        shape_values = node_matrix * raw_values;
 
-            shape_values = node_matrix * raw_values;
+        for (unsigned int j=0; j<dim+1; j++)
+            values[j] = trans(shape_values.row(j));
 
-            for (unsigned int j=0; j<dim+1; j++)
-                values[j] = trans(shape_values.row(j));
-
-            data->basis_vectors[i] = values;
-        }
+        data->basis_vectors[i] = values;
     }
 
-    if (flags & update_gradients)
+    arma::mat::fixed<dim,dim> grad;
+    arma::mat::fixed<dim,dim> shape_grads;
+    vector<arma::mat> grads;
+
+    data->basis_grad_vectors.resize(q.size());
+    grads.resize(dim+1);
+    for (unsigned int i=0; i<q.size(); i++)
     {
-        arma::mat::fixed<dim,dim> grad;
-        arma::mat::fixed<dim,dim> shape_grads;
-        vector<arma::mat> grads;
-
-        data->basis_grad_vectors.resize(q.size());
-        grads.resize(dim+1);
-        for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int k=0; k<dim+1; k++)
         {
-            for (unsigned int k=0; k<dim+1; k++)
-            {
-                grad.zeros();
-                for (unsigned int l=0; l<n_raw_functions; l++)
-                  for (unsigned int c=0; c<dim; c++)
-                    grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(k,l);
-                grads[k] = grad;
-            }
-
-            data->basis_grad_vectors[i] = grads;
+            grad.zeros();
+            for (unsigned int l=0; l<n_raw_functions; l++)
+              for (unsigned int c=0; c<dim; c++)
+                grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(k,l);
+            grads[k] = grad;
         }
+
+        data->basis_grad_vectors[i] = grads;
     }
 
     return data;
