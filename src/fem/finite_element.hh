@@ -28,6 +28,8 @@
 
 
 template<unsigned int dim, unsigned int spacedim> class FESystem;
+template<unsigned int dim, unsigned int spacedim> class FESideValues;
+template<unsigned int dim, unsigned int spacedim> class FEValues;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 template<unsigned int dim> class Quadrature;
@@ -175,16 +177,6 @@ public:
     FiniteElement();
     
     /**
-     * @brief Clears all internal structures.
-     */
-    void init(unsigned int n_components = 1, bool primitive = true, FEType type = FEScalar);
-    
-    /**
-     * @brief Initialize vectors with information about components of basis functions.
-     */
-    void setup_components();
-    
-    /**
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
@@ -225,6 +217,28 @@ public:
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
 
+    /// Returns numer of components of the basis function.    
+    inline unsigned int n_components() const {
+      return n_components_;
+    }
+    
+    /**
+     * @brief Destructor.
+     */
+    virtual ~FiniteElement();
+
+protected:
+  
+    /**
+     * @brief Clears all internal structures.
+     */
+    void init(unsigned int n_components = 1, bool primitive = true, FEType type = FEScalar);
+    
+    /**
+     * @brief Initialize vectors with information about components of basis functions.
+     */
+    void setup_components();
+    
     /**
      * @brief Calculates the data on the reference cell.
      *
@@ -254,16 +268,26 @@ public:
             FEValuesData<dim,spacedim> &fv_data);
 
     /**
+     * @brief Returns either the generalized support points (if they are defined)
+     * or the unit support points.
+     */
+    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
+    
+    /**
+     * @brief Initializes the @p node_matrix for computing the coefficients
+     * of the raw basis functions from values at support points.
+     *
+     * The method is implemented for the case of Langrangean finite
+     * element. In other cases it may be reimplemented.
+     */
+    virtual void compute_node_matrix();
+    
+    /**
      * @brief Indicates whether the basis functions have one or more
      * nonzero components (scalar FE spaces are always primitive).
      */
     inline const bool is_primitive() const {
         return is_primitive_;
-    };
-
-    /// Returns numer of components of the basis function.    
-    inline unsigned int n_components() const {
-      return n_components_;
     }
     
     /**
@@ -281,29 +305,6 @@ public:
     const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const {
       return nonzero_components_[sys_idx];
     }
-
-    /**
-     * @brief Destructor.
-     */
-    virtual ~FiniteElement();
-
-protected:
-  
-  
-    /**
-     * @brief Returns either the generalized support points (if they are defined)
-     * or the unit support points.
-     */
-    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
-    
-    /**
-     * @brief Initializes the @p node_matrix for computing the coefficients
-     * of the raw basis functions from values at support points.
-     *
-     * The method is implemented for the case of Langrangean finite
-     * element. In other cases it may be reimplemented.
-     */
-    virtual void compute_node_matrix();
 
     /**
      * @brief Total number of degrees of freedom at one finite element.
@@ -378,6 +379,8 @@ protected:
     
     friend class FESystem<dim,spacedim>;
     friend class FEValuesBase<dim,spacedim>;
+    friend class FEValues<dim,spacedim>;
+    friend class FESideValues<dim,spacedim>;
 };
 
 
