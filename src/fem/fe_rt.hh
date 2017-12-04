@@ -91,7 +91,7 @@ public:
      * @param q Quadrature.
      * @param flags Flags that indicate what quantities should be calculated.
      */
-    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+    FEInternalData *initialize(const Quadrature<dim> &q) override;
     
     /**
      * @brief Decides which additional quantities have to be computed

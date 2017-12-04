@@ -231,7 +231,7 @@ public:
      * @param q Quadrature rule.
      * @param flags Update flags.
      */
-    virtual FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+    virtual FEInternalData *initialize(const Quadrature<dim> &q);
 
     /**
      * @brief Decides which additional quantities have to be computed

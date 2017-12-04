@@ -88,7 +88,7 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
 
-    FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags) override;
+    FEInternalData *initialize(const Quadrature<dim> &q) override;
 
     void fill_fe_values(
         const Quadrature<dim> &q,
