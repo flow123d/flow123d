@@ -74,7 +74,7 @@ template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
     std::string equation_name = std::string(Model::ModelEqData::name()) + "_DG";
     return Model::get_input_type("DG", "DG solver")
-        .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
+        .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Linear solver for MH problem.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqData()
