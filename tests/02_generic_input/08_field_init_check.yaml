@@ -55,6 +55,7 @@ problem: !Coupling_Sequential
         - velocity_p0
       add_input_times: true
     balance: {}
-    output_stream:
-      format: !vtk
-        variant: ascii
+    # We don't need explicit definition of output_stream, default value is used.
+    #output_stream:
+    #  format: !vtk
+    #    variant: ascii
