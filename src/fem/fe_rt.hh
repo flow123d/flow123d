@@ -78,16 +78,7 @@ public:
      * @param p Point of evaluation.
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief Calculates the divergence of the @p i-th raw basis functionat the point @p p
-     * (vectorial finite elements).
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-            
+    
     /**
      * @brief Computes the conversion matrix from internal basis to shape functions.
      *
@@ -200,17 +191,6 @@ arma::mat::fixed<dim,dim> FE_RT0<dim,spacedim>::basis_grad_vector(const unsigned
     ASSERT_DBG(i<n_raw_functions).error("Index of basis function is out of range.");
 
     return arma::eye(dim,dim);
-}
-
-template<unsigned int dim, unsigned int spacedim>
-double FE_RT0<dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    ASSERT_DBG(i<n_raw_functions).error("Index of basis function is out of range.");
-    //dim factorial
-    double res = 1.0;
-    for(unsigned int i = 2; i < dim+1; i++)
-        res = res * i;
-    return res;
 }
 
 

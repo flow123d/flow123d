@@ -78,13 +78,6 @@ public:
      * @param p Point of evaluation.
      */
     arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief Returns the divergence of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
     
     /**
      * @brief Calculates the data on the reference cell.
@@ -139,12 +132,6 @@ template <unsigned int dim, unsigned int spacedim>
 arma::mat::fixed<dim,dim> FiniteElementEnriched<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
 {
     return fe->basis_grad_vector(i,p);
-}
-
-template <unsigned int dim, unsigned int spacedim>
-double FiniteElementEnriched<dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_div(i,p);
 }
 
 template <unsigned int dim, unsigned int spacedim>

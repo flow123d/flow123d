@@ -468,13 +468,6 @@ arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(cons
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P_disc<degree,dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    ASSERT_DBG(false).error("basis_div() may not be called for scalar finite element.");
-    return 0.0;
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 FE_P_disc<degree,dim,spacedim>::~FE_P_disc()
 {}
 

@@ -322,7 +322,10 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //         arma::vec pu_values(RefElement<dim>::n_nodes);
 //         arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
 //         arma::mat real_pu_grads(RefElement<dim>::n_nodes, spacedim);
-            
+        
+        arma::mat::fixed<dim,dim> unit_grad;
+        arma::mat::fixed<spacedim,spacedim> real_grad;
+        
         for (unsigned int q = 0; q < quad.size(); q++)
         {
 //             DBGMSG("pu q[%d]\n",q);
@@ -345,15 +348,17 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
             //fill regular shape functions
             for (unsigned int k=0; k<dim+1; k++)
             {
-//                 unit_grad.zeros();
-//                 for (unsigned int l=0; l<dim+1; l++)
-//                     unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
+                // grads on ref element
+                unit_grad.zeros();
+                for (unsigned int l=0; l<dim+1; l++)
+                    unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
                 
-//                 unit_grad.print(cout,"unit grad");
-                
-//                 divs[k] = arma::trace(unit_grad) / fv_data.determinants[q];
-//                 DBGCOUT(<< "div=" << fe->basis_div(k, quad.point(q)) << "  |J|=" << fv_data.determinants[q] << "\n");
-                divs[k] = fe->basis_div(k, quad.point(q)) / fv_data.determinants[q];
+                // map grads on real element
+                real_grad = fv_data.jacobians[q] * unit_grad * fv_data.inverse_jacobians[q]/fv_data.determinants[q];
+
+                // compute div as a trace
+                divs[k] = arma::trace(real_grad);
+//                 DBGCOUT(<< "div=" << divs[k] << "\n");
             }
             
             
