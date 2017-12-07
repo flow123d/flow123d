@@ -44,7 +44,7 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
 	orig_mesh_(&mesh),
     max_level_(0),
-    is_refined_(false),
+	mesh_type_(MeshType::orig),
     refine_by_error_(false),
     refinement_error_tolerance_(0.0)
 {
@@ -56,7 +56,7 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
     input_record_(in_rec), 
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level")),
-    is_refined_(false),
+	mesh_type_(MeshType::orig),
     refine_by_error_(input_record_.val<bool>("refine_by_error")),
     refinement_error_tolerance_(input_record_.val<double>("refinement_error_tolerance"))
 {
@@ -86,11 +86,6 @@ void OutputMeshBase::set_error_control_field(ErrorControlFieldPtr error_control_
     error_control_field_ = error_control_field;
 }
 
-bool OutputMeshBase::is_refined()
-{
-    return is_refined_;
-}
-
 unsigned int OutputMeshBase::n_elements()
 {
     ASSERT_PTR(offsets_);
@@ -101,6 +96,43 @@ unsigned int OutputMeshBase::n_nodes()
 {
     ASSERT_PTR(nodes_);
     return nodes_->n_values();
+}
+
+std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_node_ids_cache()
+{
+	if (!node_ids_) {
+		create_id_caches();
+	}
+	return node_ids_;
+}
+
+std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_element_ids_cache()
+{
+	if (!elem_ids_) {
+		create_id_caches();
+	}
+	return elem_ids_;
+}
+
+void OutputMeshBase::create_id_caches()
+{
+	unsigned int elm_idx[1];
+	unsigned int node_idx[1];
+	elem_ids_ = std::make_shared< ElementDataCache<unsigned int> >("elements_ids", (unsigned int)1, 1, this->n_elements());
+	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
+	OutputElementIterator it = this->begin();
+	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
+		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element(it->idx()).id();
+		else elm_idx[0] = it->idx();
+		elem_ids_->store_value( i, elm_idx );
+
+		std::vector< unsigned int > node_list = it->node_list();
+		for (unsigned int j = 0; j < it->n_nodes(); ++j) {
+			if (mesh_type_ == MeshType::orig) node_idx[0] = orig_mesh_->node_vector(node_list[j]).id();
+			else node_idx[0] = node_list[j];
+			node_ids_->store_value( node_list[j], node_idx );
+		}
+	}
 }
 
 
@@ -274,6 +306,8 @@ void OutputMeshDiscontinuous::create_mesh()
             corner_id++;
         }
     }
+
+    mesh_type_ = MeshType::discont;
 }
 
 
@@ -358,7 +392,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     nodes_->set_n_values(node_vec.size() / spacedim);
     offsets_->set_n_values(offset_vec.size());
     
-    is_refined_ = true;
+    mesh_type_ = MeshType::refined;
 //     for(unsigned int i=0; i< nodes_->n_values; i++)
 //     {
 //         cout << i << "  ";

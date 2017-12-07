@@ -37,6 +37,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
@@ -265,7 +266,7 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
+	unsigned int ndofs = dh_->max_elem_dofs();
 	std::vector<int> indices(ndofs);
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
@@ -555,7 +556,7 @@ void l2_diff_local(ElementFullIter &ele,
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * fv_rt.shape_vector(i_shape, i_point)
+                              * fv_rt.vector_view(0).value(i_shape, i_point)
                               / cross;
         }
 

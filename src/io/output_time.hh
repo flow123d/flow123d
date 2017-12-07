@@ -111,6 +111,10 @@ public:
     typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
     typedef std::vector< OutputDataPtr > OutputDataFieldVec;
 
+    /// pair of field name and shape (= Scalar 1, Vector 3, Tensor 9)
+    typedef std::pair< std::string, unsigned int > FieldInterpolationData;
+    typedef std::map< DiscreteSpace, std::vector<FieldInterpolationData> > InterpolationMap;
+
     /**
      * \brief This method delete all object instances of class OutputTime stored
      * in output_streams vector
@@ -198,6 +202,9 @@ public:
     inline bool is_parallel() {
     	return parallel_;
     }
+
+    /// Complete information about dummy fields, method has effect only for GMSH output.
+    virtual void add_dummy_fields();
 
 
 protected:

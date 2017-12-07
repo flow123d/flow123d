@@ -59,8 +59,8 @@ public:
 
 	void apply_constrains(double) {}
 
-	int solve() {
-		return 0;
+	LinSys::SolveInfo solve() {
+            return LinSys::SolveInfo(0,0);
 	}
 	
 	

@@ -37,6 +37,8 @@ typedef GeneralIterator<OutputElement> OutputElementIterator;
 class OutputMeshBase;
 class OutputMesh;
 class OutputMeshDiscontinuous;
+class OutputMSH;
+class OutputVTK;
 
 
 /**
@@ -82,8 +84,6 @@ public:
      */
     static const Input::Type::Record & get_input_type();
     
-    bool is_refined();
-    
     /// Gives iterator to the FIRST element of the output mesh.
     OutputElementIterator begin();
     /// Gives iterator to the LAST element of the output mesh.
@@ -101,16 +101,6 @@ public:
     /// Selects the error control field out of output field set according to input record.
     void set_error_control_field(ErrorControlFieldPtr error_control_field);
 
-    /// Vector of element indices in the computational mesh. (Important when refining.)
-    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
-    
-    /// Vector of node coordinates. [spacedim x n_nodes]
-    std::shared_ptr<ElementDataCache<double>> nodes_;
-    /// Vector maps the nodes to their coordinates in vector @p nodes_.
-    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
-    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
-    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
-    
     /// Returns number of nodes.
     unsigned int n_nodes();
     /// Returns number of element.
@@ -119,8 +109,28 @@ public:
     /// Check if nodes_, connectivity_ and offsets_ data caches are created
     bool is_created();
 
+    /// Return data cache of node ids. If doesn't exist create its.
+    std::shared_ptr<ElementDataCache<unsigned int>> get_node_ids_cache();
+    /// Return data cache of element ids. If doesn't exist create its.
+	std::shared_ptr<ElementDataCache<unsigned int>> get_element_ids_cache();
+
 protected:
-    /// Input record for output mesh.
+	/**
+	 * Possible types of OutputMesh.
+	 */
+	enum MeshType
+	{
+		orig,     //!< same as original (computational) mesh
+		refined,  //!< refined mesh
+		discont   //!< discontinuous mesh
+	};
+
+
+	/// Create node_ids_ and elem_ids_ data caches
+	void create_id_caches();
+
+
+	/// Input record for output mesh.
     Input::Record input_record_;
     
     /// Pointer to the computational mesh.
@@ -132,12 +142,29 @@ protected:
     /// Refinement error control field.
     ErrorControlFieldPtr error_control_field_;
 
-    bool is_refined_;                   ///< True, if output mesh is refined.
+    MeshType mesh_type_;                ///< Type of OutputMesh
     bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
     double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
     
+    /// Vector of element indices in the computational mesh. (Important when refining.)
+    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
+
+    /// Vector of node coordinates. [spacedim x n_nodes]
+    std::shared_ptr<ElementDataCache<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+
+    /// Vector gets ids of nodes. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
+    /// Vector gets ids of elements. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> elem_ids_;
+
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
+    friend class OutputMSH;
+    friend class OutputVTK;
 };
 
 

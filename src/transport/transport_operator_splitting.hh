@@ -177,7 +177,9 @@ public:
     };
 
     inline virtual ~TransportNothing()
-    {}
+    {
+        if(time_) delete time_;
+    }
 
     inline void set_velocity_field(const MH_DofHandler &dh) override {};
 

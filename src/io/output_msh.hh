@@ -68,6 +68,8 @@ public:
      */
     int write_tail(void);
 
+    /// Complete information about dummy fields that are not in output_data_list_.
+    void add_dummy_fields() override;
 
 private:
 
@@ -82,6 +84,7 @@ private:
      */
     std::vector< std::vector< OutputDataPtr >> dummy_data_list_;
 
+    /**
     /**
      * \brief This function write header of GMSH (.msh) file format
      */
@@ -100,19 +103,13 @@ private:
     void write_msh_topology(void);
 
     /**
-     * \brief This function writes continuous ascii data to GMSH (.msh) output file.
+     * \brief This function writes ascii data to GMSH (.msh) output file.
      *
-     * \param[in]   *out_data   The pointer at structure storing pointer at own data.
+     * \param[in]   id_cache     Data cache of node or element ids.
+     * \param[in]   output_data  The pointer at structure storing pointer at own data.
+     * \param[in]   discont      Flag determines continuous or discontinuous mesh.
      */
-    template<class element>
-    void write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataPtr output_data);
-
-    /**
-     * \brief This function writes discontinuous ascii data to GMSH (.msh) output file.
-     *
-     * \param[in]   *out_data   The pointer at structure storing pointer at own data.
-     */
-    void write_msh_ascii_discont_data(OutputDataPtr output_data);
+    void write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont = false);
 
     /**
      * \brief This function write all data on nodes to output file. This function
@@ -137,13 +134,6 @@ private:
      * \param[in]   step        The number of steps from start
      */
     void write_elem_data(OutputDataPtr output_data);
-
-    /**
-     * Write fields of single discrete space type, use given format function for the output of single field data.
-     *
-     * At first call it fills dummy_data_list_ (assuming output of all fields at the first output frame).
-     */
-    void write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) );
 
     /**
      * \brief This method add right suffix to .msh GMSH file

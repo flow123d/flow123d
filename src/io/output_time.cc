@@ -236,6 +236,10 @@ int OutputTime::get_parallel_current_step()
 }
 
 
+void OutputTime::add_dummy_fields()
+{}
+
+
 
 // explicit instantiation of template methods
 #define OUTPUT_PREPARE_COMPUTE_DATA(TYPE) \
