@@ -1,6 +1,6 @@
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test6 - Coupling between dimension 2D-3D - influence of sigma and cross section parameters.
+  description: 'Example of parallel VTK output. Test MUST RUN on two processors.' 
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
   flow_equation: !Flow_Darcy_MH
@@ -10,6 +10,8 @@ problem: !Coupling_Sequential
         a_tol: 1.0e-07
     n_schurs: 2
     input_fields:
+      - region: ALL
+        conductivity: 1
       - region: 2d_fraction
         conductivity: 16
         # K_2d
@@ -38,7 +40,8 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
-        - velocity_p0
+        - velocity_p0     
+        - { field: conductivity, interpolation: P1_average }
     balance: {}
     output_stream:
       file: test7_32d.pvd
