@@ -1,0 +1,26 @@
+#test_cases:
+#- files: 01_yaml_balance_output.yaml
+#  no-compare: true
+#  param: --yaml_balance
+#  check_rules:
+#    - regex:
+#        files: [water_balance.yaml]
+#        substr: "data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]"
+#    - regex:
+#        files: [water_balance.yaml]  # same file can be checked several times
+#        substr: "quantity: water_volume"
+#
+#- files: 02_input_format.yaml
+#  no-compare: true
+#  param: --input_format ./in.yaml
+#
+#- files: 03_log_file.yaml
+#  no-compare: true
+#  log: log03
+#  check_rules:
+#    - regex:
+#        files: [log3.0.log]  # same file can be checked several times
+#        substr: "This is Flow123d, version"
+#    - regex:
+#        files: [log3.0.log]
+#        substr: "----------- Table of all regions: -----------"
