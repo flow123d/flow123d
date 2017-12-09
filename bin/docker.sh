@@ -5,7 +5,7 @@ set -x
 
 
 # directory containing whole build process
-WORKDIR=/home/jb/workspace
+WORKDIR=/home/kingis/Dokumenty/PK_Flow
 
 # name of the development image
 WORK_IMAGE=flow123d/f123d_docker
@@ -48,8 +48,8 @@ make_work_image ()
         docker exec ${running_cont} chown $U_ID:$G_ID $D_HOME
         
         # add git user
-        docker exec ${running_cont} git config --global user.email "jbrezmorf@gmail.com"
-        docker exec ${running_cont} git config --global user.name "Jan Brezina"
+        docker exec ${running_cont} git config --global user.email "petr.kral@tul.cz"
+        docker exec ${running_cont} git config --global user.name "Petr Kral"
         
         # add git-completion
         curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o .git-completion.bash
@@ -59,8 +59,8 @@ make_work_image ()
         cp_to_docker $WORKDIR/_bashrc_docker .bashrc
                 
         # add pmake script
-        docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/bin"
-        cp_to_docker $HOME/bin/pmake bin
+        #docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/bin"
+        #cp_to_docker $HOME/bin/pmake bin
         
         # add ssh keys
         docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/.ssh"
@@ -89,7 +89,7 @@ elif [ "$1" == "make" ]
 then
     shift
     make_work_image
-    docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash -c "$D_HOME/bin/pmake" $@ 
+    docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash -c "make" $@ 
 else
     # interactive
     make_work_image
