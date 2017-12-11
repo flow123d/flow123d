@@ -29,6 +29,7 @@
 
 
 template class MultiField<3, FieldValue<0>::Scalar >;
+template class MultiField<3, FieldValue<3>::TensorFixed >;
 template class MultiField<3, FieldValue<0>::Enum >;
 template class MultiField<3, FieldValue<0>::Integer >;
 template class MultiField<2, FieldValue<0>::Scalar >;

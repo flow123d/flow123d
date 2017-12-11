@@ -449,6 +449,12 @@ quite small, e.g. 1GB on a 4GB machine. About 500MB is taken by the Docker kerne
 This is may be enough just for the small problems with thousands of elements. In order to treat realistic problems one have to 
 enlarge the RAM size of the guest system. This can be easily done as follows:
 
+\subsection{Issues with Windows 10}
+Starting with Windows 10, the system is updated incrementally. As the Virtual Box deals with very internals of the system
+any such update may broke it. The solution is to install manually the latest available version of VirtualBox. This stands for the 
+fresh installation of Flow123d as well. In particular for the "Creator's update" update, version 1703, you have to install at least version 5.2 
+of the VirtualBox. Yet, starting a virtual machine I end up with error \verb'NtCreateFile(\Device\VBoxDrvStub) failed: Unknown Status -626 ...}'. The workaround is:
+uninstall VirtualBox, {\bf reboot}, install VirtualBox 5.2.  
 
  
 \begin{enumerate}

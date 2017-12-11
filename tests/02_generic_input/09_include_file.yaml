@@ -1,0 +1,7 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Test of includes of other YAML files
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_942el_4bc.msh
+  flow_equation: !include:Flow_Darcy_MH
+    file: ./includes/include_flow.yaml
