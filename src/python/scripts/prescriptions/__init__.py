@@ -20,6 +20,10 @@ class AbstractRun(object):
 
     def get_command(self, args=None):
         result = self._get_command() if not args else self._get_command() + args
+        # append all arguments specified in config.yaml
+        if self.case is not None and self.case.args:
+            result.extend(self.case.args)
+
         return [str(x) for x in result]
 
     def _get_mpi(self):
