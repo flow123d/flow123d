@@ -1,26 +1,38 @@
-#test_cases:
-#- files: 01_yaml_balance_output.yaml
-#  no-compare: true
-#  param: --yaml_balance
-#  check_rules:
-#    - regex:
-#        files: [water_balance.yaml]
-#        substr: "data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]"
-#    - regex:
-#        files: [water_balance.yaml]  # same file can be checked several times
-#        substr: "quantity: water_volume"
-#
-#- files: 02_input_format.yaml
-#  no-compare: true
-#  param: --input_format ./in.yaml
-#
-#- files: 03_log_file.yaml
-#  no-compare: true
-#  log: log03
-#  check_rules:
-#    - regex:
-#        files: [log3.0.log]  # same file can be checked several times
-#        substr: "This is Flow123d, version"
-#    - regex:
-#        files: [log3.0.log]
-#        substr: "----------- Table of all regions: -----------"
+common_config:
+  proc: [1]
+
+test_cases:
+- files: 01_yaml_balance_output.yaml
+  args: 
+    - "--yaml_balance"
+  check_rules:
+    - regex:
+        files: [water_balance.yaml]
+        substr: "data: [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ]"
+    - regex:
+        files: [water_balance.yaml]  # same file can be checked several times
+        substr: "quantity: water_volume"
+
+- files: 02_input_format.yaml
+  args: 
+    - --input_format
+    - ./test_results/02_input_format.1/in.yaml
+  check_rules:
+    - regex:
+        files: [in.yaml]
+        substr: "flow123d_version"
+    - regex:
+        files: [in.yaml]
+        substr: "Root record of JSON input for Flow123d."
+
+- files: 03_log_file.yaml
+  args:
+    - -l
+    - log03
+  check_rules:
+    - regex:
+        files: [log03.0.log]
+        substr: "This is Flow123d, version"
+    - regex:
+        files: [log03.0.log]
+        substr: "----------- Table of all regions: -----------"
