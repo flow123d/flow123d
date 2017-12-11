@@ -242,11 +242,17 @@ public:
     FieldResult field_result( RegionSet region_set) const override;
 
     /**
-     * Return specification of the field value type in form of the string:
-     * [ <element type>, NRows, NCols]
+     * Return value of input type attribute 'field_value_shape' that is appended to the
+     * input type of this field in FieldSet::make_field_descriptor_type and also to the output field selection
+     * created in EquationOutput::make_output_type.
+     * This attribute is used by GeoMop to have semantics of the input and output field data.
      *
-     * Result is valid JSON (and/or flow style YAML).
-     * For multifields not implemented.
+     * Attribute value is a valid JSON (and/or flow style YAML) with keys:
+     * 'subfields' - value True for multifields, False or not presented for single value fields
+     * 'shape' - [ NRows, Ncols] ... given by FieldValue
+     * 'type' - <element type> (Double or Integer) ... given by FieldValue
+     * 'limit' - bounds of the field values.
+     *
      */
     std::string get_value_attribute() const override;
 
