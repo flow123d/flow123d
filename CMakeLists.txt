@@ -457,14 +457,16 @@ message(STATUS "====== BDDCML =========================================")
 message(STATUS "=======================================================")
 message(STATUS "BDDCML_ROOT = ${BDDCML_ROOT}")
 
-find_package(BDDCML REQUIRED)
-flow_define(HAVE_BDDCML)
+find_package(BDDCML)
+if (BDDCML_FOUND)
+    flow_define(HAVE_BDDCML)
+    message(STATUS "-------------------------------------------------------")
+    message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
+    message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
+    message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
+    message(STATUS "=======================================================\n\n") 
+endif()
 
-message(STATUS "-------------------------------------------------------")
-message(STATUS "BDDCML_FOUND = ${BDDCML_FOUND}")
-message(STATUS "BDDCML_INCLUDES = ${BDDCML_INCLUDES}")
-message(STATUS "BDDCML_LIBRARY = ${BDDCML_LIBRARY}")
-message(STATUS "=======================================================\n\n") 
 
 
 #################################################################################
