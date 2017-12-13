@@ -11,10 +11,6 @@ test_cases:
     - 30_surf_cube_cc.yaml
   proc: [1]
   
-- files:
-    - 07_parallel_2_proc.yaml
-  proc: [2]
-
 # long running tests
 - files:
     - 31_surf_cube_23d_p0.yaml
