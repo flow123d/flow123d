@@ -25,7 +25,7 @@ IT::Record &EquationOutput::get_input_type() {
         IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
             .add_value(OutputTime::NODE_DATA,   "P1_average", "Node data / point data.")
 			.add_value(OutputTime::CORNER_DATA, "D1_value",   "Corner data.")
-			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / point data.")
+			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / cell data.")
 			.add_value(OutputTime::NATIVE_DATA, "Native",     "Native data (Flow123D data).")
 			.close();
 
