@@ -358,8 +358,12 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::
 	return n_objects_dofs;
 }
 
-unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<int> &indices) const
 {
+	/*
+	 * TODO: This method is currently wrong (the shift by loc_offset_ is not enough for
+	 * local <-> global mapping. Only local to global mapping should be used in future.
+	 */
     unsigned int dim = cell->dim();
     unsigned int n_objects_dofs;
     

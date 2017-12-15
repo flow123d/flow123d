@@ -105,7 +105,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const =0;
+    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<int> &indices) const =0;
     
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -312,7 +312,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const override;
+    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<int> &indices) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
