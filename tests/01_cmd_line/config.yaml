@@ -15,6 +15,7 @@ test_cases:
 
 - files: 02_input_format.yaml
   args: 
+    - --no_profiler
     - --input_format
     - ./test_results/02_input_format.1/in.yaml
   check_rules:
