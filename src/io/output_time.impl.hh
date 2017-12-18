@@ -78,21 +78,27 @@ template <typename T>
 ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows,
 		unsigned int n_cols)
 {
-    if(space_type == CORNER_DATA)
-        compute_discontinuous_output_mesh();
-
     // get possibly existing data for the same field, check both name and type
-    std::vector<unsigned int> size(N_DISCRETE_SPACES);
-    size[NODE_DATA] = output_mesh_->n_nodes();
-    size[ELEM_DATA] = output_mesh_->n_elements();
-    size[CORNER_DATA] = output_mesh_discont_->n_nodes();
-    size[NATIVE_DATA] = output_mesh_->n_elements();
+    unsigned int size;
+    switch (space_type) {
+    	case NODE_DATA:
+    	case CORNER_DATA:
+    		size = output_mesh_->n_nodes();
+    		break;
+    	case ELEM_DATA:
+    	case NATIVE_DATA:
+    		size = output_mesh_->n_elements();
+    		break;
+    	default:
+    		ASSERT(false).error("Should not happen.");
+    		break;
+    }
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
             [&field_name](OutputDataPtr ptr) { return (ptr->field_input_name() == field_name); });
     if ( it == od_vec.end() ) {
-        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, size[space_type]) );
+        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, size) );
         it=--od_vec.end();
     }
     return dynamic_cast<ElementDataCache<T> &>(*(*it));

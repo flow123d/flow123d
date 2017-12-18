@@ -53,9 +53,8 @@ public:
     void output(TimeStep step);
 
     /// Selects the error control field out of output field set according to input record.
-    void select_error_control_field(std::string error_control_field_name);
-
-
+    Field<3, FieldValue<3>::Scalar> * select_error_control_field();
+    
 private:
     /**
      * Input type of the configuration record.
@@ -80,7 +79,6 @@ private:
      */
     void make_output_mesh();
 
-
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
     /// The time mark type of the equation.
@@ -95,9 +93,6 @@ private:
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;
-
-    /// Refinement error control field.
-    Field<3, FieldValue<3>::Scalar> *error_control_field_;
 };
 
 

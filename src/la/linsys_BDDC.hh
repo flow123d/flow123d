@@ -72,7 +72,7 @@ public:
 
     void apply_constrains( double scalar = 1. ) override;
 
-    int solve() override;
+    LinSys::SolveInfo solve() override;
 
     void set_from_input(const Input::Record in_rec) override;
 

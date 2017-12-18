@@ -290,12 +290,6 @@ public:
      */
     void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
 
-    /**
-     * Interpolate given native data field into output discrete @p space_type and store the values
-     * into storage of output time @p stream for postponed output.
-     */
-    void compute_native_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
-
 protected:
 
     /**

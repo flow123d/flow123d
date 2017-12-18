@@ -116,7 +116,7 @@ public:
      * - The inner linear solver is called for the Schur complement
      * - Resolve is called to reconstruct eliminated part of the solution vector.
      */
-    int solve() override;
+    LinSys::SolveInfo solve() override;
 
     /**
      * Only resolve the system with current solution vector. This is necessary for nonlinear solvers.

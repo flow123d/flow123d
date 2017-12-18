@@ -21,7 +21,7 @@
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "io/msh_gmshreader.h"
-#include "io/reader_instances.hh"
+#include "io/reader_cache.hh"
 
 /// Implementation.
 
@@ -36,7 +36,7 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
     return IT::Record("FieldElementwise", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-        .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
+        .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
@@ -88,7 +88,7 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
 	DebugOut() << "Reader file: " << string(reader_file_);
 	ASSERT(internal_raw_data).error("Trying to initialize internal FieldElementwise from input.");
 	ASSERT(reader_file_ == FilePath()).error("Multiple call of init_from_input.");
-    reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
+    reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 
     field_name_ = rec.val<std::string>("field_name");
 }
@@ -119,8 +119,10 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
-    		field_name_, time.end(), n_entities_, n_components_, boundary_domain_, this->component_idx_);
+    BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
+    ReaderCache::get_reader(reader_file_)->find_header(header_query);
+    data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
+    		n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
     return true;
 }
@@ -147,7 +149,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     }
 
     if ( reader_file_ == FilePath() ) return;
-    ReaderInstances::instance()->get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
+    ReaderCache::get_reader(reader_file_)->check_compatible_mesh( const_cast<Mesh &>(*mesh) );
 }
 
 

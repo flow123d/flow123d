@@ -24,9 +24,12 @@
 #include "input/accessors.hh"
 
 #include "tools/general_iterator.hh"
+#include "fields/field.hh"
+#include "mesh/point.hh"
 
 class Mesh;
 template<class T> class ElementDataCache;
+template<int> class ElementAccessor;
 
 class OutputElement;
 typedef GeneralIterator<OutputElement> OutputElementIterator;
@@ -34,6 +37,8 @@ typedef GeneralIterator<OutputElement> OutputElementIterator;
 class OutputMeshBase;
 class OutputMesh;
 class OutputMeshDiscontinuous;
+class OutputMSH;
+class OutputVTK;
 
 
 /**
@@ -51,17 +56,19 @@ class OutputMeshDiscontinuous;
     // Construct mesh with continuous elements
     std::make_shared<OutputMesh> output_mesh = std::make_shared<OutputMesh>(*my_mesh);
     // Creates the mesh identical to the computational one.
-    output_mesh->create_identical_mesh();
+    output_mesh->create_mesh();
 
     // Construct mesh with discontinuous elements
     std::make_shared<OutputMeshDiscontinuous> output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
-    // Creates mesh from the given continuous one.
-    output_mesh_discont->create_mesh(output_mesh);
+    // Creates mesh from the original my_mesh.
+    output_mesh_discont->create_mesh();
 @endcode
  */
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
 public:
+    typedef Field<3, FieldValue<3>::Scalar> * ErrorControlFieldPtr;
+    
     /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment. 
     static const unsigned int spacedim = 3;
     
@@ -82,31 +89,42 @@ public:
     /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
+    /// Creates the output mesh identical to the orig mesh.
+    virtual void create_mesh()=0;
+
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
-    /// Returns \p error_control_field_name_
-    inline std::string error_control_field_name() {
-    	return error_control_field_name_;
-    }
+    /// Selects the error control field out of output field set according to input record.
+    void set_error_control_field(ErrorControlFieldPtr error_control_field);
 
-    /// Vector of element indices in the computational mesh. (Important when refining.)
-    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
-    
-    /// Vector of node coordinates. [spacedim x n_nodes]
-    std::shared_ptr<ElementDataCache<double>> nodes_;
-    /// Vector maps the nodes to their coordinates in vector @p nodes_.
-    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
-    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
-    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
-    
     /// Returns number of nodes.
     unsigned int n_nodes();
     /// Returns number of element.
     unsigned int n_elements();
     
+    /// Return data cache of node ids. If doesn't exist create its.
+    std::shared_ptr<ElementDataCache<unsigned int>> get_node_ids_cache();
+    /// Return data cache of element ids. If doesn't exist create its.
+	std::shared_ptr<ElementDataCache<unsigned int>> get_element_ids_cache();
+
 protected:
-    /// Input record for output mesh.
+	/**
+	 * Possible types of OutputMesh.
+	 */
+	enum MeshType
+	{
+		orig,     //!< same as original (computational) mesh
+		refined,  //!< refined mesh
+		discont   //!< discontinuous mesh
+	};
+
+
+	/// Create node_ids_ and elem_ids_ data caches
+	void create_id_caches();
+
+
+	/// Input record for output mesh.
     Input::Record input_record_;
     
     /// Pointer to the computational mesh.
@@ -115,11 +133,32 @@ protected:
     /// Maximal level of refinement.
     const unsigned int max_level_;
     
-    /// Refinement error control field name.
-    std::string error_control_field_name_;
+    /// Refinement error control field.
+    ErrorControlFieldPtr error_control_field_;
+
+    MeshType mesh_type_;                ///< Type of OutputMesh
+    bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
+    double refinement_error_tolerance_; ///< Tolerance for error criterion refinement.
+    
+    /// Vector of element indices in the computational mesh. (Important when refining.)
+    std::shared_ptr<std::vector<unsigned int>> orig_element_indices_;
+
+    /// Vector of node coordinates. [spacedim x n_nodes]
+    std::shared_ptr<ElementDataCache<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+
+    /// Vector gets ids of nodes. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
+    /// Vector gets ids of elements. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> elem_ids_;
 
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
+    friend class OutputMSH;
+    friend class OutputVTK;
 };
 
 
@@ -131,8 +170,8 @@ public:
     OutputMesh(Mesh &mesh, const Input::Record &in_rec);
     ~OutputMesh();
     
-    /// Creates the output mesh identical to the computational one.
-    void create_identical_mesh();
+    /// Creates the output mesh identical to the orig mesh.
+    void create_mesh() override;
     
     /// Creates refined mesh.
     void create_refined_mesh() override;
@@ -153,14 +192,38 @@ public:
     OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec);
     ~OutputMeshDiscontinuous();
     
-    /// Creates output mesh from the given continuous one.
-    void create_mesh(std::shared_ptr<OutputMesh> output_mesh);
+    /// Creates the output mesh identical to the orig mesh.
+    void create_mesh() override;
     
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
     
 protected:
-    bool refinement_criterion();
+    ///Auxiliary structure defining element of refined output mesh.
+    struct AuxElement{
+        std::vector<Space<spacedim>::Point> nodes;
+        unsigned int level;
+    };
+    
+    ///Performs the actual refinement of AuxElement. Recurrent.
+    template<int dim>
+    void refine_aux_element(const AuxElement& aux_element,
+                            std::vector< AuxElement >& refinement,
+                            const ElementAccessor<spacedim> &ele_acc
+                           );
+    
+    /// Collects different refinement criteria results.
+    bool refinement_criterion(const AuxElement& ele,
+                              const ElementAccessor<spacedim> &ele_acc);
+    
+    /// Refinement flag - checks only maximal level of refinement.
+    bool refinement_criterion_uniform(const AuxElement& ele);
+    
+    /// Refinement flag - measures discretisation error according to error control field.
+    bool refinement_criterion_error(const AuxElement& ele,
+                                    const Space<spacedim>::Point &centre,
+                                    const ElementAccessor<spacedim> &ele_acc
+                                   );
 };
 
 #endif  // OUTPUT_MESH_HH_
