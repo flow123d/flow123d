@@ -18,7 +18,6 @@
 
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
-#include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "la/distribution.hh"
 
@@ -235,7 +234,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	  fe2d_(0),
 	  fe3d_(0)
 {
-	object_dofs = new int**[mesh_->n_elements()];
+	object_dofs = new IdxInt**[mesh_->n_elements()];
 	for (unsigned int i=0; i<mesh_->n_elements(); i++)
 		object_dofs[i] = NULL;
 
@@ -310,7 +309,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 			// TODO: For the moment we distribute only dofs associated to the cell
 			//       In the future we want to distribute dofs on vertices, lines,
 			//       and triangles as well.
-			object_dofs[cell.index()] = new int*[dim+1];
+			object_dofs[cell.index()] = new IdxInt*[dim+1];
 			for (unsigned int i=0; i<dim+1; i++)
 				object_dofs[cell.index()][i] = NULL;
 			object_dofs[cell.index()][dim] = new int[n_obj_dofs[dim][dim]];
@@ -332,7 +331,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
     n_dofs = next_free_dof - offset;
 }
 
-unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const
+unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const
 {
 	unsigned int dim = cell->dim();
     unsigned int n_objects_dofs;
@@ -358,7 +357,7 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::
 	return n_objects_dofs;
 }
 
-unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<int> &indices) const
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const
 {
 	/*
 	 * TODO: This method is currently wrong (the shift by loc_offset_ is not enough for
@@ -405,7 +404,7 @@ void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &val
 		break;
 	}
 
-    std::vector<int> indices(ndofs);
+    std::vector<IdxInt> indices(ndofs);
 
     get_dof_indices(cell, indices);
     VecGetValues(values, ndofs, (PetscInt *)indices[0], local_values);

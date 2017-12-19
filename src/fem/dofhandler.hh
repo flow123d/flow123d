@@ -21,6 +21,7 @@
 
 #include <map>
 #include <petscmat.h>
+#include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
 #include "mesh/elements.h"
 #include "la/distribution.hh"
@@ -97,7 +98,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const = 0;
+    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const = 0;
 
     /**
      * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
@@ -105,7 +106,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<int> &indices) const =0;
+    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const =0;
     
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -304,7 +305,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const override;
+    unsigned int get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const override;
     
     /**
      * @brief Returns the indices of dofs associated to the @p cell on the local process.
@@ -312,7 +313,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<int> &indices) const override;
+    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -395,7 +396,7 @@ private:
      * 1D edges (object_dofs[1]), 2D faces (object_difs[2]) and
      * volumes (object_dofs[3]).
      */
-    int ***object_dofs;
+    IdxInt ***object_dofs;
 
 
 	/// Global element index -> index according to partitioning

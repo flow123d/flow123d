@@ -235,7 +235,7 @@ void ConvectionTransport::set_initial_condition()
     {
     	if (!el_ds->is_local(row_4_el[elem.index()])) continue;
 
-    	unsigned int index = row_4_el[elem.index()] - el_ds->begin();
+    	IdxInt index = row_4_el[elem.index()] - el_ds->begin();
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 		arma::vec value = data_.init_conc.value(elem->centre(), ele_acc);
 
@@ -351,7 +351,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element(el_4_loc[loc_el]);
         if (elm->boundary_idx_ != NULL) {
-            unsigned int new_i = row_4_el[elm.index()];
+        	IdxInt new_i = row_4_el[elm.index()];
 
             FOR_ELEMENT_SIDES(elm,si) {
                 Boundary *b = elm->side(si)->cond();
@@ -722,7 +722,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
     struct Edge *edg;
     unsigned int n;
-    int s, j, np, rank, new_j, new_i;
+    int s, j, np, rank;
+    IdxInt new_j, new_i;
     double aij, aii;
         
     MatZeroEntries(tm);
@@ -829,7 +830,7 @@ double **ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 
-void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_distribution_out){
+void ConvectionTransport::get_par_info(IdxInt * &el_4_loc_out, Distribution * &el_distribution_out){
 	el_4_loc_out = this->el_4_loc;
 	el_distribution_out = this->el_ds;
 	return;
@@ -839,7 +840,7 @@ void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_d
 //	return el_4_loc;
 //}
 
-int *ConvectionTransport::get_row_4_el(){
+IdxInt *ConvectionTransport::get_row_4_el(){
 	return row_4_el;
 }
 

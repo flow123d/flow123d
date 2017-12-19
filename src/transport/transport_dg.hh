@@ -213,7 +213,7 @@ public:
 
 	void update_after_reactions(bool solution_changed);
 
-    void get_par_info(int * &el_4_loc, Distribution * &el_ds);
+    void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds);
 
     int *get_row_4_el();
 

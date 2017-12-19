@@ -81,6 +81,10 @@
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
 
+/// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
+typedef int IdxInt;
+
+
 class BoundarySegment {
 public:
     static Input::Type::Record input_type;
