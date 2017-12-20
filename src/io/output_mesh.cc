@@ -557,7 +557,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	DebugOut() << "Create output submesh containing only local elements.";
 
 	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(orig_mesh_);
-	int *el_4_loc = orig_mesh_->get_el_4_loc();
+	IdxInt *el_4_loc = orig_mesh_->get_el_4_loc();
 	Distribution *el_ds = orig_mesh_->get_el_ds();
     const unsigned int n_local_elements = el_ds->lsize();
 

@@ -74,7 +74,7 @@
 //    }
 //
 //    // Broadcast partition of elements to all processes.
-//    int *loc_part;
+//    IdxInt *loc_part;
 //    int myp = mesh->get_part()->get_init_distr()->myp();
 //    if (myp == 0)
 //    {
@@ -82,7 +82,7 @@
 //    }
 //    else
 //    {
-//    	loc_part = new int[mesh->n_elements()];
+//    	loc_part = new IdxInt[mesh->n_elements()];
 //    }
 //    MPI_Bcast(loc_part, mesh->n_elements(), MPI_INT, 0, mesh->get_part()->get_init_distr()->get_comm());
 //
@@ -280,11 +280,11 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
 	}
 
     // Broadcast partition of elements to all processes.
-    int *loc_part;
+    IdxInt *loc_part;
     unsigned int myp = mesh_->get_part()->get_init_distr()->myp();
     if (myp == 0)
     {
-    	loc_part = (int*)mesh_->get_part()->get_loc_part();
+    	loc_part = (IdxInt*)mesh_->get_part()->get_loc_part();
     }
     else
     {

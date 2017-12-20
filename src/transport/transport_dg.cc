@@ -1735,7 +1735,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 }
 
 template<class Model>
-int *TransportDG<Model>::get_row_4_el()
+IdxInt *TransportDG<Model>::get_row_4_el()
 {
 	return Model::mesh_->get_row_4_el();
 }

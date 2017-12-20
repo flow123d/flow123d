@@ -215,7 +215,7 @@ public:
 
     void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds);
 
-    int *get_row_4_el();
+    IdxInt *get_row_4_el();
 
 
 

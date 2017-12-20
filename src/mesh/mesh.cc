@@ -268,7 +268,7 @@ void Mesh::setup_topology() {
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
-    int *id_4_old = new int[element.size()];
+    IdxInt *id_4_old = new IdxInt[element.size()];
     int i = 0;
     FOR_ELEMENTS(this, ele)
         id_4_old[i++] = ele.index();

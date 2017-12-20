@@ -189,10 +189,10 @@ public:
     Distribution *get_el_ds() const
     { return el_ds; }
 
-    int *get_row_4_el() const
+    IdxInt *get_row_4_el() const
     { return row_4_el; }
 
-    int *get_el_4_loc() const
+    IdxInt *get_el_4_loc() const
     { return el_4_loc; }
 
     /**
@@ -466,9 +466,9 @@ protected:
 private:
 
     /// Index set assigning to global element index the local index used in parallel vectors.
-	int *row_4_el;
+    IdxInt *row_4_el;
 	/// Index set assigning to local element index its global index.
-	int *el_4_loc;
+    IdxInt *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
 };

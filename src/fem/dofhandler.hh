@@ -337,14 +337,14 @@ public:
      *
      * @param loc_edg Local index of edge.
      */
-    inline int edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
+    inline IdxInt edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
 	 * @brief Returns the global index of local neighbour.
 	 *
 	 * @param loc_nb Local index of neighbour.
 	 */
-	inline int nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+	inline IdxInt nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 
 	/**
 	 * @brief Returns number of local edges.
@@ -400,17 +400,17 @@ private:
 
 
 	/// Global element index -> index according to partitioning
-    int *row_4_el;
+    IdxInt *row_4_el;
     /// Local element index -> global element index
-    int *el_4_loc;
+    IdxInt *el_4_loc;
     /// Distribution of elements
     Distribution *el_ds_;
 
     /// Local edge index -> global edge index
-    vector<int> edg_4_loc;
+    vector<IdxInt> edg_4_loc;
 
     /// Local neighbour index -> global neighbour index
-    vector<int> nb_4_loc;
+    vector<IdxInt> nb_4_loc;
 
 };
 
