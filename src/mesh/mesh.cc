@@ -671,17 +671,17 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-void Mesh::elements_id_maps( vector<int> & bulk_elements_id, vector<int> & boundary_elements_id) const
+void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const
 {
     if (bulk_elements_id.size() ==0) {
-        std::vector<int>::iterator map_it;
-        int last_id;
+        std::vector<IdxInt>::iterator map_it;
+        IdxInt last_id;
 
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
-        	int id = element.get_id(idx);
+        	IdxInt id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
@@ -690,7 +690,7 @@ void Mesh::elements_id_maps( vector<int> & bulk_elements_id, vector<int> & bound
         map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
-        	int id = bc_elements.get_id(idx);
+        	IdxInt id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
@@ -701,9 +701,6 @@ void Mesh::elements_id_maps( vector<int> & bulk_elements_id, vector<int> & bound
             }
         }
     }
-
-    //if (boundary_domain) return boundary_elements_id_;
-    //return bulk_elements_id_;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)

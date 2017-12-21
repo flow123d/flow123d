@@ -541,7 +541,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("intersect_element_lists must produce one element")
             			<< EI_VTKFile(tok_.f_name()));
             }
-            bulk_elements_id_[i] = result_list[0];
+            bulk_elements_id_[i] = (IdxInt)result_list[0];
             node_list.clear();
             result_list.clear();
             last_offset = offsets_vec[i];
@@ -609,7 +609,7 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
             node_list.push_back( connectivity_vec[i_con] );
         }
 		mesh->add_element(i, dim, dim, 0, node_list); // TODO need to set region_id (3rd parameter, now is created from dim)
-        bulk_elements_id_[i] = i;
+        bulk_elements_id_[i] = (IdxInt)i;
         node_list.clear();
         last_offset = offsets_vec[i];
     }
