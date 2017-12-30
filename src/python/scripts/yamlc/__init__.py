@@ -15,6 +15,7 @@ from scripts.core.base import Paths
     time_limit=30,              # number of seconds (give or take resolution) allowed for test to run
     memory_limit=400,           # number of MB allowed for test to use (include all children processes)
     tags=[],                    # array of string, representing tags for case
+    args=[],                    # additional arguments passed to binary
     check_rules=[               # array of objects, representing check rules
         {
             'ndiff': {          # key is tool which will be used
@@ -74,6 +75,7 @@ TAG_MEMORY_LIMIT = 'memory_limit'
 TAG_TEST_CASES = 'test_cases'
 TAG_CHECK_RULES = 'check_rules'
 TAG_TAGS = 'tags'
+TAG_ARGS = 'args'
 TAG_INPUTS = 'inputs'
 TAG_DEATH_TEST = 'death_test'
 REF_OUTPUT_DIR = 'ref_out'
@@ -90,6 +92,7 @@ DEFAULTS = {
     TAG_MEMORY_LIMIT:   400,
     TAG_DEATH_TEST:     YamlDeathTest.FALSE,
     TAG_TAGS:           [],
+    TAG_ARGS:           [],
     TAG_CHECK_RULES: [
         {
             'ndiff': {

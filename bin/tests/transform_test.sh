@@ -12,7 +12,7 @@ TRANSFORM_FILE_YAML=flow123d_2.0.0_rc_to_2.0.0
 
 # Relative path to "importer.py" script from directory,
 # where this script is placed
-IMPORTER_PY="../../src/python/GeoMop/ModelEditor/importer.py"
+IMPORTER_PY="../yaml_converter/yaml_converter.py"
 # Relative path to "importer.py" script from current/working directory
 IMPORTER_PY="${0%/*}/${IMPORTER_PY}"
 
@@ -23,8 +23,9 @@ do
   if [ "${f%.yaml}" == "$f" ]
   then 
         # con file
-        rm -f "${f%.con}.yaml"
-        python3 "$IMPORTER_PY" --transformation-name "${TRANSFORM_FILE_CON}" --con_file "$f"
+        echo "Conversion of CON files not available." 
+        # rm -f "${f%.con}.yaml"
+        # python3 "$IMPORTER_PY" --transformation-name "${TRANSFORM_FILE_CON}" --con_file "$f"
   else     
         # yaml file
         
@@ -34,6 +35,12 @@ do
             cp "$f" "${new_name}"        
         fi    
         rm "$f"
-        python3 "$IMPORTER_PY" --transformation-name "${TRANSFORM_FILE_YAML}" --yaml_file "${new_name}" --destination-file "$f"
+        python3 "$IMPORTER_PY"  "${new_name}"
+        converted=${new_name%.yaml}.new.yaml
+        if [ -f $converted ]
+            mv ${converted} $f
+        else
+            mv $new_name $f
+        fi    
   fi  
 done

@@ -469,6 +469,7 @@ if (BDDCML_FOUND)
 endif()
 
 
+
 #################################################################################
 #  Armadillo_FOUND - set to true if the library is found
 #  Armadillo_INCLUDE_DIRS - list of required include directories
