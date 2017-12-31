@@ -287,17 +287,17 @@ Content of \verb'darcy_input_fields.yaml', included Array:
 \end{verbatim}
 
 {\bf Include general CSV data}
-The custome tag \verb'include_csv' can be used to include a simple text file table as an Array. The input file is interpreted as a table
-with rows corresponding to lines and values on a line separated by a given separator. The tag is followed by a Record with 
-several keys to specify format of the data:
+The custom tag \verb'include_csv' can be used to include a table stored as a text file (e.g. coma separated values, CSV) as an Array of Records. 
+The tag is followed by a Record with several keys to specify format of the data:
 \begin{description}
   \item {\bf\verb'file'} \\A valid path to a text data file. Relative to the main input file.
-  \item {\bf\verb'separator'}\\ A string of characters that are used as a separators of valueas on the single line (default is common ",").
-  Tabs and spaces are allways added. Double quotas can be used to express string values containing separators, 
-  backslash can be used to escaping single character. Consecutive row of separators is interpreted as a single separaotor. 
+  \item {\bf\verb'separator'}\\ A string of characters used as separators of the values on the single line (default is coma ",").
+  Tab and space are always added. Double quotas can be used to express string values containing separators, 
+  backslash can be used to escaping any character with special meaning. Consecutive row of separators is interpreted as a single separator. 
   \item {\bf\verb'n_head_lines'}\\ Skip given number of lines at the beginning.
-  \item {\bf\verb'format'}\\ An input structure of a single element of the resluting array with some values
-  replaced by the \verb"'#'" and column number (counting from zero) in the input file.
+  \item {\bf\verb'format'}\\ An input structure of a single element of the resulting array, currently the structure of single element 
+  can consist only of Records, Abstracts, and Scalars. Type of Abstracts must be same through the whole resulting Array. Any scalar value in the format
+  can be replaced with a string \verb"'$<column>'"  and column number (counting from zero) in the input file.
 \end{description}
 
 For example consider this section from a main input file:

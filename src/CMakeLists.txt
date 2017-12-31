@@ -63,7 +63,7 @@ set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
 
 
 
-add_subdirectory("dealii")
+#add_subdirectory("dealii")
 set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
 message(STATUS "===========================================")
 
