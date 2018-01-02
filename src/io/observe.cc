@@ -255,7 +255,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) );
     }
     snap( mesh );
-    Element & elm = mesh.element[element_idx_];
+    Element & elm = mesh.element[observe_data_.element_idx_];
     double dist = arma::norm(elm.centre() - input_point_, 2);
     double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
     if (dist > 2*elm_norm)
