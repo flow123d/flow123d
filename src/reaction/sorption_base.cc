@@ -377,14 +377,12 @@ void SorptionBase::set_initial_condition()
   {
     unsigned int index = el_4_loc_[loc_el];
     ElementAccessor<3> ele_acc = mesh_->element_accessor(index);
-    arma::vec value = data_->init_conc_solid.value(ele_acc.centre(),
-        ele_acc);
 
     //setting initial solid concentration for substances involved in adsorption
     for (unsigned int sbi = 0; sbi < n_substances_; sbi++)
     {
       int subst_id = substance_global_idx_[sbi];
-      conc_solid[subst_id][loc_el] = value(sbi);
+      conc_solid[subst_id][loc_el] = data_->init_conc_solid[sbi].value(ele_acc.centre(), ele_acc);
     }
   }
 }
