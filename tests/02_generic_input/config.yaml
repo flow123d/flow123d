@@ -2,3 +2,6 @@ test_cases:
 - files: 04_interpolated.yaml
   proc: [1, 2, 3]
   memory_limit: 2000
+- files: 09_include_file.yaml
+  proc: [1, 2]
+  memory_limit: 600
