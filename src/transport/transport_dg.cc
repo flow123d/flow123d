@@ -410,7 +410,8 @@ void TransportDG<Model>::output_vector_gather()
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
     {
         // gather solution to output_vec[sbi]
-	VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+    	VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+    	VecScatterEnd(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
     VecScatterDestroy(&(output_scatter));
 
