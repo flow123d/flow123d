@@ -95,6 +95,9 @@ public:
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
+    /// Creates sub mesh containing only local elements.
+    virtual void create_sub_mesh()=0;
+
     /// Selects the error control field out of output field set according to input record.
     void set_error_control_field(ErrorControlFieldPtr error_control_field);
 
@@ -103,6 +106,9 @@ public:
     /// Returns number of element.
     unsigned int n_elements();
     
+    /// Check if nodes_, connectivity_ and offsets_ data caches are created
+    bool is_created();
+
     /// Return data cache of node ids. If doesn't exist create its.
     std::shared_ptr<ElementDataCache<unsigned int>> get_node_ids_cache();
     /// Return data cache of element ids. If doesn't exist create its.
@@ -176,6 +182,9 @@ public:
     /// Creates refined mesh.
     void create_refined_mesh() override;
     
+    /// Creates sub mesh.
+    void create_sub_mesh() override;
+
 protected:
     bool refinement_criterion();
     
@@ -198,6 +207,9 @@ public:
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
     
+    /// Creates sub mesh.
+    void create_sub_mesh() override;
+
 protected:
     ///Auxiliary structure defining element of refined output mesh.
     struct AuxElement{

@@ -155,14 +155,12 @@ public:
     }
 
     /**
-     * Create shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true) and return its.
-     *
-     * @param init_input Call constructor with initialization from Input Record
+     * Set shared pointer of \p output_mesh_.
      */
-    std::shared_ptr<OutputMeshBase> create_output_mesh_ptr(bool init_input);
+    void set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr);
 
     /**
-     * Get shared pointer of \p output_mesh_ or \p output_mesh_discont_ (if discont is true).
+     * Get shared pointer of \p output_mesh_.
      */
     std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
@@ -194,8 +192,16 @@ public:
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
-    /// Add information about field to map of used interpolations.
-    void add_field_interpolation(DiscreteSpace space_type, const std::string &field_name, unsigned int value_type);
+    inline Mesh * get_orig_mesh() {
+    	return _mesh;
+    }
+
+    /**
+     * Return if file format is in parallel / serial version.
+     */
+    inline bool is_parallel() {
+    	return parallel_;
+    }
 
     /// Complete information about dummy fields, method has effect only for GMSH output.
     virtual void add_dummy_fields();
@@ -210,6 +216,16 @@ protected:
 
 
     /**
+     * \brief Return unique value current step for parallel or serial output.
+     *
+     *  Respect value of \p parallel_ flag:
+     *   - for serial output return actual value of \p current_step
+     *   - for parallel output take unique value with account rank and number of processes
+     */
+    int get_parallel_current_step();
+
+
+    /**
      * \brief Virtual method for writing data to output file
      */
     virtual int write_data(void) = 0;
@@ -218,6 +234,11 @@ protected:
      * Cached MPI rank of process (is tested in methods)
      */
     int rank;
+
+    /**
+     * Cached MPI number of processes (is tested in methods)
+     */
+    int n_proc;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace
@@ -274,12 +295,8 @@ protected:
     /// Auxiliary flag for refinement enabling, due to gmsh format.
     bool enable_refinement_;
 
-    /**
-     * Set of interpolations which are used in performed fields.
-     *
-     * Allow determine type of output mesh.
-     */
-    InterpolationMap interpolation_map_;
+    /// Parallel or serial version of file format (parallel has effect only for VTK)
+    bool parallel_;
 };
 
 

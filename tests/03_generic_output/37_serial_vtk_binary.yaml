@@ -1,0 +1,49 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Binary VTK output interpolated as node / element data.
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    n_schurs: 2
+    input_fields:
+      - region: 2d_fraction
+        anisotropy: 1.0
+        conductivity: 16
+        # K_2d
+        sigma: 0.3125
+        # sigma
+        cross_section: 10
+        # delta_2d
+        # f_2d
+        water_source_density: !FieldFormula
+          value: -2/10
+          # f_2d:- q / delta_2d
+      - region: 3d_cube
+        anisotropy: 0.1
+        conductivity: 2
+        # K_3d
+      - region: .2d_fraction
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: -(0)
+      - region: .3d_cube
+        bc_type: dirichlet
+        bc_piezo_head: !FieldFormula
+          value: z
+          # p_3d
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - anisotropy
+    balance: {}
+    output_stream:
+      file: test37_32d.pvd
+      format: !vtk
+        variant: binary
+      name: flow_output_stream

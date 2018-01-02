@@ -69,9 +69,11 @@ OutputTime::OutputTime()
 : current_step(0),
   time(-1.0),
   write_time(-1.0),
-  _mesh(nullptr)
+  _mesh(nullptr),
+  parallel_(false)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc);
 }
 
 
@@ -116,16 +118,8 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input) {
-	bool discont = (interpolation_map_.find(DiscreteSpace::CORNER_DATA) != interpolation_map_.end());
-	if (discont || this->get_output_mesh_record()) {
-		if (init_input) output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-	} else {
-		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-	}
-	return output_mesh_;
+void OutputTime::set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	output_mesh_ = mesh_ptr;
 }
 
 
@@ -192,11 +186,10 @@ std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &
 void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
-    /* TODO: do something, when support for Parallel VTK is added */
     if (observe_)
         observe_->output_time_frame(time);
 
-    if (this->rank == 0) {
+    if (this->rank == 0 || this->parallel_) {
 
     	// Write data to output stream, when data registered to this output
 		// streams were changed
@@ -236,14 +229,10 @@ void OutputTime::clear_data(void)
 }
 
 
-void OutputTime::add_field_interpolation(DiscreteSpace space_type, const std::string &field_name, unsigned int value_type) {
-	auto it = interpolation_map_.find(space_type);
-	if ( it == interpolation_map_.end() ) {
-		std::vector<FieldInterpolationData> in_vec;
-		interpolation_map_[space_type] = in_vec;
-		it = interpolation_map_.find(space_type);
-	}
-	it->second.push_back( std::make_pair(field_name, value_type) );
+int OutputTime::get_parallel_current_step()
+{
+	if (parallel_) return n_proc*current_step+rank;
+	else return current_step;
 }
 
 
