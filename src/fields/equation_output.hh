@@ -40,7 +40,7 @@ public:
      * Setup the object. Set output stream for field and observe output, input record for configuration of the object and
      * TimeGovernor. The time governor is used to get the equation time mark type, the initial and the end time of the equation.
      */
-    void initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg);
+    void initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, Input::Record in_rec, const TimeGovernor & tg);
 
     /**
      * Returns true if @param field is marked for output in the given time @param step.
@@ -100,6 +100,11 @@ private:
      * Allow determine type of output mesh.
      */
     std::set<OutputTime::DiscreteSpace> used_interpolations_;
+
+    /**
+     * Cached pointer at computational mesh.
+     */
+    Mesh *mesh_;
 };
 
 

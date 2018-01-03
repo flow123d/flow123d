@@ -54,7 +54,7 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    virtual void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -125,7 +125,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec);
     
     /**
      * Write all data registered as a new time frame.
@@ -135,7 +135,7 @@ public:
     /**
      * Getter of the observe object.
      */
-    std::shared_ptr<Observe> observe();
+    std::shared_ptr<Observe> observe(Mesh *mesh);
 
     /**
      * \brief Clear data for output computed by method @p compute_field_data.
@@ -191,10 +191,6 @@ public:
      */
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
-
-    inline Mesh * get_orig_mesh() {
-    	return _mesh;
-    }
 
     /**
      * Return if file format is in parallel / serial version.
@@ -282,11 +278,6 @@ protected:
      */
     std::string equation_name_;
 
-    /**
-     * Cached pointer at mesh used by this output stream
-     */
-    Mesh *_mesh;
-    
     /// Output mesh.
     std::shared_ptr<OutputMeshBase> output_mesh_;
     

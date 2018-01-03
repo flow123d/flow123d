@@ -94,9 +94,10 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
 }
 
 
-void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg)
+void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, Input::Record in_rec, const TimeGovernor & tg)
 {
     stream_ = stream;
+    mesh_ = mesh;
     equation_type_ = tg.equation_mark_type();
     equation_fixed_type_ = tg.equation_fixed_mark_type();
     read_from_input(in_rec, tg);
@@ -173,8 +174,10 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 
 void EquationOutput::output(TimeStep step)
 {
+    ASSERT_PTR(mesh_).error();
+
     // make observe points if not already done
-	stream_->observe();
+	auto observe_ptr = stream_->observe(mesh_);
 
 	this->make_output_mesh();
 
@@ -186,7 +189,7 @@ void EquationOutput::output(TimeStep step)
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-                field->observe_output( stream_->observe() );
+                field->observe_output( observe_ptr );
             }
         }
     }
@@ -213,7 +216,7 @@ void EquationOutput::make_output_mesh()
     if(stream_->enable_refinement()) {
         if(it) {
             // create output meshes from input record
-            auto output_mesh = std::make_shared<OutputMeshDiscontinuous>(*stream_->get_orig_mesh(), *stream_->get_output_mesh_record());
+            auto output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh_, *stream_->get_output_mesh_record());
 
             // possibly set error control field for refinement
             auto ecf = select_error_control_field();
@@ -236,9 +239,9 @@ void EquationOutput::make_output_mesh()
 	std::shared_ptr<OutputMeshBase> output_mesh;
 	bool discont = (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
 	if (discont || it || stream_->is_parallel()) {
-		output_mesh = std::make_shared<OutputMeshDiscontinuous>(*stream_->get_orig_mesh());
+		output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
 	} else {
-		output_mesh = std::make_shared<OutputMesh>(*stream_->get_orig_mesh());
+		output_mesh = std::make_shared<OutputMesh>(*mesh_);
 	}
 	if (stream_->is_parallel()) output_mesh->create_sub_mesh();
 	else output_mesh->create_mesh();

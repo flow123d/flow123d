@@ -81,9 +81,9 @@ OutputVTK::~OutputVTK()
 
 
 
-void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+void OutputVTK::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
 {
-	OutputTime::init_from_input(equation_name, mesh, in_rec);
+	OutputTime::init_from_input(equation_name, in_rec);
 
     auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
     variant_type_ = format_rec.val<VTKVariant>("variant");

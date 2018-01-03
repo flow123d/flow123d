@@ -132,10 +132,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", *mesh_, main_mh_in_rec.val<Input::Record>("output_stream"));
+	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"));
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, in_rec_output, darcy_flow->time() );
+    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -175,7 +175,7 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
-    ElementSetRef observed_elements = output_stream->observe()->observed_elements();
+    ElementSetRef observed_elements = output_stream->observe(mesh_)->observed_elements();
     {
         START_TIMER("post-process output fields");
 
