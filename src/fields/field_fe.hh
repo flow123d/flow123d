@@ -136,7 +136,7 @@ private:
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    std::vector<unsigned int> dof_indices;
+    std::vector<IdxInt> dof_indices_;
 
     /// Value handler that allows get value of 1D elements.
     FEValueHandler<1, spacedim, Value> value_handler1_;

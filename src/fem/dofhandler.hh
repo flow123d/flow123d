@@ -21,6 +21,7 @@
 
 #include <map>
 #include <petscmat.h>
+#include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
 #include "mesh/elements.h"
 #include "la/distribution.hh"
@@ -97,7 +98,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const = 0;
+    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const = 0;
 
     /**
      * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
@@ -105,7 +106,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const =0;
+    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const =0;
     
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -304,7 +305,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_dof_indices(const CellIterator &cell, std::vector<int> &indices) const override;
+    unsigned int get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const override;
     
     /**
      * @brief Returns the indices of dofs associated to the @p cell on the local process.
@@ -312,7 +313,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<unsigned int> &indices) const override;
+    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -336,14 +337,14 @@ public:
      *
      * @param loc_edg Local index of edge.
      */
-    inline int edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
+    inline IdxInt edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
 	 * @brief Returns the global index of local neighbour.
 	 *
 	 * @param loc_nb Local index of neighbour.
 	 */
-	inline int nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+	inline IdxInt nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 
 	/**
 	 * @brief Returns number of local edges.
@@ -395,21 +396,21 @@ private:
      * 1D edges (object_dofs[1]), 2D faces (object_difs[2]) and
      * volumes (object_dofs[3]).
      */
-    int ***object_dofs;
+    IdxInt ***object_dofs;
 
 
 	/// Global element index -> index according to partitioning
-    int *row_4_el;
+    IdxInt *row_4_el;
     /// Local element index -> global element index
-    int *el_4_loc;
+    IdxInt *el_4_loc;
     /// Distribution of elements
     Distribution *el_ds_;
 
     /// Local edge index -> global edge index
-    vector<int> edg_4_loc;
+    vector<IdxInt> edg_4_loc;
 
     /// Local neighbour index -> global neighbour index
-    vector<int> nb_4_loc;
+    vector<IdxInt> nb_4_loc;
 
 };
 

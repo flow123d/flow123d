@@ -25,6 +25,10 @@ class Mesh;
 class SparseGraph;
 class Distribution;
 
+/// Re-declaration of typedef defined in mesh.h
+typedef int IdxInt;
+
+
 /**
  * @brief Class for the mesh partitioning.
  * This should provide:
@@ -63,7 +67,7 @@ public:
     /**
      * Get local part of mesh partition.
      */
-    const int *get_loc_part() const;
+    const IdxInt *get_loc_part() const;
 
     /**
      * Creates and returns vector with element partitioning for output.
@@ -73,13 +77,13 @@ public:
     /**
      * Obsolete see source file for doc.
      */
-    void id_maps(int n_ids, int *id_4_old,
-                    Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+    void id_maps(int n_ids, IdxInt *id_4_old,
+                    Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id);
 
 
-    static void id_maps(int n_ids, int *id_4_old,
-            const Distribution &old_ds, int *loc_part,
-            Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+    static void id_maps(int n_ids, IdxInt *id_4_old,
+            const Distribution &old_ds, IdxInt *loc_part,
+            Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id);
 
     /// Destructor.
     ~Partitioning();
@@ -110,7 +114,7 @@ private:
     /// Graph used to partitioning the mesh.
     SparseGraph *graph_;
     /// Partition numbers for local elements in original distribution of elements given be @p init_el_ds_.
-    int *       loc_part_;
+    IdxInt *    loc_part_;
     /// Original distribution of elements. Depends on type of partitioner
     Distribution *init_el_ds_;
     /// Sequential partitioning for output.

@@ -241,7 +241,7 @@ protected:
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.
-    vector<int> bulk_elements_id_, boundary_elements_id_;
+    vector<IdxInt> bulk_elements_id_, boundary_elements_id_;
 
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;

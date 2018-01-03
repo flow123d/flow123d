@@ -152,7 +152,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
-	int *el_4_loc;
+	IdxInt *el_4_loc;
 
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);

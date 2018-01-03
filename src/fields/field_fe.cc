@@ -94,7 +94,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
     data_vec_ = data;
 
     unsigned int ndofs = dh_->max_elem_dofs();
-    dof_indices.resize(ndofs);
+    dof_indices_.resize(ndofs);
 
     // initialization data of value handlers
 	FEValueInitData init_data;
@@ -200,7 +200,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = dh_->max_elem_dofs();
-    dof_indices.resize(ndofs);
+    dof_indices_.resize(ndofs);
 
     // allocate data_vec_
 	unsigned int data_size = dh_->n_global_dofs();
@@ -297,9 +297,9 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 			++dim;
 		} while (dim<4);
 
-		dh_->get_loc_dof_indices( ele, dof_indices);
-		ASSERT_LT_DBG( dof_indices[0], data_vec_->size());
-		(*data_vec_)[dof_indices[0]] = elem_value * this->unit_conversion_coefficient_;
+		dh_->get_dof_indices( ele, dof_indices_);
+		ASSERT_LT_DBG( dof_indices_[0], data_vec_->size());
+		(*data_vec_)[dof_indices_[0]] = elem_value * this->unit_conversion_coefficient_;
 	}
 }
 
@@ -315,11 +315,11 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 	// iterate through elements, assembly global vector and count number of writes
 	FOR_ELEMENTS( dh_->mesh(), ele ) {
-		dof_size = dh_->get_loc_dof_indices( ele, dof_indices );
-		data_vec_i = ele.index() * dof_indices.size();
+		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
+		data_vec_i = ele.index() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ dof_indices[i] ] += (*data_cache)[data_vec_i];
-			++count_vector[ dof_indices[i] ];
+			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+			++count_vector[ dof_indices_[i] ];
 		}
 	}
 
@@ -333,14 +333,14 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_elem(), dh_->n_global_dofs()).error();
-	ASSERT_EQ(output_data_cache.n_elem(), dof_indices.size()).error();
+	ASSERT_EQ(output_data_cache.n_elem(), dof_indices_.size()).error();
 	double loc_values[output_data_cache.n_elem()];
 	unsigned int i, dof_filled_size;
 
 	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
 	FOR_ELEMENTS( dh_->mesh(), ele ) {
-		dof_filled_size = dh_->get_loc_dof_indices( ele, dof_indices);
-		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices[0] ];
+		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
+		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
 		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( ele.index(), loc_values );
 	}
