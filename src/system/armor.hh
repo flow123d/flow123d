@@ -84,13 +84,7 @@ public:
         return *this;
     }
     inline bool operator==(const ArmaType & other) {
-        uint size = nRows * nCols;
-        for (uint i{0}; i < size; ++i) {
-            if (*(*data + i) != other[i]) {
-                return false;
-            }
-        }
-        return true;
+        return std::equal(begin(), end(), other.begin());
     }
     inline bool operator==(const Mat<Type, nRows, nCols> & other) {
         return std::equal(begin(), end(), other.begin());
