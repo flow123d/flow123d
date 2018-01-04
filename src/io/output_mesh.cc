@@ -642,24 +642,24 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 {
     ASSERT_DBG(error_control_field_func_).error("Error control field not set!");
 
-    std::vector<double> nodes_val(ele.nodes.size());
-    error_control_field_func_(ele.nodes, ele_acc, nodes_val);
-    
+    // evaluate at nodes and center in a single call
+    std::vector<double> val_list(ele.nodes.size()+1);
+    std::vector< Space<spacedim>::Point > point_list;
+    point_list.push_back(centre);
+    point_list.insert(point_list.end(), ele.nodes.begin(), ele.nodes.end());
+    error_control_field_func_(point_list, ele_acc, val_list);
+
     //TODO: compute L1 or L2 error using standard quadrature
     
     //compare average value at nodes with value at center
     
     double average_val = 0.0;
-    for(double& v: nodes_val)
-        average_val += v;
+    for(unsigned int i=1; i<ele.nodes.size()+1; ++i)//(double& v: nodes_val)
+        average_val += val_list[i];
     average_val = average_val / ele.nodes.size();
     
-    std::vector< double > centre_val(1);
-    std::vector< Space<spacedim>::Point > point_list;
-    point_list.push_back(centre);
-    error_control_field_func_(point_list,ele_acc,centre_val);
-    double diff = std::abs((average_val - centre_val[0])/centre_val[0]);
-//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, centre_val[0]);
+    double diff = std::abs((average_val - val_list[0])/val_list[0]);
+//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, val_list[0]);
     return ( diff > refinement_error_tolerance_);
 
 }
