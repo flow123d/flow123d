@@ -17,6 +17,7 @@
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
 #include "io/output_time_set.hh"
+#include "io/output_mesh.hh"
 class TimeStep;
 
 
@@ -53,7 +54,7 @@ public:
     void output(TimeStep step);
 
     /// Selects the error control field out of output field set according to input record.
-    Field<3, FieldValue<3>::Scalar> * select_error_control_field();
+    typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
     
 private:
     /**

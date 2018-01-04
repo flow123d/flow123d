@@ -10,7 +10,6 @@
 #include "input/accessors.hh"
 #include "fields/equation_output.hh"
 #include "io/output_time_set.hh"
-#include "io/output_mesh.hh"
 #include "input/flow_attribute_lib.hh"
 #include <memory>
 
@@ -249,9 +248,8 @@ void EquationOutput::make_output_mesh()
 }
 
 
-Field<3,FieldValue<3>::Scalar>* EquationOutput::select_error_control_field()
+typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_control_field()
 {
-    Field<3,FieldValue<3>::Scalar>* error_control_field = nullptr;
     std::string error_control_field_name = "";
     // Read optional error control field name
     auto it = stream_->get_output_mesh_record()->find<std::string>("error_control_field");
@@ -269,13 +267,20 @@ Field<3,FieldValue<3>::Scalar>* EquationOutput::select_error_control_field()
         // throw input exception if the field is not scalar
         if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
 
-            error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
             DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
+            auto lambda_function =
+                [error_control_field](const std::vector< Space<OutputMeshBase::spacedim>::Point > &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
+                { error_control_field->value_list(point_list, elm, value_list); };
+
+            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
+            return func;
+
         }
         else{
             THROW(ExcFieldNotScalar()
                     << FieldCommon::EI_Field(error_control_field_name));
         }
     }
-    return error_control_field;
+    return nullptr;
 }

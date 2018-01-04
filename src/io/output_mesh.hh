@@ -19,12 +19,12 @@
 #define OUTPUT_MESH_HH_
 
 #include <string>
+#include <functional>
 
 #include "system/sys_profiler.hh"
 #include "input/accessors.hh"
 
 #include "tools/general_iterator.hh"
-#include "fields/field.hh"
 #include "mesh/point.hh"
 
 class Mesh;
@@ -67,10 +67,11 @@ class OutputVTK;
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
 public:
-    typedef Field<3, FieldValue<3>::Scalar> * ErrorControlFieldPtr;
-    
-    /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment. 
+    /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment.
     static const unsigned int spacedim = 3;
+
+    typedef std::function<void(const std::vector< Space<spacedim>::Point > &, const ElementAccessor<spacedim> &, std::vector<double> &)>
+        ErrorControlFieldFunc;
     
     /// Constructor. Takes computational mesh as a parameter.
     OutputMeshBase(Mesh &mesh);
@@ -98,8 +99,8 @@ public:
     /// Creates sub mesh containing only local elements.
     virtual void create_sub_mesh()=0;
 
-    /// Selects the error control field out of output field set according to input record.
-    void set_error_control_field(ErrorControlFieldPtr error_control_field);
+    /// Selects the error control field computing function of output field set according to input record.
+    void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
 
     /// Returns number of nodes.
     unsigned int n_nodes();
@@ -139,8 +140,8 @@ protected:
     /// Maximal level of refinement.
     const unsigned int max_level_;
     
-    /// Refinement error control field.
-    ErrorControlFieldPtr error_control_field_;
+    /// Refinement error control field function (hold value_list function of field).
+    ErrorControlFieldFunc error_control_field_func_;
 
     MeshType mesh_type_;                ///< Type of OutputMesh
     bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.

@@ -20,7 +20,6 @@
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "la/distribution.hh"
-#include "fields/field.hh"
 
 
 namespace IT=Input::Type;
@@ -81,9 +80,9 @@ OutputElementIterator OutputMeshBase::end()
 }
 
 
-void OutputMeshBase::set_error_control_field(ErrorControlFieldPtr error_control_field)
+void OutputMeshBase::set_error_control_field(ErrorControlFieldFunc error_control_field_func)
 {
-    error_control_field_ = error_control_field;
+    error_control_field_func_ = error_control_field_func;
 }
 
 unsigned int OutputMeshBase::n_elements()
@@ -641,10 +640,10 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
                                             const ElementAccessor<spacedim> &ele_acc
                                            )
 {
-    ASSERT_DBG(error_control_field_).error("Error control field not set!");
+    ASSERT_DBG(error_control_field_func_).error("Error control field not set!");
 
     std::vector<double> nodes_val(ele.nodes.size());
-    error_control_field_->value_list(ele.nodes, ele_acc, nodes_val);
+    error_control_field_func_(ele.nodes, ele_acc, nodes_val);
     
     //TODO: compute L1 or L2 error using standard quadrature
     
@@ -655,9 +654,12 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
         average_val += v;
     average_val = average_val / ele.nodes.size();
     
-    double centre_val = error_control_field_->value(centre,ele_acc);
-    double diff = std::abs((average_val - centre_val)/centre_val);
-//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, centre_val);
+    std::vector< double > centre_val(1);
+    std::vector< Space<spacedim>::Point > point_list;
+    point_list.push_back(centre);
+    error_control_field_func_(point_list,ele_acc,centre_val);
+    double diff = std::abs((average_val - centre_val[0])/centre_val[0]);
+//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, centre_val[0]);
     return ( diff > refinement_error_tolerance_);
 
 }
