@@ -165,13 +165,6 @@ public:
     std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
     /**
-     * Return MPI rank of process
-     */
-    inline int get_rank() {
-    	return rank;
-    }
-
-    /**
      * Update the last time is actual \p time is less than \p field_time
      */
     void update_time(double field_time);
@@ -193,10 +186,11 @@ public:
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
     /**
-     * Return if file format is in parallel / serial version.
+     * Return base output parameters (rank and parallel) which determine if the output is performed
      */
-    inline bool is_parallel() {
-    	return parallel_;
+    inline void get_output_params(bool &parallel, int &rank) {
+        parallel = this->parallel_;
+        rank = this->rank;
     }
 
     /// Complete information about dummy fields, method has effect only for GMSH output.

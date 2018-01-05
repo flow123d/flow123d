@@ -178,7 +178,12 @@ void EquationOutput::output(TimeStep step)
     // make observe points if not already done
 	auto observe_ptr = stream_->observe(mesh_);
 
-	this->make_output_mesh();
+    int rank; bool parallel;
+    stream_->get_output_params(parallel, rank);
+
+    if ( (rank == 0) || parallel ) {
+        this->make_output_mesh(parallel);
+    }
 
     for(FieldCommon * field : this->field_list) {
 
@@ -204,7 +209,7 @@ void EquationOutput::add_output_times(double begin, double step, double end)
 }
 
 
-void EquationOutput::make_output_mesh()
+void EquationOutput::make_output_mesh(bool parallel)
 {
     // already computed
     if (stream_->is_output_mesh_init()) return;
@@ -237,12 +242,12 @@ void EquationOutput::make_output_mesh()
     // create output mesh identical with the computational one
 	std::shared_ptr<OutputMeshBase> output_mesh;
 	bool discont = (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
-	if (discont || it || stream_->is_parallel()) {
+	if (discont || it || parallel) {
 		output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
 	} else {
 		output_mesh = std::make_shared<OutputMesh>(*mesh_);
 	}
-	if (stream_->is_parallel()) output_mesh->create_sub_mesh();
+	if (parallel) output_mesh->create_sub_mesh();
 	else output_mesh->create_mesh();
 	stream_->set_output_mesh_ptr(output_mesh);
 }

@@ -78,7 +78,7 @@ private:
      * Create the output mesh of \p stream_ OutputTime object. The field set passed in is used
      * to select the field used for adaptivity of the output mesh.
      */
-    void make_output_mesh();
+    void make_output_mesh(bool parallel);
 
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
