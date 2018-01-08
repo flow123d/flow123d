@@ -75,9 +75,20 @@ public:
      * @brief Returns the offset of the local part of dofs.
      */
     const unsigned int loffset() const { return loffset_; }
+    
+    /**
+     * @brief Returns max. number of dofs on one element.
+     */
+    const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
+    /**
+     * @brief Returns the parallel distribution of dofs.
+     */
     Distribution *distr() const { return ds_; }
 
+    /**
+     * @brief Returns the mesh.
+     */
     Mesh *mesh() const { return mesh_; }
 
     /**
@@ -139,6 +150,9 @@ protected:
      * @brief Index of the first dof on the local process.
      */
     unsigned int loffset_;
+
+    /// Max. number of dofs per element.
+    unsigned int max_elem_dofs_;
 
     /**
      * @brief Pointer to the mesh to which the dof handler is associated.

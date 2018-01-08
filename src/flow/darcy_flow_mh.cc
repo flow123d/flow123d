@@ -527,9 +527,8 @@ void DarcyMH::solve_nonlinear()
 
     assembly_linear_system();
     double residual_norm = schur0->compute_residual();
-    unsigned int l_it=0;
     nonlinear_iteration_ = 0;
-    MessageOut().fmt("[nonlin solver] norm of initial residual: {}\n", residual_norm);
+    MessageOut().fmt("[nonlinear solver] norm of initial residual: {}\n", residual_norm);
 
     // Reduce is_linear flag.
     int is_linear_common;
@@ -569,11 +568,17 @@ void DarcyMH::solve_nonlinear()
 
         if (! is_linear_common)
             VecCopy( schur0->get_solution(), save_solution);
-        int convergedReason = schur0->solve();
+        LinSys::SolveInfo si = schur0->solve();
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
-        if (is_linear_common) break;
+        if (is_linear_common){
+            // we want to print this info in linear (and steady) case
+            residual_norm = schur0->compute_residual();
+            MessageOut().fmt("[nonlinear solver] lin. it: {}, reason: {}, residual: {}\n",
+        		si.n_iterations, si.converged_reason, residual_norm);
+            break;
+        }
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
@@ -587,13 +592,13 @@ void DarcyMH::solve_nonlinear()
             VecView(sol_vec, PETSC_VIEWER_STDOUT_SELF);
         */
 
-        //LogOut().fmt("Linear solver ended with reason: {} \n", convergedReason );
-        //OLD_ASSERT( convergedReason >= 0, "Linear solver failed to converge. Convergence reason %d \n", convergedReason );
+        //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
+        //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
 
         residual_norm = schur0->compute_residual();
-        MessageOut().fmt("[nonlinear solver] it: {} lin. it:{} (reason: {}) residual: {}\n",
-        		nonlinear_iteration_, l_it, convergedReason, residual_norm);
+        MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
+        		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
     VecDestroy(&save_solution);
     this -> postprocess();

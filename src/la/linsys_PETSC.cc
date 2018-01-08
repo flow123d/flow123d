@@ -325,7 +325,7 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 }
 
 
-int LinSys_PETSC::solve()
+LinSys::SolveInfo LinSys_PETSC::solve()
 {
 
     const char *petsc_dflt_opt;
@@ -397,7 +397,7 @@ int LinSys_PETSC::solve()
 
     KSPDestroy(&system);
 
-    return static_cast<int>(reason);
+    return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 
 }
 

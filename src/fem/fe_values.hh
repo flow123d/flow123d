@@ -24,11 +24,13 @@
 #include <armadillo>
 #include <vector>
 #include "fem/update_flags.hh"
+#include "fem/fe_values_views.hh"
 #include "mesh/ref_element.hh"
 #include "mesh/mesh_types.hh"
 
 class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
+template<unsigned int dim, unsigned int spacedim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 
@@ -49,11 +51,11 @@ public:
 
     /**
      * @brief Resize the data arrays.
-     * @param size Number of quadrature points.
-     * @param flags Update flags to be stores.
-     * @param is_scalar If true, the structures for scalar values are allocated. Otherwise the vectorial structures are used.
+     * @param size   Number of quadrature points.
+     * @param flags  Update flags to be stores.
+     * @param n_comp Number of components of shape values.
      */
-    void allocate(unsigned int size, UpdateFlags flags, bool is_scalar = true);
+    void allocate(unsigned int size, UpdateFlags flags, unsigned n_comp);
 
 
 
@@ -89,25 +91,25 @@ public:
     /**
      * @brief Shape functions evaluated at the quadrature points.
      */
-    std::vector<arma::vec> shape_values;
+    std::vector<std::vector<double> > shape_values;
 
     /**
      * @brief Gradients of shape functions evaluated at the quadrature points.
      *
      * Each row of the matrix contains the gradient of one shape function.
      */
-    std::vector<arma::mat> shape_gradients;
+    std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_gradients;
 
-    /**
-     * @brief Shape functions (for vectorial finite elements) evaluated at
-     * quadrature points.
-     */
-    std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_vectors;
-
-    /**
-     * @brief Gradients of shape functions (for vectorial finite elements).
-     */
-    std::vector<std::vector<arma::mat::fixed<spacedim,spacedim> > > shape_grad_vectors;
+//     /**
+//      * @brief Shape functions (for vectorial finite elements) evaluated at
+//      * quadrature points.
+//      */
+//     std::vector<std::vector<arma::vec::fixed<spacedim> > > shape_vectors;
+// 
+//     /**
+//      * @brief Gradients of shape functions (for vectorial finite elements).
+//      */
+//     std::vector<std::vector<arma::mat::fixed<spacedim,spacedim> > > shape_grad_vectors;
 
     /**
      * @brief Divergence of shape functions (for vectorial finite elements).
@@ -187,6 +189,17 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class FEValuesBase : public FEValuesSpaceBase<spacedim>
 {
+private:
+  
+  // internal structure that stores all possible views
+  // for scalar and vector-valued components of the FE
+  struct ViewsCache {
+    vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
+    vector<FEValuesViews::Vector<dim,spacedim> > vectors;
+    
+    void resize(FEValuesBase &fv, unsigned int size);
+  };
+  
 public:
 
     /**
@@ -228,10 +241,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline double shape_value(const unsigned int function_no, const unsigned int point_no)
-    {
-        return data.shape_values[point_no][function_no];
-    }
+    double shape_value(const unsigned int function_no, const unsigned int point_no);
 
 
     /**
@@ -241,11 +251,7 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no)
-    {
-        return trans(data.shape_gradients[point_no].row(function_no));
-
-    }
+    arma::vec::fixed<spacedim> shape_grad(const unsigned int function_no, const unsigned int point_no);
 
     /**
      * @brief Return the value of the @p function_no-th shape function at
@@ -256,10 +262,9 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline arma::vec::fixed<spacedim> shape_vector(const unsigned int function_no, const unsigned int point_no)
-    {
-        return data.shape_vectors[point_no][function_no];
-    }
+    double shape_value_component(const unsigned int function_no, 
+                                        const unsigned int point_no, 
+                                        const unsigned int comp) const;
 
     /**
      * @brief Return the gradient of the @p function_no-th shape function at
@@ -270,10 +275,9 @@ public:
      * @param function_no Number of the shape function.
      * @param point_no Number of the quadrature point.
      */
-    inline arma::mat::fixed<spacedim,spacedim> shape_grad_vector(const unsigned int function_no, const unsigned int point_no)
-    {
-        return data.shape_grad_vectors[point_no][function_no];
-    }
+    arma::vec::fixed<spacedim> shape_grad_component(const unsigned int function_no,
+                                                           const unsigned int point_no,
+                                                           const unsigned int comp) const;
 
     /**
      * @brief Return the divergence of the @p function_no-th shape function at
@@ -299,6 +303,7 @@ public:
      */
     inline double determinant(const unsigned int point_no)
     {
+        ASSERT_LT_DBG(point_no, quadrature->size());
         return data.determinants[point_no];
     }
 
@@ -310,6 +315,7 @@ public:
      */
     inline double JxW(const unsigned int point_no)
     {
+        ASSERT_LT_DBG(point_no, quadrature->size());
         return data.JxW_values[point_no];
     }
 
@@ -320,6 +326,7 @@ public:
      */
     inline arma::vec::fixed<spacedim> point(const unsigned int point_no)
     {
+        ASSERT_LT_DBG(point_no, quadrature->size());
         return data.points[point_no];
     }
 
@@ -340,8 +347,29 @@ public:
      */
 	inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no)
 	{
+        ASSERT_LT_DBG(point_no, quadrature->size());
 	    return data.normal_vectors[point_no];
 	}
+	
+	/**
+     * @brief Accessor to scalar values of multicomponent FE.
+     * @param i Index of scalar component.
+     */
+	const FEValuesViews::Scalar<dim,spacedim> &scalar_view(unsigned int i) const
+	{
+      ASSERT_LT_DBG(i, views_cache_.scalars.size());
+      return views_cache_.scalars[i];
+    }
+    
+    /**
+     * @brief Accessor to vector values of multicomponent FE.
+     * @param i Index of first vector component.
+     */
+    const FEValuesViews::Vector<dim,spacedim> &vector_view(unsigned int i) const
+    {
+      ASSERT_LT_DBG(i, views_cache_.vectors.size());
+      return views_cache_.vectors[i];
+    }
 
     /**
      * @brief Returns the number of quadrature points.
@@ -415,6 +443,12 @@ protected:
      * @brief Data computed by the mapping and finite element.
      */
     FEValuesData<dim,spacedim> data;
+    
+    /// Number of components of the FE.
+    unsigned int n_components_;
+    
+    /// Auxiliary storage of FEValuesViews accessors.
+    ViewsCache views_cache_;
 };
 
 

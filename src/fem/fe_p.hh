@@ -133,6 +133,11 @@ public:
      * values at @p unit_support_points.
      */
     std::vector<arma::vec::fixed<dim> > unit_support_points;
+    
+    
+private:
+  
+    void init();
 
 };
 
@@ -151,41 +156,29 @@ class FE_P : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::order;
 
 public:
     /// Constructor.
     FE_P();
-
+    
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i,
+                       const arma::vec::fixed<dim> &p,
+                       const unsigned int comp = 0) const override;
 
     /**
      * @brief Returns the gradient of the @p ith basis function at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
+                                     const arma::vec::fixed<dim> &p,
+                                     const unsigned int comp = 0) const override;
 
-    /**
-     * @brief The vector variant of basis_value must be implemented but may not be used.
-     */
-    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The vector variant of basis_grad must be implemented but may not be used.
-     */
-    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The divergence of vector must be implemented but may not be used.
-     */
-    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-    
     virtual ~FE_P();
 
 private:
@@ -213,43 +206,31 @@ class FE_P_disc : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::order;
 
     friend class FE_RT0_XFEM<dim,spacedim>;
 public:
 
     /// Constructor.
     FE_P_disc();
-
+    
     /**
      * @brief Returns the @p ith basis function evaluated at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    double basis_value(const unsigned int i,
+                       const arma::vec::fixed<dim> &p,
+                       const unsigned int comp = 0) const override;
 
     /**
      * @brief Returns the gradient of the @p ith basis function at the point @p p.
      * @param i Number of the basis function.
      * @param p Point of evaluation.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
+                                     const arma::vec::fixed<dim> &p,
+                                     const unsigned int comp = 0) const override;
 
-    /**
-     * @brief The vector variant of basis_value must be implemented but may not be used.
-     */
-    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The vector variant of basis_grad must be implemented but may not be used.
-     */
-    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-
-    /**
-     * @brief The divergence of vector must be implemented but may not be used.
-     */
-    double basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const;
-    
     /// Destructor
     virtual ~FE_P_disc();
 
@@ -346,8 +327,9 @@ const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
 FE_P<degree,dim,spacedim>::FE_P()
+  : FiniteElement<dim,spacedim>()
 {
-    this->init();
+//     this->init();
 
     for (unsigned int i=0; i<=dim; i++)
     {
@@ -365,42 +347,29 @@ FE_P<degree,dim,spacedim>::FE_P()
     for (unsigned int i=0; i<dof_distribution.unit_support_points.size(); i++)
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
-    order = degree;
-
+    this->setup_components();
+    
     this->compute_node_matrix();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, 
+                                              const arma::vec::fixed<dim> &p,
+                                              const unsigned int comp) const
 {
-	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_EQ_DBG( 0, comp );
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i,
+                                                            const arma::vec::fixed<dim> &p,
+                                                            const unsigned int comp) const
 {
-	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_EQ_DBG( 0, comp );
     return poly_space.basis_grad(i, p);
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-	ASSERT_DBG(false).error("basis_vector() may not be called for scalar finite element.");
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<dim,dim> FE_P<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-	ASSERT_DBG(false).error("basis_grad_vector() may not be called for scalar finite element.");
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P<degree,dim,spacedim>::basis_div(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    ASSERT_DBG(false).error("basis_div() may not be called for scalar finite element.");
-    return 0.0;
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -434,37 +403,29 @@ FE_P_disc<degree,dim,spacedim>::FE_P_disc()
     for (unsigned int i=0; i<dof_distribution.unit_support_points.size(); i++)
         unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
-    order = degree;
+    this->setup_components();
 
     this->compute_node_matrix();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i,
+                                                   const arma::vec::fixed<dim> &p,
+                                                   const unsigned int comp) const
 {
-	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_EQ_DBG( 0, comp );
     return poly_space.basis_value(i, p);
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i,
+                                                                 const arma::vec::fixed<dim> &p,
+                                                                 const unsigned int comp) const
 {
-	ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_DBG(i <= number_of_dofs).error("Index of basis function is out of range.");
+    ASSERT_EQ_DBG( 0, comp );
     return poly_space.basis_grad(i, p);
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-	ASSERT_DBG(false).error("basis_vector() may not be called for scalar finite element.");
-    return arma::vec::fixed<dim>();
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<dim,dim> FE_P_disc<degree,dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-	ASSERT_DBG(false).error("basis_grad_vector() may not be called for scalar finite element.");
-    return arma::mat::fixed<dim,dim>();
 }
 
 template<unsigned int degree, unsigned int dim, unsigned int spacedim>
@@ -480,74 +441,6 @@ FE_P_disc<degree,dim,spacedim>::~FE_P_disc()
 
 
 
-
-
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS
-
-/****** Template specializations ******/
-
-/*** 1D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,1>::DofDistribution();
-
-// P1 linear element
-template<>
-DofDistribution<1,1>::DofDistribution();
-
-// P2 quadratic element
-template<>
-DofDistribution<2,1>::DofDistribution();
-
-// P3 cubic element
-template<>
-DofDistribution<3,1>::DofDistribution();
-
-
-/*** 2D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,2>::DofDistribution();
-
-
-// P1 linear element
-template<>
-DofDistribution<1,2>::DofDistribution();
-
-// P2 quadratic element
-template<>
-DofDistribution<2,2>::DofDistribution();
-
-// P3 cubic element
-template<>
-DofDistribution<3,2>::DofDistribution();
-
-
-
-/*** 3D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,3>::DofDistribution();
-
-
-// P1 linear element
-template<>
-DofDistribution<1,3>::DofDistribution();
-
-
-// P2 quadratic element
-template<>
-DofDistribution<2,3>::DofDistribution();
-
-// P3 cubic element
-template<>
-DofDistribution<3,3>::DofDistribution();
-
-#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
 
 

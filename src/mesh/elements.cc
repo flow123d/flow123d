@@ -28,6 +28,7 @@
 #include "mesh/boundaries.h"
 //#include "materials.hh"
 #include "mesh/accessors.hh"
+#include "la/distribution.hh"
 
 
 
@@ -218,6 +219,12 @@ BoundingBox &Element::get_bounding_box_fast() const
     return mesh_->element_box_[mesh_->element.index(this)];
 }
 
+
+unsigned int Element::get_proc() const
+{
+  return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
+}
+    
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

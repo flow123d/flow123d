@@ -234,10 +234,13 @@ add_library(fem_lib
     quadrature/quadrature_lib.cc
     quadrature/qxfem_factory.cc
     quadrature/intersection_quadrature.cc
-    fem/fe_p.cc
     fem/dofhandler.cc
-    fem/fe_values.cc
     fem/finite_element.cc
+    fem/fe_p.cc
+    fem/fe_rt.cc
+    fem/fe_system.cc
+    fem/fe_values.cc
+    fem/fe_values_views.cc
     fem/mapping_p1.cc
     fem/singularity.cc
     fem/xfem_element_data.cc

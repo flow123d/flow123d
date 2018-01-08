@@ -27,6 +27,8 @@
 
 
 
+template<unsigned int dim, unsigned int spacedim> class FESystem;
+template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 template<unsigned int dim> class Quadrature;
 
@@ -65,6 +67,15 @@ enum DofMultiplicity {
 
 const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
         DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
+
+
+/// Types of FiniteElement: scalar, vector-valued, tensor-valued or mixed system.
+enum FEType {
+  FEScalar = 0,
+  FEVector = 1,
+  FETensor = 2,
+  FEMixedSystem = 3
+};
 
 /**
  * @brief Structure for storing the precomputed finite element data.
@@ -117,7 +128,25 @@ public:
  * configuration of the entity with respect to the actual cell.
  * For this reason we define the dof multiplicity which allows to
  * group the dofs as described in \ref DofMultiplicity.
- *
+ * 
+ * 
+ * Dof ordering:
+ * 
+ * The dofs and basis functions are ordered as follows:
+ * - all dofs on point 1
+ * - all dofs on point 2
+ * ...
+ * - all dofs on line 1
+ * - all dofs on line 2
+ * ...
+ * - all dofs on triangle 1
+ * - all dofs on triangle 2
+ * ...
+ * - all dofs on tetrahedron
+ * The ordering is important for compatibility with DOFHandler
+ * and FESystem.
+ * 
+ * 
  * Support points:
  *
  * Sometimes it is convenient to describe the function space using
@@ -139,17 +168,22 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class FiniteElement {
 public:
-
+  
     /**
      * @brief Constructor.
      */
     FiniteElement();
-
+    
     /**
      * @brief Clears all internal structures.
      */
-    void init();
-
+    void init(unsigned int n_components = 1, bool primitive = true, FEType type = FEScalar);
+    
+    /**
+     * @brief Initialize vectors with information about components of basis functions.
+     */
+    void setup_components();
+    
     /**
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
@@ -168,61 +202,28 @@ public:
             DofMultiplicity multiplicity);
 
     /**
-     * @brief Calculates the value of the @p i-th raw basis function at the
+     * @brief Calculates the value of the @p comp-th component of
+     * the @p i-th raw basis function at the
      * point @p p on the reference element.
      *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @param i    Number of the basis function.
+     * @param p    Point of evaluation.
+     * @param comp Number of vector component.
      */
     virtual double basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
 
     /**
-     * @brief Variant of basis_value() for vectorial finite elements.
+     * @brief Calculates the @p comp-th component of the gradient
+     * of the @p i-th raw basis function at the point @p p on the
+     * reference element.
      *
-     * Calculates the value @p i-th vector-valued raw basis function
-     * at the point @p p on the reference element.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    virtual arma::vec::fixed<dim> basis_vector(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
-
-    /**
-     * @brief Calculates the gradient of the @p i-th raw basis function at the
-     * point @p p on the reference element.
-     *
-     * The gradient components
-     * are relative to the reference cell coordinate system.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @param i    Number of the basis function.
+     * @param p    Point of evaluation.
+     * @param comp Number of vector component.
      */
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
-
-    /**
-     * @brief Variant of basis_grad() for vectorial finite elements.
-     *
-     * Calculates the gradient of the @p i-th vector-valued raw basis
-     * function at the point @p p on the reference element. The gradient
-     * components are relative to the reference cell coordinate system.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    virtual arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
-    
-    /**
-     * @brief Initializes the @p node_matrix for computing the coefficients
-     * of the raw basis functions from values at support points.
-     *
-     * The method is implemented for the case of Langrangean finite
-     * element. In other cases it may be reimplemented.
-     */
-    virtual void compute_node_matrix();
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
 
     /**
      * @brief Calculates the data on the reference cell.
@@ -253,28 +254,33 @@ public:
             FEValuesData<dim,spacedim> &fv_data);
 
     /**
-     * @brief Returns the maximum degree of
-     * space of polynomials contained in the finite element space.
-     *
-     * For possible use in hp methods.
+     * @brief Indicates whether the basis functions have one or more
+     * nonzero components (scalar FE spaces are always primitive).
      */
-    virtual const unsigned int polynomial_order() const {
-        return order;
+    inline const bool is_primitive() const {
+        return is_primitive_;
     };
 
+    /// Returns numer of components of the basis function.    
+    inline unsigned int n_components() const {
+      return n_components_;
+    }
+    
     /**
-     * @brief Indicates whether the finite element function space is scalar
-     * or vectorial.
+     * @brief Returns the component index for vector valued finite elements.
+     * @param sys_idx Index of shape function.
      */
-    const bool is_scalar() const {
-        return is_scalar_fe;
-    };
-
+    unsigned int system_to_component_index(unsigned sys_idx) const {
+      return component_indices_[sys_idx];
+    }
+    
     /**
-     * @brief Returns either the generalized support points (if they are defined)
-     * or the unit support points.
+     * @brief Returns the mask of nonzero components for given basis function.
+     * @param sys_idx Index of basis function.
      */
-    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
+    const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const {
+      return nonzero_components_[sys_idx];
+    }
 
     /**
      * @brief Returns the node matrix
@@ -287,6 +293,22 @@ public:
     virtual ~FiniteElement();
 
 protected:
+  
+  
+    /**
+     * @brief Returns either the generalized support points (if they are defined)
+     * or the unit support points.
+     */
+    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
+    
+    /**
+     * @brief Initializes the @p node_matrix for computing the coefficients
+     * of the raw basis functions from values at support points.
+     *
+     * The method is implemented for the case of Langrangean finite
+     * element. In other cases it may be reimplemented.
+     */
+    virtual void compute_node_matrix();
 
     /**
      * @brief Total number of degrees of freedom at one finite element.
@@ -314,16 +336,23 @@ protected:
      * @brief Number of sextuples of dofs associated to one triangle.
      */
     unsigned int number_of_sextuples[dim + 1];
+    
+    /// Type of FiniteElement.
+    FEType type_;
 
     /**
-     * @brief Polynomial order - to be possibly used in hp methods.
+     * @brief Primitive FE is using componentwise shape functions,
+     * i.e. only one component is nonzero for each shape function.
      */
-    unsigned int order;
-
-    /**
-     * @brief Indicator of scalar versus vectorial finite element.
-     */
-    bool is_scalar_fe;
+    bool is_primitive_;
+    
+    /// Number of components of shape functions.
+    unsigned int n_components_;
+    
+    /// Indices of nonzero components of shape functions (for primitive FE).
+    std::vector<unsigned int> component_indices_;
+    
+    std::vector<std::vector<bool> > nonzero_components_;
 
     /**
      * @brief Matrix that determines the coefficients of the raw basis
@@ -350,6 +379,10 @@ protected:
      * as @p generalized_support_points.
      */
     std::vector<arma::vec::fixed<dim> > generalized_support_points;
+    
+    
+    friend class FESystem<dim,spacedim>;
+    friend class FEValuesBase<dim,spacedim>;
 };
 
 
