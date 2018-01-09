@@ -44,8 +44,6 @@ class FE_P0_XFEM : public FiniteElementEnriched<dim,spacedim>
 //     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::generalized_support_points;
     using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::order;
-    using FiniteElement<dim,spacedim>::is_scalar_fe;
 //     using FiniteElement<dim,spacedim>::node_matrix;
     
     using FiniteElementEnriched<dim,spacedim>::fe;
@@ -109,8 +107,13 @@ FE_P0_XFEM<dim,spacedim>::FE_P0_XFEM(FE_P_disc<0,dim,spacedim>* fe,
                                      std::vector<EnrichmentPtr> enr)
 : FiniteElementEnriched<dim,spacedim>(fe,enr)
 {
-    order = 0;
-    is_scalar_fe = true;
+    this->init(1, true, FEScalar);
+//     this->component_indices_.clear();
+//     this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
+    
+    // regular + pu * enriched from every singularity
+    number_of_dofs = n_regular_dofs_ + pu.n_dofs() * enr.size();
+    number_of_single_dofs[dim] = number_of_dofs;
 }
 
 
@@ -143,9 +146,9 @@ inline void FE_P0_XFEM<dim,spacedim>::fill_fe_values(
         const Quadrature<dim> &quad,
         FEValuesData<dim,spacedim> &fv_data)
 {
-    ElementFullIter ele = *fv_data.present_cell;
-    typedef typename Space<spacedim>::Point Point;
-    unsigned int j;
+//     ElementFullIter ele = *fv_data.present_cell;
+//     typedef typename Space<spacedim>::Point Point;
+//     unsigned int j;
     
     // can we suppose for this FE and element that:
     //  - jacobian (and its inverse and determinant) is constant on the element
@@ -153,80 +156,80 @@ inline void FE_P0_XFEM<dim,spacedim>::fill_fe_values(
     
 //     DBGCOUT("FE_P0_XFEM fill fe_values\n");
     
-    // shape values
-    if (fv_data.update_flags & update_values)
-    {
-//         DBGMSG("interpolation\n");
-        // for SGFEM
-        // values of enrichment function at generalized_support_points
-        // here: n_regular_dofs = RefElement<dim>::n_nodes = RefElement<dim>::n_sides = generalized_support_points.size()
-        vector<vector<double>> enr_dof_val(enr.size());
-        auto& gen_points = fe->get_generalized_support_points();
-        for (unsigned int w=0; w<enr.size(); w++){
-            enr_dof_val[w].resize(gen_points.size()); // for P0 is equal 1 (barycenter)
-            for (unsigned int i = 0; i < gen_points.size(); i++)
-            {
-                // compute real generalized_support_point
-                Point real_point; real_point.zeros();
-                
-                arma::vec::fixed<dim+1> bp = RefElement<dim>::local_to_bary(gen_points[i]);
-                for (j = 0; j < RefElement<dim>::n_nodes; j++)
-                    real_point += bp[j] * ele->node[j]->point();
-                    
-                enr_dof_val[w][i] = enr[w]->value(real_point);
-//                 cout << "interpolant: [" << i << "]: " << setprecision(15) << enr_dof_val[w][i] << endl;
-            }
-        }
-        
-        vector<double> values(number_of_dofs);
-        
-        for (unsigned int q = 0; q < quad.size(); q++)
-        {
-//             DBGMSG("pu q[%d]\n",q);
-            // compute PU
-            arma::vec pu_values(pu.n_dofs());
-            for (j=0; j < pu.n_dofs(); j++)
-                pu_values[j] = pu.basis_value(j, quad.point(q));
-            pu_values = pu.get_node_matrix() * pu_values;
-            
-//             DBGMSG("pu grad q[%d]\n",q);
-            // compute PU grads
-//             arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
-//             for (j=0; j<RefElement<dim>::n_nodes; j++)
-//                 pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
-//             pu_grads = pu.node_matrix * pu_grads;
-            // real_pu_grad = pu_grads[i] * fv_data.inverse_jacobians[i];
-            
-            
-//             DBGMSG("regular shape vectors q[%d]\n",q);
-            //fill regular shape functions
-            for (j=0; j<n_regular_dofs_; j++)
-                values[j] = fe->basis_value(j,quad.point(q));
-            
-            j = n_regular_dofs_;
-            for (unsigned int w=0; w<enr.size(); w++)
-            {
-//                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
-                //compute interpolant
-                double interpolant = 0.0;
-                for (unsigned int k=0; k < n_regular_dofs_; k++)
-                    interpolant += values[k] * enr_dof_val[w][k];
-                
-//                 quad.real_point(q).print(cout);
-//                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
-                for (unsigned int k=0; k < pu.n_dofs(); k++)
-                {
-                    values[j] +=  pu_values[k] * (enr[w]->value(fv_data.points[q]) - interpolant);
-//                     values[j] =  pu_values[k];
-//                     values[j] =  interpolant;//(enr[w]->value(fv_data.points[q]) - interpolant);
-//                     values[j] =  enr[w]->value(fv_data.points[q]);
-                    j++;
-                }
-            }   
-                
-            fv_data.shape_values[q] = values;
-        }
-    }
+//     // shape values
+//     if (fv_data.update_flags & update_values)
+//     {
+// //         DBGMSG("interpolation\n");
+//         // for SGFEM
+//         // values of enrichment function at generalized_support_points
+//         // here: n_regular_dofs = RefElement<dim>::n_nodes = RefElement<dim>::n_sides = generalized_support_points.size()
+//         vector<vector<double>> enr_dof_val(enr.size());
+//         auto& gen_points = fe->get_generalized_support_points();
+//         for (unsigned int w=0; w<enr.size(); w++){
+//             enr_dof_val[w].resize(gen_points.size()); // for P0 is equal 1 (barycenter)
+//             for (unsigned int i = 0; i < gen_points.size(); i++)
+//             {
+//                 // compute real generalized_support_point
+//                 Point real_point; real_point.zeros();
+//                 
+//                 arma::vec::fixed<dim+1> bp = RefElement<dim>::local_to_bary(gen_points[i]);
+//                 for (j = 0; j < RefElement<dim>::n_nodes; j++)
+//                     real_point += bp[j] * ele->node[j]->point();
+//                     
+//                 enr_dof_val[w][i] = enr[w]->value(real_point);
+// //                 cout << "interpolant: [" << i << "]: " << setprecision(15) << enr_dof_val[w][i] << endl;
+//             }
+//         }
+//         
+//         vector<double> values(number_of_dofs);
+//         
+//         for (unsigned int q = 0; q < quad.size(); q++)
+//         {
+// //             DBGMSG("pu q[%d]\n",q);
+//             // compute PU
+//             arma::vec pu_values(pu.n_dofs());
+//             for (j=0; j < pu.n_dofs(); j++)
+//                 pu_values[j] = pu.basis_value(j, quad.point(q));
+//             pu_values = pu.get_node_matrix() * pu_values;
+//             
+// //             DBGMSG("pu grad q[%d]\n",q);
+//             // compute PU grads
+// //             arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
+// //             for (j=0; j<RefElement<dim>::n_nodes; j++)
+// //                 pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
+// //             pu_grads = pu.node_matrix * pu_grads;
+//             // real_pu_grad = pu_grads[i] * fv_data.inverse_jacobians[i];
+//             
+//             
+// //             DBGMSG("regular shape vectors q[%d]\n",q);
+//             //fill regular shape functions
+//             for (j=0; j<n_regular_dofs_; j++)
+//                 values[j] = fe->basis_value(j,quad.point(q));
+//             
+//             j = n_regular_dofs_;
+//             for (unsigned int w=0; w<enr.size(); w++)
+//             {
+// //                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
+//                 //compute interpolant
+//                 double interpolant = 0.0;
+//                 for (unsigned int k=0; k < n_regular_dofs_; k++)
+//                     interpolant += values[k] * enr_dof_val[w][k];
+//                 
+// //                 quad.real_point(q).print(cout);
+// //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
+//                 for (unsigned int k=0; k < pu.n_dofs(); k++)
+//                 {
+//                     values[j] +=  pu_values[k] * (enr[w]->value(fv_data.points[q]) - interpolant);
+// //                     values[j] =  pu_values[k];
+// //                     values[j] =  interpolant;//(enr[w]->value(fv_data.points[q]) - interpolant);
+// //                     values[j] =  enr[w]->value(fv_data.points[q]);
+//                     j++;
+//                 }
+//             }   
+//                 
+//             fv_data.shape_values[q] = values;
+//         }
+//     }
 
 //     // shape gradients
 //     if (fv_data.update_flags & update_gradients)

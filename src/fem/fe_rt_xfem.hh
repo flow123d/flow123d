@@ -51,8 +51,6 @@ class FE_RT0_XFEM : public FiniteElementEnriched<dim,spacedim>
 //     using FiniteElement<dim,spacedim>::number_of_triples;
 //     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::generalized_support_points;
-    using FiniteElement<dim,spacedim>::order;
-    using FiniteElement<dim,spacedim>::is_scalar_fe;
 //     using FiniteElement<dim,spacedim>::node_matrix;
     
     using FiniteElementEnriched<dim,spacedim>::fe;
@@ -116,8 +114,13 @@ FE_RT0_XFEM<dim,spacedim>::FE_RT0_XFEM(FE_RT0<dim,spacedim>* fe,
                                        std::vector<EnrichmentPtr> enr)
 : FiniteElementEnriched<dim,spacedim>(fe,enr)
 {
-    order = 1;
-    is_scalar_fe = false;
+    this->init(spacedim, false, FEVector);
+    this->component_indices_.clear();
+    this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
+    
+    // regular + pu * enriched from every singularity
+    number_of_dofs = n_regular_dofs_ + pu.n_dofs() * enr.size();
+    number_of_single_dofs[dim] = number_of_dofs;
 }
 
 
@@ -249,147 +252,148 @@ inline void FE_RT0_XFEM<dim,spacedim>::fill_fe_values(
 //     }
     
     
-    // shape values
-    if (fv_data.update_flags & update_values)
-    {
-        vector<arma::vec::fixed<spacedim> > vectors(number_of_dofs);
-        
-//         DBGCOUT(<<"#############################################################");
-//         arma::vec::fixed<spacedim> interpolant_aux;
-//         interpolant_aux.zeros();
-//         for (unsigned int k=0; k < n_regular_dofs_; k++)
-//             interpolant_aux += vectors[k] * enr_dof_val[0][k];
-//         unsigned int counter = 0;
-                
-        for (unsigned int q = 0; q < quad.size(); q++)
-        {
-//             DBGMSG("pu q[%d]\n",q);
-            // compute PU: PU=1
-            
-            
-//             DBGMSG("regular shape vectors q[%d]\n",q);
-            //fill regular shape functions
-            arma::mat::fixed<dim+1,dim> raw_values;
-            arma::mat::fixed<dim+1,dim> shape_values;
-            
-            for (unsigned int j=0; j<n_regular_dofs_; j++)
-                raw_values.row(j) = trans(fe->basis_vector(j, quad.point(q)));
-            
-            shape_values = fe->get_node_matrix() * raw_values;
-            
-            unsigned int j;
-            for (j=0; j<n_regular_dofs_; j++)
-                vectors[j] = fv_data.jacobians[q] * trans(shape_values.row(j)) / fv_data.determinants[q];
-            
-            //fill enriched shape functions
-            j = n_regular_dofs_;
-            for (unsigned int w=0; w<enr.size(); w++)
-            {
-//                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
-                //compute interpolant
-                arma::vec::fixed<spacedim> interpolant;
-                interpolant.zeros();
-                for (unsigned int k=0; k < n_regular_dofs_; k++)
-                    interpolant += vectors[k] * enr_dof_val[w][k];
-                
-//                 DBGVAR(interpolant);
-//                 if(arma::norm(interpolant - interpolant_aux,2) < 1e-10) counter++;
-                
-//                 quad.real_point(q).print(cout);
-//                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
-                for (unsigned int k=0; k < pu.n_dofs(); k++)
-                {
-                    vectors[j] =  enr[w]->vector(fv_data.points[q]) - interpolant;
-//                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]) - interpolant);
-//                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]));
-//                     vectors[j] =  interpolant;//(enr[w]->vector(fv_data.points[q]) - interpolant);
-//                     vectors[j] =  enr[w]->vector(fv_data.points[q]);
-                    j++;
-                }
-            }   
-                
-            fv_data.shape_vectors[q] = vectors;
-        }
-//         DBGVAR(counter);
-    }
-
-    // divergence
-    if (fv_data.update_flags & update_divergence)
-    {
-//         arma::mat::fixed<dim,dim> unit_grad;
-        vector<double> divs(number_of_dofs);
-        
-//         arma::vec pu_values(RefElement<dim>::n_nodes);
-//         arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
-//         arma::mat real_pu_grads(RefElement<dim>::n_nodes, spacedim);
-        
-        arma::mat::fixed<dim,dim> unit_grad;
-        arma::mat::fixed<spacedim,spacedim> real_grad;
-        
-        for (unsigned int q = 0; q < quad.size(); q++)
-        {
-//             DBGMSG("pu q[%d]\n",q);
-            // compute PU
-//             for (unsigned int j=0; j<RefElement<dim>::n_nodes; j++)
-//                     pu_values[j] = pu.basis_value(j, quad.point(q));
-//             pu_values = pu.get_node_matrix() * pu_values;
+//     // shape values
+//     if (fv_data.update_flags & update_values)
+//     {
+//         vector<arma::vec::fixed<spacedim> > vectors(number_of_dofs);
+//         
+// //         DBGCOUT(<<"#############################################################");
+// //         arma::vec::fixed<spacedim> interpolant_aux;
+// //         interpolant_aux.zeros();
+// //         for (unsigned int k=0; k < n_regular_dofs_; k++)
+// //             interpolant_aux += vectors[k] * enr_dof_val[0][k];
+// //         unsigned int counter = 0;
+//                 
+//         for (unsigned int q = 0; q < quad.size(); q++)
+//         {
+// //             DBGMSG("pu q[%d]\n",q);
+//             // compute PU: PU=1
 //             
-// //             DBGMSG("pu grad q[%d]\n",q);
-//             // compute PU grads
-//             for (unsigned int j=0; j<RefElement<dim>::n_nodes; j++)
-//                 pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
-//             pu_grads = pu.node_matrix * pu_grads;
-//             real_pu_grads = pu_grads * fv_data.inverse_jacobians[q];
-            
-            
-//             pu_grads.print(cout,"pu_grads");
-//             real_pu_grads.print(cout,"real_pu_grads");
-            
-            //fill regular shape functions
-            for (unsigned int k=0; k<dim+1; k++)
-            {
-                // grads on ref element
-                unit_grad.zeros();
-                for (unsigned int l=0; l<dim+1; l++)
-                    unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
-                
-                // map grads on real element
-                real_grad = fv_data.jacobians[q] * unit_grad * fv_data.inverse_jacobians[q]/fv_data.determinants[q];
-
-                // compute div as a trace
-                divs[k] = arma::trace(real_grad);
-//                 DBGCOUT(<< "div=" << divs[k] << "\n");
-            }
-            
-            
-            //fill enriched shape functions
-            unsigned int j = n_regular_dofs_;
-            for (unsigned int w=0; w<enr.size(); w++)
-            {
-//                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
-                //compute interpolant
-//                 arma::vec::fixed<spacedim> interpolant; interpolant.zeros();
-                double interpolant_div = 0;
-                for (unsigned int k=0; k < n_regular_dofs_; k++) {
-//                     interpolant += fv_data.shape_vectors[q][k] * enr_dof_val[w][k];
-                    interpolant_div += divs[k] * enr_dof_val[w][k];
-                }
-                
-//                 quad.real_point(q).print(cout);
-//                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
-                for (unsigned int k=0; k < pu.n_dofs(); k++)
-                {
-//                     divs[j] = arma::dot(real_pu_grads.row(k),(enr[w]->vector(fv_data.points[q]) -  interpolant))
-//                             + pu_values[k] * (0 - interpolant_div);
-//                     divs[j] = arma::dot(real_pu_grads.row(k),enr[w]->vector(fv_data.points[q]));
-                    divs[j] = - interpolant_div;
-                    j++;
-                }
-            }
-            
-            fv_data.shape_divergence[q] = divs;
-        }
-    }
+//             
+// //             DBGMSG("regular shape vectors q[%d]\n",q);
+//             //fill regular shape functions
+//             arma::mat::fixed<dim+1,dim> raw_values;
+//             arma::mat::fixed<dim+1,dim> shape_values;
+//             
+//             for (unsigned int j=0; j<n_regular_dofs_; j++)
+//                 for (unsigned int c=0; c<dim; c++)
+//                     raw_values(j,c) = arma::trans(fe->basis_vector(j, quad.point(q), c));
+//             
+//             shape_values = fe->get_node_matrix() * raw_values;
+//             
+//             unsigned int j;
+//             for (j=0; j<n_regular_dofs_; j++)
+//                 vectors[j] = fv_data.jacobians[q] * arma::trans(shape_values.row(j)) / fv_data.determinants[q];
+//             
+//             //fill enriched shape functions
+//             j = n_regular_dofs_;
+//             for (unsigned int w=0; w<enr.size(); w++)
+//             {
+// //                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
+//                 //compute interpolant
+//                 arma::vec::fixed<spacedim> interpolant;
+//                 interpolant.zeros();
+//                 for (unsigned int k=0; k < n_regular_dofs_; k++)
+//                     interpolant += vectors[k] * enr_dof_val[w][k];
+//                 
+// //                 DBGVAR(interpolant);
+// //                 if(arma::norm(interpolant - interpolant_aux,2) < 1e-10) counter++;
+//                 
+// //                 quad.real_point(q).print(cout);
+// //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
+//                 for (unsigned int k=0; k < pu.n_dofs(); k++)
+//                 {
+//                     vectors[j] =  enr[w]->vector(fv_data.points[q]) - interpolant;
+// //                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]) - interpolant);
+// //                     vectors[j] =  pu_values[k] * (enr[w]->vector(fv_data.points[q]));
+// //                     vectors[j] =  interpolant;//(enr[w]->vector(fv_data.points[q]) - interpolant);
+// //                     vectors[j] =  enr[w]->vector(fv_data.points[q]);
+//                     j++;
+//                 }
+//             }   
+//                 
+//             fv_data.shape_vectors[q] = vectors;
+//         }
+// //         DBGVAR(counter);
+//     }
+// 
+//     // divergence
+//     if (fv_data.update_flags & update_divergence)
+//     {
+// //         arma::mat::fixed<dim,dim> unit_grad;
+//         vector<double> divs(number_of_dofs);
+//         
+// //         arma::vec pu_values(RefElement<dim>::n_nodes);
+// //         arma::mat pu_grads(RefElement<dim>::n_nodes, dim);
+// //         arma::mat real_pu_grads(RefElement<dim>::n_nodes, spacedim);
+//         
+//         arma::mat::fixed<dim,dim> unit_grad;
+//         arma::mat::fixed<spacedim,spacedim> real_grad;
+//         
+//         for (unsigned int q = 0; q < quad.size(); q++)
+//         {
+// //             DBGMSG("pu q[%d]\n",q);
+//             // compute PU
+// //             for (unsigned int j=0; j<RefElement<dim>::n_nodes; j++)
+// //                     pu_values[j] = pu.basis_value(j, quad.point(q));
+// //             pu_values = pu.get_node_matrix() * pu_values;
+// //             
+// // //             DBGMSG("pu grad q[%d]\n",q);
+// //             // compute PU grads
+// //             for (unsigned int j=0; j<RefElement<dim>::n_nodes; j++)
+// //                 pu_grads.row(j) = arma::trans(pu.basis_grad(j, quad.point(q)));
+// //             pu_grads = pu.node_matrix * pu_grads;
+// //             real_pu_grads = pu_grads * fv_data.inverse_jacobians[q];
+//             
+//             
+// //             pu_grads.print(cout,"pu_grads");
+// //             real_pu_grads.print(cout,"real_pu_grads");
+//             
+//             //fill regular shape functions
+//             for (unsigned int k=0; k<dim+1; k++)
+//             {
+//                 // grads on ref element
+//                 unit_grad.zeros();
+//                 for (unsigned int l=0; l<dim+1; l++)
+//                     unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
+//                 
+//                 // map grads on real element
+//                 real_grad = fv_data.jacobians[q] * unit_grad * fv_data.inverse_jacobians[q]/fv_data.determinants[q];
+// 
+//                 // compute div as a trace
+//                 divs[k] = arma::trace(real_grad);
+// //                 DBGCOUT(<< "div=" << divs[k] << "\n");
+//             }
+//             
+//             
+//             //fill enriched shape functions
+//             unsigned int j = n_regular_dofs_;
+//             for (unsigned int w=0; w<enr.size(); w++)
+//             {
+// //                 DBGMSG("interpolant w[%d] q[%d]\n",w,q);
+//                 //compute interpolant
+// //                 arma::vec::fixed<spacedim> interpolant; interpolant.zeros();
+//                 double interpolant_div = 0;
+//                 for (unsigned int k=0; k < n_regular_dofs_; k++) {
+// //                     interpolant += fv_data.shape_vectors[q][k] * enr_dof_val[w][k];
+//                     interpolant_div += divs[k] * enr_dof_val[w][k];
+//                 }
+//                 
+// //                 quad.real_point(q).print(cout);
+// //                 DBGMSG("enriched shape value w[%d] q[%d]\n",w,q);
+//                 for (unsigned int k=0; k < pu.n_dofs(); k++)
+//                 {
+// //                     divs[j] = arma::dot(real_pu_grads.row(k),(enr[w]->vector(fv_data.points[q]) -  interpolant))
+// //                             + pu_values[k] * (0 - interpolant_div);
+// //                     divs[j] = arma::dot(real_pu_grads.row(k),enr[w]->vector(fv_data.points[q]));
+//                     divs[j] = - interpolant_div;
+//                     j++;
+//                 }
+//             }
+//             
+//             fv_data.shape_divergence[q] = divs;
+//         }
+//     }
 }
 
 #endif // FE_RT0_XFEM_HH_
