@@ -104,32 +104,26 @@ void FiniteElement<dim,spacedim>::compute_node_matrix()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
+FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q)
 {
     FEInternalData *data = new FEInternalData;
 
-    if (flags & update_values)
+    arma::vec values(number_of_dofs);
+    data->basis_values.resize(q.size());
+    for (unsigned int i=0; i<q.size(); i++)
     {
-        arma::vec values(number_of_dofs);
-        data->basis_values.resize(q.size());
-        for (unsigned int i=0; i<q.size(); i++)
-        {
-            for (unsigned int j=0; j<number_of_dofs; j++)
-                values[j] = basis_value(j, q.point(i));
-            data->basis_values[i] = node_matrix * values;
-        }
+        for (unsigned int j=0; j<number_of_dofs; j++)
+            values[j] = basis_value(j, q.point(i));
+        data->basis_values[i] = node_matrix * values;
     }
 
-    if (flags & update_gradients)
+    arma::mat grads(number_of_dofs, dim);
+    data->basis_grads.resize(q.size());
+    for (unsigned int i=0; i<q.size(); i++)
     {
-        arma::mat grads(number_of_dofs, dim);
-        data->basis_grads.resize(q.size());
-        for (unsigned int i=0; i<q.size(); i++)
-        {
-            for (unsigned int j=0; j<number_of_dofs; j++)
-                grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
-            data->basis_grads[i] = node_matrix * grads;
-        }
+        for (unsigned int j=0; j<number_of_dofs; j++)
+            grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
+        data->basis_grads[i] = node_matrix * grads;
     }
 
     return data;

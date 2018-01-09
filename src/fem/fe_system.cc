@@ -234,76 +234,70 @@ void FESystem<dim,spacedim>::compute_node_matrix()
 
 
 template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FESystem<dim,spacedim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
+FEInternalData *FESystem<dim,spacedim>::initialize(const Quadrature<dim> &q)
 {
   FEInternalData *data = new FEInternalData;
   std::vector<FEInternalData *> fe_data;
   
   // first initialize the base FE
-  if ((flags & update_values) || (flags & update_gradients))
-    for (auto fe : fe_)
-      fe_data.push_back(fe->initialize(q, flags));
+  for (auto fe : fe_)
+    fe_data.push_back(fe->initialize(q));
 
-  if (flags & update_values)
+  // fill values of basis functions
+  data->basis_vectors.resize(q.size(), std::vector<arma::vec>(number_of_dofs, arma::vec(n_components_)));
+  
+  unsigned int comp_offset = 0;
+  unsigned int dof_offset = 0;
+  for (unsigned int f=0; f<fe_.size(); f++)
   {
-    // fill values of basis functions
-    data->basis_vectors.resize(q.size(), std::vector<arma::vec>(number_of_dofs, arma::vec(n_components_)));
-    
-    unsigned int comp_offset = 0;
-    unsigned int dof_offset = 0;
-    for (unsigned int f=0; f<fe_.size(); f++)
+    if (fe_[f]->n_components() == 1)
     {
-      if (fe_[f]->n_components() == 1)
-      {
-        // for scalar base FE copy only one value per point and dof
-        for (unsigned int i=0; i<q.size(); i++)
-          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            data->basis_vectors[i][dof_offset+n][comp_offset] = fe_data[f]->basis_values[i][n];
-      }
-      else
-      {
-        // for vector-valued base FE copy the values to subvector
-        for (unsigned int i=0; i<q.size(); i++)
-          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            data->basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1) = fe_data[f]->basis_vectors[i][n];
-      }
-      comp_offset += fe_[f]->n_components();
-      dof_offset += fe_[f]->n_dofs();
+      // for scalar base FE copy only one value per point and dof
+      for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+          data->basis_vectors[i][dof_offset+n][comp_offset] = fe_data[f]->basis_values[i][n];
     }
+    else
+    {
+      // for vector-valued base FE copy the values to subvector
+      for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+          data->basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1) = fe_data[f]->basis_vectors[i][n];
+    }
+    comp_offset += fe_[f]->n_components();
+    dof_offset += fe_[f]->n_dofs();
   }
 
-  if (flags & update_gradients)
+  // fill gradients of basis functions
+  data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(number_of_dofs, arma::mat(n_components_,dim)));
+  
+  comp_offset = 0;
+  dof_offset = 0;
+  for (unsigned int f=0; f<fe_.size(); f++)
   {
-    // fill gradients of basis functions
-    data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(number_of_dofs, arma::mat(n_components_,dim)));
-    
-    unsigned int comp_offset = 0;
-    unsigned int dof_offset = 0;
-    for (unsigned int f=0; f<fe_.size(); f++)
+    if (fe_[f]->n_components() == 1)
     {
-      if (fe_[f]->n_components() == 1)
-      {
-        // for scalar base FE copy values to one row per point and dof
-        for (unsigned int i=0; i<q.size(); i++)
-          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            data->basis_grad_vectors[i][dof_offset+n].row(comp_offset) = fe_data[f]->basis_grads[i].row(n);
-      }
-      else
-      {
-        // for vector-valued base FE copy the values to submatrix
-        for (unsigned int i=0; i<q.size(); i++)
-          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            data->basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1) = fe_data[f]->basis_grad_vectors[i][n];
-      }
-      comp_offset += fe_[f]->n_components();
-      dof_offset += fe_[f]->n_dofs();
+      // for scalar base FE copy values to one row per point and dof
+      for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+          data->basis_grad_vectors[i][dof_offset+n].row(comp_offset) = fe_data[f]->basis_grads[i].row(n);
     }
+    else
+    {
+      // for vector-valued base FE copy the values to submatrix
+      for (unsigned int i=0; i<q.size(); i++)
+        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
+          data->basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1) = fe_data[f]->basis_grad_vectors[i][n];
+    }
+    comp_offset += fe_[f]->n_components();
+    dof_offset += fe_[f]->n_dofs();
   }
   
   for (auto d : fe_data) delete d;
 
   return data;
 }
+
 
 template<unsigned int dim, unsigned int spacedim> inline
 void FESystem<dim,spacedim>::fill_fe_values(

@@ -3,8 +3,25 @@ common_config:
   memory_limit: 1000
 
 test_cases:
-- files: 10_vtk_bin_output.yaml
-  proc: [ 1 ]
-  check_rules:
-      - ndiff:
-            files: ["mass_balance.txt", "water_balance.txt"]       # higher abs tolerance for energy balance
+# serial tests
+- files:
+    - 31_serial_vtk_node_interp.yaml
+    - 32_serial_vtk_elem_interp.yaml
+    - 33_serial_vtk_corn_interp.yaml
+  proc: [1,2]
+# parallel tests
+- files:
+    - 34_parallel_vtk_node_interp.yaml
+    - 35_parallel_vtk_elem_interp.yaml
+    - 36_parallel_vtk_corn_interp.yaml
+  proc: [2]
+# binary test
+- files:
+    - 37_serial_vtk_binary.yaml
+  proc: [1]
+# do not run these
+- files:
+    - 10_vtk_bin_output.yaml
+    - 13_vtk_nodes_output.yaml
+    - 14_vtk_corners_output.yaml
+  proc: []   

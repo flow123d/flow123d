@@ -19,7 +19,7 @@
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-
+#include "la/distribution.hh"
 #include "fields/field.hh"
 
 
@@ -42,9 +42,6 @@ const IT::Record & OutputMeshBase::get_input_type() {
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
-	nodes_( std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 0) ),
-	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
-	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
 	orig_mesh_(&mesh),
     max_level_(0),
 	mesh_type_(MeshType::orig),
@@ -56,9 +53,6 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 
 OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 : 
-	nodes_( std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 0) ),
-	connectivity_( std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
-	offsets_( std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, 0) ),
     input_record_(in_rec), 
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level")),
@@ -142,6 +136,12 @@ void OutputMeshBase::create_id_caches()
 }
 
 
+bool OutputMeshBase::is_created()
+{
+	return (nodes_ && connectivity_ && offsets_);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -163,9 +163,7 @@ OutputMesh::~OutputMesh()
 
 void OutputMesh::create_mesh()
 {
-	nodes_.reset();
-	connectivity_.reset();
-	offsets_.reset();
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
 	DebugOut() << "Create outputmesh identical to computational one.";
 
@@ -230,6 +228,12 @@ bool OutputMesh::refinement_criterion()
 }
 
 
+void OutputMesh::create_sub_mesh()
+{
+    ASSERT(0).error("Not implemented yet.");
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -251,9 +255,7 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 
 void OutputMeshDiscontinuous::create_mesh()
 {
-	nodes_.reset();
-	connectivity_.reset();
-	offsets_.reset();
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
     ASSERT_DBG(orig_mesh_->n_nodes() > 0);   //continuous data already computed
     
@@ -547,6 +549,61 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
         refine_aux_element<dim>(sub_ele, refinement, ele_acc);
     }
 }
+
+void OutputMeshDiscontinuous::create_sub_mesh()
+{
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+
+	DebugOut() << "Create output submesh containing only local elements.";
+
+	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(orig_mesh_);
+	IdxInt *el_4_loc = orig_mesh_->get_el_4_loc();
+	Distribution *el_ds = orig_mesh_->get_el_ds();
+    const unsigned int n_local_elements = el_ds->lsize();
+
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
+
+    unsigned int ele_id = 0,
+                 offset = 0,    // offset of node indices of element in node vector
+                 coord_id = 0,  // coordinate id in vector
+                 corner_id = 0, // corner index (discontinous node)
+                 li = 0;        // local node index
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		ele = orig_mesh_->element(el_4_loc[loc_el]);
+        // increase offset by number of nodes of the simplicial element
+        offset += ele->dim() + 1;
+        offset_vec[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = el_4_loc[loc_el];
+        ele_id++;
+	}
+
+    // connectivity = for every element list the nodes => its length corresponds to discontinuous data
+    const unsigned int n_corners = offset_vec[offset_vec.size()-1];
+
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_corners);
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, n_corners);
+
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    auto &conn_vec = *( connectivity_->get_component_data(0).get() );
+	Node* node;
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		ele = orig_mesh_->element(el_4_loc[loc_el]);
+        FOR_ELEMENT_NODES(ele, li)
+        {
+            node = ele->node[li];
+            node_vec[coord_id] = node->getX();  ++coord_id;
+            node_vec[coord_id] = node->getY();  ++coord_id;
+            node_vec[coord_id] = node->getZ();  ++coord_id;
+
+            conn_vec[corner_id] = corner_id;
+            corner_id++;
+        }
+	}
+}
+
 
 template void OutputMeshDiscontinuous::refine_aux_element<1>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);
 template void OutputMeshDiscontinuous::refine_aux_element<2>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);

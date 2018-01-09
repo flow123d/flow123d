@@ -84,12 +84,12 @@ public:
     vector< vector<unsigned int> > elem_side_to_global;
 
     Mesh *mesh_;
-    int *el_4_loc;              //< array of idexes of local elements (in ordering matching the optimal global)
-    int *row_4_el;              //< element index to matrix row
-    int *side_id_4_loc;     //< array of ids of local sides
-    int *side_row_4_id;     //< side id to matrix row
-    int *edge_4_loc;        //< array of indexes of local edges
-    int *row_4_edge;        //< edge index to matrix row
+    IdxInt *el_4_loc;              //< array of idexes of local elements (in ordering matching the optimal global)
+    IdxInt *row_4_el;              //< element index to matrix row
+    IdxInt *side_id_4_loc;     //< array of ids of local sides
+    IdxInt *side_row_4_id;     //< side id to matrix row
+    IdxInt *edge_4_loc;        //< array of indexes of local edges
+    IdxInt *row_4_edge;        //< edge index to matrix row
 
     // parallel
     Distribution *edge_ds;          //< optimal distribution of edges

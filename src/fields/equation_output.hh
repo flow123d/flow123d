@@ -93,6 +93,13 @@ private:
 
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;
+
+    /**
+     * Set of interpolations which are used in performed fields.
+     *
+     * Allow determine type of output mesh.
+     */
+    std::set<OutputTime::DiscreteSpace> used_interpolations_;
 };
 
 

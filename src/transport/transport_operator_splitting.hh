@@ -111,10 +111,10 @@ public:
 	virtual const Vec &get_solution(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
-	virtual void get_par_info(int * &el_4_loc, Distribution * &el_ds) = 0;
+	virtual void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds) = 0;
 
 	/// Return global array of order of elements within parallel vector.
-	virtual int *get_row_4_el() = 0;
+	virtual IdxInt *get_row_4_el() = 0;
 
 	/// Pass velocity from flow to transport.
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;

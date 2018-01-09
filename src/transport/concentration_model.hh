@@ -57,7 +57,7 @@ public:
 		/// Transversal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_t;
 		/// Molecular diffusivity (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> diff_m;
+		MultiField<3, FieldValue<3>::TensorFixed> diff_m;
 
 	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
 	    MultiField<3, FieldValue<3>::Scalar > sorption_coefficient;     ///< Coefficient of linear sorption.
@@ -105,7 +105,7 @@ public:
 
 	void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values) override;
+			std::vector<std::vector<double> > &init_values) override;
 
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
@@ -124,13 +124,13 @@ public:
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_conc,
-				std::vector<arma::vec> &sources_density,
-				std::vector<arma::vec> &sources_sigma) override;
+				std::vector<std::vector<double> > &sources_conc,
+				std::vector<std::vector<double> > &sources_density,
+				std::vector<std::vector<double> > &sources_sigma) override;
 
 	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_sigma) override;
+				std::vector<std::vector<double> > &sources_sigma) override;
 
 	~ConcentrationTransportModel() override;
 
@@ -199,7 +199,7 @@ protected:
 	 * @param K         Dispersivity tensor (output).
 	 */
 	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			double Dm,
+			const arma::mat33 &Dm,
 			double alphaL,
 			double alphaT,
 			double water_content,

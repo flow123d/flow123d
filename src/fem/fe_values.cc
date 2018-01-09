@@ -227,7 +227,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
     
     // precompute the maping data and finite element data
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
-    this->fe_data = this->fe->initialize(*this->quadrature, this->data.update_flags);
+    this->fe_data = this->fe->initialize(*this->quadrature);
 }
 
 
@@ -275,7 +275,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     		// transform the side quadrature points to the cell quadrature points
             side_quadrature[sid][pid] = Quadrature<dim>(_sub_quadrature, sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
-    		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid], this->data.update_flags);
+    		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid]);
     	}
     }
 }

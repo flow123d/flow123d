@@ -181,9 +181,9 @@ public:
 	const Vec &get_solution(unsigned int sbi) override
 	{ return vconc[sbi]; }
 
-	void get_par_info(int * &el_4_loc, Distribution * &el_ds) override;
+	void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds) override;
 
-	int *get_row_4_el() override;
+	IdxInt *get_row_4_el() override;
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
@@ -299,8 +299,8 @@ private:
 	std::shared_ptr<OutputTime> output_stream_;
 
 
-	int *row_4_el;
-	int *el_4_loc;
+	IdxInt *row_4_el;
+	IdxInt *el_4_loc;
 	Distribution *el_ds;
 
     /// Transported substances.
