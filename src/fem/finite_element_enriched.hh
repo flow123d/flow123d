@@ -75,7 +75,7 @@ public:
      * @param q Quadrature.
      * @param flags Flags that indicate what quantities should be calculated.
      */
-    FEInternalData *initialize(const Quadrature<dim> &quad, UpdateFlags flags) override;
+    FEInternalData *initialize(const Quadrature<dim> &quad) override;
 };
 
 template <unsigned int dim, unsigned int spacedim>
@@ -117,7 +117,7 @@ arma::vec::fixed<dim> FiniteElementEnriched<dim,spacedim>::basis_grad(const unsi
 }
 
 template <unsigned int dim, unsigned int spacedim>
-FEInternalData *FiniteElementEnriched<dim,spacedim>::initialize(const Quadrature<dim> &quad, UpdateFlags flags)
+FEInternalData *FiniteElementEnriched<dim,spacedim>::initialize(const Quadrature<dim> &quad)
 {
 //     ASSERT_DBG(false).error("No internal data on reference element for XFEM.");
     // return empty internal data since all internal data are element dependent

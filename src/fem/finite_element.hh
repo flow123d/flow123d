@@ -33,7 +33,7 @@ template<unsigned int dim, unsigned int spacedim> class FEValues;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
 template<unsigned int dim> class Quadrature;
-
+template<unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM_S;
 
 
 
@@ -386,6 +386,7 @@ protected:
     friend class FEValuesBase<dim,spacedim>;
     friend class FEValues<dim,spacedim>;
     friend class FESideValues<dim,spacedim>;
+    friend class FE_RT0_XFEM_S<dim,spacedim>;
 };
 
 
