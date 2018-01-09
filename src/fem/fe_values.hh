@@ -113,6 +113,8 @@ public:
 
     /**
      * @brief Divergence of shape functions (for vectorial finite elements).
+     * 
+     * TODO: compute div from grads; (is not trivial in rt xfem)
      */
     std::vector<std::vector<double> > shape_divergence;
     

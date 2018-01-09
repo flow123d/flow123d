@@ -48,8 +48,6 @@ class FE_RT0_XFEM_S : public FiniteElementEnriched<dim,spacedim>
 //     using FiniteElement<dim,spacedim>::number_of_triples;
 //     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::generalized_support_points;
-    using FiniteElement<dim,spacedim>::order;
-    using FiniteElement<dim,spacedim>::is_scalar_fe;
 //     using FiniteElement<dim,spacedim>::node_matrix;
     
     using FiniteElementEnriched<dim,spacedim>::fe;
@@ -128,8 +126,9 @@ FE_RT0_XFEM_S<dim,spacedim>::FE_RT0_XFEM_S(FE_RT0<dim,spacedim>* fe,
                                        std::vector<EnrichmentPtr> enr)
 : FiniteElementEnriched<dim,spacedim>(fe,enr)
 {
-    order = 1;
-    is_scalar_fe = false;
+    this->init(spacedim, false, FEVector);
+    this->component_indices_.clear();
+    this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
     
     // regular + enriched from every singularity
     number_of_dofs = n_regular_dofs_ + enr.size();
@@ -171,7 +170,6 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
     unsigned int j;
 
     vector<arma::vec::fixed<spacedim>> normals;
-//     vector<vector<double>>& enr_dof_val = ele_cache_.enr_dof_val;
     vector<vector<double>> enr_dof_val;
     
     if (fv_data.update_flags & (update_values | update_divergence | update_gradients))
@@ -180,7 +178,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
 //         DBGCOUT("normals\n");
         // compute normals - TODO: this should do mapping, but it does it for fe_side_values..
         for (unsigned int j = 0; j < RefElement<dim>::n_sides; j++){
-            normals[j] = trans(fv_data.inverse_jacobians[0])*RefElement<dim>::normal_vector(j);
+            normals[j] = arma::trans(fv_data.inverse_jacobians[0])*RefElement<dim>::normal_vector(j);
             normals[j] = normals[j]/norm(normals[j],2);
 //             normals[j].print(cout, "internal normal");
         }
@@ -266,12 +264,13 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             arma::mat::fixed<dim+1,dim> shape_values;
             
             for (j=0; j<n_regular_dofs_; j++)
-                raw_values.row(j) = trans(fe->basis_vector(j, quad.point(q)));
+                for (unsigned int c=0; c<dim; c++)
+                    raw_values(j,c) = fe->basis_value(j, quad.point(q), c);
             
             shape_values = fe->get_node_matrix() * raw_values;
             
             for (j=0; j<n_regular_dofs_; j++)
-                vectors[j] = fv_data.jacobians[q] * trans(shape_values.row(j)) / fv_data.determinants[q];
+                vectors[j] = fv_data.jacobians[q] * arma::trans(shape_values.row(j)) / fv_data.determinants[q];
             
             //fill enriched shape functions
             j = n_regular_dofs_;
@@ -287,8 +286,10 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
                 vectors[j] =  enr[w]->vector(fv_data.points[q]) - interpolant;
                 j++;
             }   
-                
-            fv_data.shape_vectors[q] = vectors;
+            
+            for (unsigned int k=0; k<number_of_dofs; k++)
+                for (unsigned int c=0; c<dim; c++)
+                    fv_data.shape_values[q][k*spacedim+c] = vectors[k][c];
         }
     }
 
@@ -306,8 +307,10 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             {
                 // grads on ref element
                 unit_grad.zeros();
+                  
                 for (unsigned int l=0; l<dim+1; l++)
-                    unit_grad += fe->basis_grad_vector(l, quad.point(q)) * fe->get_node_matrix()(k,l);
+                    for (unsigned int c=0; c<dim; c++)
+                        unit_grad.col(c) += fe->basis_grad(l, quad.point(q),c) * fe->get_node_matrix()(k,l);
                 
                 // map grads on real element
                 real_grad = fv_data.jacobians[q] * unit_grad * fv_data.inverse_jacobians[q]/fv_data.determinants[q];

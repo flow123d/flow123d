@@ -58,27 +58,17 @@ public:
     /**
      * @brief The scalar variant of basis_vector must be implemented but may not be used.
      */
-    double basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
+    double basis_value(const unsigned int i,
+                       const arma::vec::fixed<dim> &p,
+                       const unsigned int comp = 0) const override;
 
     /**
      * @brief The scalar variant of basis_grad_vector must be implemented but may not be used.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
+                                     const arma::vec::fixed<dim> &p,
+                                     const unsigned int comp = 0) const override;
 
-    /**
-     * @brief Returns the @p ith basis function evaluated at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::vec::fixed<dim> basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-
-    /**
-     * @brief Returns the gradient of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const override;
-    
     /**
      * @brief Calculates the data on the reference cell.
      *
@@ -111,27 +101,19 @@ const unsigned int FiniteElementEnriched<dim,spacedim>::n_enriched_dofs() const
 {   return number_of_dofs - n_regular_dofs_;}
 
 template <unsigned int dim, unsigned int spacedim>
-double FiniteElementEnriched<dim,spacedim>::basis_value(const unsigned int i, const arma::vec::fixed<dim> &p) const
+double FiniteElementEnriched<dim,spacedim>::basis_value(const unsigned int i,
+                                                        const arma::vec::fixed<dim> &p,
+                                                        const unsigned int comp) const
 {
-    return fe->basis_value(i,p);
+    return fe->basis_value(i,p,comp);
 }
 
 template <unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FiniteElementEnriched<dim,spacedim>::basis_grad(const unsigned int i, const arma::vec::fixed<dim> &p) const
+arma::vec::fixed<dim> FiniteElementEnriched<dim,spacedim>::basis_grad(const unsigned int i,
+                                                                      const arma::vec::fixed<dim> &p,
+                                                                      const unsigned int comp) const
 {
-    return fe->basis_grad(i,p);
-}
-
-template <unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FiniteElementEnriched<dim,spacedim>::basis_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_vector(i,p);
-}
-
-template <unsigned int dim, unsigned int spacedim>
-arma::mat::fixed<dim,dim> FiniteElementEnriched<dim,spacedim>::basis_grad_vector(const unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-    return fe->basis_grad_vector(i,p);
+    return fe->basis_grad(i,p,comp);
 }
 
 template <unsigned int dim, unsigned int spacedim>
