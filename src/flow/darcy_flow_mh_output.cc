@@ -642,7 +642,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
+//     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
     
     int dofs_vel[100];
@@ -662,7 +662,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 
     double pressure_mean = result.dh->element_scalar(ele);
 //     XFEMElementSingularData* xd = nullptr;
-    if(ele_ac.is_enriched())
+//     if(ele_ac.is_enriched())
 //         xd = ele_ac.xfem_data_sing();
        
 //     // 1d:  mean_x_squared = 1/6 (v0^2 + v1^2 + v0*v1)
@@ -675,6 +675,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 //                     * arma::dot( ele->node[i_node]->point(), ele->node[j_node]->point());
 //         }
 
+    auto velocity = fv_rt.vector_view(0);
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
         arma::vec3 q_point = fe_values.point(i_point);
 
@@ -712,7 +713,7 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
         // velocity difference
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ndofs_vel; i_shape++) {
-            flux_in_q_point += dofs_vel_val[ i_shape ] * fv_rt.shape_vector(i_shape, i_point);
+            flux_in_q_point += dofs_vel_val[ i_shape ] * velocity.value(i_shape,i_point);
         }
         flux_in_q_point = flux_in_q_point / cross;
 

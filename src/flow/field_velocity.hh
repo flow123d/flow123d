@@ -81,11 +81,12 @@ public:
         
         fv_rt_ = std::make_shared<FEValues<dim,3>>(map_, quad_, fe_rt_, update_values);
         fv_rt_->reinit(ele);
+        auto velocity = fv_rt_->vector_view(0);
         
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
 //             DBGCOUT(<< "ele " << ele->index() << " flux " << mh_dh_->side_flux( *(ele->side( li ) ) ) 
 //                 << " [" << fv_rt_->shape_vector(li,0)(0) << " " << fv_rt_->shape_vector(li,0)(1) << " " << fv_rt_->shape_vector(li,0)(2) << "]\n");
-            flux += mh_dh_->side_flux( *(ele->side( li ) ) ) * fv_rt_->shape_vector(li,0);
+            flux += mh_dh_->side_flux( *(ele->side( li ) ) ) * velocity.value(li,0);
         }
         
 //         DBGCOUT(<< "ele " << ele->index() << " flux [" << flux(0) << " " << flux(1) << " " << flux(2) << "]\n");
@@ -103,6 +104,7 @@ public:
         
         fv_rt_xfem_ = std::make_shared<FEValues<dim,3>>(map_,quad_, *fe_rt_xfem_, update_values);
         fv_rt_xfem_->reinit(ele);
+        auto velocity = fv_rt_xfem_->vector_view(0);
         
         int dofs[fv_rt_xfem_->n_dofs()];
         int ndofs = ele_ac.get_dofs_vel(dofs);
@@ -112,11 +114,11 @@ public:
     //     for(int i =0; i < ndofs; i++) cout << dofs[i] << " ";
     //     cout << "\n";
         
-        unsigned int li = 0;
+        int li = 0;
         if(!reg_) li = fe_rt_xfem_->n_regular_dofs();  //skip regular part
         for (; li < ndofs; li++) {
             flux += mh_dh_->mh_solution[dofs[li]]
-                        * fv_rt_xfem_->shape_vector(li,0);
+                        * velocity.value(li,0);
         }
         
         return flux;

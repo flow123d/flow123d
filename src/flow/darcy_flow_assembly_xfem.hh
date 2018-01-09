@@ -156,13 +156,14 @@ public:
         
         FEValues<dim,3> fv_xfem(map_,velocity_interpolation_quad_, *fe_rt_xfem_, update_values | update_quadrature_points);
         fv_xfem.reinit(ele);
+        auto velocity = fv_xfem.vector_view(0);
         
         int dofs[200];
         int ndofs_vel = ele_ac.get_dofs_vel(dofs);
         
-        unsigned int li = 0;
+        int li = 0;
         for (; li < ndofs_vel; li++) {
-            flux_in_center += ad_->mh_dh->mh_solution[dofs[li]] * fv_xfem.shape_vector(li,0);
+            flux_in_center += ad_->mh_dh->mh_solution[dofs[li]] * velocity.value(li,0);
         }
         
         return flux_in_center;
@@ -191,7 +192,7 @@ public:
             velocity_interpolation_fv_.reinit(ele);
             for (unsigned int li = 0; li < ele->n_sides(); li++) {
                 flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
-                            * velocity_interpolation_fv_.shape_vector(li,0);
+                            * velocity_interpolation_fv_.vector_view(0).value(li,0);
             }
         }
         
@@ -228,9 +229,13 @@ protected:
                                                         update_inverse_jacobians | update_quadrature_points
                                                         | update_divergence);
         
-        fe_p0_xfem_ = std::make_shared<FE_P0_XFEM<dim,3>>(&fe_p_disc_,xdata->enrichment_func_vec());
+//         fe_p0_xfem_ = std::make_shared<FE_P0_XFEM<dim,3>>(&fe_p_disc_,xdata->enrichment_func_vec());
+//         fe_values_p0_xfem_ = std::make_shared<FEValues<dim,3>>
+//                             (map_, *qxfem_, *fe_p0_xfem_, update_values |
+//                                                         update_JxW_values |
+//                                                         update_quadrature_points);
         fe_values_p0_xfem_ = std::make_shared<FEValues<dim,3>>
-                            (map_, *qxfem_, *fe_p0_xfem_, update_values |
+                            (map_, *qxfem_, fe_p_disc_, update_values |
                                                         update_JxW_values |
                                                         update_quadrature_points);
     }
@@ -472,18 +477,20 @@ protected:
         unsigned int ndofs = loc_vel_dofs.size();
         unsigned int qsize = fe_values.get_quadrature()->size();
 
+        auto velocity = fe_values.vector_view(0);
+        
         for (unsigned int k=0; k<qsize; k++)
             for (unsigned int i=0; i<ndofs; i++){
                 double rhs_val =
-                        arma::dot(gravity_vec,fe_values.shape_vector(i,k))
+                        arma::dot(gravity_vec,velocity.value(i,k))
                         * fe_values.JxW(k);
                 loc_system_.add_value(i, rhs_val);
                 
                 for (unsigned int j=0; j<ndofs; j++){
                     double mat_val = 
-                        arma::dot(fe_values.shape_vector(i,k), //TODO: compute anisotropy before
+                        arma::dot(velocity.value(i,k), //TODO: compute anisotropy before
                                     (ad_->anisotropy.value(ele_ac.centre(), ele_ac.element_accessor() )).i()
-                                        * fe_values.shape_vector(j,k))
+                                        * velocity.value(j,k))
                         * scale * fe_values.JxW(k);
                     
                     loc_system_.add_value(i, j, mat_val);
@@ -639,6 +646,7 @@ protected:
                                 (map_, quad, *fe_rt_xfem_, update_values);
 
                 fv_rt_sing_->reinit(ele);
+                auto velocity = fv_rt_sing_->vector_view(0);
 
                 unsigned int loc_sing_dof = loc_edge_dofs[0] + loc_edge_dofs.size() + w;
     //             DBGVAR(loc_sing_dof);
@@ -661,7 +669,7 @@ protected:
                     // assembly well boundary integral
                     
                     for (int i=0; i < loc_vel_dofs.size(); i++){
-                        val = arma::dot(fv_rt_sing_->shape_vector(i,q),n)
+                        val = arma::dot(velocity.value(i,q),n)
                             * quad.weight(q);
                         
                         loc_system_.add_value(loc_vel_dofs[i], loc_sing_dof, val, 0.0);
@@ -993,15 +1001,16 @@ void AssemblyMHXFEM<2>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
                                                              ele_ac.full_iter(), local_side);
             auto fv_xfem = std::make_shared<FEValues<2,3>>(map_, *qside_xfem, *fe_rt_xfem_, update_values);
             fv_xfem->reinit(ele);
+            auto velocity = fv_xfem->vector_view(0);
             
             double sum_val = 0;
 //             double side_measure = ele->side(local_side)->measure();
             for(unsigned int q=0; q < qside_xfem->size(); q++){
 //                 auto qp = qside_xfem.real_point(q);
 //                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
-//                 auto fv = fv_xfem->shape_vector(j,q);
+//                 auto fv = velocity.value(j,q);
 //                 cout << fv(0) << " " << fv(1) << " " << fv(2) << "\n";
-                double val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(0))
+                double val = arma::dot(velocity.value(j,q),fv_side->normal_vector(0))
                            * qside_xfem->JxW(q);
                       // this makes JxW on the triangle side:
 //                       * qside_xfem->weight(q)
@@ -1037,6 +1046,7 @@ void AssemblyMHXFEM<3>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
                                                             ele_ac.full_iter(), local_side);
         auto fv_xfem = std::make_shared<FEValues<3,3>>(map_, *qside_xfem, *fe_rt_xfem_, update_values);
         fv_xfem->reinit(ele);
+        auto velocity = fv_xfem->vector_view(0);
             
         for(unsigned int j=fe_rt_xfem_->n_regular_dofs(); j<fe_rt_xfem_->n_dofs(); j++){
 //             DBGVAR(j);
@@ -1048,9 +1058,9 @@ void AssemblyMHXFEM<3>::assemble_enriched_side_edge(LocalElementAccessorBase<3> 
             for(unsigned int q=0; q < qside_xfem->size(); q++){
 //                 auto qp = qside_xfem.real_point(q);
 //                 cout << qp(0) << " " << qp(1) << " " << qp(2) << "\n";
-//                 auto fv = fv_xfem->shape_vector(j,q);
+//                 auto fv = velocity.value(j,q);
 //                 cout << fv(0) << " " << fv(1) << " " << fv(2) << "\n";
-                val = arma::dot(fv_xfem->shape_vector(j,q),fv_side->normal_vector(0))
+                val = arma::dot(velocity.value(j,q),fv_side->normal_vector(0))
                     * qside_xfem->JxW(q);   
                     // this makes JxW on the triangle side:
 //                     * qside_xfem->weight(q)
