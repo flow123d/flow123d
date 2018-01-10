@@ -220,8 +220,14 @@ StorageBase * ReaderInternalCsvInclude::read_storage(PathBase &p, const Type::Ar
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Array *array)
 {
-	this->generate_input_error(p, array, "Array type in CSV-included part of IST is forbidden!\n", false);
-    return NULL;
+	int arr_size;
+	if ( (arr_size = p.get_array_size()) != -1 ) {
+		return this->make_array_storage(p, array, arr_size);
+	} else {
+		this->generate_input_error(p, array, "Invalid type in CSV-included part of IST. Expected is Array!\n", false);
+	}
+
+	return NULL;
 }
 
 StorageBase * ReaderInternalCsvInclude::make_sub_storage(PathBase &p, const Type::Selection *selection)
