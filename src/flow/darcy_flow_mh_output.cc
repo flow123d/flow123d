@@ -131,21 +131,26 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
-// 	ele_flux.resize(3*mesh_->n_elements());
-// 	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
-// 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
-    
-//     if(darcy_flow->mh_dh.enrich_velocity){
-        field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, 
-                                                         darcy_flow->mh_dh.enrich_velocity, true);
-        output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);
+//         if(darcy_flow->mh_dh.enrich_velocity)
+// {
+            field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, 
+                                                            darcy_flow->mh_dh.enrich_velocity, true);
+            output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);            
+            
+            field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,
+                                                                    darcy_flow->mh_dh.enrich_velocity, false);
+            output_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
+            
+            field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
+            output_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
+//         }
+//         else{
         
-        field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,
-                                                                  darcy_flow->mh_dh.enrich_velocity, false);
-        output_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
-//     }
-    field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
-    output_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
+        // this is due to raw output and observed points only
+        ele_flux.resize(3*mesh_->n_elements());
+//             auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+//             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+//         }
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
@@ -213,16 +218,16 @@ void DarcyFlowMHOutput::output()
         else
                 make_element_scalar(observed_elements);
 
-//         if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) ){
-//                 make_element_vector(all_element_idx_);
-//         }
-//         else
-//                 make_element_vector(observed_elements);
+        if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) ){
+                make_element_vector(all_element_idx_);
+        }
+        else
+                make_element_vector(observed_elements);
 
         if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
                 make_node_scalar_param(all_element_idx_);
-        //else
-        //        make_node_scalar_param(observed_elements);
+//         else
+//                make_node_scalar_param(observed_elements);
 
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
@@ -279,21 +284,11 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
         multidim_assembler =  AssemblyBase::create< AssemblyMHXFEM >(darcy_flow->data_);
     else
         multidim_assembler =  AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
-        
-//     // create proper assembler
-//     AssemblerBase* multidim_assembler;
-// //     if(use_xfem)
-//     if(darcy_flow->use_xfem && darcy_flow->mh_dh.enrich_velocity)
-//         multidim_assembler = new AssemblerMHXFEM(darcy_flow->data_);
-//     else 
-//         multidim_assembler = new AssemblerMH(darcy_flow->data_);
     
-//     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
 
-//         flux_in_center = multidim_assembler->make_element_vector(ele);
         unsigned int dim = ele->dim();
         flux_in_center = multidim_assembler[dim-1]->make_element_vector(ele);
 
@@ -469,7 +464,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    ;
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
         raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
