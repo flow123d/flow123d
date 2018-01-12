@@ -251,14 +251,15 @@ public:
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
         
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>(*my_mesh);
-        this->output_mesh_->create_mesh();
+        auto output_mesh = std::make_shared<OutputMesh>(*my_mesh);
+        output_mesh->create_mesh();
+        this->set_output_data_caches(output_mesh);
         
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
         //this->output_mesh_discont_->create_mesh();
         
 		{
-        	field.compute_field_data(ELEM_DATA, shared_from_this());
+        	field.compute_field_data(ELEM_DATA, shared_from_this(), output_mesh);
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values());
@@ -270,7 +271,7 @@ public:
 		}
 
 		{
-			field.compute_field_data(NODE_DATA, shared_from_this());
+			field.compute_field_data(NODE_DATA, shared_from_this(), output_mesh);
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values());
@@ -282,7 +283,7 @@ public:
 		}
 
 		{
-			field.compute_field_data(CORNER_DATA, shared_from_this());
+			field.compute_field_data(CORNER_DATA, shared_from_this(), output_mesh);
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values());
@@ -301,11 +302,11 @@ public:
 
 		/*
 
-		compute_field_data(NODE_DATA, field);
+		compute_field_data(NODE_DATA, field, output_mesh);
 		EXPECT_EQ(1, node_data.size());
 		check_node_data( node_data[0], result);
 
-		compute_field_data(CORNER_DATA, field);
+		compute_field_data(CORNER_DATA, field, output_mesh);
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */
