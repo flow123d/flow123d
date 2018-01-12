@@ -215,10 +215,10 @@ void EquationOutput::make_output_mesh(bool parallel)
     if (stream_->is_output_data_caches_init()) return;
 
     // Read optional error control field name
-    auto it = stream_->get_output_mesh_record();
+    bool discont = stream_->get_output_mesh_record();
 
     if(stream_->enable_refinement()) {
-        if(it) {
+        if(discont) {
             // create output meshes from input record
         	output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_, *stream_->get_output_mesh_record());
 
@@ -235,13 +235,14 @@ void EquationOutput::make_output_mesh(bool parallel)
     else
     {
         // skip creation of output mesh (use computational one)
-        if(it)
+        if(discont)
         	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
     }
 
     // create output mesh identical with the computational one
-	bool discont = (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
-	if (discont || it || parallel) {
+	discont |= (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
+	discont |= parallel;
+	if (discont) {
 		output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
 	} else {
 		output_mesh_ = std::make_shared<OutputMesh>(*mesh_);
