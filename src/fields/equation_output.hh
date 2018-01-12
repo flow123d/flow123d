@@ -106,6 +106,10 @@ private:
      * Cached pointer at computational mesh.
      */
     Mesh *mesh_;
+
+    /// Output mesh.
+    std::shared_ptr<OutputMeshBase> output_mesh_;
+
 };
 
 

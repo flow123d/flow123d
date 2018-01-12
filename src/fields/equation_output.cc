@@ -189,7 +189,7 @@ void EquationOutput::output(TimeStep step)
 
         if ( field->flags().match( FieldFlag::allow_output) ) {
             if (is_field_output_time(*field, step)) {
-                field->field_output(stream_);
+                field->field_output(stream_, output_mesh_);
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
@@ -212,7 +212,7 @@ void EquationOutput::add_output_times(double begin, double step, double end)
 void EquationOutput::make_output_mesh(bool parallel)
 {
     // already computed
-    if (stream_->is_output_mesh_init()) return;
+    if (stream_->is_output_data_caches_init()) return;
 
     // Read optional error control field name
     auto it = stream_->get_output_mesh_record();
@@ -220,15 +220,15 @@ void EquationOutput::make_output_mesh(bool parallel)
     if(stream_->enable_refinement()) {
         if(it) {
             // create output meshes from input record
-            auto output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh_, *stream_->get_output_mesh_record());
+        	output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_, *stream_->get_output_mesh_record());
 
             // possibly set error control field for refinement
             auto ecf = select_error_control_field();
-            output_mesh->set_error_control_field(ecf);
+            output_mesh_->set_error_control_field(ecf);
             
             // actually compute refined mesh
-            output_mesh->create_refined_mesh();
-            stream_->set_output_mesh_ptr(output_mesh);
+            output_mesh_->create_refined_mesh();
+            stream_->set_output_data_caches(output_mesh_);
             return;
         }
     }
@@ -240,16 +240,15 @@ void EquationOutput::make_output_mesh(bool parallel)
     }
 
     // create output mesh identical with the computational one
-	std::shared_ptr<OutputMeshBase> output_mesh;
 	bool discont = (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
 	if (discont || it || parallel) {
-		output_mesh = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
+		output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
 	} else {
-		output_mesh = std::make_shared<OutputMesh>(*mesh_);
+		output_mesh_ = std::make_shared<OutputMesh>(*mesh_);
 	}
-	if (parallel) output_mesh->create_sub_mesh();
-	else output_mesh->create_mesh();
-	stream_->set_output_mesh_ptr(output_mesh);
+	if (parallel) output_mesh_->create_sub_mesh();
+	else output_mesh_->create_mesh();
+	stream_->set_output_data_caches(output_mesh_);
 }
 
 

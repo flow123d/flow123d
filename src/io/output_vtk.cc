@@ -107,7 +107,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, const Input::R
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PTR(output_mesh_).error();
+    ASSERT_PTR(this->nodes_).error();
 
     /* Output of serial format is implemented only in the first process */
     if ( (this->rank != 0) && (!parallel_) ) {
@@ -218,7 +218,7 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
 {    
-    auto &offsets = *( output_mesh_->offsets_->get_component_data(0).get() );
+    auto &offsets = *( this->offsets_->get_component_data(0).get() );
     unsigned int n_elements = offsets.size();
     
     auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
@@ -520,18 +520,18 @@ void OutputVTK::write_vtk_vtu(void)
     this->write_vtk_vtu_head();
 
     /* Write Piece begin */
-    file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes()
-              << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
+    file << "<Piece NumberOfPoints=\"" << this->nodes_->n_values()
+              << "\" NumberOfCells=\"" << this->offsets_->n_values() <<"\">" << endl;
 
     /* Write VTK Geometry */
     file << "<Points>" << endl;
-        write_vtk_data(output_mesh_->nodes_);
+        write_vtk_data(this->nodes_);
     file << "</Points>" << endl;
 
     /* Write VTK Topology */
     file << "<Cells>" << endl;
-        write_vtk_data(output_mesh_->connectivity_);
-        write_vtk_data(output_mesh_->offsets_);
+        write_vtk_data(this->connectivity_);
+        write_vtk_data(this->offsets_);
         auto types = fill_element_types_data();
        	write_vtk_data( types );
     file << "</Cells>" << endl;

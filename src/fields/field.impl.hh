@@ -331,14 +331,14 @@ void Field<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
+void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream, std::shared_ptr<OutputMeshBase> output_mesh)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
 		const OutputTime::DiscreteSpace type = this->get_output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-		this->compute_field_data( type, stream);
+		this->compute_field_data( type, stream, output_mesh);
 	}
 }
 
@@ -578,10 +578,9 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
+void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream,
+			std::shared_ptr<OutputMeshBase> output_mesh) {
 	typedef typename Value::element_type ElemType;
-
-    std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
 
     if ( !output_mesh ) {
         // Output mesh is not constructed for serial output and rank > 0

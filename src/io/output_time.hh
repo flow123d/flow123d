@@ -143,10 +143,10 @@ public:
     void clear_data(void);
 
     /**
-     * Return if shared pointer to output_mesh_ is created.
+     * Return if shared pointer to output data caches are created.
      */
-    inline bool is_output_mesh_init() {
-    	return (bool)(output_mesh_);
+    inline bool is_output_data_caches_init() {
+    	return (bool)(nodes_);
     }
 
     /// Return auxiliary flag enable_refinement_.
@@ -155,14 +155,9 @@ public:
     }
 
     /**
-     * Set shared pointer of \p output_mesh_.
+     * Set shared pointers of output data caches.
      */
-    void set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr);
-
-    /**
-     * Get shared pointer of \p output_mesh_.
-     */
-    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
+    virtual void set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr);
 
     /**
      * Update the last time is actual \p time is less than \p field_time
@@ -272,9 +267,6 @@ protected:
      */
     std::string equation_name_;
 
-    /// Output mesh.
-    std::shared_ptr<OutputMeshBase> output_mesh_;
-    
     std::shared_ptr<Observe> observe_;
 
     /// Auxiliary flag for refinement enabling, due to gmsh format.
@@ -282,6 +274,14 @@ protected:
 
     /// Parallel or serial version of file format (parallel has effect only for VTK)
     bool parallel_;
+
+    /// Vector of node coordinates. [spacedim x n_nodes]
+    std::shared_ptr<ElementDataCache<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+
 };
 
 

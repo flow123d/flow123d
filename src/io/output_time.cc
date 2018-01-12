@@ -116,13 +116,10 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-void OutputTime::set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-	output_mesh_ = mesh_ptr;
-}
-
-
-std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr() {
-	return output_mesh_;
+void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	this->nodes_ = mesh_ptr->nodes_;
+	this->connectivity_ = mesh_ptr->connectivity_;
+	this->offsets_ = mesh_ptr->offsets_;
 }
 
 
@@ -199,8 +196,10 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // invalidate output mesh after the time frame written
-            output_mesh_.reset();
+            // invalidate output data caches after the time frame written
+			this->nodes_.reset();
+			this->connectivity_.reset();
+			this->offsets_.reset();
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}

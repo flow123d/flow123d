@@ -97,33 +97,27 @@ unsigned int OutputMeshBase::n_nodes()
     return nodes_->n_values();
 }
 
-std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_node_ids_cache()
-{
-	if (!node_ids_) {
-		create_id_caches();
-	}
-	return node_ids_;
-}
-
-std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_element_ids_cache()
-{
-	if (!elem_ids_) {
-		create_id_caches();
-	}
-	return elem_ids_;
-}
-
 void OutputMeshBase::create_id_caches()
 {
 	unsigned int elm_idx[1];
 	unsigned int node_idx[1];
+	unsigned int region_idx[1];
+	int partition[1];
 	elem_ids_ = std::make_shared< ElementDataCache<unsigned int> >("elements_ids", (unsigned int)1, 1, this->n_elements());
 	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
+	region_ids_ = std::make_shared< ElementDataCache<unsigned int> >("region_ids", (unsigned int)1, 1, this->n_elements());
+	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, 1, this->n_elements());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
 		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element(it->idx()).id();
 		else elm_idx[0] = it->idx();
 		elem_ids_->store_value( i, elm_idx );
+
+		region_idx[0] = orig_mesh_->element(it->idx())->region().id();
+		region_ids_->store_value( i, region_idx );
+
+		partition[0] = orig_mesh_->element(it->idx())->pid;
+		partitions_->store_value( i, partition );
 
 		std::vector< unsigned int > node_list = it->node_list();
 		for (unsigned int j = 0; j < it->n_nodes(); ++j) {

@@ -110,10 +110,8 @@ public:
     /// Check if nodes_, connectivity_ and offsets_ data caches are created
     bool is_created();
 
-    /// Return data cache of node ids. If doesn't exist create its.
-    std::shared_ptr<ElementDataCache<unsigned int>> get_node_ids_cache();
-    /// Return data cache of element ids. If doesn't exist create its.
-	std::shared_ptr<ElementDataCache<unsigned int>> get_element_ids_cache();
+	/// Create nodes and elements data caches
+	void create_id_caches();
 
 protected:
 	/**
@@ -125,10 +123,6 @@ protected:
 		refined,  //!< refined mesh
 		discont   //!< discontinuous mesh
 	};
-
-
-	/// Create node_ids_ and elem_ids_ data caches
-	void create_id_caches();
 
 
 	/// Input record for output mesh.
@@ -161,9 +155,14 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
     /// Vector gets ids of elements. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> elem_ids_;
+    /// Vector gets ids of regions. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> region_ids_;
+    /// Vector gets partitions of elements. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<int>> partitions_;
 
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
+    friend class OutputTime;
     friend class OutputMSH;
     friend class OutputVTK;
 };
