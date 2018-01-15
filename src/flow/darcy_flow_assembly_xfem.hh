@@ -677,12 +677,90 @@ protected:
                     }
                 }
                 
-                loc_system_.add_value(loc_sing_dof, loc_sing_dof,
-                                    - effective_surface * sing->sigma(),
-                                    - effective_surface * sing->sigma() * sing->pressure());
+//                 loc_system_.add_value(loc_sing_dof, loc_sing_dof,
+//                                     - effective_surface * sing->sigma(),
+//                                     - effective_surface * sing->sigma() * sing->pressure());
+                
+                // Bw integral p1-lambda_w            
+                double sing_lagrange_val = 1;
+//                 if(quad.size() == sing->q_points().size()) val = sing->circumference() * sing->sigma();
+//                 else{
+//                     val = 0;
+//                     for(unsigned int q=0; q < quad.size();q++)
+//                         val += quad.weight(q);
+//                     val = sing_lagrange_val * sing->sigma() * val;
+//                 }
+                val = sing_lagrange_val * sing->sigma() * effective_surface;
+                
+                DBGVAR(val);
+                int sing_row = ele_ac.sing_row(w);
+                int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+                DBGVAR(sing_row);
+                DBGVAR(ele1d_row);
+                ad_->lin_sys->mat_set_value(sing_row, ele1d_row, val);
+                ad_->lin_sys->mat_set_value(ele1d_row, sing_row, val);
+                ad_->lin_sys->mat_set_value(sing_row, sing_row, -val);
+                ad_->lin_sys->mat_set_value(ele1d_row, ele1d_row, -val);
             }
         }
     }
+    
+//     void assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
+//         XFEMElementSingularData<dim> * xd = ele_ac.xfem_data_sing<dim>();
+//         ElementFullIter ele = ele_ac.full_iter();
+//         
+//         //as long as pressure is not enriched and is P0
+//         ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
+// 
+//         double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+//         double val;
+//         
+//         for(unsigned int w=0; w < xd->n_enrichments(); w++){
+//             if(xd->enrichment_intersects(w)){
+//                 auto sing = static_pointer_cast<Singularity<dim-2>>(xd->enrichment_func(w));
+// 
+//                 auto quad = xd->sing_quadrature(w);
+//                 fv_rt_sing_ = std::make_shared<FEValues<dim,3>>
+//                                 (map_, quad, *fe_rt_xfem_, update_values);
+// 
+//                 fv_rt_sing_->reinit(ele);
+//                 auto velocity = fv_rt_sing_->vector_view(0);
+// 
+//                 unsigned int loc_sing_dof = loc_edge_dofs[0] + loc_edge_dofs.size() + w;
+//     //             DBGVAR(loc_sing_dof);
+//                 
+//                 // robin like condition with sigma
+//                 // well lagrange multiplier test function is 1
+//                 
+//                 // local part of the effective_surface in the element
+//                 double effective_surface = 0;
+//                 for(unsigned int q=0; q < quad.size();q++)
+//                     effective_surface += quad.weight(q);
+//                 
+//                 effective_surface = cs * effective_surface;
+//                 
+//                 for(unsigned int q=0; q < quad.size();q++){
+//                     // outer normal is opposite to distance vector
+//                     arma::vec n = - sing->geometry().dist_vector(quad.real_point(q));
+//                     n = n / arma::norm(n,2);
+//                     
+//                     // assembly well boundary integral
+//                     
+//                     for (int i=0; i < loc_vel_dofs.size(); i++){
+//                         val = arma::dot(velocity.value(i,q),n)
+//                             * quad.weight(q);
+//                         
+//                         loc_system_.add_value(loc_vel_dofs[i], loc_sing_dof, val, 0.0);
+//                         loc_system_.add_value(loc_sing_dof, loc_vel_dofs[i], val, 0.0);
+//                     }
+//                 }
+//                 
+//                 loc_system_.add_value(loc_sing_dof, loc_sing_dof,
+//                                     - effective_surface * sing->sigma(),
+//                                     - effective_surface * sing->sigma() * sing->pressure());
+//             }
+//         }
+//     }
     
     // assembly volume integrals
     FE_RT0<dim,3> fe_rt_;

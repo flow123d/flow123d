@@ -896,6 +896,25 @@ void DarcyMH::allocate_mh_matrix()
 //             }
 //         }
         
+        if(ele_ac.is_enriched()){
+//             const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
+            XFEMElementDataBase* xd = ele_ac.xfem_data_pointer();
+            {
+                //FIXME: enable more wells inside 2d ele
+                int w_row;
+                for(int w=0; w < xd->n_enrichments(); w++){
+                    if(xd->enrichment_intersects(w)){
+                        w_row = ele_ac.sing_row(w);
+                    }
+                }
+                // singularity edge integrals for p1d
+                int ele1d_row = mh_dh.row_4_el[xd->intersection_ele_global_idx()];
+                ls->mat_set_value(w_row, w_row, 0.0);
+                ls->mat_set_value(w_row, ele1d_row, 0.0);
+                ls->mat_set_value(ele1d_row, w_row, 0.0);
+                ls->mat_set_value(ele1d_row, ele1d_row, 0.0);
+            }
+        }
         
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
