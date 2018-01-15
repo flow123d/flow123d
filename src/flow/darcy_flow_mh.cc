@@ -783,7 +783,7 @@ void DarcyMH::allocate_mh_matrix()
         ASSERT_DBG(loc_size < loc_size_max);
         
         nsides = ele_ac.n_sides();
-//         ele_row = ele_ac.ele_row();
+        int ele_row = ele_ac.ele_row();
         edge_rows = ele_ac.edge_rows();
 //         uint ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
 //         uint ndofs_press = ele_ac.get_dofs_press(dofs_press);
@@ -905,9 +905,18 @@ void DarcyMH::allocate_mh_matrix()
             Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
             tmp_rows.push_back(neigh_edge_row);
+//             if(ele_ac.dim() == 1)
+//             {
+//                 DebugOut() << "ele_id:  " << ele_ac.ele_row() << "  neigh:  " << neigh_edge_row << "\n";
+// //                 DBGVAR(neigh_edge_row);
+//             }
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
 
+        
+        ls->mat_set_values(1, &ele_row, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
+        ls->mat_set_values(n_neighs, tmp_rows.data(), 1, &ele_row, zeros); // (neigh edges) x (edges, ele)
+        
         // allocate always also for schur 2
         ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
         ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
