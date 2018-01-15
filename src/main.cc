@@ -198,6 +198,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     passed_argc_ = arg_i;
     */
 
+    // possibly turn off profilling
+    if (vm.count("no_profiler")) use_profiler=false;
+
     // if there is "help" option
     if (vm.count("help")) {
         display_version();
@@ -255,9 +258,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
 
     if (input_filename == "")
         THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
-
-    // possibly turn off profilling
-    if (vm.count("no_profiler")) use_profiler=false;
 
     // preserves output of balance in YAML format
     if (vm.count("yaml_balance")) yaml_balance_output_=true;

@@ -681,13 +681,19 @@ void Profiler::output(MPI_Comm comm, ostream &os) {
     // create profiler output only once (on the first processor)
     // only active communicator should be the one with mpi_rank 0
     if (mpi_rank == 0) {
-        /**
-         * Flag to property_tree::write_json method
-         * resulting in json human readable format (indents, newlines)
-         */
-        const int FLOW123D_JSON_HUMAN_READABLE = 1;
-        // write result to stream
-        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    	try {
+            /**
+             * Flag to property_tree::write_json method
+             * resulting in json human readable format (indents, newlines)
+             */
+            const int FLOW123D_JSON_HUMAN_READABLE = 1;
+            // write result to stream
+            property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    	} catch (property_tree::json_parser::json_parser_error & e) {
+    		stringstream ss;
+    		ss << "Throw json_parser_error: " << e.message() << "\nIn file: " << e.filename() << ", at line " << e.line() << "\n";
+    		THROW( ExcMessage() << EI_Message(ss.str()) );
+    	}
     }
     // restore memory monitoring
     set_memory_monitoring(temp_memory_monitoring, petsc_monitor_memory);
@@ -760,13 +766,19 @@ void Profiler::output(ostream &os) {
     root.add_child ("children", children);
 
 
-    /**
-     * Flag to property_tree::write_json method
-     * resulting in json human readable format (indents, newlines)
-     */
-    const int FLOW123D_JSON_HUMAN_READABLE = 1;
-    // write result to stream
-    property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    try {
+        /**
+         * Flag to property_tree::write_json method
+         * resulting in json human readable format (indents, newlines)
+         */
+        const int FLOW123D_JSON_HUMAN_READABLE = 1;
+        // write result to stream
+        property_tree::write_json (os, root, FLOW123D_JSON_HUMAN_READABLE);
+    } catch (property_tree::json_parser::json_parser_error & e) {
+		stringstream ss;
+		ss << "Throw json_parser_error: " << e.message() << "\nIn file: " << e.filename() << ", at line " << e.line() << "\n";
+		THROW( ExcMessage() << EI_Message(ss.str()) );
+    }
 }
 
 
