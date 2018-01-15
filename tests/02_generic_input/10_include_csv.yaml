@@ -69,14 +69,34 @@ problem: !Coupling_Sequential
 #                  t: $0
 #                  value: [$2, $3]
         - region: .BOUNDARY
-          bc_conc: 0
+          bc_conc: 
+              -  !FieldTimeFunction
+                time_function: 
+                  values: !include_csv
+                    file: ./includes/field_data.csv
+                    separator: " "
+                    n_head_lines: 1
+                    format:
+                      t: $0
+                      value: $2
+
+              -  !FieldTimeFunction
+                time_function: 
+                  values: !include_csv
+                    file: ./includes/field_data.csv
+                    separator: " "
+                    n_head_lines: 1
+                    format:
+                      t: $0
+                      value: $3
+                  
       output:
         fields:
           - porosity
-#          - conc
+          - conc
     substances:
       - A
-      #- B
+      - B
     time:
       # test forcing smaller time step then output,
       # but still larger then 0.01 necessary for capture input
