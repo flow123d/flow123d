@@ -1,0 +1,127 @@
+##---
+##title: Flow123d tutorial 50 -- ``5 Wells intersecting 2D aquifer''
+##---
+##
+###Description
+##Similar setting as the tutorial 51 with different BC and analytic solution provided.
+##
+##This example should show the convergence, but is not working properly at the moment.
+##Convergence on these meshes:
+##single_aquifer_12d_1.msh
+##single_aquifer_12d_2.msh
+##single_aquifer_12d_3.msh
+##single_aquifer_12d_4.msh
+##
+##
+## 
+##
+##
+##
+##
+flow123d_version: 2.0.0_rc
+problem: !Coupling_Sequential
+  description: Test15 - Steady flow with xfem singular connection 1D-2D
+  mesh:
+    mesh_file: ./input/aquifers/single_aquifer_12d_1.msh
+    
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+      compute_errors: true
+      python_solution: 51_analytical_module_5w.py
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 0
+    use_xfem:
+      use_xfem: true
+      enrich_velocity: true
+      enrich_pressure: false
+      single: true
+      enr_radius: 0.8
+      dim: 2
+    input_fields:
+      - region: aquifer
+        anisotropy: 0.001
+        water_source_density: !FieldFormula
+          value: 1e-3 * 80.0 * 1*1 * sin(1*x)
+        
+      - region: .aquifer
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 18.49564648342761 * log(((x-2.8)^2+(y-2.5)^2)^0.5)   -24.33605607371134  * log(((x-4.9)^2+(y-5.4)^2)^0.5)   -37.19135529303921 * log(((x-2.9)^2+(y-7.4)^2)^0.5)   +8.29534878593690 * log(((x-7.3)^2+(y-7.8)^2)^0.5)    -24.77310348746337 * log(((x-7.4)^2+(y-2.8)^2)^0.5)  + 80.0*sin(1*x)
+
+      - region: well_1
+        anisotropy: 1e7
+        sigma: 200
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_2
+        anisotropy: 1e7
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_3
+        anisotropy: 1e7
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_4
+        anisotropy: 1e7
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_5
+        anisotropy: 1e7
+        sigma: 200
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+
+      - region: .well_1_top
+        bc_type: dirichlet
+        bc_pressure: -150
+      - region: .well_2_top
+        bc_type: dirichlet
+        bc_pressure: -30
+      - region: .well_3_top
+        bc_type: dirichlet
+        bc_pressure: 120
+      - region: .well_4_top
+        bc_type: dirichlet
+        bc_pressure: -50
+      - region: .well_5_top
+        bc_type: dirichlet
+        bc_pressure: 100
+    
+      - region: .well_1_bot
+        bc_type: dirichlet
+        bc_pressure: 100
+      - region: .well_2_bot
+        bc_type: dirichlet
+        bc_pressure: -150
+      - region: .well_3_bot
+        bc_type: dirichlet
+        bc_pressure: 200
+      - region: .well_4_bot
+        bc_type: dirichlet
+        bc_pressure: 50
+      - region: .well_5_bot
+        bc_type: dirichlet
+        bc_pressure: -50
+
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - velocity_enr
+        - velocity_reg
+        - velocity_diff
+        - velocity_exact
+        - pressure_diff
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      output_mesh:
+        max_level: 3
