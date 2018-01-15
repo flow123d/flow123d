@@ -49,6 +49,7 @@ problem: !Coupling_Sequential
     transport: !Solute_Advection_FV
       input_fields:
         - region: ALL
+          init_conc: 0
           porosity: !FieldTimeFunction
             time_function: 
               values: !include_csv
@@ -59,15 +60,6 @@ problem: !Coupling_Sequential
                   t: $0
                   value: $1
 ### We need support of CSV include in transposed part of IST if we can use !include_csv tag for MultiFields 
-#          init_conc: !FieldTimeFunction
-#            time_function:
-#              values: !include_csv
-#                file: ./includes/field_data.csv
-#                separator: " "
-#                n_head_lines: 1
-#                format:
-#                  t: $0
-#                  value: [$2, $3]
         - region: .BOUNDARY
           bc_conc: 
               -  !FieldTimeFunction
