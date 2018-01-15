@@ -185,7 +185,12 @@ def all_values_2d( xx, yy, zz ):
     vx2=Parameters.vx2_fce_value(params,tx,ty) * Parameters.x_scale * math.copysign(1,xx)  *(-1)
     vy2=Parameters.vy2_fce_value(params,tx,ty) * Parameters.y_scale * math.copysign(1,yy)
     return (p2, vx2, vy2, 0.0, 1.0) 
-    
+
+def all_values_3d( xx, yy, zz ):
+    return (0, 0, 0, 0, 1.0)
+
+def velocity_2d( xx, yy, zz ):
+    return (0, 0, 0) 
 
       
       
