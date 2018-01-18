@@ -36,7 +36,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 #include "fields/multi_field.hh"
 #include "coupling/equation.hh"

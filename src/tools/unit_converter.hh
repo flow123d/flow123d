@@ -23,7 +23,7 @@
 #include <map>
 
 #include "input/input_exception.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "system/xio.h"
 
 // Declaration of exceptions

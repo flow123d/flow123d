@@ -22,7 +22,7 @@
 #include "la/distribution.hh"
 #include "transport/substance.hh"
 #include "petscmat.h"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "tools/time_marks.hh"
 
 class RegionDB;

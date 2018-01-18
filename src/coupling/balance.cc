@@ -26,7 +26,7 @@
 #include "mesh/mesh.h"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "tools/time_governor.hh"
 
 using namespace Input::Type;
