@@ -96,7 +96,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Reco
 		return make_include_storage(p, record);
 	} else if (record_name_from_tag == "include_csv") {
 		THROW( ExcForbiddenTag() << EI_Tag("include_csv")
-			<< EI_Specification("can be used only with arrays.") );
+			<< EI_Specification("can be used only with arrays.") << EI_Address(p.as_string()) );
 	} else {
 		if ( record_name_from_tag != "" ) {
 			ASSERT(record_name_from_tag == record->type_name())(record_name_from_tag)(record->type_name()).error("Inconsistent tag of record.");
@@ -242,7 +242,7 @@ StorageBase * ReaderInternalBase::make_sub_storage(PathBase &p, const Type::Abst
 		}
 	} else if ((record_tag == "include") || (record_tag == "include_csv")) { // simple '!include' tag is forbidden
 		THROW( ExcForbiddenTag() << EI_Tag(record_tag)
-			<< EI_Specification("can't be used with abstract type.") );
+			<< EI_Specification("can't be used with abstract type.") << EI_Address(p.as_string()) );
 	} else {
 		try {
 			return make_sub_storage(p, &( abstr_rec->get_descendant(record_tag) ) );

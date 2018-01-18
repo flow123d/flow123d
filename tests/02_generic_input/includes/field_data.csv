@@ -1,0 +1,4 @@
+time  porosity   A_conc     B_conc
+0.0   1          0          2
+0.1   0          12         1
+0.5   20         20         9
