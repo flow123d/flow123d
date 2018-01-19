@@ -104,6 +104,7 @@ clean-tests:
 .PHONY: html-doc
 html-doc: 
 	make -C $(BUILD_DIR)/htmldoc htmldoc
+	cp doc/graphics/flow123d-color-banner.svg $(BUILD_DIR)/htmldoc/html/src
 	$(BUILD_DIR)/bin/flow123d --input_format "$(DOC_DIR)/input_reference.json"
 	python3 $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(BUILD_DIR)/htmldoc/html/src/index.html --format=html
 

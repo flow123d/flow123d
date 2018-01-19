@@ -81,9 +81,10 @@ class ISTFormatter(object):
         html_navigation = HTMLFormatter.abc_navigation_bar(items)
         html_navigation_string = ISTFormatter.tree2html(html_navigation)
 
-        template_string = template_string.replace("@GENERATED@", time.strftime("%d-%m-%Y %H:%M:%S"))
+        template_string = template_string.replace("@GENERATED@", time.strftime("%d-%m-%Y %H:%M:%S UTC", time.gmtime()))
         template_string = template_string.replace("@IST@", html_items_string)
         template_string = template_string.replace("@NAVIGATION@", html_navigation_string)
+        template_string = template_string.replace("@VERSION@", str(info['version']))
 
         with open(output_file, 'w') as fp:
             fp.write(template_string)
