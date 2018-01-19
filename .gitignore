@@ -62,8 +62,6 @@ bin/runtest.sh
 /config/jenkins-job/jobs/*.yaml
 /config/jenkins-job/jenkins.ini
 
-/tests/runtest
-/tests_old/runtest
 
 # add test results to ignore
 /tests/*/test_results*
@@ -76,7 +74,6 @@ bin/runtest.sh
 # folder containing symlink to python sources
 /lib
 /publish
-/bin/runtest
 /bin/exec_parallel
 /unit_tests/test_scripts/consumer_cc
 /bin/python/jenkins_jobs_script.py
