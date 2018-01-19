@@ -21,6 +21,7 @@
 #include "input/accessors.hh"
 #include "time_governor.hh"
 #include "time_marks.hh"
+#include "unit_si.hh"
 
 //initialize constant pointer to TimeMarks object
 TimeMarks TimeGovernor::time_marks_ = TimeMarks();
@@ -38,15 +39,27 @@ const double TimeGovernor::time_step_precision = 16*numeric_limits<double>::epsi
 using namespace Input::Type;
 
 
+const Tuple & TimeGovernor::get_input_time_type()
+{
+    return Tuple("TimeValue", "Value of Field for independent variable.")
+        .declare_key("time", Double(), Default::obligatory(),
+                                    "Numeric value of time." )
+		.declare_key("unit", String(), Default::optional(),
+									"Specify unit of an input time value. This value overrides default unit "
+									"of equation specified by 'common_time_unit' key of Time Governor.")
+		.close();
+}
+
+
 const Record & TimeGovernor::get_input_type() {
 	return Record("TimeGovernor",
             "Setting of the simulation time. (can be specific to one equation)")
 		.allow_auto_conversion("max_dt")
-		.declare_key("start_time", Double(), Default("0.0"),
+		.declare_key("start_time", TimeGovernor::get_input_time_type(), Default("0.0"),
 					"Start time of the simulation.")
-		.declare_key("end_time", Double(), Default(MAX_END_TIME_STR),
+		.declare_key("end_time", TimeGovernor::get_input_time_type(), Default(MAX_END_TIME_STR),
 					"End time of the simulation. Default value is more then age of universe in seconds.")
-		.declare_key("init_dt", Double(0.0), Default("0.0"),
+		.declare_key("init_dt", TimeGovernor::get_input_time_type(), Default("0.0"),
 				"Initial guess for the time step.\n"
 				"Only useful for equations that use adaptive time stepping."
 				"If set to 0.0, the time step is determined in fully autonomous"
@@ -60,6 +73,9 @@ const Record & TimeGovernor::get_input_type() {
 				Default::read_time("Whole time of the simulation if specified, infinity else."),
 				"Hard upper limit for the time step. Actual length of the time step is also limited"
 				"by input and output times.")
+		.declare_key("common_time_unit", String(), Default("\"s\""),
+				"Common time unit of equation. This unit will be used for all time inputs and outputs "
+				"within the equation.")
 		.close();
 }
 
@@ -129,12 +145,15 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
     try {
 
+        string common_unit_string=input.val<string>("common_time_unit");
+        time_unit_conversion_coefficient_ = UnitSI().s().convert_unit_from(common_unit_string);
+
         // Get rid of rounding errors.
-        double end_time = input.val<double>("end_time");
+        double end_time = read_time_from_input( input.val<Input::Tuple>("end_time") );
         if (end_time> 0.99*max_end_time) end_time = max_end_time;
 
         // set permanent limits
-    	init_common(input.val<double>("start_time"),
+    	init_common(read_time_from_input( input.val<Input::Tuple>("start_time") ),
     				end_time,
     				eq_mark_type);
         set_permanent_constraint(
@@ -142,7 +161,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
             input.val<double>("max_dt", max_time_step_)
             );
 
-        double init_dt=input.val<double>("init_dt");
+        double init_dt=read_time_from_input( input.val<Input::Tuple>("init_dt") );
         if (init_dt > 0.0) {
             // set first time step suggested by user
             //time_step_=min(init_dt, time_step_);
@@ -503,6 +522,18 @@ void TimeGovernor::view(const char *name) const
 	//sprintf(buffer, "TG[%s]:%06d    t:%10.4f    dt:%10.6f    dt_int<%10.6f,%10.6f>\n",
 	//            name, tlevel(), t(), dt(), lower_constraint_, upper_constraint_ );
 #endif
+}
+
+
+
+double TimeGovernor::read_time_from_input(Input::Tuple time_accessor) {
+    double time = time_accessor.val<double>("time");
+    string time_unit;
+	if (time_accessor.opt_val<string>("unit", time_unit)) {
+		return ( time * UnitSI().s().convert_unit_from(time_unit) );
+	} else {
+		return ( time * time_unit_conversion_coefficient_ );
+	}
 }
 
 

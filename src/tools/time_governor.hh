@@ -33,8 +33,10 @@
 
 namespace Input {
     class Record;
+    class Tuple;
     namespace Type {
         class Record;
+        class Tuple;
     }
 }
 
@@ -226,6 +228,8 @@ public:
 	        << " out of history of size: " << EI_HistorySize::val);
 
     static const Input::Type::Record & get_input_type();
+
+    static const Input::Type::Tuple & get_input_time_type();
 
     /**
      * Getter for time marks.
@@ -495,6 +499,12 @@ public:
         {return step().index();}
 
     /**
+     * Returns the time unit conversion coefficient.
+     */
+    inline double time_unit_conversion_coefficient() const
+        { return time_unit_conversion_coefficient_; }
+
+    /**
      * Prints output of TimeGovernor.
      * @param name is the name of time governor that you want to show up in output (just for your convenience)
      *
@@ -525,6 +535,12 @@ private:
      * Set time marks for the start time and end time (if finite).
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
+
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_coefficient_.
+     */
+    double read_time_from_input(Input::Tuple time_accessor);
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
@@ -578,6 +594,9 @@ private:
     
     /// True if the time governor is used for steady problem.
     bool steady_;
+
+    /// Conversion unit of all time values within the equation.
+    double time_unit_conversion_coefficient_;
 
     friend TimeMarks;
 };
