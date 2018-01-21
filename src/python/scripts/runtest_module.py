@@ -6,7 +6,7 @@ import time
 import sys
 # ----------------------------------------------
 from scripts.pbs import pbs_control
-from scripts.yamlc.yaml_config import ConfigPool
+from scripts.yamlc.yaml_config import ConfigPool, ConfigBase
 from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep, StatusPrinter
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
@@ -50,16 +50,24 @@ class ModuleRuntest(ScriptModule):
                     Printer.all.out('{: >4s} {: <40s} {}', '', basename, Paths.relpath(Paths.join(dirname, basename), test_dir))
             Printer.all.newline()
 
-    @staticmethod
-    def read_configs(all_yamls):
+    def read_configs(self, all_yamls):
         """
         Add yamls to ConfigPool and parse configs
         :rtype: ConfigPool
         """
+        
+        # by default we will create dummy cases for files
+        # which are not specified in the config.yaml file
+        missing_policy = ConfigBase.MISSING_POLICY_CREATE_DEFAULT
+        if self.dir_mode:
+            # however if we are in the diectory mode (meaning only directory were passed)
+            # we will skip cases which are not present in the config.yaml
+            missing_policy = ConfigBase.MISSING_POLICY_IGNORE
+        
         configs = ConfigPool()
         for y in all_yamls:
             configs += y
-        configs.parse()
+        configs.parse(missing_policy)
         return configs
 
     @property
@@ -216,6 +224,7 @@ class ModuleRuntest(ScriptModule):
         super(ModuleRuntest, self).__init__(arg_options)
         self.all_yamls = None
         self.configs = None
+        self.dir_mode = None
 
     def _check_arguments(self):
         """
@@ -234,11 +243,14 @@ class ModuleRuntest(ScriptModule):
         """
         Run method for this module
         """
-
         if self.arg_options.random_output_dir:
             import scripts.yamlc as yamlc
             yamlc.TEST_RESULTS = 'test_results-{}'.format(self.arg_options.random_output_dir)
-
+        
+        # switching processing logic
+        self.dir_mode = False
+        
+        # in this loop we are processing all given files/folders
         self.all_yamls = list()
         for path in self.arg_options.args:
             if not Paths.exists(path):
@@ -247,10 +259,11 @@ class ModuleRuntest(ScriptModule):
 
             # append files to all_yamls
             if Paths.is_dir(path):
+                self.dir_mode = True
                 self.all_yamls.extend(Paths.walk(path, ConfigPool.yaml_filters))
             else:
                 self.all_yamls.append(path)
-
+        
         Printer.all.out("Found {} yaml file/s", len(self.all_yamls))
         if not self.all_yamls:
             Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.arg_options.args))
