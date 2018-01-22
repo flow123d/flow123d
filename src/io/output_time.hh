@@ -156,8 +156,15 @@ public:
 
     /**
      * Set shared pointers of output data caches.
+     *
+     * Set shared pointer of \p output_mesh_ (temporary solution).
      */
     virtual void set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr);
+
+    /**
+     * Get shared pointer of \p output_mesh_.
+     */
+    std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
 
     /**
      * Update the last time is actual \p time is less than \p field_time
@@ -266,6 +273,9 @@ protected:
      * Used for forming default output file name and the name of observe output file.
      */
     std::string equation_name_;
+
+    /// Output mesh.
+    std::shared_ptr<OutputMeshBase> output_mesh_;
 
     std::shared_ptr<Observe> observe_;
 

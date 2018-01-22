@@ -259,7 +259,7 @@ public:
         //this->output_mesh_discont_->create_mesh();
         
 		{
-        	field.compute_field_data(ELEM_DATA, shared_from_this(), output_mesh);
+        	field.compute_field_data(ELEM_DATA, shared_from_this());
 			EXPECT_EQ(1, output_data_vec_[ELEM_DATA].size());
 			OutputDataPtr data =  output_data_vec_[ELEM_DATA][0];
 			EXPECT_EQ(my_mesh->n_elements(), data->n_values());
@@ -271,7 +271,7 @@ public:
 		}
 
 		{
-			field.compute_field_data(NODE_DATA, shared_from_this(), output_mesh);
+			field.compute_field_data(NODE_DATA, shared_from_this());
 			EXPECT_EQ(1, output_data_vec_[NODE_DATA].size());
 			OutputDataPtr data =  output_data_vec_[NODE_DATA][0];
 			EXPECT_EQ(my_mesh->n_nodes(), data->n_values());
@@ -283,7 +283,7 @@ public:
 		}
 
 		{
-			field.compute_field_data(CORNER_DATA, shared_from_this(), output_mesh);
+			field.compute_field_data(CORNER_DATA, shared_from_this());
 			EXPECT_EQ(1, output_data_vec_[CORNER_DATA].size());
 			OutputDataPtr data =  output_data_vec_[CORNER_DATA][0];
 			//EXPECT_EQ(my_mesh->n_elements(), data->n_values());
@@ -302,11 +302,11 @@ public:
 
 		/*
 
-		compute_field_data(NODE_DATA, field, output_mesh);
+		compute_field_data(NODE_DATA, field);
 		EXPECT_EQ(1, node_data.size());
 		check_node_data( node_data[0], result);
 
-		compute_field_data(CORNER_DATA, field, output_mesh);
+		compute_field_data(CORNER_DATA, field);
 		EXPECT_EQ(1, elem_data.size());
 		check_elem_data( elem_data[0], result);
 */

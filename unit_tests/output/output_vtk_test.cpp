@@ -97,7 +97,7 @@ public:
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
         //this->output_mesh_discont_->create_mesh();
 
-		field.compute_field_data(ELEM_DATA, shared_from_this(), this->output_mesh_);
+		field.compute_field_data(ELEM_DATA, shared_from_this());
 	}
 
 	template <class FieldVal>
@@ -127,7 +127,7 @@ public:
 		field.output_type(OutputTime::NATIVE_DATA);
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
-		field.compute_field_data(NATIVE_DATA, shared_from_this(), this->output_mesh_);
+		field.compute_field_data(NATIVE_DATA, shared_from_this());
 	}
 
 	// check result
