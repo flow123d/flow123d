@@ -225,7 +225,7 @@ void EquationOutput::make_output_mesh(bool parallel)
             // possibly set error control field for refinement
             auto ecf = select_error_control_field();
             output_mesh_->set_error_control_field(ecf);
-            
+
             // actually compute refined mesh
             output_mesh_->create_refined_mesh();
             stream_->set_output_data_caches(output_mesh_);
@@ -287,5 +287,5 @@ typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_cont
                     << FieldCommon::EI_Field(error_control_field_name));
         }
     }
-    return nullptr;
+    return OutputMeshBase::ErrorControlFieldFunc();
 }

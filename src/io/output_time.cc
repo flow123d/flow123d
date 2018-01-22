@@ -203,10 +203,11 @@ void OutputTime::write_time_frame()
 			current_step++;
             
 			// invalidate output data caches after the time frame written
-			output_mesh_.reset();
+			// TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
+			/*output_mesh_.reset();
 			this->nodes_.reset();
 			this->connectivity_.reset();
-			this->offsets_.reset();
+			this->offsets_.reset();*/
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
