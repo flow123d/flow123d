@@ -576,19 +576,19 @@ TEST(TimeGovernor, unit_conversion_coefficient) {
     TimeGovernor::marks().reinit();
 
     {
-        string tg_in="{time = { common_time_unit = \"min\" } }";
+        string tg_in="{time = { end_time = 1, common_time_unit = \"min\" } }";
         TimeGovernor tg( read_input(tg_in) );
-        EXPECT_EQ(60, tg.time_unit_conversion_coefficient() );
+        EXPECT_EQ(60, tg.end_time() );
     }
     {
-        string tg_in="{time = { common_time_unit = \"ms\" } }";
+        string tg_in="{time = { end_time = 1, common_time_unit = \"ms\" } }";
         TimeGovernor tg( read_input(tg_in) );
-        EXPECT_EQ(0.001, tg.time_unit_conversion_coefficient() );
+        EXPECT_EQ(0.001, tg.end_time() );
     }
     {
-        string tg_in="{time = { common_time_unit = \"week; week = 168*h\" } }";
+        string tg_in="{time = { end_time = 1, common_time_unit = \"week; week = 168*h\" } }";
         TimeGovernor tg( read_input(tg_in) );
-        EXPECT_EQ(7*24*3600, tg.time_unit_conversion_coefficient() );
+        EXPECT_EQ(7*24*3600, tg.end_time() );
     }
     {
         string tg_in="{time = { common_time_unit = \"kg\" } }";
@@ -596,10 +596,11 @@ TEST(TimeGovernor, unit_conversion_coefficient) {
 				"Non-corresponding definition of unit: 'kg'" );
     }
     {
-        string tg_in="{time = { start_time = [1, \"min\"], end_time = 0.5, init_dt = [30, \"s\"], common_time_unit = \"h\" } }";
+        string tg_in="{time = { start_time = [1, \"min\"], end_time = 0.5, min_dt = [0.1, \"min\"], max_dt = [0.25, \"min\"], common_time_unit = \"h\" } }";
         TimeGovernor tg( read_input(tg_in) );
         EXPECT_EQ(60, tg.init_time() );
         EXPECT_EQ(1800, tg.end_time() );
-        EXPECT_EQ(30, tg.lower_constraint() );
+        EXPECT_EQ(6, tg.lower_constraint() );
+        EXPECT_EQ(15, tg.upper_constraint() );
     }
 }

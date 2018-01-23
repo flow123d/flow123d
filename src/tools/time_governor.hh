@@ -34,6 +34,7 @@
 namespace Input {
     class Record;
     class Tuple;
+    template<class T> class Iterator;
     namespace Type {
         class Record;
         class Tuple;
@@ -229,7 +230,8 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
-    static const Input::Type::Tuple & get_input_time_type();
+    static const Input::Type::Tuple & get_input_time_type(double lower_bound= -std::numeric_limits<double>::max(),
+                                                          double upper_bound=std::numeric_limits<double>::max());
 
     /**
      * Getter for time marks.
@@ -499,12 +501,6 @@ public:
         {return step().index();}
 
     /**
-     * Returns the time unit conversion coefficient.
-     */
-    inline double time_unit_conversion_coefficient() const
-        { return time_unit_conversion_coefficient_; }
-
-    /**
      * Prints output of TimeGovernor.
      * @param name is the name of time governor that you want to show up in output (just for your convenience)
      *
@@ -538,9 +534,10 @@ private:
 
     /**
      * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
-     * stored in time_unit_conversion_coefficient_.
+     * stored in time_unit_conversion_coefficient_. If time Tuple is not defined (e. g. Tuple is optional key)
+     * return default_time value.
      */
-    double read_time_from_input(Input::Tuple time_accessor);
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN());
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
