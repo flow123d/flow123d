@@ -177,8 +177,8 @@ public:
     /**
      * Collective interface to @p FieldCommon::set_mesh().
      */
-    void set_input_list(Input::Array input_list) {
-        for(FieldCommon *field : field_list) field->set_input_list(input_list);
+    void set_input_list(Input::Array input_list, const TimeGovernor &tg) {
+        for(FieldCommon *field : field_list) field->set_input_list(input_list, tg);
     }
 
     /**

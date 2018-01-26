@@ -324,7 +324,7 @@ void SorptionBase::initialize_fields()
   data_->set_components(substances_sorption);
   
   // read fields from input file
-  data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
+  data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"), *time_);
   
   data_->set_mesh(*mesh_);
 

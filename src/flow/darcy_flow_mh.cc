@@ -315,7 +315,7 @@ void DarcyMH::init_eq_data()
             (data_->gravity_, "init_piezo_head") );
 
 
-    data_->set_input_list( this->input_record_.val<Input::Array>("input_fields") );
+    data_->set_input_list( this->input_record_.val<Input::Array>("input_fields"), *time_ );
     // Check that the time step was set for the transient simulation.
     if (! zero_time_term(true) && time_->is_default() ) {
         //THROW(ExcAssertMsg());

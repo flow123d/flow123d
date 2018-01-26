@@ -34,6 +34,8 @@ const Input::Type::Record & FieldTimeFunction<spacedim, Value>::get_input_type()
 									"Values of time series initialization of Field.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
 		//							"Definition of unit.")
+		.declare_key("time_unit", it::String(), it::Default::optional(),
+									"Definition of unit of all times defined in FieldTimeFunction.")
         .allow_auto_conversion("time_function")
 		.close();
 }
@@ -72,7 +74,7 @@ bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 				in_rec_.address_string());
 	}
 	table_function.init_from_input( in_rec_.val<Input::Record>("time_function") );
-	this->r_value_ = table_function.value( time.end() );
+	this->r_value_ = table_function.value( time.end() / time.read_coef(in_rec_.find<string>("time_unit")) );
     this->value_.scale(this->unit_conversion_coefficient_);
     struct FieldAlgoBaseInitData init_data(this->field_name_, 0, this->unit_si_, this->limits_, FieldFlag::Flags() );
     this->check_field_limits(this->in_rec_, init_data);

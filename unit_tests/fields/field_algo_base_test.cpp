@@ -214,14 +214,15 @@ TYPED_TEST(FieldFix, set_input_list) {
 		list_ko = boost::regex_replace(list_ko, e, "=\"white\"");
 	}
 
+	TimeGovernor tg(0.0, 1.0);
 	this->field_.name("a");
-	this->field_.set_input_list( this->input_list(list_ok) );
+	this->field_.set_input_list( this->input_list(list_ok), tg );
 
 	this->field_.name("b");
-	this->field_.set_input_list( this->input_list(list_ok) );
+	this->field_.set_input_list( this->input_list(list_ok), tg );
 
 	this->field_.name("a");
-	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
+	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko), tg );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
 }
 
 
@@ -242,10 +243,11 @@ TYPED_TEST(FieldFix, mark_input_times) {
 		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
 	}
 
-	this->field_.name("b");
-	this->field_.set_input_list(this->input_list(list_ok));
-
 	TimeGovernor tg;
+
+	this->field_.name("b");
+	this->field_.set_input_list(this->input_list(list_ok), tg);
+
 	TimeMark::Type mark_type = TimeMark::Type(tg.marks().type_fixed_time().bitmap_, tg.equation_mark_type().equation_index_);
 	this->field_.mark_input_times(tg);
 	auto it = tg.marks().next(tg, mark_type);
@@ -326,13 +328,13 @@ TYPED_TEST(FieldFix, update_history) {
 		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
 	}
 
+	TimeGovernor tg(0.0, 1.0);
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok) );
+	this->set_input_list( this->input_list(list_ok), tg );
 	this->units( UnitSI().m() );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 1.0);
 	this->update_history(tg.step());
 
     Region diagonal_1d = this->mesh()->region_db().find_label("1D diagonal");
@@ -458,13 +460,13 @@ TYPED_TEST(FieldFix, set_time) {
 		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
 	}
 
+	TimeGovernor tg(0.0, 0.5);
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok) );
+	this->set_input_list( this->input_list(list_ok), tg );
 	this->units( UnitSI().m() );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 0.5);
 	this->set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(0, this->_value_( *this ));
 	EXPECT_TRUE( this->is_jump_time() );
@@ -520,12 +522,11 @@ TYPED_TEST(FieldFix, constructors) {
 		list_ok = boost::regex_replace(list_ok, boost::regex("=0"), "=\"black\"");
 	}
 
-	this->field_.set_input_list(this->input_list(list_ok));
-	field_default.set_input_list(this->input_list(list_ok));
-
-
-
 	TimeGovernor tg(2.0, 1.0);
+	this->field_.set_input_list(this->input_list(list_ok), tg);
+	field_default.set_input_list(this->input_list(list_ok), tg);
+
+
 
 	typename TestFixture::FieldType f2(this->field_);	// default constructor
 	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
@@ -733,7 +734,7 @@ TEST(Field, field_result) {
 
     TestFieldSet data;
     data.set_mesh(*mesh);
-    data.set_input_list(array);
+    data.set_input_list(array, tg);
 
 
     Region diagonal_1d = mesh->region_db().find_label("1D diagonal");

@@ -209,7 +209,7 @@ public:
      *
      * The list is used by set_time method to set field on individual regions to actual FieldBase descendants.
      */
-    virtual void set_input_list(const Input::Array &list) =0;
+    virtual void set_input_list(const Input::Array &list, const TimeGovernor &tg) =0;
 
     /**
      * Getters.

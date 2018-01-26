@@ -213,7 +213,7 @@ public:
 //     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
 //                              std::vector<typename MultiFieldValue::return_type>  &value_list) const;
 
-    void set_input_list(const Input::Array &list) override;
+    void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
 private:
     /// Subfields (items) of MultiField
@@ -222,6 +222,9 @@ private:
     /// Full list of input field descriptors from which the subfields of MultiField are set.
     Input::Array full_input_list_;
     
+    /// TimeGovernor is necessary for set input list in setup_components method.
+    const TimeGovernor *tg_;
+
     /**
      * If this pointer is set, turn off check of initialization in the
      * @p set_time method on the regions where the method @p get_constant_enum_value

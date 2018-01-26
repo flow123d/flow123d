@@ -282,7 +282,7 @@ public:
      */
     void add_factory(std::shared_ptr<FactoryBase> factory);
 
-    void set_input_list(const Input::Array &list) override;
+    void set_input_list(const Input::Array &list, const TimeGovernor &tg) override;
 
     /**
      * Interpolate given field into output discrete @p space_type and store the values

@@ -204,7 +204,7 @@ void DualPorosity::initialize_fields()
   data_.set_components(substances_.names());
   //setting fields that are set from input file
   input_data_set_+=data_;
-  input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
+  input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"), *time_);
 
   //setting fields in data
   data_.set_mesh(*mesh_);

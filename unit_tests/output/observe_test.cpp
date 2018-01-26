@@ -252,7 +252,7 @@ TEST(Observe, all) {
     // read fiels
     TimeGovernor tg(0.0, 1.0);
     field_set.set_mesh(*mesh);
-    field_set.set_input_list( in_rec.val<Input::Array>("input_fields") );
+    field_set.set_input_list( in_rec.val<Input::Array>("input_fields"), tg );
     field_set.set_time(tg.step(), LimitSide::right);
 
     field_set.scalar_field.observe_output(obs);

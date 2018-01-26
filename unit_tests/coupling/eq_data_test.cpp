@@ -190,7 +190,7 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_input_list( inputs[input_last] );
+        data.set_input_list( inputs[input_last], tg );
         data.set_time(tg.step(), LimitSide::right);
     }
 

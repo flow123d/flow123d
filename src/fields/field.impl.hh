@@ -413,7 +413,7 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 	double input_time;
     if (shared_->input_list_.size() != 0) {
         while( shared_->list_idx_ < shared_->input_list_.size()
-        	   && time.ge( input_time = shared_->input_list_[shared_->list_idx_].val<double>("time") ) ) {
+        	   && time.ge( input_time = time.read_time( shared_->input_list_[shared_->list_idx_].find<Input::Tuple>("time") ) ) ) {
 
         	const Input::Record & actual_list_item = shared_->input_list_[shared_->list_idx_];
         	// get domain specification
@@ -547,7 +547,7 @@ bool Field<spacedim,Value>::FactoryBase::is_active_field_descriptor(const Input:
 
 
 template<int spacedim, class Value>
-void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
+void Field<spacedim,Value>::set_input_list(const Input::Array &list, const TimeGovernor &tg) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
     // check that times forms ascending sequence
@@ -559,7 +559,7 @@ void Field<spacedim,Value>::set_input_list(const Input::Array &list) {
     	for(auto rit = factories_.rbegin() ; rit != factories_.rend(); ++rit) {
 			if ( (*rit)->is_active_field_descriptor( (*it), this->input_name() ) ) {
 				shared_->input_list_.push_back( Input::Record( *it ) );
-				time = it->val<double>("time");
+				time = tg.read_time( it->find<Input::Tuple>("time") );
 				if (time < last_time) {
 					THROW( ExcNonascendingTime()
 							<< EI_Time(time)
