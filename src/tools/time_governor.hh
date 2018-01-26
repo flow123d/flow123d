@@ -43,6 +43,39 @@ namespace Input {
 
 
 
+/**
+ * @brief Helper class storing unit conversion coefficient and functionality for conversion of units.
+ *
+ * This class has created one instance for each TimeGovernor object. This object is shared with all
+ * TimeSteps.
+ */
+class TimeUnitConversion {
+public:
+	// Constructor set coef_ from user defined unit
+	TimeUnitConversion(std::string user_defined_unit);
+
+	// Default constructor
+	TimeUnitConversion();
+
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in coeff_. If time Tuple is not defined (e. g. Tuple is optional key) return default_time value.
+     */
+	double read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in coeff_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<string> unit_it) const;
+
+protected:
+    /// Conversion coefficient of all time values within the equation.
+	double coef_;
+
+};
+
+
 
 /**
  * @brief Representation of one time step.\
@@ -59,7 +92,7 @@ public:
     /**
      * Constructor of the zero time step.
      */
-    TimeStep(double init_time);
+    TimeStep(double init_time, std::shared_ptr<TimeUnitConversion> time_unit_conversion = std::make_shared<TimeUnitConversion>());
 
     /**
      * Default constructor.
@@ -129,6 +162,19 @@ public:
         { return this->ge(other_time) && this->lt(other_time + length_); }
 
     /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
+     * default_time value.
+     */
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in time_unit_conversion_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<string> unit_it) const;
+
+    /**
      * Returns true if two time steps are exactly the same.
      */
     bool operator==(const TimeStep & other)
@@ -150,6 +196,8 @@ private:
     double length_;
     /// End time point of the time step.
     double end_;
+    /// Conversion unit of all time values within the equation.
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
 };
 
 std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
@@ -507,6 +555,19 @@ public:
      */
     void view(const char *name="") const;
 
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
+     * default_time value.
+     */
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in time_unit_conversion_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<string> unit_it) const;
+
     // Maximal tiem of simulation. More then age of the universe in seconds.
     static const double max_end_time;
 
@@ -531,13 +592,6 @@ private:
      * Set time marks for the start time and end time (if finite).
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
-
-    /**
-     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
-     * stored in time_unit_conversion_coefficient_. If time Tuple is not defined (e. g. Tuple is optional key)
-     * return default_time value.
-     */
-    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN());
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
@@ -593,7 +647,7 @@ private:
     bool steady_;
 
     /// Conversion unit of all time values within the equation.
-    double time_unit_conversion_coefficient_;
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
 
     friend TimeMarks;
 };

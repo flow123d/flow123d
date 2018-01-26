@@ -23,6 +23,10 @@
 #include "time_marks.hh"
 #include "unit_si.hh"
 
+/*******************************************************************
+ * implementation of TimeGovernor static values and methods
+ */
+
 //initialize constant pointer to TimeMarks object
 TimeMarks TimeGovernor::time_marks_ = TimeMarks();
 
@@ -81,10 +85,58 @@ const Record & TimeGovernor::get_input_type() {
 
 
 
-TimeStep::TimeStep(double init_time) :
+/*******************************************************************
+ * implementation of TimeUnitConversion
+ */
+
+TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
+{
+    coef_ = UnitSI().s().convert_unit_from(user_defined_unit);
+}
+
+
+
+TimeUnitConversion::TimeUnitConversion()
+: coef_(1.0) {}
+
+
+
+double TimeUnitConversion::read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const {
+	if (time_it) {
+	    double time = time_it->val<double>("time");
+	    string time_unit;
+		if (time_it->opt_val<string>("unit", time_unit)) {
+			return ( time * UnitSI().s().convert_unit_from(time_unit) );
+		} else {
+			return ( time * coef_ );
+		}
+	} else {
+		ASSERT(default_time!=std::numeric_limits<double>::quiet_NaN()).error("Undefined default time!");
+		return default_time;
+	}
+}
+
+
+
+double TimeUnitConversion::read_coef(Input::Iterator<string> unit_it) const {
+	if (unit_it) {
+		return UnitSI().s().convert_unit_from(*unit_it);
+	} else {
+		return coef_;
+	}
+}
+
+
+
+/*******************************************************************
+ * implementation of TimeStep
+ */
+
+TimeStep::TimeStep(double init_time, std::shared_ptr<TimeUnitConversion> time_unit_conversion) :
 index_(0),
 length_(1.0),
-end_(init_time)
+end_(init_time),
+time_unit_conversion_(time_unit_conversion)
 {}
 
 
@@ -93,7 +145,9 @@ TimeStep::TimeStep() :
 index_(0),
 length_(TimeGovernor::inf_time),
 end_(-TimeGovernor::inf_time)
-{}
+{
+	time_unit_conversion_ = std::make_shared<TimeUnitConversion>();
+}
 
 
 
@@ -101,7 +155,8 @@ end_(-TimeGovernor::inf_time)
 TimeStep::TimeStep(const TimeStep &other):
 index_(other.index_),
 length_(other.length_),
-end_(other.end_)
+end_(other.end_),
+time_unit_conversion_(other.time_unit_conversion_)
 {}
 
 
@@ -119,6 +174,7 @@ TimeStep TimeStep::make_next(double new_lenght, double end_time) const
     ts.index_=this->index_ +1;
     ts.length_=new_lenght;
     ts.end_=end_time;
+    ts.time_unit_conversion_=time_unit_conversion_;
     return ts;
 }
 
@@ -132,11 +188,28 @@ bool TimeStep::safe_compare(double t1, double t0) const
 
 
 
-ostream& operator<<(ostream& out, const TimeStep& t_step) {
-    out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
+double TimeStep::read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const {
+	return time_unit_conversion_->read_time(time_it, default_time);
 }
 
 
+
+double TimeStep::read_coef(Input::Iterator<string> unit_it) const {
+	return time_unit_conversion_->read_coef(unit_it);
+}
+
+
+
+ostream& operator<<(ostream& out, const TimeStep& t_step) {
+    out << "time: " << t_step.end() << "step: " << t_step.length() << endl;
+    return out;
+}
+
+
+
+/*******************************************************************
+ * implementation of TimeGovernor
+ */
 
 TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_type)
 {
@@ -146,7 +219,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     try {
 
         string common_unit_string=input.val<string>("common_time_unit");
-        time_unit_conversion_coefficient_ = UnitSI().s().convert_unit_from(common_unit_string);
+        time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_string);
 
         // Get rid of rounding errors.
         double end_time = read_time( input.find<Input::Tuple>("end_time") );
@@ -181,6 +254,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
 {
+	time_unit_conversion_ = std::make_shared<TimeUnitConversion>();
 	init_common( init_time, inf_time, TimeMark::every_type);
     // fixed time step
     if (dt < time_step_precision)
@@ -206,6 +280,7 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
 
+    time_unit_conversion_ = std::make_shared<TimeUnitConversion>();
 	init_common(init_time, inf_time, eq_mark_type);
 	steady_ = true;
 }
@@ -223,7 +298,7 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
     }
 
     recent_steps_.set_capacity(size_of_recent_steps_);
-    recent_steps_.push_front(TimeStep(init_time));
+    recent_steps_.push_front(TimeStep(init_time, time_unit_conversion_));
     init_time_=init_time;
 
 	if (end_time < init_time) {
@@ -526,19 +601,14 @@ void TimeGovernor::view(const char *name) const
 
 
 
-double TimeGovernor::read_time(Input::Iterator<Input::Tuple> time_it, double default_time) {
-	if (time_it) {
-	    double time = time_it->val<double>("time");
-	    string time_unit;
-		if (time_it->opt_val<string>("unit", time_unit)) {
-			return ( time * UnitSI().s().convert_unit_from(time_unit) );
-		} else {
-			return ( time * time_unit_conversion_coefficient_ );
-		}
-	} else {
-		ASSERT(default_time!=std::numeric_limits<double>::quiet_NaN()).error("Undefined default time!");
-		return default_time;
-	}
+double TimeGovernor::read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const {
+	return time_unit_conversion_->read_time(time_it, default_time);
+}
+
+
+
+double TimeGovernor::read_coef(Input::Iterator<string> unit_it) const {
+	return time_unit_conversion_->read_coef(unit_it);
 }
 
 

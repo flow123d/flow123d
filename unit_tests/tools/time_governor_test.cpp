@@ -43,7 +43,7 @@ Input::Record read_input(const string &json_input)
 
 
 TEST(TimeStep, all) {
-    TimeStep step(2.0);
+    TimeStep step(2.0, std::make_shared<TimeUnitConversion>());
     EXPECT_EQ(2.0, step.end());
     EXPECT_EQ(1.0, step.length());
     EXPECT_EQ(0, step.index());
