@@ -168,6 +168,9 @@ private:
 	/// Field flags.
 	FieldFlag::Flags flags_;
 
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
+
     /// Registrar of class to factory
     static const int registrar;
 };

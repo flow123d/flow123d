@@ -106,6 +106,9 @@ protected:
 	/// 0D (point) element, used for computing intersection
 	ngh::TPoint point_;
 
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
+
 private:
     /// Registrar of class to factory
     static const int registrar;
