@@ -17,6 +17,7 @@
 #include "input/input_type_forward.hh"
 #include "input/accessors_forward.hh"
 #include "io/output_time_set.hh"
+#include "io/output_mesh.hh"
 class TimeStep;
 
 
@@ -40,7 +41,7 @@ public:
      * Setup the object. Set output stream for field and observe output, input record for configuration of the object and
      * TimeGovernor. The time governor is used to get the equation time mark type, the initial and the end time of the equation.
      */
-    void initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg);
+    void initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, Input::Record in_rec, const TimeGovernor & tg);
 
     /**
      * Returns true if @param field is marked for output in the given time @param step.
@@ -53,7 +54,7 @@ public:
     void output(TimeStep step);
 
     /// Selects the error control field out of output field set according to input record.
-    Field<3, FieldValue<3>::Scalar> * select_error_control_field();
+    typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
     
 private:
     /**
@@ -77,7 +78,7 @@ private:
      * Create the output mesh of \p stream_ OutputTime object. The field set passed in is used
      * to select the field used for adaptivity of the output mesh.
      */
-    void make_output_mesh();
+    void make_output_mesh(bool parallel);
 
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
@@ -100,6 +101,15 @@ private:
      * Allow determine type of output mesh.
      */
     std::set<OutputTime::DiscreteSpace> used_interpolations_;
+
+    /**
+     * Cached pointer at computational mesh.
+     */
+    Mesh *mesh_;
+
+    /// Output mesh.
+    std::shared_ptr<OutputMeshBase> output_mesh_;
+
 };
 
 

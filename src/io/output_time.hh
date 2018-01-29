@@ -54,7 +54,7 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    virtual void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -125,7 +125,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec);
     
     /**
      * Write all data registered as a new time frame.
@@ -135,7 +135,7 @@ public:
     /**
      * Getter of the observe object.
      */
-    std::shared_ptr<Observe> observe();
+    std::shared_ptr<Observe> observe(Mesh *mesh);
 
     /**
      * \brief Clear data for output computed by method @p compute_field_data.
@@ -143,10 +143,10 @@ public:
     void clear_data(void);
 
     /**
-     * Return if shared pointer to output_mesh_ is created.
+     * Return if shared pointer to output data caches are created.
      */
-    inline bool is_output_mesh_init() {
-    	return (bool)(output_mesh_);
+    inline bool is_output_data_caches_init() {
+    	return (bool)(nodes_);
     }
 
     /// Return auxiliary flag enable_refinement_.
@@ -155,21 +155,16 @@ public:
     }
 
     /**
-     * Set shared pointer of \p output_mesh_.
+     * Set shared pointers of output data caches.
+     *
+     * Set shared pointer of \p output_mesh_ (temporary solution).
      */
-    void set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr);
+    virtual void set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr);
 
     /**
      * Get shared pointer of \p output_mesh_.
      */
     std::shared_ptr<OutputMeshBase> get_output_mesh_ptr();
-
-    /**
-     * Return MPI rank of process
-     */
-    inline int get_rank() {
-    	return rank;
-    }
 
     /**
      * Update the last time is actual \p time is less than \p field_time
@@ -192,15 +187,12 @@ public:
     template <typename T>
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
-    inline Mesh * get_orig_mesh() {
-    	return _mesh;
-    }
-
     /**
-     * Return if file format is in parallel / serial version.
+     * Return base output parameters (rank and parallel) which determine if the output is performed
      */
-    inline bool is_parallel() {
-    	return parallel_;
+    inline void get_output_params(bool &parallel, int &rank) {
+        parallel = this->parallel_;
+        rank = this->rank;
     }
 
     /// Complete information about dummy fields, method has effect only for GMSH output.
@@ -282,14 +274,9 @@ protected:
      */
     std::string equation_name_;
 
-    /**
-     * Cached pointer at mesh used by this output stream
-     */
-    Mesh *_mesh;
-    
     /// Output mesh.
     std::shared_ptr<OutputMeshBase> output_mesh_;
-    
+
     std::shared_ptr<Observe> observe_;
 
     /// Auxiliary flag for refinement enabling, due to gmsh format.
@@ -297,6 +284,14 @@ protected:
 
     /// Parallel or serial version of file format (parallel has effect only for VTK)
     bool parallel_;
+
+    /// Vector of node coordinates. [spacedim x n_nodes]
+    std::shared_ptr<ElementDataCache<double>> nodes_;
+    /// Vector maps the nodes to their coordinates in vector @p nodes_.
+    std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
+    std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+
 };
 
 

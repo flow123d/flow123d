@@ -2,3 +2,8 @@ test_cases:
 - files: 04_interpolated.yaml
   proc: [1, 2, 3]
   memory_limit: 2000
+- files: 
+   - 03_field_descriptors.yaml
+   - 06_bulk_interpolated.yaml
+   - 07_bulk_interpolation_cube.yaml
+  proc: [1, 2]
