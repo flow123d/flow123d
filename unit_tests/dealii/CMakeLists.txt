@@ -24,6 +24,6 @@
 set(libs la_lib ${DEAL_II_LIBRARY_NAME} system_lib "-lstdc++")
 add_test_directory("${libs}")
 
-define_mpi_test(dealii_lac 1)
-define_mpi_test(dealii_lac 2)
-define_mpi_test(dealii_lac 3)
+#define_mpi_test(dealii_lac 1)
+#define_mpi_test(dealii_lac 2)
+#define_mpi_test(dealii_lac 3)

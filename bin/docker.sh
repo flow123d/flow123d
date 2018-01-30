@@ -5,7 +5,7 @@ set -x
 
 
 # directory containing whole build process
-WORKDIR=/home/jb/workspace
+WORKDIR=/home/jb
 
 # name of the development image
 WORK_IMAGE=flow123d/f123d_docker
@@ -15,7 +15,7 @@ get_dev_dir()
     curr_dir=`pwd`
     project_dir="${curr_dir#${WORKDIR}}"
     project_dir="${project_dir#/}"
-    project_dir="${project_dir%%/*}"
+    #project_dir="${project_dir%%/*}"
 }
 
 cp_to_docker () {

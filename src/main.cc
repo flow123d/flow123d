@@ -15,14 +15,11 @@
  * @brief   This file should contain only creation of Application object.
  */
 
-#include <petsc.h>
-
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
-#include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "input/reader_internal_base.hh"
