@@ -1,6 +1,6 @@
 common_config:
   proc: [1, 2]
-  memory_limit: 1100
+  memory_limit: 1300
 
 test_cases:
 - files: 05_frac_sorption.yaml
