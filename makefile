@@ -121,7 +121,8 @@ TUTORIALS_IN_DOC= \
        04_frac_diffusion.yaml \
        05_frac_sorption.yaml \
        06_frac_dualpor.yaml \
-       07_heat.yaml
+       07_heat.yaml \
+       50_xfem_single_aquifer.yaml
 
 TUTORIALS_TEX=$(TUTORIALS_IN_DOC:.yaml=.tex)
 
