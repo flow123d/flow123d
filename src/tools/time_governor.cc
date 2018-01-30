@@ -63,7 +63,7 @@ const Record & TimeGovernor::get_input_type() {
 					"Start time of the simulation.")
 		.declare_key("end_time", TimeGovernor::get_input_time_type(), Default(MAX_END_TIME_STR),
 					"End time of the simulation. Default value is more then age of universe in seconds.")
-		.declare_key("init_dt", TimeGovernor::get_input_time_type(), Default("0.0"),
+		.declare_key("init_dt", TimeGovernor::get_input_time_type(0.0), Default("0.0"),
 				"Initial guess for the time step.\n"
 				"Only useful for equations that use adaptive time stepping."
 				"If set to 0.0, the time step is determined in fully autonomous"
@@ -90,6 +90,7 @@ const Record & TimeGovernor::get_input_type() {
  */
 
 TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
+: unit_string_(user_defined_unit)
 {
     coef_ = UnitSI().s().convert_unit_from(user_defined_unit);
 }
@@ -97,7 +98,7 @@ TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
 
 
 TimeUnitConversion::TimeUnitConversion()
-: coef_(1.0) {}
+: coef_(1.0), unit_string_("s") {}
 
 
 
@@ -196,6 +197,12 @@ double TimeStep::read_time(Input::Iterator<Input::Tuple> time_it, double default
 
 double TimeStep::read_coef(Input::Iterator<string> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
+}
+
+
+
+double TimeStep::get_coef() const {
+	return time_unit_conversion_->get_coef();
 }
 
 
@@ -609,6 +616,18 @@ double TimeGovernor::read_time(Input::Iterator<Input::Tuple> time_it, double def
 
 double TimeGovernor::read_coef(Input::Iterator<string> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
+}
+
+
+
+double TimeGovernor::get_coef() const {
+	return time_unit_conversion_->get_coef();
+}
+
+
+
+string TimeGovernor::get_unit_string() const {
+	return time_unit_conversion_->get_unit_string();
 }
 
 
