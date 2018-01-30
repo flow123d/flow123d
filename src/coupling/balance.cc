@@ -918,7 +918,7 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw((w*c+wl-14)/2) << setfill('-') << "--"
 			<< " MASS BALANCE "
 	     	<< setw((w*c+wl-14)/2) << setfill('-') << "" << endl
-			<< "# Time: " << time << "\n\n\n";
+			<< "# Time: " << (time / time_->get_coef()) << "[" << time_->get_unit_string() << "]\n\n\n";
 
 	// header for table of boundary fluxes
 	output_ << "# Mass flux through boundary [M/T]:\n# "
@@ -1072,7 +1072,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			output_ << format_csv_val(time, delimiter, true)
+			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< csv_zero_vals(3, delimiter)
@@ -1093,7 +1093,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			output_ << format_csv_val(time, delimiter, true)
+			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
@@ -1112,7 +1112,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
-			output_ << format_csv_val(time, delimiter, true)
+			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(sum_fluxes_[qi], delimiter)
@@ -1138,9 +1138,9 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 {
 	std::stringstream ss;
 	if (delimiter == ' ') {
-		ss << setw(output_column_width-comment_string.size()) << "\"time\"";
+		ss << setw(output_column_width-comment_string.size()) << "\"time [" << time_->get_unit_string() << "]\"";
 	} else {
-		ss << "\"time\"";
+		ss << "\"time [" << time_->get_unit_string() << "]\"";
 	}
 
 	output_ << comment_string << ss.str()

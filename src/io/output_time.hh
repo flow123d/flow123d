@@ -54,7 +54,7 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    virtual void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    virtual void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec, std::string unit_str);
 
     /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
@@ -125,7 +125,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec, std::string unit_str);
     
     /**
      * Write all data registered as a new time frame.
@@ -297,6 +297,9 @@ protected:
 
     /// Parallel or serial version of file format (parallel has effect only for VTK)
     bool parallel_;
+
+    /// String representation of time unit.
+	string unit_string_;
 };
 
 

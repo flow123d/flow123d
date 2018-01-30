@@ -171,7 +171,7 @@ public:
      * mesh - the mesh used for search for the observe points
      * in_array - the array of observe points
      */
-    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision);
+    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str);
 
     /// Destructor, must close the file.
     ~Observe();

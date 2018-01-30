@@ -81,9 +81,9 @@ OutputVTK::~OutputVTK()
 
 
 
-void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec, std::string unit_str)
 {
-	OutputTime::init_from_input(equation_name, mesh, in_rec);
+	OutputTime::init_from_input(equation_name, mesh, in_rec, unit_str);
 
     auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
     variant_type_ = format_rec.val<VTKVariant>("variant");
@@ -123,13 +123,15 @@ int OutputVTK::write_data(void)
         this->_base_file.precision(std::numeric_limits<double>::digits10);
     	int current_step = this->get_parallel_current_step();
 
+    	double time_fixed = isfinite(this->time)?this->time:0;
+    	time_fixed /= UnitSI().s().convert_unit_from(this->unit_string_);
         if (parallel_) {
         	for (int i_rank=0; i_rank<n_proc; ++i_rank, ++current_step) {
                 /* Strip out relative path and add "base/" string */
                 ostringstream ss;
                 ss << main_output_basename_ << "/" << main_output_basename_ << "-"
                    << std::setw(6) << std::setfill('0') << current_step << ".vtu";
-                this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+                this->_base_file << scientific << "<DataSet timestep=\"" << time_fixed
                         << "\" group=\"\" part=\"" << i_rank << "\" file=\"" << ss.str() <<"\"/>" << endl;
         	}
         } else {
@@ -137,7 +139,7 @@ int OutputVTK::write_data(void)
             ostringstream ss;
             ss << main_output_basename_ << "/" << main_output_basename_ << "-"
                << std::setw(6) << std::setfill('0') << current_step << ".vtu";
-            this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+            this->_base_file << scientific << "<DataSet timestep=\"" << time_fixed
                     << "\" group=\"\" part=\"0\" file=\"" << ss.str() <<"\"/>" << endl;
         }
 

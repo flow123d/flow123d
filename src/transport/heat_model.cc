@@ -255,7 +255,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	substances_.initialize({""});
 
-    output_stream_ = OutputTime::create_output_stream("heat", *mesh_, in_rec.val<Input::Record>("output_stream"));
+    output_stream_ = OutputTime::create_output_stream("heat", *mesh_, in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     balance_ = std::make_shared<Balance>("energy", mesh_);

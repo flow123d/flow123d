@@ -164,7 +164,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", *mesh_, in_rec.val<Input::Record>("output_stream")));
+    convection->set_output_stream(OutputTime::create_output_stream("solute", *mesh_, in_rec.val<Input::Record>("output_stream"), time().get_unit_string()));
 
 
     // initialization of balance object
