@@ -20,18 +20,24 @@
 
 #include <limits>
 #include <ios>
-#include <set>
+//#include <set>
 #include <map>
 #include <vector>
 #include <string>
-#include <iomanip>
+//#include <iomanip>
 
-#include <boost/type_traits.hpp>
-#include <boost/tokenizer.hpp>
-#include <boost/algorithm/string.hpp>
+#include <stdint.h>                  // for int64_t
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <memory>                    // for shared_ptr, __shared_ptr
+#include <utility>                   // for pair
 
-#include "system/global_defs.h"
-#include "system/system.hh"
+
+//#include <boost/type_traits.hpp>
+//#include <boost/tokenizer.hpp>
+//#include <boost/algorithm/string.hpp>
+
+//#include "system/global_defs.h"
+//#include "system/system.hh"
 #include "system/exceptions.hh"
 #include "system/file_path.hh"
 
@@ -317,8 +323,8 @@ protected:
 std::ostream& operator<<(std::ostream& stream, const TypeBase& type);
 
 
-class Record;
-class Selection;
+//class Record;
+//class Selection;
 
 
 /**

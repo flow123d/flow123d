@@ -18,20 +18,19 @@
 #ifndef TYPE_SELECTION_HH_
 #define TYPE_SELECTION_HH_
 
-#include "system/exceptions.hh"
-#include "system/system.hh"
-
-#include "type_base.hh"
-
 #include <string>
 #include <vector>
+#include <map>                       // for map, _Rb_tree_iterator, map<>::c...
+#include <memory>                    // for shared_ptr, __shared_ptr
+
+#include "system/exceptions.hh"
+#include "type_base.hh"
+#include "system/asserts.hh"         // for Assert, ASSERT, ASSERT_EQ, _FEAL...
 
 namespace Input {
 namespace Type {
 
 using namespace std;
-
-
 
 /**
  * @brief Template for classes storing finite set of named values.

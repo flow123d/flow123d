@@ -11,8 +11,8 @@
 
 #include "armadillo_tools.hh"
 
-#include <ostream>
-#include <sstream>
+//#include <ostream>
+//#include <sstream>
 #include <type_traits>
 #include "system/exc_common.hh"
 #include "system/logger.hh"

@@ -19,8 +19,14 @@
 #define PATH_JSON_HH_
 
 #include <memory>
+#include <stdint.h>                               // for int64_t
+#include <iosfwd>                                 // for ostream, istream
+#include <set>                                    // for set
+#include <string>                                 // for string
+#include <vector>                                 // for vector
+#include "input/json_spirit/json_spirit_value.h"  // for mValue
 #include "input/path_base.hh"
-#include "json_spirit/json_spirit.h"
+//#include "json_spirit/json_spirit.h"
 
 
 namespace Input {

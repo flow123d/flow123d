@@ -20,6 +20,10 @@
 #include "input/input_type.hh"
 #include "input/csv_tokenizer.hh"
 
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/file_path.hh"                         // for FilePath, File...
+#include "system/logger.hh"                            // for operator<<
+
 namespace Input {
 
 using namespace std;

@@ -16,6 +16,10 @@
  */
 
 
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/file_path.hh"                         // for FilePath, File...
+#include "system/logger.hh"                            // for operator<<
+
 #include "input/reader_internal_base.hh"
 #include "input/reader_to_storage.hh"
 #include "input/input_type.hh"
