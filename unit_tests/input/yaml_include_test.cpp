@@ -16,6 +16,7 @@
 #include <input/type_abstract.hh>
 #include <input/type_selection.hh>
 #include <input/reader_to_storage.hh>
+#include <input/storage.hh>
 
 
 using namespace Input;
@@ -92,6 +93,7 @@ protected:
     			.declare_key("d_key", Type::String(), Type::Default::obligatory(), "desc.")
     			.declare_key("e_key", Type::Double(), Type::Default::obligatory(), "desc.")
     			.declare_key("f_key", Type::String(), Type::Default::obligatory(), "desc.")
+				.declare_key("g_key", Type::Array(Type::Double()), Type::Default::obligatory(), "desc.")
     			.close();
 
     	return Type::Record("RootCsv", "Root record with CSV include.")
@@ -144,7 +146,7 @@ protected:
     	EXPECT_EQ(6, storage_->get_item(1)->get_array_size());
     	for (unsigned int i=0; i<storage_->get_item(1)->get_array_size(); ++i) {
     		StorageBase *i_storage = storage_->get_item(1)->get_item(i);
-    		EXPECT_EQ(10,                i_storage->get_array_size());
+    		EXPECT_EQ(11,                i_storage->get_array_size());
     		EXPECT_EQ("SubRecord",       i_storage->get_item(0)->get_string());
     		EXPECT_EQ(4,                 i_storage->get_item(1)->get_array_size());
     		EXPECT_EQ("Coords",          i_storage->get_item(1)->get_item(0)->get_string());
@@ -164,6 +166,9 @@ protected:
     		EXPECT_EQ(ref_strs[i],       i_storage->get_item(7)->get_string());
     		EXPECT_DOUBLE_EQ(0.25*i-1.0, i_storage->get_item(8)->get_double());
     		EXPECT_EQ("some text",       i_storage->get_item(9)->get_string());
+    		EXPECT_EQ(2,                 i_storage->get_item(10)->get_array_size());
+    		EXPECT_DOUBLE_EQ(0.1*i,      i_storage->get_item(10)->get_item(0)->get_double());
+    		EXPECT_DOUBLE_EQ(0.1*i+1.0,  i_storage->get_item(10)->get_item(1)->get_double());
     	}
     	EXPECT_EQ("RootCsv", storage_->get_item(0)->get_string() );
     	EXPECT_EQ("Example of CSV include", storage_->get_item(2)->get_string() );
@@ -353,6 +358,7 @@ sub_rec: !include_csv
     d_key: $7
     e_key: $5
     f_key: 'some text'
+    g_key: [$12, $13]
     select: $11
 description: Example of CSV include
 )YAML";
@@ -365,7 +371,7 @@ const string import_csv_to_json = R"JSON(
     format = { 
       coords={x="$1", y="$2", z="$3"}, 
       abstract_key={TYPE="DerivedRec", some_double="$9", fix_double=0.5, some_int="$10", fix_int=5}, 
-      a_key="$0", b_key="$4", c_key="$6", d_key="$7", e_key="$5", f_key="some text", select="$11"
+      a_key="$0", b_key="$4", c_key="$6", d_key="$7", e_key="$5", f_key="some text", g_key=["$12", "$13"], select="$11"
     }
   },
   description = "Example of CSV include"
@@ -393,6 +399,7 @@ sub_rec: !include_csv
     d_key: $7
     e_key: $5
     f_key: 'some text'
+    g_key: [$12, $13]
     select: $11
 description: Example of CSV include
 )YAML";

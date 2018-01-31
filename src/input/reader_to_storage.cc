@@ -26,6 +26,16 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_internal.hh"
+#include <stddef.h>                                    // for NULL
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <ostream>                                     // for operator<<
+#include <set>                                         // for set, _Rb_tree_...
+#include <typeinfo>                                    // for type_info
+#include <utility>                                     // for pair
+#include <vector>                                      // for vector
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/file_path.hh"                         // for FilePath, File...
+#include "system/logger.hh"                            // for operator<<
 
 
 namespace Input {

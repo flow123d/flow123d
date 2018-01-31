@@ -7,3 +7,8 @@ test_cases:
    - 06_bulk_interpolated.yaml
    - 07_bulk_interpolation_cube.yaml
   proc: [1, 2]
+
+- files: 
+   - 09_include_file.yaml
+  proc: [1, 2]
+  memory_limit: 600

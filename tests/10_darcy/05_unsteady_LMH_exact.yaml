@@ -60,3 +60,4 @@ problem: !Coupling_Sequential
       name: flow_output_stream
       times:
         - step: 0.1
+      precision: 15    

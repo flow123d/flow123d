@@ -35,6 +35,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 namespace IT = Input::Type;
 
 const IT::Record & OutputTime::get_input_type() {
+    stringstream default_prec;
+    default_prec << std::numeric_limits<double>::max_digits10;
     return IT::Record("OutputStream", "Configuration of the spatial output of a single balance equation.")
 		// The stream
 		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
@@ -50,8 +52,9 @@ const IT::Record & OutputTime::get_input_type() {
                 "Therefore only corner and element data can be written on refined output mesh."
                 "Node data are to be transformed to corner data, native data cannot be written."
                 "Do not include any node or native data in output fields.")
-        .declare_key("precision", IT::Integer(0), IT::Default("5"),
-                "The number of decimal digits used in output of floating point values.")
+        .declare_key("precision", IT::Integer(0), IT::Default(default_prec.str()),
+                "The number of decimal digits used in output of floating point values.\\ "
+                "Default is about 17 decimal digits which is enough to keep double values exect after write-read cycle.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
                 "Array of observe points.")
 		.close();
@@ -87,9 +90,16 @@ void OutputTime::init_from_input(const std::string &equation_name, const Input::
     // TODO: remove dummy ".xyz" extension after merge with DF
     FilePath output_file_path(equation_name+"_fields", FilePath::output_file);
     input_record_.opt_val("file", output_file_path);
+    this->precision_ = input_record_.val<int>("precision");
     this->_base_filename = output_file_path;
 }
 
+
+void OutputTime::set_stream_precision(std::ofstream &stream)
+{
+    //stream.setf(std::ios::scientific);
+    stream.precision(this->precision_);
+}
 
 
 OutputTime::~OutputTime(void)

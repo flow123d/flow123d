@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+﻿	 * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -25,21 +25,28 @@
 #ifndef INPUT_INTERFACE_HH_
 #define INPUT_INTERFACE_HH_
 
-#include <vector>
 #include <string>
 #include <memory>
 #include <cstdint>
-#include <boost/type_traits.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/static_assert.hpp>
+#include <iosfwd>                                      // for ostream
+#include <limits>                                      // for numeric_limits
+#include <type_traits>                                 // for is_same
+#include "input/type_abstract.hh"                      // for Abstract
+#include "input/type_base.hh"                          // for TypeBase (ptr ...
+#include "input/type_record.hh"                        // for Record, Record...
+#include "input/type_selection.hh"                     // for Selection
+#include "input/type_tuple.hh"                         // for Tuple
+#include "system/asserts.hh"                           // for Assert, ASSERT...
+#include "system/exc_common.hh"                        // for EI_Message
+#include "system/file_path.hh"                         // for FilePath
+//namespace boost { template <typename T> struct is_enum; }
+//namespace boost { template <typename T> struct is_float; }
+//namespace boost { template <typename T> struct is_integral; }
 
-#include "system/system.hh"
+
 #include "system/exceptions.hh"
-
-#include "input/input_type.hh"
-#include "input/factory.hh"
+//#include <boost/core/enable_if.hpp>                    // for enable_if
 #include "input/storage.hh"
-
 #include "input/input_exception.hh"
 
 
@@ -136,7 +143,6 @@ private:
 class IteratorBase;
 template <class T> class Iterator;
 
-class ReaderToStorage;
 
 /**
  * Class for storing and formating input address of an accessor (necessary for input errors detected after readed).
@@ -807,7 +813,7 @@ struct TypeDispatch {
 };
 
 template<class T>
-struct TypeDispatch<T, typename boost::enable_if<boost::is_enum<T> >::type> {
+struct TypeDispatch<T, typename std::enable_if<std::is_enum<T>::value >::type> {
     typedef T TmpType;
 
     typedef Input::Type::Selection InputType;
@@ -832,7 +838,7 @@ struct TypeDispatch<FullEnum> {
 };
 
 template<class T>
-struct TypeDispatch<T, typename boost::enable_if<boost::is_integral<T> >::type> {
+struct TypeDispatch<T, typename std::enable_if<std::is_integral<T>::value >::type> {
     typedef Input::Type::Integer InputType;
     typedef const int ReadType;
     typedef int TmpType;
@@ -857,7 +863,7 @@ struct TypeDispatch<bool> {
 };
 
 template<class T>
-struct TypeDispatch<T, typename boost::enable_if<boost::is_float<T> >::type> {
+struct TypeDispatch<T, typename std::enable_if<std::is_floating_point<T>::value >::type> {
     typedef Input::Type::Double InputType;
     typedef const double ReadType;
     typedef int TmpType;

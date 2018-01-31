@@ -60,6 +60,8 @@ public:
 	 */
     static const Input::Type::Selection & get_input_type_variant();
 
+
+
     /**
      * \brief This function write data to VTK (.pvd) file format
      * for curent time

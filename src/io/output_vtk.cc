@@ -93,6 +93,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, const Input::R
     if(this->rank == 0) {
         try {
             this->_base_filename.open_stream( this->_base_file );
+            this->set_stream_precision(this->_base_file);
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
@@ -105,6 +106,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, const Input::R
 
 
 
+
 int OutputVTK::write_data(void)
 {
     ASSERT_PTR(this->nodes_).error();
@@ -113,6 +115,13 @@ int OutputVTK::write_data(void)
     if ( (this->rank != 0) && (!parallel_) ) {
         return 0;
     }
+
+    /**
+     * TODO:
+     * - common creation of the VTU filename
+     * - names of parallel file: <base name>_<frame>.<rank>.vtu
+     * - for serial case use rank=0
+     */
 
     /* Write DataSets to the PVD file only in the first process */
     if (this->rank == 0) {
@@ -158,12 +167,28 @@ int OutputVTK::write_data(void)
         /* Set up data file */
         try {
             frame_file_path.open_stream(_data_file);
+        this->set_stream_precision(_data_file);
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << __func__ << ": Writing output (frame " << this->get_parallel_current_step() << ") file "
 				 << main_output_basename_ << "/" << frame_file_name << " ... ";
 
-        this->write_vtk_vtu();
+    LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
+
+
+    /* Set floating point precision to max */
+    //this->_base_file.precision(std::numeric_limits<double>::digits10);
+
+    /* Strip out relative path and add "base/" string */
+    std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
+    this->_base_file << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
+            << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
+
+    LogOut() << "O.K.";
+
+    LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
+
+    this->write_vtk_vtu();
 
         /* Close stream for file of current frame */
         _data_file.close();
@@ -282,7 +307,7 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
     	// ascii output
     	file << ">" << endl;
-    	file << std::fixed << std::setprecision(10); // Set precision to max
+    	//file << std::fixed << std::setprecision(10); // Set precision to max
     	output_data->print_ascii_all(file);
     	file << "\n</DataArray>" << endl;
     } else {

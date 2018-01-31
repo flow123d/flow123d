@@ -1,6 +1,7 @@
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption, sources).'
+    sources). Also use default value of output_stream of flow eqation.'
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac_fork.msh
   # mesh
@@ -37,10 +38,10 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance: {add_output_times: false}
   # primary equation
-    output_stream:
-      file: flow.pvd
-      format: !vtk
-        variant: ascii
+  # We don't need explicit definition of output_stream, default value is used.
+    #output_stream:
+    #  format: !vtk
+    #    variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
