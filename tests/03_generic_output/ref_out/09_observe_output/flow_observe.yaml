@@ -1,6 +1,6 @@
 # Observation file: flow
 time_unit: s
-time_unit_in_secodns: 1
+time_unit_in_seconds: 1
 points:
   - name: obs_0
     init_point: [ 0.0000 , 0.10000 , 0.0000 ]

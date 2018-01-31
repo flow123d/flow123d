@@ -1,4 +1,4 @@
-"time"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"flow_fracture1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"flow_fracture2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"blind_fracture1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0

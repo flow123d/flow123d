@@ -1,4 +1,4 @@
-"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [s]"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"plane"	"1"	0	0	0	0.0900385	0	0	0	0	0	0	0	0
 0	"plane"	"2"	0	0	0	0.0900385	0	0	0	0	0	0	0	0
 0	".bc_south"	"1"	0	0	0	0	0	0	0	0	0	0	0	0

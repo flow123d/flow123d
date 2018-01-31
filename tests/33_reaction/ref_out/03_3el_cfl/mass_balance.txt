@@ -1,4 +1,4 @@
-"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [s]"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"region_1"	"A"	0	0	0	13.5	0	0	0	0	0	0	0	0
 0	"region_1"	"B"	0	0	0	0	0	0	0	0	0	0	0	0
 0	".IMPLICIT_BOUNDARY"	"A"	-3.55271e-15	1.77636e-15	-5.32907e-15	0	0	0	0	0	0	0	0	0
