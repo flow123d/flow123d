@@ -61,13 +61,13 @@ public:
     inline Type * memptr() {
         return begin();
     }
-    inline const Type operator[](uint index) const {
+    inline const Type & operator[](uint index) const {
         return data[0][index];
     }
     inline Type & operator[](uint index) {
         return data[0][index];
     }
-    inline const Type operator()(uint row, uint col) const {
+    inline const Type & operator()(uint row, uint col) const {
         return data[col][row];
     }
     inline Type & operator()(uint row, uint col) {
