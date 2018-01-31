@@ -1214,7 +1214,7 @@ void Balance::output_yaml(double time)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
-			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ 0, 0, 0, " << masses_[qi][reg->bulk_idx()] << ", "
@@ -1228,7 +1228,7 @@ void Balance::output_yaml(double time)
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
-			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ " << fluxes_[qi][reg->boundary_idx()] << ", "
@@ -1242,7 +1242,7 @@ void Balance::output_yaml(double time)
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
-			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: ALL" << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ " << sum_fluxes_[qi] << ", "

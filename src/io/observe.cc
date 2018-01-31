@@ -355,7 +355,7 @@ ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, doub
     if ( std::isnan(observe_values_time_) )
         observe_values_time_ = field_time / time_unit_seconds_;
     else
-        ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon())
+        ASSERT(fabs(field_time / time_unit_seconds_ - observe_values_time_) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
