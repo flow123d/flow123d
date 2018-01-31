@@ -16,6 +16,7 @@
 #include <input/type_abstract.hh>
 #include <input/type_selection.hh>
 #include <input/reader_to_storage.hh>
+#include <input/storage.hh>
 
 
 using namespace Input;

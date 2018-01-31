@@ -5,4 +5,6 @@ common_config:
 test_cases:
 - files: 10_vtk_bin_output.yaml
   proc: [ 1 ]
+- files: 11_time_marks_mixed_times.yaml
+  memory_limit: 1300
   
