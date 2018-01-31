@@ -1,9 +1,5 @@
 #include <flow_gtest.hh>
-//#include <sstream>
-//#include <string>
 #include "system/armor.hh"
-
-//using  namespace std;
 
 TEST(Armor_test, indexing1) {
 	Armor::Mat<double, 3, 1> m1;
@@ -150,5 +146,3 @@ TEST(Armor_test, multiplication_per_elements) {
 	m1 = m1 % m1;
 	EXPECT_TRUE(m1 == a1);
 }
-
-// START_TIMER("name")

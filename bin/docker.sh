@@ -8,7 +8,8 @@ set -x
 WORKDIR=/home/kingis/Dokumenty/PK_Flow
 
 # name of the development image
-WORK_IMAGE=flow123d/f123d_docker
+#WORK_IMAGE=flow123d/f123d_docker
+WORK_IMAGE=flow123d/f123d_docker_anew
 
 get_dev_dir() 
 {
@@ -67,7 +68,9 @@ make_work_image ()
         #docker exec ${running_cont} chown jb:jb $HOME/.ssh
         cp_to_docker $HOME/.ssh/id_rsa  .ssh
         cp_to_docker $HOME/.ssh/id_rsa.pub  .ssh
-                
+        
+        docker exec ${running_cont} make -C /home/kingis/Dokumenty/PK_Flow/armadillo/armadillo-7.800.2/ install
+        
         docker stop ${running_cont}
         docker commit ${running_cont}  $WORK_IMAGE        
     fi    

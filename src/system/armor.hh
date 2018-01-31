@@ -1,7 +1,7 @@
-#define ARMA_DONT_USE_WRAPPER
-#define ARMA_NO_DEBUG
+//#define ARMA_DONT_USE_WRAPPER
+//#define ARMA_NO_DEBUG
 #include <armadillo>
-#include <algorithm>
+#include <array>
 
 namespace Armor {
 
@@ -9,46 +9,63 @@ template <class Type, uint nRows, uint nCols>
 class Mat
 {
 private:
-    Type data[nCols][nRows];
+    std::array<std::array<Type, nRows>, nCols> data;
     typedef typename arma::Mat<Type>::template fixed<nRows,nCols> ArmaType;
 public:
     Mat() {
-        std::fill(begin(), end(), 0);
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = 0;
+        }
     }
     Mat(std::initializer_list<std::initializer_list<Type>> list) {
-        uint i{0}, j{0};
-        for (auto & row : list) {
-            for (auto & item : row) {
-                data[i][j] = item;
-                ++i;
+        const auto * listIt = list.begin();
+        const Type * it;
+        for (uint i = 0; i < nRows; ++i) {
+            it = (listIt + i)->begin();
+            for (uint j = 0; j < nCols; ++j) {
+                data[j][i] = *(it + j);
             }
-            i = 0;
-            ++j;
         }
     }
     Mat(std::initializer_list<Type> list) {
-        std::copy(list.begin(), list.end(), begin());
+        const Type * it = list.begin();
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = *(it + i);
+        }
+    }
+    inline Mat(const Armor::Mat<Type, nRows, nCols> & other) {
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = other[i];
+        }
+    }
+    inline Mat(const ArmaType & other) {
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = other[i];
+        }
     }
     inline const Type * begin() const {
-        return *data;
+        return data.data()->data();
     }
     inline Type * begin() {
-        return *data;
+        return data.data()->data();
     }
     inline const Type * end() const {
-        return *data + nCols * nRows;
+        return begin() + nCols * nRows;
     }
     inline Type * end() {
-        return *data + nCols * nRows;
+        return begin() + nCols * nRows;
     }
-    inline Mat(const ArmaType & a) {
-        std::copy(a.begin(), a.end(), begin());
+    inline uint size() const {
+        return nRows * nCols;
+    }
+    inline Type * memptr() {
+        return begin();
     }
     inline const Type operator [](uint index) const {
-        return *(*data + index);
+        return data[0][index];
     }
     inline Type & operator[](uint index) {
-        return *(*data + index);
+        return data[0][index];
     }
     inline const Type operator()(uint row, uint col) const {
         return data[col][row];
@@ -60,40 +77,56 @@ public:
         return ArmaType(begin());
     }
     inline const Mat<Type, nRows, nCols> & operator=(const Mat<Type, nRows, nCols> & other) {
-        std::copy(other.begin(), other.end(), begin());
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = other[i];
+        }
         return *this;
     }
-    inline const Mat<Type, nRows, nCols> & operator=(const ArmaType & other) {
-        std::copy(other.begin(), other.end(), begin());
+    inline const Mat<Type, nRows, nCols> & operator=(const ArmaType & other) {        
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = other[i];
+        }
         return *this;
     }
     inline const Mat<Type, nRows, nCols> & operator=(std::initializer_list<std::initializer_list<Type>> list) {
-        uint i{0}, j{0};
-        for (auto & row : list) {
-            for (auto & item : row) {
-                data[i][j] = item;
-                ++i;
+        const auto * listIt = list.begin();
+        const Type * it;
+        for (uint i = 0; i < nRows; ++i) {
+            it = (listIt + i)->begin();
+            for (uint j = 0; j < nCols; ++j) {
+                data[j][i] = *(it + j);
             }
-            i = 0;
-            ++j;
         }
         return *this;
     }
     inline const Mat<Type, nRows, nCols> & operator=(std::initializer_list<Type> list) {
-        std::copy(list.begin(), list.end(), begin());
+        const Type * it = list.begin();
+        for (uint i = 0; i < nRows * nCols; ++i) {
+            data[0][i] = *(it + i);
+        }
         return *this;
     }
     inline bool operator==(const ArmaType & other) {
-        return std::equal(begin(), end(), other.begin());
+        const Type * first1 = begin();
+        const Type * last1 = end();
+        const Type * first2 = other.begin();
+        for (; first1 != last1; ++first1, ++first2) {
+            if (*first1 != *first2) {
+                return false;
+            }
+        }
+        return true;
     }
     inline bool operator==(const Mat<Type, nRows, nCols> & other) {
-        return std::equal(begin(), end(), other.begin());
-    }
-    inline uint size() const {
-        return nRows * nCols;
-    }
-    inline Type * memptr() {
-        return begin();
+        const Type * first1 = begin();
+        const Type * last1 = end();
+        const Type * first2 = other.begin();
+        for (; first1 != last1; ++first1, ++first2) {
+            if (*first1 != *first2) {
+                return false;
+            }
+        }
+        return true;
     }
 };
 
@@ -127,21 +160,15 @@ inline typename arma::Mat<Type>::template fixed<nRows,nCols> operator*(Type numb
     return number * a.arma();
 }
 
-
 template <class Type, uint nRows, uint nCols>
 inline typename arma::Mat<Type>::template fixed<nRows,nCols> operator/(const Mat<Type, nRows, nCols> & a, Type number) {
     return a.arma() / number;
 }
 
 template <uint N>
-using Vec = Mat<double, N, 1>;
+using vec = Mat<double, N, 1>;
 
-/*
 template <uint N, uint M>
-class Mat : Mat<double, N, M> {
-
-};
-*/
+using mat = Mat<double, N, M>;
 
 }
-
