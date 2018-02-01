@@ -129,6 +129,11 @@ protected:
 	static const std::vector<std::string> formats;
 
 	/**
+	 * Used internally by write_data.
+	 */
+	string form_vtu_filename_(string basename, int i_step, int rank);
+
+	/**
      * \brief Write header of VTK file (.vtu)
      */
     void write_vtk_vtu_head(void);
