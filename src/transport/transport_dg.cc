@@ -330,7 +330,7 @@ void TransportDG<Model>::initialize()
     }
 
     // set time marks for writing the output
-    data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
+    data_.output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;

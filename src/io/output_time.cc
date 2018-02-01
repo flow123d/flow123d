@@ -69,7 +69,6 @@ OutputTime::OutputTime()
 : current_step(0),
   time(-1.0),
   write_time(-1.0),
-  _mesh(nullptr),
   parallel_(false)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
@@ -78,9 +77,8 @@ OutputTime::OutputTime()
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec, std::string unit_str)
+void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
 {
-    _mesh = &mesh;
 
     input_record_ = in_rec;
     equation_name_ = equation_name;
@@ -119,7 +117,10 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-void OutputTime::set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	this->nodes_ = mesh_ptr->nodes_;
+	this->connectivity_ = mesh_ptr->connectivity_;
+	this->offsets_ = mesh_ptr->offsets_;
 	output_mesh_ = mesh_ptr;
 }
 
@@ -170,12 +171,12 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec, std::string unit_str)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
 {
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
     std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, mesh, in_rec, unit_str);
+    output_time->init_from_input(equation_name, in_rec, unit_str);
 
     return output_time;
 }
@@ -202,8 +203,12 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // invalidate output mesh after the time frame written
-            output_mesh_.reset();
+			// invalidate output data caches after the time frame written
+			// TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
+			/*output_mesh_.reset();
+			this->nodes_.reset();
+			this->connectivity_.reset();
+			this->offsets_.reset();*/
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
@@ -211,14 +216,13 @@ void OutputTime::write_time_frame()
     clear_data();
 }
 
-std::shared_ptr<Observe> OutputTime::observe()
+std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
 {
-    ASSERT_PTR(_mesh);
     // create observe object at first call
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
         unsigned int precision = input_record_.val<unsigned int>("precision");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *_mesh, observe_points, precision, this->unit_string_);
+        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision, this->unit_string_);
     }
     return observe_;
 }

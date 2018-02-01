@@ -140,7 +140,7 @@ void ConvectionTransport::initialize()
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
 
-	data_.output_fields.initialize(output_stream_, input_rec.val<Input::Record>("output"), time() );
+	data_.output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), time() );
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 

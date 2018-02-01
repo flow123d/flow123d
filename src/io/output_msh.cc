@@ -21,6 +21,7 @@
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
+#include "tools/unit_si.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(gmsh)
@@ -125,12 +126,12 @@ void OutputMSH::write_msh_geometry(void)
 
     // Write information about nodes
     file << "$Nodes" << endl;
-    file << this->output_mesh_->n_nodes() << endl;
-    auto &id_node_vec = *( this->output_mesh_->get_node_ids_cache()->get_component_data(0).get() );
+    file << this->nodes_->n_values() << endl;
+    auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
     unsigned int i_node=0;
     for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
         file << id_node_vec[i_node] << " ";
-        this->output_mesh_->nodes_->print_ascii(file, i_node);
+        this->nodes_->print_ascii(file, i_node);
         file << endl;
     }
     file << "$EndNodes" << endl;
@@ -140,23 +141,28 @@ void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->_base_file;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
-    auto &id_elem_vec = *( this->output_mesh_->get_element_ids_cache()->get_component_data(0).get() );
-    auto &id_node_vec = *( this->output_mesh_->get_node_ids_cache()->get_component_data(0).get() );
+    auto &id_elem_vec = *( this->elem_ids_->get_component_data(0).get() );
+    auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
+    auto &connectivity_vec = *( this->connectivity_->get_component_data(0).get() );
+    auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+    auto &regions_vec = *( this->region_ids_->get_component_data(0).get() );
+    auto &partition_vec = *( this->partitions_->get_component_data(0).get() );
+
+    unsigned int n_nodes, i_node=0;
 
     // Write information about elements
     file << "$Elements" << endl;
-    file << this->output_mesh_->n_elements() << endl;
-    auto it = this->output_mesh_->begin();
+    file << this->offsets_->n_values() << endl;
     ElementAccessor<OutputElement::spacedim> elm;
-    for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm, ++it) {
-    	elm = it->element_accessor();
+    for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
+    	n_nodes = (i_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_elm]-offsets_vec[i_elm-1]);
         // element_id element_type 3_other_tags material region partition
         file << id_elem_vec[i_elm]
-             << " " << gmsh_simplex_types_[ elm.dim() ]
-             << " 3 " << elm.region().id() << " " << elm.region().id() << " " << elm.element()->pid;
+             << " " << gmsh_simplex_types_[ n_nodes-1 ]
+             << " 3 " << regions_vec[i_elm] << " " << regions_vec[i_elm] << " " << partition_vec[i_elm];
 
-        for(unsigned int i=0; i<elm.element()->n_nodes(); i++) {
-            file << " " << id_node_vec[it->node_index(i)];
+        for(unsigned int i=0; i<n_nodes; i++, i_node++) {
+            file << " " << id_node_vec[connectivity_vec[i_node]];
         }
         file << endl;
     }
@@ -166,18 +172,19 @@ void OutputMSH::write_msh_topology(void)
 
 void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont)
 {
-    ofstream &file = this->_base_file;
+	ofstream &file = this->_base_file;
     auto &id_vec = *( id_cache->get_component_data(0).get() );
 
     /* Set precision to max */
     file.precision(std::numeric_limits<double>::digits10);
 
     if (discont) { // corner data
-        auto it = this->output_mesh_->begin();
-        unsigned int i_corner = 0;
-        for(unsigned int i=0; i < id_vec.size(); ++i, ++it) {
-            file << id_vec[i] << " " << it->n_nodes() << " ";
-            for (unsigned int j=0; j<it->n_nodes(); j++)
+    	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+    	unsigned int n_nodes, i_corner=0;
+        for(unsigned int i=0; i < id_vec.size(); ++i) {
+        	n_nodes = (i==0) ? (offsets_vec[0]) : (offsets_vec[i]-offsets_vec[i-1]);
+            file << id_vec[i] << " " << n_nodes << " ";
+            for (unsigned int j=0; j<n_nodes; j++)
             	output_data->print_ascii(file, i_corner++);
             file << std::endl;
         }
@@ -211,7 +218,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_data(this->output_mesh_->get_node_ids_cache(), output_data);
+    this->write_msh_ascii_data(this->node_ids_, output_data);
 
     file << "$EndNodeData" << endl;
 }
@@ -233,9 +240,9 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
     file << output_data->n_elem() << endl;   // number of components
-    file << this->output_mesh_->n_elements() << endl; // number of values
+    file << this->offsets_->n_values() << endl; // number of values
 
-    this->write_msh_ascii_data(this->output_mesh_->get_element_ids_cache(), output_data, true);
+    this->write_msh_ascii_data(this->elem_ids_, output_data, true);
 
     file << "$EndElementNodeData" << endl;
 }
@@ -258,7 +265,7 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_data(this->output_mesh_->get_element_ids_cache(), output_data);
+    this->write_msh_ascii_data(this->elem_ids_, output_data);
 
     file << "$EndElementData" << endl;
 }
@@ -351,4 +358,15 @@ void OutputMSH::add_dummy_fields()
 	}
 }
 
+
+
+void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	OutputTime::set_output_data_caches(mesh_ptr);
+
+	mesh_ptr->create_id_caches();
+	this->node_ids_ = mesh_ptr->node_ids_;
+	this->elem_ids_ = mesh_ptr->elem_ids_;
+	this->region_ids_ = mesh_ptr->region_ids_;
+	this->partitions_ = mesh_ptr->partitions_;
+}
 

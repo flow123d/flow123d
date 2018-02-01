@@ -223,7 +223,7 @@ public:
 	    auto in_rec =
 	            Input::ReaderToStorage(test_output_time_input, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_JSON)
                 .get_root_interface<Input::Record>();
-	    this->init_from_input("dummy_equation", *my_mesh, in_rec, "s");
+	    this->init_from_input("dummy_equation", in_rec, "s");
 
 	    component_names = { "comp_0", "comp_1", "comp_2" };
 
@@ -251,8 +251,9 @@ public:
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
         
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>(*my_mesh);
-        this->output_mesh_->create_mesh();
+        auto output_mesh = std::make_shared<OutputMesh>(*my_mesh);
+        output_mesh->create_mesh();
+        this->set_output_data_caches(output_mesh);
         
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
         //this->output_mesh_discont_->create_mesh();
