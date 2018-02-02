@@ -53,7 +53,7 @@ TEST(ReaderCache, get_bulk_element_) {
     for (i=0; i<3; ++i) {
     	ReaderCache::get_reader(file_name)->find_header(header_params);
         typename ElementDataCache<int>::ComponentDataPtr multifield_ =
-        		ReaderCache::get_reader(file_name)->get_element_data<int>(9, 1, false, i);
+        		ReaderCache::get_reader(file_name)->get_element_data<int>(9, 1, false, i, 0);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(9, vec.size());
     	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] );
@@ -64,7 +64,7 @@ TEST(ReaderCache, get_bulk_element_) {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	ReaderCache::get_reader(file_name)->find_header(header_params);
     	typename ElementDataCache<int>::ComponentDataPtr field_ =
-    			ReaderCache::get_reader(file_name)->get_element_data<int>(9, 3, false, 0);
+    			ReaderCache::get_reader(file_name)->get_element_data<int>(9, 3, false, 0, 0);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(27, vec.size());
     	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] );
@@ -94,7 +94,7 @@ TEST(ReaderCache, get_boundary_element_) {
     for (i=0; i<3; ++i) {
     	ReaderCache::get_reader(file_name)->find_header(header_params);
         typename ElementDataCache<int>::ComponentDataPtr multifield_ =
-        		ReaderCache::get_reader(file_name)->get_element_data<int>(4, 1, true, i);
+        		ReaderCache::get_reader(file_name)->get_element_data<int>(4, 1, true, i, 0);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(4, vec.size());
     	for (j=0; j<mesh->bc_elements.size(); j++) EXPECT_EQ( i+4, vec[j] );
@@ -105,7 +105,7 @@ TEST(ReaderCache, get_boundary_element_) {
     	BaseMeshReader::HeaderQuery header_params("vector_fixed", 1.0, OutputTime::DiscreteSpace::ELEM_DATA);
     	ReaderCache::get_reader(file_name)->find_header(header_params);
     	typename ElementDataCache<int>::ComponentDataPtr field_ =
-    			ReaderCache::get_reader(file_name)->get_element_data<int>(4, 3, true, 0);
+    			ReaderCache::get_reader(file_name)->get_element_data<int>(4, 3, true, 0, 0);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(12, vec.size());
     	for (j=0; j<3*mesh->bc_elements.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] );
