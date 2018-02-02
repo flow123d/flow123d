@@ -114,6 +114,8 @@ private:
     unsigned int n_entities_;
     /// Size of Value
     unsigned int n_components_;
+    /// Default value of element if not set in mesh data file
+    double default_value_;
 
     FilePath reader_file_;
     const Mesh *mesh_;

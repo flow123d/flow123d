@@ -42,6 +42,8 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
 		//		"Definition of unit.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
         .close();
 }
 
@@ -91,6 +93,9 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 
     field_name_ = rec.val<std::string>("field_name");
+    if (!rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -112,6 +117,7 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
 
 template <int spacedim, class Value>
 bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
+	std::cout << "FieldElementwise::set_time " << time.end() << ", field: " << field_name_ << std::endl;
 	OLD_ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     if ( reader_file_ == FilePath() ) return false;
 
@@ -122,7 +128,9 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
-    		n_entities_, n_components_, boundary_domain_, this->component_idx_);
+    		n_entities_, n_components_, boundary_domain_, this->component_idx_, default_value_);
+    for (auto item : (*data_)) std::cout << item << " ";
+    std::cout << std::endl << "------------------------------" << std::endl;
     this->scale_and_check_limits();
     return true;
 }

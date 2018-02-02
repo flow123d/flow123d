@@ -48,7 +48,7 @@ public:
 	 * @param size_of_cache Count of columns of data cache
 	 * @param row_vec_size  Count of rows of data cache
 	 */
-	ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size);
+	ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size, T default_val);
 
     /**
      * \brief Constructor of output ElementDataCache (allow write data)
@@ -73,7 +73,8 @@ public:
 	/**
 	 * Create data cache with given count of columns (\p size_of_cache) and rows (\p row_vec_size).
 	 */
-	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size);
+	static CacheData create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size,
+			T default_val = numeric_limits<T>::signaling_NaN());
 
 	/// Implements @p ElementDataCacheBase::read_ascii_data.
 	void read_ascii_data(Tokenizer &tok, unsigned int n_components, unsigned int i_row) override;

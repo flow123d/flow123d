@@ -178,7 +178,7 @@ public:
 	 */
     template<typename T>
     typename ElementDataCache<T>::ComponentDataPtr get_element_data( unsigned int n_entities, unsigned int n_components,
-    		bool boundary_domain, unsigned int component_idx);
+    		bool boundary_domain, unsigned int component_idx, T default_val);
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.

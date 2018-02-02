@@ -16,6 +16,8 @@
  */
 
 
+#include <limits>
+
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
 #include "system/armadillo_tools.hh"
@@ -29,10 +31,10 @@ ElementDataCache<T>::ElementDataCache()
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size) {
+ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size, T default_val) {
 	this->time_ = time;
 	this->field_input_name_ = field_name;
-	this->data_ = create_data_cache(size_of_cache, row_vec_size);
+	this->data_ = create_data_cache(size_of_cache, row_vec_size, default_val);
 }
 
 
@@ -81,11 +83,12 @@ typename ElementDataCache<T>::ComponentDataPtr ElementDataCache<T>::get_componen
 
 
 template <typename T>
-typename ElementDataCache<T>::CacheData ElementDataCache<T>::create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size) {
+typename ElementDataCache<T>::CacheData ElementDataCache<T>::create_data_cache(unsigned int size_of_cache, unsigned int row_vec_size,
+		T default_val) {
     typename ElementDataCache<T>::CacheData data_cache(size_of_cache);
     for (unsigned int i=0; i<size_of_cache; ++i) {
 		typename ElementDataCache<T>::ComponentDataPtr row_vec = std::make_shared<std::vector<T>>();
-		row_vec->resize(row_vec_size);
+		row_vec->resize(row_vec_size, default_val);
 		data_cache[i] = row_vec;
     }
 
