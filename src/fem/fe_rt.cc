@@ -22,17 +22,57 @@
 #include "quadrature/quadrature_lib.hh"
 
 
+RT0_space::RT0_space(unsigned int dim)
+{
+    this->space_dim_ = dim;
+    this->n_components_ = dim;
+}
+
+
+const double RT0_space::basis_value(unsigned int basis_index,
+                                    const arma::vec &point,
+                                    unsigned int comp_index) const
+{
+    OLD_ASSERT(basis_index < this->space_dim_+1, "Index of basis function is out of range.");
+    OLD_ASSERT(comp_index < this->n_components_, "Index of component is out of range.");
+
+    if (basis_index>0 && comp_index==basis_index-1)
+        return point[comp_index]-1;
+    else
+        return point[comp_index];
+}
+
+
+const arma::vec RT0_space::basis_grad(unsigned int basis_index,
+                                      const arma::vec &point,
+                                      unsigned int comp_index) const
+{
+    OLD_ASSERT(basis_index < this->space_dim_+1, "Index of basis function is out of range.");
+    OLD_ASSERT(comp_index < this->n_components_, "Index of component is out of range.");
+  
+    arma::vec g(this->space_dim_);
+    g.zeros();
+    g[comp_index] = 1;
+
+    return g;
+}
+
+
+
+
+
 template<unsigned int dim, unsigned int spacedim>
 FE_RT0<dim,spacedim>::FE_RT0()
 {
     arma::vec::fixed<dim> sp;
 
     this->init(spacedim, false, FEVector);
-    number_of_dofs = dim+1;
-    number_of_single_dofs[dim] = dim+1;
+    this->function_space_ = new RT0_space(dim);
+    this->number_of_dofs = this->function_space_->dim();
+    this->number_of_single_dofs[dim] = dim+1;
     
     this->component_indices_.clear();
-    this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
+    this->nonzero_components_.resize(this->number_of_dofs, std::vector<bool>(spacedim, true));
 
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
     {
@@ -40,80 +80,19 @@ FE_RT0<dim,spacedim>::FE_RT0()
         for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; ++i)
             sp += RefElement<dim>::node_coords(RefElement<dim>::interact(Interaction<0,dim-1>(sid))[i]);
         sp /= RefElement<dim>::n_nodes_per_side;
-        generalized_support_points.push_back(sp);
+        // barycentric coordinates
+        arma::vec::fixed<dim+1> bsp;
+        bsp.subvec(0,dim-1) = sp;
+        bsp[dim] = 1. - arma::sum(sp);
+        // The dof (flux through side) is computed as scalar product of the value with normal vector times side measure.
+        this->dofs_.push_back(Dof(dim-1, bsp, RefElement<dim>::normal_vector(sid)*RefElement<dim>::side_measure(sid), Value));
     }
 
-    compute_node_matrix();
+    this->compute_node_matrix();
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-double FE_RT0<dim,spacedim>::basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const
-{
-  OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
-  OLD_ASSERT(comp<this->n_components_, "Index of component is out of range.");
-  
-  if (i>0 && comp==i-1)
-    return p[comp]-1;
-  else
-    return p[comp];
-}
 
-
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_RT0<dim,spacedim>::basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const
-{
-  OLD_ASSERT(i<n_raw_functions, "Index of basis function is out of range.");
-  OLD_ASSERT(comp<this->n_components_, "Index of component is out of range.");
-  
-  arma::vec::fixed<dim> g;
-  g.zeros();
-  g[comp] = 1;
-
-  return g;
-}
-
-template<unsigned int dim, unsigned int spacedim>
-void FE_RT0<dim,spacedim>::compute_node_matrix()
-{
-    arma::mat::fixed<n_raw_functions,dim+1> F;
-    arma::vec::fixed<dim> r;
-
-    /*
-     * Node matrix helps creating the shape functions $\{b_k\}$ from
-     * the raw basis $\{r_i\}$:
-     *
-     * $$  b_k = \sum_{i=0}^{dim*(dim+1)-1} N_{ki} r_i. $$
-     *
-     * The shape functions must obey the flux condition
-     *
-     * $$ b_k\cdot n_j |\Gamma_j| = \delta_{kj}, $$
-     *
-     * where $n_j$, $|\Gamma_j|$ is the unit outward normal vector and
-     * the area of the $j$-th side, respectively. Consequently,
-     * the node matrix $N$ is determined as the Moon-Penrose
-     * pseudoinverse of the flux matrix, i.e.:
-     *
-     * $$ NF = I,\quad F_{ij} = r_i\cdot n_j |\Gamma_j|. $$
-     *
-     */
-
-    for (unsigned int i=0; i<n_raw_functions; i++)
-    {
-        for (unsigned int j=0; j<dim+1; ++j)
-        {
-            double dot_product = 0;
-            for (unsigned int c=0; c<dim; c++)
-               dot_product += basis_value(i,generalized_support_points[j],c)*RefElement<dim>::normal_vector(j)(c);
-            F(i,j) = dot_product*RefElement<dim>::side_measure(j);
-        }
-    }
-
-    if (dim>0) node_matrix = inv(F);
-
-}
 
 template<unsigned int dim, unsigned int spacedim>
 FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
@@ -130,9 +109,9 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
     {
         for (unsigned int j=0; j<n_raw_functions; j++)
             for (unsigned int c=0; c<dim; c++)
-              raw_values(j,c) = basis_value(j, q.point(i), c);
+              raw_values(j,c) = this->basis_value(j, q.point(i), c);
 
-        shape_values = node_matrix * raw_values;
+        shape_values = this->node_matrix * raw_values;
 
         for (unsigned int j=0; j<dim+1; j++)
             values[j] = trans(shape_values.row(j));
@@ -153,7 +132,7 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
             grad.zeros();
             for (unsigned int l=0; l<n_raw_functions; l++)
               for (unsigned int c=0; c<dim; c++)
-                grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(k,l);
+                grad.col(c) += this->basis_grad(l, q.point(i), c) * this->node_matrix(k,l);
             grads[k] = grad;
         }
 
