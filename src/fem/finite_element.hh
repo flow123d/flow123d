@@ -70,6 +70,73 @@ enum DofMultiplicity {
 const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
         DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
 
+// Possible types are: value, normal derivative, tangential derivative, ...
+enum DofType { Value = 1 };
+        
+class Dof {
+public:
+    
+    Dof(unsigned int dim_, arma::vec coords_, arma::vec coefs_, DofType type_)
+        : dim(dim_), coords(coords_), coefs(coefs_), type(type_) {}
+    
+    /// Evaulate dof for basis function of given function space.
+    template<class FS> const double evaluate(const FS &function_space, unsigned int basis_idx) const;
+    
+    /// Association to n-face of given dimension (point, line, triangle, tetrahedron.
+    unsigned int dim;
+    
+    /// Barycentric coordinates.
+    arma::vec coords;
+    
+    /// Coefficients of linear combination of function value components.
+    arma::vec coefs;
+    
+    DofType type;
+};
+
+class FunctionSpace {
+public:
+    
+    /**
+     * @brief Value of the @p i th basis function at point @p point.
+     * @param basis_index  Index of the basis function.
+     * @param point        Point coordinates.
+     * @param comp_index   Index of component (>0 for vector-valued functions).
+     */
+    virtual const double basis_value(unsigned int basis_index,
+                                     const arma::vec &point,
+                                     unsigned int comp_index = 0
+                                    ) const = 0;
+    
+    /**
+     * @brief Gradient of the @p i th basis function at point @p point.
+     * @param basis_index  Index of the basis function.
+     * @param point        Point coordinates.
+     * @param comp_index   Index of component (>0 for vector-valued functions).
+     */
+    virtual const arma::vec basis_grad(unsigned int basis_index,
+                                       const arma::vec &point,
+                                       unsigned int comp_index = 0
+                                      ) const = 0;
+    
+    /// Dimension of function space (number of basis functions).
+    virtual const unsigned int dim() const = 0;
+    
+    const unsigned int space_dim() const { return space_dim_; }
+    
+    const unsigned int n_components() const { return n_components_; }
+    
+    virtual ~FunctionSpace() {}
+    
+protected:
+    
+    /// Space dimension of function arguments (i.e. 1, 2 or 3).
+    unsigned int space_dim_;
+    
+    /// Number of components of function values.
+    unsigned int n_components_;
+};
+
 
 /// Types of FiniteElement: scalar, vector-valued, tensor-valued or mixed system.
 enum FEType {
@@ -222,6 +289,10 @@ public:
       return n_components_;
     }
     
+    Dof dof(unsigned int i) const {
+        return dofs_[i]; 
+    }
+    
     /**
      * @brief Destructor.
      */
@@ -267,12 +338,6 @@ protected:
             FEInternalData &data,
             FEValuesData<dim,spacedim> &fv_data);
 
-    /**
-     * @brief Returns either the generalized support points (if they are defined)
-     * or the unit support points.
-     */
-    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
-    
     /**
      * @brief Initializes the @p node_matrix for computing the coefficients
      * of the raw basis functions from values at support points.
@@ -356,25 +421,11 @@ protected:
      */
     arma::mat node_matrix;
 
-    /**
-     * @brief Support points for Lagrangean finite elements.
-     *
-     * Support points are points in the reference element where
-     * function values determine the dofs. In case of Lagrangean
-     * finite elements the dof values are precisely the function
-     * values at @p unit_support_points.
-     *
-     */
-    std::vector<arma::vec::fixed<dim> > unit_support_points;
-
-    /**
-     * @brief Support points for non-Lagrangean finite elements.
-     *
-     * In case of non-Lagrangean finite elements the meaning of the
-     * support points is different, hence we denote the structure
-     * as @p generalized_support_points.
-     */
-    std::vector<arma::vec::fixed<dim> > generalized_support_points;
+    /// Function space defining the FE.
+    FunctionSpace *function_space_;
+    
+    /// Set of degrees of freedom (functionals) defining the FE.
+    std::vector<Dof> dofs_;
     
     
     friend class FESystem<dim,spacedim>;

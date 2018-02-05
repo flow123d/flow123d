@@ -29,8 +29,36 @@ using namespace std;
 
 
 
+
+template<class FS> const double Dof::evaluate(const FS &function_space,
+                                              unsigned int basis_idx) const
+{
+    // We cannot evaluate dof on dim-dimensional n-face if the function space lies on lower-dimensional n-face.
+    ASSERT(function_space.space_dim()+1 == coords.size());
+    
+    switch (type)
+    {
+    case Value:
+    {
+        // evaluate basis function and return the linear combination of components
+        arma::vec vec_value(function_space.n_components());
+        for (unsigned int c=0; c<function_space.n_components(); c++)
+            vec_value[c] = function_space.basis_value(basis_idx, coords.subvec(0,coords.size()-2), c);
+        return dot(coefs, vec_value);
+        break;
+    }
+        
+    default:
+        OLD_ASSERT(false, "Dof evaluation not implemented for this type.");
+    }
+    return 0;
+}
+
+
+
 template<unsigned int dim, unsigned int spacedim>
 FiniteElement<dim,spacedim>::FiniteElement()
+    : function_space_(nullptr)
 {
     init();
 }
@@ -91,13 +119,11 @@ const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
 template<unsigned int dim, unsigned int spacedim> inline
 void FiniteElement<dim,spacedim>::compute_node_matrix()
 {
-	OLD_ASSERT_EQUAL(get_generalized_support_points().size(), number_of_dofs);
-
     arma::mat M(number_of_dofs, number_of_dofs);
 
     for (unsigned int i = 0; i < number_of_dofs; i++)
         for (unsigned int j = 0; j < number_of_dofs; j++) {
-            M(j, i) = basis_value(j, get_generalized_support_points()[i]);
+            M(j, i) = dofs_[i].evaluate(*function_space_, j);
 
         }
     node_matrix = arma::inv(M);
@@ -166,23 +192,13 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     }
 }
 
-template<unsigned int dim, unsigned int spacedim>
-const vector<arma::vec::fixed<dim> > &FiniteElement<dim,spacedim>::get_generalized_support_points()
-{
-    if (generalized_support_points.size() > 0)
-    {
-        return generalized_support_points;
-    }
-    else
-    {
-        return unit_support_points;
-    }
-}
 
 
 template<unsigned int dim, unsigned int spacedim>
 FiniteElement<dim,spacedim>::~FiniteElement()
-{}
+{
+    if (function_space_ != nullptr) delete function_space_;
+}
 
 
 template class FiniteElement<0,3>;
