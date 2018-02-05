@@ -116,7 +116,6 @@ void FE_P<dim,spacedim>::init_dofs()
 {
     if (degree_ == 0)
     {
-        this->number_of_dofs = 1;
         this->number_of_single_dofs[dim] = 1;
         // we define nodal dof:
         // coords = barycentric coordinates of the support point,
@@ -174,8 +173,6 @@ void FE_P<dim,spacedim>::init_dofs()
             coords /= degree_;
             this->dofs_.push_back(Dof(nonzeros.size()-1, coords, { 1 }, Value));
         }
-        
-        this->number_of_dofs = this->dofs_.size();
     }
 }
 
@@ -221,7 +218,7 @@ FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
         this->number_of_triples[i] = 0;
         this->number_of_sextuples[i] = 0;
     }
-    this->number_of_single_dofs[dim] = this->number_of_dofs;
+    this->number_of_single_dofs[dim] = this->n_dofs();
 
     for (auto dof : this->dofs_)
         dof.dim = dim;

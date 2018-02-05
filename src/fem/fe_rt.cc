@@ -68,12 +68,8 @@ FE_RT0<dim,spacedim>::FE_RT0()
 
     this->init(spacedim, false, FEVector);
     this->function_space_ = new RT0_space(dim);
-    this->number_of_dofs = this->function_space_->dim();
     this->number_of_single_dofs[dim] = dim+1;
     
-    this->component_indices_.clear();
-    this->nonzero_components_.resize(this->number_of_dofs, std::vector<bool>(spacedim, true));
-
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
     {
         sp.fill(0);
@@ -87,6 +83,8 @@ FE_RT0<dim,spacedim>::FE_RT0()
         // The dof (flux through side) is computed as scalar product of the value with normal vector times side measure.
         this->dofs_.push_back(Dof(dim-1, bsp, RefElement<dim>::normal_vector(sid)*RefElement<dim>::side_measure(sid), Value));
     }
+    this->component_indices_.clear();
+    this->nonzero_components_.resize(this->dofs_.size(), std::vector<bool>(spacedim, true));
 
     this->compute_node_matrix();
 }

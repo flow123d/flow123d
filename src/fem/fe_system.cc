@@ -79,7 +79,6 @@ void FESystem<dim,spacedim>::initialize()
   // information to the system
   for (auto fe : fe_)
   {
-    number_of_dofs += fe->n_dofs();
     n_components_ += fe->n_components();
     
     switch (fe->type_)
@@ -127,6 +126,20 @@ void FESystem<dim,spacedim>::initialize()
     basis_offset += fe->n_dofs();
   }
   
+  double dof_index = 0;
+  comp_offset = 0;
+  for (auto fe : fe_)
+  {
+      for (unsigned int i=0; i<fe->n_dofs(); i++)
+      {
+          arma::vec coefs(n_components_);
+          coefs.subvec(comp_offset, comp_offset+fe->dof(i).coefs.size()-1) = fe->dof(i).coefs;
+          this->dofs_.push_back(Dof(fe->dof(i).dim, fe->dof(i).coords, coefs, fe->dof(i).type));
+          dof_index++;
+      }
+      comp_offset += fe->n_components();
+  }
+  
   // make the permutation of dofs: first nodal dofs, then cell dofs
   for (auto dim_basis : basis)
     for (auto entity_basis : dim_basis)
@@ -142,7 +155,7 @@ void FESystem<dim,spacedim>::initialize()
 //         this->component_indices_.push_back(fe_dof_indices_[dof_index++].fe_index);
 //     }
 //   } else {
-    double dof_index = 0;
+    dof_index = 0;
     comp_offset = 0;
     // add footprint of nonzero components for each dof in FESystem
     for (auto fe : fe_)
@@ -169,7 +182,7 @@ double FESystem<dim,spacedim>::basis_value(const unsigned int i,
                                            const arma::vec::fixed<dim> &p, 
                                            const unsigned int comp) const
 {
-  OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+  OLD_ASSERT(i <= this->dofs_.size(), "Index of basis function is out of range.");
   
   unsigned int bi = dof_basis_[i];
   // component index in the base FE
@@ -185,7 +198,7 @@ arma::vec::fixed<dim> FESystem<dim,spacedim>::basis_grad(const unsigned int i,
                                                          const arma::vec::fixed<dim> &p, 
                                                          const unsigned int comp) const
 {
-  OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
+  OLD_ASSERT(i <= this->dofs_.size(), "Index of basis function is out of range.");
   
   unsigned int bi = dof_basis_[i];
   // component index in the base FE
@@ -215,7 +228,7 @@ void FESystem<dim,spacedim>::compute_node_matrix()
   // form the node_matrix of the FESystem as block diagonal matrix
   // composed of node_matrices of each base FE class
   
-  this->node_matrix.resize(number_of_dofs, number_of_dofs);
+  this->node_matrix.resize(this->dofs_.size(), this->dofs_.size());
 
   unsigned int offset = 0;
   for (unsigned int i = 0; i < fe_.size(); i++)
@@ -239,7 +252,7 @@ FEInternalData *FESystem<dim,spacedim>::initialize(const Quadrature<dim> &q)
     fe_data.push_back(fe->initialize(q));
 
   // fill values of basis functions
-  data->basis_vectors.resize(q.size(), std::vector<arma::vec>(number_of_dofs, arma::vec(n_components_)));
+  data->basis_vectors.resize(q.size(), std::vector<arma::vec>(this->dofs_.size(), arma::vec(n_components_)));
   
   unsigned int comp_offset = 0;
   unsigned int dof_offset = 0;
@@ -264,7 +277,7 @@ FEInternalData *FESystem<dim,spacedim>::initialize(const Quadrature<dim> &q)
   }
 
   // fill gradients of basis functions
-  data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(number_of_dofs, arma::mat(n_components_,dim)));
+  data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(this->dofs_.size(), arma::mat(n_components_,dim)));
   
   comp_offset = 0;
   dof_offset = 0;
@@ -388,7 +401,7 @@ void FESystem<dim,spacedim>::fill_fe_values(
   // reorder values for compatibility with dof handler and fill fv_data
   for (unsigned int i=0; i<q.size(); i++)
   {
-    for (unsigned int n=0; n<number_of_dofs; n++)
+    for (unsigned int n=0; n<this->dofs_.size(); n++)
       for (unsigned int c=0; c<n_components_; c++)
       {
         if (fv_data.update_flags & update_values)

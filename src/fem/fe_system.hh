@@ -35,7 +35,6 @@
 template <unsigned int dim, unsigned int spacedim>
 class FESystem : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
     using FiniteElement<dim,spacedim>::number_of_single_dofs;
     using FiniteElement<dim,spacedim>::number_of_pairs;
     using FiniteElement<dim,spacedim>::number_of_triples;

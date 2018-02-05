@@ -248,7 +248,7 @@ public:
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
-    const unsigned int n_dofs() const;
+    const unsigned int n_dofs() const { return dofs_.size(); }
 
     /**
      * @brief Returns the number of single dofs/dof pairs/triples/sextuples
@@ -291,7 +291,7 @@ public:
     }
     
     Dof dof(unsigned int i) const {
-        return dofs_[i]; 
+        return dofs_[i];
     }
     
     /**
@@ -371,11 +371,6 @@ protected:
     const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const {
       return nonzero_components_[sys_idx];
     }
-
-    /**
-     * @brief Total number of degrees of freedom at one finite element.
-     */
-    unsigned int number_of_dofs;
 
     /**
      * @brief Number of single dofs at one geometrical entity of the given
