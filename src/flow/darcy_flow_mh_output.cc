@@ -94,7 +94,10 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  compute_errors_(false)
+  compute_errors_(false),
+  fe1(1),
+  fe2(1),
+  fe3(1)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -599,8 +602,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<0,1,3> fe_1d;
-    FE_P_disc<0,2,3> fe_2d;
+    FE_P_disc<1,3> fe_1d(0);
+    FE_P_disc<2,3> fe_2d(0);
 
     QGauss<1> quad_1d( order );
     QGauss<2> quad_2d( order );
