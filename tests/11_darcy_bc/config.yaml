@@ -3,7 +3,7 @@ common_config:
   memory_limit: 1000
 
 test_cases:
-  files:
+- files:
     - 01_dirichlet.yaml
     - 02_neumann.yaml
     - 03_robin.yaml
