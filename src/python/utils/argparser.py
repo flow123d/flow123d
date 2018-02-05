@@ -283,8 +283,10 @@ class Parser(object):
         :rtype: RuntestArgs
         """
         result = RuntestArgs(*parser.parse_known_args(args))
+        
+        # if no paths or location are given, assuming current directory
         if not result.args:
-            parser.error('No yaml files or folder given')
+            result.args = ['.']
 
         cls.on_parse(result)
         return result
