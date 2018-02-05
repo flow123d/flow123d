@@ -1,68 +1,63 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <!--Import materialize.css-->
-    <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
-    <link type="text/css" rel="stylesheet" href="css/katex.min.css"  media="screen,projection"/>
-    <link type="text/css" rel="stylesheet" href="css/main.css" media="screen,projection" />
-    <link type="text/css" rel="stylesheet" href="css/colors.css" media="screen,projection" />
-    
-    <!-- Link to external graphical resource is necessary anyway due to Flow123d logo in SVG (see below),
-         which can not be loaded from flow123d.github.io from an external site. -->
-    <link rel="icon" type="image/x-icon" href="http://flow123d.github.io/images/favicon.ico">
 
-    <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Flow123d IST reference</title>
-  </head>
+<head>
+  <!--Import materialize.css-->
+  <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link type="text/css" rel="stylesheet" href="css/materialize.min.css" media="screen,projection" />
+  <link type="text/css" rel="stylesheet" href="css/katex.min.css" media="screen,projection" />
+  <link type="text/css" rel="stylesheet" href="css/main.css" media="screen,projection" />
+  <link type="text/css" rel="stylesheet" href="css/colors.css" media="screen,projection" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <!--Let browser know website is optimized for mobile-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flow123d IST reference</title>
+</head>
 
-  <body>
-      
-      
-    <nav id='nav' class="grey lighten-2" role="navigation">
-      <div class="nav-wrapper container">
-          <img src="http://flow123d.github.io/images/color.svg" style="height:  70px; float: left; padding-right: 20px;">
-          <span style="color: #666; font-weight: bold; font-size: 1.2em">ver @VERSION@</span>
-          <ul class="right hide-on-med-and-down menu-links">
-              <li class="n"><a class="show-root" href="#Root">Go to ROOT</a></li>
-              <li class="r"><a class="toggle-btn r" data-family=".toggle-btn.r" data-filter='.main-section.r' href="#">Records</a></li>
-              <li class="t"><a class="toggle-btn t" data-family=".toggle-btn.t" data-filter='.main-section.t' href="#">Tuples</a></li>
-              <li class="a"><a class="toggle-btn a" data-family=".toggle-btn.a" data-filter='.main-section.a' href="#">Abstracts</a></li>
-              <li class="s"><a class="toggle-btn s" data-family=".toggle-btn.s" data-filter='.main-section.s' href="#">Selections</a></li>
-          </ul>
-
-          <ul id="nav-mobile" class="side-nav menu-links">
-              <li class="n"><a class="show-root" href="#Root">Go to ROOT</a></li>
-              <li class="r"><a class="toggle-btn r" data-family=".toggle-btn.r" data-filter='.main-section.r' href="#">Records</a></li>
-              <li class="t"><a class="toggle-btn t" data-family=".toggle-btn.t" data-filter='.main-section.t' href="#">Tuples</a></li>
-              <li class="a"><a class="toggle-btn a" data-family=".toggle-btn.a" data-filter='.main-section.a' href="#">Abstracts</a></li>
-              <li class="s"><a class="toggle-btn s" data-family=".toggle-btn.s" data-filter='.main-section.s' href="#">Selections</a></li>
-          </ul>
-          <a href="#" data-activates="nav-mobile" class="button-collapse text-black"><i class="material-icons">menu</i></a>
+<body>
+  <div class="container">
+    <div class="row">
+      <div id="col-left" class="col s3 no-pad">
+        <nav id="nav-left">
+          <div class="nav-wrapper grey lighten-5">
+            <a href="#Root" class="left logo">
+                     <img src="http://flow123d.github.io/images/black.svg">
+                     </a>
+            <span class="version hide-on-med-and-down robot">ver @VERSION@</span>
+          </div>
+        </nav>
+        @NAVIGATION@
       </div>
-    </nav>
-    <div id="navspace">&nbsp;</div>
-    
-    <div class="generated robot">Generated @GENERATED@</div>
-      
-    <div class="container">
-        <hr />
-        <div class="row content">
-            <div class="col items">
-                @NAVIGATION@
-            </div>
-
-            <div class="col input-reference">
-                @IST@
-            </div>
-        </div>
+      <div id="col-right" class="col s9 no-pad">
+        <nav id="nav-right" class="grey lighten-3" role="navigation">
+          <div class="nav-wrapper">
+            <ul class="right hide-on-med-and-down menu-links">
+              <li class="n"><a class="show-root" href="#Root">Go to ROOT</a></li>
+              <li class="r"><a class="toggle-btn r" data-family=".toggle-btn.r" data-filter='.main-section.r' href="#">Records</a></li>
+              <li class="t"><a class="toggle-btn t" data-family=".toggle-btn.t" data-filter='.main-section.t' href="#">Tuples</a></li>
+              <li class="a"><a class="toggle-btn a" data-family=".toggle-btn.a" data-filter='.main-section.a' href="#">Abstracts</a></li>
+              <li class="s"><a class="toggle-btn s" data-family=".toggle-btn.s" data-filter='.main-section.s' href="#">Selections</a></li>
+            </ul>
+            <ul id="nav-mobile" class="side-nav menu-links">
+              <li class="n"><a class="show-root" href="#Root">Go to ROOT</a></li>
+              <li class="r"><a class="toggle-btn r" data-family=".toggle-btn.r" data-filter='.main-section.r' href="#">Records</a></li>
+              <li class="t"><a class="toggle-btn t" data-family=".toggle-btn.t" data-filter='.main-section.t' href="#">Tuples</a></li>
+              <li class="a"><a class="toggle-btn a" data-family=".toggle-btn.a" data-filter='.main-section.a' href="#">Abstracts</a></li>
+              <li class="s"><a class="toggle-btn s" data-family=".toggle-btn.s" data-filter='.main-section.s' href="#">Selections</a></li>
+            </ul>
+            <a href="#" data-activates="nav-mobile" class="button-collapse text-black"><i class="material-icons">menu</i></a>
+          </div>
+        </nav>
+        @IST@
+        <div class="generated robot right-align small">Generated @GENERATED@</div>
+      </div>
     </div>
+  </div>
+  <!--Import jQuery before materialize.js-->
+  <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
+  <script type="text/javascript" src="js/materialize.min.js"></script>
+  <script type="text/javascript" src="js/katex.min.js"></script>
+  <script type="text/javascript" src="js/main.js"></script>
+</body>
 
-    <!--Import jQuery before materialize.js-->
-    <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
-    <script type="text/javascript" src="js/materialize.min.js"></script>
-    <script type="text/javascript" src="js/katex.min.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-  </body>
 </html>
