@@ -103,9 +103,6 @@ void FESystem<dim,spacedim>::initialize()
       number_of_sextuples[i] += fe->n_object_dofs(i, DOF_SEXTUPLE);
     }
 
-    for (int i=0; i<fe->get_generalized_support_points().size(); i++)
-        generalized_support_points.push_back(fe->get_generalized_support_points()[i]);
-
     for (int i=0; i<fe->n_dofs(); ++i)
       fe_dof_indices_.push_back(DofComponentData(fe_index, i, comp_offset));
     
@@ -215,8 +212,6 @@ UpdateFlags FESystem<dim,spacedim>::update_each(UpdateFlags flags)
 template<unsigned int dim, unsigned int spacedim>
 void FESystem<dim,spacedim>::compute_node_matrix()
 {
-  OLD_ASSERT_EQUAL(this->get_generalized_support_points().size(), number_of_dofs);
-
   // form the node_matrix of the FESystem as block diagonal matrix
   // composed of node_matrices of each base FE class
   

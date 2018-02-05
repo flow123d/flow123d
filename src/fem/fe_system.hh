@@ -41,8 +41,6 @@ class FESystem : public FiniteElement<dim,spacedim>
     using FiniteElement<dim,spacedim>::number_of_triples;
     using FiniteElement<dim,spacedim>::number_of_sextuples;
     using FiniteElement<dim,spacedim>::n_components_;
-    using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::generalized_support_points;
 
 public:
   
