@@ -270,7 +270,7 @@ public:
      * @param comp Number of vector component.
      */
     virtual double basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /**
      * @brief Calculates the @p comp-th component of the gradient
@@ -282,7 +282,7 @@ public:
      * @param comp Number of vector component.
      */
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
     inline unsigned int n_components() const {

@@ -155,6 +155,28 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
     return data;
 }
 
+
+template<unsigned int dim, unsigned int spacedim>
+double FiniteElement<dim,spacedim>::basis_value(const unsigned int i, 
+                                       const arma::vec::fixed<dim> &p,
+                                       const unsigned int comp) const
+{
+    ASSERT_DBG( comp < n_components_ );
+	ASSERT_DBG( i < number_of_dofs).error("Index of basis function is out of range.");
+    return this->function_space_->basis_value(i, p, comp);
+}
+
+template<unsigned int dim, unsigned int spacedim>
+arma::vec::fixed<dim> FiniteElement<dim,spacedim>::basis_grad(const unsigned int i,
+                                                     const arma::vec::fixed<dim> &p,
+                                                     const unsigned int comp) const
+{
+    ASSERT_DBG( comp < n_components_ );
+	ASSERT_DBG( i < number_of_dofs).error("Index of basis function is out of range.");
+    return this->function_space_->basis_grad(i, p, comp);
+}
+
+
 template<unsigned int dim, unsigned int spacedim> inline
 UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
 {
