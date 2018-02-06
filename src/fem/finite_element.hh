@@ -39,38 +39,6 @@ template<unsigned int dim> class Quadrature;
 
 
 
-/**
- * @brief Multiplicity of finite element dofs.
- *
- * Multiplicities describe groups of dofs whose order changes with
- * the configuration (e.g. the rotation or orientation) of
- * the geometrical entity relative to the actual cell.
- *
- * In each spatial dimension we accept the following dof multiplicities:
- *
- * 0) Point (1 configuration):
- *    - single dofs
- *
- * 1) Line (2 possible configurations=orientations):
- *    - single dofs
- *    - pairs
- *
- * 2) Triangle (2 orientations and 3 rotations=6 configurations):
- *    - single dofs
- *    - pairs
- *    - triples
- *    - sextuples
- *
- * 3) Tetrahedron (1 configuration, since it is always the cell):
- *    - single dofs
- */
-enum DofMultiplicity {
-    DOF_SINGLE = 1, DOF_PAIR = 2, DOF_TRIPLE = 3, DOF_SEXTUPLE = 6
-};
-
-const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
-        DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
-
 // Possible types are: value, normal derivative, tangential derivative, ...
 enum DofType { Value = 1 };
         
@@ -192,12 +160,6 @@ public:
  * neighbouring cells in the mesh then this dof is shared by the
  * finite elements on all of these cells. If a dof is associated
  * to the cell itself then it is not shared with neighbouring cells.
- * The ordering of nodes in the entity may not be appropriate for the
- * finite elements on the neighbouring cells, hence we need to
- * describe how the order of dofs changes with the relative
- * configuration of the entity with respect to the actual cell.
- * For this reason we define the dof multiplicity which allows to
- * group the dofs as described in \ref DofMultiplicity.
  * 
  * 
  * Dof ordering:
@@ -361,28 +323,6 @@ protected:
       return nonzero_components_[sys_idx];
     }
 
-    /**
-     * @brief Number of single dofs at one geometrical entity of the given
-     * dimension (point, line, triangle, tetrahedron).
-     */
-    unsigned int number_of_single_dofs[dim + 1];
-
-    /**
-     * @brief Number of pairs of dofs at one geometrical entity of the given
-     * dimension (applicable to lines and triangles).
-     */
-    unsigned int number_of_pairs[dim + 1];
-
-    /**
-     * @brief Number of triples of dofs associated to one triangle.
-     */
-    unsigned int number_of_triples[dim + 1];
-
-    /**
-     * @brief Number of sextuples of dofs associated to one triangle.
-     */
-    unsigned int number_of_sextuples[dim + 1];
-    
     /// Type of FiniteElement.
     FEType type_;
 

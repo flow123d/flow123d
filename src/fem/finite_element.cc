@@ -67,14 +67,6 @@ template<unsigned int dim, unsigned int spacedim>
 void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive, FEType type)
 {
     dofs_.clear();
-    for (unsigned int i = 0; i <= dim; i++)
-    {
-        number_of_single_dofs[i] = 0;
-        number_of_pairs[i] = 0;
-        number_of_triples[i] = 0;
-        number_of_sextuples[i] = 0;
-    }
-    
     is_primitive_ = primitive;
     n_components_ = n_components;
     type_ = type;

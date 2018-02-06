@@ -68,7 +68,6 @@ FE_RT0<dim,spacedim>::FE_RT0()
 
     this->init(spacedim, false, FEVector);
     this->function_space_ = new RT0_space(dim);
-    this->number_of_single_dofs[dim] = dim+1;
     
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
     {

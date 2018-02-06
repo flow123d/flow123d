@@ -116,7 +116,6 @@ void FE_P<dim,spacedim>::init_dofs()
 {
     if (degree_ == 0)
     {
-        this->number_of_single_dofs[dim] = 1;
         // we define nodal dof:
         // coords = barycentric coordinates of the support point,
         // coefs  = 1 (dof value = function value at the point)
@@ -211,15 +210,7 @@ template<unsigned int dim, unsigned int spacedim>
 FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
     : FE_P<dim,spacedim>(degree)
 {
-    for (unsigned int i = 0; i <= dim; i++)
-    {
-        this->number_of_single_dofs[i] = 0;
-        this->number_of_pairs[i] = 0;
-        this->number_of_triples[i] = 0;
-        this->number_of_sextuples[i] = 0;
-    }
-    this->number_of_single_dofs[dim] = this->n_dofs();
-
+    // all dofs are "inside" the cell (not shared with neighbours)
     for (unsigned int i=0; i<this->dofs_.size(); i++)
         this->dofs_[i].dim = dim;
     
