@@ -61,9 +61,6 @@ class FE_RT0 : public FiniteElement<dim,spacedim>
 {
 public:
 
-    /// Number of raw basis functions.
-    static const unsigned int n_raw_functions = dim+1;
-
     /**
      * @brief Constructor.
      */

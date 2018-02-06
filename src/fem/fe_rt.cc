@@ -31,7 +31,7 @@ const double RT0_space::basis_value(unsigned int basis_index,
                                     const arma::vec &point,
                                     unsigned int comp_index) const
 {
-    OLD_ASSERT(basis_index < this->space_dim_+1, "Index of basis function is out of range.");
+    OLD_ASSERT(basis_index < this->dim(), "Index of basis function is out of range.");
     OLD_ASSERT(comp_index < this->n_components_, "Index of component is out of range.");
 
     if (basis_index>0 && comp_index==basis_index-1)
@@ -45,7 +45,7 @@ const arma::vec RT0_space::basis_grad(unsigned int basis_index,
                                       const arma::vec &point,
                                       unsigned int comp_index) const
 {
-    OLD_ASSERT(basis_index < this->space_dim_+1, "Index of basis function is out of range.");
+    OLD_ASSERT(basis_index < this->dim(), "Index of basis function is out of range.");
     OLD_ASSERT(comp_index < this->n_components_, "Index of component is out of range.");
   
     arma::vec g(this->space_dim_);
@@ -94,21 +94,20 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
 {
     FEInternalData *data = new FEInternalData;
 
-    arma::mat::fixed<n_raw_functions,dim> raw_values;
-    arma::mat::fixed<dim+1,dim> shape_values;
-    vector<arma::vec> values;
+    arma::mat raw_values(this->function_space_->dim(), dim);
+    arma::mat shape_values(this->function_space_->dim(), dim);
+    vector<arma::vec> values(this->function_space_->dim());
 
     data->basis_vectors.resize(q.size());
-    values.resize(dim+1);
     for (unsigned int i=0; i<q.size(); i++)
     {
-        for (unsigned int j=0; j<n_raw_functions; j++)
-            for (unsigned int c=0; c<dim; c++)
+        for (unsigned int j=0; j<this->function_space_->dim(); j++)
+            for (unsigned int c=0; c<this->n_components(); c++)
               raw_values(j,c) = this->basis_value(j, q.point(i), c);
 
         shape_values = this->node_matrix * raw_values;
 
-        for (unsigned int j=0; j<dim+1; j++)
+        for (unsigned int j=0; j<this->function_space_->dim(); j++)
             values[j] = trans(shape_values.row(j));
 
         data->basis_vectors[i] = values;
@@ -116,17 +115,16 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
 
     arma::mat::fixed<dim,dim> grad;
     arma::mat::fixed<dim,dim> shape_grads;
-    vector<arma::mat> grads;
+    vector<arma::mat> grads(this->function_space_->dim());
 
     data->basis_grad_vectors.resize(q.size());
-    grads.resize(dim+1);
     for (unsigned int i=0; i<q.size(); i++)
     {
-        for (unsigned int k=0; k<dim+1; k++)
+        for (unsigned int k=0; k<this->function_space_->dim(); k++)
         {
             grad.zeros();
-            for (unsigned int l=0; l<n_raw_functions; l++)
-              for (unsigned int c=0; c<dim; c++)
+            for (unsigned int l=0; l<this->function_space_->dim(); l++)
+              for (unsigned int c=0; c<this->n_components(); c++)
                 grad.col(c) += this->basis_grad(l, q.point(i), c) * this->node_matrix(k,l);
             grads[k] = grad;
         }
@@ -163,7 +161,7 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
         arma::vec::fixed<spacedim> values;
         for (unsigned int i = 0; i < q.size(); i++)
         {
-            for (unsigned int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<this->function_space_->dim(); k++)
             {
                 values = fv_data.jacobians[i]*data.basis_vectors[i][k]/fv_data.determinants[i];
                 for (unsigned int c=0; c<spacedim; c++)
@@ -178,7 +176,7 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
         arma::mat::fixed<spacedim,spacedim> grads;
         for (unsigned int i = 0; i < q.size(); i++)
         {
-            for (unsigned int k=0; k<dim+1; k++)
+            for (unsigned int k=0; k<this->function_space_->dim(); k++)
             {
               grads = fv_data.jacobians[i]*data.basis_grad_vectors[i][k]*fv_data.inverse_jacobians[i]/fv_data.determinants[i];
               for (unsigned int c=0; c<spacedim; c++)
