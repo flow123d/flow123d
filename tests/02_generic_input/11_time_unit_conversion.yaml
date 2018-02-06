@@ -24,7 +24,7 @@ problem: !Coupling_Sequential
               - 5.0
           time_unit: "s"
         sigma: !FieldElementwise
-          mesh_data_file: ../00_mesh/prism_11el.msh
+          mesh_data_file: ./11_mesh_with_data_11el.msh
           field_name: sigma
           time_unit: "min"
         anisotropy: 10
