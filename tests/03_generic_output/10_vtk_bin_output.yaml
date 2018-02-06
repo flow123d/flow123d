@@ -40,6 +40,7 @@ problem: !Coupling_Sequential
       file: flow.pvd
       format: !vtk
         variant: binary
+      precision: 6  
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -116,6 +117,7 @@ problem: !Coupling_Sequential
         variant: binary
       times:
         - step: 0.1
+      precision: 6  
     time:
       end_time: 1.0
     balance:

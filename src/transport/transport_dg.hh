@@ -430,19 +430,19 @@ private:
 	// @{
 
 	/// Vector of right hand side.
-	Vec *rhs;
+	std::vector<Vec> rhs;
 
 	/// The stiffness matrix.
-	Mat *stiffness_matrix;
+	std::vector<Mat> stiffness_matrix;
 
 	/// The mass matrix.
-	Mat *mass_matrix;
+	std::vector<Mat> mass_matrix;
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
-	Vec *mass_vec;
+	std::vector<Vec> mass_vec;
     
     /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
-    Vec *ret_vec;
+	std::vector<Vec> ret_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;

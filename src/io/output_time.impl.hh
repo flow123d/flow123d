@@ -83,11 +83,11 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     switch (space_type) {
     	case NODE_DATA:
     	case CORNER_DATA:
-    		size = output_mesh_->n_nodes();
+    		size = this->nodes_->n_values();
     		break;
     	case ELEM_DATA:
     	case NATIVE_DATA:
-    		size = output_mesh_->n_elements();
+    		size = this->offsets_->n_values();
     		break;
     	default:
     		ASSERT(false).error("Should not happen.");

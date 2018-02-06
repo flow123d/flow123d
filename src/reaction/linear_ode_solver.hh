@@ -20,6 +20,8 @@
 
 #include "armadillo"
 #include "input/accessors.hh"
+#include "system/global_defs.h"
+#include "system/asserts.hh"
 
 
 /// @brief Base class for linear ODE solver.

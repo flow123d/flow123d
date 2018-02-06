@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
 <Collection>
-<DataSet timestep="0.000000000000000e+00" group="" part="0" file="test35_32d/test35_32d-000000.vtu"/>
-<DataSet timestep="0.000000000000000e+00" group="" part="1" file="test35_32d/test35_32d-000001.vtu"/>
+<DataSet timestep="0" group="" part="0" file="test35_32d/test35_32d-000000.0.vtu"/>
+<DataSet timestep="0" group="" part="1" file="test35_32d/test35_32d-000000.1.vtu"/>
 </Collection>
 </VTKFile>

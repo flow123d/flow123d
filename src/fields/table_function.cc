@@ -17,6 +17,7 @@
 
 #include "fields/table_function.hh"
 #include "input/input_type.hh"
+#include "system/logger.hh"
 
 namespace it = Input::Type;
 

@@ -21,6 +21,8 @@
 #include "input/type_output.hh"
 #include "system/application_base.hh"
 #include "system/exceptions.hh"
+class HC_ExplicitSequential;
+
 
 using namespace std;
 

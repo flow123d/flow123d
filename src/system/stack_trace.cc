@@ -16,6 +16,7 @@
  */
 
 #include "system/stack_trace.hh"
+#include <cstring>
 #include "config.h"
 #include <boost/exception/diagnostic_information.hpp>
 

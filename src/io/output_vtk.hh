@@ -60,6 +60,8 @@ public:
 	 */
     static const Input::Type::Selection & get_input_type_variant();
 
+
+
     /**
      * \brief This function write data to VTK (.pvd) file format
      * for curent time
@@ -77,7 +79,7 @@ public:
     int write_tail(void);
 
     /// Override @p OutputTime::init_from_input.
-    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec) override;
+    void init_from_input(const std::string &equation_name, const Input::Record &in_rec) override;
 
 protected:
 
@@ -125,6 +127,11 @@ protected:
 
     /// Formats of DataArray section
 	static const std::vector<std::string> formats;
+
+	/**
+	 * Used internally by write_data.
+	 */
+	string form_vtu_filename_(string basename, int i_step, int rank);
 
 	/**
      * \brief Write header of VTK file (.vtu)

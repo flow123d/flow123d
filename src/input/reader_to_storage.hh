@@ -21,21 +21,37 @@
 
 #include <sstream>
 
-#include "input/input_type_forward.hh"
-
-#include "input/input_exception.hh"
-#include "input/storage.hh"
-#include "input/path_base.hh"
 
 #include "system/file_path.hh"
+#include <sys/types.h>                 // for int64_t
+#include <boost/exception/info.hpp>    // for error_info::~error_info<Tag, T>
+#include <memory>                      // for shared_ptr
+#include <string>                      // for string
+#include "system/exceptions.hh"        // for operator<<, ExcStream, EI, TYP...
+namespace Input { class PathBase; }
+namespace Input { class StorageBase; }
+namespace Input { namespace Type { class Abstract; } }
+namespace Input { namespace Type { class Array; } }
+namespace Input { namespace Type { class Bool; } }
+namespace Input { namespace Type { class Double; } }
+namespace Input { namespace Type { class Integer; } }
+namespace Input { namespace Type { class Record; } }
+namespace Input { namespace Type { class Selection; } }
+namespace Input { namespace Type { class String; } }
+namespace Input { namespace Type { class Tuple; } }
+namespace Input { namespace Type { class TypeBase; } }
+
+namespace Input { namespace Type { class Default; } }
+namespace Input { namespace Type { class TypeBase; } }
+
 
 
 namespace Input {
 
 using namespace std;
 
-class ReaderInternalBase;
-class ReaderInternalCsvInclude;
+//class ReaderInternalBase;
+//class ReaderInternalCsvInclude;
 
 
 
