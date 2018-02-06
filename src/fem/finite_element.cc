@@ -90,27 +90,6 @@ void FiniteElement<dim,spacedim>::setup_components()
 
 
 template<unsigned int dim, unsigned int spacedim> inline
-const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
-        unsigned int object_dim, DofMultiplicity multiplicity)
-{
-	OLD_ASSERT(object_dim >= 0 && object_dim <= dim,
-            "Object type number is out of range.");
-    switch (multiplicity)
-    {
-    case DOF_SINGLE:
-        return number_of_single_dofs[object_dim];
-    case DOF_PAIR:
-        return number_of_pairs[object_dim];
-    case DOF_TRIPLE:
-        return number_of_triples[object_dim];
-    case DOF_SEXTUPLE:
-        return number_of_sextuples[object_dim];
-    }
-
-    return 0;
-}
-
-template<unsigned int dim, unsigned int spacedim> inline
 void FiniteElement<dim,spacedim>::compute_node_matrix()
 {
     arma::mat M(dofs_.size(), dofs_.size());

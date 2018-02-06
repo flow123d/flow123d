@@ -94,14 +94,6 @@ void FESystem<dim,spacedim>::initialize()
         break;
     }
 
-    for (int i=0; i<=dim; ++i)
-    {
-      number_of_single_dofs[i] += fe->n_object_dofs(i, DOF_SINGLE);
-      number_of_pairs[i] += fe->n_object_dofs(i, DOF_PAIR);
-      number_of_triples[i] += fe->n_object_dofs(i, DOF_TRIPLE);
-      number_of_sextuples[i] += fe->n_object_dofs(i, DOF_SEXTUPLE);
-    }
-
     for (int i=0; i<fe->n_dofs(); ++i)
       fe_dof_indices_.push_back(DofComponentData(fe_index, i, comp_offset));
     
@@ -109,17 +101,26 @@ void FESystem<dim,spacedim>::initialize()
     // we assume that in the base FE, the nodal dofs are ordered as follows:
     //   dof 0 for node 0, dof 1 for node 1, ... dof dim for node dim,
     //   dof dim+1 for node 0, dof dim+2 for node 1, ...
-    unsigned int dofs_per_node = fe->n_object_dofs(0, DOF_SINGLE) / (dim+1);
-    for (unsigned int i=0; i<fe->n_object_dofs(0, DOF_SINGLE); i++)
-      basis[0][i / dofs_per_node].push_back(basis_offset+i);
+    unsigned int n_node_dofs = 0;
+    unsigned int n_cell_dofs = 0;
+    for (unsigned int i=0; i<fe->n_dofs(); i++)
+        switch (fe->dof(i).dim) {
+            case 0:
+                n_node_dofs++;
+                break;
+            case dim:
+                n_cell_dofs++;
+                break;
+        }
+    unsigned int dofs_per_node = n_node_dofs / (dim+1);
     
-    unsigned int n_cell_dofs = fe->n_object_dofs(dim, DOF_SINGLE)
-                              +fe->n_object_dofs(dim, DOF_PAIR)
-                              +fe->n_object_dofs(dim, DOF_TRIPLE)
-                              +fe->n_object_dofs(dim, DOF_SEXTUPLE);
+    for (unsigned int i=0; i<dim+1; i++)
+        for (unsigned int j=0; j<dofs_per_node; j++)
+            basis[0][i].push_back(basis_offset+i*dofs_per_node+j);
+    
     // in base FE, first come the nodal dofs, then cell dofs
     for (unsigned int i=0; i<n_cell_dofs; i++)
-      basis[dim][0].push_back(basis_offset+fe->n_object_dofs(0,DOF_SINGLE)+i);
+      basis[dim][0].push_back(basis_offset+n_node_dofs+i);
     
     fe_index++;
     comp_offset += fe->n_components();

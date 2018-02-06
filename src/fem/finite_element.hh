@@ -251,17 +251,6 @@ public:
     const unsigned int n_dofs() const { return dofs_.size(); }
 
     /**
-     * @brief Returns the number of single dofs/dof pairs/triples/sextuples
-     * that lie on a single geometric entity of the dimension
-     * @p object_dim.
-     *
-     * @param object_dim Dimension of the geometric entity.
-     * @param multiplicity Multiplicity of dofs.
-     */
-    const unsigned int n_object_dofs(unsigned int object_dim,
-            DofMultiplicity multiplicity);
-
-    /**
      * @brief Calculates the value of the @p comp-th component of
      * the @p i-th raw basis function at the
      * point @p p on the reference element.

@@ -220,9 +220,9 @@ FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
     }
     this->number_of_single_dofs[dim] = this->n_dofs();
 
-    for (auto dof : this->dofs_)
-        dof.dim = dim;
-
+    for (unsigned int i=0; i<this->dofs_.size(); i++)
+        this->dofs_[i].dim = dim;
+    
     this->setup_components();
 
     this->compute_node_matrix();
