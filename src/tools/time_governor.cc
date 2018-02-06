@@ -45,12 +45,11 @@ using namespace Input::Type;
 
 const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper_bound)
 {
-    return Tuple("TimeValue", "Value of Field for independent variable.")
+    return Tuple("TimeValue", "A time with unit specification.")
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
                                     "Numeric value of time." )
-		.declare_key("unit", String(), Default::optional(),
-									"Specify unit of an input time value. This value overrides default unit "
-									"of equation specified by 'common_time_unit' key of Time Governor.")
+		.declare_key("unit", String(), Default::read_time("Common time unit of equation defined in Time Governor"),
+									"Specify unit of an input time value.")
 		.close();
 }
 
@@ -79,7 +78,15 @@ const Record & TimeGovernor::get_input_type() {
 				"by input and output times.")
 		.declare_key("common_time_unit", String(), Default("\"s\""),
 				"Common time unit of equation. This unit will be used for all time inputs and outputs "
-				"within the equation.")
+				"within the equation. On inputs can be overwrite for every time definition.\n"
+				"Time units are used in following cases:\n"
+				"1) Time units of time value keys in: TimeGovernor, OutputTimeSet, FieldDescriptors.\n"
+				"   Global definition of unit can be overwrite for every declared time.\n"
+				"2) Time units in input fields: FieldElementwise, FieldInterpolatedP0, FieldFE and FieldTimeFunction\n"
+				"   Global definition can be overwrite by one unit value for every whole mesh data file or time function.\n"
+				"3) Time units in output files: Observe times, balance times, frame times of VTK and GMSH\n"
+				"   Global definition can't be overwritten.\n"
+				)
 		.close();
 }
 
