@@ -39,17 +39,52 @@ template<unsigned int dim> class Quadrature;
 
 
 
-// Possible types are: value, normal derivative, tangential derivative, ...
+// Possible types are: value, gradient, cell integral, ...
 enum DofType { Value = 1 };
-        
+
+/**
+ * Class Dof is a general description of functionals (degrees of freedom)
+ * determining the finite element. We assume that the Dof is defined as
+ * a linear combination of components of function value at a given point:
+ * 
+ *     Dof_value = a_1.f_1(x) + ... + a_n.f_n(x),
+ * 
+ * where (a_1, ... , a_n) are given by @p coefs, x is the support point
+ * given by barycentric @p coords and (f_1, ..., f_n) is a generally
+ * vector-valued function. For the simplest Dof, i.e. value of a scalar
+ * function at point p, we set
+ * 
+ *    @p coords = p, @p coefs = { 1 }.
+ * The member @p dim denotes the affiliation of Dof to n-face:
+ *    Nodal dofs have      dim = 0,
+ *    Dofs on lines:       dim = 1,
+ *    Dofs on triangles:   dim = 2,
+ *    Dofs in tetrahedron: dim = 3.
+ * It means that when a node, line or triangle is shared by adjacent cells,
+ * also the Dofs on this n-face are shared by the cells. Therefore
+ * for DG finite elements we set for all dofs the highest possible dimension.
+ * 
+ * The class implements the method evaluate() which computes the Dof value
+ * for a basis function from given FunctionSpace.
+ */
 class Dof {
 public:
     
-    Dof(unsigned int dim_, arma::vec coords_, arma::vec coefs_, DofType type_)
-        : dim(dim_), coords(coords_), coefs(coefs_), type(type_) {}
+    Dof(unsigned int dim_,
+        arma::vec coords_,
+        arma::vec coefs_,
+        DofType type_)
+    
+        : dim(dim_),
+          coords(coords_),
+          coefs(coefs_),
+          type(type_)
+    {}
     
     /// Evaulate dof for basis function of given function space.
-    template<class FS> const double evaluate(const FS &function_space, unsigned int basis_idx) const;
+    template<class FS>
+    const double evaluate(const FS &function_space, 
+                          unsigned int basis_idx) const;
     
     /// Association to n-face of given dimension (point, line, triangle, tetrahedron.
     unsigned int dim;
@@ -60,9 +95,24 @@ public:
     /// Coefficients of linear combination of function value components.
     arma::vec coefs;
     
+    /** 
+     * Currently we consider only type=Value, possibly we could have Gradient,
+     * CellIntegral, FaceIntegral or other types.
+     */
     DofType type;
 };
 
+
+/**
+ * FunctionSpace is an abstract class that is used to describe finite elements.
+ * It is determined by the dimension of the field of definition (@p space_dim_),
+ * by the dimension of the range (@p n_components_) and by the values and
+ * gradients of a basis functions.
+ * 
+ * Combining FunctionSpace with Dof(s), the FiniteElement class constructs the
+ * shape functions, i.e. basis of FunctionSpace for which the Dof(s) attain
+ * the value 0 or 1.
+ */
 class FunctionSpace {
 public:
     
@@ -99,8 +149,10 @@ public:
     /// Dimension of function space (number of basis functions).
     virtual const unsigned int dim() const = 0;
     
+    /// Getter for space dimension.
     const unsigned int space_dim() const { return space_dim_; }
     
+    /// Getter for number of components.
     const unsigned int n_components() const { return n_components_; }
     
     virtual ~FunctionSpace() {}
@@ -159,6 +211,13 @@ public:
 /**
  * @brief Abstract class for the description of a general finite element on
  * a reference simplex in @p dim dimensions.
+ * 
+ * The finite element is determined by a @p function_space_ and a set
+ * of @p dofs_. Further it must be set whether the finite element
+ * @p is_primitive_, which means that even if the functions in
+ * @p function_space_ are vector-valued, the basis functions have
+ * only one nonzero component (this is typical for tensor-product FE,
+ * e.g. vector-valued polynomial FE, but not for Raviart-Thomas FE).
  *
  * Description of dofs:
  *
@@ -187,9 +246,9 @@ public:
  * and FESystem.
  * 
  * 
- * Support points:
+ * Shape functions:
  *
- * Sometimes it is convenient to describe the function space using
+ * The Sometimes it is convenient to describe the function space using
  * a basis (called the raw basis) that is different from the set of
  * shape functions for the finite element (the actual basis). For
  * this reason we define the support points which play the role of
@@ -245,13 +304,10 @@ public:
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
-    inline unsigned int n_components() const {
-      return n_components_;
-    }
+    inline unsigned int n_components() const { return n_components_; }
     
-    Dof dof(unsigned int i) const {
-        return dofs_[i];
-    }
+    /// Returns @p i -th degree of freedom.
+    Dof dof(unsigned int i) const { return dofs_[i]; }
     
     /**
      * @brief Destructor.
@@ -300,10 +356,9 @@ protected:
 
     /**
      * @brief Initializes the @p node_matrix for computing the coefficients
-     * of the raw basis functions from values at support points.
-     *
-     * The method is implemented for the case of Langrangean finite
-     * element. In other cases it may be reimplemented.
+     * of the shape functions in the raw basis of @p functions_space_.
+     * This is done by evaluating the @p dofs_ for the basis function
+     * and by inverting the resulting matrix.
      */
     virtual void compute_node_matrix();
     
@@ -311,26 +366,24 @@ protected:
      * @brief Indicates whether the basis functions have one or more
      * nonzero components (scalar FE spaces are always primitive).
      */
-    inline const bool is_primitive() const {
-        return is_primitive_;
-    }
+    inline const bool is_primitive() const { return is_primitive_; }
     
     /**
      * @brief Returns the component index for vector valued finite elements.
      * @param sys_idx Index of shape function.
      */
-    unsigned int system_to_component_index(unsigned sys_idx) const {
-      return component_indices_[sys_idx];
-    }
+    unsigned int system_to_component_index(unsigned sys_idx) const
+    { return component_indices_[sys_idx]; }
     
     /**
      * @brief Returns the mask of nonzero components for given basis function.
      * @param sys_idx Index of basis function.
      */
-    const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const {
-      return nonzero_components_[sys_idx];
-    }
+    const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const
+    { return nonzero_components_[sys_idx]; }
 
+    
+    
     /// Type of FiniteElement.
     FEType type_;
 
@@ -346,6 +399,7 @@ protected:
     /// Indices of nonzero components of shape functions (for primitive FE).
     std::vector<unsigned int> component_indices_;
     
+    /// Footprints of nonzero components of shape functions.
     std::vector<std::vector<bool> > nonzero_components_;
 
     /**

@@ -22,7 +22,15 @@
 #include "fem/finite_element.hh"
 #include "system/logger.hh"
 
-
+/**
+ * Space of Raviart-Thomas polynomials of order 0 (affine functions).
+ * The basis functions are defined as
+ * 
+ *    x, x - e_1, ..., x - e_d,
+ * 
+ * where x is the space variable, e_i is the i-th canonical basis vector in R^d
+ * and d is @p space_dim_.
+ */
 class RT0_space : public FunctionSpace {
 public:
     
