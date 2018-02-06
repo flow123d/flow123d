@@ -1,3 +1,10 @@
 common_config:
   proc: [1, 2]
   memory_limit: 1000
+
+test_cases:
+- files:
+  - 01_flow_heat.yaml
+  - 02_flow_transport_heat.yaml
+  - 03_dif_por.yaml
+  - 04_dif_por_2d.yaml
