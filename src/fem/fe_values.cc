@@ -132,10 +132,22 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     quadrature = &_quadrature;
     fe = &_fe;
 
+    switch (fe->type_) {
+        case FEScalar:
+            n_components_ = 1;
+            break;
+        case FEVector:
+            n_components_ = spacedim;
+            break;
+        case FETensor:
+            n_components_ = spacedim*spacedim;
+            break;
+        case FEMixedSystem:
+            n_components_ = fe->n_components();
+            break;
+    }
     // add flags required by the finite element or mapping
-    data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*fe->n_components());
-    
-    n_components_ = fe->n_components();
+    data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
     
     views_cache_.resize(*this, fe->n_components());
 }
@@ -176,7 +188,7 @@ double FEValuesBase<dim,spacedim>::shape_value_component(const unsigned int func
 {
   ASSERT_LT_DBG(function_no, fe->n_dofs());
   ASSERT_LT_DBG(point_no, quadrature->size());
-  ASSERT_LT_DBG(comp, fe->n_components());
+  ASSERT_LT_DBG(comp, n_components_);
   return data.shape_values[point_no][function_no*n_components_+comp];
 }
 
@@ -188,7 +200,7 @@ arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(cons
 {
   ASSERT_LT_DBG(function_no, fe->n_dofs());
   ASSERT_LT_DBG(point_no, quadrature->size());
-  ASSERT_LT_DBG(comp, fe->n_components());
+  ASSERT_LT_DBG(comp, n_components_);
   return data.shape_gradients[point_no][function_no*n_components_+comp];
 }
 

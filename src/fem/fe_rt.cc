@@ -64,7 +64,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 {
     arma::vec::fixed<dim> sp;
 
-    this->init(spacedim, false, FEVector);
+    this->init(dim, false, FEVector);
     this->function_space_ = new RT0_space(dim);
     
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
@@ -81,7 +81,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
         this->dofs_.push_back(Dof(dim-1, bsp, RefElement<dim>::normal_vector(sid)*RefElement<dim>::side_measure(sid), Value));
     }
     this->component_indices_.clear();
-    this->nonzero_components_.resize(this->dofs_.size(), std::vector<bool>(spacedim, true));
+    this->nonzero_components_.resize(this->dofs_.size(), std::vector<bool>(this->n_components(), true));
 
     this->compute_node_matrix();
 }
