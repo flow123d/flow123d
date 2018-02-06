@@ -23,7 +23,8 @@
 
 
 PolynomialSpace::PolynomialSpace(unsigned int degree, unsigned int dim)
-    : degree_(degree)
+    : FunctionSpace(dim, 1),
+      degree_(degree)
 {
 // computes powers of all monomials up to given @p degree
 // the order is: 1,x,x^2, y, yx,y^2
@@ -33,8 +34,6 @@ PolynomialSpace::PolynomialSpace(unsigned int degree, unsigned int dim)
 //       - allow Q polynomials: 1,x, y, xy
 //       - can use tensor products
 
-    this->space_dim_ = dim;
-    this->n_components_ = 1;
 	arma::uvec pows(dim);
 	pows.zeros();
 

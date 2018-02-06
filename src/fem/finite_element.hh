@@ -66,6 +66,14 @@ public:
 class FunctionSpace {
 public:
     
+    FunctionSpace(unsigned int space_dim,
+                  unsigned int n_components)
+    
+        : space_dim_(space_dim),
+          n_components_(n_components)
+    {}
+    
+    
     /**
      * @brief Value of the @p i th basis function at point @p point.
      * @param basis_index  Index of the basis function.

@@ -23,10 +23,8 @@
 
 
 RT0_space::RT0_space(unsigned int dim)
-{
-    this->space_dim_ = dim;
-    this->n_components_ = dim;
-}
+    : FunctionSpace(dim, dim)
+{}
 
 
 const double RT0_space::basis_value(unsigned int basis_index,
