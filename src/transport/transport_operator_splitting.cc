@@ -78,7 +78,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				"Time governor setting for the secondary equation.")
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
 				"Settings for computing balance.")
-		.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
 				"Parameters of output stream.")
 		.declare_key("substances", Array( Substance::get_input_type(), 1), Default::obligatory(),
 				"Specification of transported substances.")

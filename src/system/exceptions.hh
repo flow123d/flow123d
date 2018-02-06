@@ -19,7 +19,15 @@
 #define EXCEPTIONS_HH_
 
 
-#include <boost/exception/all.hpp>
+#include <stdlib.h>                                    // for abort, NULL
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/diagnostic_information.hpp>  // for diagnostic_inf...
+#include <boost/exception/exception.hpp>               // for exception
+#include <boost/exception/get_error_info.hpp>          // for get_error_info
+#include <boost/throw_exception.hpp>                   // for BOOST_THROW_EX...
+#include <exception>                                   // for exception
+#include <type_traits>                                 // for is_base_of
+#include <vector>                                      // for vector
 #include <iostream>
 #include <string>
 #include <memory>

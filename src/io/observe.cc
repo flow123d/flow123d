@@ -338,6 +338,9 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
         FilePath observe_file_path(observe_name_ + "_observe.yaml", FilePath::output_file);
         try {
             observe_file_path.open_stream(observe_file_);
+            //observe_file_.setf(std::ios::scientific);
+            observe_file_.precision(this->precision_);
+
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_array)
         output_header();
     }

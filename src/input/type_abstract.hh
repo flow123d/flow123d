@@ -34,8 +34,8 @@ using namespace std;
 
 
 class Selection;
-class AdHocAbstract;
-class OutputBase;
+//class AdHocAbstract;
+//class OutputBase;
 
 
 /**

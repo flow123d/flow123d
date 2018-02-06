@@ -20,7 +20,8 @@
 
 #include <fstream>
 #include <mpi.h>
-#include "system/time_point.hh"
+#include <string>   // for string
+class TimePoint;
 
 
 

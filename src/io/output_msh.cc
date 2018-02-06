@@ -175,9 +175,6 @@ void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned i
 	ofstream &file = this->_base_file;
     auto &id_vec = *( id_cache->get_component_data(0).get() );
 
-    /* Set precision to max */
-    file.precision(std::numeric_limits<double>::digits10);
-
     if (discont) { // corner data
     	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
     	unsigned int n_nodes, i_corner=0;
@@ -293,6 +290,7 @@ int OutputMSH::write_data(void)
             this->fix_main_file_extension(".msh");
             try {
                 this->_base_filename.open_stream( this->_base_file );
+                this->set_stream_precision(this->_base_file);
             } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
         }
 

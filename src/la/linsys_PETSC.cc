@@ -22,6 +22,7 @@
 #include "petscksp.h"
 #include "petscmat.h"
 #include "system/sys_profiler.hh"
+#include "system/system.hh"
 
 
 //#include <boost/bind.hpp>

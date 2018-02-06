@@ -57,6 +57,11 @@ public:
     virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
 
     /**
+     * Common method to set scientific format and precision for output of floating point values to ASCII streams.
+     */
+    void set_stream_precision(std::ofstream &stream);
+
+    /**
      * \brief Destructor of OutputTime. It doesn't do anything, because all
      * necessary destructors will be called in destructor of Output
      */
@@ -273,6 +278,11 @@ protected:
      * Used for forming default output file name and the name of observe output file.
      */
     std::string equation_name_;
+
+    /**
+     * Number of decimal digits used for output of double values.
+     */
+    int precision_;
 
     /// Output mesh.
     std::shared_ptr<OutputMeshBase> output_mesh_;

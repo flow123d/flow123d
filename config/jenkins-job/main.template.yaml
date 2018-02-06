@@ -160,9 +160,17 @@
     builders:
       - inject:
           properties-file: prop.file
+      # Following is a hack how to run just serial tests in a branch which contains file 'tests/run_serial_only'.
       - shell: |
           echo  ${{RUN_INTEGRATION_TESTS}}
-          $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+          if -f ${{FLOW}}/tests/run_serial_only
+          then
+                $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
+          else      
+                $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+          fi      
+            
+                
 
 # ---------------------------------------------------------------------------- #
 # ---------- STOP IMAGE ------------------------------------------------------ #
@@ -405,9 +413,9 @@
           url: https://github.com/flow123d/flow123d.git
           branches:
               - master
-              - 2.0.0
               - 2.1.0
               - 2.1.2
+              - 2.2.0
               - 3.0.0_dev
           basedir: flow123d
           browser: githubweb

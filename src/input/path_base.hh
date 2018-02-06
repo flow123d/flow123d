@@ -28,7 +28,7 @@
 
 namespace Input {
 
-class ReaderInternalBase;
+//class ReaderInternalBase;
 
 
 /**
