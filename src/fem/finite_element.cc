@@ -33,6 +33,9 @@ using namespace std;
 template<class FS> const double Dof::evaluate(const FS &function_space,
                                               unsigned int basis_idx) const
 {
+    // Check that FS is derived from FunctionSpace.
+    static_assert(std::is_base_of<FunctionSpace, FS>::value, "FS must be derived from FunctionSpace.");
+    
     // We cannot evaluate dof on dim-dimensional n-face if the function space lies on lower-dimensional n-face.
     ASSERT(function_space.space_dim()+1 == coords.size());
     
