@@ -304,7 +304,7 @@ public:
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
-    inline unsigned int n_components() const { return n_components_; }
+    virtual unsigned int n_components() const { return function_space_->n_components(); }
     
     /// Returns @p i -th degree of freedom.
     Dof dof(unsigned int i) const { return dofs_[i]; }
@@ -319,7 +319,7 @@ protected:
     /**
      * @brief Clears all internal structures.
      */
-    void init(unsigned int n_components = 1, bool primitive = true, FEType type = FEScalar);
+    void init(bool primitive = true, FEType type = FEScalar);
     
     /**
      * @brief Initialize vectors with information about components of basis functions.
@@ -392,9 +392,6 @@ protected:
      * i.e. only one component is nonzero for each shape function.
      */
     bool is_primitive_;
-    
-    /// Number of components of shape functions.
-    unsigned int n_components_;
     
     /// Indices of nonzero components of shape functions (for primitive FE).
     std::vector<unsigned int> component_indices_;

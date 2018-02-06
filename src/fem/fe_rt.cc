@@ -64,7 +64,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 {
     arma::vec::fixed<dim> sp;
 
-    this->init(dim, false, FEVector);
+    this->init(false, FEVector);
     this->function_space_ = new RT0_space(dim);
     
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)

@@ -35,8 +35,6 @@
 template <unsigned int dim, unsigned int spacedim>
 class FESystem : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::n_components_;
-
 public:
   
     /**
@@ -78,6 +76,8 @@ public:
     arma::vec::fixed<dim> basis_grad(const unsigned int i, 
                                      const arma::vec::fixed<dim> &p, 
                                      const unsigned int comp) const override;
+    
+    unsigned int n_components() const override { return n_components_; }
 
     UpdateFlags update_each(UpdateFlags flags) override;
 
@@ -128,6 +128,8 @@ private:
   
   std::vector<unsigned int> scalar_components_;
   std::vector<unsigned int> vector_components_;
+  
+  unsigned int n_components_;
   
   /**
    * Auxiliary vector representing permutation of dofs

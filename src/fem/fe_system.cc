@@ -30,7 +30,7 @@ FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > f
   OLD_ASSERT(fe->is_primitive(), "FE vector or tensor can olny by created from primitive FE.");
   OLD_ASSERT(t == FEType::FEVector || t == FEType::FETensor, "This constructor can be used only for vectors or tensors.");
   
-  FiniteElement<dim,spacedim>::init(0, false, t);
+  FiniteElement<dim,spacedim>::init(false, t);
   
   if (t == FEType::FEVector)
     fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim, fe);
@@ -44,7 +44,7 @@ FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > f
 template<unsigned int dim, unsigned int spacedim>
 FESystem<dim,spacedim>::FESystem(const std::shared_ptr<FiniteElement<dim,spacedim> > &fe, unsigned int n)
 {
-  FiniteElement<dim,spacedim>::init(0, false, FEMixedSystem);
+  FiniteElement<dim,spacedim>::init(false, FEMixedSystem);
   fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(n, fe);
   initialize();
 }
@@ -53,7 +53,7 @@ FESystem<dim,spacedim>::FESystem(const std::shared_ptr<FiniteElement<dim,spacedi
 template<unsigned int dim, unsigned int spacedim>
 FESystem<dim,spacedim>::FESystem(std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe)
 {
-  FiniteElement<dim,spacedim>::init(0, false, FEMixedSystem);
+  FiniteElement<dim,spacedim>::init(false, FEMixedSystem);
   for (std::shared_ptr<FiniteElement<dim,spacedim> > fe_object : fe)
     fe_.push_back(fe_object);
   initialize();
@@ -75,6 +75,7 @@ void FESystem<dim,spacedim>::initialize()
   unsigned int fe_index = 0;
   unsigned int comp_offset = 0;
   unsigned basis_offset = 0;
+  n_components_ = 0;
   // for each base FE add components, support points, and other 
   // information to the system
   for (auto fe : fe_)

@@ -67,11 +67,10 @@ FiniteElement<dim,spacedim>::FiniteElement()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive, FEType type)
+void FiniteElement<dim,spacedim>::init(bool primitive, FEType type)
 {
     dofs_.clear();
     is_primitive_ = primitive;
-    n_components_ = n_components;
     type_ = type;
 }
 
@@ -129,7 +128,7 @@ double FiniteElement<dim,spacedim>::basis_value(const unsigned int i,
                                        const arma::vec::fixed<dim> &p,
                                        const unsigned int comp) const
 {
-    ASSERT_DBG( comp < n_components_ );
+    ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
     return this->function_space_->basis_value(i, p, comp);
 }
@@ -139,7 +138,7 @@ arma::vec::fixed<dim> FiniteElement<dim,spacedim>::basis_grad(const unsigned int
                                                      const arma::vec::fixed<dim> &p,
                                                      const unsigned int comp) const
 {
-    ASSERT_DBG( comp < n_components_ );
+    ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
     return this->function_space_->basis_grad(i, p, comp);
 }
