@@ -172,8 +172,21 @@ void FE_P<dim,spacedim>::init_dofs()
             
             // find index of n-face
             std::pair<unsigned int, unsigned int> zeros = RefElement<dim>::zeros_positions(coords);
-            unsigned int n_face_idx = RefElement<dim>::template topology_idx<0>(zeros.second);
-
+            unsigned int n_face_idx;
+            switch (dim-zeros.first) {
+                case 0:
+                    n_face_idx = RefElement<dim>::template topology_idx<0>(zeros.second);
+                    break;
+                case 1:
+                    n_face_idx = RefElement<dim>::template topology_idx<1>(zeros.second);
+                    break;
+                case 2:
+                    n_face_idx = RefElement<dim>::template topology_idx<2>(zeros.second);
+                    break;
+                case 3:
+                    n_face_idx = RefElement<dim>::template topology_idx<3>(zeros.second);
+                    break;
+            }
             this->dofs_.push_back(Dof(nonzeros.size()-1, n_face_idx, coords, { 1 }, Value));
         }
     }
