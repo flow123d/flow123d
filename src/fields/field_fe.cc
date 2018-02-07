@@ -237,12 +237,12 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
 			auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
-					n_components, boundary_domain, this->component_idx_, 0);
+					n_components, boundary_domain, this->component_idx_);
 			this->calculate_native_values(data_vec);
 		} else {
 			std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 			auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(source_mesh->element.size(),
-					n_components, boundary_domain, this->component_idx_, 0);
+					n_components, boundary_domain, this->component_idx_);
 			this->interpolate(data_vec);
 		}
 

@@ -199,7 +199,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     for (i=0; i<3; ++i) {
     	reader->find_header(vector_header_params);
         typename ElementDataCache<double>::ComponentDataPtr multifield_data =
-        		reader->get_element_data<double>(6, 1, boundary_domain, i, 0.0);
+        		reader->get_element_data<double>(6, 1, boundary_domain, i);
     	std::vector<double> &vec = *( multifield_data.get() );
     	EXPECT_EQ(6, vec.size());
     	for (j=0; j<vec.size(); j++) {
@@ -213,7 +213,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     	std::vector<double> ref_data = { 1, 4, 7, 2, 5, 8, 3, 6, 9 };
     	reader->find_header(tensor_header_params);
     	typename ElementDataCache<double>::ComponentDataPtr field_data =
-    			reader->get_element_data<double>(6, 9, boundary_domain, 0, 0.0);
+    			reader->get_element_data<double>(6, 9, boundary_domain, 0);
     	std::vector<double> &vec = *( field_data.get() );
     	EXPECT_EQ(54, vec.size());
     	for (j=0; j<vec.size(); j++) {

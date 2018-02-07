@@ -632,20 +632,20 @@ void VtkMeshReader::create_node_element_caches() {
 	auto point_header = this->find_header(header_params);
 	bulk_elements_id_.resize(point_header.n_entities);
 	for (unsigned int i=0; i<bulk_elements_id_.size(); ++i) bulk_elements_id_[i]=i;
-	this->get_element_data<double>(point_header.n_entities, point_header.n_components, false, 0, 0.0 );
+	this->get_element_data<double>(point_header.n_entities, point_header.n_components, false, 0 );
 
 	// read offset data section
 	HeaderQuery offsets_params("offsets", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
     auto offset_header = this->find_header(offsets_params);
     for (unsigned int i=bulk_elements_id_.size(); i<offset_header.n_entities; ++i) bulk_elements_id_.push_back(i);
-    std::vector<unsigned int> &offsets_vec = *( this->get_element_data<unsigned int>(offset_header.n_entities, offset_header.n_components, false, 0, 0 ) );
+    std::vector<unsigned int> &offsets_vec = *( this->get_element_data<unsigned int>(offset_header.n_entities, offset_header.n_components, false, 0 ) );
 
     // read connectivity data section
     HeaderQuery con_params("connectivity", 0.0, OutputTime::DiscreteSpace::MESH_DEFINITION);
     auto & con_header = this->find_header(con_params);
     con_header.n_entities = offsets_vec[offsets_vec.size()-1];
     for (unsigned int i=bulk_elements_id_.size(); i<con_header.n_entities; ++i) bulk_elements_id_.push_back(i);
-    this->get_element_data<unsigned int>(con_header.n_entities, con_header.n_components, false, 0, 0 );
+    this->get_element_data<unsigned int>(con_header.n_entities, con_header.n_components, false, 0 );
 
     has_compatible_mesh_ = false;
 	bulk_elements_id_.clear();

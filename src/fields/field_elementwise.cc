@@ -19,6 +19,7 @@
 #include "fields/field_elementwise.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "system/file_path.hh"
+#include "system/exceptions.hh"
 #include "input/input_type.hh"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
@@ -93,7 +94,7 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 
     field_name_ = rec.val<std::string>("field_name");
-    if (!rec.opt_val("default_value", default_value_) ) {
+    if (!in_rec_.opt_val("default_value", default_value_) ) {
     	default_value_ = numeric_limits<double>::signaling_NaN();
     }
 }
@@ -117,7 +118,6 @@ void FieldElementwise<spacedim, Value>::set_data_row(unsigned int boundary_idx, 
 
 template <int spacedim, class Value>
 bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
-	std::cout << "FieldElementwise::set_time " << time.end() << ", field: " << field_name_ << std::endl;
 	OLD_ASSERT(mesh_, "Null mesh pointer of elementwise field: %s, did you call set_mesh()?\n", field_name_.c_str());
     if ( reader_file_ == FilePath() ) return false;
 
@@ -128,9 +128,7 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
-    		n_entities_, n_components_, boundary_domain_, this->component_idx_, default_value_);
-    for (auto item : (*data_)) std::cout << item << " ";
-    std::cout << std::endl << "------------------------------" << std::endl;
+    		n_entities_, n_components_, boundary_domain_, this->component_idx_);
     this->scale_and_check_limits();
     return true;
 }
@@ -215,7 +213,14 @@ void FieldElementwise<spacedim, Value>::scale_and_check_limits()
 		std::vector<typename Value::element_type> &vec = *( data_.get() );
 		bool printed_warning = false;
 		for(unsigned int i=0; i<vec.size(); ++i) {
-			vec[i] *= this->unit_conversion_coefficient_;
+			if ( std::isnan(vec[i]) ) {
+				if ( std::isnan(default_value_) ) {
+					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+				}
+				vec[i] = default_value_ * this->unit_conversion_coefficient_;
+			} else {
+				vec[i] *= this->unit_conversion_coefficient_;
+			}
 			if ( !printed_warning && ((vec[i] < limits_.first) || (vec[i] > limits_.second)) ) {
 				printed_warning = true;
                 WarningOut().fmt("Values of some elements of FieldElementwise '{}' at address '{}' is out of limits: <{}, {}>\n"

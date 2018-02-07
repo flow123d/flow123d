@@ -30,23 +30,27 @@ string input = R"INPUT(
    scalar={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="scalar"
+       field_name="scalar",
+       default_value=0.0
    },
    scalar_unit_conversion={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar",
-       unit="const; const=100*m^0"
+       unit="const; const=100*m^0",
+       default_value=0.0
    },
    vector_fixed={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="vector_fixed"
+       field_name="vector_fixed",
+       default_value=0.0
    },
    tensor_fixed={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="tensor_fixed"
+       field_name="tensor_fixed",
+       default_value=0.0
    },
    vtk_scalar={
        TYPE="FieldElementwise",
@@ -67,7 +71,7 @@ string input = R"INPUT(
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
        field_name="porosity",
-       default_value=0.0
+       default_value=0.1
    }
 }
 )INPUT";
@@ -149,7 +153,7 @@ TEST_F(FieldElementwiseTest, bc_scalar) {
         for(unsigned int i=0; i < 4; i++) {
             EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i, true)) );
         }
-        //EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
+        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
     }
 
 }
@@ -178,7 +182,7 @@ TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
         for(unsigned int i=0; i < 4; i++) {
             EXPECT_DOUBLE_EQ( 100.0+j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i, true)) );
         }
-        //EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
+        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
     }
 
 }
@@ -212,7 +216,7 @@ TEST_F(FieldElementwiseTest, bc_vector_fixed) {
     	for(unsigned int i=0; i < 4; i++) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true))) );
         }
-        //EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(5,true))) );
+        EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(5,true))) );
     }
 }
 
@@ -248,8 +252,8 @@ TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
             arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true)) );
             EXPECT_TRUE( match.min() );
         }
-        //arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(5,true)) );
-        //EXPECT_TRUE( match.min() );
+        arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(5,true)) );
+        EXPECT_TRUE( match.min() );
     }
 }
 
@@ -335,17 +339,16 @@ TEST_F(FieldElementwiseTest, bc_scalar_enum) {
 
 
 TEST_F(FieldElementwiseTest, default_values) {
-	//string expected_vals[2] = {"4 5 6", "5 6 7"};
+	string expected_vals = "0.1 0.1 0.1";
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
     field.set_mesh(mesh,true);
 
-    for (unsigned int j=0; j<1; j++) {
+    for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-    	//for(unsigned int i=0; i < 4; i++) {
-        //    EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i,true))) );
-        //}
-        //EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(5,true))) );
+    	for(unsigned int i=0; i < 4; i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i,true))) );
+        }
     }
 }
