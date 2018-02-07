@@ -131,19 +131,6 @@ private:
   
   unsigned int n_components_;
   
-  /**
-   * Auxiliary vector representing permutation of dofs
-   * for compatibility with DOFHandler. In DOFHandler,
-   * the nodal dofs are ordered in such a way that first
-   * come all the dofs on node 1, then all dofs on node 2 etc.
-   * On the other hand, in FESystem we take first all dofs from
-   * fe_[0], then all dofs from fe_[1] etc.
-   * 
-   * TODO: Remove this object by modifying the order of fe_dof_indices_
-   * or by changing the order of distribution of dofs in DOFHandler.
-   */
-  std::vector<unsigned int> dof_basis_;
-  
 };
 
 
