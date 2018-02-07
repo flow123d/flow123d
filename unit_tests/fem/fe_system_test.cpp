@@ -68,8 +68,8 @@ ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vect
 class FESystemTest : public testing::Test {
 public:
   FESystemTest()
-    : nodes(make_nodes({"0 0 0", "1 0 0", "0 1 0", "0 0 1"})),
-      el_vec(make_elements(nodes, { { 0, 1, 2, 3 } })),
+    : nodes(make_nodes({"1 0 0", "0 1 0", "0 0 1", "0 0 0"})),
+      el_vec(make_elements(nodes, { { 3, 0, 1, 2 } })),
       ele( el_vec(0) ),
       q(nodes.size())
   {
@@ -96,7 +96,7 @@ protected:
 
 TEST_F(FESystemTest, test_vector) {
   // Test vector-valued FESystem using P1 element on tetrahedron.
-  FESystem<3,3> fe_sys(std::make_shared<FE_P<1,3,3> >(), FEVector);
+  FESystem<3,3> fe_sys(std::make_shared<FE_P<3,3> >(1), FEVector);
   FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
   
   fe_values.reinit(ele);
@@ -108,12 +108,12 @@ TEST_F(FESystemTest, test_vector) {
       for (unsigned int c=0; c<3; c++)
       {
         // check values
-        EXPECT_EQ( ((i/3==k) && (i%3==c))?1:0, vec_view.value(i,k)[c] );
+        EXPECT_EQ( ((i%4==(k+1)%4) && (i/4==c))?1:0, vec_view.value(i,k)[c] );
         //check gradients
         arma::rowvec gr = vec_view.grad(i,k).row(c);
-        if (i % 3 == c)
+        if (i / 4 == c)
         { // gradient of nonzero component
-          switch (i/3)
+          switch (i%4)
           {
             case 0:
               EXPECT_ARMA_EQ( arma::rowvec("-1 -1 -1"), gr );
@@ -140,8 +140,8 @@ TEST_F(FESystemTest, test_mixed_system) {
   // The basis functions are ordered first nodal and then element-supported,
   // hence the scalar constant function from P0 comes after the linear
   // functions from P1^3 and the RT0 functions are at the end.
-  FESystem<3,3> fe_vec(std::make_shared<FE_P<1,3,3> >(), FEVector);
-  FESystem<3,3> fe_sys({ std::make_shared<FE_P<0,3,3> >(), std::make_shared<FESystem<3,3> >(fe_vec), std::make_shared<FE_RT0<3,3> >() });
+  FESystem<3,3> fe_vec(std::make_shared<FE_P<3,3> >(1), FEVector);
+  FESystem<3,3> fe_sys({ std::make_shared<FE_P<3,3> >(0), std::make_shared<FESystem<3,3> >(fe_vec), std::make_shared<FE_RT0<3,3> >() });
   FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
   
   fe_values.reinit(ele);
@@ -153,16 +153,16 @@ TEST_F(FESystemTest, test_mixed_system) {
   for (unsigned int k=0; k<q.size(); k++)
   {
     // check values and gradients of P1^3 function
-    for (unsigned int i=0; i<fe_sys.n_dofs(); i++)
+    for (unsigned int i=1; i<1+fe_vec.n_dofs(); i++)
       for (unsigned int c=0; c<3; c++)
       {
         // check values
-        EXPECT_EQ( ((i/3==k) && (i%3==c))?1:0, vec_view.value(i,k)[c] );
+        EXPECT_EQ( (((i-k)%4==2) && ((i-1)/4==c))?1:0, vec_view.value(i,k)[c] );
         //check gradients
         arma::rowvec gr = vec_view.grad(i,k).row(c);
-        if (i % 3 == c)
+        if ((i-1) / 4 == c)
         { // gradient of nonzero component
-          switch (i/3)
+          switch ((i-1)%4)
           {
             case 0:
               EXPECT_ARMA_EQ( arma::rowvec("-1 -1 -1"), gr );
@@ -186,8 +186,8 @@ TEST_F(FESystemTest, test_mixed_system) {
       }
     
     // check value and gradient of P0 function
-    EXPECT_EQ( 1, scalar_view.value(fe_vec.n_dofs(),k) );
-    EXPECT_ARMA_EQ( arma::vec("0 0 0"), scalar_view.grad(fe_vec.n_dofs(),k) );
+    EXPECT_EQ( 1, scalar_view.value(0,k) );
+    EXPECT_ARMA_EQ( arma::vec("0 0 0"), scalar_view.grad(0,k) );
     
     // check RT0 function
     unsigned int dof_offset = fe_vec.n_dofs() + 1;
