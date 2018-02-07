@@ -119,7 +119,7 @@ void FE_P<dim,spacedim>::init_dofs()
         // coords = barycentric coordinates of the support point,
         // coefs  = 1 (dof value = function value at the point)
         arma::vec coords = arma::ones<arma::vec>(dim+1)/(dim+1);
-        this->dofs_.push_back(Dof(dim, coords, { 1 }, Value));
+        this->dofs_.push_back(Dof(dim, 0, coords, { 1 }, Value));
     }
     else
     {
@@ -169,7 +169,12 @@ void FE_P<dim,spacedim>::init_dofs()
             // convert "unsigned barycentric coordinates" to real ones
             arma::vec coords = arma::conv_to<arma::vec>::from(ubc);
             coords /= degree_;
-            this->dofs_.push_back(Dof(nonzeros.size()-1, coords, { 1 }, Value));
+            
+            // find index of n-face
+            std::pair<unsigned int, unsigned int> zeros = RefElement<dim>::zeros_positions(coords);
+            unsigned int n_face_idx = RefElement<dim>::template topology_idx<0>(zeros.second);
+
+            this->dofs_.push_back(Dof(nonzeros.size()-1, n_face_idx, coords, { 1 }, Value));
         }
     }
 }

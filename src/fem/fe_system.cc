@@ -136,7 +136,7 @@ void FESystem<dim,spacedim>::initialize()
       {
           arma::vec coefs(n_components_);
           coefs.subvec(comp_offset, comp_offset+fe->dof(i).coefs.size()-1) = fe->dof(i).coefs;
-          this->dofs_.push_back(Dof(fe->dof(i).dim, fe->dof(i).coords, coefs, fe->dof(i).type));
+          this->dofs_.push_back(Dof(fe->dof(i).dim, fe->dof(i).n_face_idx, fe->dof(i).coords, coefs, fe->dof(i).type));
           dof_index++;
       }
       comp_offset += fe->n_components();

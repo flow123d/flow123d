@@ -71,11 +71,13 @@ class Dof {
 public:
     
     Dof(unsigned int dim_,
+        unsigned int n_face_idx_,
         arma::vec coords_,
         arma::vec coefs_,
         DofType type_)
     
         : dim(dim_),
+          n_face_idx(n_face_idx_),
           coords(coords_),
           coefs(coefs_),
           type(type_)
@@ -88,6 +90,9 @@ public:
     
     /// Association to n-face of given dimension (point, line, triangle, tetrahedron.
     unsigned int dim;
+    
+    /// Index of n-face to which the dof is associated.
+    unsigned int n_face_idx;
     
     /// Barycentric coordinates.
     arma::vec coords;
