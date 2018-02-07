@@ -49,6 +49,7 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.1
+      precision: 15
     substances: [ 1, 2 ]
     time:
       end_time: 1

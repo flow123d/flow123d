@@ -21,6 +21,8 @@
 #include "system/system.hh"
 
 #include "json_spirit/json_spirit_error_position.h"
+#include "input/json_spirit/json_spirit_reader.h"            // for read_or_...
+
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/algorithm/string.hpp>

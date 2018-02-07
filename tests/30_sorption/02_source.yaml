@@ -107,6 +107,7 @@ problem: !Coupling_Sequential
       file: transport_test_20.pvd
       format: !vtk
         variant: ascii
+      precision: 15
   # secondary_equation
 # problem
 # root

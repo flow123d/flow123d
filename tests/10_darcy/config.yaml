@@ -3,10 +3,16 @@ common_config:
   memory_limit: 1100
 
 test_cases:
-- files:
-  - 03_unsteady_LMH.yaml
-  - 04_source_LMH.yaml
-  time_limit: 60
-- files:
-  - 05_unsteady_LMH_exact.yaml
-  time_limit: 120
+  - files:
+    - 01_source.yaml
+    - 02_unsteady.yaml
+    - 06_unsteady_MH_exact.yaml
+    - 07_unsteady_init_piezo.yaml
+    - 08_gravity.yaml
+  - files:
+    - 03_unsteady_LMH.yaml
+    - 04_source_LMH.yaml
+    time_limit: 60
+  - files:
+    - 05_unsteady_LMH_exact.yaml
+    time_limit: 120
