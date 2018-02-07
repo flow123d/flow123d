@@ -119,7 +119,7 @@ void FE_P<dim,spacedim>::init_dofs()
         // coords = barycentric coordinates of the support point,
         // coefs  = 1 (dof value = function value at the point)
         arma::vec coords = arma::ones<arma::vec>(dim+1)/(dim+1);
-        this->dofs_.push_back(Dof(0, coords, { 1 }, Value));
+        this->dofs_.push_back(Dof(dim, coords, { 1 }, Value));
     }
     else
     {
@@ -222,7 +222,6 @@ FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
 
 
 
-template class FE_P_disc<0, 3>;
 template class FE_P_disc<1, 3>;
 template class FE_P_disc<2, 3>;
 template class FE_P_disc<3, 3>;
