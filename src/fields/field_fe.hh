@@ -131,6 +131,12 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
+	/**
+	 * Iterate through component data vector and check if all values is defined. Replace undefined values
+	 * with default_value or throw exception.
+	 */
+	void check_nan_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
@@ -167,6 +173,9 @@ private:
 
 	/// Field flags.
 	FieldFlag::Flags flags_;
+
+    /// Default value of element if not set in mesh data file
+    double default_value_;
 
     /// Registrar of class to factory
     static const int registrar;

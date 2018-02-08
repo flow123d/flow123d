@@ -45,6 +45,8 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 		//		"Definition of unit.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
         .close();
 }
 
@@ -82,6 +84,9 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	data_->resize(data_size);
 
 	field_name_ = rec.val<std::string>("field_name");
+    if (!rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -235,7 +240,14 @@ void FieldInterpolatedP0<spacedim, Value>::scale_data()
 	if (Value::is_scalable()) {
 		std::vector<typename Value::element_type> &vec = *( data_.get() );
 		for(unsigned int i=0; i<vec.size(); ++i)
-			vec[i] *= this->unit_conversion_coefficient_;
+			if ( std::isnan(vec[i]) ) {
+				if ( std::isnan(default_value_) ) {
+					THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+				}
+				vec[i] = default_value_ * this->unit_conversion_coefficient_;
+			} else {
+				vec[i] *= this->unit_conversion_coefficient_;
+			}
 	}
 }
 

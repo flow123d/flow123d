@@ -53,6 +53,8 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         		"if it is found in more the one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
         .close();
 }
 
@@ -174,6 +176,9 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	if (! rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization_) ) {
 		discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 	}
+    if (! rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -234,6 +239,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		bool boundary_domain = false;
 		BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), this->discretization_, dh_->hash());
 		ReaderCache::get_reader(reader_file_)->find_header(header_query);
+		// TODO: use default and check NaN values in data_vec
 
 		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
 			auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
@@ -255,6 +261,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
+	this->check_nan_values(data_vec);
+
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);
@@ -307,6 +315,8 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
+	this->check_nan_values(data_cache);
+
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
@@ -327,6 +337,20 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	for (unsigned int i=0; i<data_vec_->size(); ++i) {
 		if (count_vector[i]>0) (*data_vector)[i] /= count_vector[i];
 	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::check_nan_values(ElementDataCache<double>::ComponentDataPtr data_cache)
+{
+	std::vector<double> &vec = *( data_cache.get() );
+	for(unsigned int i=0; i<vec.size(); ++i)
+		if ( std::isnan(vec[i]) ) {
+			if ( std::isnan(default_value_) ) {
+				THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+			}
+			vec[i] = default_value_;
+		}
 }
 
 

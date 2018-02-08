@@ -106,6 +106,9 @@ protected:
 	/// 0D (point) element, used for computing intersection
 	ngh::TPoint point_;
 
+    /// Default value of element if not set in mesh data file
+    double default_value_;
+
 private:
     /// Registrar of class to factory
     static const int registrar;
