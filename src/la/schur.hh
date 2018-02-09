@@ -19,12 +19,16 @@
 #ifndef LA_SCHUR_HH_
 #define LA_SCHUR_HH_
 
-#include <la/distribution.hh>
-#include "la/linsys_PETSC.hh"
-#include <petscmat.h>
+#include <petscmat.h>          // for Mat, _p_Mat
+#include "la/linsys_PETSC.hh"  // for LinSys_PETSC
+#include "petscistypes.h"      // for IS, _p_IS
+#include "petscvec.h"          // for Vec, _p_Vec
 
-struct Solver;
+class Distribution;
 class LinSys;
+
+namespace Input { class Record; }
+
 
 /**
  * @brief Schur complement class for a PETSC based linear system

@@ -18,11 +18,16 @@
 #ifndef LOCAL_TO_GLOBAL_MAP_HH_
 #define LOCAL_TO_GLOBAL_MAP_HH_
 
+#include <boost/exception/detail/error_info_impl.hpp>
+#include <boost/exception/info.hpp>
+#include <iosfwd>
+#include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
-
-#include "system/system.hh"
+#include "system/exc_common.hh"
+#include "system/exceptions.hh"
 #include "system/global_defs.h"
 
 
@@ -102,7 +107,7 @@ public:
     */
    inline unsigned int operator[] (const unsigned int local_idx) const
        {
-           OLD_ASSERT_LESS( local_idx, global_indices_.size() );
+           ASSERT_LT( local_idx, global_indices_.size() );
            return global_indices_[local_idx];
        }
 
