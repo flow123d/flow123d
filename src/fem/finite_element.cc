@@ -104,7 +104,7 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
     arma::mat raw_values(function_space_->dim(), n_components());
     arma::mat shape_values(n_dofs(), n_components());
 
-    data->basis_vectors.resize(q.size());
+    data->ref_shape_values.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
         for (unsigned int j=0; j<function_space_->dim(); j++)
@@ -113,25 +113,25 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
 
         shape_values = node_matrix * raw_values;
 
-        data->basis_vectors[i].resize(n_dofs());
+        data->ref_shape_values[i].resize(n_dofs());
         for (unsigned int j=0; j<n_dofs(); j++)
-            data->basis_vectors[i][j] = trans(shape_values.row(j));
+            data->ref_shape_values[i][j] = trans(shape_values.row(j));
     }
 
     arma::mat grad(dim,n_components());
     vector<arma::mat> grads(n_dofs());
 
-    data->basis_grad_vectors.resize(q.size());
+    data->ref_shape_grads.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
-        data->basis_grad_vectors[i].resize(n_dofs());
+        data->ref_shape_grads[i].resize(n_dofs());
         for (unsigned int j=0; j<n_dofs(); j++)
         {
             grad.zeros();
             for (unsigned int l=0; l<function_space_->dim(); l++)
               for (unsigned int c=0; c<n_components(); c++)
                 grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(j,l);
-            data->basis_grad_vectors[i][j] = grad;
+            data->ref_shape_grads[i][j] = grad;
         }
     }
 
@@ -184,7 +184,7 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
             for (unsigned int j = 0; j < n_dofs(); j++)
                 switch (type_) {
                     case FEScalar:
-                        fv_data.shape_values[i][j] = data.basis_vectors[i][j][0];
+                        fv_data.shape_values[i][j] = data.ref_shape_values[i][j][0];
                         break;
                 }
     }
@@ -198,7 +198,7 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
             {
                 switch (type_) {
                     case FEScalar:
-                        arma::mat grads = trans(fv_data.inverse_jacobians[i]) * data.basis_grad_vectors[i][j];
+                        arma::mat grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j];
                         fv_data.shape_gradients[i][j] = grads;
                         break;
                 }

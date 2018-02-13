@@ -98,7 +98,7 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
     arma::mat shape_values(this->function_space_->dim(), dim);
     vector<arma::vec> values(this->function_space_->dim());
 
-    data->basis_vectors.resize(q.size());
+    data->ref_shape_values.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
         for (unsigned int j=0; j<this->function_space_->dim(); j++)
@@ -110,14 +110,14 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
         for (unsigned int j=0; j<this->function_space_->dim(); j++)
             values[j] = trans(shape_values.row(j));
 
-        data->basis_vectors[i] = values;
+        data->ref_shape_values[i] = values;
     }
 
     arma::mat::fixed<dim,dim> grad;
     arma::mat::fixed<dim,dim> shape_grads;
     vector<arma::mat> grads(this->function_space_->dim());
 
-    data->basis_grad_vectors.resize(q.size());
+    data->ref_shape_grads.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
         for (unsigned int k=0; k<this->function_space_->dim(); k++)
@@ -129,7 +129,7 @@ FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
             grads[k] = grad;
         }
 
-        data->basis_grad_vectors[i] = grads;
+        data->ref_shape_grads[i] = grads;
     }
 
     return data;
@@ -163,7 +163,7 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
         {
             for (unsigned int k=0; k<this->function_space_->dim(); k++)
             {
-                values = fv_data.jacobians[i]*data.basis_vectors[i][k]/fv_data.determinants[i];
+                values = fv_data.jacobians[i]*data.ref_shape_values[i][k]/fv_data.determinants[i];
                 for (unsigned int c=0; c<spacedim; c++)
                   fv_data.shape_values[i][k*spacedim+c] = values(c);
             }
@@ -178,7 +178,7 @@ void FE_RT0<dim,spacedim>::fill_fe_values(
         {
             for (unsigned int k=0; k<this->function_space_->dim(); k++)
             {
-              grads = fv_data.jacobians[i]*data.basis_grad_vectors[i][k]*fv_data.inverse_jacobians[i]/fv_data.determinants[i];
+              grads = fv_data.jacobians[i]*data.ref_shape_grads[i][k]*fv_data.inverse_jacobians[i]/fv_data.determinants[i];
               for (unsigned int c=0; c<spacedim; c++)
                 fv_data.shape_gradients[i][k*spacedim+c] = grads.col(c);
             }

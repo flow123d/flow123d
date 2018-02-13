@@ -189,16 +189,20 @@ public:
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
      *
-     * For vectorial finite elements.
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
      */
-    std::vector<std::vector<arma::vec> > basis_vectors;
+    std::vector<std::vector<arma::vec> > ref_shape_values;
 
     /**
      * @brief Precomputed gradients of basis functions at the quadrature points.
      *
-     * For vectorial finite elements:
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
      */
-    std::vector<std::vector<arma::mat> > basis_grad_vectors;
+    std::vector<std::vector<arma::mat> > ref_shape_grads;
 };
 
 
