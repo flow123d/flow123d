@@ -45,7 +45,7 @@ problem: !Coupling_Sequential
     output:
       times:
         - 0.0
-        - [ 15.0, "min" ]
+        - { step: 15.0, time_unit: "min" }
         - 0.5
         - 0.75
       fields:
@@ -57,8 +57,13 @@ problem: !Coupling_Sequential
         - sigma
         - anisotropy
         - water_source_density
-        - { field: init_pressure, times: [ 0.0 ] }
-        - { field: storativity, times: [ 0.0, [ 30.0, "min" ] ] } 
+        - field: init_pressure
+          times: 
+            - 0.0
+        - field: storativity
+          times:
+            - 0.0
+            - { step: 30.0, time_unit: "min" } 
       observe_fields: [pressure_p0, velocity_p0]
     balance: {}
     time:
@@ -73,7 +78,7 @@ problem: !Coupling_Sequential
         variant: ascii
       name: flow_output_stream
       times:
-        - step: [ 100, "s" ]
+        - { step: 100, time_unit: "s" }
       observe_points:
         - [0, 0, 0.25]
         - [0, 0, 0.2]

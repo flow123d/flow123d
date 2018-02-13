@@ -147,7 +147,7 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
       times:
-        - step: [0.1, "s"]
+        - { step: 0.1, time_unit: "s" }
     time:
       end_time: 1000
       common_time_unit: "ms"
