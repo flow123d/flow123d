@@ -218,45 +218,24 @@ FEInternalData *FESystem<dim,spacedim>::initialize(const Quadrature<dim> &q)
   unsigned int dof_offset = 0;
   for (unsigned int f=0; f<fe_.size(); f++)
   {
-    if (fe_[f]->n_components() == 1)
-    {
-      // for scalar base FE copy only one value per point and dof
-      for (unsigned int i=0; i<q.size(); i++)
-        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-          data->basis_vectors[i][dof_offset+n][comp_offset] = fe_data[f]->basis_values[i][n];
-    }
-    else
-    {
-      // for vector-valued base FE copy the values to subvector
+      // copy the values to subvector
       for (unsigned int i=0; i<q.size(); i++)
         for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
           data->basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1) = fe_data[f]->basis_vectors[i][n];
-    }
     comp_offset += fe_[f]->n_components();
     dof_offset += fe_[f]->n_dofs();
   }
 
   // fill gradients of basis functions
-  data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(this->dofs_.size(), arma::mat(n_components_,dim)));
+  data->basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(this->dofs_.size(), arma::mat(dim,n_components_)));
   
   comp_offset = 0;
   dof_offset = 0;
   for (unsigned int f=0; f<fe_.size(); f++)
   {
-    if (fe_[f]->n_components() == 1)
-    {
-      // for scalar base FE copy values to one row per point and dof
       for (unsigned int i=0; i<q.size(); i++)
         for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-          data->basis_grad_vectors[i][dof_offset+n].row(comp_offset) = fe_data[f]->basis_grads[i].row(n);
-    }
-    else
-    {
-      // for vector-valued base FE copy the values to submatrix
-      for (unsigned int i=0; i<q.size(); i++)
-        for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-          data->basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1) = fe_data[f]->basis_grad_vectors[i][n];
-    }
+          data->basis_grad_vectors[i][dof_offset+n].submat(0,comp_offset,dim-1,comp_offset+fe_[f]->n_components()-1) = fe_data[f]->basis_grad_vectors[i][n];
     comp_offset += fe_[f]->n_components();
     dof_offset += fe_[f]->n_dofs();
   }
@@ -295,38 +274,18 @@ void FESystem<dim,spacedim>::fill_fe_values(
     
     if (fv_data.update_flags & update_values)
     {
-      if (fe_[f]->n_components() == 1)
-      {
-        d.basis_values.resize(q.size(), arma::vec(fe_[f]->n_dofs()));
-        for (unsigned int i=0; i<q.size(); i++)
-          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            d.basis_values[i].row(n) = data.basis_vectors[i][dof_offset+n].row(comp_offset);
-      }
-      else
-      {
         d.basis_vectors.resize(q.size(), std::vector<arma::vec>(fe_[f]->n_dofs(), arma::vec(fe_[f]->n_components())));
         for (unsigned int i=0; i<q.size(); i++)
           for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
             d.basis_vectors[i][n] = data.basis_vectors[i][dof_offset+n].subvec(comp_offset,comp_offset+fe_[f]->n_components()-1);
-      }
     }
     
     if (fv_data.update_flags & update_gradients)
     {
-      if (fe_[f]->n_components() == 1)
-      {
-        d.basis_grads.resize(q.size(), arma::mat(fe_[f]->n_dofs(),dim));
+        d.basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(fe_[f]->n_dofs(), arma::mat(dim,fe_[f]->n_components())));
         for (unsigned int i=0; i<q.size(); i++)
           for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            d.basis_grads[i].row(n) = data.basis_grad_vectors[i][dof_offset+n].row(comp_offset);
-      }
-      else
-      {
-        d.basis_grad_vectors.resize(q.size(), std::vector<arma::mat>(fe_[f]->n_dofs(), arma::mat(fe_[f]->n_components(),dim)));
-        for (unsigned int i=0; i<q.size(); i++)
-          for (unsigned int n=0; n<fe_[f]->n_dofs(); n++)
-            d.basis_grad_vectors[i][n] = data.basis_grad_vectors[i][dof_offset+n].submat(comp_offset,0,comp_offset+fe_[f]->n_components()-1,dim-1);
-      }
+            d.basis_grad_vectors[i][n] = data.basis_grad_vectors[i][dof_offset+n].submat(0,comp_offset,dim-1,comp_offset+fe_[f]->n_components()-1);
     }
     
     // fill fe_values for base FE

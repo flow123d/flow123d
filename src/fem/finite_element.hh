@@ -188,17 +188,6 @@ class FEInternalData
 public:
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
-     */
-    std::vector<arma::vec> basis_values;
-
-    /**
-     * @brief Precomputed gradients of basis functions at the quadrature points.
-     */
-    std::vector<arma::mat > basis_grads;
-
-
-    /**
-     * @brief Precomputed values of basis functions at the quadrature points.
      *
      * For vectorial finite elements.
      */
