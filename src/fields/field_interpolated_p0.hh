@@ -67,9 +67,6 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_
-    void scale_data();
-
     /// mesh, which is interpolated
 	std::shared_ptr<Mesh> source_mesh_;
 

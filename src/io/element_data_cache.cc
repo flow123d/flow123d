@@ -27,11 +27,14 @@
 
 template <typename T>
 ElementDataCache<T>::ElementDataCache()
-: ElementDataCacheBase() {}
+: ElementDataCacheBase(),
+  check_scale_data_(CheckScaleData::none) {}
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size) {
+ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size)
+: check_scale_data_(CheckScaleData::none)
+{
 	this->time_ = time;
 	this->field_input_name_ = field_name;
 	this->data_ = create_data_cache(size_of_cache, row_vec_size);
@@ -40,6 +43,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsig
 
 template <typename T>
 ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size)
+: check_scale_data_(CheckScaleData::none)
 {
 	this->set_vtk_type<T>();
     this->field_name_ = field_name;
@@ -272,6 +276,43 @@ void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
     for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
     	vec[vec_idx] /= divisor;
     }
+};
+
+template <typename T>
+CheckedData ElementDataCache<T>::check_values(double default_val, double lower_bound, double upper_bound) {
+    if (check_scale_data_ != CheckScaleData::none) return CheckedData::ok; // method is executed only once
+    check_scale_data_ = CheckScaleData::check;
+
+    bool is_nan = false, out_of_limit = false;
+    for (unsigned int j=0; j<data_.size(); ++j) {
+        std::vector<T> &vec = *( this->data_[j].get() );
+        for(unsigned int i=0; i<vec.size(); ++i) {
+            if ( std::isnan(vec[i]) ) {
+                if ( std::isnan(default_val) ) is_nan = true;
+                else vec[i] = default_val;
+            }
+            if ( (vec[i] < lower_bound) || (vec[i] > upper_bound) ) out_of_limit = true;
+        }
+    }
+
+    if (is_nan) return CheckedData::not_a_number;
+    else if (out_of_limit) return CheckedData::out_of_limits;
+    else return CheckedData::ok;
+};
+
+template <typename T>
+void ElementDataCache<T>::scale_data(double coef) {
+    if (check_scale_data_ == CheckScaleData::scale) return; // method is executed only once
+    ASSERT_DBG(check_scale_data_ == CheckScaleData::check).warning("Data should be checked before scaling. Rather call 'check_values'!\n");
+
+    for (unsigned int j=0; j<data_.size(); ++j) {
+        std::vector<T> &vec = *( this->data_[j].get() );
+        for(unsigned int i=0; i<vec.size(); ++i) {
+            vec[i] *= coef;
+        }
+    }
+
+    check_scale_data_ = CheckScaleData::scale;
 };
 
 /// Access i-th element in the data vector.

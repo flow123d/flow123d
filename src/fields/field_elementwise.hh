@@ -98,8 +98,6 @@ public:
     virtual ~FieldElementwise();
 
 private:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_ and check limits of field
-    void scale_and_check_limits();
     /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
     /// and do not delete data pointer in destructor.
     bool internal_raw_data;

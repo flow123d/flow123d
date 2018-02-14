@@ -195,6 +195,13 @@ public:
 	 */
     virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
 
+    /**
+     * Scale and check data stored in ElementDataCache of given field.
+     */
+    CheckedData scale_and_check_limits(string field_name, double coef, double default_val,
+    		double lower_bound = -std::numeric_limits<double>::max(), double upper_bound = std::numeric_limits<double>::max());
+
+
 protected:
     typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;
     typedef std::map< string, ElementDataPtr > ElementDataFieldMap;
