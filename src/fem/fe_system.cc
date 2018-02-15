@@ -319,10 +319,6 @@ void FESystem<dim,spacedim>::fill_fe_values(
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::~FESystem()
-{}
-
 
 
 

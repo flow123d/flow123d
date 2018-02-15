@@ -87,8 +87,6 @@ public:
     /// Constructor.
     FE_P(unsigned int degree);
     
-    ~FE_P() override {}
-
 protected:
     
     void init_dofs();
@@ -112,9 +110,6 @@ public:
     /// Constructor.
     FE_P_disc(unsigned int degree);
     
-    /// Destructor
-    ~FE_P_disc() override {}
-
 };
 
 

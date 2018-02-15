@@ -71,11 +71,6 @@ public:
      * for each cell.
      */
     UpdateFlags update_each(UpdateFlags flags);
-
-    /**
-     * @brief Destructor.
-     */
-    ~FE_RT0() override {}
     
 private:
   

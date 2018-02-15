@@ -81,7 +81,6 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
 
-    virtual ~FESystem();
 
 private:
 
