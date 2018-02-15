@@ -165,8 +165,26 @@ UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
 
-    if (flags & update_gradients)
-        f |= update_inverse_jacobians;
+    switch (type_)
+    {
+        case FEScalar:   
+            if (flags & update_gradients)
+                f |= update_inverse_jacobians;
+            break;
+        case FEVectorContravariant:
+            if (flags & update_values)
+                f |= update_jacobians;
+            if (flags & update_gradients)
+                f |= update_jacobians | update_inverse_jacobians;
+            break;
+        case FEVectorPiola:
+            if (flags & update_values)
+                f |= update_jacobians | update_volume_elements;
+            if (flags & update_gradients)
+                f |= update_jacobians | update_inverse_jacobians | update_volume_elements;
+            break;
+        default:;
+    }
 
     return f;
 }
@@ -182,11 +200,34 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     {
         for (unsigned int i = 0; i < q.size(); i++)
             for (unsigned int j = 0; j < n_dofs(); j++)
+            {
+                arma::vec fv_vec;
                 switch (type_) {
                     case FEScalar:
                         fv_data.shape_values[i][j] = data.ref_shape_values[i][j][0];
                         break;
+                    case FEVectorContravariant:
+                        fv_vec = fv_data.jacobians[i] * data.ref_shape_values[i][j];
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_values[i][j*spacedim+c] = fv_vec[c];
+                        break;
+                    case FEVectorPiola:
+                        fv_vec = fv_data.jacobians[i]*data.ref_shape_values[i][j]/fv_data.determinants[i];
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_values[i][j*spacedim+c] = fv_vec(c);
+                        break;
+//                     case FETensor:
+//                         arma::mat ref_mat(dim);
+//                         for (unsigned int c=0; c<spacedim*spacedim; c++)
+//                             ref_mat[c/spacedim,c%spacedim] = data.ref_shape_values[i][j][c];
+//                         arma::mat fv_mat = ref_mat*fv_data.inverse_jacobians[i];
+//                         for (unsigned int c=0; c<spacedim*spacedim; c++)
+//                             fv_data.shape_values[i][j*spacedim*spacedim+c] = fv_mat[c];
+//                         break;
+                    default:
+                        ASSERT(false).error("Not implemented.");
                 }
+            }
     }
 
     // shape gradients
@@ -196,11 +237,25 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
         {
             for (unsigned int j = 0; j < n_dofs(); j++)
             {
+                arma::mat grads;
                 switch (type_) {
                     case FEScalar:
-                        arma::mat grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j];
+                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j];
                         fv_data.shape_gradients[i][j] = grads;
                         break;
+                    case FEVectorContravariant:
+                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j] * trans(fv_data.jacobians[i]);
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                        break;
+                    case FEVectorPiola:
+                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j] * trans(fv_data.jacobians[i])
+                                / fv_data.determinants[i];
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                        break;
+                    default:
+                        ASSERT(false).error("Not implemented.");
                 }
             }
         }

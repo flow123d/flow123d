@@ -66,33 +66,6 @@ public:
      */
     FE_RT0();
 
-    /**
-     * @brief Decides which additional quantities have to be computed
-     * for each cell.
-     */
-    UpdateFlags update_each(UpdateFlags flags);
-    
-private:
-  
-    /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure.
-     *
-     * @param q Quadrature.
-     * @param data The precomputed finite element data on the reference cell.
-     * @param fv_data The data to be computed.
-     */
-    void fill_fe_values(const Quadrature<dim> &q,
-            FEInternalData &data,
-            FEValuesData<dim,spacedim> &fv_data) override;
-
-    /**
-     * @brief Calculates the data on the reference cell.
-     *
-     * @param q Quadrature.
-     * @param flags Flags that indicate what quantities should be calculated.
-     */
-    FEInternalData *initialize(const Quadrature<dim> &q) override;
 };
 
 

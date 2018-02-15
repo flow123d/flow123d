@@ -64,7 +64,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 {
     arma::vec::fixed<dim> sp;
 
-    this->init(false, FEVector);
+    this->init(false, FEVectorPiola);
     this->function_space_ = new RT0_space(dim);
     
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
@@ -88,103 +88,6 @@ FE_RT0<dim,spacedim>::FE_RT0()
 
 
 
-
-template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FE_RT0<dim,spacedim>::initialize(const Quadrature<dim> &q)
-{
-    FEInternalData *data = new FEInternalData;
-
-    arma::mat raw_values(this->function_space_->dim(), dim);
-    arma::mat shape_values(this->function_space_->dim(), dim);
-    vector<arma::vec> values(this->function_space_->dim());
-
-    data->ref_shape_values.resize(q.size());
-    for (unsigned int i=0; i<q.size(); i++)
-    {
-        for (unsigned int j=0; j<this->function_space_->dim(); j++)
-            for (unsigned int c=0; c<this->n_components(); c++)
-              raw_values(j,c) = this->basis_value(j, q.point(i), c);
-
-        shape_values = this->node_matrix * raw_values;
-
-        for (unsigned int j=0; j<this->function_space_->dim(); j++)
-            values[j] = trans(shape_values.row(j));
-
-        data->ref_shape_values[i] = values;
-    }
-
-    arma::mat::fixed<dim,dim> grad;
-    arma::mat::fixed<dim,dim> shape_grads;
-    vector<arma::mat> grads(this->function_space_->dim());
-
-    data->ref_shape_grads.resize(q.size());
-    for (unsigned int i=0; i<q.size(); i++)
-    {
-        for (unsigned int k=0; k<this->function_space_->dim(); k++)
-        {
-            grad.zeros();
-            for (unsigned int l=0; l<this->function_space_->dim(); l++)
-              for (unsigned int c=0; c<this->n_components(); c++)
-                grad.col(c) += this->basis_grad(l, q.point(i), c) * this->node_matrix(k,l);
-            grads[k] = grad;
-        }
-
-        data->ref_shape_grads[i] = grads;
-    }
-
-    return data;
-}
-
-template<unsigned int dim, unsigned int spacedim> inline
-UpdateFlags FE_RT0<dim,spacedim>::update_each(UpdateFlags flags)
-{
-    UpdateFlags f = flags;
-
-    if (flags & update_values)
-        f |= update_jacobians | update_volume_elements;
-
-    if (flags & update_gradients)
-        f |= update_jacobians | update_inverse_jacobians | update_volume_elements;
-
-    return f;
-}
-
-template<unsigned int dim, unsigned int spacedim> inline
-void FE_RT0<dim,spacedim>::fill_fe_values(
-        const Quadrature<dim> &q,
-        FEInternalData &data,
-        FEValuesData<dim,spacedim> &fv_data)
-{
-    // shape values
-    if (fv_data.update_flags & update_values)
-    {
-        arma::vec::fixed<spacedim> values;
-        for (unsigned int i = 0; i < q.size(); i++)
-        {
-            for (unsigned int k=0; k<this->function_space_->dim(); k++)
-            {
-                values = fv_data.jacobians[i]*data.ref_shape_values[i][k]/fv_data.determinants[i];
-                for (unsigned int c=0; c<spacedim; c++)
-                  fv_data.shape_values[i][k*spacedim+c] = values(c);
-            }
-        }
-    }
-
-    // shape gradients
-    if (fv_data.update_flags & update_gradients)
-    {
-        arma::mat::fixed<spacedim,spacedim> grads;
-        for (unsigned int i = 0; i < q.size(); i++)
-        {
-            for (unsigned int k=0; k<this->function_space_->dim(); k++)
-            {
-              grads = fv_data.jacobians[i]*data.ref_shape_grads[i][k]*fv_data.inverse_jacobians[i]/fv_data.determinants[i];
-              for (unsigned int c=0; c<spacedim; c++)
-                fv_data.shape_gradients[i][k*spacedim+c] = grads.col(c);
-            }
-        }
-    }
-}
 
 
 template class FE_RT0<1,3>;

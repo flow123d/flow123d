@@ -84,7 +84,8 @@ void FEValuesBase<dim,spacedim>::ViewsCache::resize(FEValuesBase<dim,spacedim> &
     case FEType::FEScalar:
       scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv, 0));
       break;
-    case FEType::FEVector:
+    case FEType::FEVectorContravariant:
+    case FEType::FEVectorPiola:
       vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv, 0));
       break;
     case FEType::FETensor:
@@ -136,7 +137,8 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         case FEScalar:
             n_components_ = 1;
             break;
-        case FEVector:
+        case FEVectorContravariant:
+        case FEVectorPiola:
             n_components_ = spacedim;
             break;
         case FETensor:

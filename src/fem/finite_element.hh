@@ -172,12 +172,37 @@ protected:
 };
 
 
-/// Types of FiniteElement: scalar, vector-valued, tensor-valued or mixed system.
+/**
+ * Types of FiniteElement: scalar, vector-valued, tensor-valued or mixed system.
+ * 
+ * The type also indicates how the shape functions and their gradients are transformed
+ * from reference element to arbitrary element. In particular:
+ * 
+ *     TYPE              OBJECT  EXPRESSION
+ * -----------------------------------------------------------
+ * FEScalar              value   ref_value
+ *                       grad    J^{-T} * ref_grad
+ * -----------------------------------------------------------
+ * FEVectorContravariant value   J * ref_value
+ *                       grad    J^{-T} * ref_grad * J^T
+ * -----------------------------------------------------------
+ * FEVectorPiola         value   J * ref_value / |J|
+ *                       grad    J^{-T} * ref_grad * J^T / |J|
+ * -----------------------------------------------------------
+ * FETensor              value   not implemented
+ *                       grad    not implemented
+ * -----------------------------------------------------------
+ * FEMixedSystem         value   depends on sub-elements
+ *                       grad    depends on sub-elements
+ * 
+ * Note that we use columnwise gradients, i.e. gradient of each component is a column vector.
+ */
 enum FEType {
   FEScalar = 0,
-  FEVector = 1,
-  FETensor = 2,
-  FEMixedSystem = 3
+  FEVectorContravariant = 1,
+  FEVectorPiola = 2,
+  FETensor = 3,
+  FEMixedSystem = 4
 };
 
 /**
@@ -221,32 +246,15 @@ public:
  *
  * The reference cell consists of lower dimensional entities (points,
  * lines, triangles). Each dof is associated to one of these
- * entities. This means that if the entity is shared by 2 or more
- * neighbouring cells in the mesh then this dof is shared by the
- * finite elements on all of these cells. If a dof is associated
- * to the cell itself then it is not shared with neighbouring cells.
- * 
- * 
- * Dof ordering:
- * 
- * The dofs and basis functions are ordered as follows:
- * - all dofs on point 1
- * - all dofs on point 2
- * ...
- * - all dofs on line 1
- * - all dofs on line 2
- * ...
- * - all dofs on triangle 1
- * - all dofs on triangle 2
- * ...
- * - all dofs on tetrahedron
- * The ordering is important for compatibility with DOFHandler
- * and FESystem.
+ * entities. If the entity is shared by 2 or more neighbouring cells
+ * in the mesh then this dof is shared by the finite elements on all
+ * of these cells. If a dof is associated to the cell itself then it
+ * is not shared with neighbouring cells.
  * 
  * 
  * Shape functions:
  *
- * The Sometimes it is convenient to describe the function space using
+ * Sometimes it is convenient to describe the function space using
  * a basis (called the raw basis) that is different from the set of
  * shape functions for the finite element (the actual basis). For
  * this reason we define the support points which play the role of

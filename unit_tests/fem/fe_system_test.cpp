@@ -96,7 +96,7 @@ protected:
 
 TEST_F(FESystemTest, test_vector) {
   // Test vector-valued FESystem using P1 element on tetrahedron.
-  FESystem<3,3> fe_sys(std::make_shared<FE_P<3,3> >(1), FEVector);
+  FESystem<3,3> fe_sys(std::make_shared<FE_P<3,3> >(1), FEVectorContravariant);
   FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
   
   fe_values.reinit(ele);
@@ -140,7 +140,7 @@ TEST_F(FESystemTest, test_mixed_system) {
   // The basis functions are ordered first nodal and then element-supported,
   // hence the scalar constant function from P0 comes after the linear
   // functions from P1^3 and the RT0 functions are at the end.
-  FESystem<3,3> fe_vec(std::make_shared<FE_P<3,3> >(1), FEVector);
+  FESystem<3,3> fe_vec(std::make_shared<FE_P<3,3> >(1), FEVectorContravariant);
   FESystem<3,3> fe_sys({ std::make_shared<FE_P<3,3> >(0), std::make_shared<FESystem<3,3> >(fe_vec), std::make_shared<FE_RT0<3,3> >() });
   FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
   

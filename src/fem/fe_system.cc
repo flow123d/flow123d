@@ -28,11 +28,13 @@ template<unsigned int dim, unsigned int spacedim>
 FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t)
 {
   OLD_ASSERT(fe->is_primitive(), "FE vector or tensor can olny by created from primitive FE.");
-  OLD_ASSERT(t == FEType::FEVector || t == FEType::FETensor, "This constructor can be used only for vectors or tensors.");
+  OLD_ASSERT(t == FEType::FEVectorContravariant ||
+             t == FEType::FEVectorPiola ||
+             t == FEType::FETensor, "This constructor can be used only for vectors or tensors.");
   
   FiniteElement<dim,spacedim>::init(false, t);
   
-  if (t == FEType::FEVector)
+  if (t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola)
     fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim, fe);
   else
     fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim*dim, fe);
@@ -78,7 +80,8 @@ void FESystem<dim,spacedim>::initialize()
       case FEType::FEScalar:
         scalar_components_.push_back(comp_offset);
         break;
-      case FEType::FEVector:
+      case FEType::FEVectorContravariant:
+      case FEType::FEVectorPiola:
         vector_components_.push_back(comp_offset);
         break;
       default:
