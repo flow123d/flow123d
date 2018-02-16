@@ -236,7 +236,7 @@ std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
  * Step estimating is constrained by several bounds (permanent maximal and minimal time step, upper 
  * and lower constraint of time step). The permanent constraints are set in the constructor from the input 
  * record so that user can set the time step constraints for the whole simulation.
- * Function set_permanent_constraint() should be used only in very specific cases and possibly right after 
+ * Function set_dt_limits() should be used only in very specific cases and possibly right after
  * the constructor before using other functions of TG.
  * 
  * Choice of the very next time step can be constrained using functions set_upper_constraint()
@@ -355,15 +355,26 @@ public:
    }
 
    /**
-    * @brief Sets permanent constraints for time step.
+    * @brief Sets dt limits for time independent DT limits in simulation.
     * 
     * This function should not be normally used. These values are to be set in constructor
     * from the input record or by default.
     * @param min_dt is the minimal value allowed for time step
     * @param max_dt is the maximal value allowed for time step
     */
-   void set_permanent_constraint( double min_dt, double max_dt);
+   void set_dt_limits( double min_dt, double max_dt);
     
+   /**
+    * @brief Sets dt limits for time dependent DT limits in simulation.
+    *
+    * This function should not be normally used. These values are to be set in constructor
+    * from the input record or by default.
+    * @param min_dt is the minimal value allowed for time step
+    * @param max_dt is the maximal value allowed for time step
+    * @param dt_limits_list list of time dependent values of minimal and maximal value allowed for time step
+    */
+   void set_dt_limits( double min_dt, double max_dt, Input::Array dt_limits_list);
+
     /**
      * @brief Sets upper constraint for the next time step estimating.
      * 
@@ -614,6 +625,19 @@ public:
 
 private:
 
+    /// Structure that stores one record of DT limit.
+    struct DtLimitRow {
+
+    	DtLimitRow(double t, double min, double max)
+        : time(t),
+		  min_dt(min),
+		  max_dt(max)
+      {};
+
+      double time;    ///< time of DT limits record
+      double min_dt;  ///< min DT limit
+      double max_dt;  ///< max DT limit
+    };
 
     /**
      * \brief Common part of the constructors. Set most important parameters, check they are valid and set default values to other.
@@ -624,6 +648,11 @@ private:
      * Set time marks for the start time and end time (if finite).
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
+
+    /**
+     * \brief Sets permanent constraints for actual time step.
+     */
+    void set_permanent_constraint();
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
@@ -680,6 +709,12 @@ private:
 
     /// Conversion unit of all time values within the equation.
     std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
+
+    /// Table of DT limits
+    std::vector<DtLimitRow> dt_limits_table_;
+
+    /// Iterator to actual position of DT limits
+    std::vector<DtLimitRow>::iterator dt_limits_iter_;
 
     friend TimeMarks;
 };
