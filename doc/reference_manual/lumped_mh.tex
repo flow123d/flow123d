@@ -186,6 +186,19 @@ to $T$ as:
 
 
 \subsection{$P1$ method}
-xx
+First, we introduce local projection of the edge pressures to the linear broken space. Let us denote $P_i$, $i=0,\dots,d$ the edge barycenters of an element $T$ 
+of dimension $d$. We find a basis $\phi_i(\vc x)$, $i=0,\dots,d$ of the space of linear functions on $T$ that is ortogonal to the functionals $\Phi_j(\phi)= \phi(P_i)$, 
+$j=0,\dots, d$. Denoting $\mr h_i$, $i=0,\dots, d$ the edge values (of the pressure) on element $T$, we introduce the projection:
+\[
+  X_T(\mr h) = \sum_i \mr h_i \phi_i(\vc x).
+\]
+Resulting functions of neigbouring elements are continuous in the edge barycenters.
 
+Finally, let $I_{K,L}$ be an intersection of the elements $K$ and $L$. Operators $R$ and $T$ are defined on every such intersection independently
+as:
+\[
+   R(\mr{h}) = X_K(\mr h_K)|_{I_{K,L}},\quad   
+   T(\mr{h}) = X_L(\mr h_L)|_{I_{K,L}}, 
+\]
+i.e. the restriction of the linear functions on individual elements to the intersection set.
 
