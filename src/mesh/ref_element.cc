@@ -138,13 +138,24 @@ template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_sid
 };
 
 
+template<> const IdxVector<2> RefElement<1>::topology_zeros_[] = {
+   {(1 << 0),  //node 0
+    (1 << 1)}, //node 1
+   {0,         //the element
+    0}
+};
+
+
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[] = {
    {(1 << 0) | (1 << 1),  //node 0
     (1 << 0) | (1 << 2),  //node 1
     (1 << 1) | (1 << 2)}, //node 2
    {(1 << 0),  //line 0
     (1 << 1),  //line 1
-    (1 << 2)}  //line 2
+    (1 << 2)}, //line 2
+   {0,         //the element
+    0,
+    0}
 };
 
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
@@ -164,6 +175,12 @@ template<> const IdxVector<6> RefElement<3>::topology_zeros_[] = {
     1 << 2,    //side 1
     1 << 1,    //side 2
     1 << 0,    //side 3
+    0,
+    0},
+   {0,    //the element
+    0,
+    0,
+    0,
     0,
     0}
 };
@@ -369,6 +386,24 @@ auto RefElement<dim>::barycentric_on_face(const BaryPoint &barycentric, unsigned
         face_barycentric[i] = barycentric[ i_bary ];
     }
     return face_barycentric;
+}
+
+
+template<unsigned int dim>
+std::pair<unsigned int, unsigned int> RefElement<dim>::zeros_positions(const BaryPoint &barycentric,
+                                                                       double tolerance)
+{
+    unsigned int zeros = 0;
+    unsigned int n_zeros = 0;
+    for(char i=0; i < dim+1; i++){
+        if(std::fabs(barycentric[i]) < tolerance)
+        {
+            zeros = zeros | (1 << i);
+            n_zeros++;
+        }
+    }
+    
+    return std::make_pair(n_zeros, zeros);
 }
 
 

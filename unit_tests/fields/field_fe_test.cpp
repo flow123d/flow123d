@@ -94,9 +94,9 @@ TEST_F(FieldFETest, scalar) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(1, 2, 3);
 
-	FE_P_disc<1,1,3> fe1;
-	FE_P_disc<1,2,3> fe2;
-	FE_P_disc<1,3,3> fe3;
+	FE_P_disc<1,3> fe1(1);
+	FE_P_disc<2,3> fe2(1);
+	FE_P_disc<3,3> fe3(1);
     ScalarField field;
 
     dh->distribute_dofs(fe1, fe2, fe3);

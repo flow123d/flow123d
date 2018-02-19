@@ -104,41 +104,10 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 {
     unsigned int q_order;
 
-    switch (fe_order)
-    {
-    case 0:
-        q_order = 0;
-        fe1_ = new FE_P_disc<0,1,3>;
-        fe2_ = new FE_P_disc<0,2,3>;
-        fe3_ = new FE_P_disc<0,3,3>;
-        break;
-
-    case 1:
-        q_order = 2;
-        fe1_ = new FE_P_disc<1,1,3>;
-        fe2_ = new FE_P_disc<1,2,3>;
-        fe3_ = new FE_P_disc<1,3,3>;
-        break;
-
-    case 2:
-        q_order = 4;
-        fe1_ = new FE_P_disc<2,1,3>;
-        fe2_ = new FE_P_disc<2,2,3>;
-        fe3_ = new FE_P_disc<2,3,3>;
-        break;
-
-    case 3:
-        q_order = 6;
-        fe1_ = new FE_P_disc<3,1,3>;
-        fe2_ = new FE_P_disc<3,2,3>;
-        fe3_ = new FE_P_disc<3,3,3>;
-        break;
-
-    default:
-        q_order=0;
-        xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in TransportDG ", fe_order);
-        break;
-    }
+    q_order = 2*fe_order;
+    fe1_ = new FE_P_disc<1,3>(fe_order);
+    fe2_ = new FE_P_disc<2,3>(fe_order);
+    fe3_ = new FE_P_disc<3,3>(fe_order);
 
     fe_rt1_ = new FE_RT0<1,3>;
     fe_rt2_ = new FE_RT0<2,3>;

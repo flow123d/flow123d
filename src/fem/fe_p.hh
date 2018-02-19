@@ -32,8 +32,7 @@
  * This class serves for evaluation of the value and gradient
  * of a polynomial of order @p degree in @p dim variables.
  */
-template<unsigned int degree, unsigned int dim>
-class PolynomialSpace
+class PolynomialSpace : public FunctionSpace
 {
 public:
 
@@ -42,103 +41,38 @@ public:
 	 *
 	 * Creates the coefficients of the basis.
 	 */
-    PolynomialSpace();
+    PolynomialSpace(unsigned int degree, unsigned int dim);
 
-    /**
-     * @brief Value of the @p i th basis function at point @p p.
-     * @param i Number of the basis function.
-     * @param p Point at which the function is evaluated.
-     */
-    const double basis_value(unsigned int i, const arma::vec::fixed<dim> &p) const;
+    const double basis_value(unsigned int basis_index,
+                             const arma::vec &point,
+                             unsigned int comp_index = 0
+                            ) const override;
+    
+    const arma::vec basis_grad(unsigned int basis_index,
+                               const arma::vec &point,
+                               unsigned int comp_index = 0
+                              ) const override;
 
-    /**
-     * @brief Gradient of the @p i th basis function at point @p p.
-     * @param i Number of the basis function.
-     * @param p Point at which the function is evaluated.
-     */
-    const arma::vec::fixed<dim> basis_grad(unsigned int i, const arma::vec::fixed<dim> &p) const;
+    const unsigned int dim() const override { return powers.size(); }
 
 private:
 
+    /// Max. degree of polynomials.
+    const unsigned int degree_;
+    
     /**
      * @brief Coefficients of basis functions.
      *
      * Powers of x, y, z, ... in the i-th basis function are stored
      * in powers[i].
      */
-    std::vector<arma::uvec::fixed<dim> > powers;
+    std::vector<arma::uvec> powers;
 
 };
 
 
 
-/**
- * @brief Distribution of dofs for polynomial finite elements.
- *
- * The class holds the information on the total number of dofs
- * as well as the number of dofs associated to geometrical entities
- * such as points, lines, triangles and tetrahedra.
- * Moreover, some dofs are grouped to pairs, triples or sextuples
- * which are invariant to rotation/reflection of the element.
- *
- * The coordinates of unit support points are provided.
- * The values at support points uniquely determine the finite
- * element function.
- *
- */
-template<unsigned int degree, unsigned int dim>
-class DofDistribution
-{
-public:
 
-	/**
-	 * @brief Constructor.
-	 *
-	 * Initializes all variables.
-	 */
-    DofDistribution();
-
-    /// Total number of degrees of freedom at one finite element.
-    unsigned int number_of_dofs;
-
-    /**
-     * @brief Number of single dofs at one geometrical entity of the given
-     * dimension (point, line, triangle, tetrahedron).
-     */
-    unsigned int number_of_single_dofs[dim + 1];
-
-    /**
-     * @brief Number of pairs of dofs at one geometrical entity of the given
-     * dimension (applicable to lines and triangles).
-     */
-    unsigned int number_of_pairs[dim + 1];
-
-    /**
-     * @brief Number of triples of dofs associated to one triangle.
-     */
-    unsigned int number_of_triples[dim + 1];
-
-    /**
-     * @brief Number of sextuples of dofs associated to one triangle.
-     */
-    unsigned int number_of_sextuples[dim + 1];
-
-    /**
-     * @brief Support points.
-     *
-     * Support points are points in the reference element where
-     * function values determine the dofs. In case of Lagrangean
-     * finite elements the dof values are precisely the function
-     * values at @p unit_support_points.
-     */
-    std::vector<arma::vec::fixed<dim> > unit_support_points;
-    
-    
-private:
-  
-    void init();
-
-};
 
 
 /**
@@ -146,47 +80,19 @@ private:
  *
  * The finite element functions are continuous across the interfaces.
  */
-template <unsigned int degree, unsigned int dim, unsigned int spacedim>
+template <unsigned int dim, unsigned int spacedim>
 class FE_P : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-    using FiniteElement<dim,spacedim>::number_of_pairs;
-    using FiniteElement<dim,spacedim>::number_of_triples;
-    using FiniteElement<dim,spacedim>::number_of_sextuples;
-    using FiniteElement<dim,spacedim>::unit_support_points;
-
 public:
     /// Constructor.
-    FE_P();
+    FE_P(unsigned int degree);
     
-    /**
-     * @brief Returns the @p ith basis function evaluated at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    double basis_value(const unsigned int i,
-                       const arma::vec::fixed<dim> &p,
-                       const unsigned int comp = 0) const override;
+protected:
+    
+    void init_dofs();
 
-    /**
-     * @brief Returns the gradient of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i,
-                                     const arma::vec::fixed<dim> &p,
-                                     const unsigned int comp = 0) const override;
-
-    virtual ~FE_P();
-
-private:
-
-    /// The auxiliary polynomial space.
-    PolynomialSpace<degree,dim> poly_space;
-
-    /// The auxiliary dof distribution.
-    DofDistribution<degree,dim> dof_distribution;
+    /// Maximum degree of polynomials.
+    unsigned int degree_;
 };
 
 
@@ -196,183 +102,18 @@ private:
  * No continuity of the finite element functions across the interfaces is
  * imposed.
  */
-template <unsigned int degree, unsigned int dim, unsigned int spacedim>
-class FE_P_disc : public FiniteElement<dim,spacedim>
+template <unsigned int dim, unsigned int spacedim>
+class FE_P_disc : public FE_P<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-    using FiniteElement<dim,spacedim>::number_of_pairs;
-    using FiniteElement<dim,spacedim>::number_of_triples;
-    using FiniteElement<dim,spacedim>::number_of_sextuples;
-    using FiniteElement<dim,spacedim>::unit_support_points;
-
 public:
 
     /// Constructor.
-    FE_P_disc();
+    FE_P_disc(unsigned int degree);
     
-    /**
-     * @brief Returns the @p ith basis function evaluated at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    double basis_value(const unsigned int i,
-                       const arma::vec::fixed<dim> &p,
-                       const unsigned int comp = 0) const override;
-
-    /**
-     * @brief Returns the gradient of the @p ith basis function at the point @p p.
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i,
-                                     const arma::vec::fixed<dim> &p,
-                                     const unsigned int comp = 0) const override;
-
-    /// Destructor
-    virtual ~FE_P_disc();
-
-private:
-
-    /// The auxiliary polynomial space.
-    PolynomialSpace<degree,dim> poly_space;
-
-    /// The auxiliary dof distribution.
-    DofDistribution<degree,dim> dof_distribution;
 };
 
 
 
-template<unsigned int degree, unsigned int dim>
-PolynomialSpace<degree,dim>::PolynomialSpace()
-{
-// computes powers of all monomials up to given @p degree
-// the order is: 1,x,x^2, y, yx,y^2
-//
-// TODO: - check and possibly rewrite to be more clear (use sum_degree temporary
-//       - change order of monomials: 1, x, y, xy, x^2 , y^2 (increasing order)
-//       - allow Q polynomials: 1,x, y, xy
-//       - can use tensor products
-
-	arma::uvec::fixed<dim> pows;
-	pows.zeros();
-
-    unsigned int degree_sum=0;
-    unsigned int i_dim;
-
-
-    while (true) {
-        powers.push_back(pows);
-
-        // increment pows
-        for(i_dim=0; i_dim < dim; i_dim++) {
-            if (degree_sum < degree) {
-                pows[i_dim]++;
-                degree_sum++;
-                break;
-            } else {                    // if degree_sum == degree, we find first non empty power, free it, and raise the next one
-                degree_sum-=pows[i_dim];
-                pows[i_dim]=0;
-            }
-        }
-        if (i_dim == dim) break; // just after pow == (0, 0, .., degree)
-    }
-}
-
-template<unsigned int degree, unsigned int dim>
-const double PolynomialSpace<degree,dim>::basis_value(unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");
-
-    double v = 1;
-
-    for (unsigned int j=0; j<dim; j++)
-        v *= pow(p[j], (int) powers[i][j]);
-
-    return v;
-}
-
-
-template<unsigned int degree, unsigned int dim>
-const arma::vec::fixed<dim> PolynomialSpace<degree,dim>::basis_grad(unsigned int i, const arma::vec::fixed<dim> &p) const
-{
-	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");
-
-    arma::vec::fixed<dim> grad;
-
-    for (unsigned int j=0; j<dim; j++)
-    {
-        grad[j] = powers[i][j];
-        if (powers[i][j] == 0) continue;
-
-        for (unsigned int k=0; k<dim; k++)
-        {
-            grad[j] *= pow(p[k], (int) (k==j?powers[i][k]-1:powers[i][k]));
-        }
-    }
-    return grad;
-}
-
-
-
-
-
-
-
-
-
-
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-FE_P<degree,dim,spacedim>::FE_P()
-  : FiniteElement<dim,spacedim>()
-{
-//     this->init();
-
-    for (int i=0; i<=dim; i++)
-    {
-        number_of_dofs += dof_distribution.number_of_single_dofs[i]
-                         +2*dof_distribution.number_of_pairs[i]
-                         +3*dof_distribution.number_of_triples[i]
-                         +6*dof_distribution.number_of_sextuples[i];
-
-        number_of_single_dofs[i] = dof_distribution.number_of_single_dofs[i];
-        number_of_pairs[i] = dof_distribution.number_of_pairs[i];
-        number_of_triples[i] = dof_distribution.number_of_triples[i];
-        number_of_sextuples[i] = dof_distribution.number_of_sextuples[i];
-    }
-
-    for (int i=0; i<dof_distribution.unit_support_points.size(); i++)
-        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
-
-    this->setup_components();
-    
-    this->compute_node_matrix();
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P<degree,dim,spacedim>::basis_value(const unsigned int i, 
-                                              const arma::vec::fixed<dim> &p,
-                                              const unsigned int comp) const
-{
-    ASSERT_EQ_DBG( 0, comp );
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_value(i, p);
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P<degree,dim,spacedim>::basis_grad(const unsigned int i,
-                                                            const arma::vec::fixed<dim> &p,
-                                                            const unsigned int comp) const
-{
-    ASSERT_EQ_DBG( 0, comp );
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_grad(i, p);
-}
-
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-FE_P<degree,dim,spacedim>::~FE_P()
-{}
 
 
 
@@ -389,46 +130,19 @@ FE_P<degree,dim,spacedim>::~FE_P()
 
 
 
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-FE_P_disc<degree,dim,spacedim>::FE_P_disc()
-{
-    this->init();
 
-    number_of_dofs += dof_distribution.number_of_dofs;
 
-    number_of_single_dofs[dim] = number_of_dofs;
 
-    for (unsigned int i=0; i<dof_distribution.unit_support_points.size(); i++)
-        unit_support_points.push_back(dof_distribution.unit_support_points[i]);
 
-    this->setup_components();
 
-    this->compute_node_matrix();
-}
 
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-double FE_P_disc<degree,dim,spacedim>::basis_value(const unsigned int i,
-                                                   const arma::vec::fixed<dim> &p,
-                                                   const unsigned int comp) const
-{
-    ASSERT_EQ_DBG( 0, comp );
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_value(i, p);
-}
 
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FE_P_disc<degree,dim,spacedim>::basis_grad(const unsigned int i,
-                                                                 const arma::vec::fixed<dim> &p,
-                                                                 const unsigned int comp) const
-{
-    ASSERT_EQ_DBG( 0, comp );
-	OLD_ASSERT(i <= number_of_dofs, "Index of basis function is out of range.");
-    return poly_space.basis_grad(i, p);
-}
 
-template<unsigned int degree, unsigned int dim, unsigned int spacedim>
-FE_P_disc<degree,dim,spacedim>::~FE_P_disc()
-{}
+
+
+
+
+
 
 
 

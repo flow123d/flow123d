@@ -22,6 +22,33 @@
 #include "fem/finite_element.hh"
 #include "system/logger.hh"
 
+/**
+ * Space of Raviart-Thomas polynomials of order 0 (affine functions).
+ * The basis functions are defined as
+ * 
+ *    x, x - e_1, ..., x - e_d,
+ * 
+ * where x is the space variable, e_i is the i-th canonical basis vector in R^d
+ * and d is @p space_dim_.
+ */
+class RT0_space : public FunctionSpace {
+public:
+    
+    RT0_space(unsigned int dim);
+    
+    const double basis_value(unsigned int basis_index,
+                             const arma::vec &point,
+                             unsigned int comp_index
+                            ) const override;
+    
+    const arma::vec basis_grad(unsigned int basis_index,
+                               const arma::vec &point,
+                               unsigned int comp_index
+                              ) const override;
+
+    const unsigned int dim() const override { return this->space_dim_+1; }
+};
+
 
 /**
  * @brief Raviart-Thomas element of order 0.
@@ -32,91 +59,13 @@
 template <unsigned int dim, unsigned int spacedim>
 class FE_RT0 : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-    using FiniteElement<dim,spacedim>::number_of_pairs;
-    using FiniteElement<dim,spacedim>::number_of_triples;
-    using FiniteElement<dim,spacedim>::number_of_sextuples;
-    using FiniteElement<dim,spacedim>::generalized_support_points;
-    using FiniteElement<dim,spacedim>::is_primitive_;
-    using FiniteElement<dim,spacedim>::node_matrix;
-
 public:
-
-    /// Number of raw basis functions.
-    static const unsigned int n_raw_functions = dim+1;
 
     /**
      * @brief Constructor.
      */
     FE_RT0();
 
-    /**
-     * @brief Calculates the value of the @p comp-th component of
-     * the @p i-th raw basis function at the
-     * point @p p on the reference element (for vector-valued FE).
-     *
-     * @param i    Number of the basis function.
-     * @param p    Point of evaluation.
-     * @param comp Number of vector component.
-     */
-    double basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const override;
-
-    /**
-     * @brief Calculates the @p comp-th component of the gradient
-     * of the @p i-th raw basis function at the point @p p on the
-     * reference element (for vector-valued FE).
-     *
-     * @param i    Number of the basis function.
-     * @param p    Point of evaluation.
-     * @param comp Number of vector component.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp) const override;
-
-    /**
-     * @brief Decides which additional quantities have to be computed
-     * for each cell.
-     */
-    UpdateFlags update_each(UpdateFlags flags);
-
-    /**
-     * @brief Destructor.
-     */
-    virtual ~FE_RT0() {};
-    
-private:
-  
-    /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure.
-     *
-     * @param q Quadrature.
-     * @param data The precomputed finite element data on the reference cell.
-     * @param fv_data The data to be computed.
-     */
-    virtual void fill_fe_values(const Quadrature<dim> &q,
-            FEInternalData &data,
-            FEValuesData<dim,spacedim> &fv_data);
-
-    /**
-     * @brief Computes the conversion matrix from internal basis to shape functions.
-     *
-     * Initializes the @p node_matrix for computing the coefficients
-     * of the raw basis functions from values at support points.
-     * Since Raviart-Thomas element is not Lagrangean, the method has
-     * to be reimplemented.
-     */
-    void compute_node_matrix();
-
-    /**
-     * @brief Calculates the data on the reference cell.
-     *
-     * @param q Quadrature.
-     * @param flags Flags that indicate what quantities should be calculated.
-     */
-    FEInternalData *initialize(const Quadrature<dim> &q) override;
 };
 
 
