@@ -305,6 +305,11 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
     time_step_changed_=true;
     end_of_fixed_dt_interval_ = inf_time;
 
+    // fill table limits with two records (start time, end time)
+    dt_limits_table_.push_back( DtLimitRow(init_time, dt, dt) );
+    dt_limits_table_.push_back( DtLimitRow(inf_time, dt, dt) );
+    dt_limits_iter_ = dt_limits_table_.begin();
+
     lower_constraint_=min_time_step_=dt;
     lower_constraint_message_ = "Initial time step set by user.";
     upper_constraint_=max_time_step_=dt;
@@ -322,6 +327,12 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 
     time_unit_conversion_ = std::make_shared<TimeUnitConversion>();
 	init_common(init_time, inf_time, eq_mark_type);
+
+	// fill table limits with two records (start time, end time)
+    dt_limits_table_.push_back( DtLimitRow(init_time, min_time_step_, max_time_step_) );
+    dt_limits_table_.push_back( DtLimitRow(inf_time, min_time_step_, max_time_step_) );
+    dt_limits_iter_ = dt_limits_table_.begin();
+
 	steady_ = true;
 }
 
@@ -449,6 +460,7 @@ void TimeGovernor::set_dt_limits( double min_dt, double max_dt, Input::Array dt_
         }
 
     	dt_limits_table_.push_back( DtLimitRow(time, min, max) );
+    	this->marks().add(TimeMark(time, this->equation_fixed_mark_type()));
     }
 
     if (dt_limits_table_[dt_limits_table_.size()-1].time < end_time_) {
@@ -468,6 +480,7 @@ void TimeGovernor::set_permanent_constraint()
     lower_constraint_message_ = "Permanent minimal constraint, custom.";
     upper_constraint_ = max_time_step_ = min(dt_limits_iter_->max_dt, end_time_-t());
     upper_constraint_message_ = "Permanent maximal constraint, custom.";
+    ++dt_limits_iter_;
 }
 
 
@@ -597,6 +610,8 @@ void TimeGovernor::next_time()
     OLD_ASSERT_LE(0.0, t());
     if (is_end()) return;
     
+    if (dt_limits_iter_->time == step().end()) set_permanent_constraint();
+
 
     if (this->step().lt(end_of_fixed_dt_interval_)) {
         // this is done for fixed step
