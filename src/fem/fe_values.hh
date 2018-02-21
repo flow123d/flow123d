@@ -394,6 +394,26 @@ public:
     }
 
 protected:
+    
+    /**
+     * @brief Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure.
+     *
+     * @param fe_data Precomputed finite element data.
+     */
+    void fill_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for scalar FE.
+    void fill_scalar_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for vectorial FE.
+    void fill_vec_contravariant_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
+    void fill_vec_piola_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for mixed system of FE.
+    void fill_system_data(const FEInternalData &fe_data);
 
     /**
      * @brief The mapping from the reference cell to the actual cell.
@@ -419,11 +439,14 @@ protected:
      * @brief Precomputed finite element data.
      */
     FEInternalData *fe_data;
-
+    
     /**
      * @brief Data computed by the mapping and finite element.
      */
     FEValuesData<dim,spacedim> data;
+    
+    /// Vector of FEValues for sub-elements of FESystem.
+    std::vector<std::shared_ptr<FEValuesBase<dim,spacedim> > > fe_values_vec;
     
     /// Number of components of the FE.
     unsigned int n_components_;

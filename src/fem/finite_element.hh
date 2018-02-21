@@ -359,18 +359,6 @@ protected:
     virtual UpdateFlags update_each(UpdateFlags flags);
 
     /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure.
-     *
-     * @param q Quadrature rule.
-     * @param data Precomputed finite element data.
-     * @param fv_data Data to be computed.
-     */
-    virtual void fill_fe_values(const Quadrature<dim> &q,
-            FEInternalData &data,
-            FEValuesData<dim,spacedim> &fv_data);
-
-    /**
      * @brief Initializes the @p node_matrix for computing the coefficients
      * of the shape functions in the raw basis of @p functions_space_.
      * This is done by evaluating the @p dofs_ for the basis function

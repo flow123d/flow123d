@@ -137,11 +137,6 @@ private:
   /// Initialization of the internal structures from the vector of base FE.
   void initialize();
 
-  void fill_fe_values(
-      const Quadrature<dim> &q,
-      FEInternalData &data,
-      FEValuesData<dim,spacedim> &fv_data) override;
-  
   void compute_node_matrix() override;
   
   /// Pointers to base FE objects.
