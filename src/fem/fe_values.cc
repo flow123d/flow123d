@@ -76,7 +76,7 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::ViewsCache::resize(FEValuesBase<dim,spacedim> &fv, unsigned int size)
+void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedim> &fv)
 {
   scalars.clear();
   vectors.clear();
@@ -151,7 +151,7 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     // add flags required by the finite element or mapping
     data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
     
-    views_cache_.resize(*this, fe->n_components());
+    views_cache_.initialize(*this);
 }
 
 

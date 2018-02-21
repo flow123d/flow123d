@@ -192,7 +192,7 @@ private:
     vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
     vector<FEValuesViews::Vector<dim,spacedim> > vectors;
     
-    void resize(FEValuesBase &fv, unsigned int size);
+    void initialize(FEValuesBase &fv);
   };
   
 public:
