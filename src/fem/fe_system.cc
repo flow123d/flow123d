@@ -97,47 +97,47 @@ const arma::vec FESystemFunctionSpace::basis_grad(const unsigned int i,
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t)
+template<unsigned int dim>
+FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 {
   OLD_ASSERT(fe->is_primitive(), "FE vector or tensor can olny by created from primitive FE.");
   OLD_ASSERT(t == FEType::FEVectorContravariant ||
              t == FEType::FEVectorPiola ||
              t == FEType::FETensor, "This constructor can be used only for vectors or tensors.");
   
-  FiniteElement<dim,spacedim>::init(false, t);
+  FiniteElement<dim>::init(false, t);
   
   if (t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola)
-    fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim, fe);
+    fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim, fe);
   else
-    fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(dim*dim, fe);
+    fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim*dim, fe);
   
   initialize();
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::FESystem(const std::shared_ptr<FiniteElement<dim,spacedim> > &fe, unsigned int n)
+template<unsigned int dim>
+FESystem<dim>::FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, unsigned int n)
 {
-  FiniteElement<dim,spacedim>::init(false, FEMixedSystem);
-  fe_ = std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > >(n, fe);
+  FiniteElement<dim>::init(false, FEMixedSystem);
+  fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(n, fe);
   initialize();
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-FESystem<dim,spacedim>::FESystem(std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe)
+template<unsigned int dim>
+FESystem<dim>::FESystem(std::vector<std::shared_ptr<FiniteElement<dim> > > fe)
 {
-  FiniteElement<dim,spacedim>::init(false, FEMixedSystem);
-  for (std::shared_ptr<FiniteElement<dim,spacedim> > fe_object : fe)
+  FiniteElement<dim>::init(false, FEMixedSystem);
+  for (std::shared_ptr<FiniteElement<dim> > fe_object : fe)
     fe_.push_back(fe_object);
   initialize();
 }
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-void FESystem<dim,spacedim>::initialize()
+template<unsigned int dim>
+void FESystem<dim>::initialize()
 {
   unsigned int fe_index = 0;
   unsigned int comp_offset = 0;
@@ -214,8 +214,8 @@ void FESystem<dim,spacedim>::initialize()
 
 
 
-template<unsigned int dim, unsigned int spacedim> inline
-UpdateFlags FESystem<dim,spacedim>::update_each(UpdateFlags flags)
+template<unsigned int dim> inline
+UpdateFlags FESystem<dim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
 
@@ -226,8 +226,8 @@ UpdateFlags FESystem<dim,spacedim>::update_each(UpdateFlags flags)
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-void FESystem<dim,spacedim>::compute_node_matrix()
+template<unsigned int dim>
+void FESystem<dim>::compute_node_matrix()
 {
   // form the node_matrix of the FESystem as block diagonal matrix
   // composed of node_matrices of each base FE class
@@ -251,9 +251,9 @@ void FESystem<dim,spacedim>::compute_node_matrix()
 
 
 
-template class FESystem<1,3>;
-template class FESystem<2,3>;
-template class FESystem<3,3>;
+template class FESystem<1>;
+template class FESystem<2>;
+template class FESystem<3>;
 
 
 

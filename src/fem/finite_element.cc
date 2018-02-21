@@ -71,15 +71,15 @@ FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FiniteElement<dim,spacedim>::FiniteElement()
+template<unsigned int dim>
+FiniteElement<dim>::FiniteElement()
     : function_space_(nullptr)
 {
     init();
 }
 
-template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init(bool primitive, FEType type)
+template<unsigned int dim>
+void FiniteElement<dim>::init(bool primitive, FEType type)
 {
     dofs_.clear();
     is_primitive_ = primitive;
@@ -87,16 +87,16 @@ void FiniteElement<dim,spacedim>::init(bool primitive, FEType type)
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::setup_components()
+template<unsigned int dim>
+void FiniteElement<dim>::setup_components()
 {
   component_indices_.resize(dofs_.size(), 0);
   nonzero_components_.resize(dofs_.size(), { true });
 }
 
 
-template<unsigned int dim, unsigned int spacedim> inline
-void FiniteElement<dim,spacedim>::compute_node_matrix()
+template<unsigned int dim> inline
+void FiniteElement<dim>::compute_node_matrix()
 {
     arma::mat M(dofs_.size(), dofs_.size());
 
@@ -108,8 +108,8 @@ void FiniteElement<dim,spacedim>::compute_node_matrix()
     node_matrix = arma::inv(M);
 }
 
-template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q)
+template<unsigned int dim>
+FEInternalData *FiniteElement<dim>::initialize(const Quadrature<dim> &q)
 {
     FEInternalData *data = new FEInternalData(q.size(), n_dofs());
 
@@ -147,8 +147,8 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-double FiniteElement<dim,spacedim>::basis_value(const unsigned int i, 
+template<unsigned int dim>
+double FiniteElement<dim>::basis_value(const unsigned int i, 
                                        const arma::vec::fixed<dim> &p,
                                        const unsigned int comp) const
 {
@@ -157,8 +157,8 @@ double FiniteElement<dim,spacedim>::basis_value(const unsigned int i,
     return this->function_space_->basis_value(i, p, comp);
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FiniteElement<dim,spacedim>::basis_grad(const unsigned int i,
+template<unsigned int dim>
+arma::vec::fixed<dim> FiniteElement<dim>::basis_grad(const unsigned int i,
                                                      const arma::vec::fixed<dim> &p,
                                                      const unsigned int comp) const
 {
@@ -168,8 +168,8 @@ arma::vec::fixed<dim> FiniteElement<dim,spacedim>::basis_grad(const unsigned int
 }
 
 
-template<unsigned int dim, unsigned int spacedim> inline
-UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
+template<unsigned int dim> inline
+UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
 
@@ -203,9 +203,9 @@ UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
 
 
 
-template class FiniteElement<0,3>;
-template class FiniteElement<1,3>;
-template class FiniteElement<2,3>;
-template class FiniteElement<3,3>;
+template class FiniteElement<0>;
+template class FiniteElement<1>;
+template class FiniteElement<2>;
+template class FiniteElement<3>;
 
 

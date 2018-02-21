@@ -92,7 +92,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
       OLD_ASSERT(false, "Not Implemented.");
       break;
     case FEType::FEMixedSystem:
-      FESystem<dim,spacedim> *fe = dynamic_cast<FESystem<dim,spacedim>*>(fv.get_fe());
+      FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(fv.get_fe());
       OLD_ASSERT(fe != nullptr, "Mixed system must be represented by FESystem.");
       std::vector<unsigned int> sc = fe->get_scalar_components();
       std::vector<unsigned int> vc = fe->get_vector_components();
@@ -125,7 +125,7 @@ FEValuesBase<dim,spacedim>::~FEValuesBase() {
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         Quadrature<dim> & _quadrature,
-        FiniteElement<dim,spacedim> & _fe,
+        FiniteElement<dim> & _fe,
         UpdateFlags _flags)
 {
     mapping = &_mapping;
@@ -294,7 +294,7 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
     ASSERT_DBG(fe->type_ == FEMixedSystem);
     
     // for mixed system we first fill data in sub-elements
-    FESystem<dim,spacedim> *fe_sys = dynamic_cast<FESystem<dim,spacedim>*>(fe);
+    FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>(fe);
     ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
     for (unsigned int f=0; f<fe_sys->fe().size(); f++)
     {
@@ -377,7 +377,7 @@ void FEValuesBase<dim,spacedim>::fill_data(const FEInternalData &fe_data)
 template<unsigned int dim, unsigned int spacedim>
 FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
          Quadrature<dim> &_quadrature,
-         FiniteElement<dim,spacedim> &_fe,
+         FiniteElement<dim> &_fe,
          UpdateFlags _flags)
 :FEValuesBase<dim, spacedim>()
 {
@@ -390,7 +390,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
     {
-        FESystem<dim,spacedim> *fe = dynamic_cast<FESystem<dim,spacedim>*>(this->fe);
+        FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(this->fe);
         ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         for (auto fe_sub : fe->fe())
@@ -426,7 +426,7 @@ void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
 template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
                                  Quadrature<dim-1> & _sub_quadrature,
-                                 FiniteElement<dim,spacedim> & _fe,
+                                 FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
 :FEValuesBase<dim,spacedim>()
 {
@@ -448,7 +448,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
     {
-        FESystem<dim,spacedim> *fe = dynamic_cast<FESystem<dim,spacedim>*>(this->fe);
+        FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(this->fe);
         ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
         
         for (auto fe_sub : fe->fe())

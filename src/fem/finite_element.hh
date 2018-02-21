@@ -28,12 +28,12 @@
 
 
 
-template<unsigned int dim, unsigned int spacedim> class FESystem;
+template<unsigned int dim> class FESystem;
 template<unsigned int dim, unsigned int spacedim> class FESideValues;
 template<unsigned int dim, unsigned int spacedim> class FEValues;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
-template<unsigned int dim, unsigned int spacedim> class FE_P_disc;
+template<unsigned int dim> class FE_P_disc;
 template<unsigned int dim> class Quadrature;
 
 
@@ -280,7 +280,7 @@ public:
  *
  *
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int dim>
 class FiniteElement {
 public:
   
@@ -416,11 +416,11 @@ protected:
     std::vector<Dof> dofs_;
     
     
-    friend class FESystem<dim,spacedim>;
-    friend class FEValuesBase<dim,spacedim>;
-    friend class FEValues<dim,spacedim>;
-    friend class FESideValues<dim,spacedim>;
-    friend class FE_P_disc<dim,spacedim>;
+    friend class FESystem<dim>;
+    friend class FEValuesBase<dim,3>;
+    friend class FEValues<dim,3>;
+    friend class FESideValues<dim,3>;
+    friend class FE_P_disc<dim>;
 };
 
 

@@ -95,8 +95,8 @@ private:
  *
  * This type of FE is used for vector-valued functions and for systems of equations.
  */
-template <unsigned int dim, unsigned int spacedim>
-class FESystem : public FiniteElement<dim,spacedim>
+template <unsigned int dim>
+class FESystem : public FiniteElement<dim>
 {
 public:
   
@@ -105,20 +105,20 @@ public:
      * @param fe Base finite element class.
      * @param t  Type (vector or tensor).
      */
-    FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t);
+    FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t);
     
     /**
      * @brief Constructor. FESystem with @p n components created from a scalar FE.
      * @param fe Base finite element class.
      * @param n  Multiplicity (number of components).
      */
-    FESystem(const std::shared_ptr<FiniteElement<dim,spacedim> > &fe, unsigned int n);
+    FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, unsigned int n);
     
     /**
      * @brief Constructor. FESystem for mixed elements.
      * @param fe Base finite element classes.
      */
-    FESystem(std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe);
+    FESystem(std::vector<std::shared_ptr<FiniteElement<dim> > > fe);
     
     std::vector<unsigned int> get_scalar_components() const
     { return scalar_components_; }
@@ -128,7 +128,7 @@ public:
 
     UpdateFlags update_each(UpdateFlags flags) override;
     
-    const std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > &fe()
+    const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
     { return fe_; }
     
 
@@ -140,7 +140,7 @@ private:
   void compute_node_matrix() override;
   
   /// Pointers to base FE objects.
-  std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe_;
+  std::vector<std::shared_ptr<FiniteElement<dim> > > fe_;
   
   std::vector<unsigned int> scalar_components_;
   std::vector<unsigned int> vector_components_;

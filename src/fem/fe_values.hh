@@ -30,7 +30,7 @@
 
 class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 
@@ -219,7 +219,7 @@ public:
      */
     void allocate(Mapping<dim,spacedim> &_mapping,
             Quadrature<dim> &_quadrature,
-            FiniteElement<dim,spacedim> &_fe,
+            FiniteElement<dim> &_fe,
             UpdateFlags flags);
     
     /**
@@ -380,7 +380,7 @@ public:
     /**
      * @brief Returns the finite element in use.
      */
-    inline FiniteElement<dim,spacedim> * get_fe() const
+    inline FiniteElement<dim> * get_fe() const
     {
         return fe;
     }
@@ -428,7 +428,7 @@ protected:
     /**
      * @brief The used finite element.
      */
-    FiniteElement<dim,spacedim> *fe;
+    FiniteElement<dim> *fe;
     
     /**
      * @brief Precomputed mapping data.
@@ -487,7 +487,7 @@ public:
 	 */
     FEValues(Mapping<dim,spacedim> &_mapping,
              Quadrature<dim> &_quadrature,
-             FiniteElement<dim,spacedim> &_fe,
+             FiniteElement<dim> &_fe,
              UpdateFlags _flags);
 
     /**
@@ -533,7 +533,7 @@ public:
      */
     FESideValues(Mapping<dim,spacedim> &_mapping,
              Quadrature<dim-1> &_sub_quadrature,
-             FiniteElement<dim,spacedim> &_fe,
+             FiniteElement<dim> &_fe,
              UpdateFlags flags);
 
     /// Destructor.

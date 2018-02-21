@@ -56,8 +56,8 @@ public:
  * The lowest order Raviart-Thomas finite element with linear basis functions
  * and continuous normal components across element sides.
  */
-template <unsigned int dim, unsigned int spacedim>
-class FE_RT0 : public FiniteElement<dim,spacedim>
+template <unsigned int dim>
+class FE_RT0 : public FiniteElement<dim>
 {
 public:
 

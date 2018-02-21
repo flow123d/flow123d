@@ -80,8 +80,8 @@ private:
  *
  * The finite element functions are continuous across the interfaces.
  */
-template <unsigned int dim, unsigned int spacedim>
-class FE_P : public FiniteElement<dim,spacedim>
+template <unsigned int dim>
+class FE_P : public FiniteElement<dim>
 {
 public:
     /// Constructor.
@@ -102,8 +102,8 @@ protected:
  * No continuity of the finite element functions across the interfaces is
  * imposed.
  */
-template <unsigned int dim, unsigned int spacedim>
-class FE_P_disc : public FE_P<dim,spacedim>
+template <unsigned int dim>
+class FE_P_disc : public FE_P<dim>
 {
 public:
 

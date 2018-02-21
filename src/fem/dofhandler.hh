@@ -27,7 +27,7 @@
 #include "la/distribution.hh"
 
 
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 class Mesh;
 class Distribution;
 
@@ -294,9 +294,9 @@ public:
      * @param fe3d The 3D finite element.
      * @param offset The offset.
      */
-    void distribute_dofs(FiniteElement<1,3> &fe1d,
-    		FiniteElement<2,3> &fe2d,
-    		FiniteElement<3,3> &fe3d,
+    void distribute_dofs(FiniteElement<1> &fe1d,
+    		FiniteElement<2> &fe2d,
+    		FiniteElement<3> &fe3d,
     		const unsigned int offset = 0);
 
     /**
@@ -364,7 +364,7 @@ public:
 
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
-    FiniteElement<dim,3> *fe() const;
+    FiniteElement<dim> *fe() const;
 
     /**
      * Implements @p DOFHandlerBase::hash.
@@ -385,9 +385,9 @@ private:
      * @brief Pointer to the finite element class for which the handler
      * distributes dofs.
      */
-    FiniteElement<1,3> *fe1d_;
-    FiniteElement<2,3> *fe2d_;
-    FiniteElement<3,3> *fe3d_;
+    FiniteElement<1> *fe1d_;
+    FiniteElement<2> *fe2d_;
+    FiniteElement<3> *fe3d_;
 
     /**
      * @brief Number of dofs associated to geometrical entities.

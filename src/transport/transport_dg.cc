@@ -105,13 +105,13 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     unsigned int q_order;
 
     q_order = 2*fe_order;
-    fe1_ = new FE_P_disc<1,3>(fe_order);
-    fe2_ = new FE_P_disc<2,3>(fe_order);
-    fe3_ = new FE_P_disc<3,3>(fe_order);
+    fe1_ = new FE_P_disc<1>(fe_order);
+    fe2_ = new FE_P_disc<2>(fe_order);
+    fe3_ = new FE_P_disc<3>(fe_order);
 
-    fe_rt1_ = new FE_RT0<1,3>;
-    fe_rt2_ = new FE_RT0<2,3>;
-    fe_rt3_ = new FE_RT0<3,3>;
+    fe_rt1_ = new FE_RT0<1>;
+    fe_rt2_ = new FE_RT0<2>;
+    fe_rt3_ = new FE_RT0<3>;
     
     q0_ = new QGauss<0>(q_order);
     q1_ = new QGauss<1>(q_order);
@@ -145,15 +145,15 @@ FEObjects::~FEObjects()
     delete map3_;
 }
 
-template<> FiniteElement<0,3> *FEObjects::fe<0>() { return 0; }
-template<> FiniteElement<1,3> *FEObjects::fe<1>() { return fe1_; }
-template<> FiniteElement<2,3> *FEObjects::fe<2>() { return fe2_; }
-template<> FiniteElement<3,3> *FEObjects::fe<3>() { return fe3_; }
+template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
+template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
+template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
+template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
-template<> FiniteElement<0,3> *FEObjects::fe_rt<0>() { return 0; }
-template<> FiniteElement<1,3> *FEObjects::fe_rt<1>() { return fe_rt1_; }
-template<> FiniteElement<2,3> *FEObjects::fe_rt<2>() { return fe_rt2_; }
-template<> FiniteElement<3,3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
+template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
+template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
+template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
+template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
 
 template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
 template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }

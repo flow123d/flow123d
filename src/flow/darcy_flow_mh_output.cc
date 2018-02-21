@@ -602,8 +602,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<1,3> fe_1d(0);
-    FE_P_disc<2,3> fe_2d(0);
+    FE_P_disc<1> fe_1d(0);
+    FE_P_disc<2> fe_2d(0);
 
     QGauss<1> quad_1d( order );
     QGauss<2> quad_2d( order );
@@ -615,8 +615,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
     
     // FEValues for velocity.
-    FE_RT0<1,3> fe_rt1d;
-    FE_RT0<2,3> fe_rt2d;
+    FE_RT0<1> fe_rt1d;
+    FE_RT0<2> fe_rt2d;
     FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
     FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
 

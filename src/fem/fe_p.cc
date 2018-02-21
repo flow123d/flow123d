@@ -110,8 +110,8 @@ const arma::vec PolynomialSpace::basis_grad(unsigned int i,
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-void FE_P<dim,spacedim>::init_dofs()
+template<unsigned int dim>
+void FE_P<dim>::init_dofs()
 {
     if (degree_ == 0)
     {
@@ -195,9 +195,9 @@ void FE_P<dim,spacedim>::init_dofs()
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FE_P<dim,spacedim>::FE_P(unsigned int degree)
-  : FiniteElement<dim,spacedim>(),
+template<unsigned int dim>
+FE_P<dim>::FE_P(unsigned int degree)
+  : FiniteElement<dim>(),
     degree_(degree)
 {
     this->function_space_ = make_shared<PolynomialSpace>(degree,dim);
@@ -223,9 +223,9 @@ FE_P<dim,spacedim>::FE_P(unsigned int degree)
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
-    : FE_P<dim,spacedim>(degree)
+template<unsigned int dim>
+FE_P_disc<dim>::FE_P_disc(unsigned int degree)
+    : FE_P<dim>(degree)
 {
     // all dofs are "inside" the cell (not shared with neighbours)
     for (unsigned int i=0; i<this->dofs_.size(); i++)
@@ -240,6 +240,6 @@ FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
 
 
 
-template class FE_P_disc<1, 3>;
-template class FE_P_disc<2, 3>;
-template class FE_P_disc<3, 3>;
+template class FE_P_disc<1>;
+template class FE_P_disc<2>;
+template class FE_P_disc<3>;
