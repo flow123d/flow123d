@@ -127,7 +127,10 @@ public:
     { return vector_components_; }
 
     UpdateFlags update_each(UpdateFlags flags) override;
-
+    
+    const std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > &fe()
+    { return fe_; }
+    
 
 private:
 
