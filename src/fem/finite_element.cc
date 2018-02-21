@@ -264,11 +264,6 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FiniteElement<dim,spacedim>::~FiniteElement()
-{
-    if (function_space_ != nullptr) delete function_space_;
-}
 
 
 template class FiniteElement<0,3>;

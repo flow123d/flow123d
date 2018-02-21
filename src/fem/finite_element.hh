@@ -22,6 +22,7 @@
 #include <armadillo>
 #include <map>
 #include <vector>
+#include <memory>
 #include <boost/assign/list_of.hpp>
 #include "fem/update_flags.hh"
 
@@ -318,7 +319,7 @@ public:
     /**
      * @brief Destructor.
      */
-    virtual ~FiniteElement();
+    virtual ~FiniteElement() {};
 
 protected:
   
@@ -412,7 +413,7 @@ protected:
     arma::mat node_matrix;
 
     /// Function space defining the FE.
-    FunctionSpace *function_space_;
+    std::shared_ptr<FunctionSpace> function_space_;
     
     /// Set of degrees of freedom (functionals) defining the FE.
     std::vector<Dof> dofs_;
