@@ -136,8 +136,6 @@ private:
 
   /// Initialization of the internal structures from the vector of base FE.
   void initialize();
-  
-  FEInternalData *initialize(const Quadrature<dim> &q) override;
 
   void fill_fe_values(
       const Quadrature<dim> &q,

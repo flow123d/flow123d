@@ -295,7 +295,7 @@ public:
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    virtual double basis_value(const unsigned int i,
+    double basis_value(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /**
@@ -307,11 +307,11 @@ public:
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
+    arma::vec::fixed<dim> basis_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
-    virtual unsigned int n_components() const { return function_space_->n_components(); }
+    unsigned int n_components() const { return function_space_->n_components(); }
     
     /// Returns @p i -th degree of freedom.
     Dof dof(unsigned int i) const { return dofs_[i]; }
@@ -339,7 +339,7 @@ protected:
      * @param q Quadrature rule.
      * @param flags Update flags.
      */
-    virtual FEInternalData *initialize(const Quadrature<dim> &q);
+    FEInternalData *initialize(const Quadrature<dim> &q);
 
     /**
      * @brief Decides which additional quantities have to be computed
