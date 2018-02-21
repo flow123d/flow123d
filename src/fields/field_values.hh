@@ -239,6 +239,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = NCols;
+    const static int rank_ = 2;
 
     static std::string type_name() { return boost::str(boost::format("R[%d,%d]") % NRows % NCols); }
     static IT::Array get_input_type() {
@@ -321,6 +322,7 @@ public:
     typedef typename internal::AccessTypeDispatch<ET>::type AccessType;
     const static int NRows_ = 1;
     const static int NCols_ = 1;
+    const static int rank_ = 0;
 
     static std::string type_name() { return "R"; }
     static IT::Parameter get_input_type()
@@ -393,6 +395,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = 0;
     const static int NCols_ = 1;
+    const static int rank_ = 10;
 
 
     static std::string type_name() { return "R[n]"; }
@@ -465,6 +468,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = 1;
+    const static int rank_ = 1;
 
 
     static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }

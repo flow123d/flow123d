@@ -80,10 +80,10 @@ string field_value_to_yaml_matrix(const T &mat, unsigned int prec) {
     stringstream ss;
     ss << "[ ";
     for(unsigned int i_row=0; i_row < mat.n_rows; i_row ++ ) {
-        if (i_row != 0) ss << ", ";
+        if (i_row != 0) ss << " , ";
         ss << "[ ";
         for(unsigned int i_col=0; i_col < mat.n_cols; i_col++) {
-            if (i_col != 0) ss << ", ";
+            if (i_col != 0) ss << " , ";
             if (std::is_floating_point<decltype(mat.at(0,0))>::value)
                 //ss << fmt::format("{0:#.{1}g}", mat.at(i_row, i_col), prec);
                 ss << mat.at(i_row, i_col);
@@ -102,7 +102,7 @@ string field_value_to_yaml_vector(const T &vec, unsigned int prec) {
     stringstream ss;
     ss <<  "[ ";
     for(unsigned int i=0; i < vec.n_elem; i++) {
-        if (i != 0) ss << ", ";
+        if (i != 0) ss << " , ";
         if (std::is_floating_point<decltype(vec[0])>::value)
             //ss << fmt::format("{0:#.{1}g}", vec(i), prec);
             ss << vec(i);

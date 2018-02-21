@@ -3,6 +3,7 @@
 
 set -x
 
+SCRIPT_DIR=`pwd`/${0%/*}
 
 # directory containing whole build process
 WORKDIR=/home/jb
@@ -13,8 +14,8 @@ WORK_IMAGE=flow123d/f123d_docker
 get_dev_dir() 
 {
     curr_dir=`pwd`
-    project_dir="${curr_dir#${WORKDIR}}"
-    project_dir="${project_dir#/}"
+    project_dir="${curr_dir#${WORKDIR}}"    # relative to 'workspace'
+    project_dir="${project_dir#/}"          
     #project_dir="${project_dir%%/*}"
 }
 
@@ -27,6 +28,13 @@ cp_to_docker () {
     then    
         docker exec ${running_cont} chown $U_ID:$G_ID $target
     fi        
+}
+
+remove_custom_image()
+{
+    docker stop `docker ps -aq`
+    docker rm `docker ps -aq`
+    docker rmi $WORK_IMAGE   
 }
 
 make_work_image () 
@@ -55,7 +63,7 @@ make_work_image ()
         curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o .git-completion.bash
         cp_to_docker .git-completion.bash .
         
-        # add bashrc, the prompt in particular
+        # add bashrc, the prompt in particular        
         cp_to_docker $WORKDIR/_bashrc_docker .bashrc
                 
         # add pmake script
@@ -79,21 +87,33 @@ G_ID=`id -g`
 
 get_dev_dir
 
+
+
 if [ "$1" == "clean" ]
 then
-    docker stop `docker ps -aq`
-    docker rm `docker ps -aq`
-    docker rmi $WORK_IMAGE
+    remove_custom_image
     exit
+elif [ "$1" == "update" ]
+then    
+    remove_custom_image
+    # download flow-libs-dev-dbg image and recreates cusomized container
+    # We can not use prebuild images until they are update on regular basis.
+    #docker import http://flow.nti.tul.cz/developer-images/flow-libs-dev-dbg.tar.gz    
+    make -C $SCRIPT_DIR/docker/dockerfiles flow-libs-dev-dbg    
+    make_work_image
 elif [ "$1" == "make" ]
 then
     shift
     make_work_image
     docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash -c "$D_HOME/bin/pmake" $@ 
+elif [ "$1" == "flow123d" ]
+then
+    shift
+    docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w `pwd` -u $U_ID:$G_ID $WORK_IMAGE bash -c "${WORKDIR}/${project_dir}/bin/flow123d $*" 
 else
     # interactive
-    make_work_image
-    docker run --rm -it -v "${WORKDIR}":"${WORKDIR}"  -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash
+    make_work_image    
+    docker run --rm -it -v "${WORKDIR}":"${WORKDIR}"  -w `pwd` -u $U_ID:$G_ID $WORK_IMAGE bash
 fi
 
 

@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test15 - 2D unsteady flow LM
   mesh:
@@ -36,7 +36,7 @@ problem: !Coupling_Sequential
       end_time: 2.0
       max_dt: 0.01
       min_dt: 0.01
-    output_stream: 
+    output_stream:
       file: ./test15.pvd
       format: !vtk
         variant: ascii
@@ -57,7 +57,7 @@ problem: !Coupling_Sequential
           bc_type: dirichlet
           bc_conc: 0
           time: 0.1
-    output_stream: 
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii

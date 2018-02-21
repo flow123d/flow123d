@@ -51,6 +51,7 @@ doc/reference_manual/input_reference.json.tex
 .settings
 
 *.pyc
+*python.log
 /.idea/
 bin/pythonenv.sh
 

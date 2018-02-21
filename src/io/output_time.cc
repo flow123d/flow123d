@@ -47,7 +47,11 @@ const IT::Record & OutputTime::get_input_type() {
 		.declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
 		        "Output times used for equations without is own output times key.")
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
-                "Output mesh record enables output on a refined mesh.")
+                "Output mesh record enables output on a refined mesh [EXPERIMENTAL, VTK only]."
+                "Sofar refinement is performed only in discontinous sense."
+                "Therefore only corner and element data can be written on refined output mesh."
+                "Node data are to be transformed to corner data, native data cannot be written."
+                "Do not include any node or native data in output fields.")
         .declare_key("precision", IT::Integer(0), IT::Default(default_prec.str()),
                 "The number of decimal digits used in output of floating point values.\\ "
                 "Default is about 17 decimal digits which is enough to keep double values exect after write-read cycle.")
@@ -68,16 +72,16 @@ OutputTime::OutputTime()
 : current_step(0),
   time(-1.0),
   write_time(-1.0),
-  _mesh(nullptr)
+  parallel_(false)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc);
 }
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
 {
-    _mesh = &mesh;
 
     input_record_ = in_rec;
     equation_name_ = equation_name;
@@ -122,25 +126,16 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-std::shared_ptr<OutputMeshBase> OutputTime::create_output_mesh_ptr(bool init_input, bool discont) {
-	if (discont) {
-		if (init_input) output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*_mesh);
-		return output_mesh_discont_;
-	} else {
-		if (init_input) output_mesh_ = std::make_shared<OutputMesh>(*_mesh, *this->get_output_mesh_record());
-		else output_mesh_ = std::make_shared<OutputMesh>(*_mesh);
-		return output_mesh_;
-	}
+void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	this->nodes_ = mesh_ptr->nodes_;
+	this->connectivity_ = mesh_ptr->connectivity_;
+	this->offsets_ = mesh_ptr->offsets_;
+	output_mesh_ = mesh_ptr;
 }
 
 
-std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr(bool discont) {
-	if (discont) {
-		return output_mesh_discont_;
-	} else {
-		return output_mesh_;
-	}
+std::shared_ptr<OutputMeshBase> OutputTime::get_output_mesh_ptr() {
+	return output_mesh_;
 }
 
 
@@ -149,14 +144,6 @@ void OutputTime::update_time(double field_time) {
 		this->time = field_time;
 	}
 }
-
-
-void OutputTime::compute_discontinuous_output_mesh()
-{
-    ASSERT_PTR(output_mesh_).error("Create output mesh first!");
-    output_mesh_discont_->create_mesh(output_mesh_);
-}
-
 
 
 void OutputTime::fix_main_file_extension(std::string extension)
@@ -193,12 +180,12 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec)
 {
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
     std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, mesh, in_rec);
+    output_time->init_from_input(equation_name, in_rec);
 
     return output_time;
 }
@@ -210,11 +197,10 @@ std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &
 void OutputTime::write_time_frame()
 {
 	START_TIMER("OutputTime::write_time_frame");
-    /* TODO: do something, when support for Parallel VTK is added */
     if (observe_)
         observe_->output_time_frame(time);
 
-    if (this->rank == 0) {
+    if (this->rank == 0 || this->parallel_) {
 
     	// Write data to output stream, when data registered to this output
 		// streams were changed
@@ -226,9 +212,12 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // invalidate output meshes after the time frame written
-            output_mesh_.reset();
-            output_mesh_discont_.reset();
+			// invalidate output data caches after the time frame written
+			// TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
+			/*output_mesh_.reset();
+			this->nodes_.reset();
+			this->connectivity_.reset();
+			this->offsets_.reset();*/
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
@@ -236,14 +225,13 @@ void OutputTime::write_time_frame()
     clear_data();
 }
 
-std::shared_ptr<Observe> OutputTime::observe()
+std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
 {
-    ASSERT_PTR(_mesh);
     // create observe object at first call
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
         unsigned int precision = input_record_.val<unsigned int>("precision");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *_mesh, observe_points, precision);
+        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision);
     }
     return observe_;
 }
@@ -253,6 +241,17 @@ void OutputTime::clear_data(void)
 {
     for(auto &map : output_data_vec_)  map.clear();
 }
+
+
+int OutputTime::get_parallel_current_step()
+{
+	if (parallel_) return n_proc*current_step+rank;
+	else return current_step;
+}
+
+
+void OutputTime::add_dummy_fields()
+{}
 
 
 

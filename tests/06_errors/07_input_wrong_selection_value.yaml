@@ -1,6 +1,6 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: "Wrong value 'FieldInterpolatedP1' of the Selection - wrong descendant of Abstract"
+  description: Wrong value 'FieldInterpolatedP1' of the Selection - wrong descendant of Abstract
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21_shift.msh
   flow_equation: !Flow_Darcy_MH
@@ -13,14 +13,14 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
 ### ERROR wrong descendant of Abstract
         bc_piezo_head: !FieldInterpolatedP1
-          gmsh_file: ref_out/05_interpolation_large_cube/large_cube.msh
+          mesh_data_file: ref_out/05_interpolation_large_cube/large_cube.msh
           field_name: piezo_head_p0
     n_schurs: 2
     output:
       fields:
         - piezo_head_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./small_cube.pvd
       format: !vtk
         variant: ascii

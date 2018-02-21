@@ -1,6 +1,6 @@
 /*!
  *
-﻿ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
+ * Copyright (C) 2015 Technical University of Liberec.  All rights reserved.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License version 3 as published by the
@@ -59,7 +59,7 @@ public:
 	 *
 	 * @return Count of bounding boxes stored in elements_ member
 	 */
-    unsigned int get_element_count();
+    unsigned int get_element_count() const;
 
     /**
      * Main bounding box of the whole tree.
@@ -70,17 +70,19 @@ public:
 	 * Gets elements which can have intersection with bounding box
 	 *
 	 * @param boundingBox Bounding box which is tested if has intersection
-	 * @param searchedElements vector of ids of suspect elements
+	 * @param result_list vector of ids of suspect elements
+	 * @param full_list put to result_list all suspect elements found in leaf node or add only those that has intersection with boundingBox
 	 */
-    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list) const;
+    void find_bounding_box(const BoundingBox &boundingBox, std::vector<unsigned int> &result_list, bool full_list = false) const;
 
 	/**
 	 * Gets elements which can have intersection with point
 	 *
 	 * @param point Point which is tested if has intersection
-	 * @param searchedElements vector of ids of suspect elements
+	 * @param result_list vector of ids of suspect elements
+	 * @param full_list put to result_list all suspect elements found in leaf node or add only those that has intersection with point
 	 */
-    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const;
+    void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list, bool full_list = false) const;
 
     /**
      * Get vector of mesh elements bounding boxes
@@ -88,13 +90,16 @@ public:
      * @return elements_ vector
      */
     std::vector<BoundingBox> &get_elements() { return elements_; }
+    
+    /// Gets bounding box of element of given index @p ele_index.
+    const BoundingBox & ele_bounding_box(unsigned int ele_idx) const;
 
 protected:
     /// required reduction in size of box to allow further splitting
     static const double size_reduce_factor;
 
     /// create bounding boxes of element
-    void element_boxes();
+    //void element_boxes();
 
     /// split tree node given by node_idx, distribute elements to child nodes
     void split_node(const BoundingBox &node_box, unsigned int node_idx);
@@ -113,12 +118,13 @@ protected:
 
     /// mesh
     Mesh* mesh_;
-	/// vector of mesh elements bounding boxes
-    std::vector<BoundingBox> elements_;
+	/// vector of mesh elements bounding boxes (from mesh)
+    std::vector<BoundingBox> &elements_;
+    /// Main bounding box. (from mesh)
+    BoundingBox &main_box_;
+
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
-    /// Main bounding box.
-    BoundingBox main_box_;
     /// Maximal number of elements stored in a leaf node of BIH tree.
     unsigned int leaf_size_limit;
     /// Maximal count of BIH tree levels
@@ -131,6 +137,7 @@ protected:
 
     // random generator
     std::mt19937	r_gen;
+
 
 };
 

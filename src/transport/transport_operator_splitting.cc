@@ -152,7 +152,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
-	int *el_4_loc;
+	IdxInt *el_4_loc;
 
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
@@ -164,7 +164,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", *mesh_, in_rec.val<Input::Record>("output_stream")));
+    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream")));
 
 
     // initialization of balance object

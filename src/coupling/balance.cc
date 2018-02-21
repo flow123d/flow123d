@@ -104,6 +104,7 @@ Balance::~Balance()
 		chkerr(MatDestroy(&(region_source_rhs_[c])));
 		chkerr(VecDestroy(&(be_flux_vec_[c])));
 		chkerr(VecDestroy(&(region_source_vec_[c])));
+        chkerr(VecDestroy(&(region_mass_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -111,6 +112,7 @@ Balance::~Balance()
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
+    delete[] region_mass_vec_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
 	chkerr(VecDestroy(&ones_));
@@ -291,11 +293,11 @@ void Balance::lazy_initialize()
                &(region_source_rhs_[c])));
 
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-               be_regions_.size(),
-               n_loc_dofs_,
-               PETSC_DECIDE,
-               PETSC_DECIDE,
-               max_dofs_per_boundary_,
+               be_regions_.size(),  // n local rows, number of local boundary edges
+               n_loc_dofs_,         // n local cols (local rows of multiplying vector)
+               PETSC_DECIDE,        // n global rows
+               PETSC_DECIDE,        // n global cols
+               max_dofs_per_boundary_,  // allocation, local poriton
                0,
                0,
                0,
@@ -468,7 +470,7 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 
 void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -488,7 +490,7 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		unsigned int boundary_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -507,7 +509,7 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -552,7 +554,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 
 void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);

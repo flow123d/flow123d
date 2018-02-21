@@ -24,8 +24,6 @@
 
 
 using namespace std;
-using namespace arma;
-
 
 
 
@@ -60,18 +58,9 @@ MappingInternalData *MappingP1<dim,spacedim>::initialize(const Quadrature<dim> &
     // barycentric coordinates of quadrature points
     if (flags & update_quadrature_points)
     {
-        vec::fixed<dim+1> basis;
         data->bar_coords.resize(q.size());
         for (unsigned int i=0; i<q.size(); i++)
-        {
-            basis[0] = 1;
-            for (unsigned int j=0; j<dim; j++)
-            {
-                basis[0] -= q.point(i)[j];
-                basis[j+1] = q.point(i)[j];
-            }
-            data->bar_coords[i] = basis;
-        }
+            data->bar_coords[i] = RefElement<dim>::local_to_bary(q.point(i));
     }
 
 
@@ -102,8 +91,8 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::Cell
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
 {
-    mat::fixed<spacedim,dim+1> coords;
-    mat::fixed<spacedim,dim> jac;
+    ElementMap coords;
+    arma::mat::fixed<spacedim,dim> jac;
 
     if ((fv_data.update_flags & update_jacobians) |
         (fv_data.update_flags & update_volume_elements) |
@@ -111,10 +100,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::Cell
         (fv_data.update_flags & update_inverse_jacobians) |
         (fv_data.update_flags & update_quadrature_points))
     {
-        coords.zeros();
-        for (unsigned int n=0; n<dim+1; n++)
-            for (unsigned int c=0; c<spacedim; c++)
-                coords(c,n) = cell->node[n]->point()[c];
+        coords = element_map(*cell);
     }
 
     // calculation of Jacobian dependent data
@@ -149,7 +135,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::Cell
         // update inverse Jacobians
         if (fv_data.update_flags & update_inverse_jacobians)
         {
-            mat::fixed<dim,spacedim> ijac;
+            arma::mat::fixed<dim,spacedim> ijac;
             if (dim==spacedim)
             {
                 ijac = inv(jac);
@@ -166,7 +152,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::Cell
     // quadrature points in the actual cell coordinate system
     if (fv_data.update_flags & update_quadrature_points)
     {
-        vec::fixed<dim+1> basis;
+        BaryPoint basis;
         for (unsigned int i=0; i<q.size(); i++)
             fv_data.points[i] = coords*data.bar_coords[i];
     }
@@ -179,7 +165,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
 {
-    mat::fixed<spacedim,dim+1> coords;
+    ElementMap coords;
 
     if ((fv_data.update_flags & update_jacobians) |
         (fv_data.update_flags & update_volume_elements) |
@@ -187,10 +173,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
         (fv_data.update_flags & update_normal_vectors) |
         (fv_data.update_flags & update_quadrature_points))
     {
-        coords.zeros();
-        for (unsigned int n=0; n<dim+1; n++)
-            for (unsigned int c=0; c<spacedim; c++)
-                coords(c,n) = cell->node[n]->point()[c];
+        coords = element_map(*cell);
     }
 
     // calculation of cell Jacobians and dependent data
@@ -199,7 +182,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
         (fv_data.update_flags & update_inverse_jacobians) |
         (fv_data.update_flags & update_normal_vectors))
     {
-        mat::fixed<spacedim,dim> jac = coords*grad;
+        arma::mat::fixed<spacedim,dim> jac = coords*grad;
 
         // update cell Jacobians
         if (fv_data.update_flags & update_jacobians)
@@ -217,7 +200,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
         // inverse Jacobians
         if (fv_data.update_flags & update_inverse_jacobians)
         {
-            mat::fixed<dim,spacedim> ijac;
+            arma::mat::fixed<dim,spacedim> ijac;
             if (dim==spacedim)
             {
                 ijac = inv(jac);
@@ -226,13 +209,14 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
             {
                 ijac = pinv(jac);
             }
+            ASSERT_LE_DBG(q.size(), fv_data.inverse_jacobians.size());
             for (unsigned int i=0; i<q.size(); i++)
                 fv_data.inverse_jacobians[i] = ijac;
 
             // calculation of normal vectors to the side
             if ((fv_data.update_flags & update_normal_vectors))
             {
-                vec::fixed<spacedim> n_cell;
+                arma::vec::fixed<spacedim> n_cell;
                 n_cell = trans(ijac)*RefElement<dim>::normal_vector(sid);
                 n_cell = n_cell/norm(n_cell,2);
                 for (unsigned int i=0; i<q.size(); i++)
@@ -258,8 +242,8 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
         }
         else
         {
-            mat::fixed<spacedim,dim> side_coords;
-            mat::fixed<spacedim, MatrixSizes<dim>::dim_minus_one > side_jac;   // some compilers complain for case dim==0
+            arma::mat::fixed<spacedim,dim> side_coords;
+            arma::mat::fixed<spacedim, MatrixSizes<dim>::dim_minus_one > side_jac;   // some compilers complain for case dim==0
 
             // calculation of side Jacobian
             side_coords.zeros();
@@ -276,17 +260,46 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
     }
 }
 
-template<>
-void MappingP1<0,3>::fill_fe_side_values(const DOFHandlerBase::CellIterator &cell,
-                            unsigned int sid,
-                            const Quadrature<0> &q,
-                            MappingInternalData &data,
-                            FEValuesData<0,3> &fv_data)
-{}
+
+template<unsigned int dim, unsigned int spacedim>
+auto MappingP1<dim,spacedim>::element_map(const Element &elm) const -> ElementMap
+{
+    ElementMap coords;
+    for (unsigned int i=0; i<dim+1; i++)
+        coords.col(i) = elm.node[i]->point();
+    return coords;
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+auto MappingP1<dim,spacedim>::project_real_to_unit(const RealPoint &point, const ElementMap &map) const -> BaryPoint
+{
+    arma::mat::fixed<3, dim> A = map.cols(1,dim);
+    for(unsigned int i=0; i < dim; i++ ) {
+        A.col(i) -= map.col(0);
+    }
+    
+    arma::mat::fixed<dim, dim> AtA = A.t()*A;
+    arma::vec::fixed<dim> Atb = A.t()*(point - map.col(0));
+    arma::vec::fixed<dim+1> bary_coord;
+    bary_coord.rows(1, dim) = arma::solve(AtA, Atb);
+    bary_coord( 0 ) = 1.0 - arma::sum( bary_coord.rows(1,dim) );
+    return bary_coord;
+}
+
+template<unsigned int dim, unsigned int spacedim>
+auto MappingP1<dim,spacedim>::project_unit_to_real(const BaryPoint &point, const ElementMap &map) const -> RealPoint
+{
+    return map * point;
+}
+
+template<unsigned int dim, unsigned int spacedim>
+auto MappingP1<dim,spacedim>::clip_to_element(BaryPoint &barycentric) -> BaryPoint{
+    return RefElement<dim>::clip(barycentric);
+}
 
 
 
-template class MappingP1<0,3>;
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;
 template class MappingP1<3,3>;

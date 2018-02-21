@@ -159,7 +159,7 @@ public:
      * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
     FieldCommon & output_type(OutputTime::DiscreteSpace rt)
-    { type_of_output_data_ = rt; return *this; }
+    { if (rt!=OutputTime::UNDEFINED) type_of_output_data_ = rt; return *this; }
 
     /**
      * Set given mask to the field flags, ignoring default setting.
@@ -237,7 +237,7 @@ public:
         return shared_->limits_;
     }
 
-    OutputTime::DiscreteSpace output_type() const
+    OutputTime::DiscreteSpace get_output_type() const
     { return type_of_output_data_; }
 
     bool is_bc() const
@@ -250,6 +250,9 @@ public:
     { return shared_->mesh_;}
 
     FieldFlag::Flags &flags()
+    { return flags_; }
+
+    FieldFlag::Flags get_flags() const
     { return flags_; }
 
     /**

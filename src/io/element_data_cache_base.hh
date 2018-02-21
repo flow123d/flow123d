@@ -140,6 +140,20 @@ public:
     	return this->vtk_type_;
     }
 
+    /**
+     * Get dof_handler_hash_ value.
+     */
+    inline std::size_t dof_handler_hash() const {
+    	return this->dof_handler_hash_;
+    }
+
+    /**
+     * Set dof_handler_hash_ value.
+     */
+    inline void set_dof_handler_hash(std::size_t hash) {
+    	this->dof_handler_hash_ = hash;
+    }
+
 protected:
     template <class T>
     void set_vtk_type() {
@@ -178,6 +192,9 @@ protected:
 
     /// Type of stored data
     VTKValueType vtk_type_;
+
+    /// Hash of DOF handler (attribute of native VTK data)
+    std::size_t dof_handler_hash_;
 };
 
 

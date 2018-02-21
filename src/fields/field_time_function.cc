@@ -74,7 +74,7 @@ bool FieldTimeFunction<spacedim, Value>::set_time(const TimeStep &time)
 	table_function.init_from_input( in_rec_.val<Input::Record>("time_function") );
 	this->r_value_ = table_function.value( time.end() );
     this->value_.scale(this->unit_conversion_coefficient_);
-    struct FieldAlgoBaseInitData init_data(this->field_name_, 0, this->unit_si_, this->limits_);
+    struct FieldAlgoBaseInitData init_data(this->field_name_, 0, this->unit_si_, this->limits_, FieldFlag::Flags() );
     this->check_field_limits(this->in_rec_, init_data);
 
 	return true;

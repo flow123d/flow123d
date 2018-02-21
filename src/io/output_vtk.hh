@@ -28,6 +28,8 @@
 
 using namespace std;
 
+class OutputMeshBase;
+
 /**
  * \brief This class is used for output data to VTK file format
  */
@@ -77,7 +79,7 @@ public:
     int write_tail(void);
 
     /// Override @p OutputTime::init_from_input.
-    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec) override;
+    void init_from_input(const std::string &equation_name, const Input::Record &in_rec) override;
 
 protected:
 
@@ -123,7 +125,15 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    /**
+    /// Formats of DataArray section
+	static const std::vector<std::string> formats;
+
+	/**
+	 * Used internally by write_data.
+	 */
+	string form_vtu_filename_(string basename, int i_step, int rank);
+
+	/**
      * \brief Write header of VTK file (.vtu)
      */
     void write_vtk_vtu_head(void);
@@ -159,6 +169,13 @@ protected:
      * \brief Write data on elements to the VTK file (.vtu)
      */
    void write_vtk_element_data(void);
+
+   /**
+    * \brief Write native data (part of our own data skipped by Paraview) to the VTK file (.vtu)
+    *
+    * Tags of native data are subtags of 'Flow123dData' tag, that is subtag of 'Piece' tag
+    */
+  void write_vtk_native_data(void);
 
    /**
     * \brief Write tail of VTK file (.vtu)

@@ -25,6 +25,7 @@
 #include "mesh/ngh/include/intersection.h"
 
 using namespace mathfce;
+namespace ngh {
 
 int TBisector::numberInstance = 0;
 
@@ -132,3 +133,5 @@ bool TBisector::Belong(const TPoint &P) const {
         return false;
     }
 }
+
+} //namespace ngh

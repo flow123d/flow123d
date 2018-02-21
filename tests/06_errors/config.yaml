@@ -4,7 +4,7 @@ common_config:
   memory_limit: 500
 
 test_cases:
-- files: 01_input_invalid_format.yaml
+- files: 01_input_invalid_format._yaml
   death_test: true
   check_rules:
     - regex:

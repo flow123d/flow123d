@@ -26,8 +26,8 @@ using namespace std;
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
 FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
+FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
 
 string field_constant_input = R"YAML(
 common: !FieldConstant 
@@ -86,10 +86,10 @@ formula_field_base: !FieldFormula
   value: x
 
 elementwise_field: !FieldElementwise
-  gmsh_file: fields/simplest_cube_data.msh
+  mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
 interpolated_p0_field: !FieldInterpolatedP0
-  gmsh_file: fields/simplest_cube_3d.msh
+  mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
 )YAML";
 

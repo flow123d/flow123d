@@ -29,9 +29,9 @@ ElementDataCache<T>::ElementDataCache()
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(MeshDataHeader data_header, unsigned int size_of_cache, unsigned int row_vec_size) {
-	this->time_ = data_header.time;
-	this->field_input_name_ = data_header.field_name;
+ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsigned int size_of_cache, unsigned int row_vec_size) {
+	this->time_ = time;
+	this->field_input_name_ = field_name;
 	this->data_ = create_data_cache(size_of_cache, row_vec_size);
 }
 
@@ -177,7 +177,7 @@ void ElementDataCache<T>::print_all_yaml(ostream &out_stream, unsigned int preci
     out_stream << "[ ";
 	std::vector<T> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-        if (idx != 0) out_stream << ", ";
+        if (idx != 0) out_stream << " , ";
         unsigned int vec_pos = n_elem_ * idx; // position of element value in data cache
         switch (this->n_elem_) {
             case NumCompValueType::N_SCALAR: {

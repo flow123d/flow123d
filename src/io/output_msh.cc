@@ -16,6 +16,8 @@
  */
 
 #include "output_msh.hh"
+#include "output_mesh.hh"
+#include "output_element.hh"
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
@@ -120,13 +122,16 @@ void OutputMSH::write_msh_header(void)
 void OutputMSH::write_msh_geometry(void)
 {
     ofstream &file = this->_base_file;
-    Mesh* mesh = this->_mesh;
 
     // Write information about nodes
     file << "$Nodes" << endl;
-    file <<  mesh->node_vector.size() << endl;
-    FOR_NODES(mesh, nod) {
-        file << NODE_FULL_ITER(mesh, nod).id() << " " << nod->getX() << " " << nod->getY() << " " << nod->getZ() << endl;
+    file << this->nodes_->n_values() << endl;
+    auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
+    unsigned int i_node=0;
+    for(unsigned int i_node=0; i_node < id_node_vec.size(); ++i_node) {
+        file << id_node_vec[i_node] << " ";
+        this->nodes_->print_ascii(file, i_node);
+        file << endl;
     }
     file << "$EndNodes" << endl;
 }
@@ -134,60 +139,60 @@ void OutputMSH::write_msh_geometry(void)
 void OutputMSH::write_msh_topology(void)
 {
     ofstream &file = this->_base_file;
-    Mesh* mesh = this->_mesh;
-    unsigned int i;
     const static unsigned int gmsh_simplex_types_[4] = {0, 1, 2, 4};
+    auto &id_elem_vec = *( this->elem_ids_->get_component_data(0).get() );
+    auto &id_node_vec = *( this->node_ids_->get_component_data(0).get() );
+    auto &connectivity_vec = *( this->connectivity_->get_component_data(0).get() );
+    auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+    auto &regions_vec = *( this->region_ids_->get_component_data(0).get() );
+    auto &partition_vec = *( this->partitions_->get_component_data(0).get() );
+
+    unsigned int n_nodes, i_node=0;
 
     // Write information about elements
     file << "$Elements" << endl;
-    file << mesh->n_elements() << endl;
-    FOR_ELEMENTS(mesh, elm) {
+    file << this->offsets_->n_values() << endl;
+    ElementAccessor<OutputElement::spacedim> elm;
+    for(unsigned int i_elm=0; i_elm < id_elem_vec.size(); ++i_elm) {
+    	n_nodes = (i_elm==0) ? (offsets_vec[0]) : (offsets_vec[i_elm]-offsets_vec[i_elm-1]);
         // element_id element_type 3_other_tags material region partition
-        file << ELEM_FULL_ITER(mesh, elm).id()
-             << " " << gmsh_simplex_types_[ elm->dim() ]
-             << " 3 " << elm->region().id() << " " << elm->region().id() << " " << elm->pid;
+        file << id_elem_vec[i_elm]
+             << " " << gmsh_simplex_types_[ n_nodes-1 ]
+             << " 3 " << regions_vec[i_elm] << " " << regions_vec[i_elm] << " " << partition_vec[i_elm];
 
-        FOR_ELEMENT_NODES(elm, i)
-            file << " " << NODE_FULL_ITER(mesh, elm->node[i]).id();
+        for(unsigned int i=0; i<n_nodes; i++, i_node++) {
+            file << " " << id_node_vec[connectivity_vec[i_node]];
+        }
         file << endl;
     }
     file << "$EndElements" << endl;
 }
 
 
-template<class element>
-void OutputMSH::write_msh_ascii_cont_data(flow::VectorId<element> &vec, OutputDataPtr output_data)
+void OutputMSH::write_msh_ascii_data(std::shared_ptr<ElementDataCache<unsigned int>> id_cache, OutputDataPtr output_data, bool discont)
 {
-    ofstream &file = this->_base_file;
+	ofstream &file = this->_base_file;
+    auto &id_vec = *( id_cache->get_component_data(0).get() );
 
-    for(unsigned int i=0; i < output_data->n_values(); i ++) {
-        file << vec(i).id() << " ";
-        output_data->print_ascii(file, i);
-        file << std::endl;
-    }
-
-}
-
-
-void OutputMSH::write_msh_ascii_discont_data(OutputDataPtr output_data)
-{
-    Mesh *mesh = this->_mesh;
-    ofstream &file = this->_base_file;
-
-    /* Write ascii data */
-    unsigned int i_node;
-	unsigned int i_corner = 0;
-    FOR_ELEMENTS(mesh, ele) {
-        file << ele.id() << " " << ele->n_nodes() << " ";
-
-        FOR_ELEMENT_NODES(ele, i_node) {
-            output_data->print_ascii(file, i_corner++);
+    if (discont) { // corner data
+    	auto &offsets_vec = *( this->offsets_->get_component_data(0).get() );
+    	unsigned int n_nodes, i_corner=0;
+        for(unsigned int i=0; i < id_vec.size(); ++i) {
+        	n_nodes = (i==0) ? (offsets_vec[0]) : (offsets_vec[i]-offsets_vec[i-1]);
+            file << id_vec[i] << " " << n_nodes << " ";
+            for (unsigned int j=0; j<n_nodes; j++)
+            	output_data->print_ascii(file, i_corner++);
+            file << std::endl;
+        }
+    } else { // element / node data
+        for(unsigned int i=0; i < output_data->n_values(); ++i) {
+            file << id_vec[i] << " ";
+            output_data->print_ascii(file, i);
+            file << std::endl;
         }
 
-        file << std::endl;
     }
 }
-
 
 
 void OutputMSH::write_node_data(OutputDataPtr output_data)
@@ -209,7 +214,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_cont_data(this->_mesh->node_vector, output_data);
+    this->write_msh_ascii_data(this->node_ids_, output_data);
 
     file << "$EndNodeData" << endl;
 }
@@ -231,9 +236,9 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
     file << output_data->n_elem() << endl;   // number of components
-    file << this->_mesh->n_elements() << endl; // number of values
+    file << this->offsets_->n_values() << endl; // number of values
 
-    this->write_msh_ascii_discont_data(output_data);
+    this->write_msh_ascii_data(this->elem_ids_, output_data, true);
 
     file << "$EndElementNodeData" << endl;
 }
@@ -256,35 +261,9 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
     file << output_data->n_elem() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
-    this->write_msh_ascii_cont_data(this->_mesh->element, output_data);
+    this->write_msh_ascii_data(this->elem_ids_, output_data);
 
     file << "$EndElementData" << endl;
-}
-
-void OutputMSH::write_field_data(OutputTime::DiscreteSpace type_idx, void (OutputMSH::* format_fce)(OutputDataPtr) )
-{
-    auto &dummy_data_list = dummy_data_list_[type_idx];
-    auto &data_list = this->output_data_vec_[type_idx];
-
-    if (dummy_data_list.size() == 0) {
-        // Collect all output fields
-        // If more EquationOutput object with different initial times output into same
-        // output stream, we may need to possibly update this list on every output frame.
-        for(auto out_ptr : data_list)
-            dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
-    }
-
-
-    auto data_it = data_list.begin();
-    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
-    	//DebugOut().fmt("dummy field: {} data field: {}\n", (*dummy_it)->field_input_name_, (*data_it)->field_input_name_);
-        if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
-            (this->*format_fce)(*data_it); ++data_it;
-        } else {
-            (this->*format_fce)(*dummy_it);
-        }
-    }
-    ASSERT( data_it ==  data_list.end() )(data_it - data_list.begin())(data_list.size());
 }
 
 int OutputMSH::write_head(void)
@@ -321,9 +300,18 @@ int OutputMSH::write_data(void)
     LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
 
 
-    this->write_field_data(NODE_DATA, &OutputMSH::write_node_data);
-    this->write_field_data(CORNER_DATA, &OutputMSH::write_corner_data);
-    this->write_field_data(ELEM_DATA, &OutputMSH::write_elem_data);
+    auto &node_data_list = this->output_data_vec_[NODE_DATA];
+    for(auto data_it = node_data_list.begin(); data_it != node_data_list.end(); ++data_it) {
+    	write_node_data(*data_it);
+    }
+    auto &corner_data_list = this->output_data_vec_[CORNER_DATA];
+    for(auto data_it = corner_data_list.begin(); data_it != corner_data_list.end(); ++data_it) {
+    	write_corner_data(*data_it);
+    }
+    auto &elem_data_list = this->output_data_vec_[ELEM_DATA];
+    for(auto data_it = elem_data_list.begin(); data_it != elem_data_list.end(); ++data_it) {
+    	write_elem_data(*data_it);
+    }
 
     // Flush stream to be sure everything is in the file now
     this->_base_file.flush();
@@ -341,4 +329,41 @@ int OutputMSH::write_tail(void)
 }
 
 
+
+void OutputMSH::add_dummy_fields()
+{
+	const std::vector<OutputTime::DiscreteSpace> space_types = {OutputTime::NODE_DATA, OutputTime::CORNER_DATA, OutputTime::ELEM_DATA};
+	for (auto type_idx : space_types) {
+	    auto &dummy_data_list = dummy_data_list_[type_idx];
+	    auto &data_list = this->output_data_vec_[type_idx];
+
+        // Collect all output fields
+		if (dummy_data_list.size() == 0)
+			for(auto out_ptr : data_list)
+				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
+
+	    auto data_it = data_list.begin();
+	    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
+	        if ( data_it == data_list.end() ) {
+	        	data_list.push_back( *dummy_it );
+	        } else if ((*dummy_it)->field_input_name() == (*data_it)->field_input_name()) {
+	        	++data_it;
+	        } else {
+	        	data_list.push_back( *dummy_it );
+	        }
+	    }
+	}
+}
+
+
+
+void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	OutputTime::set_output_data_caches(mesh_ptr);
+
+	mesh_ptr->create_id_caches();
+	this->node_ids_ = mesh_ptr->node_ids_;
+	this->elem_ids_ = mesh_ptr->elem_ids_;
+	this->region_ids_ = mesh_ptr->region_ids_;
+	this->partitions_ = mesh_ptr->partitions_;
+}
 

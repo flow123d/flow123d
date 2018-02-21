@@ -28,6 +28,7 @@
 #include "mesh/boundaries.h"
 //#include "materials.hh"
 #include "mesh/accessors.hh"
+#include "la/distribution.hh"
 
 
 
@@ -112,6 +113,15 @@ double Element::measure() const {
     return 1.0;
 }
 
+double Element::tetrahedron_jacobian() const
+{
+    OLD_ASSERT(dim_ == 3, "Cannot provide Jacobian for dimension other than 3.");
+    return arma::dot( arma::cross(*node[1] - *node[0], 
+                                  *node[2] - *node[0]),
+                    *node[3] - *node[0]
+                    );
+}
+
 
 /**
  * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
@@ -171,7 +181,7 @@ double Element::quality_measure_smooth() {
         for(unsigned int i=0;i<3;i++)
             for(unsigned int j=i+1;j<4;j++) {
                 unsigned int i_line = RefElement<3>::line_between_faces(i,j);
-                arma::vec line = *node[RefElement<3>::line_nodes[i_line][1]] - *node[RefElement<3>::line_nodes[i_line][0]];
+                arma::vec line = *node[RefElement<3>::interact(Interaction<0,1>(i_line))[1]] - *node[RefElement<3>::interact(Interaction<0,1>(i_line))[0]];
                 sum_pairs += face[i]*face[j]*arma::dot(line, line);
             }
         double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
@@ -201,22 +211,18 @@ void Element::get_bounding_box(BoundingBox &bounding_box) const
 		bounding_box.expand( this->node[i]->point() );
 }
 
-
-arma::vec Element::project_point(const arma::vec3 &point, const arma::mat &map) const
+BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
 {
-
-    if (dim() == 0) return arma::ones(1);
-
-    arma::mat A=map.cols(0, dim()-1);
-    arma::mat AtA = A.t()*A;
-    arma::vec Atb = A.t()*(point - map.col(dim()));
-    arma::vec bary_coord(dim()+1);
-    bary_coord.rows(0, dim() - 1) = solve(AtA, Atb);
-    bary_coord( dim() ) = 1.0 - arma::sum( bary_coord.rows(0,dim()-1) );
-
-    return bary_coord;
+    ASSERT_GT(mesh_->element_box_.size(), 0);
+    return mesh_->element_box_[mesh_->element.index(this)];
 }
 
+
+unsigned int Element::get_proc() const
+{
+  return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
+}
+    
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -20,12 +20,19 @@
 #include "io/msh_basereader.hh"
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
+#include "io/msh_pvdreader.hh"
 #include "system/sys_profiler.hh"
 
 
 BaseMeshReader::BaseMeshReader(const FilePath &file_name)
-: tok_(file_name) {
-}
+: element_data_values_(std::make_shared<ElementDataFieldMap>()),
+  tok_(file_name)
+{}
+
+BaseMeshReader::BaseMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values)
+: element_data_values_(element_data_values),
+  tok_(file_name)
+{}
 
 std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath &file_name) {
 	std::shared_ptr<BaseMeshReader> reader_ptr;
@@ -33,6 +40,8 @@ std::shared_ptr< BaseMeshReader > BaseMeshReader::reader_factory(const FilePath 
 		reader_ptr = std::make_shared<GmshMeshReader>(file_name);
 	} else if ( file_name.extension() == ".vtu" ) {
 		reader_ptr = std::make_shared<VtkMeshReader>(file_name);
+	} else if ( file_name.extension() == ".pvd" ) {
+		reader_ptr = std::make_shared<PvdMeshReader>(file_name);
 	} else {
 		THROW(ExcWrongExtension() << EI_FileExtension(file_name.extension()) << EI_MeshFile((string)file_name) );
 	}
@@ -72,48 +81,53 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 	else return bulk_elements_id_;
 }
 
+
 template<typename T>
-typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( std::string field_name, double time,
-		unsigned int n_entities, unsigned int n_components, bool boundary_domain, unsigned int component_idx) {
+typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( unsigned int n_entities, unsigned int n_components,
+		bool boundary_domain, unsigned int component_idx) {
 	ASSERT(has_compatible_mesh_)
 			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
+	ASSERT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call find_header?\n");
 
-    MeshDataHeader actual_header = this->find_header(time, field_name);
-    ElementDataFieldMap::iterator it=element_data_values_.find(field_name);
-    if (it == element_data_values_.end()) {
-    	element_data_values_[field_name] = std::make_shared< ElementDataCache<T> >();
-        it=element_data_values_.find(field_name);
+    std::string field_name = actual_header_.field_name;
+
+	ElementDataFieldMap::iterator it=element_data_values_->find(field_name);
+    if (it == element_data_values_->end()) {
+    	(*element_data_values_)[field_name] = std::make_shared< ElementDataCache<T> >();
+        it=element_data_values_->find(field_name);
     }
 
-    if ( !it->second->is_actual(actual_header.time, field_name) ) {
+    if ( !it->second->is_actual(actual_header_.time, field_name) ) {
     	unsigned int size_of_cache; // count of vectors stored in cache
 
 	    // check that the header is valid, try to correct
-	    if (actual_header.n_entities != n_entities) {
+	    if (actual_header_.n_entities != n_entities) {
 	    	WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of entities: {}, using {} instead.\n",
-	                tok_.f_name(), data_section_name_, field_name, actual_header.time, actual_header.n_entities, n_entities);
+	                tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_entities, n_entities);
 	        // actual_header.n_entities=n_entities;
 	    }
 
 	    if (n_components == 1) {
 	    	// read for MultiField to 'n_comp' vectors
 	    	// or for Field if ElementData contains only one value
-	    	size_of_cache = actual_header.n_components;
+	    	size_of_cache = actual_header_.n_components;
 	    }
 	    else {
 	    	// read for Field if more values is stored to one vector
 	    	size_of_cache = 1;
-	    	if (actual_header.n_components != n_components) {
+	    	if (actual_header_.n_components != n_components) {
 	    		WarningOut().fmt("In file '{}', '{}' section for field '{}', time: {}.\nWrong number of components: {}, using {} instead.\n",
-		                tok_.f_name(), data_section_name_, field_name, actual_header.time, actual_header.n_components, n_components);
-		        actual_header.n_components=n_components;
+		                tok_.f_name(), data_section_name_, field_name, actual_header_.time, actual_header_.n_components, n_components);
+	    		actual_header_.n_components=n_components;
 	    	}
 	    }
 
-    	element_data_values_[field_name]
-					= std::make_shared< ElementDataCache<T> >(actual_header, size_of_cache, n_components*n_entities);
-    	this->read_element_data(*(it->second), actual_header, n_components, boundary_domain );
+    	(*element_data_values_)[field_name]
+					= std::make_shared< ElementDataCache<T> >(field_name, actual_header_.time, size_of_cache, n_components*n_entities);
+    	this->read_element_data(*(it->second), actual_header_, n_components, boundary_domain );
 	}
+
+    actual_header_.reset();
 
     if (component_idx == std::numeric_limits<unsigned int>::max()) component_idx = 0;
     ElementDataCache<T> &current_cache = dynamic_cast<ElementDataCache<T> &>(*(it->second));
@@ -123,8 +137,8 @@ typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data(
 
 // explicit instantiation of template methods
 #define MESH_READER_GET_ELEMENT_DATA(TYPE) \
-template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>(std::string field_name, double time, \
-	unsigned int n_entities, unsigned int n_components, bool boundary_domain, unsigned int component_idx);
+template typename ElementDataCache<TYPE>::ComponentDataPtr BaseMeshReader::get_element_data<TYPE>(unsigned int n_entities, \
+		unsigned int n_components, bool boundary_domain, unsigned int component_idx);
 
 MESH_READER_GET_ELEMENT_DATA(int);
 MESH_READER_GET_ELEMENT_DATA(unsigned int);

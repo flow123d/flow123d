@@ -23,6 +23,8 @@
 
 using namespace mathfce;
 
+namespace ngh {
+
 TMatrix::TMatrix(int size) {
     nc = size;
     nr = size;
@@ -197,3 +199,5 @@ TNSolutions Gauss(const TMatrix& A, TMVector* X, const TMVector& B) {
 
     return one_solution;
 }
+
+} //namespace ngh

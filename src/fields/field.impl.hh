@@ -22,6 +22,7 @@
 
 #include "field.hh"
 #include "field_algo_base.impl.hh"
+#include "field_fe.hh"
 #include "mesh/region.hh"
 #include "input/reader_to_storage.hh"
 #include "input/accessors.hh"
@@ -227,7 +228,7 @@ void Field<spacedim, Value>::set_field(
 		const Input::AbstractRecord &a_rec,
 		double time)
 {
-	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
+	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
 	set_field(domain, FieldBaseType::function_factory(a_rec, init_data), time);
 }
 
@@ -334,14 +335,10 @@ void Field<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->output_type();
+		const OutputTime::DiscreteSpace type = this->get_output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
-
-		OutputTime::DiscreteSpaceFlags flags = 1 << type;
-	    for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
-	        if (flags & (1 << ids))
-	        	this->compute_field_data( OutputTime::DiscreteSpace(ids), stream);
+		this->compute_field_data( type, stream);
 	}
 }
 
@@ -508,7 +505,7 @@ void Field<spacedim,Value>::check_initialized_region_fields_() {
         Input::ReaderToStorage reader( default_input, *input_type, Input::FileFormat::format_JSON );
 
         auto a_rec = reader.get_root_interface<Input::AbstractRecord>();
-    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits());
+    	FieldAlgoBaseInitData init_data(input_name(), n_comp(), units(), limits(), flags());
         auto field_ptr = FieldBaseType::function_factory( a_rec , init_data );
         field_ptr->set_mesh( mesh(), is_bc() );
         for(const Region &reg: regions_to_init) {
@@ -533,7 +530,7 @@ template<int spacedim, class Value>
 typename Field<spacedim,Value>::FieldBasePtr Field<spacedim,Value>::FactoryBase::create_field(Input::Record rec, const FieldCommon &field) {
 	Input::AbstractRecord field_record;
 	if (rec.opt_val(field.input_name(), field_record)) {
-		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
 		return FieldBaseType::function_factory(field_record, init_data );
 	}
 	else
@@ -584,15 +581,15 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-    /* It's possible now to do output to the file only in the first process */
-    if( stream->get_rank() != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
+	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+
+    if ( !output_mesh ) {
+        // Output mesh is not constructed for serial output and rank > 0
         return;
     }
 
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
-
 
     /* Copy data to array */
     switch(space_type) {
@@ -602,7 +599,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         for(unsigned int idx=0; idx < output_data.n_values(); idx++)
             output_data.zero(idx);
 
-        std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -625,9 +621,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::CORNER_DATA: {
-    	std::shared_ptr<OutputMeshDiscontinuous> output_mesh_disc
-			= std::dynamic_pointer_cast<OutputMeshDiscontinuous>( stream->get_output_mesh_ptr(true) );
-        for(const auto & ele : *output_mesh_disc )
+        for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
@@ -645,7 +639,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::ELEM_DATA: {
-    	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream->get_output_mesh_ptr() );
         for(const auto & ele : *output_mesh )
         {
             unsigned int ele_index = ele.idx();
@@ -660,12 +653,51 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         }
     }
     break;
+    case OutputTime::NATIVE_DATA: {
+        std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr = this->get_field_fe();
+
+        if (field_fe_ptr) {
+            ElementDataCache<double> &native_output_data = stream->prepare_compute_data<double>(this->name(), space_type,
+                    (unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
+            field_fe_ptr->fill_data_to_cache(native_output_data);
+        } else {
+            WarningOut().fmt("Field '{}' of native data space type is not of type FieldFE. Output will be skipped.\n", this->name());
+        }
+    }
+    break;
+    case OutputTime::MESH_DEFINITION:
+    case OutputTime::UNDEFINED:
+        //should not happen
+    break;
     }
 
     /* Set the last time */
     stream->update_time(this->time());
 
 }
+
+
+template<int spacedim, class Value>
+std::shared_ptr< FieldFE<spacedim, Value> > Field<spacedim,Value>::get_field_fe() {
+	ASSERT_EQ_DBG(this->mesh()->region_db().size(), region_fields_.size()).error();
+	ASSERT(!this->shared_->bc_).error("FieldFE output of native data is supported only for bulk fields!");
+
+	std::shared_ptr< FieldFE<spacedim, Value> > field_fe_ptr;
+
+	bool is_fe = (region_fields_.size()>0); // indicate if FieldFE is defined on all bulk regions
+	is_fe = is_fe && region_fields_[1] && (typeid(*region_fields_[1]) == typeid(FieldFE<spacedim, Value>));
+	for (unsigned int i=3; i<2*this->mesh()->region_db().bulk_size(); i+=2)
+		if (!region_fields_[i] || (region_fields_[i] != region_fields_[1])) {
+			is_fe = false;
+			break;
+		}
+	if (is_fe) {
+		field_fe_ptr = std::dynamic_pointer_cast<  FieldFE<spacedim, Value> >( region_fields_[1] );
+	}
+
+	return field_fe_ptr;
+}
+
 
 
 

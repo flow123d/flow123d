@@ -29,38 +29,38 @@ string input = R"INPUT(
 {   
    scalar={
        TYPE="FieldElementwise",
-       gmsh_file="fields/simplest_cube_data.msh",
+       mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar"
    },
    scalar_unit_conversion={
        TYPE="FieldElementwise",
-       gmsh_file="fields/simplest_cube_data.msh",
+       mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar",
        unit="const; const=100*m^0"
    },
    vector_fixed={
        TYPE="FieldElementwise",
-       gmsh_file="fields/simplest_cube_data.msh",
+       mesh_data_file="fields/simplest_cube_data.msh",
        field_name="vector_fixed"
    },
    tensor_fixed={
        TYPE="FieldElementwise",
-       gmsh_file="fields/simplest_cube_data.msh",
+       mesh_data_file="fields/simplest_cube_data.msh",
        field_name="tensor_fixed"
    },
    vtk_scalar={
        TYPE="FieldElementwise",
-       gmsh_file="fields/vtk_ascii_data.vtu",
+       mesh_data_file="fields/vtk_ascii_data.vtu",
        field_name="scalar_field"
    }
    vtk_vector={
        TYPE="FieldElementwise",
-       gmsh_file="fields/vtk_binary_data.vtu",
+       mesh_data_file="fields/vtk_binary_data.vtu",
        field_name="vector_field"
    }
    vtk_tensor={
        TYPE="FieldElementwise",
-       gmsh_file="fields/vtk_compressed_data.vtu",
+       mesh_data_file="fields/vtk_compressed_data.vtu",
        field_name="tensor_field"
    }
 }

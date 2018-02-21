@@ -36,10 +36,9 @@ FiniteElement<dim,spacedim>::FiniteElement()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init()
+void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive, FEType type)
 {
     number_of_dofs = 0;
-    is_scalar_fe = true;
     for (unsigned int i = 0; i <= dim; i++)
     {
         number_of_single_dofs[i] = 0;
@@ -47,7 +46,20 @@ void FiniteElement<dim,spacedim>::init()
         number_of_triples[i] = 0;
         number_of_sextuples[i] = 0;
     }
+    
+    is_primitive_ = primitive;
+    n_components_ = n_components;
+    type_ = type;
 }
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FiniteElement<dim,spacedim>::setup_components()
+{
+  component_indices_.resize(number_of_dofs, 0);
+  nonzero_components_.resize(number_of_dofs, { true });
+}
+
 
 template<unsigned int dim, unsigned int spacedim> inline
 const unsigned int FiniteElement<dim,spacedim>::n_dofs() const
@@ -92,32 +104,26 @@ void FiniteElement<dim,spacedim>::compute_node_matrix()
 }
 
 template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q, UpdateFlags flags)
+FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q)
 {
     FEInternalData *data = new FEInternalData;
 
-    if (flags & update_values)
+    arma::vec values(number_of_dofs);
+    data->basis_values.resize(q.size());
+    for (unsigned int i=0; i<q.size(); i++)
     {
-        arma::vec values(number_of_dofs);
-        data->basis_values.resize(q.size());
-        for (unsigned int i=0; i<q.size(); i++)
-        {
-            for (unsigned int j=0; j<number_of_dofs; j++)
-                values[j] = basis_value(j, q.point(i));
-            data->basis_values[i] = node_matrix * values;
-        }
+        for (unsigned int j=0; j<number_of_dofs; j++)
+            values[j] = basis_value(j, q.point(i));
+        data->basis_values[i] = node_matrix * values;
     }
 
-    if (flags & update_gradients)
+    arma::mat grads(number_of_dofs, dim);
+    data->basis_grads.resize(q.size());
+    for (unsigned int i=0; i<q.size(); i++)
     {
-        arma::mat grads(number_of_dofs, dim);
-        data->basis_grads.resize(q.size());
-        for (unsigned int i=0; i<q.size(); i++)
-        {
-            for (unsigned int j=0; j<number_of_dofs; j++)
-                grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
-            data->basis_grads[i] = node_matrix * grads;
-        }
+        for (unsigned int j=0; j<number_of_dofs; j++)
+            grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
+        data->basis_grads[i] = node_matrix * grads;
     }
 
     return data;
@@ -144,7 +150,8 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     if (fv_data.update_flags & update_values)
     {
         for (unsigned int i = 0; i < q.size(); i++)
-            fv_data.shape_values[i] = data.basis_values[i];
+            for (unsigned int c = 0; c < n_dofs(); c++)
+                fv_data.shape_values[i][c] = data.basis_values[i][c];
     }
 
     // shape gradients
@@ -152,7 +159,9 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     {
         for (unsigned int i = 0; i < q.size(); i++)
         {
-            fv_data.shape_gradients[i] = data.basis_grads[i] * fv_data.inverse_jacobians[i];
+            arma::mat grads = trans(data.basis_grads[i] * fv_data.inverse_jacobians[i]);
+            for (unsigned int c = 0; c < n_dofs(); c++)
+                fv_data.shape_gradients[i][c] = grads.col(c);
         }
     }
 }

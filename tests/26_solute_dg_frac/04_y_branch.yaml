@@ -1,10 +1,9 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   time: &anchor3
     end_time: 100.0
     init_dt: 5.0
-  description: Test13 - mixing of substances on edges and quantitative test on trivial
-    transport problem.
+  description: Test13 - mixing of substances on edges and quantitative test on trivial transport problem.
   mesh:
     mesh_file: ../00_mesh/y_branch.msh
   flow_equation: !Flow_Darcy_MH
@@ -35,7 +34,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: test13.pvd
       format: !vtk
         variant: ascii
@@ -50,7 +49,7 @@ problem: !Coupling_Sequential
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-    output_stream: 
+    output_stream:
       file: transport_implicit.pvd
       format: !vtk
         variant: ascii
