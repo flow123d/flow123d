@@ -19,10 +19,11 @@
 #define plainH
 
 #include "myvector.h"
-#include "point.h"
 
 
 namespace ngh {
+
+class TVector;
 
 class TPlain {
 private:
