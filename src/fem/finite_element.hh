@@ -212,6 +212,9 @@ enum FEType {
 class FEInternalData
 {
 public:
+    
+    FEInternalData(unsigned int np, unsigned int nd);
+    
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
      *
@@ -229,6 +232,12 @@ public:
      *             x ((dim of. ref. cell)x(no. of components in ref. cell))
      */
     std::vector<std::vector<arma::mat> > ref_shape_grads;
+    
+    /// Number of quadrature points.
+    unsigned int n_points;
+    
+    /// Number of dofs (shape functions).
+    unsigned int n_dofs;
 };
 
 

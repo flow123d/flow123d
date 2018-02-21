@@ -59,6 +59,18 @@ template<class FS> const double Dof::evaluate(const FS &function_space,
 
 
 
+
+FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
+    : n_points(np),
+      n_dofs(nd)
+{
+    ref_shape_values.resize(np, vector<arma::vec>(nd));
+    ref_shape_grads.resize(np, vector<arma::mat>(nd));
+}
+
+
+
+
 template<unsigned int dim, unsigned int spacedim>
 FiniteElement<dim,spacedim>::FiniteElement()
     : function_space_(nullptr)
@@ -99,12 +111,11 @@ void FiniteElement<dim,spacedim>::compute_node_matrix()
 template<unsigned int dim, unsigned int spacedim>
 FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q)
 {
-    FEInternalData *data = new FEInternalData;
+    FEInternalData *data = new FEInternalData(q.size(), n_dofs());
 
     arma::mat raw_values(function_space_->dim(), n_components());
     arma::mat shape_values(n_dofs(), n_components());
 
-    data->ref_shape_values.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
         for (unsigned int j=0; j<function_space_->dim(); j++)
@@ -113,7 +124,6 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
 
         shape_values = node_matrix * raw_values;
 
-        data->ref_shape_values[i].resize(n_dofs());
         for (unsigned int j=0; j<n_dofs(); j++)
             data->ref_shape_values[i][j] = trans(shape_values.row(j));
     }
@@ -121,10 +131,8 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
     arma::mat grad(dim,n_components());
     vector<arma::mat> grads(n_dofs());
 
-    data->ref_shape_grads.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
-        data->ref_shape_grads[i].resize(n_dofs());
         for (unsigned int j=0; j<n_dofs(); j++)
         {
             grad.zeros();
