@@ -22,7 +22,6 @@
 
 
 
-class Element;
 class Edge;
 class SideIter;
 /**

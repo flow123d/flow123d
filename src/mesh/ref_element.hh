@@ -71,8 +71,8 @@
 #ifndef REF_ELEMENT_HH_
 #define REF_ELEMENT_HH_
 
+#include <vector>                      // for vector
 #include <armadillo>
-#include "system/system.hh"
 
 
 /*
