@@ -22,11 +22,13 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 #include <boost/circular_buffer.hpp>
 
 
 #include "system/global_defs.h"
 #include "system/system.hh"
+#include "system/file_path.hh"
 #include "input/accessors_forward.hh"
 #include "input/input_exception.hh"
 #include "tools/time_marks.hh"
@@ -314,11 +316,13 @@ public:
      *
      * @param input accessor to input data
      * @param fixed_time_mask TimeMark mask used to select fixed time marks from all the time marks. 
+     * @param timestep_output enable/forbid output of time steps to YAML file
      * This value is bitwise added to the default one defined in TimeMarks::type_fixed_time().
      *
      */
    TimeGovernor(const Input::Record &input,
-                TimeMark::Type fixed_time_mask = TimeMark::none_type);
+                TimeMark::Type fixed_time_mask = TimeMark::none_type,
+				bool timestep_output = true);
 
    /**
     * @brief Default constructor - steady time governor.
@@ -345,6 +349,11 @@ public:
     * TODO: Partially tested as part of field test. Needs its own unit test.
     */
    TimeGovernor(double init_time, double dt);
+
+	/**
+	 * Destructor.
+	 */
+	~TimeGovernor();
 
    /**
     * Returns true if the time governor was set from default values
@@ -715,6 +724,18 @@ private:
 
     /// Iterator to actual position of DT limits
     std::vector<DtLimitRow>::iterator dt_limits_iter_;
+
+    /// File path for timesteps_output_ stream.
+    FilePath timesteps_output_file_;
+
+    /// Handle for file for output time steps to YAML format.
+    std::ofstream timesteps_output_;
+
+    /// Store last printed time to YAML output, try multiplicity output of one time
+    double last_printed_timestep_;
+
+    /// Special flag allows forbid output time steps during multiple initialization of TimeGovernor
+    bool timestep_output_;
 
     friend TimeMarks;
 };

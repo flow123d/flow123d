@@ -91,6 +91,8 @@ const Record & TimeGovernor::get_input_type() {
 		.declare_key("dt_limits", Array(dt_step, 2), Default::optional(),
 				"Allow to set a time dependent changes in min_dt and max_dt limits. This list is processed "
 				"at individual times overwriting previous setting of min_dt/max_dt. Limits equal to 0 are ignored.")
+		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
+				"Write used time steps to given file in YAML format corresponding with format of 'dt_limits'.")
 		.declare_key("common_time_unit", String(), Default("\"s\""),
 				"Common time unit of equation. This unit will be used for all time inputs and outputs "
 				"within the equation. On inputs can be overwrite for every time definition.\n"
@@ -242,7 +244,8 @@ ostream& operator<<(ostream& out, const TimeStep& t_step) {
  * implementation of TimeGovernor
  */
 
-TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_type)
+TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_type, bool timestep_output)
+: timestep_output_(timestep_output)
 {
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
@@ -274,6 +277,16 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
                 );
     	}
 
+    	// check key write_used_timesteps, open YAML file, print first time step
+        if (timestep_output_)
+            if (input.opt_val("write_used_timesteps", timesteps_output_file_) ) {
+                try {
+                    timesteps_output_file_.open_stream(timesteps_output_);
+                } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input)
+                timesteps_output_ << "- [ " << t() << ", " << dt_limits_table_[0].min_dt << ", " << dt_limits_table_[0].max_dt << ", \"s\" ]\n";
+                last_printed_timestep_ = t();
+            }
+
         double init_dt=read_time( input.find<Input::Tuple>("init_dt") );
         if (init_dt > 0.0) {
             // set first time step suggested by user
@@ -293,6 +306,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 }
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
+: timestep_output_(false)
 {
 	time_unit_conversion_ = std::make_shared<TimeUnitConversion>();
 	init_common( init_time, inf_time, TimeMark::every_type);
@@ -321,6 +335,7 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
 
 // steady time governor constructor
 TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
+: timestep_output_(false)
 {
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
@@ -334,6 +349,14 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
     dt_limits_iter_ = dt_limits_table_.begin();
 
 	steady_ = true;
+}
+
+
+TimeGovernor::~TimeGovernor()
+{
+	if ( !(timesteps_output_file_ == FilePath()) && timestep_output_ ) {
+		timesteps_output_.close();
+	}
 }
 
 
@@ -610,8 +633,6 @@ void TimeGovernor::next_time()
     OLD_ASSERT_LE(0.0, t());
     if (is_end()) return;
     
-    if (dt_limits_iter_->time == step().end()) set_permanent_constraint();
-
 
     if (this->step().lt(end_of_fixed_dt_interval_)) {
         // this is done for fixed step
@@ -653,6 +674,17 @@ void TimeGovernor::next_time()
     lower_constraint_ = min_time_step_;
     lower_constraint_message_ = "Permanent minimal constraint, in next time.";
     upper_constraint_message_ = "Permanent maximal constraint, in next time.";
+
+    if (dt_limits_iter_->time == step().end()) set_permanent_constraint();
+
+	// write time step to YAML file
+    if ( !(timesteps_output_file_ == FilePath()) && timestep_output_ ) {
+    	double time = t();
+    	if (time > last_printed_timestep_) {
+    		timesteps_output_ << "- [ " << time << ", " << lower_constraint_ << ", " << upper_constraint_ << ", \"s\" ]\n";
+    		last_printed_timestep_ = time;
+    	}
+	}
 }
 
 
