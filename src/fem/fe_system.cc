@@ -160,9 +160,6 @@ void FESystem<dim,spacedim>::initialize()
         break;
     }
 
-    for (int i=0; i<fe->n_dofs(); ++i)
-      fe_dof_indices_.push_back(DofComponentData(fe_index, i, comp_offset));
-    
     fe_index++;
     comp_offset += fe->n_components();
     fs_vector.push_back(shared_ptr<FunctionSpace>(fe->function_space_));
@@ -203,7 +200,7 @@ void FESystem<dim,spacedim>::initialize()
       {
         std::vector<bool> nonzeros(this->function_space_->n_components(), false);
         for (unsigned int c=0; c<fe->n_components(); c++)\
-          nonzeros[comp_offset+c] = fe->get_nonzero_components(fe_dof_indices_[dof_index].basis_index)[c];
+          nonzeros[comp_offset+c] = fe->get_nonzero_components(i)[c];
         this->nonzero_components_.push_back(nonzeros);
         dof_index++;
       }

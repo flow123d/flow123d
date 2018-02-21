@@ -149,9 +149,6 @@ private:
   /// Pointers to base FE objects.
   std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe_;
   
-  /// Information about dofs.
-  std::vector<DofComponentData> fe_dof_indices_;
-  
   std::vector<unsigned int> scalar_components_;
   std::vector<unsigned int> vector_components_;
   
