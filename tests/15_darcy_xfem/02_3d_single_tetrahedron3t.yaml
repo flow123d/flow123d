@@ -2,7 +2,7 @@ flow123d_version: 3.0.0_r1
 problem: !Coupling_Sequential
   description: Test15 - Steady flow with xfem singular connection 1D-3D on simple 3d mesh.
   mesh:
-    mesh_file: ./input/tetrahedron3t_1.msh
+    mesh_file: ./input/tetrahedron3t/tetrahedron3t_1.msh
   flow_equation: !Flow_Darcy_MH
     output_specific:
       compute_errors: true

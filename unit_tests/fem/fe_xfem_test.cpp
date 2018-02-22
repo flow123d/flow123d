@@ -42,36 +42,36 @@ $Elements
 $EndElements
 )CODE";
 
-void print_fv_side(ElementFullIter ele, FESideValues<2,3>& fv_side, unsigned int side){
-    fv_side.reinit(ele, side);
-    
-    cout << "FV_SIDE: side " << side << endl;
-    cout << "n qpoints " << fv_side.n_points() << endl;
-    cout << "ndofs " << fv_side.n_dofs() << endl;
-//     cout << fv_side.shape_vector(0,0) << endl;
-//     cout << fv_side.normal_vector(0) << endl;
-//     cout << side_quad.weight(0) << endl;
-    cout << "side measure " << ele->side(side)->measure() << endl;
-    cout << arma::dot(fv_side.shape_vector(0,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-    cout << arma::dot(fv_side.shape_vector(1,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-    cout << arma::dot(fv_side.shape_vector(2,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-    cout << arma::dot(fv_side.shape_vector(3,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-//     cout << arma::dot(fv_side.shape_vector(4,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-//     cout << arma::dot(fv_side.shape_vector(5,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
-    cout << endl;
-    
-    double sv_norm = arma::norm(fv_side.shape_vector(3,0),2);
-    arma::vec sx = fv_side.shape_vector(3,0);
-    if(sv_norm != 0) sx = sx / sv_norm;
-    
-    arma::vec n = fv_side.normal_vector(0) / arma::norm(fv_side.normal_vector(0),2);
-    fv_side.shape_vector(3,0).print(cout,"shape");
-    sx.print(cout,"sx");
-    n.print(cout,"n");
-    cout << "sx.n = " << arma::dot(sx,n) << endl;
-    
-    
-}
+// void print_fv_side(ElementFullIter ele, FESideValues<2,3>& fv_side, unsigned int side){
+//     fv_side.reinit(ele, side);
+//     
+//     cout << "FV_SIDE: side " << side << endl;
+//     cout << "n qpoints " << fv_side.n_points() << endl;
+//     cout << "ndofs " << fv_side.n_dofs() << endl;
+// //     cout << fv_side.shape_vector(0,0) << endl;
+// //     cout << fv_side.normal_vector(0) << endl;
+// //     cout << side_quad.weight(0) << endl;
+//     cout << "side measure " << ele->side(side)->measure() << endl;
+//     cout << arma::dot(fv_side.shape_vector(0,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+//     cout << arma::dot(fv_side.shape_vector(1,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+//     cout << arma::dot(fv_side.shape_vector(2,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+//     cout << arma::dot(fv_side.shape_vector(3,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+// //     cout << arma::dot(fv_side.shape_vector(4,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+// //     cout << arma::dot(fv_side.shape_vector(5,0),fv_side.normal_vector(0))*ele->side(side)->measure() << endl;
+//     cout << endl;
+//     
+//     double sv_norm = arma::norm(fv_side.shape_vector(3,0),2);
+//     arma::vec sx = fv_side.shape_vector(3,0);
+//     if(sv_norm != 0) sx = sx / sv_norm;
+//     
+//     arma::vec n = fv_side.normal_vector(0) / arma::norm(fv_side.normal_vector(0),2);
+//     fv_side.shape_vector(3,0).print(cout,"shape");
+//     sx.print(cout,"sx");
+//     n.print(cout,"n");
+//     cout << "sx.n = " << arma::dot(sx,n) << endl;
+//     
+//     
+// }
 
 // TEST(fe_xfem, fe_rt_xfem) {
 // 
