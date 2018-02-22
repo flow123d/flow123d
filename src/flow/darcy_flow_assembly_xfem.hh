@@ -152,7 +152,8 @@ public:
         ElementFullIter ele = ele_ac.full_iter();
         
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
-        fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
+        if(ad_->mh_dh->single_enr) fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM_S<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
+        else fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
         
         FEValues<dim,3> fv_xfem(map_,velocity_interpolation_quad_, *fe_rt_xfem_, update_values | update_quadrature_points);
         fv_xfem.reinit(ele);
