@@ -40,7 +40,6 @@ PolynomialSpace::PolynomialSpace(unsigned int degree, unsigned int dim)
     unsigned int degree_sum=0;
     unsigned int i_dim;
 
-
     while (true) {
         powers.push_back(pows);
 

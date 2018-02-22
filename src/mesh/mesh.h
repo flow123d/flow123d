@@ -80,6 +80,7 @@
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
+class DuplicateNodes;
 
 /// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
 typedef int IdxInt;
@@ -354,6 +355,8 @@ public:
 
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
+
+    DuplicateNodes *tree;
 
 
 protected:

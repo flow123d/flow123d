@@ -162,6 +162,7 @@ private:
     FE_P_disc<1,3> fe1;
     FE_P_disc<2,3> fe2;
     FE_P_disc<3,3> fe3;
+    std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
 

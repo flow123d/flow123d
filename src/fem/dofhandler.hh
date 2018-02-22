@@ -25,6 +25,7 @@
 #include "mesh/mesh_types.hh"
 #include "mesh/elements.h"
 #include "la/distribution.hh"
+#include "fem/discrete_space.hh"
 
 
 template<unsigned int dim, unsigned int spacedim> class FiniteElement;
@@ -44,7 +45,8 @@ public:
      * @brief Constructor.
      * @param _mesh The mesh.
      */
-    DOFHandlerBase(Mesh &_mesh) : global_dof_offset(0), n_dofs(0), lsize_(0), mesh_(&_mesh) {};
+    DOFHandlerBase(Mesh &_mesh)
+    : global_dof_offset(0), n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
 
     /**
      * @brief Alias for iterator over cells.
@@ -59,8 +61,8 @@ public:
      * @brief Getter for the number of all mesh dofs required by the given
      * finite element.
      */
-    const unsigned int n_global_dofs() const { return n_dofs; }
-
+    const unsigned int n_global_dofs() const { return n_global_dofs_; }
+    
     /**
      * @brief Returns the number of the first global dof handled by this
      * DOFHandler.
@@ -82,10 +84,7 @@ public:
      */
     const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
-    /**
-     * @brief Returns the parallel distribution of dofs.
-     */
-    Distribution *distr() const { return ds_; }
+    Distribution *distr() const { return dof_ds_; }
 
     /**
      * @brief Returns the mesh.
@@ -115,8 +114,8 @@ public:
      * @param values The global vector of values.
      * @param local_values Array of values at local dofs.
      */
-    virtual void get_dof_values(const CellIterator &cell, const Vec &values,
-            double local_values[]) const = 0;
+//     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
+//             double local_values[]) const = 0;
 
     /**
      * @brief Compute hash value of DOF handler.
@@ -124,7 +123,7 @@ public:
     virtual std::size_t hash() const =0;
 
     /// Destructor.
-    virtual ~DOFHandlerBase() {};
+    virtual ~DOFHandlerBase();
 
 protected:
 
@@ -140,8 +139,8 @@ protected:
     /**
      * @brief Number of global dofs assigned by the handler.
      */
-    unsigned int n_dofs;
-
+    unsigned int n_global_dofs_;
+    
     /**
      * @brief Number of dofs associated to local process.
      */
@@ -163,7 +162,7 @@ protected:
     /**
      * @brief Distribution of dofs associated to local process.
      */
-    Distribution *ds_;
+     Distribution *dof_ds_;
 
 };
 
@@ -294,9 +293,7 @@ public:
      * @param fe3d The 3D finite element.
      * @param offset The offset.
      */
-    void distribute_dofs(FiniteElement<1,3> &fe1d,
-    		FiniteElement<2,3> &fe2d,
-    		FiniteElement<3,3> &fe3d,
+    void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     		const unsigned int offset = 0);
 
     /**
@@ -322,8 +319,8 @@ public:
      * @param values The global vector of values.
      * @param local_values Array of values at local dofs.
      */
-    void get_dof_values(const CellIterator &cell, const Vec &values,
-            double local_values[]) const override;
+//     void get_dof_values(const CellIterator &cell, const Vec &values,
+//             double local_values[]) const override;
 
     /**
      * @brief Returns the global index of local element.
@@ -364,7 +361,7 @@ public:
 
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
-    FiniteElement<dim,3> *fe() const;
+    FiniteElement<dim,3> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
 
     /**
      * Implements @p DOFHandlerBase::hash.
@@ -373,6 +370,10 @@ public:
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
+    
+    void create_sequential();
+    
+    
 
 private:
 
@@ -385,9 +386,7 @@ private:
      * @brief Pointer to the finite element class for which the handler
      * distributes dofs.
      */
-    FiniteElement<1,3> *fe1d_;
-    FiniteElement<2,3> *fe2d_;
-    FiniteElement<3,3> *fe3d_;
+    std::shared_ptr<DiscreteSpace> ds_;
 
     /**
      * @brief Number of dofs associated to geometrical entities.
@@ -396,7 +395,13 @@ private:
      * 1D edges (object_dofs[1]), 2D faces (object_difs[2]) and
      * volumes (object_dofs[3]).
      */
-    IdxInt ***object_dofs;
+//     int ***object_dofs;
+    
+    std::vector<IdxInt> cell_starts;
+    std::vector<IdxInt> dof_indices;
+    
+    std::vector<IdxInt> cell_starts_seq;
+    std::vector<IdxInt> dof_indices_seq;
 
 
 	/// Global element index -> index according to partitioning
@@ -411,6 +416,12 @@ private:
 
     /// Local neighbour index -> global neighbour index
     vector<IdxInt> nb_4_loc;
+    
+    /// Vector of local nodes in mesh tree.
+    vector<IdxInt> node_4_loc;
+    
+    /// Ghost cells (neighbouring with local elements).
+    vector<IdxInt> ghost_4_loc;
 
 };
 
