@@ -8,14 +8,22 @@
 #ifndef SRC_IO_OBSERVE_HH_
 #define SRC_IO_OBSERVE_HH_
 
-#include <string>
-
-#include "input/input_type.hh"
-#include "io/element_data_cache_base.hh"
-#include "io/element_data_cache.hh"
-#include "tools/time_governor.hh"
-#include "system/exceptions.hh"
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <iosfwd>                            // for ofstream, ostream
+#include <map>                               // for map, map<>::value_compare
+#include <memory>                            // for shared_ptr
+#include <new>                               // for operator new[]
+#include <string>                            // for string, operator<<
+#include <vector>                            // for vector
 #include <armadillo>
+#include "input/accessors.hh"                // for Array (ptr only), Record
+#include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
+#include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+
+class ElementDataCacheBase;
+class Mesh;
+namespace Input { namespace Type { class Record; } }
+template <typename T> class ElementDataCache;
 
 
 
