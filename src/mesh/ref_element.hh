@@ -72,7 +72,9 @@
 #define REF_ELEMENT_HH_
 
 #include <vector>                      // for vector
+#include <array>
 #include <armadillo>
+#include "system/asserts.hh"
 
 
 /*
