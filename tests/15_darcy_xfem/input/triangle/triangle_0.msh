@@ -1,0 +1,32 @@
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+4
+1 1 ".xzero"
+1 2 ".yzero"
+1 3 ".xy"
+2 10 "aquifer"
+$EndPhysicalNames
+$Nodes
+6
+1 0 0 0
+2 10 0 0
+3 5 0 0
+4 0 10 0
+5 0 5 0
+6 5 5 0
+$EndNodes
+$Elements
+10
+1 1 2 1 1 1 3
+2 1 2 1 1 3 2
+3 1 2 2 2 1 5
+4 1 2 2 2 5 4
+5 1 2 3 3 2 6
+6 1 2 3 3 6 4
+7 2 2 10 10 1 3 5
+8 2 2 10 10 3 6 5
+9 2 2 10 10 3 2 6
+10 2 2 10 10 5 6 4
+$EndElements

@@ -2,7 +2,7 @@ flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test15 - Steady flow with xfem singular connection 1D-2D, well intersection over ele edges. 
   mesh:
-    mesh_file: ./input/big_circle_1.msh
+    mesh_file: ./input/big_circle/big_circle_1.msh
   flow_equation: !Flow_Darcy_MH
     output_specific:
       compute_errors: true
