@@ -119,8 +119,8 @@ void MH_DofHandler::reinit(Mesh *mesh,
     if(enrich_velocity || enrich_pressure){
         if(xfem_dim == 2)
             create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
-//         if(xfem_dim == 3)
-//             create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
+        if(xfem_dim == 3)
+            create_enrichment(singularities_13d_, xfem_data_3d, cross_section, sigma);
         
         // distribute FE enriched dofs
         distribute_enriched_dofs();
@@ -602,6 +602,62 @@ void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Si
 }
 
 
+template<>
+std::shared_ptr<Singularity<0>> MH_DofHandler::create_sing<2>(IntersectionLocal<1,2>* il,
+                                    double cross_section,
+                                    double sigma)
+{
+    DebugOut().fmt("intersection:  c {} b {}\n", il->component_ele_idx(), il->bulk_ele_idx());
+    ElementFullIter ele = mesh_->element(il->component_ele_idx());
+    ElementFullIter bulk_ele = mesh_->element(il->bulk_ele_idx());
+    //create singularity
+    Space<3>::Point center = (*il)[0].coords(ele);
+    center.print(MessageOut(),"center");
+    
+    double radius = std::sqrt(cross_section/M_PI);
+    DebugOut() << "radius " << radius << "\n";
+    
+    const unsigned int n_qpoints = 1000;
+    Space<3>::Point n = arma::cross(bulk_ele->node[1]->point() - bulk_ele->node[0]->point(),
+                                    bulk_ele->node[2]->point() - bulk_ele->node[0]->point());
+    Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
+    
+    auto sing = std::make_shared<Singularity<0>>(center, radius, direction_vector, n, n_qpoints);
+    // set sigma of 1d element
+    sing->set_sigma(sigma);
+    return sing;
+}
+
+template<>
+std::shared_ptr<Singularity<1>> MH_DofHandler::create_sing<3>(IntersectionLocal<1,3>* il,
+                                    double cross_section,
+                                    double sigma)
+{
+    DebugOut().fmt("intersection:  c {} b {}\n", il->component_ele_idx(), il->bulk_ele_idx());
+    ElementFullIter ele = mesh_->element(il->component_ele_idx());
+    ElementFullIter bulk_ele = mesh_->element(il->bulk_ele_idx());
+    //create singularity
+    Space<3>::Point center = (*il)[0].coords(ele);
+    center.print(MessageOut(),"center");
+    
+    double radius = std::sqrt(cross_section/M_PI);
+    DebugOut() << "radius " << radius << "\n";
+    
+    Space<3>::Point a = ele->node[0]->point();
+    Space<3>::Point b = ele->node[1]->point();
+    a.print(MessageOut(),"pointA");
+    b.print(MessageOut(),"pointB");
+    DebugOut() << "radius " << radius << "\n";
+    
+    const unsigned int n_qpoints = 300;
+    const unsigned int m_qpoints = 1000;
+    
+    auto sing = std::make_shared<Singularity<1>>(a,b, radius, n_qpoints, m_qpoints);
+    // set sigma of 1d element
+    sing->set_sigma(sigma);
+    return sing;
+}
+
 template<int dim>
 void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<dim-2>>>& singularities,
                                       std::vector<XFEMElementSingularData<dim>>& xfem_data,
@@ -609,7 +665,6 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
                                       Field<3, FieldValue<3>::Scalar>& sigma)
 {
     DBGCOUT(<< "MH_DofHandler - create_singularities " << dim << "\n");
-    ASSERT(dim == 2);
     //TODO:
     //- count different types of intersections inside InspectElements to be able to allocate other objects
     //- differ 1d-2d intersections: one point intersection in plane versus in 3D
@@ -625,8 +680,6 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
     //TODO propose some allocation size for xfem data
     xfem_data.reserve(mesh_->n_elements());
     
-    const unsigned int n_qpoints = 1000;
-    
     int new_enrich_node_idx = 0;
 //     create_testing_singularities(singularities, new_enrich_node_idx);
 
@@ -639,38 +692,30 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
             if(isec_list.size() == 0) continue;
             
             for(auto &isec : isec_list ) {
-                DBGVAR(isec.second);
                 ASSERT_PTR_DBG(isec.second);
                 ElementFullIter bulk_ele = mesh_->element(isec.second->bulk_ele_idx());
-                // do only 2d singularities
-                if(bulk_ele->dim() != 2)
-                    continue;
                 
-                IntersectionLocal<1,2>* il = static_cast<IntersectionLocal<1,2>*>(isec.second);
-                if(il->size() != 1) continue;   //process only IL with one IP
+                Space<3>::Point center = ele->centre();
+                IntersectionLocal<1,dim>* il = static_cast<IntersectionLocal<1,dim>*>(isec.second);
                 
-                DBGCOUT("singularity: ele 1d: " << ele->index() << "  bulk_ele: " << bulk_ele->index() << "\n");
-                //create singularity
-                Space<3>::Point center = (*il)[0].coords(ele);
-                double cs = cross_section.value(center,ele->element_accessor()); // pi*r^2
-                double radius = std::sqrt(cs/M_PI);
+                if(bulk_ele->dim() == 2){
+                    if(il->size() != 1) continue;   //process only IL with one IP
+                    
+                    center = (*il)[0].coords(ele);
+                }
                 
-                DebugOut().fmt("intersection:  c {} b {}\n", il->component_ele_idx(), il->bulk_ele_idx());
-                center.print(MessageOut(),"center");
-                DebugOut() << "radius " << radius << "\n";
+                DBGCOUT("singularity: ele 0d: " << ele->index() << "  bulk_ele: " << bulk_ele->index() << "\n");
+                double cs = cross_section.value(center, ele->element_accessor()); // pi*r^2
+                double sgm = sigma.value(center, ele->element_accessor());
                 
-                Space<3>::Point n = arma::cross(bulk_ele->node[1]->point() - bulk_ele->node[0]->point(),
-                                                bulk_ele->node[2]->point() - bulk_ele->node[0]->point());
-                Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
-                
-                auto sing = std::make_shared<Singularity<dim-2>>(center, radius, direction_vector, n, n_qpoints);
-                // set sigma of 1d element
-                sing->set_sigma(sigma.value(center, ele->element_accessor()));
-                singularities.push_back(sing);
+                singularities.push_back(create_sing<dim>(il, cs, sgm));
                 
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
                 find_ele_to_enrich(singularities.back(), ele->index(), bulk_ele, enr_radius, new_enrich_node_idx);
+                
+                // in 3d, create only one singularity per 1d element
+                if(dim == 3) break;
             }
         }
     }

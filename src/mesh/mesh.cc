@@ -658,7 +658,11 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 	 */
     if (! intersections) {
         intersections = std::make_shared<MixedMeshIntersections>(this);
-        intersections->compute_intersections(IntersectionType::d12_2);
+        intersections->compute_intersections(
+            static_cast<IntersectionType> (
+                static_cast<unsigned int> (IntersectionType::d12_2) |
+                static_cast<unsigned int> (IntersectionType::d13))
+        );
     }
     return *intersections;
 }

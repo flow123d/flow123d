@@ -40,6 +40,9 @@ class MH_DofHandler;
 template <int spacedim>
 class LocalElementAccessorBase;
 
+template <unsigned int dimA, unsigned int dimB>
+class IntersectionLocal;
+
 
 #include "fields/field.hh"
 #include "fem/xfem_element_data.hh"
@@ -152,6 +155,11 @@ protected:
                            std::vector<XFEMElementSingularData<dim>>& xfem_data,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma);
+    
+    template<int dim>
+    std::shared_ptr<Singularity<dim-2>> create_sing(IntersectionLocal<1,dim>* il,
+                                                    double cross_section,
+                                                    double sigma);
     
     template<class Enr>
     void create_testing_singularities(std::vector<std::shared_ptr<Enr>> &singularities,
