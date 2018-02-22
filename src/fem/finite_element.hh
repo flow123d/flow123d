@@ -20,12 +20,17 @@
 #define FINITE_ELEMENT_HH_
 
 #include <armadillo>
-#include <map>
-#include <vector>
-#include <boost/assign/list_of.hpp>
-#include "fem/update_flags.hh"
-
-
+#include <stdio.h>                             // for sprintf
+#include <string.h>                            // for memcpy
+#include <algorithm>                           // for max, min
+#include <boost/assign/list_of.hpp>            // for generic_list, list_of
+#include <boost/exception/info.hpp>            // for error_info::error_info...
+#include <new>                                 // for operator new[]
+#include <ostream>                             // for operator<<
+#include <string>                              // for operator<<
+#include <vector>                              // for vector
+#include "fem/update_flags.hh"                 // for operator&, operator|=
+#include "system/exceptions.hh"                // for ExcAssertMsg::~ExcAsse...
 
 template<unsigned int dim, unsigned int spacedim> class FESystem;
 template<unsigned int dim, unsigned int spacedim> class FESideValues;
