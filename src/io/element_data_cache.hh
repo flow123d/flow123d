@@ -34,7 +34,7 @@ typedef enum  {
 	ok,              ///< All values are not NaN and are in limits.
 	out_of_limits,   ///< Some value(s) is out of limits
 	not_a_number     ///< Some value(s) is set to NaN
-} CheckedData;
+} CheckResult;
 
 
 template <typename T>
@@ -143,13 +143,13 @@ public:
      *
      * Method iterates through data and
      *  - checks NaN data values, default_val replaces NaN
-     *  - if default_val==NaN and some value(s) is not replaced with valid value return CheckedData::nan
-     *  - if some value(s) is out of limits )lower_bound, upper_bound) return CheckedData::out_of_limits
-     *  - in other cases return CheckedData::ok
+     *  - if default_val==NaN and some value(s) is not replaced with valid value return CheckResult::nan
+     *  - if some value(s) is out of limits )lower_bound, upper_bound) return CheckResult::out_of_limits
+     *  - in other cases return CheckResult::ok
      *
      * Method is executed only once.
      */
-    CheckedData check_values(double default_val, double lower_bound, double upper_bound);
+    CheckResult check_values(double default_val, double lower_bound, double upper_bound);
 
     /**
      * Scale data vector of given 'component_idx' with scale 'coef'.

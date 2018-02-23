@@ -249,10 +249,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		}
 		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary_domain, this->component_idx_);
-		CheckedData checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
-	    if (checked_data == CheckedData::not_a_number) {
+	    if (checked_data == CheckResult::not_a_number) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 

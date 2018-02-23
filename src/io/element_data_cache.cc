@@ -279,8 +279,8 @@ void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
 };
 
 template <typename T>
-CheckedData ElementDataCache<T>::check_values(double default_val, double lower_bound, double upper_bound) {
-    if (check_scale_data_ != CheckScaleData::none) return CheckedData::ok; // method is executed only once
+CheckResult ElementDataCache<T>::check_values(double default_val, double lower_bound, double upper_bound) {
+    if (check_scale_data_ != CheckScaleData::none) return CheckResult::ok; // method is executed only once
     check_scale_data_ = CheckScaleData::check;
 
     bool is_nan = false, out_of_limit = false;
@@ -295,9 +295,9 @@ CheckedData ElementDataCache<T>::check_values(double default_val, double lower_b
         }
     }
 
-    if (is_nan) return CheckedData::not_a_number;
-    else if (out_of_limit) return CheckedData::out_of_limits;
-    else return CheckedData::ok;
+    if (is_nan) return CheckResult::not_a_number;
+    else if (out_of_limit) return CheckResult::out_of_limits;
+    else return CheckResult::ok;
 };
 
 template <typename T>

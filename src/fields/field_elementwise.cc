@@ -129,12 +129,12 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     ReaderCache::get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		n_entities_, n_components_, boundary_domain_, this->component_idx_);
-    CheckedData checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
             this->unit_conversion_coefficient_, default_value_, limits_.first, limits_.second);
 
-    if (checked_data == CheckedData::not_a_number) {
+    if (checked_data == CheckResult::not_a_number) {
     	THROW( ExcUndefElementValue() << EI_Field(field_name_) );
-    } else if (checked_data == CheckedData::out_of_limits) {
+    } else if (checked_data == CheckResult::out_of_limits) {
         WarningOut().fmt("Values of some elements of FieldElementwise '{}' at address '{}' is out of limits: <{}, {}>\n"
         		"Unit of the Field: [{}]\n",
 				field_name_, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );

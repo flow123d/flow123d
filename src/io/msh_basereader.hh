@@ -198,7 +198,7 @@ public:
     /**
      * Scale and check data stored in ElementDataCache of given field.
      */
-    CheckedData scale_and_check_limits(string field_name, double coef, double default_val,
+    CheckResult scale_and_check_limits(string field_name, double coef, double default_val,
     		double lower_bound = -std::numeric_limits<double>::max(), double upper_bound = std::numeric_limits<double>::max());
 
 

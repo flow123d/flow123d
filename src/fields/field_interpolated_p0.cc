@@ -109,10 +109,10 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
-    CheckedData checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
     		this->unit_conversion_coefficient_, default_value_);
 
-    if (checked_data == CheckedData::not_a_number) {
+    if (checked_data == CheckResult::not_a_number) {
         THROW( ExcUndefElementValue() << EI_Field(field_name_) );
     }
 
