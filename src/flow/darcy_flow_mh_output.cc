@@ -716,10 +716,10 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 //         velocity_diff += arma::norm(anal_flux,1) * fe_values.JxW(i_point);
         
         // divergence diff - flow over sides (RT dofs)
-        diff = 0;
-        for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += dofs_vel_val[ i_shape ];
-        diff = ( diff / ele->measure() / cross - analytical[4]);
-        divergence_diff += diff * diff * fe_values.JxW(i_point);
+//         diff = 0;
+//         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += dofs_vel_val[ i_shape ];
+//         diff = ( diff / ele->measure() / cross - analytical[4]);
+//         divergence_diff += diff * diff * fe_values.JxW(i_point);
 
     }
 
@@ -734,8 +734,8 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
     result.pressure_diff[ele.index()] = std::sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
-    result.div_diff[ele.index()] = std::sqrt(divergence_diff);
-    result.div_error[dim-1] += divergence_diff;
+//     result.div_diff[ele.index()] = std::sqrt(divergence_diff);
+//     result.div_error[dim-1] += divergence_diff;
 
 }
 
@@ -875,9 +875,9 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             unsigned int dim = ele_ac.dim();
             
             switch (dim) {
-            case 1:
-                l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
-                break;
+//             case 1:
+//                 l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
+//                 break;
             case 2:
                 if(ele->xfem_data != nullptr){
                     fe_data_2d.prepare_xfem(ele_ac,result.dh->single_enr);

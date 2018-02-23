@@ -5,9 +5,12 @@ common_config:
   
 test_cases:
   - files:
-      - 01_2d_single_triangle.yaml
-      - 02_3d_single_tetrahedron3t.yaml
-      - 03_2d_single_circle.yaml
-      - 04_2d_single_circle_source.yaml
-      - 05_3d_single_cylinder.yaml
+      #- 01_2d_single_triangle.yaml
+      #- 02_3d_single_tetrahedron3t.yaml
+      #- 03_2d_single_circle.yaml
+      #- 04_2d_single_circle_source.yaml
+      #- 05_3d_single_cylinder.yaml
+      - 21_2d_triangle_well.yaml
+      - 23_2d_circle_well.yaml
+      - 25_3d_cylinder_well.yaml
     proc: [1]
