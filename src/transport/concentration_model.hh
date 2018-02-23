@@ -19,12 +19,29 @@
 #ifndef CONC_TRANS_MODEL_HH_
 #define CONC_TRANS_MODEL_HH_
 
+#include <boost/exception/info.hpp>                   // for operator<<, err...
+#include <memory>                                     // for shared_ptr
+#include <string>                                     // for string
+#include <vector>                                     // for vector
+#include <armadillo>
 #include "advection_diffusion_model.hh"
-
-#include "fields/bc_field.hh"
+#include "fields/field_values.hh"                     // for FieldValue<>::S...
 #include "fields/bc_multi_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "input/type_base.hh"                         // for Array
+#include "input/type_generic.hh"                      // for Instance
+#include "input/type_record.hh"                       // for Record
+#include "input/type_selection.hh"                    // for Selection
+#include "transport/substance.hh"                     // for SubstanceList
+#include "transport/transport_operator_splitting.hh"  // for ConcentrationTr...
+
+class Balance;
+class MH_DofHandler;
+class Mesh;
+class OutputTime;
+namespace Input { class Record; }
+template <int spacedim> class ElementAccessor;
 
 
 
