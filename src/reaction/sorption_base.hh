@@ -24,17 +24,36 @@
 #ifndef SORPTION_BASE_H
 #define SORPTION_BASE_H
 
+#include <boost/exception/info.hpp>     // for operator<<, error_info::~erro...
+#include <memory>                       // for shared_ptr
+#include <string>                       // for string
 #include <vector>
-
-#include "fields/field_algo_base.hh"
+#include "reaction/reaction_term.hh"    // for ReactionTerm
+#include "fields/field.hh"              // for Field
+#include "fields/field_values.hh"       // for FieldValue<>::Scalar, FieldVa...
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
-#include "reaction/reaction_term.hh"
 #include "fields/equation_output.hh"
+#include "input/input_exception.hh"     // for DECLARE_INPUT_EXCEPTION, Exce...
+#include "input/type_base.hh"           // for Array
+#include "input/type_generic.hh"        // for Instance
+#include "petscvec.h"                   // for Vec, VecScatter, _p_VecScatter
+#include "system/exceptions.hh"         // for operator<<, ExcStream, EI
 
 class Isotherm;
 class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+template <int spacedim> class ElementAccessor;
+
+
+
 
 class SorptionBase:  public ReactionTerm
 {

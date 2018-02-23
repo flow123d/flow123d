@@ -18,7 +18,17 @@
 #ifndef LINEAR_ODE_ANALYTIC_H_
 #define LINEAR_ODE_ANALYTIC_H_
 
+#include <stdio.h>                        // for sprintf
+#include <boost/exception/info.hpp>       // for operator<<, error_info::err...
+#include <armadillo>
 #include "reaction/linear_ode_solver.hh"
+#include "system/exceptions.hh"           // for ExcAssertMsg::~ExcAssertMsg
+
+namespace Input {
+	class Record;
+	namespace Type { class Record; }
+}
+
 
 /** @brief This class implements the analytic solution of a system of linear ODEs with constant matrix.
  *
