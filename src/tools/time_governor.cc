@@ -45,12 +45,11 @@ using namespace Input::Type;
 
 const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper_bound)
 {
-    return Tuple("TimeValue", "Value of Field for independent variable.")
+    return Tuple("TimeValue", "A time with unit specification.")
         .declare_key("time", Double(lower_bound, upper_bound), Default::obligatory(),
                                     "Numeric value of time." )
-		.declare_key("unit", String(), Default::optional(),
-									"Specify unit of an input time value. This value overrides default unit "
-									"of equation specified by 'common_time_unit' key of Time Governor.")
+		.declare_key("unit", String(), Default::read_time("Common time unit of equation defined in Time Governor"),
+									"Specify unit of an input time value.")
 		.close();
 }
 
@@ -63,7 +62,7 @@ const Record & TimeGovernor::get_input_type() {
 					"Start time of the simulation.")
 		.declare_key("end_time", TimeGovernor::get_input_time_type(), Default(MAX_END_TIME_STR),
 					"End time of the simulation. Default value is more then age of universe in seconds.")
-		.declare_key("init_dt", TimeGovernor::get_input_time_type(), Default("0.0"),
+		.declare_key("init_dt", TimeGovernor::get_input_time_type(0.0), Default("0.0"),
 				"Initial guess for the time step.\n"
 				"Only useful for equations that use adaptive time stepping."
 				"If set to 0.0, the time step is determined in fully autonomous"
@@ -79,7 +78,17 @@ const Record & TimeGovernor::get_input_type() {
 				"by input and output times.")
 		.declare_key("common_time_unit", String(), Default("\"s\""),
 				"Common time unit of equation. This unit will be used for all time inputs and outputs "
-				"within the equation.")
+				"within the equation. On inputs can be overwrite for every time definition.\n"
+				"Time units are used in following cases:\n"
+				"1) Time units of time value keys in: TimeGovernor, FieldDescriptors.\n"
+				"   Global definition of unit can be overwrite for every declared time.\n"
+				"2) Time units in: \n"
+				"   a) input fields: FieldElementwise, FieldInterpolatedP0, FieldFE and FieldTimeFunction\n"
+				"   b) time steps definition of OutputTimeSet\n"
+				"   Global definition can be overwrite by one unit value for every whole mesh data file or time function.\n"
+				"3) Time units in output files: Observe times, balance times, frame times of VTK and GMSH\n"
+				"   Global definition can't be overwritten.\n"
+				)
 		.close();
 }
 
@@ -90,6 +99,7 @@ const Record & TimeGovernor::get_input_type() {
  */
 
 TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
+: unit_string_(user_defined_unit)
 {
     coef_ = UnitSI().s().convert_unit_from(user_defined_unit);
 }
@@ -97,7 +107,7 @@ TimeUnitConversion::TimeUnitConversion(std::string user_defined_unit)
 
 
 TimeUnitConversion::TimeUnitConversion()
-: coef_(1.0) {}
+: coef_(1.0), unit_string_("s") {}
 
 
 
@@ -196,6 +206,12 @@ double TimeStep::read_time(Input::Iterator<Input::Tuple> time_it, double default
 
 double TimeStep::read_coef(Input::Iterator<string> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
+}
+
+
+
+double TimeStep::get_coef() const {
+	return time_unit_conversion_->get_coef();
 }
 
 
@@ -609,6 +625,18 @@ double TimeGovernor::read_time(Input::Iterator<Input::Tuple> time_it, double def
 
 double TimeGovernor::read_coef(Input::Iterator<string> unit_it) const {
 	return time_unit_conversion_->read_coef(unit_it);
+}
+
+
+
+double TimeGovernor::get_coef() const {
+	return time_unit_conversion_->get_coef();
+}
+
+
+
+string TimeGovernor::get_unit_string() const {
+	return time_unit_conversion_->get_unit_string();
 }
 
 

@@ -45,9 +45,8 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 		//		"Definition of unit.")
-		.declare_key("time_unit", IT::String(), IT::Default::optional(),
-				"Definition of unit of all times defined in mesh data file. Unit override common unit coefficient defined "
-				"in TimeGovernor. If key is not defined, common unit of TimeGovernor is used.")
+		.declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+				"Definition of unit of all times defined in mesh data file.")
         .close();
 }
 

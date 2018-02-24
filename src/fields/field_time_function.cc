@@ -34,7 +34,7 @@ const Input::Type::Record & FieldTimeFunction<spacedim, Value>::get_input_type()
 									"Values of time series initialization of Field.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys(), it::Default::optional(),
 		//							"Definition of unit.")
-		.declare_key("time_unit", it::String(), it::Default::optional(),
+		.declare_key("time_unit", it::String(), it::Default::read_time("Common unit of TimeGovernor."),
 									"Definition of unit of all times defined in FieldTimeFunction.")
         .allow_auto_conversion("time_function")
 		.close();

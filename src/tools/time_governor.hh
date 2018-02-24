@@ -67,9 +67,26 @@ public:
      */
 	double read_coef(Input::Iterator<std::string> unit_it) const;
 
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	inline double get_coef() const {
+		return coef_;
+	}
+
+    /**
+     * Return string representation of global time unit.
+     */
+	inline string get_unit_string() const {
+		return unit_string_;
+	}
+
 protected:
     /// Conversion coefficient of all time values within the equation.
 	double coef_;
+
+	/// String representation of global unit of all time values within the equation.
+	string unit_string_;
 
 };
 
@@ -171,6 +188,11 @@ public:
      * in time_unit_conversion_, if iterator is not defined.
      */
 	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	double get_coef() const;
 
     /**
      * Returns true if two time steps are exactly the same.
@@ -566,7 +588,17 @@ public:
      */
 	double read_coef(Input::Iterator<std::string> unit_it) const;
 
-    // Maximal tiem of simulation. More then age of the universe in seconds.
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	double get_coef() const;
+
+    /**
+     * Return string representation of global time unit.
+     */
+	string get_unit_string() const;
+
+	// Maximal tiem of simulation. More then age of the universe in seconds.
     static const double max_end_time;
 
     /// Infinity time used for steady case.

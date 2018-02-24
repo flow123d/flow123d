@@ -53,9 +53,8 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         		"if it is found in more the one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
-		.declare_key("time_unit", IT::String(), IT::Default::optional(),
-				"Definition of unit of all times defined in mesh data file. Unit override common unit coefficient defined "
-				"in TimeGovernor. If key is not defined, common unit of TimeGovernor is used.")
+		.declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+				"Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
