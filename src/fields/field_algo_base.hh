@@ -25,20 +25,35 @@
 #ifndef field_algo_base_HH_
 #define field_algo_base_HH_
 
-#include <string>
-#include <memory>
-
-#include <boost/type_traits.hpp>
-
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-
-#include "mesh/accessors.hh"
-#include "mesh/point.hh"
-#include "fields/field_values.hh"
-#include "fields/unit_si.hh"
+#include <string.h>                        // for memcpy
+#include <boost/type_traits/is_same.hpp>   // for is_same
+#include <limits>                          // for numeric_limits
+#include <memory>                          // for shared_ptr
+#include <ostream>                         // for operator<<
+#include <string>                          // for string
+#include <utility>                         // for make_pair, pair
+#include <vector>                          // for vector
+#include <armadillo>                       // for operator%, operator<<
+#include "fields/field_values.hh"          // for FieldValue<>::Enum, FieldV...
 #include "fields/field_flag.hh"
-#include "tools/time_governor.hh"
+#include "input/type_selection.hh"         // for Selection
+#include "mesh/point.hh"                   // for Space
+#include "mesh/accessors.hh"
+#include "system/asserts.hh"               // for Assert, ASSERT
+#include "tools/time_governor.hh"          // for TimeStep
+
+class Mesh;
+class UnitSI;
+namespace Input {
+	class AbstractRecord;
+	class Record;
+	namespace Type {
+		class Abstract;
+		class Instance;
+		class Record;
+	}
+}
+template <int spacedim> class ElementAccessor;
 
 
 

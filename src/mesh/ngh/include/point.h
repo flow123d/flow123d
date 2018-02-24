@@ -20,8 +20,6 @@
 
 #include <iostream>
 
-#include "myvector.h"
-
 namespace ngh {
 
 class TVector;

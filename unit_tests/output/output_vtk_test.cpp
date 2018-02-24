@@ -20,6 +20,7 @@
 #include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/logger_options.hh"
+#include "system/sys_profiler.hh"
 #include "fields/field.hh"
 
 #include "fem/mapping_p1.hh"

@@ -20,6 +20,7 @@
 
 #include "mesh/region.hh"
 #include "system/exceptions.hh"
+#include "system/system.hh"
 
 #include "input/input_type.hh"
 #include "input/type_base.hh"

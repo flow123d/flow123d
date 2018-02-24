@@ -18,15 +18,16 @@
 #ifndef FIRST_ORDER_REACTION_BASE_H_
 #define FIRST_ORDER_REACTION_BASE_H_
 
+#include <memory>                      // for shared_ptr
+#include <string>                      // for string
 #include <vector>
-
 #include "reaction/reaction_term.hh"
-#include "input/accessors_forward.hh"
 
 #include "armadillo"
 
 class Mesh;
 class PadeApproximant;
+namespace Input { class Record; }
 
 /** @brief Base class for linear reactions and decay chain.
  *

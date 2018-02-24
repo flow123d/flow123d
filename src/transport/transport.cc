@@ -44,6 +44,7 @@
 #include "fields/generic_field.hh"
 
 #include "reaction/isotherm.hh" // SorptionType enum
+#include "flow/mh_dofhandler.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);

@@ -42,6 +42,7 @@
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
+#include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 
 // #include "coupling/balance.hh"
