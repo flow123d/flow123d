@@ -47,10 +47,26 @@
 #ifndef SORPTION_IMPL_HH_
 #define SORPTION_IMPL_HH_
 
+#include <stdint.h>                                           // for uintmax_t
+#include <algorithm>                                          // for max
 #include <vector>
-#include <input/input_type_forward.hh>
-#include <boost/math/tools/roots.hpp>
-#include "fields/field.hh"
+#include <boost/core/explicit_operator_bool.hpp>              // for optiona...
+#include <boost/exception/detail/error_info_impl.hpp>         // for error_info
+#include <boost/exception/diagnostic_information.hpp>         // for diagnos...
+#include <boost/exception/exception.hpp>                      // for exception
+#include <boost/exception/info.hpp>                           // for error_i...
+#include <boost/format/alt_sstream.hpp>                       // for basic_a...
+#include <boost/format/alt_sstream_impl.hpp>                  // for basic_a...
+#include <boost/math/special_functions/detail/round_fwd.hpp>  // for BOOST_M...
+#include <boost/math/tools/toms748_solve.hpp>                 // for toms748...
+#include <boost/optional/optional.hpp>                        // for get_poi...
+#include <cmath>                                              // for floor, pow
+#include <complex>                                            // for fabs
+#include <ostream>                                            // for operator<<
+#include <string>                                             // for string
+#include <utility>                                            // for pair
+#include "input/input_exception.hh"                           // for EI_Address
+#include "system/exceptions.hh"                               // for operator<<
 
 
 
@@ -285,7 +301,7 @@ protected:
      * Interpolation table of isotherm in the rotated coordinates.
      * The X axes of rotated system is total mass, the Y axes is perpendicular.
      */
-    vector<double> interpolation_table;
+    std::vector<double> interpolation_table;
     /**
      * Step on the rotated X axes (total mass).
      */
@@ -423,7 +439,7 @@ inline Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const 
 	}
 	upper_solution_bound = mass_limit / scale_aqua_;
 	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
-	pair<double,double> solution;
+	std::pair<double,double> solution;
 	if (total_mass > 0) // here should be probably some kind of tolerance instead of "0"
     {
         try {

@@ -20,6 +20,7 @@
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/myvector.h"
 
 using namespace mathfce;
 

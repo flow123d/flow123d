@@ -21,6 +21,7 @@
 #include "mesh/mesh.h"
 #include "element_data_cache_base.hh"
 #include "input/factory.hh"
+#include "system/sys_vector.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(gmsh)

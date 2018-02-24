@@ -42,6 +42,7 @@
 #include "io/msh_gmshreader.h"
 
 #include "fields/field_interpolated_p0.hh"
+#include "fields/unit_si.hh"
 
 
 

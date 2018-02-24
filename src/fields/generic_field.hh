@@ -26,9 +26,11 @@
  * depends only on data in mesh.
  */
 
-#include "fields/field.hh"
-#include "fields/field_constant.hh"
-#include "fields/field_elementwise.hh"
+#include <boost/exception/info.hpp>  // for operator<<, error_info::error_in...
+#include "fields/field.hh"           // for Field
+#include "fields/field_values.hh"    // for FieldValue
+#include "input/type_base.hh"        // for Array
+#include "input/type_generic.hh"     // for Instance
 
 class Mesh;
 

@@ -19,15 +19,22 @@
 #ifndef MSH_VTK_READER_HH
 #define	MSH_VTK_READER_HH
 
-#include <string>
-#include <istream>
-#include <pugixml.hpp>
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <istream>                           // for istream
+#include <map>                               // for map, map<>::value_compare
+#include <string>                            // for string
+#include <armadillo>
+#include "io/msh_basereader.hh"              // for MeshDataHeader, DataType
+#include "system/exceptions.hh"              // for ExcStream, operator<<, EI
+#include "system/file_path.hh"               // for FilePath
+#include "system/tokenizer.hh"               // for Tokenizer, Tokenizer::Po...
 
-#include "io/msh_basereader.hh"
-#include "system/file_path.hh"
-
-
+class ElementDataCacheBase;
+class Mesh;
 class PvdMeshReader;
+namespace pugi { class xml_node; }
+
+
 
 
 class VtkMeshReader : public BaseMeshReader {

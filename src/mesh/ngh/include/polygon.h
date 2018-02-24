@@ -18,9 +18,11 @@
 #ifndef polygonH
 #define polygonH
 
-#include "vertex.h"
-#include "triangle.h"
-#include <vector>
+#include <iosfwd>                       // for ostream
+#include <vector>                       // for vector, vector<>::iterator
+#include "myvector.h"                   // for TVector
+#include "point.h"                      // for TPoint
+#include "vertex.h"                     // for TVertex
 
 namespace ngh {
 

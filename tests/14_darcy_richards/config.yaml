@@ -6,5 +6,6 @@ test_cases:
   - files:
       - 01_1d.yaml
       - 02_1d_dirichlet.yaml
-      - 03_1d_horizontal.yaml
       - 04_2d_horizontal.yaml
+  - files: 03_1d_horizontal.yaml
+    time_limit: 60

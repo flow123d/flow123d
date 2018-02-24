@@ -21,6 +21,7 @@
 #include "mesh/ngh/include/tetrahedron.h"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/myvector.h"
 
 namespace ngh {
 

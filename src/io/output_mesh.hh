@@ -18,27 +18,21 @@
 #ifndef OUTPUT_MESH_HH_
 #define OUTPUT_MESH_HH_
 
-#include <string>
-#include <functional>
-
-#include "system/sys_profiler.hh"
-#include "input/accessors.hh"
-
-#include "tools/general_iterator.hh"
+#include <memory>                     // for shared_ptr, enable_shared_from_...
+#include <string>                     // for string
+#include <vector>                     // for vector
+#include "input/accessors.hh"         // for Record
 #include "mesh/point.hh"
+#include "tools/general_iterator.hh"  // for GeneralIterator
 
 class Mesh;
+class OutputElement;
+namespace Input { namespace Type { class Record; } }
 template<class T> class ElementDataCache;
 template<int> class ElementAccessor;
 
-class OutputElement;
-typedef GeneralIterator<OutputElement> OutputElementIterator;
 
-class OutputMeshBase;
-class OutputMesh;
-class OutputMeshDiscontinuous;
-class OutputMSH;
-class OutputVTK;
+typedef GeneralIterator<OutputElement> OutputElementIterator;
 
 
 /**

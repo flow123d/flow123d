@@ -16,7 +16,9 @@
  */
 
 #include "flow/mh_dofhandler.hh"
+#include "la/local_to_global_map.hh"
 #include "mesh/mesh.h"
+#include "mesh/partitioning.hh"
 #include "mesh/side_impl.hh"
 #include "system/sys_profiler.hh"
 

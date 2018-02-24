@@ -8,17 +8,28 @@
 #ifndef SRC_FIELDS_EQUATION_OUTPUT_HH_
 #define SRC_FIELDS_EQUATION_OUTPUT_HH_
 
-#include <memory>
-#include <unordered_map>
-#include <unordered_set>
-
-#include "tools/time_marks.hh"
-#include "fields/field_set.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-#include "io/output_time_set.hh"
+#include <memory>                  // for shared_ptr
+#include <string>                  // for string
+#include <unordered_map>           // for unordered_map
+#include <unordered_set>           // for unordered_set
+#include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
+#include "fields/field_set.hh"     // for FieldSet
+#include "fields/field_values.hh"  // for FieldValue, FieldValue<>::Scalar
+#include "io/output_time_set.hh"   // for OutputTimeSet
 #include "io/output_mesh.hh"
+#include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
+#include "tools/time_marks.hh"     // for TimeMark, TimeMark::Type
+
+class OutputTime;
+class TimeGovernor;
 class TimeStep;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Instance;
+		class Record;
+	}
+}
 
 
 /**
