@@ -20,15 +20,22 @@
 
 
 #include <string>
-#include <sstream>
+//#include <sstream>
 #include <mpi.h>
+//#include "global_defs.h"
+//#include "system/file_path.hh"
 
-#include "global_defs.h"
-#include "system/file_path.hh"
+#include <stdarg.h>                  // for va_list
+#include <stdio.h>                   // for FILE
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include "config.h"                  // for FLOW123D_HAVE_PETSC
+#include "petscsys.h"                // for PetscErrorCode
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 
-#ifdef FLOW123D_HAVE_PETSC
-#include "petsc.h"
-#endif
+
+//#ifdef FLOW123D_HAVE_PETSC
+//#include "petsc.h"
+//#endif
 
 using namespace std;
 

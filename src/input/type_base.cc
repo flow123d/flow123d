@@ -37,6 +37,31 @@
 #include "attribute_lib.hh"
 #include "json_spirit/json_spirit.h"
 
+#include <stdint.h>                                          // for int64_t
+#include <boost/algorithm/string.hpp>
+#include <boost/exception/detail/error_info_impl.hpp>        // for error_info
+#include <boost/exception/info.hpp>                          // for operator<<
+#include <boost/functional/hash/hash.hpp>                    // for hash_com...
+#include <boost/static_assert.hpp>                           // for BOOST_ST...
+#include <boost/type_traits/is_base_of.hpp>                  // for is_base_of
+#include <memory>                                            // for shared_ptr
+#include <ostream>                                           // for operator<<
+#include <typeinfo>                                          // for type_info
+#include <utility>                                           // for make_pair
+#include "input/json_spirit/json_spirit_error_position.h"    // for Error_po...
+#include "input/json_spirit/json_spirit_reader.h"            // for read_or_...
+#include "input/json_spirit/json_spirit_value.h"             // for mValue
+#include "input/type_base.hh"                                // for TypeBase
+#include "input/type_generic.hh"                             // for ExcGener...
+#include "system/asserts.hh"                                 // for Assert
+#include "system/exceptions.hh"                              // for ExcGener...
+#include "system/file_path.hh"                               // for FilePath
+namespace Input { namespace Type { class Abstract; } }
+namespace Input { namespace Type { class Record; } }
+namespace Input { namespace Type { class Selection; } }
+namespace Input { namespace Type { class Tuple; } }
+
+
 
 namespace Input {
 namespace Type {

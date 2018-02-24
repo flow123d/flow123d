@@ -16,6 +16,7 @@
  */
 
 #include <cmath>
+#include <cstring>
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/matrix.h"
 #include "mesh/ngh/include/mathfce.h"

@@ -20,12 +20,24 @@
 #include "system/logger_options.hh"
 #include "system/armadillo_tools.hh"
 #include "system/file_path.hh"
+#include "system/system.hh"
 #include <signal.h>
 
 #ifdef FLOW123D_HAVE_PETSC
-#include <petsc.h>
+//#include <petsc.h>
 #include <petscsys.h>
 #endif
+
+#include <string.h>                                    // for strsignal
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <iostream>                                    // for cout
+#include <sstream>                                     // for operator<<, endl
+#include "mpi.h"                                       // for MPI_Comm_size
+#include "petscerror.h"                                // for CHKERRQ, Petsc...
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/logger.hh"                            // for Logger, operat...
+#include "system/system.hh"                            // for SystemInfo
 
 
 

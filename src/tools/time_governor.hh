@@ -19,16 +19,14 @@
 #ifndef TIME_HH_
 #define TIME_HH_
 
-#include <limits>
-#include <cmath>
-#include <algorithm>
 #include <boost/circular_buffer.hpp>
+#include <boost/exception/info.hpp>
+#include <iosfwd>
+#include <string>
 
-
-#include "system/global_defs.h"
-#include "system/system.hh"
-#include "input/accessors_forward.hh"
 #include "input/input_exception.hh"
+#include "system/exc_common.hh"
+#include "system/exceptions.hh"
 #include "tools/time_marks.hh"
 
 namespace Input {

@@ -18,13 +18,15 @@
 #ifndef UNIT_CONVERTER_HH_
 #define UNIT_CONVERTER_HH_
 
-#include <vector>
-#include <string>
-#include <map>
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <map>                       // for map, map<>::value_compare
+#include <string>                    // for string
+#include <vector>                    // for vector
 
-#include "input/input_exception.hh"
-#include "tools/unit_si.hh"
-#include "system/xio.h"
+#include "fields/unit_si.hh"         // for UnitSI
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "system/asserts.hh"         // for Assert, ASSERT
+#include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
 // Declaration of exceptions
 TYPEDEF_ERR_INFO(EI_UnitDefinition, std::string);

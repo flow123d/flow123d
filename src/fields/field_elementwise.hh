@@ -42,9 +42,25 @@
  * - allow common storage for more elementwise fields to have values for one element on one place
  */
 
-#include "system/system.hh"
-#include "fields/field_algo_base.hh"
-#include "input/factory.hh"
+#include <string.h>                        // for memcpy
+#include <boost/exception/info.hpp>        // for operator<<, error_info::er...
+#include <memory>                          // for shared_ptr
+#include <string>                          // for string
+#include <utility>                         // for pair
+#include <vector>                          // for vector
+#include <armadillo>
+#include "fields/field_algo_base.hh"       // for FieldAlgorithmBase
+#include "fields/field_values.hh"          // for FieldValue<>::Enum, FieldV...
+#include "input/accessors.hh"              // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"         // for Record::val
+#include "input/storage.hh"                // for ExcStorageTypeMismatch
+#include "input/type_record.hh"            // for Record::ExcRecordKeyNotFound
+#include "system/exceptions.hh"            // for ExcAssertMsg::~ExcAssertMsg
+#include "system/file_path.hh"             // for FilePath
+#include "tools/time_governor.hh"          // for TimeStep
+class Mesh;
+class UnitSI;
+template <int spacedim> class ElementAccessor;
 
 template <int spacedim, class Value>
 class FieldElementwise : public FieldAlgorithmBase<spacedim, Value>

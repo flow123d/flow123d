@@ -61,7 +61,7 @@ if (USE_DEAL_II)
     set(DEAL_II_COMPONENT_MESH_CONVERTER OFF)
     set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
 
-    add_subdirectory("dealii")
+#add_subdirectory("dealii")
     set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
     message(STATUS "===========================================")
 
@@ -95,11 +95,9 @@ add_library(system_lib
     system/sys_profiler.cc
     system/time_point.cc
     system/system.cc
-#    system/xio.cc
     system/exceptions.cc
     system/stack_trace.cc
     system/asserts.cc
-#    io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
     system/application_base.cc
@@ -367,7 +365,7 @@ target_link_libraries(flow123d_lib
     fparser  
     armadillo 
 #    ${TBB_LIBRARIES}
-    ${DEAL_II_LIBRARY_NAME}
+#    ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB} 

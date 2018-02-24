@@ -20,7 +20,6 @@
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "la/distribution.hh"
-#include "fields/field.hh"
 
 
 namespace IT=Input::Type;
@@ -81,9 +80,9 @@ OutputElementIterator OutputMeshBase::end()
 }
 
 
-void OutputMeshBase::set_error_control_field(ErrorControlFieldPtr error_control_field)
+void OutputMeshBase::set_error_control_field(ErrorControlFieldFunc error_control_field_func)
 {
-    error_control_field_ = error_control_field;
+    error_control_field_func_ = error_control_field_func;
 }
 
 unsigned int OutputMeshBase::n_elements()
@@ -98,33 +97,27 @@ unsigned int OutputMeshBase::n_nodes()
     return nodes_->n_values();
 }
 
-std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_node_ids_cache()
-{
-	if (!node_ids_) {
-		create_id_caches();
-	}
-	return node_ids_;
-}
-
-std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_element_ids_cache()
-{
-	if (!elem_ids_) {
-		create_id_caches();
-	}
-	return elem_ids_;
-}
-
 void OutputMeshBase::create_id_caches()
 {
 	unsigned int elm_idx[1];
 	unsigned int node_idx[1];
+	unsigned int region_idx[1];
+	int partition[1];
 	elem_ids_ = std::make_shared< ElementDataCache<unsigned int> >("elements_ids", (unsigned int)1, 1, this->n_elements());
 	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
+	region_ids_ = std::make_shared< ElementDataCache<unsigned int> >("region_ids", (unsigned int)1, 1, this->n_elements());
+	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, 1, this->n_elements());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
 		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element(it->idx()).id();
 		else elm_idx[0] = it->idx();
 		elem_ids_->store_value( i, elm_idx );
+
+		region_idx[0] = orig_mesh_->element(it->idx())->region().id();
+		region_ids_->store_value( i, region_idx );
+
+		partition[0] = orig_mesh_->element(it->idx())->pid;
+		partitions_->store_value( i, partition );
 
 		std::vector< unsigned int > node_list = it->node_list();
 		for (unsigned int j = 0; j < it->n_nodes(); ++j) {
@@ -641,23 +634,26 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
                                             const ElementAccessor<spacedim> &ele_acc
                                            )
 {
-    ASSERT_DBG(error_control_field_).error("Error control field not set!");
+    ASSERT_DBG(error_control_field_func_).error("Error control field not set!");
 
-    std::vector<double> nodes_val(ele.nodes.size());
-    error_control_field_->value_list(ele.nodes, ele_acc, nodes_val);
-    
+    // evaluate at nodes and center in a single call
+    std::vector<double> val_list(ele.nodes.size()+1);
+    std::vector< Space<spacedim>::Point > point_list;
+    point_list.push_back(centre);
+    point_list.insert(point_list.end(), ele.nodes.begin(), ele.nodes.end());
+    error_control_field_func_(point_list, ele_acc, val_list);
+
     //TODO: compute L1 or L2 error using standard quadrature
     
     //compare average value at nodes with value at center
     
     double average_val = 0.0;
-    for(double& v: nodes_val)
-        average_val += v;
+    for(unsigned int i=1; i<ele.nodes.size()+1; ++i)//(double& v: nodes_val)
+        average_val += val_list[i];
     average_val = average_val / ele.nodes.size();
     
-    double centre_val = error_control_field_->value(centre,ele_acc);
-    double diff = std::abs((average_val - centre_val)/centre_val);
-//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, centre_val);
+    double diff = std::abs((average_val - val_list[0])/val_list[0]);
+//     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, val_list[0]);
     return ( diff > refinement_error_tolerance_);
 
 }

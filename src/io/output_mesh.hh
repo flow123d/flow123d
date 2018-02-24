@@ -18,27 +18,21 @@
 #ifndef OUTPUT_MESH_HH_
 #define OUTPUT_MESH_HH_
 
-#include <string>
-
-#include "system/sys_profiler.hh"
-#include "input/accessors.hh"
-
-#include "tools/general_iterator.hh"
-#include "fields/field.hh"
+#include <memory>                     // for shared_ptr, enable_shared_from_...
+#include <string>                     // for string
+#include <vector>                     // for vector
+#include "input/accessors.hh"         // for Record
 #include "mesh/point.hh"
+#include "tools/general_iterator.hh"  // for GeneralIterator
 
 class Mesh;
+class OutputElement;
+namespace Input { namespace Type { class Record; } }
 template<class T> class ElementDataCache;
 template<int> class ElementAccessor;
 
-class OutputElement;
-typedef GeneralIterator<OutputElement> OutputElementIterator;
 
-class OutputMeshBase;
-class OutputMesh;
-class OutputMeshDiscontinuous;
-class OutputMSH;
-class OutputVTK;
+typedef GeneralIterator<OutputElement> OutputElementIterator;
 
 
 /**
@@ -67,10 +61,11 @@ class OutputVTK;
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
 {
 public:
-    typedef Field<3, FieldValue<3>::Scalar> * ErrorControlFieldPtr;
-    
-    /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment. 
+    /// Shortcut instead of spacedim template. We suppose only spacedim=3 at the moment.
     static const unsigned int spacedim = 3;
+
+    typedef std::function<void(const std::vector< Space<spacedim>::Point > &, const ElementAccessor<spacedim> &, std::vector<double> &)>
+        ErrorControlFieldFunc;
     
     /// Constructor. Takes computational mesh as a parameter.
     OutputMeshBase(Mesh &mesh);
@@ -98,8 +93,8 @@ public:
     /// Creates sub mesh containing only local elements.
     virtual void create_sub_mesh()=0;
 
-    /// Selects the error control field out of output field set according to input record.
-    void set_error_control_field(ErrorControlFieldPtr error_control_field);
+    /// Selects the error control field computing function of output field set according to input record.
+    void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
 
     /// Returns number of nodes.
     unsigned int n_nodes();
@@ -109,10 +104,8 @@ public:
     /// Check if nodes_, connectivity_ and offsets_ data caches are created
     bool is_created();
 
-    /// Return data cache of node ids. If doesn't exist create its.
-    std::shared_ptr<ElementDataCache<unsigned int>> get_node_ids_cache();
-    /// Return data cache of element ids. If doesn't exist create its.
-	std::shared_ptr<ElementDataCache<unsigned int>> get_element_ids_cache();
+	/// Create nodes and elements data caches
+	void create_id_caches();
 
 protected:
 	/**
@@ -126,10 +119,6 @@ protected:
 	};
 
 
-	/// Create node_ids_ and elem_ids_ data caches
-	void create_id_caches();
-
-
 	/// Input record for output mesh.
     Input::Record input_record_;
     
@@ -139,8 +128,8 @@ protected:
     /// Maximal level of refinement.
     const unsigned int max_level_;
     
-    /// Refinement error control field.
-    ErrorControlFieldPtr error_control_field_;
+    /// Refinement error control field function (hold value_list function of field).
+    ErrorControlFieldFunc error_control_field_func_;
 
     MeshType mesh_type_;                ///< Type of OutputMesh
     bool refine_by_error_;              ///< True, if output mesh is to be refined by error criterion.
@@ -160,9 +149,14 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
     /// Vector gets ids of elements. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> elem_ids_;
+    /// Vector gets ids of regions. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<unsigned int>> region_ids_;
+    /// Vector gets partitions of elements. Data is used in GMSH output.
+    std::shared_ptr<ElementDataCache<int>> partitions_;
 
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
+    friend class OutputTime;
     friend class OutputMSH;
     friend class OutputVTK;
 };

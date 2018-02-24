@@ -63,6 +63,7 @@ problem: !Coupling_Sequential
       name: transport_output_stream
       times:
         - step: 0.1
+      precision: 15
     solver: !Petsc
       a_tol: 1.0e-07
     time:

@@ -20,6 +20,7 @@
 #include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/logger_options.hh"
+#include "system/sys_profiler.hh"
 #include "fields/field.hh"
 
 #include "fem/mapping_p1.hh"
@@ -67,11 +68,12 @@ public:
     {
     	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
-        this->init_from_input("dummy_equation", *(this->_mesh), in_rec);
+        this->init_from_input("dummy_equation", in_rec);
 
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>(*(this->_mesh));
-        this->output_mesh_->create_mesh();
+        auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
+        output_mesh->create_mesh();
+        this->set_output_data_caches(output_mesh);
 
     }
 
@@ -89,8 +91,9 @@ public:
 		field.set_time(TimeGovernor(0.0, 1.0).step(), LimitSide::left);
 
         // create output mesh identical to computational mesh
-        this->output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-        this->output_mesh_->create_mesh();
+		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
+		output_mesh_->create_mesh();
+        this->set_output_data_caches(output_mesh_);
 
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
         //this->output_mesh_discont_->create_mesh();
@@ -109,9 +112,9 @@ public:
 		field.units(UnitSI::one());
 
 		std::shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>( *(this->_mesh) );
-		FE_P_disc<0,1,3> fe1;
-		FE_P_disc<0,2,3> fe2;
-		FE_P_disc<0,3,3> fe3;
+		FE_P_disc<1,3> fe1(0);
+		FE_P_disc<2,3> fe2(0);
+		FE_P_disc<3,3> fe3(0);
 		dh->distribute_dofs(fe1, fe2, fe3);
 
 		VectorSeqDouble v;
@@ -164,6 +167,8 @@ public:
 	MappingP1<1,3> map1;
 	MappingP1<2,3> map2;
 	MappingP1<3,3> map3;
+	Mesh *_mesh;
+	std::shared_ptr<OutputMeshBase> output_mesh_;
 };
 
 

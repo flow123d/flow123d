@@ -18,8 +18,11 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
-#include "output_time.hh"
-#include "system/sys_vector.hh"
+#include <vector>          // for vector
+#include "output_time.hh"  // for OutputTime::OutputDataPtr, OutputTime, Out...
+namespace Input { namespace Type { class Record; } }
+namespace flow { template <class T> class VectorId; }
+
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -70,6 +73,11 @@ public:
 
     /// Complete information about dummy fields that are not in output_data_list_.
     void add_dummy_fields() override;
+
+    /**
+     * Set shared pointers of output data caches.
+     */
+    void set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) override;
 
 private:
 
@@ -139,6 +147,15 @@ private:
      * \brief This method add right suffix to .msh GMSH file
      */
     void fix_base_file_name(void);
+
+    /// Vector gets ids of nodes.
+    std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
+    /// Vector gets ids of elements.
+    std::shared_ptr<ElementDataCache<unsigned int>> elem_ids_;
+    /// Vector gets ids of regions.
+    std::shared_ptr<ElementDataCache<unsigned int>> region_ids_;
+    /// Vector gets partitions of elements.
+    std::shared_ptr<ElementDataCache<int>> partitions_;
 };
 
 #endif /* OUTPUT_MSH_HH_ */

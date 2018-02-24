@@ -18,6 +18,7 @@
 #include "mesh/ngh/include/plain.h"
 #include "mesh/ngh/include/mathfce.h"
 #include "mesh/ngh/include/intersection.h"
+#include "mesh/ngh/include/point.h"
 
 using namespace mathfce;
 namespace ngh {

@@ -7,5 +7,5 @@
 	url = https://github.com/flow123d/docker-config.git
 [submodule "bin/yaml_converter"]
     path = bin/yaml_converter
-    url = https://github.com/flow123d/yaml_converter.git
+    url = https://github.com/flow123d/yaml_converter.git    
 	

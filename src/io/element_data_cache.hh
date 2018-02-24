@@ -18,15 +18,16 @@
 #ifndef ELEMENT_DATA_CACHE_HH_
 #define ELEMENT_DATA_CACHE_HH_
 
-#include <vector>
-#include <string>
-#include <memory>
-#include <ostream>
-#include <typeinfo>
-#include "system/system.hh"
-#include "system/tokenizer.hh"
-#include "system/global_defs.h"
-#include "io/element_data_cache_base.hh"
+#include <boost/exception/info.hpp>           // for error_info::~error_info...
+#include <memory>                             // for shared_ptr
+#include <sstream>                            // for basic_ostream::write
+#include <string>                             // for string, operator<<
+#include <vector>                             // for vector
+#include <armadillo>
+#include "io/element_data_cache_base.hh"      // for ElementDataCacheBase
+#include "system/exceptions.hh"               // for ExcStream, operator<<
+class Tokenizer;
+struct MeshDataHeader;  // lines 32-32
 
 
 template <typename T>

@@ -35,6 +35,8 @@ FLOW123D_FORCE_LINK_IN_PARENT(gmsh)
 namespace IT = Input::Type;
 
 const IT::Record & OutputTime::get_input_type() {
+    stringstream default_prec;
+    default_prec << std::numeric_limits<double>::max_digits10;
     return IT::Record("OutputStream", "Configuration of the spatial output of a single balance equation.")
 		// The stream
 		.declare_key("file", IT::FileName::output(), IT::Default::read_time("Name of the equation associated with the output stream."),
@@ -50,8 +52,9 @@ const IT::Record & OutputTime::get_input_type() {
                 "Therefore only corner and element data can be written on refined output mesh."
                 "Node data are to be transformed to corner data, native data cannot be written."
                 "Do not include any node or native data in output fields.")
-        .declare_key("precision", IT::Integer(0), IT::Default("5"),
-                "The number of decimal digits used in output of floating point values.")
+        .declare_key("precision", IT::Integer(0), IT::Default(default_prec.str()),
+                "The number of decimal digits used in output of floating point values.\\ "
+                "Default is about 17 decimal digits which is enough to keep double values exect after write-read cycle.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
                 "Array of observe points.")
 		.close();
@@ -69,7 +72,6 @@ OutputTime::OutputTime()
 : current_step(0),
   time(-1.0),
   write_time(-1.0),
-  _mesh(nullptr),
   parallel_(false)
 {
     MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
@@ -78,9 +80,8 @@ OutputTime::OutputTime()
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
 {
-    _mesh = &mesh;
 
     input_record_ = in_rec;
     equation_name_ = equation_name;
@@ -89,9 +90,16 @@ void OutputTime::init_from_input(const std::string &equation_name, Mesh &mesh, c
     // TODO: remove dummy ".xyz" extension after merge with DF
     FilePath output_file_path(equation_name+"_fields", FilePath::output_file);
     input_record_.opt_val("file", output_file_path);
+    this->precision_ = input_record_.val<int>("precision");
     this->_base_filename = output_file_path;
 }
 
+
+void OutputTime::set_stream_precision(std::ofstream &stream)
+{
+    //stream.setf(std::ios::scientific);
+    stream.precision(this->precision_);
+}
 
 
 OutputTime::~OutputTime(void)
@@ -118,7 +126,10 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 }
 
 
-void OutputTime::set_output_mesh_ptr(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
+	this->nodes_ = mesh_ptr->nodes_;
+	this->connectivity_ = mesh_ptr->connectivity_;
+	this->offsets_ = mesh_ptr->offsets_;
 	output_mesh_ = mesh_ptr;
 }
 
@@ -169,12 +180,12 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec)
 {
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
     std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, mesh, in_rec);
+    output_time->init_from_input(equation_name, in_rec);
 
     return output_time;
 }
@@ -201,8 +212,12 @@ void OutputTime::write_time_frame()
 			write_time = time;
 			current_step++;
             
-            // invalidate output mesh after the time frame written
-            output_mesh_.reset();
+			// invalidate output data caches after the time frame written
+			// TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
+			/*output_mesh_.reset();
+			this->nodes_.reset();
+			this->connectivity_.reset();
+			this->offsets_.reset();*/
 		} else {
 			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
 		}
@@ -210,14 +225,13 @@ void OutputTime::write_time_frame()
     clear_data();
 }
 
-std::shared_ptr<Observe> OutputTime::observe()
+std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
 {
-    ASSERT_PTR(_mesh);
     // create observe object at first call
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
         unsigned int precision = input_record_.val<unsigned int>("precision");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *_mesh, observe_points, precision);
+        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision);
     }
     return observe_;
 }

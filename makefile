@@ -104,6 +104,7 @@ clean-tests:
 .PHONY: html-doc
 html-doc: 
 	make -C $(BUILD_DIR)/htmldoc htmldoc
+	cp doc/graphics/flow123d-color-banner.svg $(BUILD_DIR)/htmldoc/html/src
 	$(BUILD_DIR)/bin/flow123d --input_format "$(DOC_DIR)/input_reference.json"
 	python3 $(SOURCE_DIR)/bin/python/ist_script.py --input=$(DOC_DIR)/input_reference.json --output=$(BUILD_DIR)/htmldoc/html/src/index.html --format=html
 
@@ -121,7 +122,9 @@ TUTORIALS_IN_DOC= \
        04_frac_diffusion.yaml \
        05_frac_sorption.yaml \
        06_frac_dualpor.yaml \
-       07_heat.yaml
+       07_heat.yaml 
+
+#       50_xfem_single_aquifer.yaml
 
 TUTORIALS_TEX=$(TUTORIALS_IN_DOC:.yaml=.tex)
 
@@ -183,6 +186,18 @@ petsc-doc: #build-flow123d
 	cd tests/02*; \
 	mkdir output; \
 	"$(BUILD_DIR)/bin/flow123d" -s flow_vtk.con -help --petsc_redirect "$(BUILD_DIR)/doc/petsc_help" >/dev/null
+
+
+web-content: README.md CHANGES.md
+	pandoc README.md -f markdown -t html -s -o README.html
+	echo "---\ntitle: Flow123d - Readme\nlayout: page\n---" > readme.html
+	cat README.html | sed -n '/<body>/,/<\/body>/p' | sed -e '1s/.*<body>//'  -e '$$s/<\/body>.*//' >> readme.html
+	
+	echo "---\ntitle: Flow123d - Changes\nlayout: page\n---" > changes.html
+	pandoc CHANGES.md -f markdown -t html -s -o CHANGES.html
+	cat CHANGES.html | sed -n '/<body>/,/<\/body>/p' | sed -e '1s/.*<body>//' -e '$$s/<\/body>.*//' >> changes.html
+
+
 
 ######################################################################################
 

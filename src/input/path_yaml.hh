@@ -19,7 +19,15 @@
 #define PATH_YAML_HH_
 
 
-#include "yaml-cpp/yaml.h"
+#include <stdint.h>                          // for int64_t
+#include <iosfwd>                            // for ostream, istream
+#include <set>                               // for set
+#include <string>                            // for string
+#include <vector>                            // for vector
+#include "yaml-cpp/node/detail/bool_type.h"  // for Node::operator void (*)(...
+#include "yaml-cpp/node/impl.h"              // for Node::Node, Node::operat...
+#include "yaml-cpp/node/node.h"              // for Node
+
 #include "input/path_base.hh"
 
 

@@ -19,15 +19,24 @@
 #define BALANCE_HH_
 
 
-#include "la/distribution.hh"
-#include "transport/substance.hh"
-#include "petscmat.h"
-#include "tools/unit_si.hh"
-#include "tools/time_marks.hh"
+#include <iosfwd>               // for ofstream
+#include <string>               // for string
+#include <vector>               // for vector
+#include "tools/unit_si.hh"    // for UnitSI
+#include "input/accessors.hh"   // for Record
+#include "petscmat.h"           // for Mat, _p_Mat
+#include "petscvec.h"           // for Vec, _p_Vec
+#include "system/file_path.hh"  // for FilePath
+#include "tools/time_marks.hh"  // for TimeMark, TimeMark::Type
 
-class RegionDB;
+class Mesh;
 class TimeGovernor;
-class TimeStep;
+namespace Input {
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
 
 
 

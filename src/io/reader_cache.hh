@@ -19,11 +19,13 @@
 #define READER_CACHE_HH_
 
 
-#include "io/msh_basereader.hh"
-#include "mesh/mesh.h"
-#include "system/file_path.hh"
+#include <map>                  // for map, map<>::value_compare
+#include <memory>               // for shared_ptr
+#include <string>               // for string
+#include "system/file_path.hh"  // for FilePath
 
-#include <memory>
+class BaseMeshReader;
+class Mesh;
 
 
 

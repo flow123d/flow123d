@@ -16,8 +16,10 @@
  */
 
 
+#include <boost/type_traits/is_floating_point.hpp>
 #include "fields/field_elementwise.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
+#include "fields/unit_si.hh"
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "io/msh_gmshreader.h"

@@ -18,9 +18,11 @@
 #include <iostream>
 #include <vector>
 
+#include "mesh/ngh/include/mathfce.h"
 #include "mesh/ngh/include/polygon.h"
 #include "mesh/ngh/include/vertex.h"
-#include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/triangle.h"
+#include "system/logger.hh"
 
 using namespace mathfce;
 
