@@ -30,7 +30,7 @@
 #include "fields/field_algo_base.hh"                   // for FieldResult
 #include "fields/field_flag.hh"                        // for FieldFlag, Fie...
 #include "fields/field_values.hh"                      // for FieldEnum
-#include "fields/unit_si.hh"                           // for UnitSI
+#include "tools/unit_si.hh"                           // for UnitSI
 #include "input/accessors.hh"                          // for Record, Array ...
 #include "input/input_exception.hh"                    // for ExcInputMessage
 #include "input/type_base.hh"                          // for Array, Type
