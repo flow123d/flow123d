@@ -18,11 +18,15 @@
 #ifndef abscissaH
 #define abscissaH
 
-#include "bisector.h"
-#include "point.h"
-#include "mesh/bounding_box.hh"
+#include "bisector.h"            // for TBisector
+#include "mesh/bounding_box.hh"  // for BoundingBox
+
+class Element;
+
 
 namespace ngh {
+
+class TPoint;
 
 
 class TAbscissa : public TBisector {

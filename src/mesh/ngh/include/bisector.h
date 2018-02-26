@@ -18,15 +18,15 @@
 #ifndef bisectorH
 #define bisectorH
 
-#include <iostream>
+#include <iostream>  // for ostream
+#include "point.h"   // for TPoint
 
-#include "system/global_defs.h"
-#include "mesh/mesh_types.hh"
+class Element;
 
-#include "point.h"
-#include "myvector.h"
 
 namespace ngh {
+
+class TVector;
 
 class TBisector {
 protected:

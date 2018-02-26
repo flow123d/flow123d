@@ -20,7 +20,15 @@
 
 
 #include <armadillo>
-#include "mesh/mesh_types.hh"
+#include <stddef.h>                          // for NULL
+#include "mesh/mesh_types.hh"                // for ElementFullIter
+#include "system/sys_vector.hh"              // for FullIterator
+
+class Boundary;
+class Edge;
+class Element;
+class Mesh;
+class Node;
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH

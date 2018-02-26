@@ -260,24 +260,15 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
     global_dof_offset = offset;
     max_elem_dofs_ = max(fe1d_->n_dofs(), max(fe2d_->n_dofs(), fe3d_->n_dofs()));
 
-    for (unsigned int dm=0; dm <= 1; dm++)
-    {
-        n_obj_dofs[1][dm] = 0;
-        for (unsigned int m=0; m<dof_multiplicities.size(); m++)
-            n_obj_dofs[1][dm] += fe1d.n_object_dofs(dm, dof_multiplicities[m])*dof_multiplicities[m];
-    }
-    for (unsigned int dm=0; dm <= 2; dm++)
-	{
-		n_obj_dofs[2][dm] = 0;
-		for (unsigned int m=0; m<dof_multiplicities.size(); m++)
-			n_obj_dofs[2][dm] += fe2d.n_object_dofs(dm, dof_multiplicities[m])*dof_multiplicities[m];
-	}
     for (unsigned int dm=0; dm <= 3; dm++)
-	{
-		n_obj_dofs[3][dm] = 0;
-		for (unsigned int m=0; m<dof_multiplicities.size(); m++)
-			n_obj_dofs[3][dm] += fe3d.n_object_dofs(dm, dof_multiplicities[m])*dof_multiplicities[m];
-	}
+        for (unsigned int dd=1; dd <= 3; dd++)
+            n_obj_dofs[dd][dm] = 0;
+    for (unsigned int d=0; d<fe1d.n_dofs(); d++)
+        n_obj_dofs[1][fe1d.dof(d).dim]++;
+    for (unsigned int d=0; d<fe2d.n_dofs(); d++)
+        n_obj_dofs[2][fe2d.dof(d).dim]++;
+    for (unsigned int d=0; d<fe3d.n_dofs(); d++)
+        n_obj_dofs[3][fe3d.dof(d).dim]++;
 
     // Broadcast partition of elements to all processes.
     IdxInt *loc_part;
@@ -339,13 +330,13 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::
 	switch (dim)
 	{
 	case 1:
-		n_objects_dofs = fe1d_->n_object_dofs(dim,DOF_SINGLE);
+		n_objects_dofs = fe1d_->n_dofs();
 		break;
 	case 2:
-		n_objects_dofs = fe2d_->n_object_dofs(dim,DOF_SINGLE);
+		n_objects_dofs = fe2d_->n_dofs();
 		break;
 	case 3:
-		n_objects_dofs = fe3d_->n_object_dofs(dim,DOF_SINGLE);
+		n_objects_dofs = fe3d_->n_dofs();
 		break;
 	}
 	
@@ -369,13 +360,13 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, s
     switch (dim)
     {
     case 1:
-        n_objects_dofs = fe1d_->n_object_dofs(dim,DOF_SINGLE);
+        n_objects_dofs = fe1d_->n_dofs();
         break;
     case 2:
-        n_objects_dofs = fe2d_->n_object_dofs(dim,DOF_SINGLE);
+        n_objects_dofs = fe2d_->n_dofs();
         break;
     case 3:
-        n_objects_dofs = fe3d_->n_object_dofs(dim,DOF_SINGLE);
+        n_objects_dofs = fe3d_->n_dofs();
         break;
     }
 

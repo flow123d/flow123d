@@ -20,10 +20,17 @@
 
 #include <vector>
 
+#include "reaction/reaction_term.hh"              // for ReactionTerm
 #include "reaction/first_order_reaction_base.hh"
-#include "input/accessors_forward.hh"
 
 class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
+
 
 /** @brief Class implements the radioactive decay chain.
  * 

@@ -18,10 +18,17 @@
 #ifndef LINEAR_ODE_SOLVER_H_
 #define LINEAR_ODE_SOLVER_H_
 
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <iosfwd>                                      // for stringstream
+#include <string>                                      // for string, basic_...
+#include <vector>                                      // for vector
 #include "armadillo"
-#include "input/accessors.hh"
-#include "system/global_defs.h"
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/global_defs.h"                        // for msg, rank, OLD...
 #include "system/asserts.hh"
+namespace Input { namespace Type { class Abstract; } }
 
 
 /// @brief Base class for linear ODE solver.
@@ -99,8 +106,8 @@ template<class Method>
 void LinearODESolver<Method>::update_solution(arma::mat& init_vecs, arma::mat& output_vecs, const std::vector< unsigned int > &mask)
 {  
 	OLD_ASSERT(0,"Not implemented yet.");
-	OLD_ASSERT_EQUAL(init_vecs.n_cols, output_vecs.n_cols);
-	OLD_ASSERT_EQUAL(init_vecs.n_rows, output_vecs.n_rows);
+	//OLD_ASSERT_EQUAL(init_vecs.n_cols, output_vecs.n_cols);
+	//OLD_ASSERT_EQUAL(init_vecs.n_rows, output_vecs.n_rows);
     
     for(unsigned int j=0; j < init_vecs.n_cols; j++)
     {

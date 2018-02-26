@@ -18,7 +18,6 @@
 #ifndef IntersectionLocalH
 #define IntersectionLocalH
 
-#include <iostream>
 #include <vector>
 #include <stdio.h>
 

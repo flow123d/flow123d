@@ -24,13 +24,17 @@
 #include <algorithm>
 #include <fstream>
 #include <boost/circular_buffer.hpp>
-
+#include <boost/exception/info.hpp>
+#include <iosfwd>
+#include <string>
 
 #include "system/global_defs.h"
 #include "system/system.hh"
 #include "system/file_path.hh"
 #include "input/accessors_forward.hh"
 #include "input/input_exception.hh"
+#include "system/exc_common.hh"
+#include "system/exceptions.hh"
 #include "tools/time_marks.hh"
 
 namespace Input {
@@ -69,7 +73,7 @@ public:
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in coeff_, if iterator is not defined.
      */
-	double read_coef(Input::Iterator<string> unit_it) const;
+	double read_coef(Input::Iterator<std::string> unit_it) const;
 
     /**
      * Return global time unit coefficient of equation stored in coeff_.
@@ -191,7 +195,7 @@ public:
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in time_unit_conversion_, if iterator is not defined.
      */
-	double read_coef(Input::Iterator<string> unit_it) const;
+	double read_coef(Input::Iterator<std::string> unit_it) const;
 
     /**
      * Return global time unit coefficient of equation stored in coeff_.
@@ -608,7 +612,7 @@ public:
      * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
      * in time_unit_conversion_, if iterator is not defined.
      */
-	double read_coef(Input::Iterator<string> unit_it) const;
+	double read_coef(Input::Iterator<std::string> unit_it) const;
 
     /**
      * Return global time unit coefficient of equation stored in coeff_.

@@ -20,6 +20,7 @@
 #include "io/msh_gmshreader.h"
 #include "input/reader_to_storage.hh"
 #include "system/logger_options.hh"
+#include "system/sys_profiler.hh"
 #include "fields/field.hh"
 
 #include "fem/mapping_p1.hh"
@@ -111,9 +112,9 @@ public:
 		field.units(UnitSI::one());
 
 		std::shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>( *(this->_mesh) );
-		FE_P_disc<0,1,3> fe1;
-		FE_P_disc<0,2,3> fe2;
-		FE_P_disc<0,3,3> fe3;
+		FE_P_disc<1,3> fe1(0);
+		FE_P_disc<2,3> fe2(0);
+		FE_P_disc<3,3> fe3(0);
 		dh->distribute_dofs(fe1, fe2, fe3);
 
 		VectorSeqDouble v;

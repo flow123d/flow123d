@@ -18,23 +18,44 @@
 #ifndef FIELD_HH_
 #define FIELD_HH_
 
-#include <memory>
-using namespace std;
-
+#include <stdio.h>                                     // for sprintf
+#include <string.h>                                    // for memcpy
+#include <algorithm>                                   // for find, min
 #include <boost/circular_buffer.hpp>
+#include <memory>                                      // for dynamic_pointe...
+#include <new>                                         // for operator new[]
+#include <ostream>                                     // for basic_ostream:...
+#include <string>                                      // for basic_string
+#include <utility>                                     // for pair
+#include <vector>                                      // for vector
+#include <armadillo>
+#include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
+#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
+#include "fields/field_common.hh"                      // for FieldCommon::T...
+#include "fields/field_values.hh"                      // for FieldValue<>::...
+#include "input/accessors.hh"                          // for ExcTypeMismatch
+#include "input/accessors_impl.hh"                     // for Record::opt_val
+#include "input/factory_impl.hh"                       // for Factory::create
+#include "input/input_exception.hh"                    // for FieldCommon::E...
+#include "input/storage.hh"                            // for ExcStorageType...
+#include "input/type_base.hh"                          // for Array
+#include "input/type_generic.hh"                       // for Instance
+#include "input/type_record.hh"                        // for Record::ExcRec...
+#include "io/output_time.hh"                           // for OutputTime
+#include "mesh/element_impls.hh"                       // for Element::dim
+#include "mesh/region.hh"                              // for RegionDB::ExcU...
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "tools/time_governor.hh"                      // for TimeStep
 
-#include "system/exceptions.hh"
-#include "input/accessors_forward.hh"
-#include "tools/time_marks.hh"
-#include "tools/time_governor.hh"
+class Mesh;
+class Observe;
+template <int spacedim> class ElementAccessor;
+template <int spacedim, class Value> class FieldFE;
 
-#include "fields/field_common.hh"
-#include "fields/field_algo_base.hh"
-#include "fields/field_flag.hh"
-//#include "io/output_time.hh"
-
-class OutputTime;
-template<int spacedim, class Value> class FieldFE;
+using namespace std;
 namespace IT=Input::Type;
 
 /**

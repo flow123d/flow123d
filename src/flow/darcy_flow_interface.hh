@@ -9,6 +9,7 @@
 #define SRC_FLOW_DARCY_FLOW_INTERFACE_HH_
 
 #include "input/input_type_forward.hh"
+#include "coupling/equation.hh"
 
 class MH_DofHandler;
 

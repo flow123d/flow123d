@@ -20,6 +20,9 @@
 #include "mesh/ngh/include/intersectionLocal.h"
 #include "mesh/ngh/include/matrix.h"
 #include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/plain.h"
+#include "mesh/ngh/include/point.h"
+#include "mesh/ngh/include/tetrahedron.h"
 #include <cmath>
 //#include "math.h"
 #include <iostream>

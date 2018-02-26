@@ -18,17 +18,23 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
-#include "input/accessors_forward.hh"
+#include <memory>          // for shared_ptr
+#include <ostream>         // for ofstream, stringstream, ostringstream
+#include <string>          // for string
+#include "output_time.hh"  // for OutputTime, OutputTime::OutputDataFieldVec
 
-#include "output_time.hh"
-#include "element_data_cache.hh"
-
-#include <ostream>
-#include <cstdint>
+class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+template <typename T> class ElementDataCache;
 
 using namespace std;
 
-class OutputMeshBase;
 
 /**
  * \brief This class is used for output data to VTK file format

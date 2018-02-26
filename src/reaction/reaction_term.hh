@@ -21,13 +21,23 @@
 #ifndef REACTION_TERM_H
 #define REACTION_TERM_H
 
-#include "coupling/equation.hh"
-#include "transport/substance.hh"
-#include "mesh/mesh.h"
+#include <memory>                    // for shared_ptr
+#include <string>                    // for string
+#include "coupling/equation.hh"      // for EquationBase
+#include "mesh/partitioning.hh"      // for IdxInt
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
+#include "transport/substance.hh"    // for SubstanceList
 
-class Mesh;
 class Distribution;
+class Mesh;
 class OutputTime;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Abstract;
+	}
+}
 
 
 class ReactionTerm: public EquationBase

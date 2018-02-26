@@ -196,9 +196,9 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	fe1_ = new FE_P_disc<0,1,3>();
-	fe2_ = new FE_P_disc<0,2,3>();
-	fe3_ = new FE_P_disc<0,3,3>();
+	fe1_ = new FE_P_disc<1,3>(0);
+	fe2_ = new FE_P_disc<2,3>(0);
+	fe3_ = new FE_P_disc<3,3>(0);
 
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
