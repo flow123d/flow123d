@@ -21,6 +21,7 @@
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "fields/field_set.hh"
+#include "fields/field.hh"
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"

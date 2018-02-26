@@ -18,20 +18,26 @@
 #ifndef OUTPUT_TIME_HH_
 #define OUTPUT_TIME_HH_
 
-#include <vector>
-#include <string>
-#include <fstream>
-#include "input/accessors.hh"
-#include "io/element_data_cache.hh"
+#include <fstream>              // for ofstream
+#include <memory>               // for shared_ptr
+#include <string>               // for string, allocator
+#include <vector>               // for vector
+#include "input/accessors.hh"   // for Iterator, Array (ptr only), Record
+#include "system/file_path.hh"  // for FilePath
 
-class FilePath;
-class Observe;
 class ElementDataCacheBase;
 class Mesh;
-class TimeGovernor;
-class OutputMeshBase;
+class Observe;
 class OutputMesh;
+class OutputMeshBase;
 class OutputMeshDiscontinuous;
+namespace Input {
+	namespace Type {
+		class Abstract;
+		class Record;
+	}
+}
+template <typename T> class ElementDataCache;
 
 
 /**

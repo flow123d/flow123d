@@ -78,10 +78,11 @@ private:
     // assembly face integrals (BC)
     MappingP1<dim+1,3> side_map_;
     QGauss<dim> side_quad_;
-    FE_P_disc<0,dim+1,3> fe_p_disc_;
+    FE_P_disc<dim+1,3> fe_p_disc_;
 public:
     NeighSideValues<dim>()
     :  side_quad_(1),
+       fe_p_disc_(0),
        fe_side_values_(side_map_, side_quad_, fe_p_disc_, update_normal_vectors)
     {}
     FESideValues<dim+1,3> fe_side_values_;

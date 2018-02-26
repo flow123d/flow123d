@@ -19,18 +19,16 @@
 #ifndef _GMSHMESHREADER_H
 #define	_GMSHMESHREADER_H
 
-#include <string>
-#include <vector>
-#include <map>
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <map>                       // for map, map<>::value_compare
+#include <string>                    // for string
+#include <vector>                    // for vector
+#include "io/msh_basereader.hh"      // for MeshDataHeader, BaseMeshReader
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 
-
-#include "mesh/region.hh"
-#include "io/element_data_cache_base.hh"
-#include "io/msh_basereader.hh"
-#include "input/input_exception.hh"
-
-class Mesh;
+class ElementDataCacheBase;
 class FilePath;
+class Mesh;
 
 
 

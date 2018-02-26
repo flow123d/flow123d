@@ -19,24 +19,36 @@
 #ifndef DARCY_FLOW_MH_OUTPUT_HH_
 #define DARCY_FLOW_MH_OUTPUT_HH_
 
-#include "mesh/mesh.h"
-#include <string>
-#include <vector>
+#include <stdio.h>                       // for sprintf
+#include <string.h>                      // for memcpy
+#include <boost/exception/info.hpp>      // for operator<<, error_info::erro...
+#include <cmath>                         // for pow
+#include <iosfwd>                        // for ofstream
+#include <memory>                        // for shared_ptr
+#include <vector>                        // for vector
+#include <armadillo>
+#include "fem/fe_p.hh"                   // for FE_P_disc
+#include "fem/mapping_p1.hh"             // for MappingP1
+#include "fields/equation_output.hh"     // for EquationOutput
+#include "fields/field.hh"               // for Field
+#include "fields/field_set.hh"           // for FieldSet
+#include "fields/field_values.hh"        // for FieldValue<>::Scalar, FieldV...
+#include "fields/vec_seq_double.hh"      // for VectorSeqDouble
+#include "input/type_base.hh"            // for Array
+#include "input/type_generic.hh"         // for Instance
+#include "petscvec.h"                    // for Vec, _p_Vec
+#include "system/exceptions.hh"          // for ExcAssertMsg::~ExcAssertMsg
 
-#include "io/output_time.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
-
-#include "fem/mapping_p1.hh"
-#include "fem/fe_p.hh"
-
-#include "fields/vec_seq_double.hh"
-#include "fields/equation_output.hh"
-
-
-class DarcyMH;
-class OutputTime;
 class DOFHandlerMultiDim;
+class DarcyMH;
+class Mesh;
+class OutputTime;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
 
 
 /**
@@ -159,9 +171,9 @@ private:
     MappingP1<1,3> map1;
     MappingP1<2,3> map2;
     MappingP1<3,3> map3;
-    FE_P_disc<1,1,3> fe1;
-    FE_P_disc<1,2,3> fe2;
-    FE_P_disc<1,3,3> fe3;
+    FE_P_disc<1,3> fe1;
+    FE_P_disc<2,3> fe2;
+    FE_P_disc<3,3> fe3;
 
     OutputFields output_fields;
 

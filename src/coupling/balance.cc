@@ -28,6 +28,7 @@
 #include "coupling/balance.hh"
 #include "fields/unit_si.hh"
 #include "tools/time_governor.hh"
+#include "la/distribution.hh"
 
 using namespace Input::Type;
 

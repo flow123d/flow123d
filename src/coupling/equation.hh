@@ -20,23 +20,23 @@
 #define EQUATION_HH_
 
 
-#include <limits>
-#include "tools/time_governor.hh"
-#include "tools/time_marks.hh"
-#include "input/accessors.hh"
-
-#include <petscvec.h>
-
-class Mesh;
-class Region;
-class FieldSet;
-//typedef std::vector<Region> RegionSet;
+#include <petscvec.h>                                  // for Vec
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <memory>                                      // for shared_ptr
+#include <string>                                      // for basic_string
+#include <typeinfo>                                    // for type_info
+#include "input/accessors.hh"                          // for Record
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "system/logger.hh"                            // for Logger, DebugOut
+#include "tools/time_governor.hh"                      // for TimeGovernor
+#include "tools/time_marks.hh"                         // for TimeMark, Time...
 class Balance;
+class FieldSet;
+class Mesh;
 
-
-namespace Input {
-    class Record;
-}
 
 /**
  * Class EquationBase is abstract base class for a general time dependent model. This class should provide general interface

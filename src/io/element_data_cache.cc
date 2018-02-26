@@ -17,10 +17,12 @@
 
 
 #include <limits>
-
+#include <ostream>
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
 #include "system/armadillo_tools.hh"
+#include "system/system.hh"
+#include "system/tokenizer.hh"
 #include "boost/lexical_cast.hpp"
 
 

@@ -35,15 +35,6 @@
 template <unsigned int dim, unsigned int spacedim>
 class FESystem : public FiniteElement<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-    using FiniteElement<dim,spacedim>::number_of_pairs;
-    using FiniteElement<dim,spacedim>::number_of_triples;
-    using FiniteElement<dim,spacedim>::number_of_sextuples;
-    using FiniteElement<dim,spacedim>::n_components_;
-    using FiniteElement<dim,spacedim>::unit_support_points;
-    using FiniteElement<dim,spacedim>::generalized_support_points;
-
 public:
   
     /**
@@ -85,10 +76,11 @@ public:
     arma::vec::fixed<dim> basis_grad(const unsigned int i, 
                                      const arma::vec::fixed<dim> &p, 
                                      const unsigned int comp) const override;
+    
+    unsigned int n_components() const override { return n_components_; }
 
     UpdateFlags update_each(UpdateFlags flags) override;
 
-    virtual ~FESystem();
 
 private:
 
@@ -136,18 +128,7 @@ private:
   std::vector<unsigned int> scalar_components_;
   std::vector<unsigned int> vector_components_;
   
-  /**
-   * Auxiliary vector representing permutation of dofs
-   * for compatibility with DOFHandler. In DOFHandler,
-   * the nodal dofs are ordered in such a way that first
-   * come all the dofs on node 1, then all dofs on node 2 etc.
-   * On the other hand, in FESystem we take first all dofs from
-   * fe_[0], then all dofs from fe_[1] etc.
-   * 
-   * TODO: Remove this object by modifying the order of fe_dof_indices_
-   * or by changing the order of distribution of dofs in DOFHandler.
-   */
-  std::vector<unsigned int> dof_basis_;
+  unsigned int n_components_;
   
 };
 

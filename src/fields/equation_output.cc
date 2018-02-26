@@ -9,6 +9,7 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "fields/equation_output.hh"
+#include "fields/field.hh"
 #include "io/output_time_set.hh"
 #include "input/flow_attribute_lib.hh"
 #include <memory>
