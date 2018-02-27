@@ -626,6 +626,29 @@ TEST(TimeGovernor, dt_limits_table) {
     }
 
     {
+        string tg_in="{time = { start_time = 0, end_time = 60, min_dt = 0.2, max_dt = 2, "
+        		"dt_limits = [ [4, 0.5, 3], [10, 0.0, 0.0], [20, 0.1, 3], [30, 0.4, 0.0], [65, 1, 2] ], "
+        		"add_dt_limits_time_marks = true } }";
+        std::vector<double> expected_vals = { 0, 2, 4, 7, 10, 12, 14, 16, 18, 20 };
+        TimeGovernor tg( read_input(tg_in) );
+        for (unsigned int i=0; i<10; ++i) {
+        	EXPECT_EQ( expected_vals[i], tg.t() );
+        	tg.next_time();
+        }
+    }
+
+    {
+        string tg_in="{time = { start_time = 8, end_time = 60, min_dt = 0.2, max_dt = 2, "
+        		"dt_limits = [ [0, 0.5, 3], [2, 0.5, 4], [10, 0.0, 0.0], [20, 0.1, 5] ] } }";
+        std::vector<double> expected_vals = { 8, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 60 };
+        TimeGovernor tg( read_input(tg_in) );
+        for (unsigned int i=0; i<15; ++i) {
+        	EXPECT_EQ( expected_vals[i], tg.t() );
+        	tg.next_time();
+        }
+    }
+
+    {
     	// complete example of usage of dt_limits table
         string tg_in="{time = { start_time = 0, end_time = 60, min_dt = 0.2, max_dt = 2, "
         		"dt_limits = [ [0, 0.5, 3], [10, 0.0, 0.0], [20, 0.1, 1], [30, 0.4, 0.0], [65, 1, 2] ], "

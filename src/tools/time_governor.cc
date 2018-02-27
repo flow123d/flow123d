@@ -278,7 +278,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
                 try {
                     timesteps_output_file_.open_stream(timesteps_output_);
                 } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input)
-                timesteps_output_ << "- [ " << t() << ", " << dt_limits_table_[0].min_dt << ", " << dt_limits_table_[0].max_dt << ", \"s\" ]\n";
+                timesteps_output_ << "- [ " << t() << ", " << dt_limits_table_[0].min_dt << ", " << dt_limits_table_[0].max_dt << " ]\n";
                 last_printed_timestep_ = t();
             }
 
@@ -670,7 +670,7 @@ void TimeGovernor::next_time()
     if ( !(timesteps_output_file_ == FilePath()) && timestep_output_ ) {
     	double time = t();
     	if (time > last_printed_timestep_) {
-    		timesteps_output_ << "- [ " << time << ", " << lower_constraint_ << ", " << upper_constraint_ << ", \"s\" ]\n";
+    		timesteps_output_ << "- [ " << time << ", " << lower_constraint_ << ", " << upper_constraint_ << " ]\n";
     		last_printed_timestep_ = time;
     	}
 	}
