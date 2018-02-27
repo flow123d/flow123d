@@ -195,7 +195,7 @@ TEST (TimeGovernor, time_step_constraints)
     TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), my_mark_type  );
 
     //set permanent min_dt and max_dt
-    tm_tg->set_dt_limits(0.01, 20.0);
+    tm_tg->set_dt_limits(0.01, 20.0, Input::Array());
 
     //testing setting of upper constraint
     //if out of allowed interval, cannot change the user constraints
@@ -324,7 +324,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     //-----------------
 
     //set permanent min_dt and max_dt
-    tm_tg->set_dt_limits(0.01, 20.0);
+    tm_tg->set_dt_limits(0.01, 20.0, Input::Array());
 
 
     //upper time step constraint for next change of time_step
@@ -453,7 +453,7 @@ TEST(TimeGovernor, reduce_timestep)
     string tg_in="{time = { start_time = 0.0, end_time = 100.0 } }";
     TimeGovernor tg( read_input(tg_in));
     tg.marks().add(TimeMark(10, tg.equation_fixed_mark_type()));
-    tg.set_dt_limits(0.5, 20.0);
+    tg.set_dt_limits(0.5, 20.0, Input::Array());
 
     tg.set_upper_constraint(5, "My upper constraint");
     tg.set_lower_constraint(1, "My lower constraint");
@@ -629,7 +629,7 @@ TEST(TimeGovernor, dt_limits_table) {
     	// complete example of usage of dt_limits table
         string tg_in="{time = { start_time = 0, end_time = 60, min_dt = 0.2, max_dt = 2, "
         		"dt_limits = [ [0, 0.5, 3], [10, 0.0, 0.0], [20, 0.1, 1], [30, 0.4, 0.0], [65, 1, 2] ], "
-        		"write_used_timesteps = \"./tg_steps.yaml\" } }";
+        		"add_dt_limits_time_marks = true, write_used_timesteps = \"./tg_steps.yaml\" } }";
         std::vector<double> expected_vals = { 0, 2, 4, 7, 10, 12, 14, 16, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
         		32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 60 };
         {

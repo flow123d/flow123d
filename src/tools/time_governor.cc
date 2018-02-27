@@ -89,6 +89,8 @@ const Record & TimeGovernor::get_input_type() {
 		.declare_key("dt_limits", Array(dt_step), Default::optional(),
 				"Allow to set a time dependent changes in min_dt and max_dt limits. This list is processed "
 				"at individual times overwriting previous setting of min_dt/max_dt. Limits equal to 0 are ignored.")
+		.declare_key("add_dt_limits_time_marks", Bool(), Default("false"), "Add all times defined in 'dt_limits' "
+			    "table to list of TimeMarks.")
 		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
 				"Write used time steps to given file in YAML format corresponding with format of 'dt_limits'.")
 		.declare_key("common_time_unit", String(), Default("\"s\""),
@@ -252,6 +254,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 
         string common_unit_string=input.val<string>("common_time_unit");
         time_unit_conversion_ = std::make_shared<TimeUnitConversion>(common_unit_string);
+        limits_time_marks_ = input.val<bool>("add_dt_limits_time_marks");
 
         // Get rid of rounding errors.
         double end_time = read_time( input.find<Input::Tuple>("end_time") );
@@ -462,7 +465,7 @@ void TimeGovernor::set_dt_limits( double min_dt, double max_dt, Input::Array dt_
 			}
 
 			dt_limits_table_.push_back( DtLimitRow(time, min, max) );
-			this->marks().add(TimeMark(time, this->equation_fixed_mark_type()));
+			if (limits_time_marks_) this->marks().add(TimeMark(time, this->equation_fixed_mark_type()));
 		}
 
     if (dt_limits_table_.size() == 0) {
@@ -661,7 +664,7 @@ void TimeGovernor::next_time()
     lower_constraint_message_ = "Permanent minimal constraint, in next time.";
     upper_constraint_message_ = "Permanent maximal constraint, in next time.";
 
-    if (dt_limits_table_[dt_limits_pos_].time == step().end()) set_permanent_constraint();
+    if (step().end() >= dt_limits_table_[dt_limits_pos_].time) set_permanent_constraint();
 
 	// write time step to YAML file
     if ( !(timesteps_output_file_ == FilePath()) && timestep_output_ ) {

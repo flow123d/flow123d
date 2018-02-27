@@ -731,6 +731,9 @@ private:
     /// Special flag allows forbid output time steps during multiple initialization of TimeGovernor
     bool timestep_output_;
 
+    /// Allows add all times defined in dt_limits_table_ to list of TimeMarks
+    bool limits_time_marks_;
+
     friend TimeMarks;
 };
 
