@@ -57,14 +57,12 @@ const Tuple & TimeGovernor::get_input_time_type(double lower_bound, double upper
 const Record & TimeGovernor::get_input_type() {
     static const Tuple &dt_step =
         Tuple("DtLimits", "Time dependent changes in min_dt and max_dt limits.")
-            .declare_key("time", Double(0.0), Default::obligatory(),
+            .declare_key("time", TimeGovernor::get_input_time_type(), Default::obligatory(),
                     "The start time of dt step set.")
-            .declare_key("min_dt", Double(0.0), Default::read_time("'min_dt' value of TimeGovernor."),
+            .declare_key("min_dt", TimeGovernor::get_input_time_type(), Default::read_time("'min_dt' value of TimeGovernor."),
                     "Soft lower limit for the time step.")
-            .declare_key("max_dt", Double(0.0), Default::read_time("'max_dt' value of TimeGovernor."),
+            .declare_key("max_dt", TimeGovernor::get_input_time_type(), Default::read_time("'max_dt' value of TimeGovernor."),
                     "Whole time of the simulation if specified, infinity else.")
-			.declare_key("time_unit", String(), Default::read_time("Common unit of TimeGovernor."),
-					"Definition of unit of all defined times (time, min_dt and max_dt).")
             .close();
 
     return Record("TimeGovernor",
@@ -448,8 +446,7 @@ void TimeGovernor::set_dt_limits( double min_dt, double max_dt, Input::Array dt_
 
 	bool first_step = true;
     for(auto it = dt_limits_list.begin<Input::Tuple>(); it != dt_limits_list.end(); ++it) {
-    	double time_unit_coef = read_coef(it->find<string>("time_unit"));
-    	double time = it->val<double>("time") * time_unit_coef;
+    	double time = read_time( it->find<Input::Tuple>("time"));
 
     	if (first_step) { // table of dt limits must start in init_time of simulation
         	if (time != init_time_) {
@@ -470,9 +467,9 @@ void TimeGovernor::set_dt_limits( double min_dt, double max_dt, Input::Array dt_
             continue;
     	}
 
-    	double min = it->val<double>("min_dt", 0.0) * time_unit_coef;
+    	double min = read_time( it->find<Input::Tuple>("min_dt"), 0.0);
     	if (min == 0.0) min = min_dt;
-    	double max = it->val<double>("max_dt", 0.0) * time_unit_coef;
+    	double max = read_time( it->find<Input::Tuple>("max_dt"), 0.0);
     	if (max == 0.0) max = max_dt;
 
         if (min < time_step_precision) {
