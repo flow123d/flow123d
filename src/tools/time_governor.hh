@@ -368,16 +368,6 @@ public:
    }
 
    /**
-    * @brief Sets dt limits for time independent DT limits in simulation.
-    * 
-    * This function should not be normally used. These values are to be set in constructor
-    * from the input record or by default.
-    * @param min_dt is the minimal value allowed for time step
-    * @param max_dt is the maximal value allowed for time step
-    */
-   void set_dt_limits( double min_dt, double max_dt);
-    
-   /**
     * @brief Sets dt limits for time dependent DT limits in simulation.
     *
     * This function should not be normally used. These values are to be set in constructor
@@ -726,8 +716,8 @@ private:
     /// Table of DT limits
     std::vector<DtLimitRow> dt_limits_table_;
 
-    /// Iterator to actual position of DT limits
-    std::vector<DtLimitRow>::iterator dt_limits_iter_;
+    /// Index to actual position of DT limits
+    unsigned int dt_limits_pos_;
 
     /// File path for timesteps_output_ stream.
     FilePath timesteps_output_file_;

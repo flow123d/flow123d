@@ -86,7 +86,7 @@ const Record & TimeGovernor::get_input_type() {
 				Default::read_time("Whole time of the simulation if specified, infinity else."),
 				"Hard upper limit for the time step. Actual length of the time step is also limited"
 				"by input and output times.")
-		.declare_key("dt_limits", Array(dt_step, 2), Default::optional(),
+		.declare_key("dt_limits", Array(dt_step), Default::optional(),
 				"Allow to set a time dependent changes in min_dt and max_dt limits. This list is processed "
 				"at individual times overwriting previous setting of min_dt/max_dt. Limits equal to 0 are ignored.")
 		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
@@ -261,19 +261,13 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
     	init_common(read_time( input.find<Input::Tuple>("start_time") ),
     				end_time,
     				eq_mark_type);
-    	Input::Array limits_array;
-    	if (input.opt_val("dt_limits", limits_array) ) {
-    		set_dt_limits(
-                read_time( input.find<Input::Tuple>("min_dt"), min_time_step_),
-                read_time( input.find<Input::Tuple>("max_dt"), max_time_step_),
-				limits_array
-                );
-    	} else {
-    		set_dt_limits(
-                read_time( input.find<Input::Tuple>("min_dt"), min_time_step_),
-                read_time( input.find<Input::Tuple>("max_dt"), max_time_step_)
-                );
-    	}
+    	Input::Array limits_array = Input::Array();
+    	input.opt_val("dt_limits", limits_array);
+		set_dt_limits(
+			read_time( input.find<Input::Tuple>("min_dt"), min_time_step_),
+			read_time( input.find<Input::Tuple>("max_dt"), max_time_step_),
+			limits_array
+			);
 
     	// check key write_used_timesteps, open YAML file, print first time step
         if (timestep_output_)
@@ -304,7 +298,7 @@ TimeGovernor::TimeGovernor(const Input::Record &input, TimeMark::Type eq_mark_ty
 }
 
 TimeGovernor::TimeGovernor(double init_time, double dt)
-: timestep_output_(false)
+: dt_limits_pos_(0), timestep_output_(false)
 {
 	time_unit_conversion_ = std::make_shared<TimeUnitConversion>();
 	init_common( init_time, inf_time, TimeMark::every_type);
@@ -320,7 +314,6 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
     // fill table limits with two records (start time, end time)
     dt_limits_table_.push_back( DtLimitRow(init_time, dt, dt) );
     dt_limits_table_.push_back( DtLimitRow(inf_time, dt, dt) );
-    dt_limits_iter_ = dt_limits_table_.begin();
 
     lower_constraint_=min_time_step_=dt;
     lower_constraint_message_ = "Initial time step set by user.";
@@ -333,7 +326,7 @@ TimeGovernor::TimeGovernor(double init_time, double dt)
 
 // steady time governor constructor
 TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
-: timestep_output_(false)
+: dt_limits_pos_(0), timestep_output_(false)
 {
     // use new mark type as default
     if (eq_mark_type == TimeMark::none_type) eq_mark_type = marks().new_mark_type();
@@ -344,7 +337,6 @@ TimeGovernor::TimeGovernor(double init_time, TimeMark::Type eq_mark_type)
 	// fill table limits with two records (start time, end time)
     dt_limits_table_.push_back( DtLimitRow(init_time, min_time_step_, max_time_step_) );
     dt_limits_table_.push_back( DtLimitRow(inf_time, min_time_step_, max_time_step_) );
-    dt_limits_iter_ = dt_limits_table_.begin();
 
 	steady_ = true;
 }
@@ -417,78 +409,75 @@ void TimeGovernor::init_common(double init_time, double end_time, TimeMark::Type
 
 
 
-
-
-
-void TimeGovernor::set_dt_limits( double min_dt, double max_dt)
-{
-	dt_limits_table_.clear();
-
-	if (min_dt < time_step_precision) {
-		THROW(ExcTimeGovernorMessage()	<< EI_Message("'min_dt' smaller than machine precision.\n") );
-    }
-    if (max_dt < min_dt) {
-		THROW(ExcTimeGovernorMessage()	<< EI_Message("'max_dt' smaller than 'min_dt'.\n") );
-    }
-
-    // fill table limits with two records (start time, end time)
-    dt_limits_table_.push_back( DtLimitRow(init_time_, min_dt, max_dt) );
-    dt_limits_table_.push_back( DtLimitRow(end_time_, min_dt, max_dt) );
-    dt_limits_iter_ = dt_limits_table_.begin();
-
-    set_permanent_constraint();
-}
-
-
 void TimeGovernor::set_dt_limits( double min_dt, double max_dt, Input::Array dt_limits_list)
 {
 	dt_limits_table_.clear();
 
+	// check min_dt and max_dt set by user
+	if (min_dt < time_step_precision) {
+		THROW(ExcTimeGovernorMessage() << EI_Message("'min_dt' smaller than machine precision.\n") );
+	}
+	if (max_dt < min_dt) {
+		THROW(ExcTimeGovernorMessage() << EI_Message("'max_dt' smaller than 'min_dt'.\n") );
+	}
+
 	bool first_step = true;
-    for(auto it = dt_limits_list.begin<Input::Tuple>(); it != dt_limits_list.end(); ++it) {
-    	double time = read_time( it->find<Input::Tuple>("time"));
+    if (dt_limits_list.size())
+    	for(auto it = dt_limits_list.begin<Input::Tuple>(); it != dt_limits_list.end(); ++it) {
+			double time = read_time( it->find<Input::Tuple>("time"));
 
-    	if (first_step) { // table of dt limits must start in init_time of simulation
-        	if (time != init_time_) {
-            	THROW(ExcTimeGovernorMessage() << EI_Message("'dt_limits' must start in same time as 'start_time' of simulation.\n") );
-            }
-        	first_step = false;
-    	}
+			if (first_step) { // we need special check before setting first time step to the table
+				if (time > init_time_) { // table starts later than simulation, we need to add start time to the table
+					dt_limits_table_.push_back( DtLimitRow(init_time_, min_dt, max_dt) );
+				}
+				first_step = false;
+			}
 
-    	// next cases will be skipped
-    	if (dt_limits_table_.size() && (time <= dt_limits_table_[dt_limits_table_.size()-1].time) ) {
-            WarningOut().fmt("Time {} define in 'dt_limits' table at address {} is in incorrect order "
-            		"and will be skipped.\n",time, dt_limits_list.address_string());
-            continue;
-    	}
-    	if ((time > end_time_) ) {
-            WarningOut().fmt("Time {} define in 'dt_limits' table at address {} is greater than end time of simulation "
-            		"and will be skipped.\n", time, dt_limits_list.address_string());
-            continue;
-    	}
+			// next cases will be skipped
+			if (time < init_time_) {
+				WarningOut().fmt("Time {} define in 'dt_limits' table at address {} is lesser than start time of simulation "
+						"and can be skipped.\n", time, dt_limits_list.address_string());
+			}
+			if (dt_limits_table_.size() && (time <= dt_limits_table_[dt_limits_table_.size()-1].time) ) {
+				WarningOut().fmt("Time {} define in 'dt_limits' table at address {} is in incorrect order "
+						"and will be skipped.\n", time, dt_limits_list.address_string());
+				continue;
+			}
+			if ((time > end_time_) ) {
+				WarningOut().fmt("Time {} define in 'dt_limits' table at address {} is greater than end time of simulation "
+						"and will be skipped.\n", time, dt_limits_list.address_string());
+				continue;
+			}
 
-    	double min = read_time( it->find<Input::Tuple>("min_dt"), 0.0);
-    	if (min == 0.0) min = min_dt;
-    	double max = read_time( it->find<Input::Tuple>("max_dt"), 0.0);
-    	if (max == 0.0) max = max_dt;
+			double min = read_time( it->find<Input::Tuple>("min_dt"), 0.0);
+			if (min == 0.0) min = min_dt;
+			double max = read_time( it->find<Input::Tuple>("max_dt"), 0.0);
+			if (max == 0.0) max = max_dt;
 
-        if (min < time_step_precision) {
-    		THROW(ExcTimeGovernorMessage() << EI_Message("'min_dt' in 'dt_limits' smaller than machine precision.\n") );
-        }
-        if (max < min) {
-    		THROW(ExcTimeGovernorMessage() << EI_Message("'max_dt' in 'dt_limits' smaller than 'min_dt'.\n") );
-        }
+			if (min < time_step_precision) {
+				THROW(ExcTimeGovernorMessage() << EI_Message("'min_dt' in 'dt_limits' smaller than machine precision.\n") );
+			}
+			if (max < min) {
+				THROW(ExcTimeGovernorMessage() << EI_Message("'max_dt' in 'dt_limits' smaller than 'min_dt'.\n") );
+			}
 
-    	dt_limits_table_.push_back( DtLimitRow(time, min, max) );
-    	this->marks().add(TimeMark(time, this->equation_fixed_mark_type()));
+			dt_limits_table_.push_back( DtLimitRow(time, min, max) );
+			this->marks().add(TimeMark(time, this->equation_fixed_mark_type()));
+		}
+
+    if (dt_limits_table_.size() == 0) {
+    	// add start time to limit table if it is empty
+    	dt_limits_table_.push_back( DtLimitRow(init_time_, min_dt, max_dt) );
     }
-
     if (dt_limits_table_[dt_limits_table_.size()-1].time < end_time_) {
     	// add time == end_time_ to limits table, we need only for check time, not for limits
     	dt_limits_table_.push_back( DtLimitRow(end_time_, min_dt, max_dt) );
     }
 
-    dt_limits_iter_ = dt_limits_table_.begin();
+    dt_limits_pos_ = 0;
+    while (dt_limits_table_[dt_limits_pos_+1].time <= init_time_) {
+    	++dt_limits_pos_;
+    }
 
     set_permanent_constraint();
 }
@@ -496,11 +485,11 @@ void TimeGovernor::set_dt_limits( double min_dt, double max_dt, Input::Array dt_
 
 void TimeGovernor::set_permanent_constraint()
 {
-    lower_constraint_ = min_time_step_ = max(dt_limits_iter_->min_dt, time_step_precision);
+    lower_constraint_ = min_time_step_ = max(dt_limits_table_[dt_limits_pos_].min_dt, time_step_precision);
     lower_constraint_message_ = "Permanent minimal constraint, custom.";
-    upper_constraint_ = max_time_step_ = min(dt_limits_iter_->max_dt, end_time_-t());
+    upper_constraint_ = max_time_step_ = min(dt_limits_table_[dt_limits_pos_].max_dt, end_time_-t());
     upper_constraint_message_ = "Permanent maximal constraint, custom.";
-    ++dt_limits_iter_;
+    ++dt_limits_pos_;
 }
 
 
@@ -672,7 +661,7 @@ void TimeGovernor::next_time()
     lower_constraint_message_ = "Permanent minimal constraint, in next time.";
     upper_constraint_message_ = "Permanent maximal constraint, in next time.";
 
-    if (dt_limits_iter_->time == step().end()) set_permanent_constraint();
+    if (dt_limits_table_[dt_limits_pos_].time == step().end()) set_permanent_constraint();
 
 	// write time step to YAML file
     if ( !(timesteps_output_file_ == FilePath()) && timestep_output_ ) {
