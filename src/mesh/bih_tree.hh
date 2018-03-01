@@ -46,15 +46,18 @@ public:
 	 * Constructor
 	 *
 	 * Set class members and call functions which create tree
-	 * @param mesh  - Mesh used for creation the tree
 	 * @param soft_leaf_size_limit - Maximal number of elements stored in a leaf node of BIH tree.
 	 */
-	BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit = 20);
+	BIHTree(unsigned int soft_leaf_size_limit = 20);
 
 	/**
 	 * Destructor
 	 */
 	~BIHTree();
+
+	void add_boxes(std::vector<BoundingBox> boxes);
+
+	void construct();
 
 	/**
 	 * Get count of elements stored in tree
@@ -118,12 +121,10 @@ protected:
      */
     double estimate_median(unsigned char axis, const BIHNode &node);
 
-    /// mesh
-    Mesh* mesh_;
 	/// vector of mesh elements bounding boxes (from mesh)
-    std::vector<BoundingBox> &elements_;
+    std::vector<BoundingBox> elements_;
     /// Main bounding box. (from mesh)
-    BoundingBox &main_box_;
+    BoundingBox main_box_;
 
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
@@ -138,7 +139,7 @@ protected:
     std::vector<double> coors_;
 
     // random generator
-    std::mt19937	r_gen;
+    //std::mt19937	r_gen;
 
 
 };

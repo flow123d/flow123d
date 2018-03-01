@@ -729,30 +729,32 @@ void Mesh::check_and_finish()
 }
 
 
-void Mesh::compute_element_boxes() {
+std::vector<BoundingBox> Mesh::get_element_boxes(std::string region_name) {
     START_TIMER("Mesh::compute_element_boxes");
-    if (element_box_.size() > 0) return;
+    std::vector<BoundingBox> boxes;
+    RegionSet region_set = this->region_db().get_region_set(region_name);
+    if (region_set.size() == 0)
+        THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(region_name) );
 
     // make element boxes
-    element_box_.resize(this->element.size());
+    boxes.resize(this->element.size());
     unsigned int i=0;
     FOR_ELEMENTS(this, element) {
-         element_box_[i] = element->bounding_box();
-         i++;
+    	if (element->region().is_in_region_set(region_set)) {
+            boxes[i] = element->bounding_box();
+    	}
+    	i++;
     }
 
-    // make mesh box
-    Node* node = this->node_vector.begin();
-    mesh_box_ = BoundingBox(node->point(), node->point());
-    FOR_NODES(this, node ) {
-        mesh_box_.expand( node->point() );
-    }
-
+    return boxes;
 }
 
 const BIHTree &Mesh::get_bih_tree() {
-    if (! this->bih_tree_)
-        bih_tree_ = std::make_shared<BIHTree>(this);
+    if (! this->bih_tree_) {
+        bih_tree_ = std::make_shared<BIHTree>();
+        bih_tree_->add_boxes( this->get_element_boxes() );
+        bih_tree_->construct();
+	}
     return *bih_tree_;
 }
 

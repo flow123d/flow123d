@@ -29,31 +29,44 @@
 const double BIHTree::size_reduce_factor = 0.8;
 
 
-BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
-: mesh_(mesh),
-  elements_(mesh_->element_box_),
-  main_box_(mesh_->mesh_box_),
-  leaf_size_limit(soft_leaf_size_limit), r_gen(123)
-{
-	OLD_ASSERT(mesh != nullptr, " ");
-
-	mesh_->compute_element_boxes();
-
-    max_n_levels = 2*log(mesh->n_elements())/log(2);
-	nodes_.reserve(2*mesh_->n_elements() / leaf_size_limit);
-	in_leaves_.resize(elements_.size());
-	for(unsigned int i=0; i<in_leaves_.size(); i++) in_leaves_[i] = i;
-
-	// make root node
-	nodes_.push_back(BIHNode());
-	nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
-	make_node(main_box_, 0);
-}
+BIHTree::BIHTree(unsigned int soft_leaf_size_limit)
+: leaf_size_limit(soft_leaf_size_limit) //, r_gen(123)
+{}
 
 
 BIHTree::~BIHTree() {
 
 }
+
+
+void BIHTree::add_boxes(std::vector<BoundingBox> boxes) {
+    for(BoundingBox box : boxes) {
+        this->elements_.push_back(box);
+        if (box.is_valid()) main_box_.expand(box);
+    }
+}
+
+
+void BIHTree::construct() {
+    ASSERT_GT(elements_.size(), 0);
+
+    max_n_levels = 2*log2(elements_.size());
+    nodes_.reserve(2*elements_.size() / leaf_size_limit);
+    in_leaves_.resize(elements_.size());
+    for(unsigned int i=0, j=0; i<in_leaves_.size(); i++) {
+    	if ( elements_[i].is_valid() ) {
+        	in_leaves_[j] = i;
+    		j++;
+    	}
+    }
+
+    // make root node
+    nodes_.push_back(BIHNode());
+    nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
+    make_node(main_box_, 0);
+
+}
+
 
 const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
 {
