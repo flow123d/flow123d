@@ -22,6 +22,7 @@
 #include <limits>
 
 #include "msh_gmshreader.h"
+#include "io/element_data_cache_base.hh"
 
 #include "system/system.hh"
 #include "system/tokenizer.hh"

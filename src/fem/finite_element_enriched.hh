@@ -30,14 +30,14 @@ template <unsigned int dim, unsigned int spacedim>
 class FiniteElementEnriched : public FiniteElement<dim,spacedim>
 {
 protected:
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
+    //TODO: this is temporary merge fix, remove later and use vector<dof> dofs_ in FiniteElement
+    unsigned int number_of_dofs;
     
     typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
     
     FiniteElement<dim,spacedim> *fe;
 //     FE_P_disc<1,dim, spacedim> pu;
-    FE_P_disc<0,dim, spacedim> pu;
+    FE_P_disc<dim, spacedim> pu;
     
     unsigned int n_regular_dofs_;
     
@@ -81,7 +81,7 @@ public:
 template <unsigned int dim, unsigned int spacedim>
 FiniteElementEnriched<dim,spacedim>::FiniteElementEnriched(FiniteElement<dim,spacedim>* fe,
                                                            std::vector<EnrichmentPtr> enr)
-: fe(fe), enr(enr)
+: fe(fe), pu(0), enr(enr)
 {
     this->init();
 
@@ -89,7 +89,6 @@ FiniteElementEnriched<dim,spacedim>::FiniteElementEnriched(FiniteElement<dim,spa
     
     // regular + enriched from every singularity
     number_of_dofs = n_regular_dofs_ + pu.n_dofs() * enr.size();
-    number_of_single_dofs[dim] = number_of_dofs;
 }
 
 template <unsigned int dim, unsigned int spacedim>

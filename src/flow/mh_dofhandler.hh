@@ -18,27 +18,26 @@
 #ifndef MH_DOFHANDLER_HH_
 #define MH_DOFHANDLER_HH_
 
-#include <vector>
-#include <memory>
-#include <unordered_map>
+#include <ext/alloc_traits.h>                // for __alloc_traits<>::value_...
+#include <sys/types.h>                       // for uint
+#include <memory>                            // for shared_ptr, __shared_ptr
+#include <unordered_map>                     // for unordered_map
+#include <vector>                            // for vector
+#include <armadillo>
+#include "la/distribution.hh"                // for Distribution
+#include "mesh/accessors.hh"                 // for ElementAccessor
+#include "mesh/element_impls.hh"             // for Element::side, Element::dim
+#include "mesh/mesh.h"                       // for Mesh
+#include "mesh/mesh_types.hh"                // for ElementFullIter
+#include "mesh/region.hh"                    // for Region
+#include "mesh/side_impl.hh"                 // for Side::edge_idx
+#include "mesh/sides.h"                      // for SideIter, Side
+#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 
-#include "mesh/mesh_types.hh"
-#include "mesh/accessors.hh"
-#include "mesh/sides.h"
-#include "mesh/region.hh"
-
-#include "la/distribution.hh"
-#include "la/local_to_global_map.hh"
+class LocalToGlobalMap;
+template <int spacedim> class LocalElementAccessorBase;
 
 using namespace std;
-
-class Mesh;
-class Side;
-class SideIter;
-class MH_DofHandler;
-
-template <int spacedim>
-class LocalElementAccessorBase;
 
 template <unsigned int dimA, unsigned int dimB>
 class IntersectionLocal;

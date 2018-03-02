@@ -52,7 +52,7 @@ StorageBase * ReaderInternalTranspose::read_storage(PathBase &p, const Type::Arr
 		return make_autoconversion_array_storage(p, array, first_item_storage);
 	} else {
 
-		// check sizes of arrays stored in transpose_array_sizes_
+		// check that transposed arrays are of the same size
 		transpose_array_sizes_.erase( unique( transpose_array_sizes_.begin(), transpose_array_sizes_.end() ),
 									  transpose_array_sizes_.end() );
 		if (transpose_array_sizes_.size() == 1) {

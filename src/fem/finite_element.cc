@@ -29,26 +29,48 @@ using namespace std;
 
 
 
+
+template<class FS> const double Dof::evaluate(const FS &function_space,
+                                              unsigned int basis_idx) const
+{
+    // Check that FS is derived from FunctionSpace.
+    static_assert(std::is_base_of<FunctionSpace, FS>::value, "FS must be derived from FunctionSpace.");
+    
+    // We cannot evaluate dof on dim-dimensional n-face if the function space lies on lower-dimensional n-face.
+    ASSERT(function_space.space_dim()+1 == coords.size());
+    
+    switch (type)
+    {
+    case Value:
+    {
+        // evaluate basis function and return the linear combination of components
+        arma::vec vec_value(function_space.n_components());
+        for (unsigned int c=0; c<function_space.n_components(); c++)
+            vec_value[c] = function_space.basis_value(basis_idx, coords.subvec(0,coords.size()-2), c);
+        return dot(coefs, vec_value);
+        break;
+    }
+        
+    default:
+        OLD_ASSERT(false, "Dof evaluation not implemented for this type.");
+    }
+    return 0;
+}
+
+
+
 template<unsigned int dim, unsigned int spacedim>
 FiniteElement<dim,spacedim>::FiniteElement()
+    : function_space_(nullptr)
 {
     init();
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive, FEType type)
+void FiniteElement<dim,spacedim>::init(bool primitive, FEType type)
 {
-    number_of_dofs = 0;
-    for (unsigned int i = 0; i <= dim; i++)
-    {
-        number_of_single_dofs[i] = 0;
-        number_of_pairs[i] = 0;
-        number_of_triples[i] = 0;
-        number_of_sextuples[i] = 0;
-    }
-    
+    dofs_.clear();
     is_primitive_ = primitive;
-    n_components_ = n_components;
     type_ = type;
 }
 
@@ -56,48 +78,19 @@ void FiniteElement<dim,spacedim>::init(unsigned int n_components, bool primitive
 template<unsigned int dim, unsigned int spacedim>
 void FiniteElement<dim,spacedim>::setup_components()
 {
-  component_indices_.resize(number_of_dofs, 0);
-  nonzero_components_.resize(number_of_dofs, { true });
+  component_indices_.resize(dofs_.size(), 0);
+  nonzero_components_.resize(dofs_.size(), { true });
 }
 
-
-template<unsigned int dim, unsigned int spacedim> inline
-const unsigned int FiniteElement<dim,spacedim>::n_dofs() const
-{
-    return number_of_dofs;
-}
-
-template<unsigned int dim, unsigned int spacedim> inline
-const unsigned int FiniteElement<dim,spacedim>::n_object_dofs(
-        unsigned int object_dim, DofMultiplicity multiplicity)
-{
-	OLD_ASSERT(object_dim >= 0 && object_dim <= dim,
-            "Object type number is out of range.");
-    switch (multiplicity)
-    {
-    case DOF_SINGLE:
-        return number_of_single_dofs[object_dim];
-    case DOF_PAIR:
-        return number_of_pairs[object_dim];
-    case DOF_TRIPLE:
-        return number_of_triples[object_dim];
-    case DOF_SEXTUPLE:
-        return number_of_sextuples[object_dim];
-    }
-
-    return 0;
-}
 
 template<unsigned int dim, unsigned int spacedim> inline
 void FiniteElement<dim,spacedim>::compute_node_matrix()
 {
-	OLD_ASSERT_EQUAL(get_generalized_support_points().size(), number_of_dofs);
+    arma::mat M(dofs_.size(), dofs_.size());
 
-    arma::mat M(number_of_dofs, number_of_dofs);
-
-    for (unsigned int i = 0; i < number_of_dofs; i++)
-        for (unsigned int j = 0; j < number_of_dofs; j++) {
-            M(j, i) = basis_value(j, get_generalized_support_points()[i]);
+    for (unsigned int i = 0; i < dofs_.size(); i++)
+        for (unsigned int j = 0; j < dofs_.size(); j++) {
+            M(j, i) = dofs_[i].evaluate(*function_space_, j);
 
         }
     node_matrix = arma::inv(M);
@@ -108,34 +101,90 @@ FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q
 {
     FEInternalData *data = new FEInternalData;
 
-    arma::vec values(number_of_dofs);
-    data->basis_values.resize(q.size());
+    arma::mat raw_values(function_space_->dim(), n_components());
+    arma::mat shape_values(n_dofs(), n_components());
+
+    data->ref_shape_values.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
-        for (unsigned int j=0; j<number_of_dofs; j++)
-            values[j] = basis_value(j, q.point(i));
-        data->basis_values[i] = node_matrix * values;
+        for (unsigned int j=0; j<function_space_->dim(); j++)
+            for (unsigned int c=0; c<n_components(); c++)
+              raw_values(j,c) = basis_value(j, q.point(i), c);
+
+        shape_values = node_matrix * raw_values;
+
+        data->ref_shape_values[i].resize(n_dofs());
+        for (unsigned int j=0; j<n_dofs(); j++)
+            data->ref_shape_values[i][j] = trans(shape_values.row(j));
     }
 
-    arma::mat grads(number_of_dofs, dim);
-    data->basis_grads.resize(q.size());
+    arma::mat grad(dim,n_components());
+    vector<arma::mat> grads(n_dofs());
+
+    data->ref_shape_grads.resize(q.size());
     for (unsigned int i=0; i<q.size(); i++)
     {
-        for (unsigned int j=0; j<number_of_dofs; j++)
-            grads.row(j) = arma::trans(basis_grad(j, q.point(i)));
-        data->basis_grads[i] = node_matrix * grads;
+        data->ref_shape_grads[i].resize(n_dofs());
+        for (unsigned int j=0; j<n_dofs(); j++)
+        {
+            grad.zeros();
+            for (unsigned int l=0; l<function_space_->dim(); l++)
+              for (unsigned int c=0; c<n_components(); c++)
+                grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(j,l);
+            data->ref_shape_grads[i][j] = grad;
+        }
     }
 
     return data;
 }
+
+
+template<unsigned int dim, unsigned int spacedim>
+double FiniteElement<dim,spacedim>::basis_value(const unsigned int i, 
+                                       const arma::vec::fixed<dim> &p,
+                                       const unsigned int comp) const
+{
+    ASSERT_DBG( comp < n_components() );
+	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
+    return this->function_space_->basis_value(i, p, comp);
+}
+
+template<unsigned int dim, unsigned int spacedim>
+arma::vec::fixed<dim> FiniteElement<dim,spacedim>::basis_grad(const unsigned int i,
+                                                     const arma::vec::fixed<dim> &p,
+                                                     const unsigned int comp) const
+{
+    ASSERT_DBG( comp < n_components() );
+	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
+    return this->function_space_->basis_grad(i, p, comp);
+}
+
 
 template<unsigned int dim, unsigned int spacedim> inline
 UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
 
-    if (flags & update_gradients)
-        f |= update_inverse_jacobians;
+    switch (type_)
+    {
+        case FEScalar:   
+            if (flags & update_gradients)
+                f |= update_inverse_jacobians;
+            break;
+        case FEVectorContravariant:
+            if (flags & update_values)
+                f |= update_jacobians;
+            if (flags & update_gradients)
+                f |= update_jacobians | update_inverse_jacobians;
+            break;
+        case FEVectorPiola:
+            if (flags & update_values)
+                f |= update_jacobians | update_volume_elements;
+            if (flags & update_gradients)
+                f |= update_jacobians | update_inverse_jacobians | update_volume_elements;
+            break;
+        default:;
+    }
 
     return f;
 }
@@ -150,8 +199,35 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     if (fv_data.update_flags & update_values)
     {
         for (unsigned int i = 0; i < q.size(); i++)
-            for (unsigned int c = 0; c < n_dofs(); c++)
-                fv_data.shape_values[i][c] = data.basis_values[i][c];
+            for (unsigned int j = 0; j < n_dofs(); j++)
+            {
+                arma::vec fv_vec;
+                switch (type_) {
+                    case FEScalar:
+                        fv_data.shape_values[i][j] = data.ref_shape_values[i][j][0];
+                        break;
+                    case FEVectorContravariant:
+                        fv_vec = fv_data.jacobians[i] * data.ref_shape_values[i][j];
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_values[i][j*spacedim+c] = fv_vec[c];
+                        break;
+                    case FEVectorPiola:
+                        fv_vec = fv_data.jacobians[i]*data.ref_shape_values[i][j]/fv_data.determinants[i];
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_values[i][j*spacedim+c] = fv_vec(c);
+                        break;
+//                     case FETensor:
+//                         arma::mat ref_mat(dim);
+//                         for (unsigned int c=0; c<spacedim*spacedim; c++)
+//                             ref_mat[c/spacedim,c%spacedim] = data.ref_shape_values[i][j][c];
+//                         arma::mat fv_mat = ref_mat*fv_data.inverse_jacobians[i];
+//                         for (unsigned int c=0; c<spacedim*spacedim; c++)
+//                             fv_data.shape_values[i][j*spacedim*spacedim+c] = fv_mat[c];
+//                         break;
+                    default:
+                        ASSERT(false).error("Not implemented.");
+                }
+            }
     }
 
     // shape gradients
@@ -159,25 +235,33 @@ void FiniteElement<dim,spacedim>::fill_fe_values(
     {
         for (unsigned int i = 0; i < q.size(); i++)
         {
-            arma::mat grads = trans(data.basis_grads[i] * fv_data.inverse_jacobians[i]);
-            for (unsigned int c = 0; c < n_dofs(); c++)
-                fv_data.shape_gradients[i][c] = grads.col(c);
+            for (unsigned int j = 0; j < n_dofs(); j++)
+            {
+                arma::mat grads;
+                switch (type_) {
+                    case FEScalar:
+                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j];
+                        fv_data.shape_gradients[i][j] = grads;
+                        break;
+                    case FEVectorContravariant:
+                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j] * trans(fv_data.jacobians[i]);
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                        break;
+                    case FEVectorPiola:
+                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j] * trans(fv_data.jacobians[i])
+                                / fv_data.determinants[i];
+                        for (unsigned int c=0; c<spacedim; c++)
+                            fv_data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+                        break;
+                    default:
+                        ASSERT(false).error("Not implemented.");
+                }
+            }
         }
     }
 }
 
-template<unsigned int dim, unsigned int spacedim>
-const vector<arma::vec::fixed<dim> > &FiniteElement<dim,spacedim>::get_generalized_support_points()
-{
-    if (generalized_support_points.size() > 0)
-    {
-        return generalized_support_points;
-    }
-    else
-    {
-        return unit_support_points;
-    }
-}
 
 template<unsigned int dim, unsigned int spacedim>
 const arma::mat& FiniteElement<dim,spacedim>::get_node_matrix()
@@ -188,7 +272,9 @@ const arma::mat& FiniteElement<dim,spacedim>::get_node_matrix()
 
 template<unsigned int dim, unsigned int spacedim>
 FiniteElement<dim,spacedim>::~FiniteElement()
-{}
+{
+    if (function_space_ != nullptr) delete function_space_;
+}
 
 
 template class FiniteElement<0,3>;

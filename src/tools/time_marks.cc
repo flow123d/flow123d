@@ -22,7 +22,6 @@
 #include "system/global_defs.h"
 #include "time_governor.hh"
 #include "time_marks.hh"
-#include <boost/functional/hash.hpp>
 
 // ------------------------------------------------------
 // implementation of members of class TimeMark

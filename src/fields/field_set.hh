@@ -19,9 +19,19 @@
 #define FIELD_SET_HH_
 
 
-#include <system/exceptions.hh>
-#include "fields/field.hh"
-#include "fields/field_flag.hh"
+#include <iosfwd>                  // for ostream
+#include <string>                  // for string
+#include <vector>                  // for vector
+#include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
+#include "fields/field_flag.hh"    // for FieldFlag, FieldFlag::Flags
+#include "input/accessors.hh"      // for Array
+#include "input/type_record.hh"    // for Record
+#include "io/output_time.hh"       // for OutputTime, OutputTime::DiscreteSpace
+#include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
+#include "system/flag_array.hh"    // for FlagArray<>::Mask
+#include "tools/time_governor.hh"  // for TimeGovernor (ptr only), TimeStep
+class Mesh;
+class Region;
 
 
 

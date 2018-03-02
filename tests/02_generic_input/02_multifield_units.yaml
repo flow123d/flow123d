@@ -58,6 +58,7 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.2
+      precision: 14  
     substances:
       - A
       - B

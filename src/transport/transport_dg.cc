@@ -27,6 +27,7 @@
 #include "fem/fe_rt.hh"
 #include "fields/field_fe.hh"
 #include "la/linsys_PETSC.hh"
+#include "flow/mh_dofhandler.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
@@ -74,7 +75,7 @@ template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
     std::string equation_name = std::string(Model::ModelEqData::name()) + "_DG";
     return Model::get_input_type("DG", "DG solver")
-        .declare_key("solver", LinSys_PETSC::get_input_type(), Default::obligatory(),
+        .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
                 "Linear solver for MH problem.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqData()
@@ -104,41 +105,10 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 {
     unsigned int q_order;
 
-    switch (fe_order)
-    {
-    case 0:
-        q_order = 0;
-        fe1_ = new FE_P_disc<0,1,3>;
-        fe2_ = new FE_P_disc<0,2,3>;
-        fe3_ = new FE_P_disc<0,3,3>;
-        break;
-
-    case 1:
-        q_order = 2;
-        fe1_ = new FE_P_disc<1,1,3>;
-        fe2_ = new FE_P_disc<1,2,3>;
-        fe3_ = new FE_P_disc<1,3,3>;
-        break;
-
-    case 2:
-        q_order = 4;
-        fe1_ = new FE_P_disc<2,1,3>;
-        fe2_ = new FE_P_disc<2,2,3>;
-        fe3_ = new FE_P_disc<2,3,3>;
-        break;
-
-    case 3:
-        q_order = 6;
-        fe1_ = new FE_P_disc<3,1,3>;
-        fe2_ = new FE_P_disc<3,2,3>;
-        fe3_ = new FE_P_disc<3,3,3>;
-        break;
-
-    default:
-        q_order=0;
-        xprintf(PrgErr, "Unsupported polynomial order %d for finite elements in TransportDG ", fe_order);
-        break;
-    }
+    q_order = 2*fe_order;
+    fe1_ = new FE_P_disc<1,3>(fe_order);
+    fe2_ = new FE_P_disc<2,3>(fe_order);
+    fe3_ = new FE_P_disc<3,3>(fe_order);
 
     fe_rt1_ = new FE_RT0<1,3>;
     fe_rt2_ = new FE_RT0<2,3>;
@@ -330,7 +300,7 @@ void TransportDG<Model>::initialize()
     }
 
     // set time marks for writing the output
-    data_.output_fields.initialize(Model::output_stream_, input_rec.val<Input::Record>("output"), this->time());
+    data_.output_fields.initialize(Model::output_stream_, Model::mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
@@ -343,7 +313,13 @@ void TransportDG<Model>::initialize()
     ls    = new LinSys*[Model::n_substances()];
     ls_dt = new LinSys*[Model::n_substances()];
     solution_elem_ = new double*[Model::n_substances()];
-    ret_vec = new Vec[Model::n_substances()];
+
+    stiffness_matrix.resize(Model::n_substances(), nullptr);
+    mass_matrix.resize(Model::n_substances(), nullptr);
+    rhs.resize(Model::n_substances(), nullptr);
+    mass_vec.resize(Model::n_substances(), nullptr);
+    ret_vec.resize(Model::n_substances(), nullptr);
+
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
         ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
@@ -355,10 +331,6 @@ void TransportDG<Model>::initialize()
         
         VecDuplicate(ls[sbi]->get_solution(), &ret_vec[sbi]);
     }
-    stiffness_matrix = new Mat[Model::n_substances()];
-    mass_matrix = new Mat[Model::n_substances()];
-    rhs = new Vec[Model::n_substances()];
-    mass_vec = new Vec[Model::n_substances()];
 
 
     // initialization of balance object
@@ -381,20 +353,26 @@ TransportDG<Model>::~TransportDG()
             delete ls[i];
             delete[] solution_elem_[i];
             delete ls_dt[i];
-            MatDestroy(&stiffness_matrix[i]);
-            MatDestroy(&mass_matrix[i]);
-            VecDestroy(&rhs[i]);
-            VecDestroy(&mass_vec[i]);
-            VecDestroy(&ret_vec[i]);
+
+            if (stiffness_matrix[i])
+                MatDestroy(&stiffness_matrix[i]);
+            if (mass_matrix[i])
+                MatDestroy(&mass_matrix[i]);
+            if (rhs[i])
+                VecDestroy(&rhs[i]);
+            if (mass_vec[i])
+                VecDestroy(&mass_vec[i]);
+            if (ret_vec[i])
+                VecDestroy(&ret_vec[i]);
         }
         delete[] ls;
         delete[] solution_elem_;
         delete[] ls_dt;
-        delete[] stiffness_matrix;
-        delete[] mass_matrix;
-        delete[] rhs;
-        delete[] mass_vec;
-        delete[] ret_vec;
+        //delete[] stiffness_matrix;
+        //delete[] mass_matrix;
+        //delete[] rhs;
+        //delete[] mass_vec;
+        //delete[] ret_vec;
         delete feo;
 
     }

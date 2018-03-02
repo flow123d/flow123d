@@ -20,10 +20,15 @@
 
 
 #include <mpi.h>
-#include <iostream>
+//#include <iostream>
 
 #include "system/global_defs.h"
 #include "system/exc_common.hh"
+#include <stdio.h>                                     // for FILE
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <string>                                      // for string
+#include "system/exceptions.hh"                        // for ExcChkErr::~Ex...
 
 
 #ifndef _BSD_SOURCE
@@ -35,9 +40,9 @@
   #define GetCurrentDir _getcwd
   #define PATH_MAX MAX_PATH 
 #else
-  #include <unistd.h>
-  #define GetCurrentDir getcwd
-  #include <limits.h>   //PATH_MAX
+  //#include <unistd.h>
+  //#define GetCurrentDir getcwd
+  //#include <limits.h>   //PATH_MAX
 #endif
 
 #define strcmpi strcasecmp

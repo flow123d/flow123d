@@ -22,6 +22,8 @@
 #include "mesh/ngh/include/triangle.h"
 #include "mesh/ngh/include/abscissa.h"
 #include "mesh/ngh/include/intersection.h"
+#include "mesh/ngh/include/intersectionLocal.h"
+#include "mesh/ngh/include/myvector.h"
 
 
 

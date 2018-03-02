@@ -162,9 +162,9 @@ const it::Record & DarcyMH::get_input_type() {
                 "Vector of the gravity force. Dimensionless.")
 		.declare_key("input_fields", it::Array( type_field_descriptor() ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")				
-        .declare_key("nonlinear_solver", ns_rec, it::Default::obligatory(),
+        .declare_key("nonlinear_solver", ns_rec, it::Default("{}"),
                 "Non-linear solver for MH problem.")
-        .declare_key("output_stream", OutputTime::get_input_type(), it::Default::obligatory(),
+        .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
                 "Parameters of output stream.")
 
         .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),

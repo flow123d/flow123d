@@ -18,17 +18,23 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
-#include "input/accessors_forward.hh"
+#include <memory>          // for shared_ptr
+#include <ostream>         // for ofstream, stringstream, ostringstream
+#include <string>          // for string
+#include "output_time.hh"  // for OutputTime, OutputTime::OutputDataFieldVec
 
-#include "output_time.hh"
-#include "element_data_cache.hh"
-
-#include <ostream>
-#include <cstdint>
+class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+template <typename T> class ElementDataCache;
 
 using namespace std;
 
-class OutputMeshBase;
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -60,6 +66,8 @@ public:
 	 */
     static const Input::Type::Selection & get_input_type_variant();
 
+
+
     /**
      * \brief This function write data to VTK (.pvd) file format
      * for curent time
@@ -77,7 +85,7 @@ public:
     int write_tail(void);
 
     /// Override @p OutputTime::init_from_input.
-    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec) override;
+    void init_from_input(const std::string &equation_name, const Input::Record &in_rec) override;
 
 protected:
 
@@ -125,6 +133,11 @@ protected:
 
     /// Formats of DataArray section
 	static const std::vector<std::string> formats;
+
+	/**
+	 * Used internally by write_data.
+	 */
+	string form_vtu_filename_(string basename, int i_step, int rank);
 
 	/**
      * \brief Write header of VTK file (.vtu)

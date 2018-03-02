@@ -33,6 +33,7 @@
 
 template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM_S;
 
+
 /**
  * @brief Raviart-Thomas element of order 0.
  *
@@ -42,18 +43,11 @@ template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM_S;
 template <unsigned int dim, unsigned int spacedim>
 class FE_RT0_XFEM_S : public FiniteElementEnriched<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-//     using FiniteElement<dim,spacedim>::number_of_pairs;
-//     using FiniteElement<dim,spacedim>::number_of_triples;
-//     using FiniteElement<dim,spacedim>::number_of_sextuples;
-    using FiniteElement<dim,spacedim>::generalized_support_points;
-//     using FiniteElement<dim,spacedim>::node_matrix;
-    
     using FiniteElementEnriched<dim,spacedim>::fe;
     using FiniteElementEnriched<dim,spacedim>::pu;
     using FiniteElementEnriched<dim,spacedim>::enr;
     using FiniteElementEnriched<dim,spacedim>::n_regular_dofs_;
+    using FiniteElementEnriched<dim,spacedim>::number_of_dofs;
     
     typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
     
@@ -100,6 +94,9 @@ public:
     ~FE_RT0_XFEM_S() {};
 
 private:
+    
+    void setup_dofs();
+    
     /// Awful HACK function for getting quadrature based on Singularity0D or Singularity1D
     std::shared_ptr<QXFEM<dim,spacedim>> qxfem_side(ElementFullIter ele, unsigned int sid);
     
@@ -126,15 +123,29 @@ FE_RT0_XFEM_S<dim,spacedim>::FE_RT0_XFEM_S(FE_RT0<dim,spacedim>* fe,
                                        std::vector<EnrichmentPtr> enr)
 : FiniteElementEnriched<dim,spacedim>(fe,enr)
 {
-    this->init(spacedim, false, FEVector);
-    this->component_indices_.clear();
-    this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
+    this->init(false, FEType::FEVectorPiola);
+    this->function_space_ = new RT0_space(dim);
     
+    setup_dofs();
     // regular + enriched from every singularity
     number_of_dofs = n_regular_dofs_ + enr.size();
-    number_of_single_dofs[dim] = number_of_dofs;
+    
+    this->component_indices_.clear();
+    this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
 }
 
+template <unsigned int dim, unsigned int spacedim>
+inline void FE_RT0_XFEM_S<dim,spacedim>::setup_dofs()
+{
+    this->dofs_ = fe->dofs_;
+    // now add enriched dofs:
+    for (unsigned int w=0; w<enr.size(); w++){
+        this->dofs_.push_back(Dof(dim, 0,
+                                  enr[w]->geometry().dist_vector(arma::vec({0,0,0})),
+                                  arma::vec({enr[w]->geometry().effective_surface()}),
+                                  DofType::Singular));
+    }
+}
 
 template <unsigned int dim, unsigned int spacedim>
 inline UpdateFlags FE_RT0_XFEM_S<dim,spacedim>::update_each(UpdateFlags flags)
@@ -201,7 +212,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
                 
                 for (unsigned int w=0; w<enr.size(); w++){
                     double val = 0;
-    //                 DBGCOUT("edge quad [" << j << "]\n");
+//                     DBGCOUT("edge quad [" << j << "]\n");
                     for(unsigned int q=0; q < q_side->size(); q++){
                         val += arma::dot(enr[w]->vector(q_side->real_point(q)),normals[j])
                             // this makes JxW on the triangle side:
@@ -263,16 +274,20 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             arma::mat::fixed<dim+1,dim> raw_values;
             arma::mat::fixed<dim+1,dim> shape_values;
             
+//             DBGCOUT("regular shape vals\n");
             for (j=0; j<n_regular_dofs_; j++)
                 for (unsigned int c=0; c<dim; c++)
                     raw_values(j,c) = fe->basis_value(j, quad.point(q), c);
             
+//             DBGCOUT("times node matrix\n");
             shape_values = fe->get_node_matrix() * raw_values;
             
+//             DBGCOUT("times jacobians\n");
             for (j=0; j<n_regular_dofs_; j++)
                 vectors[j] = fv_data.jacobians[q] * arma::trans(shape_values.row(j)) / fv_data.determinants[q];
             
             //fill enriched shape functions
+//             DBGCOUT("enriched shape vals\n");
             j = n_regular_dofs_;
             for (unsigned int w=0; w<enr.size(); w++)
             {
@@ -287,6 +302,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
                 j++;
             }   
             
+//             DBGCOUT("enriched shape vals - decomp on components\n");
             for (unsigned int k=0; k<number_of_dofs; k++)
                 for (unsigned int c=0; c<dim; c++)
                     fv_data.shape_values[q][k*spacedim+c] = vectors[k][c];
@@ -294,6 +310,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
     }
 
     // divergence
+//     DBGCOUT("divergence\n");
     if (fv_data.update_flags & update_divergence)
     {
         vector<double> divs(number_of_dofs);
@@ -303,6 +320,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
         for (unsigned int q = 0; q < quad.size(); q++)
         {   
             //fill regular shape functions
+//             DBGCOUT("regular shape divs\n");
             for (unsigned int k=0; k<dim+1; k++)
             {
                 // grads on ref element
@@ -322,6 +340,7 @@ inline void FE_RT0_XFEM_S<dim,spacedim>::fill_fe_values(
             
             
             //fill enriched shape functions
+//             DBGCOUT("enriched shape divs\n");
             j = n_regular_dofs_;
             for (unsigned int w=0; w<enr.size(); w++)
             {

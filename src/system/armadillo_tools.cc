@@ -11,8 +11,8 @@
 
 #include "armadillo_tools.hh"
 
-#include <ostream>
-#include <sstream>
+//#include <ostream>
+//#include <sstream>
 #include <type_traits>
 #include "system/exc_common.hh"
 #include "system/logger.hh"
@@ -85,7 +85,8 @@ string field_value_to_yaml_matrix(const T &mat, unsigned int prec) {
         for(unsigned int i_col=0; i_col < mat.n_cols; i_col++) {
             if (i_col != 0) ss << " , ";
             if (std::is_floating_point<decltype(mat.at(0,0))>::value)
-                ss << fmt::format("{0:#.{1}g}", mat.at(i_row, i_col), prec);
+                //ss << fmt::format("{0:#.{1}g}", mat.at(i_row, i_col), prec);
+                ss << mat.at(i_row, i_col);
             else
                 ss << mat.at(i_row, i_col);
         }
@@ -103,7 +104,8 @@ string field_value_to_yaml_vector(const T &vec, unsigned int prec) {
     for(unsigned int i=0; i < vec.n_elem; i++) {
         if (i != 0) ss << " , ";
         if (std::is_floating_point<decltype(vec[0])>::value)
-            ss << fmt::format("{0:#.{1}g}", vec(i), prec);
+            //ss << fmt::format("{0:#.{1}g}", vec(i), prec);
+            ss << vec(i);
         else
             ss << vec(i);
     }
@@ -122,7 +124,8 @@ struct field_value_scalar_resolution<std::true_type> {
         if (std::is_integral<T>::value)
             ss << mat;
         else
-            ss << fmt::format("{0:#.{1}g}", mat, prec);
+            //ss << fmt::format("{0:#.{1}g}", mat, prec);
+            ss << mat;
         return ss.str();
     }
 };

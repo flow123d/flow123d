@@ -9,7 +9,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <memory>
-#include <boost/regex.hpp>
+#include <regex>
 
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
@@ -209,9 +209,9 @@ TYPED_TEST(FieldFix, set_input_list) {
 			"{time=2, a=0}]";
 
 	if (this->is_enum_valued) {
-		boost::regex e("=0");
-		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
-		list_ko = boost::regex_replace(list_ko, e, "=\"white\"");
+		std::regex e("=0");
+		list_ok = std::regex_replace(list_ok, e, "=\"white\"");
+		list_ko = std::regex_replace(list_ko, e, "=\"white\"");
 	}
 
 	this->field_.name("a");
@@ -238,8 +238,8 @@ TYPED_TEST(FieldFix, mark_input_times) {
             "{time=5, a=0, b=0}]";
 
 	if (this->is_enum_valued) {
-		boost::regex e("=0");
-		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
+		std::regex e("=0");
+		list_ok = std::regex_replace(list_ok, e, "=\"white\"");
 	}
 
 	this->field_.name("b");
@@ -322,8 +322,8 @@ TYPED_TEST(FieldFix, update_history) {
 			"{time=5, region=\"ALL\", a =1}"
 			"]";
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
 	}
 
 	this->name("a");
@@ -454,8 +454,8 @@ TYPED_TEST(FieldFix, set_time) {
 			"]";
 
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
 	}
 
 	this->name("a");
@@ -516,8 +516,8 @@ TYPED_TEST(FieldFix, constructors) {
 			"{time=5,  region=\"BULK\", a=0, b=0}]";
 
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex("=1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex("=0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex("=1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex("=0"), "=\"black\"");
 	}
 
 	this->field_.set_input_list(this->input_list(list_ok));

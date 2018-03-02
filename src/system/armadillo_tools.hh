@@ -9,7 +9,6 @@
 #define SRC_SYSTEM_ARMADILLO_TOOLS_HH_
 
 #include <string>
-#include <armadillo>
 
 /**
  * This method sets particular ostream to armadillo which catch

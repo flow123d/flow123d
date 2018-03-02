@@ -37,28 +37,22 @@ template <unsigned int dim, unsigned int spacedim> class FE_P0_XFEM;
 template <unsigned int dim, unsigned int spacedim>
 class FE_P0_XFEM : public FiniteElementEnriched<dim,spacedim>
 {
-    using FiniteElement<dim,spacedim>::number_of_dofs;
-    using FiniteElement<dim,spacedim>::number_of_single_dofs;
-//     using FiniteElement<dim,spacedim>::number_of_pairs;
-//     using FiniteElement<dim,spacedim>::number_of_triples;
-//     using FiniteElement<dim,spacedim>::number_of_sextuples;
-    using FiniteElement<dim,spacedim>::generalized_support_points;
-    using FiniteElement<dim,spacedim>::unit_support_points;
-//     using FiniteElement<dim,spacedim>::node_matrix;
-    
     using FiniteElementEnriched<dim,spacedim>::fe;
     using FiniteElementEnriched<dim,spacedim>::pu;
     using FiniteElementEnriched<dim,spacedim>::enr;
     using FiniteElementEnriched<dim,spacedim>::n_regular_dofs_;
+    using FiniteElementEnriched<dim,spacedim>::number_of_dofs;
     
     typedef typename std::shared_ptr<GlobalEnrichmentFunc<dim,spacedim>> EnrichmentPtr;
+    
+    void setup_dofs();
     
 public:
 
     /**
      * @brief Constructor.
      */
-    FE_P0_XFEM(FE_P_disc<0,dim,spacedim>* fe,std::vector<EnrichmentPtr> enr);
+    FE_P0_XFEM(FE_P_disc<dim,spacedim>* fe,std::vector<EnrichmentPtr> enr);
 
 
     /**
@@ -103,19 +97,36 @@ public:
 
 
 template <unsigned int dim, unsigned int spacedim>
-FE_P0_XFEM<dim,spacedim>::FE_P0_XFEM(FE_P_disc<0,dim,spacedim>* fe,
+FE_P0_XFEM<dim,spacedim>::FE_P0_XFEM(FE_P_disc<dim,spacedim>* fe,
                                      std::vector<EnrichmentPtr> enr)
 : FiniteElementEnriched<dim,spacedim>(fe,enr)
 {
-    this->init(1, true, FEScalar);
-//     this->component_indices_.clear();
-//     this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
+    this->init(true, FEType::FEScalar);
+    this->function_space_ = new PolynomialSpace(fe->degree_,dim);
     
     // regular + pu * enriched from every singularity
-    number_of_dofs = n_regular_dofs_ + pu.n_dofs() * enr.size();
-    number_of_single_dofs[dim] = number_of_dofs;
+//     number_of_dofs = n_regular_dofs_ + pu.n_dofs() * enr.size();
+    
+    setup_dofs();
+    // regular + enriched from every singularity
+    number_of_dofs = n_regular_dofs_ + enr.size();
+    
+    this->component_indices_.clear();
+    this->nonzero_components_.resize(number_of_dofs, std::vector<bool>(spacedim, true));
 }
 
+template <unsigned int dim, unsigned int spacedim>
+inline void FE_P0_XFEM<dim,spacedim>::setup_dofs()
+{
+    this->dofs_ = fe->dofs_;
+    // now add enriched dofs:
+    for (unsigned int w=0; w<enr.size(); w++){
+        this->dofs_.push_back(Dof(dim, 0,
+                                  enr[w]->geometry().dist_vector(arma::vec({0,0,0})),
+                                  arma::vec({enr[w]->geometry().effective_surface()}),
+                                  DofType::Singular));
+    }
+}
 
 template <unsigned int dim, unsigned int spacedim>
 inline UpdateFlags FE_P0_XFEM<dim,spacedim>::update_each(UpdateFlags flags)

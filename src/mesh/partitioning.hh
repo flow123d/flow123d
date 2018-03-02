@@ -18,12 +18,23 @@
 #ifndef PARTITIONING_HH_
 #define PARTITIONING_HH_
 
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <memory>                    // for shared_ptr
+#include <string>                    // for string
+#include <vector>                    // for vector
+#include "input/accessors.hh"        // for Record
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
+class Distribution;
 class Mesh;
 class SparseGraph;
-class Distribution;
+namespace Input {
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
 
 /// Re-declaration of typedef defined in mesh.h
 typedef int IdxInt;

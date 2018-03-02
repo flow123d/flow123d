@@ -9,8 +9,8 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "fields/equation_output.hh"
+#include "fields/field.hh"
 #include "io/output_time_set.hh"
-#include "io/output_mesh.hh"
 #include "input/flow_attribute_lib.hh"
 #include <memory>
 
@@ -94,9 +94,10 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
 }
 
 
-void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg)
+void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, Input::Record in_rec, const TimeGovernor & tg)
 {
     stream_ = stream;
+    mesh_ = mesh;
     equation_type_ = tg.equation_mark_type();
     equation_fixed_type_ = tg.equation_fixed_mark_type();
     read_from_input(in_rec, tg);
@@ -173,10 +174,17 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
 
 void EquationOutput::output(TimeStep step)
 {
-    // make observe points if not already done
-	stream_->observe();
+    ASSERT_PTR(mesh_).error();
 
-	this->make_output_mesh();
+    // make observe points if not already done
+	auto observe_ptr = stream_->observe(mesh_);
+
+    int rank; bool parallel;
+    stream_->get_output_params(parallel, rank);
+
+    if ( (rank == 0) || parallel ) {
+        this->make_output_mesh(parallel);
+    }
 
     for(FieldCommon * field : this->field_list) {
 
@@ -186,7 +194,7 @@ void EquationOutput::output(TimeStep step)
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-                field->observe_output( stream_->observe() );
+                field->observe_output( observe_ptr );
             }
         }
     }
@@ -202,53 +210,52 @@ void EquationOutput::add_output_times(double begin, double step, double end)
 }
 
 
-void EquationOutput::make_output_mesh()
+void EquationOutput::make_output_mesh(bool parallel)
 {
     // already computed
-    if (stream_->is_output_mesh_init()) return;
+    if (stream_->is_output_data_caches_init()) return;
 
     // Read optional error control field name
-    auto it = stream_->get_output_mesh_record();
+    bool discont = stream_->get_output_mesh_record();
 
     if(stream_->enable_refinement()) {
-        if(it) {
+        if(discont) {
             // create output meshes from input record
-            auto output_mesh = std::make_shared<OutputMeshDiscontinuous>(*stream_->get_orig_mesh(), *stream_->get_output_mesh_record());
+        	output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_, *stream_->get_output_mesh_record());
 
             // possibly set error control field for refinement
             auto ecf = select_error_control_field();
-            output_mesh->set_error_control_field(ecf);
-            
+            output_mesh_->set_error_control_field(ecf);
+
             // actually compute refined mesh
-            output_mesh->create_refined_mesh();
-            stream_->set_output_mesh_ptr(output_mesh);
+            output_mesh_->create_refined_mesh();
+            stream_->set_output_data_caches(output_mesh_);
             return;
         }
     }
     else
     {
         // skip creation of output mesh (use computational one)
-        if(it)
+        if(discont)
         	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
     }
 
     // create output mesh identical with the computational one
-	std::shared_ptr<OutputMeshBase> output_mesh;
-	bool discont = (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
-	if (discont || it || stream_->is_parallel()) {
-		output_mesh = std::make_shared<OutputMeshDiscontinuous>(*stream_->get_orig_mesh());
+	discont |= (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
+	discont |= parallel;
+	if (discont) {
+		output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
 	} else {
-		output_mesh = std::make_shared<OutputMesh>(*stream_->get_orig_mesh());
+		output_mesh_ = std::make_shared<OutputMesh>(*mesh_);
 	}
-	if (stream_->is_parallel()) output_mesh->create_sub_mesh();
-	else output_mesh->create_mesh();
-	stream_->set_output_mesh_ptr(output_mesh);
+	if (parallel) output_mesh_->create_sub_mesh();
+	else output_mesh_->create_mesh();
+	stream_->set_output_data_caches(output_mesh_);
 }
 
 
-Field<3,FieldValue<3>::Scalar>* EquationOutput::select_error_control_field()
+typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_control_field()
 {
-    Field<3,FieldValue<3>::Scalar>* error_control_field = nullptr;
     std::string error_control_field_name = "";
     // Read optional error control field name
     auto it = stream_->get_output_mesh_record()->find<std::string>("error_control_field");
@@ -266,13 +273,20 @@ Field<3,FieldValue<3>::Scalar>* EquationOutput::select_error_control_field()
         // throw input exception if the field is not scalar
         if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
 
-            error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
             DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
+            auto lambda_function =
+                [error_control_field](const std::vector< Space<OutputMeshBase::spacedim>::Point > &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
+                { error_control_field->value_list(point_list, elm, value_list); };
+
+            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
+            return func;
+
         }
         else{
             THROW(ExcFieldNotScalar()
                     << FieldCommon::EI_Field(error_control_field_name));
         }
     }
-    return error_control_field;
+    return OutputMeshBase::ErrorControlFieldFunc();
 }

@@ -51,6 +51,7 @@ public:
                 update_values | update_gradients | update_JxW_values | update_quadrature_points),
 
         side_quad_(1),
+        fe_p_disc_(0),
         fe_side_values_(map_, side_quad_, fe_p_disc_, update_normal_vectors),
 
         velocity_interpolation_quad_(0), // veloctiy values in barycenter
@@ -177,7 +178,7 @@ public:
     arma::vec3 make_element_vector(ElementFullIter ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
-        DBGVAR(ele->index());
+//         DBGVAR(ele->index());
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
 
@@ -773,7 +774,7 @@ protected:
 
     // assembly face integrals (BC)
     QGauss<dim-1> side_quad_;
-    FE_P_disc<0,dim,3> fe_p_disc_;
+    FE_P_disc<dim,3> fe_p_disc_;
     FESideValues<dim,3> fe_side_values_;
 
     // Interpolation of velocity into barycenters

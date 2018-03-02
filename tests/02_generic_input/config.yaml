@@ -1,4 +1,22 @@
 test_cases:
+- files:
+  - 01_user_defined_units.yaml
+  - 02_multifield_units.yaml
+  - 05_interpolation_large_cube.yaml
+  - 08_field_init_check.yaml
+  - 10_include_csv.yaml
+
 - files: 04_interpolated.yaml
   proc: [1, 2, 3]
   memory_limit: 2000
+
+- files: 
+   - 03_field_descriptors.yaml
+   - 06_bulk_interpolated.yaml
+   - 07_bulk_interpolation_cube.yaml
+  proc: [1, 2]
+
+- files: 
+   - 09_include_file.yaml
+  proc: [1, 2]
+  memory_limit: 600

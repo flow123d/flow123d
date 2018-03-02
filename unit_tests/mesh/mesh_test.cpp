@@ -15,6 +15,7 @@
 #include <iostream>
 #include <vector>
 #include "mesh/accessors.hh"
+#include "mesh/partitioning.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
 

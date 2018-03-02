@@ -581,9 +581,10 @@ template<int spacedim, class Value>
 void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream) {
 	typedef typename Value::element_type ElemType;
 
-    /* It's possible now to do output to the file only in the first process */
-    if( (stream->get_rank() != 0) && (!stream->is_parallel())) {
-        /* TODO: do something, when support for Parallel VTK is added */
+	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
+
+    if ( !output_mesh ) {
+        // Output mesh is not constructed for serial output and rank > 0
         return;
     }
 
@@ -598,7 +599,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
         for(unsigned int idx=0; idx < output_data.n_values(); idx++)
             output_data.zero(idx);
 
-        std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -621,7 +621,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::CORNER_DATA: {
-    	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
@@ -640,7 +639,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     }
     break;
     case OutputTime::ELEM_DATA: {
-    	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
         for(const auto & ele : *output_mesh )
         {
             unsigned int ele_index = ele.idx();

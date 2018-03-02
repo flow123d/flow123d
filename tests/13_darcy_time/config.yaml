@@ -2,3 +2,7 @@ common_config:
   proc: [1, 2]
   memory_limit: 1000
 
+test_cases:
+  - files:
+      - 01_square.yaml
+      - 02_unsteady_MH_time_dep.yaml

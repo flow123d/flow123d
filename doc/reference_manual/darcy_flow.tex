@@ -303,6 +303,14 @@ The model used for bentonite is due to Irmay and use simple power relation for t
 \]
 
 
+\subsection{Coupling of dimensions for non-conforming meshes}
+Version 3.0.0 introduce an experimental support for the non-conforming meshes of mixed dimension. 
+In particular 1D-2D coupling is supported in the 2D ambient space and 2D-3D and 2D-2D coupling is 
+supported for the 3D ambient space. Non-conforming coupling is supported only by the Dracy flow model
+and lower dimensional elements can not represent barrieres, i.e. we consider that the pressure 
+and the velocity fields are continuous accross the lower dimensional fractures. Search for the non-conforming intersections 
+and assembly of the associated terms in the weak formulation is turned on by the key \hyperA{Flow-Darcy-MH::mortar-method}{mortar\_method}.
+One of two methods can be selected: $P0$ method is faster but can be a bit unstable for coarse meshes, $P1$ method should be more robust.
 
     
 
