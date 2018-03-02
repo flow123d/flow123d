@@ -30,7 +30,12 @@ public:
 	/**
 	 * Constructor
 	 */
-	SurfaceDepth(const Mesh *mesh, std::string surface_region);
+	SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction);
+
+	/**
+	 * Destructor
+	 */
+	~SurfaceDepth();
 
 protected:
 	/// Tree of mesh elements

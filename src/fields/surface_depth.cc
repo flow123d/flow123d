@@ -15,13 +15,34 @@
  * @brief
  */
 
+#include <armadillo>
+
 #include "fields/surface_depth.hh"
 #include "mesh/mesh.h"
 
 
-SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region)
+SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction)
 {
+	arma::vec3 surface_vec(surface_direction);
+	ASSERT( surface_vec(2)!=0 ).error("Vertical plane of surface is forbidden!"); // may be not false
+	surface_vec /= arma::norm(surface_vec, 2); // normalize to size == 1
+
+	arma::vec3 ex, ey;
+	ex(0) = 1; ex(1) = 0; ex(2) = - surface_vec(0) / surface_vec(2);
+	ey(0) = 0; ey(1) = 1; ey(2) = - surface_vec(1) / surface_vec(2);
+
+	arma::vec3 ta = ex - arma::dot(ex, surface_vec) * surface_vec;
+	ta /= arma::norm(ta, 2); // normalize
+	arma::vec3 tb = ey - arma::dot(ey, surface_vec) * surface_vec;
+	tb /= arma::norm(tb, 2); // normalize
+
 	bih_tree_ = new BIHTree();
-	bih_tree_->add_boxes( const_cast<Mesh*>(mesh)->get_element_boxes(surface_region) );
-	bih_tree_->construct();
+	//bih_tree_->add_boxes( const_cast<Mesh*>(mesh)->get_element_boxes(surface_region) );
+	//bih_tree_->construct();
+}
+
+
+SurfaceDepth::~SurfaceDepth()
+{
+	delete bih_tree_;
 }
