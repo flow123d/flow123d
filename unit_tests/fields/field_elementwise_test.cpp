@@ -31,38 +31,48 @@ string input = R"INPUT(
    scalar={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="scalar"
+       field_name="scalar",
+       default_value=0.0
    },
    scalar_unit_conversion={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar",
-       unit="const; const=100*m^0"
+       unit="const; const=100*m^0",
+       default_value=0.0
    },
    vector_fixed={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="vector_fixed"
+       field_name="vector_fixed",
+       default_value=0.0
    },
    tensor_fixed={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
-       field_name="tensor_fixed"
+       field_name="tensor_fixed",
+       default_value=0.0
    },
    vtk_scalar={
        TYPE="FieldElementwise",
        mesh_data_file="fields/vtk_ascii_data.vtu",
        field_name="scalar_field"
-   }
+   },
    vtk_vector={
        TYPE="FieldElementwise",
        mesh_data_file="fields/vtk_binary_data.vtu",
        field_name="vector_field"
-   }
+   },
    vtk_tensor={
        TYPE="FieldElementwise",
        mesh_data_file="fields/vtk_compressed_data.vtu",
        field_name="tensor_field"
+   },
+   default_values={
+       TYPE="FieldElementwise",
+       mesh_data_file="fields/simplest_cube_data.msh",
+       field_name="porosity",
+       default_value=0.1
    }
 }
 )INPUT";
@@ -91,6 +101,7 @@ public:
             .declare_key("vtk_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_vector", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_tensor", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("default_values", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
         Input::ReaderToStorage reader( input, rec_type, Input::FileFormat::format_JSON );
@@ -325,3 +336,20 @@ TEST_F(FieldElementwiseTest, bc_scalar_enum) {
     }
 }
 
+
+
+
+TEST_F(FieldElementwiseTest, default_values) {
+	string expected_vals = "0.1 0.1 0.1";
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
+    field.set_mesh(mesh,true);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+    	for(unsigned int i=0; i < 4; i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i,true))) );
+        }
+    }
+}

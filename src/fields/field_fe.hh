@@ -168,6 +168,9 @@ private:
 	/// Field flags.
 	FieldFlag::Flags flags_;
 
+    /// Default value of element if not set in mesh data file
+    double default_value_;
+
     /// Accessor to Input::Record
     Input::Record in_rec_;
 

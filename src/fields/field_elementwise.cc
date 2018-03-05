@@ -21,6 +21,7 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "tools/unit_si.hh"
 #include "system/file_path.hh"
+#include "system/exceptions.hh"
 #include "input/input_type.hh"
 #include "io/msh_gmshreader.h"
 #include "io/reader_cache.hh"
@@ -44,8 +45,10 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
 		//		"Definition of unit.")
-		.declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
-				"Definition of unit of all times defined in mesh data file.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
@@ -76,7 +79,7 @@ internal_raw_data(false), mesh_(NULL), unit_si_( UnitSI::dimensionless() )
 {
 	n_components_ = this->value_.n_rows() * this->value_.n_cols();
 	data_ = data;
-	this->scale_and_check_limits();
+	//this->scale_and_check_limits();
 }
 
 
@@ -95,6 +98,9 @@ void FieldElementwise<spacedim, Value>::init_from_input(const Input::Record &rec
     reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
 
     field_name_ = rec.val<std::string>("field_name");
+    if (!in_rec_.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -128,7 +134,17 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     ReaderCache::get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		n_entities_, n_components_, boundary_domain_, this->component_idx_);
-    this->scale_and_check_limits();
+    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+            this->unit_conversion_coefficient_, default_value_, limits_.first, limits_.second);
+
+    if (checked_data == CheckResult::not_a_number) {
+    	THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+    } else if (checked_data == CheckResult::out_of_limits) {
+        WarningOut().fmt("Values of some elements of FieldElementwise '{}' at address '{}' is out of limits: <{}, {}>\n"
+        		"Unit of the Field: [{}]\n",
+				field_name_, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
+    }
+
     return true;
 }
 
@@ -201,26 +217,6 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
     } else {
         xprintf(UsrErr, "FieldElementwise is not implemented for discrete return types.\n");
     }
-}
-
-
-
-template <int spacedim, class Value>
-void FieldElementwise<spacedim, Value>::scale_and_check_limits()
-{
-	if (Value::is_scalable()) {
-		std::vector<typename Value::element_type> &vec = *( data_.get() );
-		bool printed_warning = false;
-		for(unsigned int i=0; i<vec.size(); ++i) {
-			vec[i] *= this->unit_conversion_coefficient_;
-			if ( !printed_warning && ((vec[i] < limits_.first) || (vec[i] > limits_.second)) ) {
-				printed_warning = true;
-                WarningOut().fmt("Values of some elements of FieldElementwise '{}' at address '{}' is out of limits: <{}, {}>\n"
-                		"Unit of the Field: [{}]\n",
-						field_name_, in_rec_.address_string(), limits_.first, limits_.second, unit_si_.format_text() );
-			}
-		}
-	}
 }
 
 

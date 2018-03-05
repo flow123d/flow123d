@@ -84,9 +84,6 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_
-    void scale_data();
-
     /// mesh, which is interpolated
 	std::shared_ptr<Mesh> source_mesh_;
 
@@ -122,6 +119,9 @@ protected:
 
 	/// 0D (point) element, used for computing intersection
 	ngh::TPoint point_;
+
+    /// Default value of element if not set in mesh data file
+    double default_value_;
 
     /// Accessor to Input::Record
     Input::Record in_rec_;
