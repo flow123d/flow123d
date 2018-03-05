@@ -85,7 +85,7 @@ public:
     /**
      * Return string representation of global time unit.
      */
-	inline string get_unit_string() const {
+	inline std::string get_unit_string() const {
 		return unit_string_;
 	}
 
@@ -94,7 +94,7 @@ protected:
 	double coef_;
 
 	/// String representation of global unit of all time values within the equation.
-	string unit_string_;
+	std::string unit_string_;
 
 };
 
@@ -612,7 +612,7 @@ public:
     /**
      * Return string representation of global time unit.
      */
-	string get_unit_string() const;
+	std::string get_unit_string() const;
 
 	// Maximal tiem of simulation. More then age of the universe in seconds.
     static const double max_end_time;
