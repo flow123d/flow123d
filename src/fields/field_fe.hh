@@ -171,6 +171,9 @@ private:
     /// Default value of element if not set in mesh data file
     double default_value_;
 
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
+
     /// Registrar of class to factory
     static const int registrar;
 };

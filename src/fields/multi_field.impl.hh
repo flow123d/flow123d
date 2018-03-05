@@ -287,14 +287,14 @@ void MultiField<spacedim, Value>::setup_components() {
     	}
 
     	sub_fields_[i_comp].flags_ = this->flags_;
-    	sub_fields_[i_comp].set_input_list(this->full_input_list_);
+    	sub_fields_[i_comp].set_input_list(this->full_input_list_, *tg_);
     }
 }
 
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
+void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const TimeGovernor &tg) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
     // Check sizes of Arrays defined MultiField in field descriptors
@@ -311,6 +311,7 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     }
     
     this->full_input_list_ = list;
+    this->tg_ = &tg;
     
     // Save the full array for future use in FieldCommon::mark_input_times().
     list.copy_to(shared_->input_list_);

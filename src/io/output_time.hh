@@ -60,7 +60,7 @@ public:
      * \param[in] equation_name The name of equation, used for forming output file name.
      * \param[in] in_rec The reference on the input record
      */
-    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec);
+    virtual void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
 
     /**
      * Common method to set scientific format and precision for output of floating point values to ASCII streams.
@@ -136,7 +136,7 @@ public:
      * \brief This method tries to create new instance of OutputTime according
      * record in configuration file.
      */
-    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec);
+    static std::shared_ptr<OutputTime> create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str);
     
     /**
      * Write all data registered as a new time frame.
@@ -301,7 +301,10 @@ protected:
     /// Parallel or serial version of file format (parallel has effect only for VTK)
     bool parallel_;
 
-    /// Vector of node coordinates. [spacedim x n_nodes]
+    /// String representation of time unit.
+	string unit_string_;
+
+	/// Vector of node coordinates. [spacedim x n_nodes]
     std::shared_ptr<ElementDataCache<double>> nodes_;
     /// Vector maps the nodes to their coordinates in vector @p nodes_.
     std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;

@@ -31,11 +31,64 @@
 
 namespace Input {
     class Record;
+    class Tuple;
+    template<class T> class Iterator;
     namespace Type {
         class Record;
+        class Tuple;
     }
 }
 
+
+
+/**
+ * @brief Helper class storing unit conversion coefficient and functionality for conversion of units.
+ *
+ * This class has created one instance for each TimeGovernor object. This object is shared with all
+ * TimeSteps.
+ */
+class TimeUnitConversion {
+public:
+	// Constructor set coef_ from user defined unit
+	TimeUnitConversion(std::string user_defined_unit);
+
+	// Default constructor
+	TimeUnitConversion();
+
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in coeff_. If time Tuple is not defined (e. g. Tuple is optional key) return default_time value.
+     */
+	double read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in coeff_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	inline double get_coef() const {
+		return coef_;
+	}
+
+    /**
+     * Return string representation of global time unit.
+     */
+	inline std::string get_unit_string() const {
+		return unit_string_;
+	}
+
+protected:
+    /// Conversion coefficient of all time values within the equation.
+	double coef_;
+
+	/// String representation of global unit of all time values within the equation.
+	std::string unit_string_;
+
+};
 
 
 
@@ -54,7 +107,7 @@ public:
     /**
      * Constructor of the zero time step.
      */
-    TimeStep(double init_time);
+    TimeStep(double init_time, std::shared_ptr<TimeUnitConversion> time_unit_conversion = std::make_shared<TimeUnitConversion>());
 
     /**
      * Default constructor.
@@ -124,6 +177,24 @@ public:
         { return this->ge(other_time) && this->lt(other_time + length_); }
 
     /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
+     * default_time value.
+     */
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in time_unit_conversion_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	double get_coef() const;
+
+    /**
      * Returns true if two time steps are exactly the same.
      */
     bool operator==(const TimeStep & other)
@@ -145,6 +216,8 @@ private:
     double length_;
     /// End time point of the time step.
     double end_;
+    /// Conversion unit of all time values within the equation.
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
 };
 
 std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
@@ -224,6 +297,9 @@ public:
 	        << " out of history of size: " << EI_HistorySize::val);
 
     static const Input::Type::Record & get_input_type();
+
+    static const Input::Type::Tuple & get_input_time_type(double lower_bound= -std::numeric_limits<double>::max(),
+                                                          double upper_bound=std::numeric_limits<double>::max());
 
     /**
      * Getter for time marks.
@@ -499,7 +575,30 @@ public:
      */
     void view(const char *name="") const;
 
-    // Maximal tiem of simulation. More then age of the universe in seconds.
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
+     * default_time value.
+     */
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in time_unit_conversion_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	double get_coef() const;
+
+    /**
+     * Return string representation of global time unit.
+     */
+	std::string get_unit_string() const;
+
+	// Maximal tiem of simulation. More then age of the universe in seconds.
     static const double max_end_time;
 
     /// Infinity time used for steady case.
@@ -576,6 +675,9 @@ private:
     
     /// True if the time governor is used for steady problem.
     bool steady_;
+
+    /// Conversion unit of all time values within the equation.
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
 
     friend TimeMarks;
 };

@@ -47,6 +47,8 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
 		//		"Definition of unit.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
                 "Allow set default value of elements that have not listed values in mesh data file.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
@@ -68,6 +70,7 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 
 
 	// read mesh, create tree
@@ -105,7 +108,8 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
     bool boundary_domain_ = false;
-    BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
+    double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+    BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
