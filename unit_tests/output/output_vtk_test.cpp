@@ -68,7 +68,7 @@ public:
     {
     	auto in_rec = Input::ReaderToStorage(input_yaml, const_cast<Input::Type::Record &>(OutputTime::get_input_type()), Input::FileFormat::format_YAML)
         				.get_root_interface<Input::Record>();
-        this->init_from_input("dummy_equation", in_rec);
+        this->init_from_input("dummy_equation", in_rec, "s");
 
         // create output mesh identical to computational mesh
         auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));

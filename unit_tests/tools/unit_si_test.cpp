@@ -11,9 +11,9 @@
 
 #include <flow_gtest.hh>
 
-#include "fields/unit_si.hh"
-#include "fields/unit_converter.hh"
-#include "fields/unit_converter_template.hh"
+#include "tools/unit_si.hh"
+#include "tools/unit_converter.hh"
+#include "tools/unit_converter_template.hh"
 
 
 TEST(UnitSI, format_latex) {

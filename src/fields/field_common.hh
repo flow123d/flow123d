@@ -30,7 +30,7 @@
 #include "fields/field_algo_base.hh"                   // for FieldResult
 #include "fields/field_flag.hh"                        // for FieldFlag, Fie...
 #include "fields/field_values.hh"                      // for FieldEnum
-#include "fields/unit_si.hh"                           // for UnitSI
+#include "tools/unit_si.hh"                           // for UnitSI
 #include "input/accessors.hh"                          // for Record, Array ...
 #include "input/input_exception.hh"                    // for ExcInputMessage
 #include "input/type_base.hh"                          // for Array, Type
@@ -222,7 +222,7 @@ public:
      *
      * The list is used by set_time method to set field on individual regions to actual FieldBase descendants.
      */
-    virtual void set_input_list(const Input::Array &list) =0;
+    virtual void set_input_list(const Input::Array &list, const TimeGovernor &tg) =0;
 
     /**
      * Getters.

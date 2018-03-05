@@ -53,6 +53,8 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         		"if it is found in more the one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+		.declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+				"Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
@@ -165,6 +167,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point > &point_lis
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 	flags_ = init_data.flags_;
 
 
@@ -232,7 +235,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
-		BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), this->discretization_, dh_->hash());
+		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+		BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, this->discretization_, dh_->hash());
 		ReaderCache::get_reader(reader_file_)->find_header(header_query);
 
 		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {

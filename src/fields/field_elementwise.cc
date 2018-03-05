@@ -19,7 +19,7 @@
 #include <boost/type_traits/is_floating_point.hpp>
 #include "fields/field_elementwise.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "system/file_path.hh"
 #include "input/input_type.hh"
 #include "io/msh_gmshreader.h"
@@ -44,6 +44,8 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), IT::Default::optional(),
 		//		"Definition of unit.")
+		.declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+				"Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
@@ -121,7 +123,8 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //TODO: is it possible to check this before calling set_time?
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
-    BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
+    double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+    BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		n_entities_, n_components_, boundary_domain_, this->component_idx_);
