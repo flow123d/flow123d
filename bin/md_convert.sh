@@ -44,6 +44,6 @@ then
 fi
 
 cd "${SAVE_DIR}"
-"${PREFIX}/bin/grip" --export --gfm --context=https://github.com/flow123d/flow123d.git "${MD_FILE}"
+"${PREFIX}/bin/grip" --export  --context=https://github.com/flow123d/flow123d.git "${MD_FILE}"
 TARGET="${MD_FILE%.md}.html"
 mv "${TARGET}" "${BUILD_TREE}"
