@@ -686,7 +686,8 @@ void TimeGovernor::next_time()
     if ( !(timesteps_output_file_ == FilePath()) && timestep_output_ ) {
     	double time = t();
     	if (time > last_printed_timestep_) {
-    		timesteps_output_ << "- [ " << time << ", " << lower_constraint_ << ", " << upper_constraint_ << " ]\n";
+    		if (is_end()) timesteps_output_ << "- [ " << time << ", 0, 0 ]\n";
+    		else timesteps_output_ << "- [ " << time << ", " << lower_constraint_ << ", " << upper_constraint_ << " ]\n";
     		last_printed_timestep_ = time;
     	}
 	}
