@@ -66,7 +66,22 @@ const Record & TimeGovernor::get_input_type() {
             .close();
 
     return Record("TimeGovernor",
-            "Setting of the simulation time. (can be specific to one equation)")
+            "Setting of the simulation time (can be specific to one equation).\n"
+    		"TimeGovernor allows to:\n"
+    		" - define start time and end time of simulation\n"
+    		" - define lower and upper limits of time steps\n"
+    		" - direct fixed time marks of whole simulation\n"
+    		" - set global time unit of equation (see 'common_time_unit' key)\n"
+    		"Limits of time steps are defined by keys 'min_dt', 'max_dt', 'init_dt' and 'dt_limits'. Key "
+    		"'init_dt' has the highest priority and allows set fix size of time steps. Pair of keys 'min_dt' "
+    		"and 'max_dt' define interval of time steps. Both previous cases ('init_dt' or pair 'min_dt' "
+    		"and 'max_dt') set global limits of whole simulation. In contrasts, 'dt_limits' allow set "
+    		"time-dependent function of min_dt/max_dt. Used time steps of simulation can be printed to YAML "
+    		"output file (see 'write_used_timesteps'.\n"
+    		"Fixed time marks define exact values of time steps. They are defined in:\n"
+    		" - start time and end time of simulation\n"
+    		" - output times printed to output mesh file\n"
+    		" - times defined in 'dt_limits' table (optional, see 'add_dt_limits_time_marks' key)")
 		.allow_auto_conversion("max_dt")
 		.declare_key("start_time", TimeGovernor::get_input_time_type(), Default("0.0"),
 					"Start time of the simulation.")
@@ -88,9 +103,10 @@ const Record & TimeGovernor::get_input_type() {
 				"by input and output times.")
 		.declare_key("dt_limits", Array(dt_step), Default::optional(),
 				"Allow to set a time dependent changes in min_dt and max_dt limits. This list is processed "
-				"at individual times overwriting previous setting of min_dt/max_dt. Limits equal to 0 are ignored.")
+				"at individual times overwriting previous setting of min_dt/max_dt. Limits equal to 0 are "
+				"ignored and replaced with min_dt/max_dt values.")
 		.declare_key("add_dt_limits_time_marks", Bool(), Default("false"), "Add all times defined in 'dt_limits' "
-			    "table to list of TimeMarks.")
+			    "table to list of fixed TimeMarks.")
 		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
 				"Write used time steps to given file in YAML format corresponding with format of 'dt_limits'.")
 		.declare_key("common_time_unit", String(), Default("\"s\""),
