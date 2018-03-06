@@ -59,13 +59,13 @@ const arma::vec RT0_space::basis_grad(unsigned int basis_index,
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FE_RT0<dim,spacedim>::FE_RT0()
+template<unsigned int dim>
+FE_RT0<dim>::FE_RT0()
 {
     arma::vec::fixed<dim> sp;
 
     this->init(false, FEVectorPiola);
-    this->function_space_ = new RT0_space(dim);
+    this->function_space_ = make_shared<RT0_space>(dim);
     
     for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
     {
@@ -90,7 +90,7 @@ FE_RT0<dim,spacedim>::FE_RT0()
 
 
 
-template class FE_RT0<1,3>;
-template class FE_RT0<2,3>;
-template class FE_RT0<3,3>;
+template class FE_RT0<1>;
+template class FE_RT0<2>;
+template class FE_RT0<3>;
 
