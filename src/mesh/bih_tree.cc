@@ -42,7 +42,7 @@ BIHTree::~BIHTree() {
 void BIHTree::add_boxes(std::vector<BoundingBox> boxes) {
     for(BoundingBox box : boxes) {
         this->elements_.push_back(box);
-        if (box.is_valid()) main_box_.expand(box);
+        main_box_.expand(box);
     }
 }
 
@@ -53,12 +53,7 @@ void BIHTree::construct() {
     max_n_levels = 2*log2(elements_.size());
     nodes_.reserve(2*elements_.size() / leaf_size_limit);
     in_leaves_.resize(elements_.size());
-    for(unsigned int i=0, j=0; i<in_leaves_.size(); i++) {
-    	if ( elements_[i].is_valid() ) {
-        	in_leaves_[j] = i;
-    		j++;
-    	}
-    }
+    for(unsigned int i=0; i<in_leaves_.size(); i++) in_leaves_[i] = i;
 
     // make root node
     nodes_.push_back(BIHNode());

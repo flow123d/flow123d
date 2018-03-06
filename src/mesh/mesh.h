@@ -318,8 +318,8 @@ public:
      */
     void check_and_finish();
     
-    /// Compute bounding boxes of elements contained in region of given @p region_name.
-    std::vector<BoundingBox> get_element_boxes(std::string region_name = "ALL");
+    /// Compute bounding boxes of elements contained in mesh.
+    std::vector<BoundingBox> get_element_boxes();
 
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\

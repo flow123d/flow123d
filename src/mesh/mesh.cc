@@ -729,20 +729,15 @@ void Mesh::check_and_finish()
 }
 
 
-std::vector<BoundingBox> Mesh::get_element_boxes(std::string region_name) {
+std::vector<BoundingBox> Mesh::get_element_boxes() {
     START_TIMER("Mesh::compute_element_boxes");
     std::vector<BoundingBox> boxes;
-    RegionSet region_set = this->region_db().get_region_set(region_name);
-    if (region_set.size() == 0)
-        THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(region_name) );
 
     // make element boxes
-    boxes.resize(this->element.size());
     unsigned int i=0;
+    boxes.resize(this->element.size());
     FOR_ELEMENTS(this, element) {
-    	if (element->region().is_in_region_set(region_set)) {
-            boxes[i] = element->bounding_box();
-    	}
+        boxes[i] = element->bounding_box();
     	i++;
     }
 

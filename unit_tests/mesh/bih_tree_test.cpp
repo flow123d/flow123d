@@ -314,17 +314,37 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 	reader->read_physical_names(mesh);
 	reader->read_raw_mesh(mesh);
 
+	std::vector<BoundingBox> boxes;
+	std::vector<unsigned int> elm_idx; // indexes in Mesh::element vector
+    std::string region_name = "3D back";
+    {
+        RegionSet region_set = mesh->region_db().get_region_set(region_name);
+        if (region_set.size() == 0)
+            THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(region_name) );
+
+        // make element boxes
+        unsigned int i=0;
+        FOR_ELEMENTS(mesh, element) {
+        	if (element->region().is_in_region_set(region_set)) {
+                boxes.push_back(element->bounding_box());
+                elm_idx.push_back(i);
+        	}
+        	i++;
+        }
+    }
+
 	unsigned int element_limit=20;
 	BIHTree bt(element_limit);
-    bt.add_boxes( mesh->get_element_boxes("3D back") );
-    bt.construct();
+	bt.add_boxes( boxes );
+	bt.construct();
 	std::vector<unsigned int> insec_list;
 
 	bt.find_bounding_box(BoundingBox(arma::vec3("-1 -1 -1"), arma::vec3("1 1 1")), insec_list);
 	EXPECT_EQ(insec_list.size(), 3);
 	for(unsigned int i=0; i<insec_list.size(); ++i) {
-		EXPECT_EQ(insec_list[i], i+3);
-		EXPECT_EQ(mesh->element.get_id( &(mesh->element[ insec_list[i] ]) ), i+4);
+		EXPECT_EQ(insec_list[i], i);
+		EXPECT_EQ(elm_idx[i], i+3);
+		EXPECT_EQ(mesh->element.get_id( &(mesh->element[ elm_idx[i] ]) ), i+4);
 	}
 
 	delete mesh;
