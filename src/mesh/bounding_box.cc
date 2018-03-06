@@ -23,7 +23,7 @@ const double BoundingBox::epsilon = 64*numeric_limits<double>::epsilon();
 
 
 BoundingBox::BoundingBox(const vector<Point> &points)
-: valid_(true) {
+{
 	ASSERT_LT( 0, points.size() );
 
 	auto it = points.begin();

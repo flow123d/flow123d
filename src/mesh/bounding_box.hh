@@ -73,13 +73,13 @@ public:
 	 * No initialization of vertices. Be very careful using this.
 	 * One necessary usage is vector of BoundigBox.
 	 */
-	BoundingBox() : valid_(false) {}
+	BoundingBox() {}
 
 	/**
 	 * Constructor for point box.
 	 */
 	BoundingBox(const Point &min)
-	: min_vertex_(min), max_vertex_(min), valid_(true)
+	: min_vertex_(min), max_vertex_(min)
 	{};
 
 	/**
@@ -88,7 +88,7 @@ public:
 	 * From given minimal and maximal vertex.
 	 */
 	BoundingBox(const Point &min, const Point &max)
-	: min_vertex_(min), max_vertex_(max), valid_(true)
+	: min_vertex_(min), max_vertex_(max)
 	{
 		OLD_ASSERT( arma::min( min <= max ) , "Wrong coordinates in constructor.");
 	};
@@ -104,7 +104,6 @@ public:
 	 * Set maximum in given axis.
 	 */
 	void set_max(unsigned int axis, double max) {
-		ASSERT(valid_);
 		ASSERT_LT( axis , dimension);
 		ASSERT_LE( min(axis) , max);
 		max_vertex_[axis] = max;
@@ -114,7 +113,6 @@ public:
 	 * Set minimum on given axis.
 	 */
 	void set_min(unsigned int axis, double min) {
-		ASSERT(valid_);
 		ASSERT_LT(axis, dimension);
 		ASSERT_LE(min , max(axis));
 		min_vertex_[axis] = min;
@@ -231,7 +229,6 @@ public:
     void split(unsigned int axis, double splitting_point,
     		BoundingBox &left, BoundingBox &right ) const
     {
-    	ASSERT(valid_);
     	ASSERT_LT(axis , dimension);
     	if (min_vertex_[axis] <= splitting_point && splitting_point <= max_vertex_[axis] ) {
     	   	left = *this;
@@ -249,33 +246,20 @@ public:
      * Expand bounding box to contain also given @p point.
      */
     void expand(const Point &point) {
-    	if (valid_) {
-    		for(unsigned int j=0; j<dimension; j++) {
-    			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
-    			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
-    		}
-    	} else {
-    		min_vertex_ = point;
-    		max_vertex_ = point;
-    		valid_ = true;
-    	}
+   		for(unsigned int j=0; j<dimension; j++) {
+   			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
+   			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
+   		}
     }
 
     /**
      * Expand bounding box to contain also given @p box.
      */
     void expand(const BoundingBox &box) {
-    	ASSERT(box.valid_);
-    	if (valid_) {
-            for(unsigned int j=0; j<dimension; j++) {
-                min_vertex_[j] = std::min( min_vertex_[j], box.min_vertex_[j] );
-                max_vertex_[j] = std::max( max_vertex_[j], box.max_vertex_[j] );
-            }
-    	} else {
-            min_vertex_ = box.min_vertex_;
-            max_vertex_ = box.max_vertex_;
-    		valid_ = true;
-    	}
+        for(unsigned int j=0; j<dimension; j++) {
+            min_vertex_[j] = std::min( min_vertex_[j], box.min_vertex_[j] );
+            max_vertex_[j] = std::max( max_vertex_[j], box.max_vertex_[j] );
+        }
     }
 
     /**
@@ -304,19 +288,12 @@ public:
         return projected_point;
     }
 
-    /// Return if BoundingBox is valid
-    inline bool is_valid() const {
-    	return valid_;
-    }
-
 
 private:
     /// minimal coordinates of bounding box
     Point min_vertex_;
     /// maximal coordinates of bounding box
     Point max_vertex_;
-    /// value false marks invalid (undefined) BoundingBox, necessary if we need construct BIHTree above RegionSet
-    bool valid_;
 };
 
 /// Overloads output operator for box.
