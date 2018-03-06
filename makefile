@@ -187,6 +187,18 @@ petsc-doc: #build-flow123d
 	mkdir output; \
 	"$(BUILD_DIR)/bin/flow123d" -s flow_vtk.con -help --petsc_redirect "$(BUILD_DIR)/doc/petsc_help" >/dev/null
 
+
+web-content: README.md CHANGES.md
+	pandoc README.md -f markdown -t html -s -o README.html
+	echo "---\ntitle: Flow123d - Readme\nlayout: page\n---" > readme.html
+	cat README.html | sed -n '/<body>/,/<\/body>/p' | sed -e '1s/.*<body>//'  -e '$$s/<\/body>.*//' >> readme.html
+	
+	echo "---\ntitle: Flow123d - Changes\nlayout: page\n---" > changes.html
+	pandoc CHANGES.md -f markdown -t html -s -o CHANGES.html
+	cat CHANGES.html | sed -n '/<body>/,/<\/body>/p' | sed -e '1s/.*<body>//' -e '$$s/<\/body>.*//' >> changes.html
+
+
+
 ######################################################################################
 
 # Prepare infrastructure for build:

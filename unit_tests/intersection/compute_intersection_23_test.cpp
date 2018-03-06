@@ -16,6 +16,8 @@
 #include "mesh_constructor.hh"
 
 #include "mesh/ngh/include/point.h"
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/tetrahedron.h"
 #include "mesh/ngh/include/intersection.h"
 
 #include "../../src/intersection/mixed_mesh_intersections.hh"

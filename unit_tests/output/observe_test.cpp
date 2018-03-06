@@ -21,6 +21,7 @@
 #include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 #include "fields/field_set.hh"
+#include "fields/field.hh"
 #include "armadillo"
 #include "system/armadillo_tools.hh"
 #include "../arma_expect.hh"
@@ -108,7 +109,7 @@ public:
 class TestObserve : public Observe {
 public:
     TestObserve(Mesh &mesh, Input::Array in_array)
-    : Observe("test_eq", mesh, in_array, 5)
+    : Observe("test_eq", mesh, in_array, 5, "s")
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
@@ -252,7 +253,7 @@ TEST(Observe, all) {
     // read fiels
     TimeGovernor tg(0.0, 1.0);
     field_set.set_mesh(*mesh);
-    field_set.set_input_list( in_rec.val<Input::Array>("input_fields") );
+    field_set.set_input_list( in_rec.val<Input::Array>("input_fields"), tg );
     field_set.set_time(tg.step(), LimitSide::right);
 
     field_set.scalar_field.observe_output(obs);

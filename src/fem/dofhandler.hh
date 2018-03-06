@@ -19,17 +19,15 @@
 #ifndef DOFHANDLER_HH_
 #define DOFHANDLER_HH_
 
-#include <map>
-#include <petscmat.h>
+#include <vector>              // for vector
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
-#include "mesh/elements.h"
-#include "la/distribution.hh"
-
+#include "mesh/mesh_types.hh"  // for ElementFullIter
+#include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
 class Mesh;
 class Distribution;
+
 
 /**
  * Class DOFHandlerBase provides an abstract interface for various dof handlers:

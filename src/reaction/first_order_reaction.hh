@@ -18,12 +18,18 @@
 #ifndef FIRST_ORDER_REACTION_H_
 #define FIRST_ORDER_REACTION_H_
 
-#include <vector>
-
-#include "reaction/first_order_reaction_base.hh"
-#include "input/accessors_forward.hh"
+#include <vector>                                 // for vector
+#include "reaction/first_order_reaction_base.hh"  // for FirstOrderReactionBase
+#include "reaction/reaction_term.hh"              // for ReactionTerm
 
 class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
+
 
 /** @brief Class implements the linear reactions.
  * 

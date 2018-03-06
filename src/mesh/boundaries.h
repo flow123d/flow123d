@@ -18,12 +18,15 @@
 #ifndef BOUNDARIES_H
 #define BOUNDARIES_H
 
-//#include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
-#include "mesh/sides.h"
-#include "mesh/edges.h"
-#include "mesh/region.hh"
-#include "system/sys_vector.hh"
+#include "mesh/edges.h"      // for Edge
+#include "mesh/region.hh"    // for Region
+#include "mesh/sides.h"      // for SideIter
+#include "system/system.hh"  // for MessageType::Err, xprintf
+
+class Element;
+class Mesh;
+namespace flow { template <class T> class VectorId; }
+template <int spacedim> class ElementAccessor;
 
 
 

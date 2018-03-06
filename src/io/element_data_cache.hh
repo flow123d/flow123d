@@ -18,15 +18,24 @@
 #ifndef ELEMENT_DATA_CACHE_HH_
 #define ELEMENT_DATA_CACHE_HH_
 
-#include <vector>
-#include <string>
-#include <memory>
-#include <ostream>
-#include <typeinfo>
-#include "system/system.hh"
-#include "system/tokenizer.hh"
-#include "system/global_defs.h"
-#include "io/element_data_cache_base.hh"
+#include <boost/exception/info.hpp>           // for error_info::~error_info...
+#include <memory>                             // for shared_ptr
+#include <sstream>                            // for basic_ostream::write
+#include <string>                             // for string, operator<<
+#include <vector>                             // for vector
+#include <armadillo>
+#include "io/element_data_cache_base.hh"      // for ElementDataCacheBase
+#include "system/exceptions.hh"               // for ExcStream, operator<<
+class Tokenizer;
+struct MeshDataHeader;  // lines 32-32
+
+
+/// Return type of method that checked data stored in ElementDataCache (NaN values, limits)
+typedef enum  {
+	ok,              ///< All values are not NaN and are in limits.
+	out_of_limits,   ///< Some value(s) is out of limits
+	not_a_number     ///< Some value(s) is set to NaN
+} CheckResult;
 
 
 template <typename T>
@@ -130,6 +139,27 @@ public:
      */
     void get_min_max_range(double &min, double &max) override;
 
+    /**
+     * Make full check of data stored in cache.
+     *
+     * Method iterates through data and
+     *  - checks NaN data values, default_val replaces NaN
+     *  - if default_val==NaN and some value(s) is not replaced with valid value return CheckResult::nan
+     *  - if some value(s) is out of limits )lower_bound, upper_bound) return CheckResult::out_of_limits
+     *  - in other cases return CheckResult::ok
+     *
+     * Method is executed only once.
+     */
+    CheckResult check_values(double default_val, double lower_bound, double upper_bound);
+
+    /**
+     * Scale data vector of given 'component_idx' with scale 'coef'.
+     *
+     * Method is executed only once and should be called after check_values method.
+     * Method can be used e. g. for convert between units.
+     */
+    void scale_data(double coef);
+
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);
 
@@ -145,6 +175,16 @@ public:
             << " returning variable size vectors. Try convert to MultiField.\n");
 
 protected:
+    /// Allow to hold sign, if data in cache is checked and scale (both can be executed only once)
+	enum CheckScaleData {
+	    none,      ///< Data is neither checked nor scaled.
+		check,     ///< Data is only checked.
+	    scale      ///< Data is scaled.
+	};
+
+	/// Sign, if data in cache is checked and scale.
+	CheckScaleData check_scale_data_;
+
 	/**
 	 * Table of element data.
 	 *

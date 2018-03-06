@@ -20,6 +20,7 @@
 
 #include <memory>
 #include "mesh/mesh.h"
+#include "mesh/partitioning.hh"
 
 #include "fields/generic_field.hh"
 

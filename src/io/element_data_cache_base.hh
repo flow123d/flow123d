@@ -22,9 +22,11 @@
 
 #include <ostream>
 #include <string>
-
-#include "system/tokenizer.hh"
+#include <istream>
 #include "system/system.hh"
+
+class Tokenizer;
+
 
 class ElementDataCacheBase {
 public:

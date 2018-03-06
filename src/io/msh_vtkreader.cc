@@ -19,11 +19,14 @@
 
 #include <iostream>
 #include <vector>
+#include <pugixml.hpp>
 #include "boost/lexical_cast.hpp"
 
 #include "msh_vtkreader.hh"
 #include "system/system.hh"
 #include "mesh/bih_tree.hh"
+#include "mesh/mesh.h"
+#include "mesh/mesh_types.hh"
 
 #include "config.h"
 #include <zlib.h>

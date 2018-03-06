@@ -9,11 +9,12 @@
 #define SRC_IO_OUTPUT_TIME_SET_HH_
 
 
-//#include  "boost/unordered_set.hpp"
-#include "tools/time_marks.hh"
-#include <set>
+#include <set>                  // for set
+#include "input/type_base.hh"   // for Array
+#include "tools/time_marks.hh"  // for TimeMark
 
 class TimeGovernor;
+namespace Input { class Array; }
 
 
 /**

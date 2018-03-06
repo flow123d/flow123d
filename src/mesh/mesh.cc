@@ -30,6 +30,7 @@
 
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
+#include "mesh/region_set.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"

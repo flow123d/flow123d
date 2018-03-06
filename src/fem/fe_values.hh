@@ -21,12 +21,15 @@
 #ifndef FE_VALUES_HH_
 #define FE_VALUES_HH_
 
-#include <armadillo>
-#include <vector>
-#include "fem/update_flags.hh"
-#include "fem/fe_values_views.hh"
-#include "mesh/ref_element.hh"
-#include "mesh/mesh_types.hh"
+#include <string.h>                           // for memcpy
+#include <algorithm>                          // for swap
+#include <new>                                // for operator new[]
+#include <string>                             // for operator<<
+#include <vector>                             // for vector
+#include "fem/fe_values_views.hh"             // for FEValuesViews
+#include "mesh/ref_element.hh"                // for RefElement
+#include "mesh/mesh_types.hh"                 // for ElementFullIter
+#include "fem/update_flags.hh"                // for UpdateFlags
 
 class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
@@ -36,7 +39,6 @@ template<unsigned int dim, unsigned int spacedim> class Mapping;
 
 struct FEInternalData;
 struct MappingInternalData;
-class SideIter;
 
 
 

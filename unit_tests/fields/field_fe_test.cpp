@@ -14,6 +14,7 @@
 
 
 #include "fields/field_fe.hh"
+#include "tools/unit_si.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 

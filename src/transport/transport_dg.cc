@@ -27,6 +27,7 @@
 #include "fem/fe_rt.hh"
 #include "fields/field_fe.hh"
 #include "la/linsys_PETSC.hh"
+#include "flow/mh_dofhandler.hh"
 #include "transport/advection_diffusion_model.hh"
 #include "transport/concentration_model.hh"
 #include "transport/heat_model.hh"
@@ -239,7 +240,7 @@ template<class Model>
 void TransportDG<Model>::initialize()
 {
     data_.set_components(Model::substances_.names());
-    data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
+    data_.set_input_list( input_rec.val<Input::Array>("input_fields"), *(Model::time_) );
 
     // DG stabilization parameters on boundary edges
     gamma.resize(Model::n_substances());

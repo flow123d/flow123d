@@ -200,7 +200,7 @@ FE_P<dim>::FE_P(unsigned int degree)
   : FiniteElement<dim>(),
     degree_(degree)
 {
-    this->function_space_ = make_shared<PolynomialSpace>(degree,dim);
+    this->function_space_ = std::make_shared<PolynomialSpace>(degree,dim);
     
     init_dofs();
 

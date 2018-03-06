@@ -42,6 +42,7 @@
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
+#include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 
 // #include "coupling/balance.hh"
@@ -135,7 +136,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"));
+	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"), darcy_flow->time().get_unit_string());
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
     output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );

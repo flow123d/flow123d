@@ -22,7 +22,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/version.hpp>
-#include "fields/unit_converter.hh"
+#include "tools/unit_converter.hh"
 
 #if BOOST_VERSION >= 103800
     #include <boost/spirit/include/classic_core.hpp>

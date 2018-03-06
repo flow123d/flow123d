@@ -18,11 +18,13 @@
 #ifndef BIH_TREE_HH_
 #define BIH_TREE_HH_
 
-#include "mesh/bih_node.hh"
-#include "mesh/mesh.h"
-#include "mesh/point.hh"
-#include <armadillo>
-#include <random>
+#include <random>                // for mt19937
+#include <vector>                // for vector
+#include "mesh/bih_node.hh"      // for BIHNode
+#include "mesh/bounding_box.hh"  // for BoundingBox
+#include "mesh/point.hh"         // for Space, Space<>::Point
+
+class Mesh;
 
 
 /**

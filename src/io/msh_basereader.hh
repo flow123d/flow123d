@@ -20,17 +20,22 @@
 #define	MSH_BASE_READER_HH
 
 
-#include <string>
-#include <vector>
-#include <istream>
-#include <memory>
-
-#include "io/element_data_cache.hh"
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <map>                       // for map, map<>::value_compare
+#include <memory>                    // for shared_ptr
+#include <string>                    // for string
+#include <vector>                    // for vector
+#include "input/accessors.hh"        // for Record
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "io/element_data_cache.hh"  // for ElementDataCache
 #include "io/output_time.hh"
-#include "mesh/mesh.h"
-#include "input/accessors.hh"
-#include "system/system.hh"
-#include "system/tokenizer.hh"
+#include "mesh/partitioning.hh"
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
+#include "system/file_path.hh"       // for FilePath
+#include "system/tokenizer.hh"       // for Tokenizer, Tokenizer::Position
+
+class ElementDataCacheBase;
+class Mesh;
 
 
 
@@ -194,6 +199,13 @@ public:
 	 * Find data header for time and field given by header_query.
 	 */
     virtual MeshDataHeader & find_header(HeaderQuery &header_query)=0;
+
+    /**
+     * Scale and check data stored in ElementDataCache of given field.
+     */
+    CheckResult scale_and_check_limits(string field_name, double coef, double default_val,
+    		double lower_bound = -std::numeric_limits<double>::max(), double upper_bound = std::numeric_limits<double>::max());
+
 
 protected:
     typedef std::shared_ptr<ElementDataCacheBase> ElementDataPtr;

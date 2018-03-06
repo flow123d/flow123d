@@ -80,11 +80,12 @@ OutputTime::OutputTime()
 
 
 
-void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
+void OutputTime::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
 {
 
     input_record_ = in_rec;
     equation_name_ = equation_name;
+    unit_string_ = unit_str;
 
     // Read output base file name
     // TODO: remove dummy ".xyz" extension after merge with DF
@@ -180,12 +181,12 @@ void OutputTime::destroy_all(void)
     */
 
 
-std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec)
+std::shared_ptr<OutputTime> OutputTime::create_output_stream(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
 {
 
     Input::AbstractRecord format = Input::Record(in_rec).val<Input::AbstractRecord>("format");
     std::shared_ptr<OutputTime> output_time = format.factory< OutputTime >();
-    output_time->init_from_input(equation_name, in_rec);
+    output_time->init_from_input(equation_name, in_rec, unit_str);
 
     return output_time;
 }
@@ -231,7 +232,7 @@ std::shared_ptr<Observe> OutputTime::observe(Mesh *mesh)
     if (! observe_) {
         auto observe_points = input_record_.val<Input::Array>("observe_points");
         unsigned int precision = input_record_.val<unsigned int>("precision");
-        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision);
+        observe_ = std::make_shared<Observe>(this->equation_name_, *mesh, observe_points, precision, this->unit_string_);
     }
     return observe_;
 }
