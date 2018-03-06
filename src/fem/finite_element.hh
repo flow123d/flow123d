@@ -210,39 +210,6 @@ enum FEType {
   FEMixedSystem = 4
 };
 
-/**
- * @brief Structure for storing the precomputed finite element data.
- */
-class FEInternalData
-{
-public:
-    
-    FEInternalData(unsigned int np, unsigned int nd);
-    
-    /**
-     * @brief Precomputed values of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    std::vector<std::vector<arma::vec> > ref_shape_values;
-
-    /**
-     * @brief Precomputed gradients of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
-     */
-    std::vector<std::vector<arma::mat> > ref_shape_grads;
-    
-    /// Number of quadrature points.
-    unsigned int n_points;
-    
-    /// Number of dofs (shape functions).
-    unsigned int n_dofs;
-};
 
 
 /**
@@ -301,26 +268,26 @@ public:
 
     /**
      * @brief Calculates the value of the @p comp-th component of
-     * the @p i-th raw basis function at the
+     * the @p i-th shape function at the
      * point @p p on the reference element.
      *
-     * @param i    Number of the basis function.
+     * @param i    Number of the shape function.
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    double basis_value(const unsigned int i,
+    double shape_value(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /**
      * @brief Calculates the @p comp-th component of the gradient
-     * of the @p i-th raw basis function at the point @p p on the
+     * of the @p i-th shape function at the point @p p on the
      * reference element.
      *
-     * @param i    Number of the basis function.
+     * @param i    Number of the shape function.
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i,
+    arma::vec::fixed<dim> shape_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
@@ -346,14 +313,6 @@ protected:
      */
     void setup_components();
     
-    /**
-     * @brief Calculates the data on the reference cell.
-     *
-     * @param q Quadrature rule.
-     * @param flags Update flags.
-     */
-    FEInternalData *initialize(const Quadrature<dim> &q);
-
     /**
      * @brief Decides which additional quantities have to be computed
      * for each cell.

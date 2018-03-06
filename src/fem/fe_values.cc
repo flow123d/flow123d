@@ -36,6 +36,14 @@ using namespace std;
 
 
 
+FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
+    : n_points(np),
+      n_dofs(nd)
+{
+    ref_shape_values.resize(np, vector<arma::vec>(nd));
+    ref_shape_grads.resize(np, vector<arma::mat>(nd));
+}
+
 
 
 template<unsigned int dim, unsigned int spacedim>
@@ -151,6 +159,41 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
     
     views_cache_.initialize(*this);
+}
+
+
+
+template<unsigned int dim, unsigned int spacedim>
+FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature<dim> *q)
+{
+    FEInternalData *data = new FEInternalData(q->size(), fe->n_dofs());
+
+    arma::mat shape_values(fe->n_dofs(), fe->n_components());
+    for (unsigned int i=0; i<q->size(); i++)
+    {
+        for (unsigned int j=0; j<fe->n_dofs(); j++)
+        {
+            for (unsigned int c=0; c<fe->n_components(); c++)
+                shape_values(j,c) = fe->shape_value(j, q->point(i), c);
+            
+            data->ref_shape_values[i][j] = trans(shape_values.row(j));
+        }
+    }
+
+    arma::mat grad(dim, fe->n_components());
+    for (unsigned int i=0; i<q->size(); i++)
+    {
+        for (unsigned int j=0; j<fe->n_dofs(); j++)
+        {
+            grad.zeros();
+            for (unsigned int c=0; c<fe->n_components(); c++)
+                grad.col(c) += fe->shape_grad(j, q->point(i), c);
+            
+            data->ref_shape_grads[i][j] = grad;
+        }
+    }
+    
+    return data;
 }
 
 
@@ -385,7 +428,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 
     // precompute the maping data and finite element data
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
-    this->fe_data = this->fe->initialize(*this->quadrature);
+    this->fe_data = this->init_fe_data(this->quadrature);
     
     // In case of mixed system allocate data for sub-elements.
     if (this->fe->type_ == FEMixedSystem)
@@ -441,7 +484,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     		// transform the side quadrature points to the cell quadrature points
             side_quadrature[sid][pid] = Quadrature<dim>(_sub_quadrature, sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
-    		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid]);
+    		side_fe_data[sid][pid] = this->init_fe_data(&side_quadrature[sid][pid]);
     	}
     }
     

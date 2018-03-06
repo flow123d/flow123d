@@ -60,14 +60,6 @@ template<class FS> const double Dof::evaluate(const FS &function_space,
 
 
 
-FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
-    : n_points(np),
-      n_dofs(nd)
-{
-    ref_shape_values.resize(np, vector<arma::vec>(nd));
-    ref_shape_grads.resize(np, vector<arma::mat>(nd));
-}
-
 
 
 
@@ -108,63 +100,36 @@ void FiniteElement<dim>::compute_node_matrix()
     node_matrix = arma::inv(M);
 }
 
-template<unsigned int dim>
-FEInternalData *FiniteElement<dim>::initialize(const Quadrature<dim> &q)
-{
-    FEInternalData *data = new FEInternalData(q.size(), n_dofs());
-
-    arma::mat raw_values(function_space_->dim(), n_components());
-    arma::mat shape_values(n_dofs(), n_components());
-
-    for (unsigned int i=0; i<q.size(); i++)
-    {
-        for (unsigned int j=0; j<function_space_->dim(); j++)
-            for (unsigned int c=0; c<n_components(); c++)
-              raw_values(j,c) = basis_value(j, q.point(i), c);
-
-        shape_values = node_matrix * raw_values;
-
-        for (unsigned int j=0; j<n_dofs(); j++)
-            data->ref_shape_values[i][j] = trans(shape_values.row(j));
-    }
-
-    arma::mat grad(dim,n_components());
-    vector<arma::mat> grads(n_dofs());
-
-    for (unsigned int i=0; i<q.size(); i++)
-    {
-        for (unsigned int j=0; j<n_dofs(); j++)
-        {
-            grad.zeros();
-            for (unsigned int l=0; l<function_space_->dim(); l++)
-              for (unsigned int c=0; c<n_components(); c++)
-                grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(j,l);
-            data->ref_shape_grads[i][j] = grad;
-        }
-    }
-
-    return data;
-}
-
 
 template<unsigned int dim>
-double FiniteElement<dim>::basis_value(const unsigned int i, 
+double FiniteElement<dim>::shape_value(const unsigned int i, 
                                        const arma::vec::fixed<dim> &p,
                                        const unsigned int comp) const
 {
     ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
-    return this->function_space_->basis_value(i, p, comp);
+    
+    double value = 0;
+    for (unsigned int j=0; j<function_space_->dim(); j++)
+        value += function_space_->basis_value(j, p, comp) * node_matrix(i,j);
+
+    return value;
 }
 
 template<unsigned int dim>
-arma::vec::fixed<dim> FiniteElement<dim>::basis_grad(const unsigned int i,
+arma::vec::fixed<dim> FiniteElement<dim>::shape_grad(const unsigned int i,
                                                      const arma::vec::fixed<dim> &p,
                                                      const unsigned int comp) const
 {
     ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
-    return this->function_space_->basis_grad(i, p, comp);
+    
+    arma::vec grad(dim);
+    grad.zeros();
+    for (unsigned int j=0; j<function_space_->dim(); j++)
+        grad += function_space_->basis_grad(j, p, comp) * node_matrix(i,j);
+    
+    return grad;
 }
 
 

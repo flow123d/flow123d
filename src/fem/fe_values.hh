@@ -37,8 +37,44 @@ template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 
-struct FEInternalData;
 struct MappingInternalData;
+
+
+
+/**
+ * @brief Structure for storing the precomputed finite element data.
+ */
+class FEInternalData
+{
+public:
+    
+    FEInternalData(unsigned int np, unsigned int nd);
+    
+    /**
+     * @brief Precomputed values of basis functions at the quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
+     */
+    std::vector<std::vector<arma::vec> > ref_shape_values;
+
+    /**
+     * @brief Precomputed gradients of basis functions at the quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
+     */
+    std::vector<std::vector<arma::mat> > ref_shape_grads;
+    
+    /// Number of quadrature points.
+    unsigned int n_points;
+    
+    /// Number of dofs (shape functions).
+    unsigned int n_dofs;
+};
+
 
 
 
@@ -397,6 +433,9 @@ public:
 
 protected:
     
+    /// Precompute finite element data on reference element.
+    FEInternalData *init_fe_data(const Quadrature<dim> *q);
+    
     /**
      * @brief Computes the shape function values and gradients on the actual cell
      * and fills the FEValues structure.
@@ -416,6 +455,7 @@ protected:
     
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
     void fill_system_data(const FEInternalData &fe_data);
+    
 
     /**
      * @brief The mapping from the reference cell to the actual cell.
