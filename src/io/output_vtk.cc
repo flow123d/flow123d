@@ -17,12 +17,14 @@
 
 #include "output_vtk.hh"
 #include "element_data_cache_base.hh"
+#include "element_data_cache.hh"
 #include "output_mesh.hh"
 
 #include <limits.h>
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
+#include "tools/unit_si.hh"
 
 #include "config.h"
 #include <zlib.h>
@@ -81,9 +83,9 @@ OutputVTK::~OutputVTK()
 
 
 
-void OutputVTK::init_from_input(const std::string &equation_name, const Input::Record &in_rec)
+void OutputVTK::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
 {
-	OutputTime::init_from_input(equation_name, in_rec);
+	OutputTime::init_from_input(equation_name, in_rec, unit_str);
 
     auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
     variant_type_ = format_rec.val<VTKVariant>("variant");
@@ -154,6 +156,7 @@ int OutputVTK::write_data(void)
 
         /* Write dataset lines to the PVD file. */
         double corrected_time = (isfinite(this->time)?this->time:0);
+        corrected_time /= UnitSI().s().convert_unit_from(this->unit_string_);
         if (parallel_) {
         	for (int i_rank=0; i_rank<n_proc; ++i_rank) {
                 string file = this->form_vtu_filename_(main_output_basename_, current_step, i_rank);

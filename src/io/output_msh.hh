@@ -18,8 +18,11 @@
 #ifndef OUTPUT_MSH_HH_
 #define OUTPUT_MSH_HH_
 
-#include "output_time.hh"
-#include "system/sys_vector.hh"
+#include <vector>          // for vector
+#include "output_time.hh"  // for OutputTime::OutputDataPtr, OutputTime, Out...
+namespace Input { namespace Type { class Record; } }
+namespace flow { template <class T> class VectorId; }
+
 
 /**
  * \brief This class is used for output data to VTK file format

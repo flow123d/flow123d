@@ -21,22 +21,60 @@
 #ifndef FE_VALUES_HH_
 #define FE_VALUES_HH_
 
-#include <armadillo>
-#include <vector>
-#include "fem/update_flags.hh"
-#include "fem/fe_values_views.hh"
-#include "mesh/ref_element.hh"
-#include "mesh/mesh_types.hh"
+#include <string.h>                           // for memcpy
+#include <algorithm>                          // for swap
+#include <new>                                // for operator new[]
+#include <string>                             // for operator<<
+#include <vector>                             // for vector
+#include "fem/fe_values_views.hh"             // for FEValuesViews
+#include "mesh/ref_element.hh"                // for RefElement
+#include "mesh/mesh_types.hh"                 // for ElementFullIter
+#include "fem/update_flags.hh"                // for UpdateFlags
 
 class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 
-struct FEInternalData;
 struct MappingInternalData;
-class SideIter;
+
+
+
+/**
+ * @brief Structure for storing the precomputed finite element data.
+ */
+class FEInternalData
+{
+public:
+    
+    FEInternalData(unsigned int np, unsigned int nd);
+    
+    /**
+     * @brief Precomputed values of basis functions at the quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
+     */
+    std::vector<std::vector<arma::vec> > ref_shape_values;
+
+    /**
+     * @brief Precomputed gradients of basis functions at the quadrature points.
+     *
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
+     */
+    std::vector<std::vector<arma::mat> > ref_shape_grads;
+    
+    /// Number of quadrature points.
+    unsigned int n_points;
+    
+    /// Number of dofs (shape functions).
+    unsigned int n_dofs;
+};
+
 
 
 
@@ -192,7 +230,7 @@ private:
     vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
     vector<FEValuesViews::Vector<dim,spacedim> > vectors;
     
-    void resize(FEValuesBase &fv, unsigned int size);
+    void initialize(FEValuesBase &fv);
   };
   
 public:
@@ -219,7 +257,7 @@ public:
      */
     void allocate(Mapping<dim,spacedim> &_mapping,
             Quadrature<dim> &_quadrature,
-            FiniteElement<dim,spacedim> &_fe,
+            FiniteElement<dim> &_fe,
             UpdateFlags flags);
     
     /**
@@ -380,7 +418,7 @@ public:
     /**
      * @brief Returns the finite element in use.
      */
-    inline FiniteElement<dim,spacedim> * get_fe() const
+    inline FiniteElement<dim> * get_fe() const
     {
         return fe;
     }
@@ -394,6 +432,30 @@ public:
     }
 
 protected:
+    
+    /// Precompute finite element data on reference element.
+    FEInternalData *init_fe_data(const Quadrature<dim> *q);
+    
+    /**
+     * @brief Computes the shape function values and gradients on the actual cell
+     * and fills the FEValues structure.
+     *
+     * @param fe_data Precomputed finite element data.
+     */
+    void fill_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for scalar FE.
+    void fill_scalar_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for vectorial FE.
+    void fill_vec_contravariant_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
+    void fill_vec_piola_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for mixed system of FE.
+    void fill_system_data(const FEInternalData &fe_data);
+    
 
     /**
      * @brief The mapping from the reference cell to the actual cell.
@@ -408,7 +470,7 @@ protected:
     /**
      * @brief The used finite element.
      */
-    FiniteElement<dim,spacedim> *fe;
+    FiniteElement<dim> *fe;
     
     /**
      * @brief Precomputed mapping data.
@@ -419,11 +481,14 @@ protected:
      * @brief Precomputed finite element data.
      */
     FEInternalData *fe_data;
-
+    
     /**
      * @brief Data computed by the mapping and finite element.
      */
     FEValuesData<dim,spacedim> data;
+    
+    /// Vector of FEValues for sub-elements of FESystem.
+    std::vector<std::shared_ptr<FEValuesBase<dim,spacedim> > > fe_values_vec;
     
     /// Number of components of the FE.
     unsigned int n_components_;
@@ -464,7 +529,7 @@ public:
 	 */
     FEValues(Mapping<dim,spacedim> &_mapping,
              Quadrature<dim> &_quadrature,
-             FiniteElement<dim,spacedim> &_fe,
+             FiniteElement<dim> &_fe,
              UpdateFlags _flags);
 
     /**
@@ -510,7 +575,7 @@ public:
      */
     FESideValues(Mapping<dim,spacedim> &_mapping,
              Quadrature<dim-1> &_sub_quadrature,
-             FiniteElement<dim,spacedim> &_fe,
+             FiniteElement<dim> &_fe,
              UpdateFlags flags);
 
     /// Destructor.

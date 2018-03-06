@@ -16,9 +16,11 @@
  */
 
 #include "io/reader_cache.hh"
+#include "io/msh_basereader.hh"
 #include "io/msh_gmshreader.h"
 #include "io/msh_vtkreader.hh"
 #include "io/msh_pvdreader.hh"
+#include "mesh/mesh.h"
 #include "input/accessors.hh"
 
 

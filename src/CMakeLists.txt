@@ -173,6 +173,8 @@ add_library(tools_lib
     tools/adaptivesimpson.cc
     tools/time_marks.cc
     tools/time_governor.cc
+    tools/unit_si.cc
+    tools/unit_converter.cc
 )
 target_link_libraries(tools_lib
     system_lib input_lib )
@@ -292,8 +294,6 @@ add_library(coupling_lib
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
-    fields/unit_si.cc
-    fields/unit_converter.cc
     fields/generic_field.cc
     fields/field_constant.cc
     fields/field_formula.cc

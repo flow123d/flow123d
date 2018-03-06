@@ -53,6 +53,10 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         		"if it is found in more the one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
@@ -165,6 +169,7 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point > &point_lis
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 	flags_ = init_data.flags_;
 
 
@@ -174,6 +179,9 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	if (! rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization_) ) {
 		discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 	}
+    if (! rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -193,9 +201,9 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	fe1_ = new FE_P_disc<1,3>(0);
-	fe2_ = new FE_P_disc<2,3>(0);
-	fe3_ = new FE_P_disc<3,3>(0);
+	fe1_ = new FE_P_disc<1>(0);
+	fe2_ = new FE_P_disc<2>(0);
+	fe3_ = new FE_P_disc<3>(0);
 
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe1_, fe2_, fe3_);
@@ -233,17 +241,29 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
-		BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), this->discretization_, dh_->hash());
+		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+		BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, this->discretization_, dh_->hash());
 		ReaderCache::get_reader(reader_file_)->find_header(header_query);
+		// TODO: use default and check NaN values in data_vec
+
+		unsigned int n_entities;
+		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+			n_entities = dh_->mesh()->element.size();
+		} else {
+			n_entities = ReaderCache::get_mesh(reader_file_)->element.size();
+		}
+		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
+				boundary_domain, this->component_idx_);
+		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+				this->unit_conversion_coefficient_, default_value_);
+
+	    if (checked_data == CheckResult::not_a_number) {
+	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+	    }
 
 		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
-			auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(dh_->mesh()->element.size(),
-					n_components, boundary_domain, this->component_idx_);
 			this->calculate_native_values(data_vec);
 		} else {
-			std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
-			auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(source_mesh->element.size(),
-					n_components, boundary_domain, this->component_idx_);
 			this->interpolate(data_vec);
 		}
 

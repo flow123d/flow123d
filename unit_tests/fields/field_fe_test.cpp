@@ -14,6 +14,7 @@
 
 
 #include "fields/field_fe.hh"
+#include "tools/unit_si.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 
@@ -94,9 +95,9 @@ TEST_F(FieldFETest, scalar) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(1, 2, 3);
 
-	FE_P_disc<1,3> fe1(1);
-	FE_P_disc<2,3> fe2(1);
-	FE_P_disc<3,3> fe3(1);
+	FE_P_disc<1> fe1(1);
+	FE_P_disc<2> fe2(1);
+	FE_P_disc<3> fe3(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     ScalarField field;
 
@@ -121,9 +122,9 @@ TEST_F(FieldFETest, vector) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(0, 0, 1);
 
-    FE_RT0<1,3> fe1;
-	FE_RT0<2,3> fe2;
-	FE_RT0<3,3> fe3;
+    FE_RT0<1> fe1;
+	FE_RT0<2> fe2;
+	FE_RT0<3> fe3;
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     VecField field;
 

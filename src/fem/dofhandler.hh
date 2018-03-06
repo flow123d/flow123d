@@ -19,18 +19,14 @@
 #ifndef DOFHANDLER_HH_
 #define DOFHANDLER_HH_
 
-#include <map>
-#include <petscmat.h>
-#include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
-#include "mesh/elements.h"
-#include "la/distribution.hh"
-#include "fem/discrete_space.hh"
+#include <vector>                // for vector
+#include "mesh/mesh.h"           // for IdxInt
+#include "mesh/mesh_types.hh"    // for ElementFullIter
+#include "fem/discrete_space.hh" // for DiscreteSpace
 
-
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
-class Mesh;
+template<unsigned int dim> class FiniteElement;
 class Distribution;
+
 
 /**
  * Class DOFHandlerBase provides an abstract interface for various dof handlers:
@@ -361,7 +357,7 @@ public:
 
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
-    FiniteElement<dim,3> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
+    FiniteElement<dim> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
 
     /**
      * Implements @p DOFHandlerBase::hash.

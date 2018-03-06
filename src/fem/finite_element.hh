@@ -20,19 +20,24 @@
 #define FINITE_ELEMENT_HH_
 
 #include <armadillo>
-#include <map>
-#include <vector>
-#include <boost/assign/list_of.hpp>
-#include "fem/update_flags.hh"
+#include <stdio.h>                             // for sprintf
+#include <string.h>                            // for memcpy
+#include <algorithm>                           // for max, min
+#include <boost/assign/list_of.hpp>            // for generic_list, list_of
+#include <boost/exception/info.hpp>            // for error_info::error_info...
+#include <new>                                 // for operator new[]
+#include <ostream>                             // for operator<<
+#include <string>                              // for operator<<
+#include <vector>                              // for vector
+#include "fem/update_flags.hh"                 // for operator&, operator|=
+#include "system/exceptions.hh"                // for ExcAssertMsg::~ExcAsse...
 
-
-
-template<unsigned int dim, unsigned int spacedim> class FESystem;
+template<unsigned int dim> class FESystem;
 template<unsigned int dim, unsigned int spacedim> class FESideValues;
 template<unsigned int dim, unsigned int spacedim> class FEValues;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
-template<unsigned int dim, unsigned int spacedim> class FE_P_disc;
+template<unsigned int dim> class FE_P_disc;
 template<unsigned int dim> class Quadrature;
 
 
@@ -205,30 +210,6 @@ enum FEType {
   FEMixedSystem = 4
 };
 
-/**
- * @brief Structure for storing the precomputed finite element data.
- */
-class FEInternalData
-{
-public:
-    /**
-     * @brief Precomputed values of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x (no. of components in ref. cell)
-     */
-    std::vector<std::vector<arma::vec> > ref_shape_values;
-
-    /**
-     * @brief Precomputed gradients of basis functions at the quadrature points.
-     *
-     * Dimensions:   (no. of quadrature points)
-     *             x (no. of dofs)
-     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
-     */
-    std::vector<std::vector<arma::mat> > ref_shape_grads;
-};
 
 
 /**
@@ -270,7 +251,7 @@ public:
  *
  *
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int dim>
 class FiniteElement {
 public:
   
@@ -287,30 +268,30 @@ public:
 
     /**
      * @brief Calculates the value of the @p comp-th component of
-     * the @p i-th raw basis function at the
+     * the @p i-th shape function at the
      * point @p p on the reference element.
      *
-     * @param i    Number of the basis function.
+     * @param i    Number of the shape function.
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    virtual double basis_value(const unsigned int i,
+    double shape_value(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /**
      * @brief Calculates the @p comp-th component of the gradient
-     * of the @p i-th raw basis function at the point @p p on the
+     * of the @p i-th shape function at the point @p p on the
      * reference element.
      *
-     * @param i    Number of the basis function.
+     * @param i    Number of the shape function.
      * @param p    Point of evaluation.
      * @param comp Number of vector component.
      */
-    virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
+    arma::vec::fixed<dim> shape_grad(const unsigned int i,
             const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
-    virtual unsigned int n_components() const { return function_space_->n_components(); }
+    unsigned int n_components() const { return function_space_->n_components(); }
     
     /// Returns @p i -th degree of freedom.
     Dof dof(unsigned int i) const { return dofs_[i]; }
@@ -318,7 +299,7 @@ public:
     /**
      * @brief Destructor.
      */
-    virtual ~FiniteElement();
+    virtual ~FiniteElement() {};
 
 protected:
   
@@ -333,32 +314,12 @@ protected:
     void setup_components();
     
     /**
-     * @brief Calculates the data on the reference cell.
-     *
-     * @param q Quadrature rule.
-     * @param flags Update flags.
-     */
-    virtual FEInternalData *initialize(const Quadrature<dim> &q);
-
-    /**
      * @brief Decides which additional quantities have to be computed
      * for each cell.
      *
      * @param flags Computed update flags.
      */
     virtual UpdateFlags update_each(UpdateFlags flags);
-
-    /**
-     * @brief Computes the shape function values and gradients on the actual cell
-     * and fills the FEValues structure.
-     *
-     * @param q Quadrature rule.
-     * @param data Precomputed finite element data.
-     * @param fv_data Data to be computed.
-     */
-    virtual void fill_fe_values(const Quadrature<dim> &q,
-            FEInternalData &data,
-            FEValuesData<dim,spacedim> &fv_data);
 
     /**
      * @brief Initializes the @p node_matrix for computing the coefficients
@@ -412,17 +373,17 @@ protected:
     arma::mat node_matrix;
 
     /// Function space defining the FE.
-    FunctionSpace *function_space_;
+    std::shared_ptr<FunctionSpace> function_space_;
     
     /// Set of degrees of freedom (functionals) defining the FE.
     std::vector<Dof> dofs_;
     
     
-    friend class FESystem<dim,spacedim>;
-    friend class FEValuesBase<dim,spacedim>;
-    friend class FEValues<dim,spacedim>;
-    friend class FESideValues<dim,spacedim>;
-    friend class FE_P_disc<dim,spacedim>;
+    friend class FESystem<dim>;
+    friend class FEValuesBase<dim,3>;
+    friend class FEValues<dim,3>;
+    friend class FESideValues<dim,3>;
+    friend class FE_P_disc<dim>;
 };
 
 

@@ -19,18 +19,11 @@
 #ifndef DISCRETE_SPACE_HH_
 #define DISCRETE_SPACE_HH_
 
-#include <map>
-#include <petscmat.h>
 #include "mesh/mesh_types.hh"
-#include "mesh/elements.h"
-#include "la/distribution.hh"
-#include "fem/finite_element.hh"
 
 
-
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 class Mesh;
-class Distribution;
 
 
 /**
@@ -56,11 +49,12 @@ public:
   unsigned int n_face_dofs(unsigned int face_id)
   {
     ASSERT(false).error("Not implemented.");
+    return 0;
   }
   
   /// Return finite element object for given element.
   template<unsigned int dim>
-  FiniteElement<dim,3> *fe(const ElementFullIter &) const;
+  FiniteElement<dim> *fe(const ElementFullIter &) const;
 
   /// Destructor.
   virtual ~DiscreteSpace() {};
@@ -72,9 +66,9 @@ protected:
   DiscreteSpace(Mesh *mesh)
   : mesh_(mesh) {}
   
-  virtual FiniteElement<1,3> *fe1d(const ElementFullIter &) const = 0;
-  virtual FiniteElement<2,3> *fe2d(const ElementFullIter &) const = 0;
-  virtual FiniteElement<3,3> *fe3d(const ElementFullIter &) const = 0;
+  virtual FiniteElement<1> *fe1d(const ElementFullIter &) const = 0;
+  virtual FiniteElement<2> *fe2d(const ElementFullIter &) const = 0;
+  virtual FiniteElement<3> *fe3d(const ElementFullIter &) const = 0;
   
   Mesh *mesh_;
 
@@ -88,23 +82,23 @@ protected:
 class EqualOrderDiscreteSpace : public DiscreteSpace {
 public:
   
-  EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<1,3> *fe1, FiniteElement<2,3> *fe2, FiniteElement<3,3> *fe3)
+  EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<1> *fe1, FiniteElement<2> *fe2, FiniteElement<3> *fe3)
   : DiscreteSpace(mesh), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
   
   unsigned int n_elem_dofs(const ElementFullIter &cell) const override;
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   
-  FiniteElement<1,3> *fe1d(const ElementFullIter &cell) const override { return fe1_; }
-  FiniteElement<2,3> *fe2d(const ElementFullIter &cell) const override { return fe2_; }
-  FiniteElement<3,3> *fe3d(const ElementFullIter &cell) const override { return fe3_; }
+  FiniteElement<1> *fe1d(const ElementFullIter &cell) const override { return fe1_; }
+  FiniteElement<2> *fe2d(const ElementFullIter &cell) const override { return fe2_; }
+  FiniteElement<3> *fe3d(const ElementFullIter &cell) const override { return fe3_; }
   
   
 private:
   
-  FiniteElement<1,3> *fe1_;
-  FiniteElement<2,3> *fe2_;
-  FiniteElement<3,3> *fe3_;
+  FiniteElement<1> *fe1_;
+  FiniteElement<2> *fe2_;
+  FiniteElement<3> *fe3_;
   
 };
 

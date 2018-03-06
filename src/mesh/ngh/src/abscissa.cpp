@@ -18,7 +18,9 @@
 #include <cmath>
 
 #include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/myvector.h"
 #include "stdio.h"
 
 namespace ngh {

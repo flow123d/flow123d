@@ -18,25 +18,30 @@
 #ifndef MAKE_MESH_H
 #define MAKE_MESH_H
 
-#include <vector>
-#include <mpi.h>
+#include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <memory>                            // for shared_ptr
+#include <string>                            // for string
+#include <vector>                            // for vector, vector<>::iterator
+#include "input/accessors.hh"                // for Record, Array (ptr only)
+#include "input/accessors_impl.hh"           // for Record::val
+#include "input/storage.hh"                  // for ExcStorageTypeMismatch
+#include "input/type_record.hh"              // for Record (ptr only), Recor...
+#include "mesh/boundaries.h"                 // for Boundary
+#include "mesh/edges.h"                      // for Edge
+#include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
+#include "mesh/neighbours.h"                 // for Neighbour
+#include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
+#include "mesh/sides.h"                      // for SideIter
+#include "mesh/bounding_box.hh"              // for BoundingBox
+#include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+#include "system/file_path.hh"               // for FilePath
+#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 
-#include "mesh/mesh_types.hh"
-
-#include "mesh/nodes.hh"
-//#include "mesh/elements.h"
-//#include "mesh/sides.h"
-#include "mesh/edges.h"
-#include "mesh/neighbours.h"
-#include "mesh/boundaries.h"
-#include "mesh/partitioning.hh"
-#include "mesh/region_set.hh"
-#include "mesh/bounding_box.hh"
-
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-#include "system/exceptions.hh"
-
+class BIHTree;
+class Distribution;
+class Partitioning;
+template <int spacedim> class ElementAccessor;
 
 
 #define ELM  0

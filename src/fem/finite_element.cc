@@ -59,15 +59,19 @@ template<class FS> const double Dof::evaluate(const FS &function_space,
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FiniteElement<dim,spacedim>::FiniteElement()
+
+
+
+
+template<unsigned int dim>
+FiniteElement<dim>::FiniteElement()
     : function_space_(nullptr)
 {
     init();
 }
 
-template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::init(bool primitive, FEType type)
+template<unsigned int dim>
+void FiniteElement<dim>::init(bool primitive, FEType type)
 {
     dofs_.clear();
     is_primitive_ = primitive;
@@ -75,16 +79,16 @@ void FiniteElement<dim,spacedim>::init(bool primitive, FEType type)
 }
 
 
-template<unsigned int dim, unsigned int spacedim>
-void FiniteElement<dim,spacedim>::setup_components()
+template<unsigned int dim>
+void FiniteElement<dim>::setup_components()
 {
   component_indices_.resize(dofs_.size(), 0);
   nonzero_components_.resize(dofs_.size(), { true });
 }
 
 
-template<unsigned int dim, unsigned int spacedim> inline
-void FiniteElement<dim,spacedim>::compute_node_matrix()
+template<unsigned int dim> inline
+void FiniteElement<dim>::compute_node_matrix()
 {
     arma::mat M(dofs_.size(), dofs_.size());
 
@@ -96,72 +100,41 @@ void FiniteElement<dim,spacedim>::compute_node_matrix()
     node_matrix = arma::inv(M);
 }
 
-template<unsigned int dim, unsigned int spacedim>
-FEInternalData *FiniteElement<dim,spacedim>::initialize(const Quadrature<dim> &q)
-{
-    FEInternalData *data = new FEInternalData;
 
-    arma::mat raw_values(function_space_->dim(), n_components());
-    arma::mat shape_values(n_dofs(), n_components());
-
-    data->ref_shape_values.resize(q.size());
-    for (unsigned int i=0; i<q.size(); i++)
-    {
-        for (unsigned int j=0; j<function_space_->dim(); j++)
-            for (unsigned int c=0; c<n_components(); c++)
-              raw_values(j,c) = basis_value(j, q.point(i), c);
-
-        shape_values = node_matrix * raw_values;
-
-        data->ref_shape_values[i].resize(n_dofs());
-        for (unsigned int j=0; j<n_dofs(); j++)
-            data->ref_shape_values[i][j] = trans(shape_values.row(j));
-    }
-
-    arma::mat grad(dim,n_components());
-    vector<arma::mat> grads(n_dofs());
-
-    data->ref_shape_grads.resize(q.size());
-    for (unsigned int i=0; i<q.size(); i++)
-    {
-        data->ref_shape_grads[i].resize(n_dofs());
-        for (unsigned int j=0; j<n_dofs(); j++)
-        {
-            grad.zeros();
-            for (unsigned int l=0; l<function_space_->dim(); l++)
-              for (unsigned int c=0; c<n_components(); c++)
-                grad.col(c) += basis_grad(l, q.point(i), c) * node_matrix(j,l);
-            data->ref_shape_grads[i][j] = grad;
-        }
-    }
-
-    return data;
-}
-
-
-template<unsigned int dim, unsigned int spacedim>
-double FiniteElement<dim,spacedim>::basis_value(const unsigned int i, 
+template<unsigned int dim>
+double FiniteElement<dim>::shape_value(const unsigned int i, 
                                        const arma::vec::fixed<dim> &p,
                                        const unsigned int comp) const
 {
     ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
-    return this->function_space_->basis_value(i, p, comp);
+    
+    double value = 0;
+    for (unsigned int j=0; j<function_space_->dim(); j++)
+        value += function_space_->basis_value(j, p, comp) * node_matrix(i,j);
+
+    return value;
 }
 
-template<unsigned int dim, unsigned int spacedim>
-arma::vec::fixed<dim> FiniteElement<dim,spacedim>::basis_grad(const unsigned int i,
+template<unsigned int dim>
+arma::vec::fixed<dim> FiniteElement<dim>::shape_grad(const unsigned int i,
                                                      const arma::vec::fixed<dim> &p,
                                                      const unsigned int comp) const
 {
     ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
-    return this->function_space_->basis_grad(i, p, comp);
+    
+    arma::vec grad(dim);
+    grad.zeros();
+    for (unsigned int j=0; j<function_space_->dim(); j++)
+        grad += function_space_->basis_grad(j, p, comp) * node_matrix(i,j);
+    
+    return grad;
 }
 
 
-template<unsigned int dim, unsigned int spacedim> inline
-UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
+template<unsigned int dim> inline
+UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
 {
     UpdateFlags f = flags;
 
@@ -189,91 +162,15 @@ UpdateFlags FiniteElement<dim,spacedim>::update_each(UpdateFlags flags)
     return f;
 }
 
-template<unsigned int dim, unsigned int spacedim> inline
-void FiniteElement<dim,spacedim>::fill_fe_values(
-        const Quadrature<dim> &q,
-        FEInternalData &data,
-        FEValuesData<dim,spacedim> &fv_data)
-{
-    // shape values
-    if (fv_data.update_flags & update_values)
-    {
-        for (unsigned int i = 0; i < q.size(); i++)
-            for (unsigned int j = 0; j < n_dofs(); j++)
-            {
-                arma::vec fv_vec;
-                switch (type_) {
-                    case FEScalar:
-                        fv_data.shape_values[i][j] = data.ref_shape_values[i][j][0];
-                        break;
-                    case FEVectorContravariant:
-                        fv_vec = fv_data.jacobians[i] * data.ref_shape_values[i][j];
-                        for (unsigned int c=0; c<spacedim; c++)
-                            fv_data.shape_values[i][j*spacedim+c] = fv_vec[c];
-                        break;
-                    case FEVectorPiola:
-                        fv_vec = fv_data.jacobians[i]*data.ref_shape_values[i][j]/fv_data.determinants[i];
-                        for (unsigned int c=0; c<spacedim; c++)
-                            fv_data.shape_values[i][j*spacedim+c] = fv_vec(c);
-                        break;
-//                     case FETensor:
-//                         arma::mat ref_mat(dim);
-//                         for (unsigned int c=0; c<spacedim*spacedim; c++)
-//                             ref_mat[c/spacedim,c%spacedim] = data.ref_shape_values[i][j][c];
-//                         arma::mat fv_mat = ref_mat*fv_data.inverse_jacobians[i];
-//                         for (unsigned int c=0; c<spacedim*spacedim; c++)
-//                             fv_data.shape_values[i][j*spacedim*spacedim+c] = fv_mat[c];
-//                         break;
-                    default:
-                        ASSERT(false).error("Not implemented.");
-                }
-            }
-    }
-
-    // shape gradients
-    if (fv_data.update_flags & update_gradients)
-    {
-        for (unsigned int i = 0; i < q.size(); i++)
-        {
-            for (unsigned int j = 0; j < n_dofs(); j++)
-            {
-                arma::mat grads;
-                switch (type_) {
-                    case FEScalar:
-                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j];
-                        fv_data.shape_gradients[i][j] = grads;
-                        break;
-                    case FEVectorContravariant:
-                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j] * trans(fv_data.jacobians[i]);
-                        for (unsigned int c=0; c<spacedim; c++)
-                            fv_data.shape_gradients[i][j*spacedim+c] = grads.col(c);
-                        break;
-                    case FEVectorPiola:
-                        grads = trans(fv_data.inverse_jacobians[i]) * data.ref_shape_grads[i][j] * trans(fv_data.jacobians[i])
-                                / fv_data.determinants[i];
-                        for (unsigned int c=0; c<spacedim; c++)
-                            fv_data.shape_gradients[i][j*spacedim+c] = grads.col(c);
-                        break;
-                    default:
-                        ASSERT(false).error("Not implemented.");
-                }
-            }
-        }
-    }
-}
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-FiniteElement<dim,spacedim>::~FiniteElement()
-{
-    if (function_space_ != nullptr) delete function_space_;
-}
 
 
-template class FiniteElement<0,3>;
-template class FiniteElement<1,3>;
-template class FiniteElement<2,3>;
-template class FiniteElement<3,3>;
+
+template class FiniteElement<0>;
+template class FiniteElement<1>;
+template class FiniteElement<2>;
+template class FiniteElement<3>;
 
 

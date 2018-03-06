@@ -23,25 +23,36 @@
 #ifndef TRANSPORT_H_
 #define TRANSPORT_H_
 
+#include <boost/exception/info.hpp>                   // for operator<<, err...
+#include <memory>                                     // for shared_ptr
+#include <vector>                                     // for vector
 #include <petscmat.h>
-#include "coupling/equation.hh"
-#include "input/accessors.hh"
-#include "flow/mh_dofhandler.hh"
-#include "transport/transport_operator_splitting.hh"
-
-#include "fields/field_algo_base.hh"
-#include "fields/bc_field.hh"
+#include "fields/field.hh"                            // for Field
 #include "fields/bc_multi_field.hh"
 #include "fields/field_values.hh"
 #include "fields/multi_field.hh"
 #include "fields/vec_seq_double.hh"
 #include "fields/equation_output.hh"
+#include "input/type_base.hh"                         // for Array
+#include "input/type_generic.hh"                      // for Instance
+#include "input/accessors.hh"
+#include "mesh/region.hh"                             // for RegionSet
+#include "petscvec.h"                                 // for Vec, _p_Vec
+#include "tools/time_marks.hh"                        // for TimeMark, TimeM...
+#include "transport/substance.hh"                     // for SubstanceList
+#include "transport/transport_operator_splitting.hh"
 
-class SorptionImmob;
 class OutputTime;
 class Mesh;
 class Distribution;
-class ConvectionTransport;
+class Balance;
+class MH_DofHandler;
+namespace Input {
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
 
 
 //=============================================================================
