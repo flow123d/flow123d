@@ -19,246 +19,227 @@
 #include "fe_p.hh"
 #include "mesh/ref_element.hh"
 
-/****** Template specializations ******/
 
-/*** 1D finite elements ***/
 
-// P0 constant element
-template<>
-DofDistribution<0,1>::DofDistribution()
+
+PolynomialSpace::PolynomialSpace(unsigned int degree, unsigned int dim)
+    : FunctionSpace(dim, 1),
+      degree_(degree)
 {
-    number_of_dofs = 1;
+// computes powers of all monomials up to given @p degree
+// the order is: 1,x,x^2, y, yx,y^2
+//
+// TODO: - check and possibly rewrite to be more clear (use sum_degree temporary
+//       - change order of monomials: 1, x, y, xy, x^2 , y^2 (increasing order)
+//       - allow Q polynomials: 1,x, y, xy
+//       - can use tensor products
 
-    number_of_single_dofs[1] = 1;
+	arma::uvec pows(dim);
+	pows.zeros();
 
-    unit_support_points.push_back(arma::zeros<arma::vec>(1));
-}
+    unsigned int degree_sum=0;
+    unsigned int i_dim;
 
-// P1 linear element
-template<>
-DofDistribution<1,1>::DofDistribution()
-{
-    number_of_dofs = 2;
 
-    number_of_single_dofs[0] = 2;
+    while (true) {
+        powers.push_back(pows);
 
-    unit_support_points.push_back(RefElement<1>::node_coords(0));
-    unit_support_points.push_back(RefElement<1>::node_coords(1));
-}
-
-// P2 quadratic element
-template<>
-DofDistribution<2,1>::DofDistribution()
-{
-    number_of_dofs = 3;
-
-    number_of_single_dofs[0] = 2;
-    number_of_single_dofs[1] = 1;
-
-    unit_support_points.push_back(RefElement<1>::node_coords(0));
-    unit_support_points.push_back(RefElement<1>::node_coords(1));
-    unit_support_points.push_back(
-    		(RefElement<1>::node_coords(0)+RefElement<1>::node_coords(1))*0.5);
-}
-
-// P3 cubic element
-template<>
-DofDistribution<3,1>::DofDistribution()
-{
-    number_of_dofs = 4;
-
-    number_of_single_dofs[0] = 2;
-    number_of_pairs[1] = 1;
-
-    unit_support_points.push_back(RefElement<1>::node_coords(0));
-    unit_support_points.push_back(RefElement<1>::node_coords(1));
-    unit_support_points.push_back(
-    		(RefElement<1>::node_coords(0)*2+RefElement<1>::node_coords(1))/3);
-    unit_support_points.push_back(
-    		(RefElement<1>::node_coords(0)+RefElement<1>::node_coords(1)*2)/3);
+        // increment pows
+        for(i_dim=0; i_dim < dim; i_dim++) {
+            if (degree_sum < degree) {
+                pows[i_dim]++;
+                degree_sum++;
+                break;
+            } else {                    // if degree_sum == degree, we find first non empty power, free it, and raise the next one
+                degree_sum-=pows[i_dim];
+                pows[i_dim]=0;
+            }
+        }
+        if (i_dim == dim) break; // just after pow == (0, 0, .., degree)
+    }
 }
 
 
-/*** 2D finite elements ***/
-
-// P0 constant element
-template<>
-DofDistribution<0,2>::DofDistribution()
+const double PolynomialSpace::basis_value(unsigned int i,
+                                          const arma::vec &point,
+                                          unsigned int comp_index
+                                         ) const
 {
-    number_of_dofs = 1;
+    ASSERT(comp_index == 0);
+	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");
+    ASSERT(point.size()==space_dim_);
 
-    number_of_single_dofs[2] = 1;
+    double v = 1;
+    for (unsigned int j=0; j<this->space_dim_; j++)
+        v *= pow(point[j], (int) powers[i][j]);
 
-    unit_support_points.push_back(RefElement<2>::node_coords(0));
+    return v;
 }
 
 
-// P1 linear element
-template<>
-DofDistribution<1,2>::DofDistribution()
+const arma::vec PolynomialSpace::basis_grad(unsigned int i,
+                                            const arma::vec &p,
+                                            unsigned int comp_index
+                                           ) const
 {
-    number_of_dofs = 3;
+    ASSERT(comp_index == 0);
+	OLD_ASSERT(i<=powers.size(), "Index of basis function is out of range.");
 
-    number_of_single_dofs[0] = 3;
+    arma::vec grad(this->space_dim_);
 
-    unit_support_points.push_back(RefElement<2>::node_coords(0));
-    unit_support_points.push_back(RefElement<2>::node_coords(1));
-    unit_support_points.push_back(RefElement<2>::node_coords(2));
-}
+    for (unsigned int j=0; j<this->space_dim_; j++)
+    {
+        grad[j] = powers[i][j];
+        if (powers[i][j] == 0) continue;
 
-// P2 quadratic element
-template<>
-DofDistribution<2,2>::DofDistribution()
-{
-    number_of_dofs = 6;
-
-    number_of_single_dofs[0] = 3;
-    number_of_single_dofs[1] = 3;
-
-    unit_support_points.push_back(RefElement<2>::node_coords(0));
-    unit_support_points.push_back(RefElement<2>::node_coords(1));
-    unit_support_points.push_back(RefElement<2>::node_coords(2));
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)+RefElement<2>::node_coords(1))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)+RefElement<2>::node_coords(2))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(1)+RefElement<2>::node_coords(2))*0.5);
-}
-
-// P3 cubic element
-template<>
-DofDistribution<3,2>::DofDistribution()
-{
-    number_of_dofs = 10;
-
-    number_of_single_dofs[0] = 3;
-    number_of_pairs[1] = 3;
-    number_of_single_dofs[2] = 1;
-
-    unit_support_points.push_back(RefElement<2>::node_coords(0));
-    unit_support_points.push_back(RefElement<2>::node_coords(1));
-    unit_support_points.push_back(RefElement<2>::node_coords(2));
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)*2+RefElement<2>::node_coords(1))/3);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)+RefElement<2>::node_coords(1)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)*2+RefElement<2>::node_coords(2))/3);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)+RefElement<2>::node_coords(2)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(1)*2+RefElement<2>::node_coords(2))/3);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(1)+RefElement<2>::node_coords(2)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<2>::node_coords(0)+RefElement<2>::node_coords(1)+RefElement<2>::node_coords(2))/3);
+        for (unsigned int k=0; k<this->space_dim_; k++)
+        {
+            grad[j] *= pow(p[k], (int) (k==j?powers[i][k]-1:powers[i][k]));
+        }
+    }
+    return grad;
 }
 
 
 
-/*** 3D finite elements ***/
 
-// P0 constant element
-template<>
-DofDistribution<0,3>::DofDistribution()
+
+
+
+
+
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FE_P<dim,spacedim>::init_dofs()
 {
-    number_of_dofs = 1;
-
-    number_of_single_dofs[3] = 1;
-
-    unit_support_points.push_back(RefElement<3>::node_coords(0));
-}
-
-
-// P1 linear element
-template<>
-DofDistribution<1,3>::DofDistribution()
-{
-    number_of_dofs = 4;
-
-    number_of_single_dofs[0] = 4;
-
-    unit_support_points.push_back(RefElement<3>::node_coords(0));
-    unit_support_points.push_back(RefElement<3>::node_coords(1));
-    unit_support_points.push_back(RefElement<3>::node_coords(2));
-    unit_support_points.push_back(RefElement<3>::node_coords(3));
-}
-
-// P2 quadratic element
-template<>
-DofDistribution<2,3>::DofDistribution()
-{
-    number_of_dofs = 10;
-
-    number_of_single_dofs[0] = 4;
-    number_of_single_dofs[1] = 6;
-
-    unit_support_points.push_back(RefElement<3>::node_coords(0));
-    unit_support_points.push_back(RefElement<3>::node_coords(1));
-    unit_support_points.push_back(RefElement<3>::node_coords(2));
-    unit_support_points.push_back(RefElement<3>::node_coords(3));
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(1))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(2))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(3))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)+RefElement<3>::node_coords(2))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)+RefElement<3>::node_coords(3))*0.5);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(2)+RefElement<3>::node_coords(3))*0.5);
-}
-
-// P3 cubic element
-template<>
-DofDistribution<3,3>::DofDistribution()
-{
-    number_of_dofs = 20;
-
-    number_of_single_dofs[0] = 4;
-    number_of_pairs[1] = 6;
-    number_of_single_dofs[2] = 4;
-
-    unit_support_points.push_back(RefElement<3>::node_coords(0));
-    unit_support_points.push_back(RefElement<3>::node_coords(1));
-    unit_support_points.push_back(RefElement<3>::node_coords(2));
-    unit_support_points.push_back(RefElement<3>::node_coords(3));
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)*2+RefElement<3>::node_coords(1))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(1)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)*2+RefElement<3>::node_coords(2))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(2)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)*2+RefElement<3>::node_coords(3))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(3)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)+RefElement<3>::node_coords(2)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)*2+RefElement<3>::node_coords(2))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)+RefElement<3>::node_coords(3)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)*2+RefElement<3>::node_coords(3))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(2)+RefElement<3>::node_coords(3)*2)/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(2)*2+RefElement<3>::node_coords(3))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(1)+RefElement<3>::node_coords(2))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(1)+RefElement<3>::node_coords(3))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(0)+RefElement<3>::node_coords(2)+RefElement<3>::node_coords(3))/3);
-    unit_support_points.push_back(
-    		(RefElement<3>::node_coords(1)+RefElement<3>::node_coords(2)+RefElement<3>::node_coords(3))/3);
+    if (degree_ == 0)
+    {
+        // we define nodal dof:
+        // coords = barycentric coordinates of the support point,
+        // coefs  = 1 (dof value = function value at the point)
+        arma::vec coords = arma::ones<arma::vec>(dim+1)/(dim+1);
+        this->dofs_.push_back(Dof(dim, 0, coords, { 1 }, Value));
+    }
+    else
+    {
+        // Create vector of barycentric coordinates.
+        // First we make vector uvbc which contains barycentric coordinates
+        // multiplied by degree_, so that its values are unsigned ints.
+        // Then by counting the nonzero barycentric coordinates we can decide
+        // whether the dof lies on node, line, triangle or tetrahedron.
+        std::vector<arma::uvec> uvbc;
+        arma::uvec ubc = arma::zeros<arma::uvec>(dim+1);
+        ubc[dim] = degree_;
+        bool finish = false;
+        do {
+            uvbc.push_back(ubc);
+            if (ubc[dim] > 0)
+            {
+                // by default increment the first coordinate
+                ubc[0] += 1;
+                ubc[dim] -= 1;
+            }
+            else
+            {
+                // if sum of coordinates is maximal (last coordinate is zero)
+                // then find first nonzero coordinate,
+                // set it to zero, and increment the following coordinate.
+                unsigned int c = 0;
+                while (ubc[c] == 0) c++;
+                // if the first nonzero coordinate is the last but one, we reach the end
+                if (c == dim-1) finish = true;
+                else {
+                    ubc[dim] = ubc[c]-1;
+                    ubc[c] = 0;
+                    ubc[c+1] += 1;
+                }
+            }
+        } while (!finish);
+        
+        // define dofs
+        for (auto ubc : uvbc)
+        {
+            // we define nodal dof:
+            // coords = barycentric coordinates of the support point,
+            // coefs  = 1 (dof value = function value at the point)
+            
+            // count nonzero coordinates in ubc: 1=>nodal dof, 2=>dof on line etc.
+            arma::uvec nonzeros = find(ubc);
+            // convert "unsigned barycentric coordinates" to real ones
+            arma::vec coords = arma::conv_to<arma::vec>::from(ubc);
+            coords /= degree_;
+            
+            // find index of n-face
+            std::pair<unsigned int, unsigned int> zeros = RefElement<dim>::zeros_positions(coords);
+            unsigned int n_face_idx;
+            switch (dim-zeros.first) {
+                case 0:
+                    n_face_idx = RefElement<dim>::template topology_idx<0>(zeros.second);
+                    break;
+                case 1:
+                    n_face_idx = RefElement<dim>::template topology_idx<1>(zeros.second);
+                    break;
+                case 2:
+                    n_face_idx = RefElement<dim>::template topology_idx<2>(zeros.second);
+                    break;
+                case 3:
+                    n_face_idx = RefElement<dim>::template topology_idx<3>(zeros.second);
+                    break;
+            }
+            this->dofs_.push_back(Dof(nonzeros.size()-1, n_face_idx, coords, { 1 }, Value));
+        }
+    }
 }
 
 
 
+
+template<unsigned int dim, unsigned int spacedim>
+FE_P<dim,spacedim>::FE_P(unsigned int degree)
+  : FiniteElement<dim,spacedim>(),
+    degree_(degree)
+{
+    this->function_space_ = new PolynomialSpace(degree,dim);
+    
+    init_dofs();
+
+    this->setup_components();
+    
+    this->compute_node_matrix();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template<unsigned int dim, unsigned int spacedim>
+FE_P_disc<dim,spacedim>::FE_P_disc(unsigned int degree)
+    : FE_P<dim,spacedim>(degree)
+{
+    // all dofs are "inside" the cell (not shared with neighbours)
+    for (unsigned int i=0; i<this->dofs_.size(); i++)
+        this->dofs_[i].dim = dim;
+    
+    this->setup_components();
+
+    this->compute_node_matrix();
+}
+
+
+
+
+
+template class FE_P_disc<1, 3>;
+template class FE_P_disc<2, 3>;
+template class FE_P_disc<3, 3>;

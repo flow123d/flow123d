@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+<DataSet timestep="0" group="" part="0" file="solute_fields/solute_fields-000000.vtu"/>
+<DataSet timestep="360000" group="" part="0" file="solute_fields/solute_fields-000001.vtu"/>
+<DataSet timestep="720000" group="" part="0" file="solute_fields/solute_fields-000002.vtu"/>
+<DataSet timestep="1.08e+06" group="" part="0" file="solute_fields/solute_fields-000003.vtu"/>
+<DataSet timestep="1.44e+06" group="" part="0" file="solute_fields/solute_fields-000004.vtu"/>
+<DataSet timestep="1.8e+06" group="" part="0" file="solute_fields/solute_fields-000005.vtu"/>
+<DataSet timestep="2.16e+06" group="" part="0" file="solute_fields/solute_fields-000006.vtu"/>
+<DataSet timestep="2.52e+06" group="" part="0" file="solute_fields/solute_fields-000007.vtu"/>
+<DataSet timestep="2.88e+06" group="" part="0" file="solute_fields/solute_fields-000008.vtu"/>
+<DataSet timestep="3.24e+06" group="" part="0" file="solute_fields/solute_fields-000009.vtu"/>
+<DataSet timestep="3.6e+06" group="" part="0" file="solute_fields/solute_fields-000010.vtu"/>
+<DataSet timestep="3.96e+06" group="" part="0" file="solute_fields/solute_fields-000011.vtu"/>
+<DataSet timestep="4.32e+06" group="" part="0" file="solute_fields/solute_fields-000012.vtu"/>
+<DataSet timestep="4.68e+06" group="" part="0" file="solute_fields/solute_fields-000013.vtu"/>
+<DataSet timestep="5.04e+06" group="" part="0" file="solute_fields/solute_fields-000014.vtu"/>
+<DataSet timestep="5.4e+06" group="" part="0" file="solute_fields/solute_fields-000015.vtu"/>
+<DataSet timestep="5.76e+06" group="" part="0" file="solute_fields/solute_fields-000016.vtu"/>
+<DataSet timestep="6.12e+06" group="" part="0" file="solute_fields/solute_fields-000017.vtu"/>
+<DataSet timestep="6.48e+06" group="" part="0" file="solute_fields/solute_fields-000018.vtu"/>
+<DataSet timestep="6.84e+06" group="" part="0" file="solute_fields/solute_fields-000019.vtu"/>
+<DataSet timestep="7.2e+06" group="" part="0" file="solute_fields/solute_fields-000020.vtu"/>
+<DataSet timestep="7.56e+06" group="" part="0" file="solute_fields/solute_fields-000021.vtu"/>
+<DataSet timestep="7.92e+06" group="" part="0" file="solute_fields/solute_fields-000022.vtu"/>
+<DataSet timestep="8.28e+06" group="" part="0" file="solute_fields/solute_fields-000023.vtu"/>
+<DataSet timestep="8.64e+06" group="" part="0" file="solute_fields/solute_fields-000024.vtu"/>
+</Collection>
+</VTKFile>

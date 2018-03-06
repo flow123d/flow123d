@@ -55,20 +55,35 @@
  *  - why we need lsize in constructors if we have Distribution
  */
 
-#include "system/global_defs.h"
-#include "la/distribution.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
+#include <mpi.h>                                       // for MPI_Comm, MPI_...
+#include <stdlib.h>                                    // for NULL, abs
+#include <string.h>                                    // for memcpy
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <cmath>                                       // for abs, fabs
+#include <new>                                         // for operator new[]
+#include <string>                                      // for basic_string
+#include <typeinfo>                                    // for type_info
+#include <utility>                                     // for swap, pair
+#include <vector>                                      // for vector, allocator
 
-#include "local_system.hh"
-
-#include <mpi.h>
-
-#include <vector>
 #include <armadillo>
 
 // PETSc includes
-#include "petscmat.h"
+#include "petsclog.h"                                  // for MPI_Allreduce
+#include "petscmat.h"                                  // for Mat, MatStructure
+#include "petscmath.h"                                 // for PetscScalar
+#include "petscsys.h"                                  // for PetscErrorCode
+#include "petscvec.h"                                  // for Vec, VecCreate...
+
+#include "input/accessors.hh"                          // for Record
+#include "la/local_system.hh"
+#include "la/distribution.hh"                          // for Distribution
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+
+namespace Input { namespace Type { class Abstract; } }
 
 
 class LinSys
@@ -85,6 +100,14 @@ public:
         DONE,
         NONE
     } SetValuesMode;
+    
+    struct SolveInfo {
+        SolveInfo(int cr, int nits)
+        : converged_reason(cr), n_iterations(nits)
+        {}
+        int converged_reason;
+        int n_iterations;
+    };
 
 protected:
     typedef std::pair<unsigned,double>       Constraint_;
@@ -464,7 +487,7 @@ public:
     /**
      * Solve the system and return convergence reason.
      */
-    virtual int solve()=0;
+    virtual SolveInfo solve()=0;
 
     /**
      * Returns norm of the initial right hand side

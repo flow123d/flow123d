@@ -6,6 +6,7 @@ import json
 import subprocess
 import time
 import datetime
+import re
 # ----------------------------------------------
 from scripts.core.base import Printer, IO, StatusPrinter
 from scripts.core.threads import PyPy
@@ -21,7 +22,7 @@ class JobState(object):
     Class JobState is enum for job states
     """
 
-    COMPLETED = 'C'
+    COMPLETED = 'F'
     EXITING = 'E'
     HELD = 'H'
     QUEUED = 'Q'
@@ -68,6 +69,8 @@ class Job(object):
     Class Job represents single PBS job
     :type case : scripts.config.yaml_config.ConfigCase
     """
+
+    id_regex = re.compile('([0-9]+)')
 
     def __init__(self, job_id, case):
         self.id = job_id
@@ -141,7 +144,7 @@ class Job(object):
     def parser_builder(cls, o, index, default=JobState.UNKNOWN, **kwargs):
         def parse(output):
             for line in output.splitlines():
-                if line.find(o.id) != -1:
+                if str(o.id) in cls.id_regex.findall(line):
                     info = line.split()
                     for name, i in list(kwargs.items()):
                         setattr(o, name, info[i])

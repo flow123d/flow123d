@@ -30,7 +30,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include <iostream>
 
@@ -67,8 +67,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
         region="set_2",
@@ -88,8 +88,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     }
 ]
 )JSON";
@@ -117,11 +117,7 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh_->read_gmsh_from_stream(in);
-
+	    mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         set_values();
 	}
 

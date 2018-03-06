@@ -128,8 +128,22 @@ There are three region sets implicitly defined:}
 			{Mesh::print-regions}
 			{print{\_}regions}
 			{{Bool}}{}
-			{ \ValueDefault{false}}
+			{ \ValueDefault{true}}
 			{{{If true, print table of all used regions.}% 
+}}
+		\RecKey
+			{Mesh::intersection-search}
+			{intersection{\_}search}
+			{{selection: }\TypeLink{IT::Types-of-search-algorithm-for-finding-intersection-candidates-}{Types of search algorithm for finding intersection candidates.}}{}
+			{ \ValueDefault{"BIHsearch"}}
+			{{{Search algorithm for element intersections.}% 
+}}
+		\RecKey
+			{Mesh::global-observe-search-radius}
+			{global{\_}observe{\_}search{\_}radius}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0.001}}
+			{{{Maximal distance of observe point from Mesh relative to its size (bounding box). Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search{\_}radius.}% 
 }}
 \end{RecordType}
 \begin{AbstractType}
@@ -371,6 +385,26 @@ neighborings of elements of different dimension.}%
 			{{{Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).}% 
 }}
 \end{SelectionType}
+\begin{SelectionType}
+	{IT::Types-of-search-algorithm-for-finding-intersection-candidates-}
+	{Types of search algorithm for finding intersection candidates.}
+	{}
+		\SelectionItem
+			{Types-of-search-algorithm-for-finding-intersection-candidates-::BIHsearch}
+			{BIHsearch}
+			{{{Use BIH for finding initial candidates, then continue by prolongation.}% 
+}}
+		\SelectionItem
+			{Types-of-search-algorithm-for-finding-intersection-candidates-::BIHonly}
+			{BIHonly}
+			{{{Use BIH for finding all candidates.}% 
+}}
+		\SelectionItem
+			{Types-of-search-algorithm-for-finding-intersection-candidates-::BBsearch}
+			{BBsearch}
+			{{{Use bounding boxes for finding initial candidates, then continue by prolongation.}% 
+}}
+\end{SelectionType}
 \begin{RecordType}
 	{IT::TimeGovernor}
 	{TimeGovernor}
@@ -588,7 +622,7 @@ These times have to form an increasing sequence.}%
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed pressure value on the boundary.
-Used for all values of 'bc{\_}type' save the bc{\_}type='none'.See documentation of 'bc{\_}type' for exact meaning of 'bc{\_}pressure' in individual boundary condition types. }{$[m]$}% 
+Used for all values of 'bc{\_}type' except for 'none' and 'seepage'. See documentation of 'bc{\_}type' for exact meaning of 'bc{\_}pressure' in individual boundary condition types. }{$[m]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-MH-Data::bc-flux}
@@ -596,7 +630,7 @@ Used for all values of 'bc{\_}type' save the bc{\_}type='none'.See documentation
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Incoming water boundary flux.
-Used for bc{\_}types : 'none', 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s^{-1}]$}% 
+Used for bc{\_}types : 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-MH-Data::bc-robin-sigma}
@@ -617,7 +651,7 @@ Used for bc{\_}types : 'none', 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s
 			{init{\_}pressure}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Initial condition as pressure }{$[m]$}% 
+			{{{Initial condition for pressure }{$[m]$}% 
 }}
 		\RecKey
 			{Flow-Darcy-MH-Data::storativity}
@@ -660,6 +694,7 @@ Used for bc{\_}types : 'none', 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s
 		\Descendant{\TypeLink{IT::FieldElementwise}{FieldElementwise}}% 
 		\Descendant{\TypeLink{IT::FieldInterpolatedP0}{FieldInterpolatedP0}}% 
 		\Descendant{\TypeLink{IT::FieldTimeFunction}{FieldTimeFunction}}% 
+		\Descendant{\TypeLink{IT::FieldFE}{FieldFE}}% 
 \end{AbstractType}
 \begin{RecordType}
 	{IT::FieldPython}
@@ -790,7 +825,7 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 	{FieldElementwise}
 	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
 	{}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field constant in space.}% 
+	{{{R3{\_}to{\_}R[3,3] Field piecewise constant on mesh elements.}% 
 }}
 		\RecKey
 			{FieldElementwise::unit}
@@ -800,8 +835,8 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
 }}
 		\RecKey
-			{FieldElementwise::gmsh-file}
-			{gmsh{\_}file}
+			{FieldElementwise::mesh-data-file}
+			{mesh{\_}data{\_}file}
 			{{Filename}}{}
 			{ \it{Obligatory}}
 			{{{Input file with ASCII GMSH file format.}% 
@@ -819,7 +854,7 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 	{FieldInterpolatedP0}
 	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
 	{}% reducible to key
-	{{{R3{\_}to{\_}R[3,3] Field constant in space.}% 
+	{{{R3{\_}to{\_}R[3,3] Field interpolated from external mesh data and piecewise constant on mesh elements.}% 
 }}
 		\RecKey
 			{FieldInterpolatedP0::unit}
@@ -829,8 +864,8 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
 }}
 		\RecKey
-			{FieldInterpolatedP0::gmsh-file}
-			{gmsh{\_}file}
+			{FieldInterpolatedP0::mesh-data-file}
+			{mesh{\_}data{\_}file}
 			{{Filename}}{}
 			{ \it{Obligatory}}
 			{{{Input file with ASCII GMSH file format.}% 
@@ -902,6 +937,73 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 			{{{Value of the field in given stamp.}% 
 }}
 \end{TupleType}
+\begin{RecordType}
+	{IT::FieldFE}
+	{FieldFE}
+	{\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R[3,3] Field given by finite element approximation.}% 
+}}
+		\RecKey
+			{FieldFE::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFE::mesh-data-file}
+			{mesh{\_}data{\_}file}
+			{{Filename}}{}
+			{ \it{Obligatory}}
+			{{{GMSH mesh with data.
+Can be different from actual computational mesh.}% 
+}}
+		\RecKey
+			{FieldFE::input-discretization}
+			{input{\_}discretization}
+			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
+			{ \it{Optional}}
+			{{{Section where to find the field, some sections are specific to file format }\\{
+point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
+If not given by user we try to find the field in all sections, but report error }\\{
+if it is found in more the one section.}% 
+}}
+		\RecKey
+			{FieldFE::field-name}
+			{field{\_}name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
+}}
+\end{RecordType}
+\begin{SelectionType}
+	{IT::FE-discretization}
+	{FE{\_}discretization}
+	{{{Specify the section in mesh input file where field data is listed.}\\{
+Some sections are specific to file format.}% 
+}}
+		\SelectionItem
+			{FE-discretization::node-data}
+			{node{\_}data}
+			{{{point{\_}data (VTK) / node{\_}data (GMSH)}% 
+}}
+		\SelectionItem
+			{FE-discretization::element-data}
+			{element{\_}data}
+			{{{cell{\_}data (VTK) / element{\_}data (GMSH)}% 
+}}
+		\SelectionItem
+			{FE-discretization::element-node-data}
+			{element{\_}node{\_}data}
+			{{{element{\_}node{\_}data (only for GMSH)}% 
+}}
+		\SelectionItem
+			{FE-discretization::native-data}
+			{native{\_}data}
+			{{{native{\_}data (only for VTK)}% 
+}}
+\end{SelectionType}
 \begin{AbstractType}
 	{IT::Field-R3-to-R}
 	{Field{\_}R3{\_}to{\_}R}
@@ -914,6 +1016,7 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 		\Descendant{\TypeLink{IT::FieldElementwise-2}{FieldElementwise}}% 
 		\Descendant{\TypeLink{IT::FieldInterpolatedP0-2}{FieldInterpolatedP0}}% 
 		\Descendant{\TypeLink{IT::FieldTimeFunction-2}{FieldTimeFunction}}% 
+		\Descendant{\TypeLink{IT::FieldFE-2}{FieldFE}}% 
 \end{AbstractType}
 \begin{RecordType}
 	{IT::FieldPython-2}
@@ -1019,7 +1122,7 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 	{FieldElementwise}
 	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
 	{}% reducible to key
-	{{{R3{\_}to{\_}R Field constant in space.}% 
+	{{{R3{\_}to{\_}R Field piecewise constant on mesh elements.}% 
 }}
 		\RecKey
 			{FieldElementwise-2::unit}
@@ -1029,8 +1132,8 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
 }}
 		\RecKey
-			{FieldElementwise-2::gmsh-file}
-			{gmsh{\_}file}
+			{FieldElementwise-2::mesh-data-file}
+			{mesh{\_}data{\_}file}
 			{{Filename}}{}
 			{ \it{Obligatory}}
 			{{{Input file with ASCII GMSH file format.}% 
@@ -1048,7 +1151,7 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 	{FieldInterpolatedP0}
 	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
 	{}% reducible to key
-	{{{R3{\_}to{\_}R Field constant in space.}% 
+	{{{R3{\_}to{\_}R Field interpolated from external mesh data and piecewise constant on mesh elements.}% 
 }}
 		\RecKey
 			{FieldInterpolatedP0-2::unit}
@@ -1058,8 +1161,8 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
 }}
 		\RecKey
-			{FieldInterpolatedP0-2::gmsh-file}
-			{gmsh{\_}file}
+			{FieldInterpolatedP0-2::mesh-data-file}
+			{mesh{\_}data{\_}file}
 			{{Filename}}{}
 			{ \it{Obligatory}}
 			{{{Input file with ASCII GMSH file format.}% 
@@ -1131,6 +1234,46 @@ Formula can contain variables }\begin{ttfamily}x,y,z,t\end{ttfamily}{ and usual 
 			{{{Value of the field in given stamp.}% 
 }}
 \end{TupleType}
+\begin{RecordType}
+	{IT::FieldFE-2}
+	{FieldFE}
+	{\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}% implements
+	{}% reducible to key
+	{{{R3{\_}to{\_}R Field given by finite element approximation.}% 
+}}
+		\RecKey
+			{FieldFE-2::unit}
+			{unit}
+			{{record: }\TypeLink{IT::Unit}{Unit}}{}
+			{ \it{Optional}}
+			{{{Unit of the field values provided in the main input file, in the external file, or by a function (FieldPython).}% 
+}}
+		\RecKey
+			{FieldFE-2::mesh-data-file}
+			{mesh{\_}data{\_}file}
+			{{Filename}}{}
+			{ \it{Obligatory}}
+			{{{GMSH mesh with data.
+Can be different from actual computational mesh.}% 
+}}
+		\RecKey
+			{FieldFE-2::input-discretization}
+			{input{\_}discretization}
+			{{selection: }\TypeLink{IT::FE-discretization}{FE{\_}discretization}}{}
+			{ \it{Optional}}
+			{{{Section where to find the field, some sections are specific to file format }\\{
+point{\_}data/node{\_}data, cell{\_}data/element{\_}data, -/element{\_}node{\_}data, native/-.}\\{
+If not given by user we try to find the field in all sections, but report error }\\{
+if it is found in more the one section.}% 
+}}
+		\RecKey
+			{FieldFE-2::field-name}
+			{field{\_}name}
+			{{String}}{}
+			{ \it{Obligatory}}
+			{{{The values of the Field are read from the }\begin{ttfamily}{\$}ElementData\end{ttfamily}{ section with field name given by this key.}% 
+}}
+\end{RecordType}
 \begin{SelectionType}
 	{IT::Flow-Darcy-BC-Type}
 	{Flow{\_}Darcy{\_}BC{\_}Type}
@@ -1150,23 +1293,23 @@ Specify the pressure head through the ''bc{\_}pressure'' field or the piezometri
 		\SelectionItem
 			{Flow-Darcy-BC-Type::total-flux}
 			{total{\_}flux}
-			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$q^N + \sigma (h^R - h)$}{. Specify the water inflow by the 'bc{\_}flux' field, the transition coefficient by 'bc{\_}robin{\_}sigma' and the reference pressure head or pieozmetric head through ''bc{\_}pressure'' or ''bc{\_}piezo{\_}head'' respectively.}% 
+			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$ \delta_d(q_d^N + \sigma_d (h_d^R - h_d) )$}{. Specify the water inflow by the 'bc{\_}flux' field, the transition coefficient by 'bc{\_}robin{\_}sigma' and the reference pressure head or pieozmetric head through ''bc{\_}pressure'' or ''bc{\_}piezo{\_}head'' respectively.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-BC-Type::seepage}
 			{seepage}
 			{{{Seepage face boundary condition.
 Pressure and inflow bounded from above.
-Boundary with potential seepage flow is described by the pair of inequalities: }{$h \le h_d^D$}{ and }{$ q \le q_d^N$}{, where the equality holds in at least one of them.
+Boundary with potential seepage flow is described by the pair of inequalities: }{$h_d \le h_d^D$}{ and }{$ -\boldsymbol q_d\cdot\boldsymbol n \le \delta q_d^N$}{, where the equality holds in at least one of them.
 Caution.
 Setting }{$q_d^N$}{ strictly negative may lead to an ill posed problem since a positive outflow is enforced.
-Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by fields }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ (or }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{) and }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ respectively.}% 
+Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by fields }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{ (or }\begin{ttfamily}bc{\_}switch{\_}piezo{\_}head\end{ttfamily}{) and }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-BC-Type::river}
 			{river}
 			{{{River boundary condition.
-For the water level above the bedrock, }{$H > H^S$}{, the Robin boundary condition is used with the inflow given by: }{ $q^N + \sigma(H^D - H)$}{. For the water level under the bedrock, constant infiltration is used }{ $q^N + \sigma(H^D - H^S)$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma,\end{ttfamily}{bc{\_}flux``.}% 
+For the water level above the bedrock, }{$H_d > H_d^S$}{, the Robin boundary condition is used with the inflow given by: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d) )$}{. For the water level under the bedrock, constant infiltration is used: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d^S) )$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma,\end{ttfamily}{bc{\_}flux``.}% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -1357,7 +1500,10 @@ See also PETSc documentation for KSPSetNormType.}%
 			{output{\_}mesh}
 			{{record: }\TypeLink{IT::OutputMesh}{OutputMesh}}{}
 			{ \it{Optional}}
-			{{{Output mesh record enables output on a refined mesh.}% 
+			{{{Output mesh record enables output on a refined mesh [EXPERIMENTAL, VTK only].Sofar refinement is performed only in discontinous sense.
+Therefore only corner and element data can be written on refined output mesh.
+Node data are to be transformed to corner data, native data cannot be written.
+Do not include any node or native data in output fields.}% 
 }}
 		\RecKey
 			{OutputStream::precision}
@@ -1397,6 +1543,13 @@ See also PETSc documentation for KSPSetNormType.}%
 			{ \ValueDefault{"ascii"}}
 			{{{Variant of output stream file format.}% 
 }}
+		\RecKey
+			{vtk::parallel}
+			{parallel}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{Parallel or serial version of file format.}% 
+}}
 \end{RecordType}
 \begin{SelectionType}
 	{IT::VTK-variant-ascii-or-binary-}
@@ -1416,7 +1569,7 @@ See also PETSc documentation for KSPSetNormType.}%
 			{VTK-variant-ascii-or-binary-::binary-zlib}
 			{binary{\_}zlib}
 			{{{Appended binary XML VTK format without usage of base64 encoding of appended data.
-Compressed with ZLib. (Not supported yet)}% 
+Compressed with ZLib.}% 
 }}
 \end{SelectionType}
 \begin{RecordType}
@@ -1487,6 +1640,15 @@ Set false for global uniform refinement to max{\_}level.}%
 			{{{Name of an output field, according to which the output mesh will be refined.
 The field must be a SCALAR one.}% 
 }}
+		\RecKey
+			{OutputMesh::refinement-error-tolerance}
+			{refinement{\_}error{\_}tolerance}
+			{{Double [0, +inf)}}{}
+			{ \ValueDefault{0.01}}
+			{{{Tolerance for element refinement by error.
+If tolerance is reached, refinement is stopped.
+Relative difference between error control field and its linear approximation on element is computedand compared with tolerance.}% 
+}}
 \end{RecordType}
 \begin{RecordType}
 	{IT::ObservePoint}
@@ -1538,12 +1700,11 @@ E.g. for dimension 2 we snap to the nearest center of the face of the initial el
 Without snapping we make a projection to the initial element.}% 
 }}
 		\RecKey
-			{ObservePoint::n-search-levels}
-			{n{\_}search{\_}levels}
-			{{Integer [0, INT]}}{}
-			{ \ValueDefault{1}}
-			{{{Maximum number of levels of the breadth first search used to find the observe element from the initial element.
-Value zero means to search only the initial element itself.}% 
+			{ObservePoint::search-radius}
+			{search{\_}radius}
+			{{Double [0, +inf)}}{}
+			{implicit value: "{Maximal distance of observe point from Mesh relative to its size (bounding box). }"}
+			{{{Global value is define in Mesh by the key global{\_}observe{\_}search{\_}radius.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -1611,7 +1772,42 @@ The field name, output times, output interpolation (future).}%
 			{ \it{Optional}}
 			{{{Output times specific to particular field.}% 
 }}
+		\RecKey
+			{FieldOutputSetting::interpolation}
+			{interpolation}
+			{{selection: }\TypeLink{IT::Discrete-output}{Discrete{\_}output}}{}
+			{implicit value: "{Interpolation type of output data.}"}
+			{{{Optional value.
+Implicit value is given by field and can be changed.}% 
+}}
 \end{RecordType}
+\begin{SelectionType}
+	{IT::Discrete-output}
+	{Discrete{\_}output}
+	{{{Discrete type of output.
+Determines type of output data (element, node, native etc).}% 
+}}
+		\SelectionItem
+			{Discrete-output::P1-average}
+			{P1{\_}average}
+			{{{Node data / point data.}% 
+}}
+		\SelectionItem
+			{Discrete-output::D1-value}
+			{D1{\_}value}
+			{{{Corner data.}% 
+}}
+		\SelectionItem
+			{Discrete-output::P0-value}
+			{P0{\_}value}
+			{{{Element data / cell data.}% 
+}}
+		\SelectionItem
+			{Discrete-output::Native}
+			{Native}
+			{{{Native data (Flow123D data).}% 
+}}
+\end{SelectionType}
 \begin{SelectionType}
 	{IT::Flow-Darcy-MH-OutputFields}
 	{Flow{\_}Darcy{\_}MH:OutputFields}
@@ -1675,7 +1871,7 @@ The field name, output times, output interpolation (future).}%
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::init-pressure}
 			{init{\_}pressure}
-			{{{}{$[m]$}{ Input field: Initial condition as pressure}% 
+			{{{}{$[m]$}{ Input field: Initial condition for pressure}% 
 }}
 		\SelectionItem
 			{Flow-Darcy-MH-OutputFields::storativity}
@@ -1971,7 +2167,7 @@ These times have to form an increasing sequence.}%
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Prescribed pressure value on the boundary.
-Used for all values of 'bc{\_}type' save the bc{\_}type='none'.See documentation of 'bc{\_}type' for exact meaning of 'bc{\_}pressure' in individual boundary condition types. }{$[m]$}% 
+Used for all values of 'bc{\_}type' except for 'none' and 'seepage'. See documentation of 'bc{\_}type' for exact meaning of 'bc{\_}pressure' in individual boundary condition types. }{$[m]$}% 
 }}
 		\RecKey
 			{RichardsLMH-Data::bc-flux}
@@ -1979,7 +2175,7 @@ Used for all values of 'bc{\_}type' save the bc{\_}type='none'.See documentation
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
 			{{{Incoming water boundary flux.
-Used for bc{\_}types : 'none', 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s^{-1}]$}% 
+Used for bc{\_}types : 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s^{-1}]$}% 
 }}
 		\RecKey
 			{RichardsLMH-Data::bc-robin-sigma}
@@ -2000,7 +2196,7 @@ Used for bc{\_}types : 'none', 'total{\_}flux', 'seepage', 'river'. }{$[m^{4-d}s
 			{init{\_}pressure}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Initial condition as pressure }{$[m]$}% 
+			{{{Initial condition for pressure }{$[m]$}% 
 }}
 		\RecKey
 			{RichardsLMH-Data::storativity}
@@ -2340,6 +2536,11 @@ These times have to form an increasing sequence.}%
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: }% 
 }}
+		\SelectionItem
+			{Solute-Advection-FV-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: }% 
+}}
 \end{SelectionType}
 \begin{RecordType}
 	{IT::Solute-AdvectionDiffusion-DG}
@@ -2491,21 +2692,21 @@ These times have to form an increasing sequence.}%
 			{disp{\_}l}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Longitudal dispersivity (for each substance). }{$[m]$}% 
+			{{{Longitudal dispersivity in the liquid (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::disp-t}
 			{disp{\_}t}
 			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Transversal dispersivity (for each substance). }{$[m]$}% 
+			{{{Transversal dispersivity in the liquid (for each substance). }{$[m]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::diff-m}
 			{diff{\_}m}
-			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{{array [1, UINT] of }{gen. abstract: }\TypeLink{IT::Field-R3-to-R-3-3-}{Field{\_}R3{\_}to{\_}R[3,3]}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Molecular diffusivity (for each substance). }{$[m^{2}s^{-1}]$}% 
+			{{{Molecular diffusivity in the liquid (for each substance). }{$[m^{2}s^{-1}]$}% 
 }}
 		\RecKey
 			{Solute-AdvectionDiffusion-DG-Data::rock-density}
@@ -2626,17 +2827,17 @@ The prescribed incoming mass flux due to diffusion can have the general form }{$
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
-			{{{}{$[m]$}{ Input field: Longitudal dispersivity (for each substance).}% 
+			{{{}{$[m]$}{ Input field: Longitudal dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
-			{{{}{$[m]$}{ Input field: Transversal dispersivity (for each substance).}% 
+			{{{}{$[m]$}{ Input field: Transversal dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::diff-m}
 			{diff{\_}m}
-			{{{}{$[m^{2}s^{-1}]$}{ Input field: Molecular diffusivity (for each substance).}% 
+			{{{}{$[m^{2}s^{-1}]$}{ Input field: Molecular diffusivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{Solute-AdvectionDiffusion-DG-OutputFields::rock-density}
@@ -2669,6 +2870,11 @@ Higher value diminishes the inter-element jumps.}%
 			{region{\_}id}
 			{{{}{$[-]$}{ Input field: }% 
 }}
+		\SelectionItem
+			{Solute-AdvectionDiffusion-DG-OutputFields::subdomain}
+			{subdomain}
+			{{{}{$[-]$}{ Input field: }% 
+}}
 \end{SelectionType}
 \begin{AbstractType}
 	{IT::ReactionTerm}
@@ -2684,7 +2890,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
+	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -2801,7 +3007,7 @@ The default values n=2, d=3 yield relatively good precision while keeping the or
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::GenericReaction}{GenericReaction}}% implements
+	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}
@@ -3656,21 +3862,21 @@ These times have to form an increasing sequence.}%
 			{fluid{\_}thermal{\_}source}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Thermal source density in fluid. }{$[m^{-1}kgs^{-3}]$}% 
+			{{{Density of thermal source in fluid. }{$[m^{-1}kgs^{-3}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-thermal-source}
 			{solid{\_}thermal{\_}source}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Thermal source density in solid. }{$[m^{-1}kgs^{-3}]$}% 
+			{{{Density of thermal source in solid. }{$[m^{-1}kgs^{-3}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::fluid-heat-exchange-rate}
 			{fluid{\_}heat{\_}exchange{\_}rate}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
 			{ \it{Optional}}
-			{{{Heat exchange rate in fluid. }{$[s^{-1}]$}% 
+			{{{Heat exchange rate of source in fluid. }{$[s^{-1}]$}% 
 }}
 		\RecKey
 			{Heat-AdvectionDiffusion-DG-Data::solid-heat-exchange-rate}
@@ -3802,17 +4008,17 @@ The prescribed incoming energy flux due to diffusion can have the general form }
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-thermal-source}
 			{fluid{\_}thermal{\_}source}
-			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Thermal source density in fluid.}% 
+			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Density of thermal source in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-thermal-source}
 			{solid{\_}thermal{\_}source}
-			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Thermal source density in solid.}% 
+			{{{}{$[m^{-1}kgs^{-3}]$}{ Input field: Density of thermal source in solid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::fluid-heat-exchange-rate}
 			{fluid{\_}heat{\_}exchange{\_}rate}
-			{{{}{$[s^{-1}]$}{ Input field: Heat exchange rate in fluid.}% 
+			{{{}{$[s^{-1}]$}{ Input field: Heat exchange rate of source in fluid.}% 
 }}
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::solid-heat-exchange-rate}
@@ -3848,6 +4054,11 @@ Higher value diminishes the inter-element jumps.}%
 		\SelectionItem
 			{Heat-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
+			{{{}{$[-]$}{ Input field: }% 
+}}
+		\SelectionItem
+			{Heat-AdvectionDiffusion-DG-OutputFields::subdomain}
+			{subdomain}
 			{{{}{$[-]$}{ Input field: }% 
 }}
 \end{SelectionType}

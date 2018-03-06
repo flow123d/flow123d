@@ -73,6 +73,12 @@ TEST(la, simple_local_system_solution) {
                          0};
     
     LocalSystem ls(m, n);
+    
+    // set sparsity pattern
+    arma::umat sp;
+    sp.ones(m,n);
+    ls.set_sparsity(sp);
+    
     // set solution with preferred diagonal entries
     //ls.set_solution(11, s1, d1);
     ls.set_solution_row(1, s1, d1);
@@ -149,6 +155,11 @@ TEST(la, simple_local_system_no_solution) {
     
     LocalSystem ls(m, n);
     
+    // set sparsity pattern
+    arma::umat sp;
+    sp.ones(m,n);
+    ls.set_sparsity(sp);
+    
     ls.add_value(0, 0, 1, 10);
     ls.add_value(0, 1, 2, 0);
     ls.add_value(0, 2, 3, 0);
@@ -163,6 +174,46 @@ TEST(la, simple_local_system_no_solution) {
 }
 
 
+TEST(la, sparse_local_system) {
+
+    const unsigned int m = 4,
+                       n = 4;
+    // set sparsity pattern
+    arma::umat sp(m,n);
+    sp.zeros();
+    sp.diag() = arma::uvec({1,2,3,4});
+    sp.diag(2) = arma::uvec({5,6});
+    sp.diag(-3) = arma::uvec({7});
+    
+    //resulting system
+    arma::mat res_mat(m,n);
+    for(unsigned int i=0; i<m;i++)
+        for(unsigned int j=0; j<n;j++)
+            res_mat(i,j) = sp(i,j);
+    arma::vec res_rhs = {10, 11, 12, 13};
+    
+    LocalSystem ls(m, n);
+    
+    // set sparsity pattern
+    ls.set_sparsity(sp);
+    
+    EXPECT_ASSERT_DEATH(ls.add_value(0, 1, 1.0), "Violation of sparsity pattern.");
+    EXPECT_ASSERT_DEATH(ls.add_value(0, 3, 1.0), "Violation of sparsity pattern.");
+    EXPECT_ASSERT_DEATH(ls.add_value(2, 0, 1.0, 1.0), "Violation of sparsity pattern.");
+    EXPECT_ASSERT_DEATH(ls.add_value(3, 1, 1.0, 1.0), "Violation of sparsity pattern.");
+    ls.add_value(0, 0, 1, 10);
+    ls.add_value(1, 1, 2, 11);
+    ls.add_value(2, 2, 3, 12);
+    ls.add_value(3, 3, 4, 13);
+    ls.add_value(0, 2, 5);
+    ls.add_value(1, 3, 6);
+    ls.add_value(3, 0, 7);
+    
+    ls.eliminate_solution();
+    
+    EXPECT_ARMA_EQ(res_mat, ls.get_matrix());
+    EXPECT_ARMA_EQ(res_rhs, ls.get_rhs());
+}
 
 
 
@@ -193,6 +244,11 @@ public:
     void restart() {
             full_matrix_ = matrix = arma::zeros(size, size);
             full_rhs_    = rhs    = arma::zeros(size);
+            
+            // set sparsity pattern
+            arma::umat sp;
+            sp.ones(size, size);
+            set_sparsity(sp);
             
             dirichlet_rows_ = arma::find(arma::randu<arma::vec>(size)<0.2);
             dirichlet_.ones(size);

@@ -9,11 +9,20 @@
 #define REGION_SET_HH_
 
 
-#include "mesh/region.hh"
-#include "input/accessors.hh"
-#include "input/input_type.hh"
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <string>                    // for string
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "mesh/region.hh"            // for RegionDB, RegionSet, RegionDB::M...
+#include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
 class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Abstract;
+		class Record;
+	}
+}
 
 /**
  * Base class represented regions.
@@ -220,7 +229,7 @@ private:
      * @param set_name Name of second RegionSet
      * @return RegionSet created of intersection operation
      */
-    RegionSet intersection( RegionSet target_set, const string & source_set_name) const;
+    RegionSet intersection( RegionSet target_set, const std::string & source_set_name) const;
 };
 
 

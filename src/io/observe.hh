@@ -8,14 +8,22 @@
 #ifndef SRC_IO_OBSERVE_HH_
 #define SRC_IO_OBSERVE_HH_
 
-#include <string>
-
-#include "input/input_type.hh"
-#include "fields/field.hh"
-#include "io/output_data.hh"
-#include "tools/time_governor.hh"
-#include "system/exceptions.hh"
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <iosfwd>                            // for ofstream, ostream
+#include <map>                               // for map, map<>::value_compare
+#include <memory>                            // for shared_ptr
+#include <new>                               // for operator new[]
+#include <string>                            // for string, operator<<
+#include <vector>                            // for vector
 #include <armadillo>
+#include "input/accessors.hh"                // for Array (ptr only), Record
+#include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
+#include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+
+class ElementDataCacheBase;
+class Mesh;
+namespace Input { namespace Type { class Record; } }
+template <typename T> class ElementDataCache;
 
 
 
@@ -60,6 +68,18 @@ public:
             << " close to the initial observe point. Change maximal distance of observe element." << "\n");
 
     static const Input::Type::Record & get_input_type();
+
+    /**
+     * Return index of observation point in the mesh.
+     */
+    inline unsigned int element_idx() const
+    { return observe_data_.element_idx_; }
+
+    /**
+     * Return global coordinates of the observation point.
+     */
+    inline arma::vec3 global_coords() const
+    { return observe_data_.global_coords_; }
 
 protected:
     /**
@@ -149,6 +169,9 @@ protected:
 class Observe {
 public:
 
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
+    typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
+
     /**
      * Construct the observation object.
      *
@@ -161,12 +184,6 @@ public:
     /// Destructor, must close the file.
     ~Observe();
 
-
-    /**
-     * Evaluates and store values of the given field in the observe points.
-     */
-    template<int spacedim, class Value>
-    void compute_field_values(Field<spacedim, Value> &field);
 
     /**
      * Provides a vector of element indices on which the observation values are evaluated.
@@ -186,22 +203,37 @@ public:
      */
     void output_time_frame(double time);
 
+    /**
+     * Return \p points_ vector
+     */
+    inline const std::vector<ObservePoint> & points() const
+    { return points_; }
+
+    /**
+     * Prepare data for computing observe values.
+     *
+     * Method:
+     *  - check that all fields of one time frame are evaluated at the same time
+     *  - find and return ElementDataCache of given field_name, create its if doesn't exist.
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     * @param field_time Actual computing time
+     * @param n_rows     Count of rows of data cache (used only if new cache is created)
+     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     */
+    template <typename T>
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+
 
 
 protected:
     // MPI rank.
     int rank_;
 
-    // Mesh used for search of points.
-    Mesh *mesh_;
-
     /// Full information about observe points.
     std::vector<ObservePoint> points_;
     /// Elements of the o_points.
     std::vector<unsigned int> observed_element_indices_;
-
-    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
-    typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
 
     /// Stored field values.
     OutputDataFieldMap observe_field_values_;

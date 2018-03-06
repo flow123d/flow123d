@@ -464,9 +464,10 @@ unsigned int ComputeIntersection<1,2>::compute_final_in_plane(vector<IPAux12>& I
             IP12s[ip].set_topology_A(ip, 0);
         }
     }
-
+    
     // if IPs are the same, then throw the second one away
     if(IP12s[0].topology_equal(IP12s[1])){
+//         DebugOut() << "IP same, pop up\n";
         IP12s.pop_back();
     }
     
@@ -482,19 +483,11 @@ void ComputeIntersection<1,2>::correct_triangle_ip_topology(
     arma::vec2 local_abscissa({1 - t, t});    // abscissa local barycentric coords
     ips[ip].set_coordinates(local_abscissa, local_tria);
 
-    
     // create mask for zeros in barycentric coordinates
     // coords (*,*,*,*) -> byte bitwise xxxx
     // only least significant one byte used from the integer
-    unsigned int zeros = 0;
-    unsigned int n_zeros = 0;
-    for(char i=0; i < 3; i++){
-        if(std::fabs(ips[ip].local_bcoords_B()[i]) < geometry_epsilon)
-        {
-            zeros = zeros | (1 << i);
-            n_zeros++;
-        }
-    }
+    std::pair<unsigned int, unsigned int> zeros = 
+        RefElement<2>::zeros_positions(ips[ip].local_bcoords_B(), geometry_epsilon);
     
     /**
      * TODO:
@@ -503,13 +496,14 @@ void ComputeIntersection<1,2>::correct_triangle_ip_topology(
      *    remove topology_idx from RefElement.
      */
 
-    switch(n_zeros)
+//     DebugOut() << "zeros: <" << zeros.first << ",  " << zeros.second << ">\n";
+    switch(zeros.first)
     {
         default: ips[ip].set_topology_B(0,2);  //inside tetrahedon
                  break;
-        case 1: ips[ip].set_topology_B(RefElement<2>::topology_idx<1>(zeros),1);
+        case 1: ips[ip].set_topology_B(RefElement<2>::topology_idx<1>(zeros.second),1);
                 break;
-        case 2: ips[ip].set_topology_B(RefElement<2>::topology_idx<0>(zeros),0);
+        case 2: ips[ip].set_topology_B(RefElement<2>::topology_idx<0>(zeros.second),0);
                 break;
     }
 };

@@ -18,8 +18,9 @@
 #ifndef tetrahedronH
 #define tetrahedronH
 
-#include "point.h"
-#include "triangle.h"
+#include "point.h"     // for TPoint
+#include "triangle.h"  // for TTriangle
+class TAbscissa;
 
 namespace ngh {
 

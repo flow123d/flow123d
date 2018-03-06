@@ -6,16 +6,18 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
+#include "mesh/ngh/include/tetrahedron.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/compute_intersection.hh"
@@ -199,8 +201,6 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.25, 0, 0},
                 {0, 0, 0}
                 }});
-
-
     c.push_back({ "61_p", {
                 {0, 0.25, 0.25},
                 {0.25, 0, 0},
@@ -330,7 +330,7 @@ TEST(area_intersections, all) {
         string file_name=test_case.first+"_triangle_tetrahedron.msh";
         TestCaseIPs &case_ips=test_case.second;
 
-        FilePath mesh_file(dir_name + file_name, FilePath::input_file);
+        string in_mesh_string = "{mesh_file=\"" + dir_name + file_name + "\"}";
         
         const unsigned int np = 1;//permutations_triangle.size();
         for(unsigned int p=0; p<np; p++){
@@ -342,10 +342,10 @@ TEST(area_intersections, all) {
                 MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## permutation:  triangle #{}, tetrahedron #{}\n",
                                  i_file,  file_name, p, pt);
                 
-                Mesh *mesh = mesh_constructor();
+                Mesh *mesh = mesh_constructor(in_mesh_string);
                 // read mesh with gmshreader
-                GmshMeshReader reader(mesh_file);
-                reader.read_mesh(mesh);
+                auto reader = reader_constructor(in_mesh_string);
+                reader->read_raw_mesh(mesh);
                 
                 // permute nodes:
                 FOR_ELEMENTS(mesh,ele)

@@ -18,25 +18,38 @@
 #ifndef FIELD_COMMON_HH_
 #define FIELD_COMMON_HH_
 
-#include <vector>
-using namespace std;
-
-#include "system/exceptions.hh"
-#include "fields/field_values.hh"
-#include "input/accessors.hh"
-#include "input/type_generic.hh"
-#include "tools/time_marks.hh"
-#include "tools/time_governor.hh"
-
-#include "fields/field_algo_base.hh"
-#include "fields/field_flag.hh"
-#include "fields/unit_si.hh"
-#include "io/output_time.hh"
-
+#include <algorithm>                                   // for sort, unique
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <limits>                                      // for numeric_limits
+#include <memory>                                      // for shared_ptr
+#include <ostream>                                     // for operator<<
+#include <string>                                      // for string, basic_...
+#include <utility>                                     // for make_pair, pair
+#include <vector>                                      // for vector, allocator
+#include "fields/field_algo_base.hh"                   // for FieldResult
+#include "fields/field_flag.hh"                        // for FieldFlag, Fie...
+#include "fields/field_values.hh"                      // for FieldEnum
+#include "fields/unit_si.hh"                           // for UnitSI
+#include "input/accessors.hh"                          // for Record, Array ...
+#include "input/input_exception.hh"                    // for ExcInputMessage
+#include "input/type_base.hh"                          // for Array, Type
+#include "input/type_generic.hh"                       // for Instance
+#include "input/type_record.hh"                        // for Record
+#include "input/type_selection.hh"                     // for Selection
+#include "io/output_time.hh"                           // for OutputTime
+#include "mesh/region.hh"                              // for Region (ptr only)
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/exc_common.hh"                        // for EI_Message
+#include "system/exceptions.hh"                        // for operator<<
+#include "system/flag_array.hh"                        // for FlagArray<>::Mask
+#include "tools/time_governor.hh"                      // for TimeGovernor (...
 
 class Mesh;
-class Region;
 class Observe;
+
+
+using namespace std;
 
 namespace IT=Input::Type;
 
@@ -159,7 +172,7 @@ public:
      * If not set explicitly by this method, the default value is OutputTime::ELEM_DATA
      */
     FieldCommon & output_type(OutputTime::DiscreteSpace rt)
-    { type_of_output_data_ = rt; return *this; }
+    { if (rt!=OutputTime::UNDEFINED) type_of_output_data_ = rt; return *this; }
 
     /**
      * Set given mask to the field flags, ignoring default setting.
@@ -237,7 +250,7 @@ public:
         return shared_->limits_;
     }
 
-    OutputTime::DiscreteSpace output_type() const
+    OutputTime::DiscreteSpace get_output_type() const
     { return type_of_output_data_; }
 
     bool is_bc() const
@@ -400,7 +413,7 @@ public:
      * The parameter @p output_fields is checked for value named by the field name. If the key exists,
      * then the output of the field is performed. If the key do not appear in the input, no output is done.
      */
-    virtual void output(std::shared_ptr<OutputTime> stream) =0;
+    virtual void field_output(std::shared_ptr<OutputTime> stream) =0;
 
     /**
      * Perform the observe output of the field.

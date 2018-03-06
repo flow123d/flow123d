@@ -232,7 +232,7 @@ IT::Record HeatTransferModel::get_input_type(const string &implementation, const
 					"Time governor setting for the secondary equation.")
 			.declare_key("balance", Balance::get_input_type(), Default("{}"),
 					"Settings for computing balance.")
-			.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+			.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
 					"Parameters of output stream.");
 }
 
@@ -255,7 +255,7 @@ HeatTransferModel::HeatTransferModel(Mesh &mesh, const Input::Record in_rec) :
 	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
 	substances_.initialize({""});
 
-    output_stream_ = OutputTime::create_output_stream("heat", *mesh_, in_rec.val<Input::Record>("output_stream"));
+    output_stream_ = OutputTime::create_output_stream("heat", in_rec.val<Input::Record>("output_stream"));
     //output_stream_->add_admissible_field_names(in_rec.val<Input::Array>("output_fields"));
 
     balance_ = std::make_shared<Balance>("energy", mesh_);
@@ -337,12 +337,9 @@ void HeatTransferModel::compute_advection_diffusion_coefficients(const std::vect
 
 void HeatTransferModel::compute_init_cond(const std::vector<arma::vec3> &point_list,
 		const ElementAccessor<3> &ele_acc,
-		std::vector< arma::vec > &init_values)
+		std::vector<std::vector<double> > &init_values)
 {
-	vector<double> init_value(point_list.size());
-	data().init_temperature.value_list(point_list, ele_acc, init_value);
-	for (unsigned int i=0; i<point_list.size(); i++)
-		init_values[i] = init_value[i];
+	data().init_temperature.value_list(point_list, ele_acc, init_values[0]);
 }
 
 
@@ -381,9 +378,9 @@ void HeatTransferModel::get_flux_bc_sigma(unsigned int index,
 
 void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_value,
-			std::vector<arma::vec> &sources_density,
-			std::vector<arma::vec> &sources_sigma)
+			std::vector<std::vector<double> > &sources_value,
+			std::vector<std::vector<double> > &sources_density,
+			std::vector<std::vector<double> > &sources_sigma)
 {
 	const unsigned int qsize = point_list.size();
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
@@ -401,26 +398,25 @@ void HeatTransferModel::compute_source_coefficients(const std::vector<arma::vec3
 	data().fluid_ref_temperature.value_list(point_list, ele_acc, f_temp);
 	data().solid_ref_temperature.value_list(point_list, ele_acc, s_temp);
 
+    sources_density[0].resize(point_list.size());
+    sources_sigma[0].resize(point_list.size());
+    sources_value[0].resize(point_list.size());
 	for (unsigned int k=0; k<point_list.size(); k++)
 	{
-		sources_density[k].resize(1);
-		sources_sigma[k].resize(1);
-		sources_value[k].resize(1);
-
-		sources_density[k][0] = csection[k]*(por[k]*f_source[k] + (1.-por[k])*s_source[k]);
-		sources_sigma[k][0] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
-		if (fabs(sources_sigma[k][0]) > numeric_limits<double>::epsilon())
-			sources_value[k][0] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k]*f_temp[k]
-		                   + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]*s_temp[k])/sources_sigma[k][0];
+		sources_density[0][k] = csection[k]*(por[k]*f_source[k] + (1.-por[k])*s_source[k]);
+		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
+		if (fabs(sources_sigma[0][k]) > numeric_limits<double>::epsilon())
+			sources_value[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k]*f_temp[k]
+		                   + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]*s_temp[k])/sources_sigma[0][k];
 		else
-			sources_value[k][0] = 0;
+			sources_value[0][k] = 0;
 	}
 }
 
 
 void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_sigma)
+			std::vector<std::vector<double> > &sources_sigma)
 {
 	const unsigned int qsize = point_list.size();
 	std::vector<double> por(qsize), csection(qsize), f_rho(qsize), s_rho(qsize), f_cap(qsize), s_cap(qsize),
@@ -433,10 +429,10 @@ void HeatTransferModel::compute_sources_sigma(const std::vector<arma::vec3> &poi
 	data().solid_heat_capacity.value_list(point_list, ele_acc, s_cap);
 	data().fluid_heat_exchange_rate.value_list(point_list, ele_acc, f_sigma);
 	data().solid_heat_exchange_rate.value_list(point_list, ele_acc, s_sigma);
+    sources_sigma[0].resize(point_list.size());
 	for (unsigned int k=0; k<point_list.size(); k++)
 	{
-		sources_sigma[k].resize(1);
-		sources_sigma[k][0] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
+		sources_sigma[0][k] = csection[k]*(por[k]*f_rho[k]*f_cap[k]*f_sigma[k] + (1.-por[k])*s_rho[k]*s_cap[k]*s_sigma[k]);
 	}
 }
 

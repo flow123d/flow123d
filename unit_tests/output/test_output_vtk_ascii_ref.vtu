@@ -4,7 +4,7 @@
 <Piece NumberOfPoints="8" NumberOfCells="6">
 <Points>
 <DataArray type="Float64" NumberOfComponents="3" format="ascii">
-1.0000000000 1.0000000000 1.0000000000 -1.0000000000 1.0000000000 1.0000000000 -1.0000000000 -1.0000000000 1.0000000000 1.0000000000 -1.0000000000 1.0000000000 1.0000000000 -1.0000000000 -1.0000000000 -1.0000000000 -1.0000000000 -1.0000000000 1.0000000000 1.0000000000 -1.0000000000 -1.0000000000 1.0000000000 -1.0000000000 
+1 1 1 -1 1 1 -1 -1 1 1 -1 1 1 -1 -1 -1 -1 -1 1 1 -1 -1 1 -1 
 </DataArray>
 </Points>
 <Cells>
@@ -18,6 +18,22 @@
 10 10 10 10 10 10 
 </DataArray>
 </Cells>
+<CellData Scalars="scalar_field," Vectors="vector_field," Tensors="tensor_field,">
+<DataArray type="Float64" Name="scalar_field" format="ascii">
+0.5 0.5 0.5 0.5 0.5 0.5 
+</DataArray>
+<DataArray type="Float64" Name="vector_field" NumberOfComponents="3" format="ascii">
+0.5 1 1.5 0.5 1 1.5 0.5 1 1.5 0.5 1 1.5 0.5 1 1.5 0.5 1 1.5 
+</DataArray>
+<DataArray type="Float64" Name="tensor_field" NumberOfComponents="9" format="ascii">
+1 4 7 2 5 8 3 6 9 1 4 7 2 5 8 3 6 9 1 4 7 2 5 8 3 6 9 1 4 7 2 5 8 3 6 9 1 4 7 2 5 8 3 6 9 1 4 7 2 5 8 3 6 9 
+</DataArray>
+</CellData>
+<Flow123dData Scalars="flow_data," Vectors="" Tensors="">
+<DataArray type="Float64" Name="flow_data" format="ascii" dof_handler_hash="6" n_dofs_per_element="1">
+0.0000000000 0.2000000000 0.4000000000 0.6000000000 0.8000000000 1.0000000000 
+</DataArray>
+</Flow123dData>
 </Piece>
 </UnstructuredGrid>
 </VTKFile>

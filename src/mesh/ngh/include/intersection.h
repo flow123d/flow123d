@@ -18,15 +18,17 @@
 #ifndef intersectionH
 #define intersectionH
 
-#include "bisector.h"
-#include "abscissa.h"
-#include "point.h"
-#include "plain.h"
-#include "triangle.h"
-#include "tetrahedron.h"
-#include "intersectionLocal.h"
+#include "abscissa.h"  // for TAbscissa
+#include "bisector.h"  // for TBisector
+#include "triangle.h"  // for TTriangle
+
 
 namespace ngh {
+
+class IntersectionLocal;
+class TPlain;
+class TPoint;
+class TTetrahedron;
 
 typedef enum Intersections{
         none,

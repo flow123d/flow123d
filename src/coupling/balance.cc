@@ -28,6 +28,7 @@
 #include "coupling/balance.hh"
 #include "fields/unit_si.hh"
 #include "tools/time_governor.hh"
+#include "la/distribution.hh"
 
 using namespace Input::Type;
 
@@ -104,6 +105,7 @@ Balance::~Balance()
 		chkerr(MatDestroy(&(region_source_rhs_[c])));
 		chkerr(VecDestroy(&(be_flux_vec_[c])));
 		chkerr(VecDestroy(&(region_source_vec_[c])));
+        chkerr(VecDestroy(&(region_mass_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -111,6 +113,7 @@ Balance::~Balance()
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
+    delete[] region_mass_vec_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
 	chkerr(VecDestroy(&ones_));
@@ -468,7 +471,7 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 
 void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -488,7 +491,7 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		unsigned int boundary_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -507,7 +510,7 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -552,7 +555,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 
 void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);

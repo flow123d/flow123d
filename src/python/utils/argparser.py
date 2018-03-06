@@ -157,6 +157,8 @@ class RuntestArgs(ParserArgs):
 
      :type time_limit        : float
      :type memory_limit      : float
+     :type input             : str
+
 
      :type root              : str
      :type json              : str
@@ -164,7 +166,7 @@ class RuntestArgs(ParserArgs):
      :type dump              : str
      :type log               : str
 
-     :type export            : bool
+     :type save_to_db        : bool
      :type random_output_dir : str
      :type no_clean          : bool
      :type no_compare        : bool
@@ -192,6 +194,7 @@ class RuntestArgs(ParserArgs):
 
         self.time_limit = None
         self.memory_limit = None
+        self.input = None
 
         self.root = None
         self.json = None
@@ -199,7 +202,7 @@ class RuntestArgs(ParserArgs):
         self.dump = None
         self.log = None
 
-        self.export = None
+        self.save_to_db = None
         self.random_output_dir = None
         self.no_clean = None
         self.no_compare = None
@@ -280,8 +283,10 @@ class Parser(object):
         :rtype: RuntestArgs
         """
         result = RuntestArgs(*parser.parse_known_args(args))
+        
+        # if no paths or location are given, assuming current directory
         if not result.args:
-            parser.error('No yaml files or folder given')
+            result.args = ['.']
 
         cls.on_parse(result)
         return result

@@ -3,9 +3,10 @@
 
 set -x
 
+SCRIPT_DIR=`pwd`/${0%/*}
 
 # directory containing whole build process
-WORKDIR=/home/jb/workspace
+WORKDIR=/home/jb
 
 # name of the development image
 WORK_IMAGE=flow123d/f123d_docker
@@ -15,7 +16,7 @@ get_dev_dir()
     curr_dir=`pwd`
     project_dir="${curr_dir#${WORKDIR}}"    # relative to 'workspace'
     project_dir="${project_dir#/}"          
-    project_dir="${project_dir%%/*}"
+    #project_dir="${project_dir%%/*}"
 }
 
 cp_to_docker () {
@@ -27,6 +28,13 @@ cp_to_docker () {
     then    
         docker exec ${running_cont} chown $U_ID:$G_ID $target
     fi        
+}
+
+remove_custom_image()
+{
+    docker stop `docker ps -aq`
+    docker rm `docker ps -aq`
+    docker rmi $WORK_IMAGE   
 }
 
 make_work_image () 
@@ -79,12 +87,20 @@ G_ID=`id -g`
 
 get_dev_dir
 
+
+
 if [ "$1" == "clean" ]
 then
-    docker stop `docker ps -aq`
-    docker rm `docker ps -aq`
-    docker rmi $WORK_IMAGE
+    remove_custom_image
     exit
+elif [ "$1" == "update" ]
+then    
+    remove_custom_image
+    # download flow-libs-dev-dbg image and recreates cusomized container
+    # We can not use prebuild images until they are update on regular basis.
+    #docker import http://flow.nti.tul.cz/developer-images/flow-libs-dev-dbg.tar.gz    
+    make -C $SCRIPT_DIR/docker/dockerfiles flow-libs-dev-dbg    
+    make_work_image
 elif [ "$1" == "make" ]
 then
     shift

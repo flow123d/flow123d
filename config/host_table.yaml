@@ -7,13 +7,14 @@
 # where all dots(.) are replaced with undescores(_)
 
 # for testing purposes
-janhybs:              local_pbs
+janhybs:                    pbs_tarkil_grid_cesnet_cz
 
 # for testing purposes
-ci2runner.nti.tul.cz: local_pbs
+ci2runner.nti.tul.cz:       local_pbs
 
 # metacentrum frontend node tarkil
-tarkil.cesnet.cz:     pbs_tarkil_cesnet_cz
+tarkil.cesnet.cz:           pbs_tarkil_cesnet_cz
+tarkil.grid.cesnet.cz:      pbs_tarkil_grid_cesnet_cz
 
 # TUL cluster hydra
-hydra.kai.tul.cz:     pbs_hydra_kai_tul_cz
+hydra.kai.tul.cz:           pbs_hydra_kai_tul_cz

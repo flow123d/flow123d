@@ -17,8 +17,10 @@
  */
 
 #include <math.h>
-#include "global_defs.h"
-#include "system/system.hh"
+#include <stdio.h>           // for printf
+#include <ostream>           // for endl
+#include "system/logger.hh"  // for Logger, operator<<, Logger::MsgType, Log...
+
 #include "system/math_fce.h"
 
 

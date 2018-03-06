@@ -9,7 +9,7 @@
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
@@ -107,17 +107,9 @@ TEST(intersection_test, all) {
     string filename = "intersection/mesh7.msh";
 
     MessageOut() << "Computing intersection on mesh: " << filename << "\n";
-    FilePath mesh_file(filename, FilePath::input_file);
+    //FilePath mesh_file(filename, FilePath::input_file);
+    string in_mesh_string = "{mesh_file=\"" + filename + "\"}";
     
-    Mesh *mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    if (!in.is_open()) {
-        string out = "failed to open " + mesh_file.filename() + "\n";
-        ASSERT(in.is_open()).error(out);
-    }
-    else{
-        mesh->read_gmsh_from_stream(in);
-//         compute_intersection(mesh);
-        compare_ngh_12d(mesh);
-    }
+    Mesh *mesh = mesh_full_constructor(in_mesh_string);
+    compute_intersection(mesh);
 }

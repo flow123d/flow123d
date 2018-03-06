@@ -21,7 +21,7 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
 #include "io/observe.hh"
-#include "io/output_data.hh"
+#include "io/element_data_cache.hh"
 #include "fem/mapping_p1.hh"
 
 
@@ -43,9 +43,8 @@ public:
 
 	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, Element &elm) {
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
-		arma::vec::fixed<dim+1> projection = mapping_.project_point(input_point, elm_map);
+		arma::vec::fixed<dim+1> projection = mapping_.project_real_to_unit(input_point, elm_map);
 		projection = mapping_.clip_to_element(projection);
-		projection[0] = 1.0; // use first coordinates for translation
 
 		ObservePointData data;
 		data.element_idx_ = i_elm;
@@ -76,7 +75,7 @@ public:
 		}
 
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
-		observe_data.global_coords_ =  elm_map * arma::join_cols(arma::ones(1), observe_data.local_coords_);
+        observe_data.global_coords_ =  elm_map * RefElement<dim>::local_to_bary(observe_data.local_coords_);
 	}
 
 private:
@@ -206,7 +205,8 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     std::priority_queue< ObservePointData, std::vector<ObservePointData>, CompareByDist > candidate_queue;
 
     // search for the initial element
-    bih_tree.find_point(input_point_, candidate_list, true);
+    auto projected_point = bih_tree.tree_box().project_point(input_point_);
+    bih_tree.find_point(projected_point, candidate_list, true);
 
     for (unsigned int i_candidate=0; i_candidate<candidate_list.size(); ++i_candidate) {
         unsigned int i_elm=candidate_list[i_candidate];
@@ -240,7 +240,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // add candidates to queue
 		for (unsigned int n=0; n < elm.n_nodes(); n++)
-			for(unsigned int i_node_ele : mesh.node_elements[mesh.node_vector.index(elm.node[n])]) {
+			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])]) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					Element & neighbor_elm = mesh.element[i_node_ele];
 					auto observe_data = point_projection(i_node_ele, neighbor_elm);
@@ -255,7 +255,13 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) );
     }
     snap( mesh );
+    Element & elm = mesh.element[observe_data_.element_idx_];
+    double dist = arma::norm(elm.centre() - input_point_, 2);
+    double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
+    if (dist > 2*elm_norm)
+    	WarningOut().fmt("Observe point ({}) is too distant from the mesh.\n", name_);
 }
+
 
 
 
@@ -305,16 +311,15 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, Element &elm
  */
 
 Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision)
-: mesh_(&mesh),  
-  observe_values_time_(numeric_limits<double>::signaling_NaN()),
+: observe_values_time_(numeric_limits<double>::signaling_NaN()),
   observe_name_(observe_name),
   precision_(precision)
 {
     // in_rec is Output input record.
 
     for(auto it = in_array.begin<Input::Record>(); it != in_array.end(); ++it) {
-        ObservePoint point(*it, *mesh_, points_.size());
-        point.find_observe_point(*mesh_);
+        ObservePoint point(*it, mesh, points_.size());
+        point.find_observe_point(mesh);
         points_.push_back( point );
         observed_element_indices_.push_back(point.observe_data_.element_idx_);
     }
@@ -332,6 +337,9 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
         FilePath observe_file_path(observe_name_ + "_observe.yaml", FilePath::output_file);
         try {
             observe_file_path.open_stream(observe_file_);
+            //observe_file_.setf(std::ios::scientific);
+            observe_file_.precision(this->precision_);
+
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_array)
         output_header();
     }
@@ -342,57 +350,40 @@ Observe::~Observe() {
 }
 
 
-template<int spacedim, class Value>
-void Observe::compute_field_values(Field<spacedim, Value> &field)
+template <typename T>
+ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows,
+		unsigned int n_cols)
 {
-    if (points_.size() == 0) return;
-
-    // check that all fields of one time frame are evaluated at the same time
-    double field_time = field.time();
     if ( std::isnan(observe_values_time_) )
         observe_values_time_ = field_time;
     else
         ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_);
 
-    OutputDataFieldMap::iterator it=observe_field_values_.find(field.name());
+    OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
     if (it == observe_field_values_.end()) {
-        observe_field_values_[field.name()] = std::make_shared< OutputData<Value> >(field, points_.size());
-        it=observe_field_values_.find(field.name());
+        observe_field_values_[field_name]
+					= std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, points_.size());
+        it=observe_field_values_.find(field_name);
     }
-    OutputData<Value> &output_data = dynamic_cast<OutputData<Value> &>(*(it->second));
-
-    unsigned int i_data=0;
-    for(ObservePoint &o_point : points_) {
-        unsigned int ele_index = o_point.observe_data_.element_idx_;
-        const Value &obs_value =
-                Value( const_cast<typename Value::return_type &>(
-                        field.value(o_point.observe_data_.global_coords_,
-                                ElementAccessor<spacedim>(this->mesh_, ele_index,false)) ));
-        output_data.store_value(i_data,  obs_value);
-        i_data++;
-    }
-
+    return dynamic_cast<ElementDataCache<T> &>(*(it->second));
 }
 
-// Instantiation of the method template for particular dimension.
-#define INSTANCE_DIM(dim) \
-template void Observe::compute_field_values(Field<dim, FieldValue<0>::Enum> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<0>::Integer> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<0>::Scalar> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<dim>::VectorFixed> &); \
-template void Observe::compute_field_values(Field<dim, FieldValue<dim>::TensorFixed> &);
+// explicit instantiation of template method
+#define OBSERVE_PREPARE_COMPUTE_DATA(TYPE) \
+template ElementDataCache<TYPE> & Observe::prepare_compute_data<TYPE>(std::string field_name, double field_time, \
+		unsigned int n_rows, unsigned int n_cols)
 
-// Make all instances for both dimensions.
-INSTANCE_DIM(2)
-INSTANCE_DIM(3)
+OBSERVE_PREPARE_COMPUTE_DATA(int);
+OBSERVE_PREPARE_COMPUTE_DATA(unsigned int);
+OBSERVE_PREPARE_COMPUTE_DATA(double);
 
 
 void Observe::output_header() {
     unsigned int indent = 2;
     observe_file_ << "# Observation file: " << observe_name_ << endl;
     observe_file_ << "time_unit: " << time_unit_str_ << endl;
-    observe_file_ << "time_unit_in_secodns: " << time_unit_seconds_ << endl;
+    observe_file_ << "time_unit_in_seconds: " << time_unit_seconds_ << endl;
     observe_file_ << "points:" << endl;
     for(auto &point : points_)
         point.output(observe_file_, indent, precision_);
@@ -422,7 +413,7 @@ void Observe::output_time_frame(double time) {
         unsigned int indent = 2;
         observe_file_ << setw(indent) << "" << "- time: " << observe_values_time_ << endl;
         for(auto &field_data : observe_field_values_) {
-            observe_file_ << setw(indent) << "" << "  " << field_data.second->field_name << ": ";
+            observe_file_ << setw(indent) << "" << "  " << field_data.second->field_input_name() << ": ";
             field_data.second->print_all_yaml(observe_file_, precision_);
             observe_file_ << endl;
         }

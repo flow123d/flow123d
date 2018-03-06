@@ -18,7 +18,7 @@
 #include <input/type_base.hh>
 #include <input/reader_to_storage.hh>
 #include <input/type_output.hh>
-#include <mesh/msh_gmshreader.h>
+#include <io/msh_gmshreader.h>
 #include <system/sys_profiler.hh>
 
 #include <iostream>
@@ -86,10 +86,10 @@ formula_field_base: !FieldFormula
   value: x
 
 elementwise_field: !FieldElementwise
-  gmsh_file: ../fields/simplest_cube_data.msh
+  mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
 interpolated_p0_field: !FieldInterpolatedP0
-  gmsh_file: ../fields/simplest_cube_3d.msh
+  mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
 )YAML";
 
@@ -101,20 +101,19 @@ public:
 protected:
     virtual void SetUp() {
     	Profiler::initialize();
-    	FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
+    	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-    	FilePath mesh_file( "../fields/simplest_cube_data.msh", FilePath::input_file);
-        GmshMeshReader reader(mesh_file);
-        mesh = mesh_constructor();
-        reader.read_physical_names(mesh);
-        reader.read_mesh(mesh);
-        mesh->check_and_finish();
+        auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
+        mesh_reader->read_raw_mesh(mesh);
 
     }
 
-    virtual void TearDown() {}
+    virtual void TearDown() {
+    	delete mesh;
+    }
 
     void check_field_vals(Input::Array &arr_field, ElementAccessor<3> elm, double expected = 1.0, double step = 0.0) {
     	for (auto it = arr_field.begin<Input::AbstractRecord>(); it != arr_field.end(); ++it) {
@@ -130,7 +129,7 @@ protected:
 
     static Input::Type::Record & get_input_type();
     static ScalarMultiField empty_mf;
-    Mesh *mesh;
+    Mesh * mesh;
     Space<3>::Point point;
 };
 
@@ -222,13 +221,12 @@ string eq_data_input = R"JSON(
 TEST(Operators, assignment) {
     Profiler::initialize();
 
-    FilePath::set_io_dirs(".",FilePath::get_absolute_working_dir(),"",".");
-    FilePath mesh_file("../mesh/simplest_cube.msh", FilePath::input_file);
-    GmshMeshReader msh_reader(mesh_file);
-    Mesh * mesh = mesh_constructor();
-    msh_reader.read_physical_names(mesh);
-	msh_reader.read_mesh(mesh);
-	mesh->check_and_finish();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    Mesh * mesh = mesh_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+    mesh_reader->read_physical_names(mesh);
+    mesh_reader->read_raw_mesh(mesh);
+    mesh->check_and_finish();
 
 	std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
 
@@ -301,4 +299,6 @@ TEST(Operators, assignment) {
 		EXPECT_ASSERT_DEATH( { mf_assignment_error = mf_base; },
 				"Both multi fields must have same size of vectors");
 	}
+
+	delete mesh;
 }

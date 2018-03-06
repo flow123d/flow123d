@@ -1,0 +1,26 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: 'Do not fit the size of the Array at address: /problem/flow_equation/output_stream/observe_points/0/point'
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: ALL
+        conductivity: 1.0e-06
+    output:
+      fields:
+        - pressure_p1
+    balance: {}
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
+      observe_points:
+### ERROR maximal size of point array is 3
+        - {point: [0, 0.1, 0, 0.2], snap_region: 1d_lower}
+        - {point: [0.7, 0.8, 0], snap_region: 1d_upper}

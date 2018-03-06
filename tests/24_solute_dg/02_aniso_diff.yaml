@@ -1,0 +1,57 @@
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: Anisotropic molecular diffusion
+               Two solutes are transported only by molecular diffusion
+               in the direction (2,1) and (1,2), respectively.
+               The magnitude of the diffusivity is 0.05 (the only positive eigenvalue).
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_942el_4bc.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    n_schurs: 2
+    input_fields:
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+    output:
+      fields: []
+    balance: {}
+    output_stream: 
+      format: !vtk
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: .BOUNDARY
+          bc_type: diffusive_flux
+        - region: BULK
+          diff_m:
+            - !FieldConstant
+              value: [ [ 0.04, 0.02, 0 ], [ 0.02, 0.01, 0 ], [ 0, 0, 0 ] ]
+            - !FieldConstant
+              value: [ [ 0.01, 0.02, 0 ], [ 0.02, 0.04, 0 ], [ 0, 0, 0 ] ]
+          init_conc: !FieldFormula
+            value: exp(-1e6*((x-0.5)^2+(y-0.5)^2)^4)
+          dg_penalty: 10
+      solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+      output:
+        fields:
+        - conc
+        - diff_m
+    output_stream: 
+      format: !vtk
+        variant: ascii
+      times:
+        - step: 0.1
+      precision: 15
+    substances: [ 1, 2 ]
+    time:
+      end_time: 1
+    balance:
+      cumulative: true

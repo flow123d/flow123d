@@ -105,10 +105,17 @@ class ProgressMonitor(ThreadMonitor):
         self.pypy.on_process_complete.set_priority(self.on_complete, 5)
         self.timer = ProgressTime('Running | elapsed time {}')
 
+        if pypy.limit_monitor and pypy.limit_monitor.active:
+            self.timer.format_args['memory_usage'] = pypy.limit_monitor.memory_usage
+            self.timer.format = 'Running | elapsed time {}, memory usage {memory_usage:1.2f}MB'
+
     @ensure_active
     def on_update(self, pypy=None):
         if pypy.executor.broken:
             return
+
+        if pypy.limit_monitor and pypy.limit_monitor.active:
+            self.timer.format_args['memory_usage'] = pypy.limit_monitor.memory_usage
 
         self.timer.update()
 
@@ -117,7 +124,11 @@ class ProgressMonitor(ThreadMonitor):
         if pypy.executor.broken:
             return
 
-        self.timer.format = 'Done    | elapsed time {}'
+        if pypy.limit_monitor and pypy.limit_monitor.active:
+            self.timer.format_args['memory_used'] = pypy.limit_monitor.memory_usage
+            self.timer.format = 'Done    | elapsed time {}, memory used  {memory_used:1.2f}MB'
+        else:
+            self.timer.format = 'Done    | elapsed time {}'
         self.timer.stop()
 
 
@@ -137,13 +148,18 @@ class LimitMonitor(ThreadMonitor):
         self.memory_limit = None
         self.time_limit = None
         self.monitor_thread = None
+        self.proc = 1
         self.terminated = False
         self.terminated_cause = 0
+        self.memory_usage = 0
+        self.memory_used = 0
+        self.runtime = 0
 
     def set_limits(self, case):
         """
-        :type case: scripts.config.yaml_config.ConfigCase
+        :type case: scripts.yamlc.yaml_config.ConfigCase
         """
+
         # empty Limits object
         if not case:
             self.memory_limit = None
@@ -152,6 +168,10 @@ class LimitMonitor(ThreadMonitor):
 
         self.memory_limit = case.memory_limit
         self.time_limit = case.time_limit
+
+        if case.proc > 1:
+            self.proc = case.proc
+            self.memory_limit = case.memory_limit * self.proc
 
     @ensure_active
     def on_start(self, pypy=None):
@@ -164,13 +184,12 @@ class LimitMonitor(ThreadMonitor):
 
         if self.time_limit:
             try:
-                runtime = self.process.runtime()
-                if runtime > self.time_limit:
+                self.runtime = self.process.runtime()
+                if self.runtime > self.time_limit:
                     Printer.console.newline()
                     Printer.all.err(
-                        'Time limit exceeded! {:1.2f}s of runtime, {:1.2f}s allowed'.format(
-                            runtime, self.time_limit
-                        )
+                        'Time limit exceeded! {:1.2f}s of runtime, {:1.2f}s allowed',
+                        self.runtime, self.time_limit
                     )
                     self.terminated_cause = self.CAUSE_TIME_LIMIT
                     self.terminated = True
@@ -181,12 +200,13 @@ class LimitMonitor(ThreadMonitor):
 
         if self.memory_limit:
             try:
-                memory_usage = self.process.memory_usage()
-                if memory_usage > self.memory_limit:
+                self.memory_usage = self.process.memory_usage()
+                self.memory_used = max(self.memory_used, self.memory_usage)
+                if self.memory_usage > self.memory_limit:
                     Printer.console.newline()
-                    Printer.all.err('Memory limit exceeded! {:1.2f}MB used, {:1.2f}MB allowed'.format(
-                        memory_usage, self.memory_limit
-                    )
+                    Printer.all.err(
+                        'Memory limit exceeded! {:1.2f}MB used, {:1.2f}MB allowed ({:1.2f}MB per cpu)',
+                        self.memory_usage, self.memory_limit, self.memory_limit / self.proc
                     )
                     self.terminated_cause = self.CAUSE_MEMORY_LIMIT
                     self.terminated = True
