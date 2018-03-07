@@ -318,7 +318,7 @@ void compare_with_ngh(Mesh *mesh)
 TEST(area_intersections, all) {
     // directory with testing meshes
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d_new/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
 
     std::vector<TestCaseResult> solution_coords;
     fill_solution(solution_coords);
