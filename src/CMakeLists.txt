@@ -211,7 +211,6 @@ add_library(mesh_lib
     mesh/ngh/src/vertex.cpp
 
     intersection/plucker.cc
-    intersection/simplex.cc
     intersection/intersection_point_aux.cc
     intersection/intersection_aux.cc
     intersection/intersection_local.cc
