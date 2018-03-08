@@ -19,14 +19,6 @@
 #include "mesh/bih_tree.hh"
 
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
-#include "mesh/ngh/include/intersectionLocal.h"
-#include "mesh/ngh/include/myvector.h"
-
-
-
 MixedMeshIntersections::MixedMeshIntersections(Mesh* mesh)
 : mesh(mesh), algorithm13_(mesh), algorithm23_(mesh), algorithm22_(mesh), algorithm12_(mesh)
 {}
@@ -327,59 +319,6 @@ void MixedMeshIntersections::compute_intersections_12_1(vector< IntersectionLoca
     END_TIMER("Intersection into storage");
 }
 
-
-void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< IntersectionLocal< 1, 2 > >& storage)
-{
-    /* Algorithm:
-     *
-     * 1) create BIH tree
-     * 2) for every 1D, find list of candidates
-     * 3) compute intersections for 1d, store it to master_elements
-     *
-     */
-
-    const BIHTree &bih_tree =mesh->get_bih_tree();
-
-    for(unsigned int i_ele=0; i_ele<mesh->n_elements(); i_ele++) {
-        Element &ele = mesh->element[i_ele];
-
-        if (ele.dim() == 1) {
-            vector<unsigned int> candidate_list;
-            bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-
-            for(unsigned int i_elm : candidate_list) {
-                ElementFullIter elm = mesh->element( i_elm );
-                if (elm->dim() == 2) {
-                    ngh::IntersectionLocal *intersection;
-                    GetIntersection( ngh::TAbscissa(ele), ngh::TTriangle(*elm), intersection);
-                    if (intersection && intersection->get_type() == ngh::IntersectionLocal::line) {
-
-                        // make IntersectionAux<1,2> from IntersectionLocal (from ngh)
-                        IntersectionAux<1,2> is(ele.index(), elm.index());
-                        for(uint i=0; i< intersection->n_points(); i++) {
-                            // convert local to barycentric
-                            ASSERT_EQ_DBG(intersection->get_point(i)->el1_coord().size(), 1)(i);
-                            ASSERT_EQ_DBG(intersection->get_point(i)->el2_coord().size(), 2)(i);
-
-                            arma::vec::fixed<1> local_on_1d = arma::vec::fixed<1>(intersection->get_point(i)->el1_coord().data());
-                            arma::vec::fixed<2> local_on_2d = arma::vec::fixed<2>(intersection->get_point(i)->el2_coord().data());
-
-                            is.points().push_back(IntersectionPointAux<1,2>(
-                                    RefElement<1>::local_to_bary( local_on_1d ),
-                                    RefElement<2>::local_to_bary( local_on_2d ) ));
-                        }
-
-                        store_intersection(storage, is);
-                    }
-                }
-
-            }
-        }
-    }
-    MessageOut() << "1D-2D [1-ngh]: number of intersections = " << storage.size() << "\n";
-}
-
-
 void MixedMeshIntersections::compute_intersections(IntersectionType d)
 {
     element_intersections_.resize(mesh->n_elements());
@@ -418,7 +357,6 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     if( mesh_in_2d_only){
         START_TIMER("Intersections 1D-2D (1)");
         if(d & IntersectionType::d12_1) compute_intersections_12_1(intersection_storage12_);
-        else if(d & IntersectionType::d12_ngh) compute_intersections_12_ngh_plane(intersection_storage12_);
         END_TIMER("Intersections 1D-2D (1)");
     }
     // make sence only if some intersections in 3D are computed

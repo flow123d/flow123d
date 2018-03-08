@@ -42,7 +42,6 @@ enum IntersectionType
     d12_1 = 0x0010, // different algorithms for 12
     d12_2 = 0x0020,
     d12_3 = 0x0040,
-    d12_ngh = 0x0080,   // to be removed in future
     d12 = 0x00F0,   // automatically choose 12 alg.
     all = 0xFFFF
 };
@@ -125,7 +124,6 @@ private:
     void compute_intersections_12_3(std::vector<IntersectionLocal<1,2>> &storage);
     void compute_intersections_12_1(std::vector<IntersectionLocal<1,2>> &storage);
     void compute_intersections_12_2(std::vector<IntersectionLocal<1,2>> &storage);
-    void compute_intersections_12_ngh_plane(std::vector< IntersectionLocal< 1, 2 > >& storage);
 };
 
     
