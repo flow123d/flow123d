@@ -19,7 +19,10 @@
 #define SURFACE_DEPTH_HH_
 
 #include <string>
+#include <vector>
+#include <armadillo>
 #include "mesh/bih_tree.hh"
+#include "input/input_exception.hh"
 
 class Mesh;
 
@@ -27,19 +30,36 @@ class Mesh;
 class SurfaceDepth
 {
 public:
-	/**
+	/// Declaration of exceptions
+	TYPEDEF_ERR_INFO( EI_Message, const std::string);
+    DECLARE_INPUT_EXCEPTION(ExcSurfaceProjection, << EI_Message::val );
+
+    /**
 	 * Constructor
 	 */
 	SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction);
 
-	/**
-	 * Destructor
-	 */
-	~SurfaceDepth();
+	/// Compute distance of point from given surface region (was set in constructor)
+	double compute_distance(arma::vec3 point);
 
 protected:
+	/// Create projection matrix \p m_
+	void create_projection_matrix(arma::vec3 surface_vec);
+
+	/// Construct BIH tree above surface region of given name.
+	void construct_bih_tree(Mesh *mesh, std::string surface_region);
+
 	/// Tree of mesh elements
-	BIHTree * bih_tree_;
+	BIHTree bih_tree_;
+
+	/// normal vector of surface plane
+	arma::vec3 surface_norm_vec_;
+
+	/// projection matrix
+	arma::mat m_;
+
+	/// vector of nodes coordinates of elements above which BIH tree is created
+	std::vector<arma::mat> nodes_coords_;
 };
 
 #endif /* SURFACE_DEPTH_HH_ */
