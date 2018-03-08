@@ -37,14 +37,17 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
+#include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 
-#include "coupling/balance.hh"
-
+// #include "coupling/balance.hh"
+#include "intersection/mixed_mesh_intersections.hh"
+#include "intersection/intersection_local.hh"
 
 namespace it = Input::Type;
 
@@ -92,7 +95,10 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  compute_errors_(false)
+  compute_errors_(false),
+  fe1(1),
+  fe2(1),
+  fe3(1)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -109,13 +115,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
-	dh = new DOFHandlerMultiDim(*mesh_);
-	dh->distribute_dofs(fe1, fe2, fe3);
-	corner_pressure.resize(dh->n_global_dofs());
-	VecCreateSeqWithArray(PETSC_COMM_SELF, 1, dh->n_global_dofs(), &(corner_pressure[0]), &vec_corner_pressure);
+	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	dh_->distribute_dofs(fe1, fe2, fe3);
+	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh, &map1, &map2, &map3, &vec_corner_pressure);
+	corner_ptr->set_fe_data(dh_, &map1, &map2, &map3, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
@@ -131,10 +136,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", *mesh_, main_mh_in_rec.val<Input::Record>("output_stream"));
+	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"));
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, in_rec_output, darcy_flow->time() );
+    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -159,12 +164,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
-{
-    if (dh) {
-        chkerr(VecDestroy(&vec_corner_pressure));
-        delete dh;
-    }
-};
+{};
 
 
 
@@ -179,7 +179,7 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
-    ElementSetRef observed_elements = output_stream->observe()->observed_elements();
+    ElementSetRef observed_elements = output_stream->observe(mesh_)->observed_elements();
     {
         START_TIMER("post-process output fields");
 
@@ -238,7 +238,8 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
         ele_pressure[i_ele] = sol[ soi + i_ele];
-        ele_piezo_head[i_ele] = sol[soi + i_ele ] + ele->centre()[Mesh::z_coord];
+        ele_piezo_head[i_ele] = sol[soi + i_ele ]
+          - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));
     }
 }
 
@@ -269,12 +270,12 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = max(dh->fe<1>()->n_dofs(), max(dh->fe<2>()->n_dofs(), dh->fe<3>()->n_dofs()));
-	unsigned int indices[ndofs];
+	unsigned int ndofs = dh_->max_elem_dofs();
+	std::vector<IdxInt> indices(ndofs);
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
-		dh->get_dof_indices(ele, indices);
+		dh_->get_dof_indices(ele, indices);
 		FOR_ELEMENT_NODES(ele, i_node)
 		{
 			corner_pressure[indices[i_node]] = node_scalar[mesh_->node_vector.index(ele->node[i_node])];
@@ -613,7 +614,7 @@ void l2_diff_local(ElementFullIter &ele,
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * fv_rt.shape_vector(i_shape, i_point)
+                              * fv_rt.vector_view(0).value(i_shape, i_point)
                               / cross;
         }
 
@@ -631,7 +632,7 @@ void l2_diff_local(ElementFullIter &ele,
 
     result.velocity_diff[ele.index()] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
-    if (dim == 2) {
+    if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
     }
 
@@ -656,8 +657,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<0,1,3> fe_1d;
-    FE_P_disc<0,2,3> fe_2d;
+    FE_P_disc<1,3> fe_1d(0);
+    FE_P_disc<2,3> fe_2d(0);
 
     QGauss<1> quad_1d( order );
     QGauss<2> quad_2d( order );
@@ -683,11 +684,16 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
 
     DiffData result;
+    result.dh = &( darcy_flow->get_mh_dofhandler());
+    result.darcy = darcy_flow;
+    result.data_ = darcy_flow->data_.get();
 
     // mask 2d elements crossing 1d
-    result.velocity_mask.resize(mesh_->n_elements(),0);
-    for(Intersection & isec : mesh_->intersections) {
-    	result.velocity_mask[ mesh_->element.index( isec.slave_iter() ) ]++;
+    if (result.data_->mortar_method_ != DarcyMH::NoMortar) {
+        result.velocity_mask.resize(mesh_->n_elements(),0);
+        for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
+            result.velocity_mask[ isec.bulk_ele_idx() ]++;
+        }
     }
 
     result.pressure_diff.resize( mesh_->n_elements() );
@@ -720,9 +726,6 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
 
-    result.dh = &( darcy_flow->get_mh_dofhandler());
-    result.darcy = darcy_flow;
-    result.data_ = darcy_flow->data_.get();
 
     FOR_ELEMENTS( mesh_, ele) {
 

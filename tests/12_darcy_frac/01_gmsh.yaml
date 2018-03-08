@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
   mesh:
@@ -54,7 +54,7 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    output_stream: 
+    output_stream:
       file: ./test1.msh
       format: !gmsh
         variant: ascii

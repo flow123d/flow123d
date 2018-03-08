@@ -28,18 +28,23 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
-#include <boost/tokenizer.hpp>
-#include "boost/lexical_cast.hpp"
-
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
+#include "mesh/region_set.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 
+
 #include "mesh/bih_tree.hh"
+
+#include "mesh/ngh/include/triangle.h"
+#include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/intersection.h"
+
+#include "intersection/mixed_mesh_intersections.hh"
 
 
 //TODO: sources, concentrations, initial condition  and similarly boundary conditions should be
@@ -47,13 +52,22 @@
 // concentrations is in fact reimplemented in transport REMOVE it HERE
 
 // After removing non-geometrical things from mesh, this should be part of mash initializing.
-#include "mesh/msh_gmshreader.h"
 #include "mesh/region.hh"
 
 #define NDEF  -1
 
 namespace IT = Input::Type;
 
+const Input::Type::Selection & Mesh::get_input_intersection_variant() {
+    return Input::Type::Selection("Types of search algorithm for finding intersection candidates.")
+        .add_value(Mesh::BIHsearch, "BIHsearch",
+            "Use BIH for finding initial candidates, then continue by prolongation.")
+        .add_value(Mesh::BIHonly, "BIHonly",
+            "Use BIH for finding all candidates.")
+        .add_value(Mesh::BBsearch, "BBsearch",
+            "Use bounding boxes for finding initial candidates, then continue by prolongation.")
+        .close();
+}
 
 const IT::Record & Mesh::get_input_type() {
 	return IT::Record("Mesh","Record with mesh related data." )
@@ -67,13 +81,24 @@ const IT::Record & Mesh::get_input_type() {
 				"- .BOUNDARY (all boundary regions)\n"
 				"- BULK (all bulk regions)")
 		.declare_key("partitioning", Partitioning::get_input_type(), IT::Default("\"any_neighboring\""), "Parameters of mesh partitioning algorithms.\n" )
-	    .declare_key("print_regions", IT::Bool(), IT::Default("false"), "If true, print table of all used regions.")
+	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
+        .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
+                     IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
+		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
+					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
+					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
 		.close();
 }
 
-
-
 const unsigned int Mesh::undef_idx;
+
+Mesh::Mesh()
+: row_4_el(nullptr),
+  el_4_loc(nullptr),
+  el_ds(nullptr)
+{}
+
+
 
 Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 : in_record_(in_record),
@@ -95,6 +120,10 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 	reinit(in_record_);
 }
 
+Mesh::IntersectionSearch Mesh::get_intersection_search()
+{
+    return in_record_.val<Mesh::IntersectionSearch>("intersection_search");
+}
 
 
 void Mesh::reinit(Input::Record in_record)
@@ -130,15 +159,15 @@ void Mesh::reinit(Input::Record in_record)
 
     for (unsigned int sid=0; sid<RefElement<1>::n_sides; sid++)
     	for (unsigned int nid=0; nid<RefElement<1>::n_nodes_per_side; nid++)
-    		side_nodes[0][sid][nid] = RefElement<1>::side_nodes[sid][nid];
+            side_nodes[0][sid][nid] = RefElement<1>::interact(Interaction<0,0>(sid))[nid];
 
     for (unsigned int sid=0; sid<RefElement<2>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<2>::n_nodes_per_side; nid++)
-        		side_nodes[1][sid][nid] = RefElement<2>::side_nodes[sid][nid];
+                side_nodes[1][sid][nid] = RefElement<2>::interact(Interaction<0,1>(sid))[nid];
 
     for (unsigned int sid=0; sid<RefElement<3>::n_sides; sid++)
         	for (unsigned int nid=0; nid<RefElement<3>::n_nodes_per_side; nid++)
-        		side_nodes[2][sid][nid] = RefElement<3>::side_nodes[sid][nid];
+        		side_nodes[2][sid][nid] = RefElement<3>::interact(Interaction<0,2>(sid))[nid];
 }
 
 
@@ -151,6 +180,7 @@ Mesh::~Mesh() {
         if (ele->edge_idx_) delete[] ele->edge_idx_;
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+        if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
     for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
@@ -211,45 +241,6 @@ void Mesh::count_element_types() {
 }
 
 
-void Mesh::read_gmsh_from_stream(istream &in) {
-  
-    START_TIMER("Reading mesh - from_stream");
-    
-    GmshMeshReader reader(in);
-    reader.read_physical_names(this);
-    reader.read_mesh(this);
-    setup_topology();
-    //close region_db_.
-   	region_db_.close();
-}
-
-
-
-void Mesh::init_from_input() {
-    START_TIMER("Reading mesh - init_from_input");
-    
-	try {
-	    Input::Array region_list;
-	    // read raw mesh, add regions from GMSH file
-	    GmshMeshReader reader( in_record_.val<FilePath>("mesh_file") );
-	    reader.read_physical_names(this);
-	    // create regions from input
-	    if (in_record_.opt_val("regions", region_list)) {
-	        this->read_regions_from_input(region_list);
-	    }
-	    reader.read_mesh(this);
-	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, in_record_)
-	catch (ExceptionBase const &e) {
-		throw;
-	}
-    // possibly add implicit_boundary region.
-    setup_topology();
-    // finish mesh initialization
-    this->check_and_finish();
-}
-
-
-
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
@@ -274,11 +265,11 @@ void Mesh::setup_topology() {
     element_to_neigh_vb();
     make_edge_permutations();
     count_side_types();
-
+    
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
-    int *id_4_old = new int[element.size()];
+    IdxInt *id_4_old = new IdxInt[element.size()];
     int i = 0;
     FOR_ELEMENTS(this, ele)
         id_4_old[i++] = ele.index();
@@ -304,13 +295,13 @@ void Mesh::count_side_types()
 
 void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
-    node_elements.resize(node_vector.size());
+    node_elements_.resize(node_vector.size());
 
     FOR_ELEMENTS( this, e )
         for (unsigned int n=0; n<e->n_nodes(); n++)
-            node_elements[node_vector.index(e->node[n])].push_back(e->index());
+            node_elements_[node_vector.index(e->node[n])].push_back(e->index());
 
-    for (vector<vector<unsigned int> >::iterator n=node_elements.begin(); n!=node_elements.end(); n++)
+    for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
 }
 
@@ -320,22 +311,22 @@ void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vecto
     if (nodes_list.size() == 0) {
         intersection_element_list.clear();
     } else if (nodes_list.size() == 1) {
-        intersection_element_list = node_elements[ nodes_list[0] ];
+        intersection_element_list = node_elements_[ nodes_list[0] ];
 	} else {
 	    vector<unsigned int>::const_iterator it1=nodes_list.begin();
 	    vector<unsigned int>::const_iterator it2=it1+1;
-	    intersection_element_list.resize( node_elements[*it1].size() ); // make enough space
+	    intersection_element_list.resize( node_elements_[*it1].size() ); // make enough space
 
 	    it1=set_intersection(
-                node_elements[*it1].begin(), node_elements[*it1].end(),
-                node_elements[*it2].begin(), node_elements[*it2].end(),
+                node_elements_[*it1].begin(), node_elements_[*it1].end(),
+                node_elements_[*it2].begin(), node_elements_[*it2].end(),
                 intersection_element_list.begin());
         intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
 
         for(;it2<nodes_list.end();++it2) {
             it1=set_intersection(
                     intersection_element_list.begin(), intersection_element_list.end(),
-                    node_elements[*it2].begin(), node_elements[*it2].end(),
+                    node_elements_[*it2].begin(), node_elements_[*it2].end(),
                     intersection_element_list.begin());
             intersection_element_list.resize(it1-intersection_element_list.begin()); // resize to true size
         }
@@ -656,12 +647,9 @@ void Mesh::element_to_neigh_vb()
 
 
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
 
 
-void Mesh::make_intersec_elements() {
+MixedMeshIntersections & Mesh::mixed_intersections() {
 	/* Algorithm:
 	 *
 	 * 1) create BIH tree
@@ -669,33 +657,11 @@ void Mesh::make_intersec_elements() {
 	 * 3) compute intersections for 1d, store it to master_elements
 	 *
 	 */
-	const BIHTree &bih_tree =get_bih_tree();
-	master_elements.resize(n_elements());
-
-	for(unsigned int i_ele=0; i_ele<n_elements(); i_ele++) {
-		Element &ele = this->element[i_ele];
-
-		if (ele.dim() == 1) {
-			vector<unsigned int> candidate_list;
-                        bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
-                        
-			//for(unsigned int i_elm=0; i_elm<n_elements(); i_elm++) {
-                        for(unsigned int i_elm : candidate_list) {
-				ElementFullIter elm = this->element( i_elm );
-				if (elm->dim() == 2) {
-					IntersectionLocal *intersection;
-					GetIntersection( TAbscissa(ele), TTriangle(*elm), intersection);
-					if (intersection && intersection->get_type() == IntersectionLocal::line) {
-
-						master_elements[i_ele].push_back( intersections.size() );
-						intersections.push_back( Intersection(this->element(i_ele), elm, intersection) );
-				    }
-				}
-
-			}
-		}
-	}
-
+    if (! intersections) {
+        intersections = std::make_shared<MixedMeshIntersections>(this);
+        intersections->compute_intersections();
+    }
+    return *intersections;
 }
 
 
@@ -706,28 +672,28 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
+void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const
 {
-    if (bulk_elements_id_.size() ==0) {
-        std::vector<int>::iterator map_it;
-        int last_id;
+    if (bulk_elements_id.size() ==0) {
+        std::vector<IdxInt>::iterator map_it;
+        IdxInt last_id;
 
-        bulk_elements_id_.resize(n_elements());
-        map_it = bulk_elements_id_.begin();
+        bulk_elements_id.resize(n_elements());
+        map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
-        	int id = element.get_id(idx);
+        	IdxInt id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
 
-        boundary_elements_id_.resize(bc_elements.size());
-        map_it = boundary_elements_id_.begin();
+        boundary_elements_id.resize(bc_elements.size());
+        map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
-        	int id = bc_elements.get_id(idx);
+        	IdxInt id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
-            // this force gmsh reader to skip all remaining entries in boundary_elements_id_
+            // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
             if (id < 0) last_id=*map_it=-1;
             else {
@@ -736,9 +702,6 @@ vector<int> const & Mesh::elements_id_maps( bool boundary_domain) const
             }
         }
     }
-
-    if (boundary_domain) return boundary_elements_id_;
-    return bulk_elements_id_;
 }
 
 void Mesh::read_regions_from_input(Input::Array region_list)
@@ -759,15 +722,101 @@ void Mesh::check_and_finish()
 	region_db_.check_regions();
 
 	if ( in_record_.val<bool>("print_regions") ) {
-		region_db_.print_region_table(cout);
+		stringstream ss;
+		region_db_.print_region_table(ss);
+		MessageOut() << ss.str();
 	}
 }
 
+
+void Mesh::compute_element_boxes() {
+    START_TIMER("Mesh::compute_element_boxes");
+    if (element_box_.size() > 0) return;
+
+    // make element boxes
+    element_box_.resize(this->element.size());
+    unsigned int i=0;
+    FOR_ELEMENTS(this, element) {
+         element_box_[i] = element->bounding_box();
+         i++;
+    }
+
+    // make mesh box
+    Node* node = this->node_vector.begin();
+    mesh_box_ = BoundingBox(node->point(), node->point());
+    FOR_NODES(this, node ) {
+        mesh_box_.expand( node->point() );
+    }
+
+}
 
 const BIHTree &Mesh::get_bih_tree() {
     if (! this->bih_tree_)
         bih_tree_ = std::make_shared<BIHTree>(this);
     return *bih_tree_;
+}
+
+double Mesh::global_observe_radius() const {
+	return in_record_.val<double>("global_observe_search_radius");
+}
+
+void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
+	region_db_.add_region(id, name, dim, "$PhysicalNames");
+}
+
+
+void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
+	NodeFullIter node = node_vector.add_item(node_id);
+	node->point() = coords;
+}
+
+
+void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+		std::vector<unsigned int> node_ids) {
+	Element *ele=nullptr;
+	RegionIdx region_idx = region_db_.get_region( region_id, dim );
+	if ( !region_idx.is_valid() ) {
+		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
+	}
+	region_db_.mark_used_region(region_idx.idx());
+
+	if (region_idx.is_boundary()) {
+		ele = bc_elements.add_item(elm_id);
+	} else {
+		if(dim == 0 ) {
+			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
+			return;
+		}
+		else
+			ele = element.add_item(elm_id);
+	}
+	ele->init(dim, this, region_idx);
+	ele->pid = partition_id;
+
+	unsigned int ni;
+	FOR_ELEMENT_NODES(ele, ni) {
+		unsigned int node_id = node_ids[ni];
+		NodeIter node = node_vector.find_id( node_id );
+		INPUT_CHECK( node != node_vector.end(),
+				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
+		ele->node[ni] = node;
+	}
+
+    // check that tetrahedron element is numbered correctly and is not degenerated
+    if(ele->dim() == 3)
+    {
+        double jac = ele->tetrahedron_jacobian();
+        if( ! (jac > 0) )
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
+    }
+}
+
+
+vector<vector<unsigned int> > const & Mesh::node_elements() {
+	if (node_elements_.size() == 0) {
+		this->create_node_element_lists();
+	}
+	return node_elements_;
 }
 
 //-----------------------------------------------------------------------------

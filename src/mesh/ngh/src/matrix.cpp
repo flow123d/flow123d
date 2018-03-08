@@ -16,11 +16,14 @@
  */
 
 #include <cmath>
+#include <cstring>
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/matrix.h"
 #include "mesh/ngh/include/mathfce.h"
 
 using namespace mathfce;
+
+namespace ngh {
 
 TMatrix::TMatrix(int size) {
     nc = size;
@@ -196,3 +199,5 @@ TNSolutions Gauss(const TMatrix& A, TMVector* X, const TMVector& B) {
 
     return one_solution;
 }
+
+} //namespace ngh

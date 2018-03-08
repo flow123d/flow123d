@@ -20,51 +20,195 @@
 #define FINITE_ELEMENT_HH_
 
 #include <armadillo>
-#include <map>
-#include <vector>
-#include <boost/assign/list_of.hpp>
-#include "fem/update_flags.hh"
+#include <stdio.h>                             // for sprintf
+#include <string.h>                            // for memcpy
+#include <algorithm>                           // for max, min
+#include <boost/assign/list_of.hpp>            // for generic_list, list_of
+#include <boost/exception/info.hpp>            // for error_info::error_info...
+#include <new>                                 // for operator new[]
+#include <ostream>                             // for operator<<
+#include <string>                              // for operator<<
+#include <vector>                              // for vector
+#include "fem/update_flags.hh"                 // for operator&, operator|=
+#include "system/exceptions.hh"                // for ExcAssertMsg::~ExcAsse...
 
-
-
+template<unsigned int dim, unsigned int spacedim> class FESystem;
+template<unsigned int dim, unsigned int spacedim> class FESideValues;
+template<unsigned int dim, unsigned int spacedim> class FEValues;
+template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim, unsigned int spacedim> class FEValuesData;
+template<unsigned int dim, unsigned int spacedim> class FE_P_disc;
 template<unsigned int dim> class Quadrature;
 
 
 
 
 
+// Possible types are: value, gradient, cell integral, ...
+enum DofType { Value = 1 };
+
 /**
- * @brief Multiplicity of finite element dofs.
- *
- * Multiplicities describe groups of dofs whose order changes with
- * the configuration (e.g. the rotation or orientation) of
- * the geometrical entity relative to the actual cell.
- *
- * In each spatial dimension we accept the following dof multiplicities:
- *
- * 0) Point (1 configuration):
- *    - single dofs
- *
- * 1) Line (2 possible configurations=orientations):
- *    - single dofs
- *    - pairs
- *
- * 2) Triangle (2 orientations and 3 rotations=6 configurations):
- *    - single dofs
- *    - pairs
- *    - triples
- *    - sextuples
- *
- * 3) Tetrahedron (1 configuration, since it is always the cell):
- *    - single dofs
+ * Class Dof is a general description of functionals (degrees of freedom)
+ * determining the finite element. We assume that the Dof is defined as
+ * a linear combination of components of function value at a given point:
+ * 
+ *     Dof_value = a_1.f_1(x) + ... + a_n.f_n(x),
+ * 
+ * where (a_1, ... , a_n) are given by @p coefs, x is the support point
+ * given by barycentric @p coords and (f_1, ..., f_n) is a generally
+ * vector-valued function. For the simplest Dof, i.e. value of a scalar
+ * function at point p, we set
+ * 
+ *    @p coords = p, @p coefs = { 1 }.
+ * The member @p dim denotes the affiliation of Dof to n-face:
+ *    Nodal dofs have      dim = 0,
+ *    Dofs on lines:       dim = 1,
+ *    Dofs on triangles:   dim = 2,
+ *    Dofs in tetrahedron: dim = 3.
+ * It means that when a node, line or triangle is shared by adjacent cells,
+ * also the Dofs on this n-face are shared by the cells. Therefore
+ * for DG finite elements we set for all dofs the highest possible dimension.
+ * 
+ * The class implements the method evaluate() which computes the Dof value
+ * for a basis function from given FunctionSpace.
  */
-enum DofMultiplicity {
-    DOF_SINGLE = 1, DOF_PAIR = 2, DOF_TRIPLE = 3, DOF_SEXTUPLE = 6
+class Dof {
+public:
+    
+    Dof(unsigned int dim_,
+        unsigned int n_face_idx_,
+        arma::vec coords_,
+        arma::vec coefs_,
+        DofType type_)
+    
+        : dim(dim_),
+          n_face_idx(n_face_idx_),
+          coords(coords_),
+          coefs(coefs_),
+          type(type_)
+    {}
+    
+    /// Evaulate dof for basis function of given function space.
+    template<class FS>
+    const double evaluate(const FS &function_space, 
+                          unsigned int basis_idx) const;
+    
+    /// Association to n-face of given dimension (point, line, triangle, tetrahedron.
+    unsigned int dim;
+    
+    /// Index of n-face to which the dof is associated.
+    unsigned int n_face_idx;
+    
+    /// Barycentric coordinates.
+    arma::vec coords;
+    
+    /// Coefficients of linear combination of function value components.
+    arma::vec coefs;
+    
+    /** 
+     * Currently we consider only type=Value, possibly we could have Gradient,
+     * CellIntegral, FaceIntegral or other types.
+     */
+    DofType type;
 };
 
-const std::vector<DofMultiplicity> dof_multiplicities = boost::assign::list_of(
-        DOF_SINGLE)(DOF_PAIR)(DOF_TRIPLE)(DOF_SEXTUPLE);
+
+/**
+ * FunctionSpace is an abstract class that is used to describe finite elements.
+ * It is determined by the dimension of the field of definition (@p space_dim_),
+ * by the dimension of the range (@p n_components_) and by the values and
+ * gradients of a basis functions.
+ * 
+ * Combining FunctionSpace with Dof(s), the FiniteElement class constructs the
+ * shape functions, i.e. basis of FunctionSpace for which the Dof(s) attain
+ * the value 0 or 1.
+ */
+class FunctionSpace {
+public:
+    
+    FunctionSpace(unsigned int space_dim,
+                  unsigned int n_components)
+    
+        : space_dim_(space_dim),
+          n_components_(n_components)
+    {}
+    
+    
+    /**
+     * @brief Value of the @p i th basis function at point @p point.
+     * @param basis_index  Index of the basis function.
+     * @param point        Point coordinates.
+     * @param comp_index   Index of component (>0 for vector-valued functions).
+     */
+    virtual const double basis_value(unsigned int basis_index,
+                                     const arma::vec &point,
+                                     unsigned int comp_index = 0
+                                    ) const = 0;
+    
+    /**
+     * @brief Gradient of the @p i th basis function at point @p point.
+     * @param basis_index  Index of the basis function.
+     * @param point        Point coordinates.
+     * @param comp_index   Index of component (>0 for vector-valued functions).
+     */
+    virtual const arma::vec basis_grad(unsigned int basis_index,
+                                       const arma::vec &point,
+                                       unsigned int comp_index = 0
+                                      ) const = 0;
+    
+    /// Dimension of function space (number of basis functions).
+    virtual const unsigned int dim() const = 0;
+    
+    /// Getter for space dimension.
+    const unsigned int space_dim() const { return space_dim_; }
+    
+    /// Getter for number of components.
+    const unsigned int n_components() const { return n_components_; }
+    
+    virtual ~FunctionSpace() {}
+    
+protected:
+    
+    /// Space dimension of function arguments (i.e. 1, 2 or 3).
+    unsigned int space_dim_;
+    
+    /// Number of components of function values.
+    unsigned int n_components_;
+};
+
+
+/**
+ * Types of FiniteElement: scalar, vector-valued, tensor-valued or mixed system.
+ * 
+ * The type also indicates how the shape functions and their gradients are transformed
+ * from reference element to arbitrary element. In particular:
+ * 
+ *     TYPE              OBJECT  EXPRESSION
+ * -----------------------------------------------------------
+ * FEScalar              value   ref_value
+ *                       grad    J^{-T} * ref_grad
+ * -----------------------------------------------------------
+ * FEVectorContravariant value   J * ref_value
+ *                       grad    J^{-T} * ref_grad * J^T
+ * -----------------------------------------------------------
+ * FEVectorPiola         value   J * ref_value / |J|
+ *                       grad    J^{-T} * ref_grad * J^T / |J|
+ * -----------------------------------------------------------
+ * FETensor              value   not implemented
+ *                       grad    not implemented
+ * -----------------------------------------------------------
+ * FEMixedSystem         value   depends on sub-elements
+ *                       grad    depends on sub-elements
+ * 
+ * Note that we use columnwise gradients, i.e. gradient of each component is a column vector.
+ */
+enum FEType {
+  FEScalar = 0,
+  FEVectorContravariant = 1,
+  FEVectorPiola = 2,
+  FETensor = 3,
+  FEMixedSystem = 4
+};
 
 /**
  * @brief Structure for storing the precomputed finite element data.
@@ -74,51 +218,46 @@ class FEInternalData
 public:
     /**
      * @brief Precomputed values of basis functions at the quadrature points.
-     */
-    std::vector<arma::vec> basis_values;
-
-    /**
-     * @brief Precomputed gradients of basis functions at the quadrature points.
-     */
-    std::vector<arma::mat > basis_grads;
-
-
-    /**
-     * @brief Precomputed values of basis functions at the quadrature points.
      *
-     * For vectorial finite elements.
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x (no. of components in ref. cell)
      */
-    std::vector<std::vector<arma::vec> > basis_vectors;
+    std::vector<std::vector<arma::vec> > ref_shape_values;
 
     /**
      * @brief Precomputed gradients of basis functions at the quadrature points.
      *
-     * For vectorial finite elements:
+     * Dimensions:   (no. of quadrature points)
+     *             x (no. of dofs)
+     *             x ((dim of. ref. cell)x(no. of components in ref. cell))
      */
-    std::vector<std::vector<arma::mat> > basis_grad_vectors;
+    std::vector<std::vector<arma::mat> > ref_shape_grads;
 };
 
 
 /**
  * @brief Abstract class for the description of a general finite element on
  * a reference simplex in @p dim dimensions.
+ * 
+ * The finite element is determined by a @p function_space_ and a set
+ * of @p dofs_. Further it must be set whether the finite element
+ * @p is_primitive_, which means that even if the functions in
+ * @p function_space_ are vector-valued, the basis functions have
+ * only one nonzero component (this is typical for tensor-product FE,
+ * e.g. vector-valued polynomial FE, but not for Raviart-Thomas FE).
  *
  * Description of dofs:
  *
  * The reference cell consists of lower dimensional entities (points,
  * lines, triangles). Each dof is associated to one of these
- * entities. This means that if the entity is shared by 2 or more
- * neighbouring cells in the mesh then this dof is shared by the
- * finite elements on all of these cells. If a dof is associated
- * to the cell itself then it is not shared with neighbouring cells.
- * The ordering of nodes in the entity may not be appropriate for the
- * finite elements on the neighbouring cells, hence we need to
- * describe how the order of dofs changes with the relative
- * configuration of the entity with respect to the actual cell.
- * For this reason we define the dof multiplicity which allows to
- * group the dofs as described in \ref DofMultiplicity.
- *
- * Support points:
+ * entities. If the entity is shared by 2 or more neighbouring cells
+ * in the mesh then this dof is shared by the finite elements on all
+ * of these cells. If a dof is associated to the cell itself then it
+ * is not shared with neighbouring cells.
+ * 
+ * 
+ * Shape functions:
  *
  * Sometimes it is convenient to describe the function space using
  * a basis (called the raw basis) that is different from the set of
@@ -139,98 +278,72 @@ public:
 template<unsigned int dim, unsigned int spacedim>
 class FiniteElement {
 public:
-
+  
     /**
      * @brief Constructor.
      */
     FiniteElement();
-
-    /**
-     * @brief Clears all internal structures.
-     */
-    void init();
-
+    
     /**
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
-    const unsigned int n_dofs() const;
+    const unsigned int n_dofs() const { return dofs_.size(); }
 
     /**
-     * @brief Returns the number of single dofs/dof pairs/triples/sextuples
-     * that lie on a single geometric entity of the dimension
-     * @p object_dim.
-     *
-     * @param object_dim Dimension of the geometric entity.
-     * @param multiplicity Multiplicity of dofs.
-     */
-    const unsigned int n_object_dofs(unsigned int object_dim,
-            DofMultiplicity multiplicity);
-
-    /**
-     * @brief Calculates the value of the @p i-th raw basis function at the
+     * @brief Calculates the value of the @p comp-th component of
+     * the @p i-th raw basis function at the
      * point @p p on the reference element.
      *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @param i    Number of the basis function.
+     * @param p    Point of evaluation.
+     * @param comp Number of vector component.
      */
     virtual double basis_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
     /**
-     * @brief Variant of basis_value() for vectorial finite elements.
+     * @brief Calculates the @p comp-th component of the gradient
+     * of the @p i-th raw basis function at the point @p p on the
+     * reference element.
      *
-     * Calculates the value @p i-th vector-valued raw basis function
-     * at the point @p p on the reference element.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
-     */
-    virtual arma::vec::fixed<dim> basis_vector(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
-
-    /**
-     * @brief Calculates the gradient of the @p i-th raw basis function at the
-     * point @p p on the reference element.
-     *
-     * The gradient components
-     * are relative to the reference cell coordinate system.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @param i    Number of the basis function.
+     * @param p    Point of evaluation.
+     * @param comp Number of vector component.
      */
     virtual arma::vec::fixed<dim> basis_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
 
+    /// Returns numer of components of the basis function.    
+    virtual unsigned int n_components() const { return function_space_->n_components(); }
+    
+    /// Returns @p i -th degree of freedom.
+    Dof dof(unsigned int i) const { return dofs_[i]; }
+    
     /**
-     * @brief Variant of basis_grad() for vectorial finite elements.
-     *
-     * Calculates the gradient of the @p i-th vector-valued raw basis
-     * function at the point @p p on the reference element. The gradient
-     * components are relative to the reference cell coordinate system.
-     *
-     * @param i Number of the basis function.
-     * @param p Point of evaluation.
+     * @brief Destructor.
      */
-    virtual arma::mat::fixed<dim,dim> basis_grad_vector(const unsigned int i,
-            const arma::vec::fixed<dim> &p) const = 0;
+    virtual ~FiniteElement();
 
+protected:
+  
     /**
-     * @brief Initializes the @p node_matrix for computing the coefficients
-     * of the raw basis functions from values at support points.
-     *
-     * The method is implemented for the case of Langrangean finite
-     * element. In other cases it may be reimplemented.
+     * @brief Clears all internal structures.
      */
-    virtual void compute_node_matrix();
-
+    void init(bool primitive = true, FEType type = FEScalar);
+    
+    /**
+     * @brief Initialize vectors with information about components of basis functions.
+     */
+    void setup_components();
+    
     /**
      * @brief Calculates the data on the reference cell.
      *
      * @param q Quadrature rule.
      * @param flags Update flags.
      */
-    virtual FEInternalData *initialize(const Quadrature<dim> &q, UpdateFlags flags);
+    virtual FEInternalData *initialize(const Quadrature<dim> &q);
 
     /**
      * @brief Decides which additional quantities have to be computed
@@ -253,72 +366,49 @@ public:
             FEValuesData<dim,spacedim> &fv_data);
 
     /**
-     * @brief Returns the maximum degree of
-     * space of polynomials contained in the finite element space.
-     *
-     * For possible use in hp methods.
+     * @brief Initializes the @p node_matrix for computing the coefficients
+     * of the shape functions in the raw basis of @p functions_space_.
+     * This is done by evaluating the @p dofs_ for the basis function
+     * and by inverting the resulting matrix.
      */
-    virtual const unsigned int polynomial_order() const {
-        return order;
-    };
+    virtual void compute_node_matrix();
+    
+    /**
+     * @brief Indicates whether the basis functions have one or more
+     * nonzero components (scalar FE spaces are always primitive).
+     */
+    inline const bool is_primitive() const { return is_primitive_; }
+    
+    /**
+     * @brief Returns the component index for vector valued finite elements.
+     * @param sys_idx Index of shape function.
+     */
+    unsigned int system_to_component_index(unsigned sys_idx) const
+    { return component_indices_[sys_idx]; }
+    
+    /**
+     * @brief Returns the mask of nonzero components for given basis function.
+     * @param sys_idx Index of basis function.
+     */
+    const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const
+    { return nonzero_components_[sys_idx]; }
+
+    
+    
+    /// Type of FiniteElement.
+    FEType type_;
 
     /**
-     * @brief Indicates whether the finite element function space is scalar
-     * or vectorial.
+     * @brief Primitive FE is using componentwise shape functions,
+     * i.e. only one component is nonzero for each shape function.
      */
-    const bool is_scalar() const {
-        return is_scalar_fe;
-    };
-
-    /**
-     * @brief Returns either the generalized support points (if they are defined)
-     * or the unit support points.
-     */
-    const std::vector<arma::vec::fixed<dim> > &get_generalized_support_points();
-
-    /**
-     * @brief Destructor.
-     */
-    virtual ~FiniteElement();
-
-protected:
-
-    /**
-     * @brief Total number of degrees of freedom at one finite element.
-     */
-    unsigned int number_of_dofs;
-
-    /**
-     * @brief Number of single dofs at one geometrical entity of the given
-     * dimension (point, line, triangle, tetrahedron).
-     */
-    unsigned int number_of_single_dofs[dim + 1];
-
-    /**
-     * @brief Number of pairs of dofs at one geometrical entity of the given
-     * dimension (applicable to lines and triangles).
-     */
-    unsigned int number_of_pairs[dim + 1];
-
-    /**
-     * @brief Number of triples of dofs associated to one triangle.
-     */
-    unsigned int number_of_triples[dim + 1];
-
-    /**
-     * @brief Number of sextuples of dofs associated to one triangle.
-     */
-    unsigned int number_of_sextuples[dim + 1];
-
-    /**
-     * @brief Polynomial order - to be possibly used in hp methods.
-     */
-    unsigned int order;
-
-    /**
-     * @brief Indicator of scalar versus vectorial finite element.
-     */
-    bool is_scalar_fe;
+    bool is_primitive_;
+    
+    /// Indices of nonzero components of shape functions (for primitive FE).
+    std::vector<unsigned int> component_indices_;
+    
+    /// Footprints of nonzero components of shape functions.
+    std::vector<std::vector<bool> > nonzero_components_;
 
     /**
      * @brief Matrix that determines the coefficients of the raw basis
@@ -326,25 +416,18 @@ protected:
      */
     arma::mat node_matrix;
 
-    /**
-     * @brief Support points for Lagrangean finite elements.
-     *
-     * Support points are points in the reference element where
-     * function values determine the dofs. In case of Lagrangean
-     * finite elements the dof values are precisely the function
-     * values at @p unit_support_points.
-     *
-     */
-    std::vector<arma::vec::fixed<dim> > unit_support_points;
-
-    /**
-     * @brief Support points for non-Lagrangean finite elements.
-     *
-     * In case of non-Lagrangean finite elements the meaning of the
-     * support points is different, hence we denote the structure
-     * as @p generalized_support_points.
-     */
-    std::vector<arma::vec::fixed<dim> > generalized_support_points;
+    /// Function space defining the FE.
+    FunctionSpace *function_space_;
+    
+    /// Set of degrees of freedom (functionals) defining the FE.
+    std::vector<Dof> dofs_;
+    
+    
+    friend class FESystem<dim,spacedim>;
+    friend class FEValuesBase<dim,spacedim>;
+    friend class FEValues<dim,spacedim>;
+    friend class FESideValues<dim,spacedim>;
+    friend class FE_P_disc<dim,spacedim>;
 };
 
 

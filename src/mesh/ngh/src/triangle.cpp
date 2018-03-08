@@ -16,10 +16,13 @@
  */
 
 #include "system/exc_common.hh"
-#include "mesh/ngh/include/triangle.h"
 #include "mesh/element_impls.hh"
+#include "mesh/elements.h"                             // for Element
+#include "mesh/ngh/include/abscissa.h"                 // for TAbscissa
+#include "mesh/ngh/include/plain.h"                    // for TPlain
+#include "mesh/ngh/include/triangle.h"
 
-
+namespace ngh {
 
 int TTriangle::numberInstance = 0;
 
@@ -226,3 +229,5 @@ bool TTriangle::IsInner(const TPoint& P) const {
 
     return true;
 }
+
+} // namespace ngh

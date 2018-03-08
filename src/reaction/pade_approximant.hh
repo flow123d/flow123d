@@ -18,9 +18,20 @@
 #ifndef PADE_APPROXIMANT_H_
 #define PADE_APPROXIMANT_H_
 
-#include "input/accessors_forward.hh"
-#include "reaction/linear_ode_solver.hh"
+#include <stdio.h>                        // for sprintf
+#include <boost/exception/info.hpp>       // for operator<<, error_info::err...
+#include <vector>                         // for vector
 #include "armadillo"
+#include "reaction/linear_ode_solver.hh"
+#include "system/exceptions.hh"           // for ExcAssertMsg::~ExcAssertMsg
+
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+	}
+}
+
 
 /** @brief This class implements the Pade approximation of exponential function. 
  *

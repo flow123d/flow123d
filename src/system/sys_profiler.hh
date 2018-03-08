@@ -49,11 +49,16 @@
 #define	PROFILER_H
 
 #include "global_defs.h"
-#include "system/system.hh"
+
 #include <mpi.h>
 #include <ostream>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/unordered_map.hpp>
+namespace boost { template <class T> struct hash; }
+#include <boost/functional/hash/hash.hpp>      // for hash
+#include <boost/property_tree/ptree_fwd.hpp>   // for ptree, property_tree
+#include <boost/ref.hpp>
+#include <boost/tuple/detail/tuple_basic.hpp>  // for get
+#include <boost/unordered/unordered_map.hpp>   // for unordered_map
+
 #include "time_point.hh"
 #include "petscsys.h" 
 #include "simple_allocator.hh"

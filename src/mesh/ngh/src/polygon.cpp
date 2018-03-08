@@ -18,11 +18,16 @@
 #include <iostream>
 #include <vector>
 
+#include "mesh/ngh/include/mathfce.h"
 #include "mesh/ngh/include/polygon.h"
 #include "mesh/ngh/include/vertex.h"
-#include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/triangle.h"
+#include "system/logger.hh"
 
 using namespace mathfce;
+
+namespace ngh {
+
 
 int TPolygon::numberInstance = 0;
 
@@ -178,3 +183,4 @@ void TPolygon::ComputeArea() {
     return;
 }
 
+} // namespace ngh

@@ -1,0 +1,10 @@
+** data of Region Sets **
+label            dim   new_name
+.1d_channel      1     .channel_1d
+.2d_fracture_1   2     .fracture_2d_1
+.2d_fracture_2   2     .fracture_2d_2
+.3d_cube         3      .cube_3d
+1d_channel       1      channel_1d
+2d_fracture_1    2      fracture_2d_1
+2d_fracture_2    2      fracture_2d_2
+3d_cube          3      cube_3d

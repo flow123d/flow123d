@@ -21,8 +21,40 @@
 using namespace std;
 
 
-#include "fields/field.hh"
-#include "fields/field_common.hh"
+#include <boost/core/explicit_operator_bool.hpp>       // for optional::oper...
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <boost/format/alt_sstream.hpp>                // for basic_altstrin...
+#include <boost/format/alt_sstream_impl.hpp>           // for basic_altstrin...
+#include <boost/format/parsing.hpp>                    // for basic_format::...
+#include <boost/optional/optional.hpp>                 // for get_pointer
+#include <boost/type_index/type_index_facade.hpp>      // for operator==
+#include <iostream>                                    // for basic_ostream:...
+#include <memory>                                      // for shared_ptr
+#include <string>                                      // for string, basic_...
+#include <vector>                                      // for vector
+#include "fields/field.hh"                             // for Field<>::Field...
+#include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
+#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
+#include "fields/field_common.hh"                      // for FieldCommon
+#include "fields/field_values.hh"                      // for FieldValue<>::...
+#include "input/accessors.hh"                          // for ExcTypeMismatch
+#include "input/accessors_impl.hh"                     // for Array::begin
+#include "input/factory_impl.hh"                       // for Factory::create
+#include "input/input_exception.hh"                    // for DECLARE_INPUT_...
+#include "input/input_type_forward.hh"                 // for Type
+#include "input/type_base.hh"                          // for Array
+#include "input/type_generic.hh"                       // for Instance
+#include "input/type_record.hh"                        // for Record::ExcRec...
+#include "mesh/region.hh"                              // for Region (ptr only)
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcMessage::~E...
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "tools/time_governor.hh"                      // for TimeStep
+
+class Mesh;
+class Observe;
+class OutputTime;
 
 
 namespace IT=Input::Type;
@@ -139,7 +171,7 @@ public:
     /**
      * Implementation of @p FieldCommonBase::output().
      */
-    void output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -203,15 +235,15 @@ public:
      * Returns vector of value in one given point @p on an element given by ElementAccessor @p elm.
      * It returns reference to he actual value in order to avoid temporaries for vector and tensor values.
      */
-    virtual typename MultiFieldValue::return_type value(const Point &p, const ElementAccessor<spacedim> &elm) const;
+//     virtual typename MultiFieldValue::return_type value(const Point &p, const ElementAccessor<spacedim> &elm) const;
 
     /**
      * Returns std::vector of vector values in several points at once. The base class implements
      * trivial implementation using the @p value(,,) method. This is not optimal as it involves lot of virtual calls,
      * but this overhead can be negligible for more complex fields as Python of Formula.
      */
-    virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-                             std::vector<typename MultiFieldValue::return_type>  &value_list) const;
+//     virtual void value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+//                              std::vector<typename MultiFieldValue::return_type>  &value_list) const;
 
     void set_input_list(const Input::Array &list) override;
 

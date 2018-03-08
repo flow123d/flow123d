@@ -19,7 +19,15 @@
 #define PATH_YAML_HH_
 
 
-#include "yaml-cpp/yaml.h"
+#include <stdint.h>                          // for int64_t
+#include <iosfwd>                            // for ostream, istream
+#include <set>                               // for set
+#include <string>                            // for string
+#include <vector>                            // for vector
+#include "yaml-cpp/node/detail/bool_type.h"  // for Node::operator void (*)(...
+#include "yaml-cpp/node/impl.h"              // for Node::Node, Node::operat...
+#include "yaml-cpp/node/node.h"              // for Node
+
 #include "input/path_base.hh"
 
 
@@ -71,7 +79,7 @@ public:
      *
      * Implements @p PathBase::down(const std::string&)
      */
-    bool down(const std::string& key) override;
+    bool down(const std::string& key, int index = -1) override;
 
     /// Return one level up in the hierarchy.
     void up() override;
@@ -93,8 +101,8 @@ public:
     /// Implements reading of reference keys, and check of cyclic references.
     PathBase * find_ref_node() override;
 
-    /// Implements @p PathBase::get_record_name
-    std::string get_record_name() const override;
+    /// Implements @p PathBase::get_record_tag
+    std::string get_record_tag() const override;
 
 protected:
 

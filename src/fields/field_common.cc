@@ -15,7 +15,13 @@
  * @brief   
  */
 
+#include <iomanip>                  // for operator<<, setw, setfill, left
 #include "fields/field_common.hh"
+#include "input/accessors_impl.hh"  // for Record::val
+#include "input/attribute_lib.hh"   // for Attribute
+#include "input/storage.hh"         // for ExcStorageTypeMismatch
+#include "tools/time_marks.hh"      // for TimeMark, TimeMark::Type, TimeMarks
+
 
 /****************************************************************************
  *  Implementation of FieldCommon
@@ -84,6 +90,29 @@ void FieldCommon::mark_input_times(const TimeGovernor &tg) {
         TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
     }
 }
+
+
+
+bool FieldCommon::print_message_table(ostream& stream, std::string equation_name) {
+	if (FieldCommon::messages_data_.size() == 0) return false;
+
+	stream << endl << "Used default values of Fields for equation " << equation_name << ":" << endl;
+	stream << std::setfill('-') << setw(100) << "" << endl;
+	stream << std::setfill(' ') << " Field name" << setw(21) << "" << "Default value" << setw(7) << "" << "Apply on regions" << endl;
+	for (std::vector<MessageData>::iterator it = FieldCommon::messages_data_.begin(); it < FieldCommon::messages_data_.end(); ++it) {
+		stringstream ss;
+		stream << " " << std::left << setw(30) << it->field_name_ << "" << " "
+			   << setw(18) << it->default_value_ << "" << " " << it->region_list_ << endl;
+	}
+	stream << std::setfill('-') << setw(100) << "" << endl << endl;
+
+	FieldCommon::messages_data_.clear();
+	return true;
+}
+
+
+
+std::vector<FieldCommon::MessageData> FieldCommon::messages_data_ = std::vector<FieldCommon::MessageData>();
 
 
 

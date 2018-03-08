@@ -18,13 +18,14 @@
 #ifndef triangleH
 #define triangleH
 
-#include "point.h"
-#include "plain.h"
-#include "abscissa.h"
-#include "mesh/mesh_types.hh"
-#include "mesh/bounding_box.hh"
-//#include "mesh/elements.h"
+#include "mesh/bounding_box.hh"  // for BoundingBox
+#include "point.h"               // for TPoint
+class Element;
 
+namespace ngh {
+
+class TAbscissa;
+class TPlain;
 
 
 class TTriangle {
@@ -79,6 +80,8 @@ public:
         return TTriangle::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif
 

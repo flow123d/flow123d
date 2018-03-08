@@ -28,6 +28,7 @@
 #include "coupling/balance.hh"
 #include "fields/unit_si.hh"
 #include "tools/time_governor.hh"
+#include "la/distribution.hh"
 
 using namespace Input::Type;
 
@@ -74,7 +75,6 @@ std::shared_ptr<Balance> Balance::make_balance(
 Balance::Balance(const std::string &file_prefix, const Mesh *mesh)
 	: 	  file_prefix_(file_prefix),
 	      mesh_(mesh),
-	  	  initial_time_(),
 	  	  last_time_(),
 	  	  initial_(true),
 	  	  allocation_done_(false),
@@ -105,6 +105,7 @@ Balance::~Balance()
 		chkerr(MatDestroy(&(region_source_rhs_[c])));
 		chkerr(VecDestroy(&(be_flux_vec_[c])));
 		chkerr(VecDestroy(&(region_source_vec_[c])));
+        chkerr(VecDestroy(&(region_mass_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -112,6 +113,7 @@ Balance::~Balance()
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
+    delete[] region_mass_vec_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
 	chkerr(VecDestroy(&ones_));
@@ -125,6 +127,8 @@ void Balance::init_from_input(
 {
     ASSERT(! allocation_done_);
 
+    time_ = &tg;
+    
     auto &marks = TimeGovernor::marks();
 
     output_mark_type_ = tg.equation_mark_type() | marks.type_output(),
@@ -290,11 +294,11 @@ void Balance::lazy_initialize()
                &(region_source_rhs_[c])));
 
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-               be_regions_.size(),
-               n_loc_dofs_,
-               PETSC_DECIDE,
-               PETSC_DECIDE,
-               max_dofs_per_boundary_,
+               be_regions_.size(),  // n local rows, number of local boundary edges
+               n_loc_dofs_,         // n local cols (local rows of multiplying vector)
+               PETSC_DECIDE,        // n global rows
+               PETSC_DECIDE,        // n global cols
+               max_dofs_per_boundary_,  // allocation, local poriton
                0,
                0,
                0,
@@ -389,12 +393,12 @@ void Balance::lazy_initialize()
 
 
 
-bool Balance::is_current(const TimeStep &step)
+bool Balance::is_current()
 {
     if (! balance_on_) return false;
 
     auto &marks = TimeGovernor::marks();
-    bool res =  marks.current(step, balance_output_type_) != marks.end(balance_output_type_);
+    bool res =  marks.current(time_->step(), balance_output_type_) != marks.end(balance_output_type_);
 
     //cout << "flag: " << res << " time: " << step.end() << " type:" << hex << balance_output_type_ << endl;
     return res;
@@ -467,7 +471,7 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 
 void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -486,14 +490,14 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
-		unsigned int elem_idx,
-		const vector<int> &dof_indices,
+		unsigned int boundary_idx,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
-	PetscInt elem_array[1] = { int(be_offset_+elem_idx) };
+	PetscInt elem_array[1] = { int(be_offset_+boundary_idx) };
 	chkerr_assert(MatSetValues(be_flux_matrix_[quantity_idx],
 			1,
 			elem_array,
@@ -506,7 +510,7 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -536,14 +540,14 @@ void Balance::add_mass_vec_value(unsigned int quantity_idx,
 
 
 void Balance::add_flux_vec_value(unsigned int quantity_idx,
-		unsigned int elem_idx,
+		unsigned int boundary_idx,
 		double value)
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
 
     chkerr_assert(VecSetValue(be_flux_vec_[quantity_idx],
-			be_offset_+elem_idx,
+			be_offset_+boundary_idx,
 			value,
 			ADD_VALUES));
 }
@@ -551,7 +555,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 
 void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -579,13 +583,14 @@ void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 }
 
 
-void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
-		const Vec &solution,
-		double dt)
+void Balance::calculate_cumulative(unsigned int quantity_idx,
+		const Vec &solution)
 {
     ASSERT_DBG(allocation_done_);
 	if (!cumulative_) return;
+    if (time_->tlevel() <= 0) return;
 
+    // sources
 	Vec bulk_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
@@ -606,17 +611,10 @@ void Balance::calculate_cumulative_sources(unsigned int quantity_idx,
 
 	if (rank_ == 0)
 		// sum sources in one step
-		increment_sources_[quantity_idx] += sum_sources*dt;
-}
+		increment_sources_[quantity_idx] += sum_sources*time_->dt();
 
-
-void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
-		const Vec &solution,
-		double dt)
-{
-    ASSERT_DBG(allocation_done_);
-    if (!cumulative_) return;
-
+    
+    // fluxes 
 	Vec boundary_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
@@ -643,7 +641,7 @@ void Balance::calculate_cumulative_fluxes(unsigned int quantity_idx,
 
 	if (rank_ == 0)
 		// sum fluxes in one step
-		increment_fluxes_[quantity_idx] += sum_fluxes*dt;
+		increment_fluxes_[quantity_idx] += sum_fluxes*time_->dt();
 }
 
 
@@ -672,13 +670,13 @@ void Balance::calculate_mass(unsigned int quantity_idx,
 	VecDestroy(&bulk_vec);
 }
 
-
-void Balance::calculate_source(unsigned int quantity_idx,
-		const Vec &solution)
+void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 {
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
+    if ( !is_current() ) return;
+    
+    calculate_mass(quantity_idx, solution, masses_[quantity_idx]);
+    
+    // calculate source
     Vec bulk_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
@@ -727,15 +725,9 @@ void Balance::calculate_source(unsigned int quantity_idx,
 	VecDestroy(&rhs_r);
 	VecDestroy(&mat_r);
 	VecDestroy(&bulk_vec);
-}
 
-
-void Balance::calculate_flux(unsigned int quantity_idx,
-		const Vec &solution)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
+    
+    // calculate flux
     Vec boundary_vec;
 
 	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1,
@@ -756,7 +748,7 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 	fluxes_in_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
 	fluxes_out_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
 	const double *flux_array;
-	int lsize;
+// 	int lsize;
 	chkerr(VecGetArrayRead(temp, &flux_array));
 	chkerr(VecGetLocalSize(temp, &lsize));
 	for (int e=0; e<lsize; ++e)
@@ -775,13 +767,14 @@ void Balance::calculate_flux(unsigned int quantity_idx,
 
 
 
-void Balance::output(double time)
+void Balance::output()
 {
     ASSERT_DBG(allocation_done_);
     if (! balance_on_) return;
-
+    if (! is_current() ) return;
+    
 	// gather results from processes and sum them up
-	const unsigned int n_quant = quantities_.size();
+    const unsigned int n_quant = quantities_.size();
 	const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
 	const unsigned int n_bdr_reg = mesh_->region_db().boundary_size();
 	const int buf_size = n_quant*2*n_blk_reg + n_quant*2*n_bdr_reg;
@@ -865,8 +858,7 @@ void Balance::output(double time)
 			// save initial time and mass
 			if (initial_)
 			{
-				initial_time_ = time;
-				last_time_ = initial_time_;
+				last_time_ = time_->init_time();
 				for (unsigned int qi=0; qi<n_quant; qi++)
 					initial_mass_[qi] = sum_masses_[qi];
 				initial_ = false;
@@ -880,24 +872,24 @@ void Balance::output(double time)
 		}
 	}
 
-	last_time_ = time;
+	last_time_ = time_->t();
 
 
 	// perform actual output
 	switch (output_format_)
 	{
 	case txt:
-		output_csv(time, '\t', "");
+		output_csv(time_->t(), '\t', "");
 		break;
 	case gnuplot:
-		output_csv(time, ' ', "#", 30);
+		output_csv(time_->t(), ' ', "#", 30);
 		break;
 	case legacy:
-		output_legacy(time);
+		output_legacy(time_->t());
 		break;
 	}
 	// output in YAML format
-	output_yaml(time);
+	output_yaml(time_->t());
 
 	if (rank_ == 0)
 	{
@@ -1020,7 +1012,7 @@ void Balance::output_legacy(double time)
 	{
 		// Print cumulative sources
 		output_ << "\n\n# Cumulative mass balance on time interval ["
-				<< setiosflags(ios::left) << initial_time_ << ","
+				<< setiosflags(ios::left) << time_->init_time() << ","
 				<< setiosflags(ios::left) << time << "]\n"
 				<< "# Initial mass [M] + sources integrated over time [M] - flux integrated over time [M] = current mass [M]\n"
 				<< "# " << setiosflags(ios::left)

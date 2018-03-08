@@ -18,23 +18,44 @@
 #ifndef FIELD_HH_
 #define FIELD_HH_
 
-#include <memory>
-using namespace std;
-
+#include <stdio.h>                                     // for sprintf
+#include <string.h>                                    // for memcpy
+#include <algorithm>                                   // for find, min
 #include <boost/circular_buffer.hpp>
+#include <memory>                                      // for dynamic_pointe...
+#include <new>                                         // for operator new[]
+#include <ostream>                                     // for basic_ostream:...
+#include <string>                                      // for basic_string
+#include <utility>                                     // for pair
+#include <vector>                                      // for vector
+#include <armadillo>
+#include "fields/field_algo_base.hh"                   // for FieldAlgorithm...
+#include "fields/field_algo_base.impl.hh"              // for FieldAlgorithm...
+#include "fields/field_common.hh"                      // for FieldCommon::T...
+#include "fields/field_values.hh"                      // for FieldValue<>::...
+#include "input/accessors.hh"                          // for ExcTypeMismatch
+#include "input/accessors_impl.hh"                     // for Record::opt_val
+#include "input/factory_impl.hh"                       // for Factory::create
+#include "input/input_exception.hh"                    // for FieldCommon::E...
+#include "input/storage.hh"                            // for ExcStorageType...
+#include "input/type_base.hh"                          // for Array
+#include "input/type_generic.hh"                       // for Instance
+#include "input/type_record.hh"                        // for Record::ExcRec...
+#include "io/output_time.hh"                           // for OutputTime
+#include "mesh/element_impls.hh"                       // for Element::dim
+#include "mesh/region.hh"                              // for RegionDB::ExcU...
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/global_defs.h"                        // for OLD_ASSERT, msg
+#include "tools/time_governor.hh"                      // for TimeStep
 
-#include "system/exceptions.hh"
-#include "input/accessors_forward.hh"
-#include "tools/time_marks.hh"
-#include "tools/time_governor.hh"
+class Mesh;
+class Observe;
+template <int spacedim> class ElementAccessor;
+template <int spacedim, class Value> class FieldFE;
 
-#include "fields/field_common.hh"
-#include "fields/field_algo_base.hh"
-#include "fields/field_flag.hh"
-//#include "io/output_time.hh"
-
-class OutputTime;
-
+using namespace std;
 namespace IT=Input::Type;
 
 /**
@@ -214,7 +235,7 @@ public:
     /**
      * Implementation of FieldCommonBase::output().
      */
-    void output(std::shared_ptr<OutputTime> stream) override;
+    void field_output(std::shared_ptr<OutputTime> stream) override;
 
     /**
      * Implementation of FieldCommonBase::observe_output().
@@ -242,11 +263,17 @@ public:
     FieldResult field_result( RegionSet region_set) const override;
 
     /**
-     * Return specification of the field value type in form of the string:
-     * [ <element type>, NRows, NCols]
+     * Return value of input type attribute 'field_value_shape' that is appended to the
+     * input type of this field in FieldSet::make_field_descriptor_type and also to the output field selection
+     * created in EquationOutput::make_output_type.
+     * This attribute is used by GeoMop to have semantics of the input and output field data.
      *
-     * Result is valid JSON (and/or flow style YAML).
-     * For multifields not implemented.
+     * Attribute value is a valid JSON (and/or flow style YAML) with keys:
+     * 'subfields' - value True for multifields, False or not presented for single value fields
+     * 'shape' - [ NRows, Ncols] ... given by FieldValue
+     * 'type' - <element type> (Double or Integer) ... given by FieldValue
+     * 'limit' - bounds of the field values.
+     *
      */
     std::string get_value_attribute() const override;
 
@@ -278,6 +305,12 @@ public:
 
     void set_input_list(const Input::Array &list) override;
 
+    /**
+     * Interpolate given field into output discrete @p space_type and store the values
+     * into storage of output time @p stream for postponed output.
+     */
+    void compute_field_data(OutputTime::DiscreteSpace space_type, std::shared_ptr<OutputTime> stream);
+
 protected:
 
     /**
@@ -292,6 +325,12 @@ protected:
      *  Check that whole field list (@p region_fields_) is set, possibly use default values for unset regions.
      */
     void check_initialized_region_fields_();
+
+    /**
+     * Check that the field is in fact FieldFE set on all bulk regions, return shared pointer to that FieldFE or NULL
+     * if the Field is not FieldFE.
+     */
+    std::shared_ptr< FieldFE<spacedim, Value> > get_field_fe();
 
     /**************** Shared data **************/
 

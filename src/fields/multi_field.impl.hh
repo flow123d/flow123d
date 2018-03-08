@@ -35,7 +35,7 @@ MultiField<spacedim, Value>::MultiField(bool bc)
 : FieldCommon(),
   no_check_control_field_(nullptr)
 {
-	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
+// 	static_assert(Value::NRows_ == 1 && Value::NCols_ == 1, "");
 	this->multifield_ = true;
     this->shared_->bc_ = bc;
 }
@@ -188,11 +188,18 @@ void MultiField<spacedim, Value>::copy_from(const FieldCommon & other) {
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
+void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> stream)
 {
 	// currently we cannot output boundary fields
-	if (!is_bc())
-		stream->register_data(this->output_type(), *this);
+	if (!is_bc()) {
+		const OutputTime::DiscreteSpace type = this->get_output_type();
+
+		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
+
+	    for (unsigned long index=0; index < this->size(); index++) {
+            sub_fields_[index].compute_field_data( type, stream );
+	    }
+	}
 }
 
 
@@ -200,7 +207,7 @@ void MultiField<spacedim, Value>::output(std::shared_ptr<OutputTime> stream)
 template<int spacedim, class Value>
 void MultiField<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
 {
-    for(auto &field : sub_fields_) observe->compute_field_values(field);
+    for(auto &field : sub_fields_) field.observe_output(observe);
 }
 
 
@@ -310,26 +317,26 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
 }
 
 
-template<int spacedim, class Value>
-typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
-    typename MultiFieldValue::return_type ret(size(), 1);
-    for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
-    	ret(i_comp, 0) = sub_fields_[i_comp].value(p,elm);
-    }
-
-    return ret;
-}
-
-
-
-template<int spacedim, class Value>
-void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
-                   std::vector<typename MultiFieldValue::return_type>  &value_list) const {
-	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
-	for(unsigned int i=0; i< point_list.size(); i++) {
-		value_list[i]=this->value(point_list[i], elm);
-	}
-}
+// template<int spacedim, class Value>
+// typename MultiField<spacedim, Value>::MultiFieldValue::return_type MultiField<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm) const {
+//     typename MultiFieldValue::return_type ret(size(), 1);
+//     for (unsigned int i_comp=0; i_comp < size(); i_comp++) {
+//     	ret(i_comp, 0) = sub_fields_[i_comp].value(p,elm);
+//     }
+// 
+//     return ret;
+// }
+// 
+// 
+// 
+// template<int spacedim, class Value>
+// void MultiField<spacedim, Value>::value_list(const std::vector< Point >  &point_list, const  ElementAccessor<spacedim> &elm,
+//                    std::vector<typename MultiFieldValue::return_type>  &value_list) const {
+// 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+// 	for(unsigned int i=0; i< point_list.size(); i++) {
+// 		value_list[i]=this->value(point_list[i], elm);
+// 	}
+// }
 
 
 
@@ -347,7 +354,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 				++it; ++position;
 			}
 
-		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
 		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), init_data );
 		field_algo_base->set_component_idx(index_);
 		return field_algo_base;

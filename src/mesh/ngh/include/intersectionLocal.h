@@ -18,12 +18,12 @@
 #ifndef IntersectionLocalH
 #define IntersectionLocalH
 
-#include <iostream>
 #include <vector>
 #include <stdio.h>
 
 using namespace std;
 
+namespace ngh {
 
 //class IntersectionPoint - two vectors of local coords
 class IntersectionPoint {
@@ -88,5 +88,7 @@ private:
 
     int generateId();
 };
+
+} // namespace ngh
 
 #endif /* IntersectionLocalH */

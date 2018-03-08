@@ -18,7 +18,7 @@
 #ifndef ADAPTIVESIMPSON_H
 #define ADAPTIVESIMPSON_H
 
-#include "functors.hh"
+template <class Type> class FunctorBase;
 
 #define MAX_RECURSION 1e+7
 

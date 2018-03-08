@@ -1,7 +1,7 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test14 - 2D transport with time variable boundary, test matching input/output
-    times even if prescribed initial and maximal time step is larger.
+  description: Test14 - 2D transport with time variable boundary, test matching input/output times even if prescribed initial
+    and maximal time step is larger.
   mesh:
     mesh_file: ../00_mesh/rectangle_1x0.2.msh
   # steady velocity field, with velocity v:0.1
@@ -64,5 +64,6 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.1
+      precision: 15
     balance:
       cumulative: true

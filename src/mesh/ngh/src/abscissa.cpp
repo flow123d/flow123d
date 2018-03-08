@@ -18,7 +18,12 @@
 #include <cmath>
 
 #include "mesh/ngh/include/abscissa.h"
+#include "mesh/ngh/include/point.h"
+#include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/myvector.h"
 #include "stdio.h"
+
+namespace ngh {
 
 int TAbscissa::numberInstance = 0;
 
@@ -106,3 +111,20 @@ double TAbscissa::GetMax(int x) const {
         return X0->Get(x);
     }
 }
+
+bool TAbscissa::IsInner(const TPoint& P) const {
+    TVector Up(*X0, P);
+
+    double x_proportion = Up.X1() / U->X1();
+    if ( x_proportion < 0 || x_proportion > 1 ) {
+    	return false;
+    }
+
+    if ( (fabs( Up.X2() / U->X2() - x_proportion ) < epsilon) && (fabs( Up.X3() / U->X3() - x_proportion ) < epsilon) ) {
+    	return true;
+    } else {
+    	return false;
+    }
+}
+
+} // namespace ngh

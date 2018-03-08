@@ -56,6 +56,15 @@ public:
     inline static string subfields_address()
     { return "subfields_address"; }
 
+    /**
+     * Specify default value of Field.
+     *
+     * Format of value: string, e.g.
+     * "0.0"
+     */
+    inline static string field_default_value()
+    { return "field_default_value"; }
+
 };
 
 #endif /* ATTRIBUTE_LIB_HH_ */

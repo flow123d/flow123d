@@ -1,12 +1,10 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 output_streams:
-  - &anchor1
-    file: dual_por.pvd
+  - file: dual_por.pvd
     format: !vtk
       variant: ascii
     name: flow_output_stream
-  - &anchor2
-    file: dual_por_transport.pvd
+  - file: dual_por_transport.pvd
     format: !vtk
       variant: ascii
     time_step: 0.5
@@ -32,7 +30,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: dual_por.pvd
       format: !vtk
         variant: ascii
@@ -50,7 +48,7 @@ problem: !Coupling_Sequential
     substances:
       - A
       - B
-    output_stream: 
+    output_stream:
       file: dual_por_transport.pvd
       format: !vtk
         variant: ascii
@@ -84,7 +82,7 @@ problem: !Coupling_Sequential
             sorption_type: linear
             distribution_coefficient: 0.6
             isotherm_other: 0.4
-        reaction_liquid: !FirstOrderReaction &anchor6
+        reaction_liquid: &anchor6 !FirstOrderReaction
           reactions:
             - reactants: A
               reaction_rate: 0.277258872

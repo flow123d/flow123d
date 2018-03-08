@@ -19,12 +19,15 @@
 
 #include "system/global_defs.h"
 #include "mesh/element_impls.hh"
+#include "mesh/elements.h"
 
 #include "mesh/ngh/include/bisector.h"
 #include "mesh/ngh/include/mathfce.h"
 #include "mesh/ngh/include/intersection.h"
+#include "mesh/ngh/include/myvector.h"
 
 using namespace mathfce;
+namespace ngh {
 
 int TBisector::numberInstance = 0;
 
@@ -132,3 +135,5 @@ bool TBisector::Belong(const TPoint &P) const {
         return false;
     }
 }
+
+} //namespace ngh

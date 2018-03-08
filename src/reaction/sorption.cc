@@ -69,15 +69,10 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 	double rock_density = data_->rock_density.value(elem.centre(),elem);
 	double por_m = data_->porosity.value(elem.centre(),elem);
 
-	// List of types of isotherms in particular regions
-	arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
-	arma::Col<double> mult_coef_vec = data_->distribution_coefficient.value(elem.centre(),elem);
-	arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
-
 	for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
 	{
-		double mult_coef = mult_coef_vec[i_subst];
-		double second_coef = second_coef_vec[i_subst];
+		double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
+		double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
 		Isotherm & isotherm = isotherms_vec[i_subst];
 
 		//scales are different for the case of sorption in mobile and immobile pores
@@ -103,7 +98,7 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
         
-		isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
+		isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)), limited_solubility_on,
 					solvent_density_, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
 	}
@@ -182,15 +177,10 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
     double por_imm = immob_porosity_.value(elem.centre(),elem);
     double phi = por_m/(por_m + por_imm);
 
-    // List of types of isotherms in particular regions
-    arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
-    arma::Col<double> mult_coef_vec = data_->distribution_coefficient.value(elem.centre(),elem);
-    arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
-
     for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
     {
-        double mult_coef = mult_coef_vec[i_subst];
-        double second_coef = second_coef_vec[i_subst];
+        double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
+        double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
         Isotherm & isotherm = isotherms_vec[i_subst];
 
         //scales are different for the case of sorption in mobile and immobile pores
@@ -217,7 +207,7 @@ void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const El
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
         
-        isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
+        isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)), limited_solubility_on,
                         solvent_density_, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
     }
@@ -272,15 +262,10 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
     double por_imm = immob_porosity_.value(elem.centre(),elem);
     double phi = por_m/(por_m + por_imm);
         
-    // List of types of isotherms in particular regions
-    arma::uvec adsorption_type = data_->sorption_type.value(elem.centre(),elem);
-    arma::Col<double> mult_coef_vec = data_->distribution_coefficient.value(elem.centre(),elem);
-    arma::Col<double> second_coef_vec = data_->isotherm_other.value(elem.centre(),elem);
-
     for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
     {
-        double mult_coef = mult_coef_vec[i_subst];
-        double second_coef = second_coef_vec[i_subst];
+        double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
+        double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
         Isotherm & isotherm = isotherms_vec[i_subst];
 
         //scales are different for the case of sorption in mobile and immobile pores
@@ -307,7 +292,7 @@ void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const 
         if ( scale_sorbed <= 0.0)
             xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
         
-        isotherm.reinit(Isotherm::SorptionType(adsorption_type[i_subst]), limited_solubility_on,
+        isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)), limited_solubility_on,
                     solvent_density_, scale_aqua, scale_sorbed, table_limit, mult_coef, second_coef);
 
     }

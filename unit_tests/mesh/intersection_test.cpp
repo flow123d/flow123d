@@ -4,7 +4,9 @@
 #include "system/system.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/intersection.h"
+#include "mesh/ngh/include/tetrahedron.h"
 
+using namespace ngh;
 
 TEST(intersection, triangle_tetrahedron) {
 	TIntersectionType it;

@@ -18,9 +18,13 @@
 #ifndef polygonH
 #define polygonH
 
-#include "vertex.h"
-#include "triangle.h"
-#include <vector>
+#include <iosfwd>                       // for ostream
+#include <vector>                       // for vector, vector<>::iterator
+#include "myvector.h"                   // for TVector
+#include "point.h"                      // for TPoint
+#include "vertex.h"                     // for TVertex
+
+namespace ngh {
 
 #define FOR_POL_VERTECES(i,j)     \
 	for((j)=(i)->verteces.begin();(j)!=(i)->verteces.end();(j)++)
@@ -72,6 +76,8 @@ public:
         return TPolygon::numberInstance;
     }
 };
+
+} // namespace ngh
 
 #endif
 

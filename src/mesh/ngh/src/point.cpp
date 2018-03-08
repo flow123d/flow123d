@@ -20,8 +20,12 @@
 #include "system/exc_common.hh"
 #include "mesh/ngh/include/point.h"
 #include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/myvector.h"
 
 using namespace mathfce;
+
+namespace ngh {
+
 
 int TPoint::numberInstance = 0;
 
@@ -135,3 +139,5 @@ std::ostream & operator <<(std::ostream& stream, const TPoint& P) {
     stream << "[" << P.x << " " << P.y << " " << P.z << "]";
     return stream;
 }
+
+} //namespace ngh

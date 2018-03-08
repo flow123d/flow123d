@@ -18,27 +18,30 @@
 #ifndef MAKE_MESH_H
 #define MAKE_MESH_H
 
-#include <vector>
-#include <mpi.h>
+#include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <memory>                            // for shared_ptr
+#include <string>                            // for string
+#include <vector>                            // for vector, vector<>::iterator
+#include "input/accessors.hh"                // for Record, Array (ptr only)
+#include "input/accessors_impl.hh"           // for Record::val
+#include "input/storage.hh"                  // for ExcStorageTypeMismatch
+#include "input/type_record.hh"              // for Record (ptr only), Recor...
+#include "mesh/boundaries.h"                 // for Boundary
+#include "mesh/edges.h"                      // for Edge
+#include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
+#include "mesh/neighbours.h"                 // for Neighbour
+#include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
+#include "mesh/sides.h"                      // for SideIter
+#include "mesh/bounding_box.hh"              // for BoundingBox
+#include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+#include "system/file_path.hh"               // for FilePath
+#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 
-#include "mesh/mesh_types.hh"
-
-#include "mesh/nodes.hh"
-//#include "mesh/elements.h"
-//#include "mesh/sides.h"
-#include "mesh/edges.h"
-#include "mesh/neighbours.h"
-#include "mesh/boundaries.h"
-#include "mesh/intersection.hh"
-#include "mesh/partitioning.hh"
-#include "mesh/region_set.hh"
-
-
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-#include "system/exceptions.hh"
-
-
+class BIHTree;
+class Distribution;
+class Partitioning;
+template <int spacedim> class ElementAccessor;
 
 
 #define ELM  0
@@ -83,10 +86,16 @@
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
 
+/// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
+typedef int IdxInt;
+
+
 class BoundarySegment {
 public:
     static Input::Type::Record input_type;
 };
+
+
 
 //=============================================================================
 // STRUCTURE OF THE MESH
@@ -104,7 +113,20 @@ public:
             << "Element id: " << EI_ElemNew::val << " on region name: " << EI_RegNew::val << "\n");
 
 
-
+    /**
+     * \brief Types of search algorithm for finding intersection candidates.
+     */
+    typedef enum IntersectionSearch {
+        BIHsearch  = 1,
+        BIHonly = 2,
+        BBsearch = 3
+    } IntersectionSearch;
+    
+    /**
+     * \brief The definition of input record for selection of variant of file format
+     */
+    static const Input::Type::Selection & get_input_intersection_variant();
+    
     static const unsigned int undef_idx=-1;
     static const Input::Type::Record & get_input_type();
 
@@ -113,6 +135,12 @@ public:
     /** Labels for coordinate indexes in arma::vec3 representing vectors and points.*/
     enum {x_coord=0, y_coord=1, z_coord=2};
 
+    /**
+     * Empty constructor.
+     *
+     * Use only for unit tests!!!
+     */
+    Mesh();
     /**
      * Constructor from an input record.
      * Do not process input record. That is done in init_from_input.
@@ -148,6 +176,16 @@ public:
         return region_db_;
     }
 
+    /// Reserve size of node vector
+    inline void reserve_node_size(unsigned int n_nodes) {
+    	node_vector.reserve(n_nodes);
+    }
+
+    /// Reserve size of element vector
+    inline void reserve_element_size(unsigned int n_elements) {
+    	element.reserve(n_elements);
+    }
+
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */
@@ -156,10 +194,10 @@ public:
     Distribution *get_el_ds() const
     { return el_ds; }
 
-    int *get_row_4_el() const
+    IdxInt *get_row_4_el() const
     { return row_4_el; }
 
-    int *get_el_4_loc() const
+    IdxInt *get_el_4_loc() const
     { return el_4_loc; }
 
     /**
@@ -168,7 +206,7 @@ public:
     inline MPI_Comm get_comm() const { return comm_; }
 
 
-    void make_intersec_elements();
+    MixedMeshIntersections &mixed_intersections();
 
     unsigned int n_sides();
 
@@ -195,9 +233,15 @@ public:
 
 
     /**
+     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
+     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
+     */
+    void setup_topology();
+    
+    /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    vector<int> const & elements_id_maps( bool boundary_domain) const;
+    void elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -209,6 +253,11 @@ public:
      * @param region_list Array input AbstractRecords which define regions, region sets and elements
      */
     void read_regions_from_input(Input::Array region_list);
+
+    /**
+     * Returns nodes_elements vector, if doesn't exist creates its.
+     */
+    vector<vector<unsigned int> > const & node_elements();
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
@@ -232,7 +281,7 @@ public:
      * Vector of individual intersections of two elements.
      * This is enough for local mortar.
      */
-    vector<Intersection>  intersections;
+    std::shared_ptr<MixedMeshIntersections>  intersections;
 
     /**
      * For every element El we have vector of indices into @var intersections array for every intersection in which El is master element.
@@ -269,10 +318,47 @@ public:
      */
     void check_and_finish();
     
-    const BIHTree &get_bih_tree();
+    /// Precompute element bounding boxes if it is not done yet.
+    void compute_element_boxes();
 
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements;
+    /// Return the mesh bounding box. Is set after call compute_element_boxes().
+    const BoundingBox &get_mesh_boungin_box() {
+        return mesh_box_;
+    }
+
+    /// Getter for BIH. Creates and compute BIH at first call.
+    const BIHTree &get_bih_tree();\
+
+    /**
+     * Find intersection of element lists given by Mesh::node_elements_ for elements givne by @p nodes_list parameter.
+     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
+     * returned.
+     */
+    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
+
+    /// Add new node of given id and coordinates to mesh
+    void add_node(unsigned int node_id, arma::vec3 coords);
+
+    /// Add new element of given id to mesh
+    void add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
+    		std::vector<unsigned int> node_ids);
+
+    /// Add new node of given id and coordinates to mesh
+    void add_physical_name(unsigned int dim, unsigned int id, std::string name);
+
+    /// Return FilePath object representing "mesh_file" input key
+    inline FilePath mesh_file() {
+    	return in_record_.val<FilePath>("mesh_file");
+    }
+
+    /// Getter for input type selection for intersection search algorithm.
+    IntersectionSearch get_intersection_search();
+
+    /// Maximal distance of observe point from Mesh relative to its size
+    double global_observe_radius() const;
+
+    /// Number of elements read from input.
+    unsigned int n_all_input_elements_;
 
 
 protected:
@@ -303,12 +389,6 @@ protected:
      */
     void create_node_element_lists();
     /**
-     * Find intersection of element lists given by Mesh::node_elements for elements givne by @p nodes_list parameter.
-     * The result is placed into vector @p intersection_element_list. If the @p node_list is empty, and empty intersection is
-     * returned.
-     */
-    void intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list);
-    /**
      * Remove elements with dimension not equal to @p dim from @p element_list. Index of the first element of dimension @p dim-1,
      * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
      * if more elements are found we report an user input error.
@@ -319,12 +399,6 @@ protected:
      * Returns true if side @p si has same nodes as in the list @p side_nodes.
      */
     bool same_sides(const SideIter &si, vector<unsigned int> &side_nodes);
-
-    /**
-     * Initialize all mesh structures from raw information about nodes and elements (including boundary elements).
-     * Namely: create remaining boundary elements and Boundary objects, find edges and compatible neighborings.
-     */
-    void setup_topology();
 
 
     void element_to_neigh_vb();
@@ -343,14 +417,6 @@ protected:
 
     unsigned int n_bb_neigh, n_vb_neigh;
 
-    /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
-    /// in input mesh file and has ID assigned.
-    ///
-    /// TODO: Rather should be part of GMSH reader, but in such case we need store pointer to it in the mesh (good idea, but need more general interface for readers)
-    mutable vector<int> bulk_elements_id_, boundary_elements_id_;
-    /// Number of elements read from input.
-    unsigned int n_all_input_elements_;
-
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];
 
@@ -364,10 +430,18 @@ protected:
      */
     std::shared_ptr<Partitioning> part_;
 
+    /// Auxiliary vector of mesh elements bounding boxes.
+    std::vector<BoundingBox> element_box_;
+
+    /// Bounding box of whole mesh.
+    BoundingBox mesh_box_;
+
     /**
      * BIH Tree for intersection and observe points lookup.
      */
     std::shared_ptr<BIHTree> bih_tree_;
+
+
     /**
      * Accessor to the input record for the mesh.
      */
@@ -378,16 +452,22 @@ protected:
      */
     MPI_Comm comm_;
 
-    friend class GmshMeshReader;
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements_;
+
+
     friend class RegionSetBase;
+    friend class Element;
+    friend class BIHTree;
+
 
 
 private:
 
     /// Index set assigning to global element index the local index used in parallel vectors.
-	int *row_4_el;
+    IdxInt *row_4_el;
 	/// Index set assigning to local element index its global index.
-	int *el_4_loc;
+    IdxInt *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
 };

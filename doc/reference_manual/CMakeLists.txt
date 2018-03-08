@@ -22,7 +22,6 @@ cmake_minimum_required(VERSION 2.8)
        darcy_flow.tex
        chemistry.tex
        dg.tex
-  #    flow_ini.tex
        flow_version.tex
        heat.tex
        input_files.tex
@@ -31,7 +30,6 @@ cmake_minimum_required(VERSION 2.8)
        lumped_mh.tex
        numerical.tex
        output.tex
-       pos_12.tex
        reaction_term_numerical.tex
        semchem.tex
        reaction_term.tex

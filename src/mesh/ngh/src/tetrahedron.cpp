@@ -21,8 +21,12 @@
 #include "mesh/ngh/include/tetrahedron.h"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/mathfce.h"
+#include "mesh/ngh/include/myvector.h"
+
+namespace ngh {
 
 int TTetrahedron::numberInstance = 0;
+
 
 int TTetrahedron::generateId() {
     return TTetrahedron::numberInstance++;
@@ -219,3 +223,5 @@ bool TTetrahedron::IsInner(const TPoint& P) const {
 
 	return true;
 }
+
+} // namespace ngh

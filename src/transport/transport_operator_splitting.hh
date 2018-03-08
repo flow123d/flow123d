@@ -18,28 +18,36 @@
 #ifndef TRANSPORT_OPERATOR_SPLITTING_HH_
 #define TRANSPORT_OPERATOR_SPLITTING_HH_
 
+#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+#include <memory>                               // for shared_ptr
+#include <vector>                               // for vector
 #include "coupling/equation.hh"
-
-#include <limits>
-
-#include "io/output_time.hh"
-//#include "flow/darcy_flow_mh.hh"
-#include "flow/mh_dofhandler.hh"
-#include "fields/field_algo_base.hh"
+#include "fields/field.hh"                      // for Field
 #include "fields/field_values.hh"
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
-#include "transport/substance.hh"
 #include "transport/advection_process_base.hh"
-
+#include "input/accessors.hh"                   // for Record
+#include "input/type_base.hh"                   // for Array
+#include "input/type_generic.hh"                // for Instance
+#include "petscvec.h"                           // for Vec
+#include "tools/time_governor.hh"               // for TimeGovernor, TimeGov...
+#include "tools/time_marks.hh"                  // for TimeMarks
 
 /// external types:
 class Mesh;
 class ReactionTerm;
-class ConvectionTransport;
-class Semchem_interface;
 class Balance;
-
+class Distribution;
+class MH_DofHandler;
+class OutputTime;
+class SubstanceList;
+namespace Input {
+	namespace Type {
+		class Abstract;
+		class Record;
+	}
+}
 
 
 
@@ -92,17 +100,6 @@ public:
     /// Return substance indices used in balance.
     virtual const vector<unsigned int> &get_subst_idx() = 0;
 
-    /**
-     * Calculate quantities necessary for cumulative balance (over time).
-     * This method is called at each (sub)iteration of the time loop.
-     */
-    virtual void calculate_cumulative_balance() = 0;
-
-    /**
-     * Calculate instant quantities at output times.
-     */
-    virtual void calculate_instant_balance() = 0;
-
     /// Calculate the array of concentrations per element (for reactions).
     virtual void calculate_concentration_matrix() = 0;
 
@@ -122,10 +119,10 @@ public:
 	virtual const Vec &get_solution(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
-	virtual void get_par_info(int * &el_4_loc, Distribution * &el_ds) = 0;
+	virtual void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds) = 0;
 
 	/// Return global array of order of elements within parallel vector.
-	virtual int *get_row_4_el() = 0;
+	virtual IdxInt *get_row_4_el() = 0;
 
 	/// Pass velocity from flow to transport.
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;
@@ -188,7 +185,9 @@ public:
     };
 
     inline virtual ~TransportNothing()
-    {}
+    {
+        if(time_) delete time_;
+    }
 
     inline void set_velocity_field(const MH_DofHandler &dh) override {};
 

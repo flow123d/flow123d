@@ -18,13 +18,28 @@
 #ifndef FIELD_VALUES_HH_
 #define FIELD_VALUES_HH_
 
+#include <string.h>                                    // for memcpy
+#include <boost/core/explicit_operator_bool.hpp>       // for optional::oper...
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <boost/format.hpp>                            // for str
+#include <boost/optional/optional.hpp>                 // for get_pointer
+#include <cmath>                                       // for abs
+#include <cstdlib>                                     // for abs
+#include <limits>                                      // for numeric_limits
+#include <new>                                         // for operator new[]
+#include <ostream>                                     // for operator&, ope...
+#include <string>                                      // for basic_string
+#include <system/exceptions.hh>                        // for THROW, ExcStream
+#include <type_traits>                                 // for is_floating_point
+#include <vector>                                      // for vector
 #include <armadillo>
-#include <boost/format.hpp>
-#include <system/exceptions.hh>
-#include "input/input_type.hh"
-#include "input/accessors.hh"
-#include <ostream>
-#include <cmath>
+#include "input/accessors.hh"                          // for Array, Iterator
+#include "input/accessors_impl.hh"                     // for Array::size
+#include "input/input_exception.hh"                    // for ExcFV_Input::~...
+#include "input/type_base.hh"                          // for Array, String
+#include "input/type_generic.hh"                       // for Parameter
+#include "input/type_selection.hh"                     // for Selection
 
 namespace IT=Input::Type;
 
@@ -237,6 +252,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = NCols;
+    const static int rank_ = 2;
 
     static std::string type_name() { return boost::str(boost::format("R[%d,%d]") % NRows % NCols); }
     static IT::Array get_input_type() {
@@ -256,7 +272,9 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() const {
+    	return value_.memptr();
+    }
 
     void init_from_input( AccessType rec ) {
         internal::init_matrix_from_input(value_, rec);
@@ -317,6 +335,7 @@ public:
     typedef typename internal::AccessTypeDispatch<ET>::type AccessType;
     const static int NRows_ = 1;
     const static int NCols_ = 1;
+    const static int rank_ = 0;
 
     static std::string type_name() { return "R"; }
     static IT::Parameter get_input_type()
@@ -334,7 +353,7 @@ public:
      * A reference to a work space @p val has to be provided for efficient work with vector and matrix values.
      */
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_scalar(val, raw_data);}
-    const ET * mem_ptr() { return &(value_); }
+    const ET * mem_ptr() const { return &(value_); }
 
     void init_from_input( AccessType val ) { value_ = return_type(val); }
 
@@ -389,6 +408,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = 0;
     const static int NCols_ = 1;
+    const static int rank_ = 10;
 
 
     static std::string type_name() { return "R[n]"; }
@@ -399,7 +419,7 @@ public:
         return std::is_floating_point<element_type>::value;
     }
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_vec(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() const { return value_.memptr(); }
 
     inline FieldValue_(return_type &val) : value_(val) {}
 
@@ -461,6 +481,7 @@ public:
     typedef Input::Array AccessType;
     const static int NRows_ = NRows;
     const static int NCols_ = 1;
+    const static int rank_ = 1;
 
 
     static std::string type_name() { return boost::str(boost::format("R[%d]") % NRows ); }
@@ -473,7 +494,7 @@ public:
 
     inline FieldValue_(return_type &val) : value_(val) {}
     inline static const return_type &from_raw(return_type &val, ET *raw_data) {return internal::set_raw_fix(val, raw_data);}
-    const ET * mem_ptr() { return value_.memptr(); }
+    const ET * mem_ptr() const { return value_.memptr(); }
 
     void init_from_input( AccessType rec ) {
         internal::init_vector_from_input(value_, rec);
