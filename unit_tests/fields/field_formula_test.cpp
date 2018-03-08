@@ -204,3 +204,25 @@ TEST(FieldFormula, set_time) {
 
 }
 
+#include "fields/surface_depth.hh"
+#include "system/sys_profiler.hh"
+#include <mesh_constructor.hh>
+
+TEST(SurfaceDepth, base_test) {
+    Profiler::initialize();
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	std::string mesh_in_string = "{mesh_file=\"fields/surface_reg.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
+	reader->read_physical_names(mesh);
+	reader->read_raw_mesh(mesh);
+
+	SurfaceDepth sd(mesh, ".top side", "0 0 1");
+	std::cout << " - " << sd.compute_distance( arma::vec3("1 0.5 -0.9") ) << std::endl;
+	std::cout << " - " << sd.compute_distance( arma::vec3("-1 0.5 0.9") ) << std::endl;
+	std::cout << " - " << sd.compute_distance( arma::vec3("3 0.5 0.9") ) << std::endl;
+
+	delete mesh;
+}
+
