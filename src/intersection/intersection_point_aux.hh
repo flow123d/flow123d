@@ -24,12 +24,11 @@
 #include "mesh/mesh_types.hh"
 
 
-//TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
-static const double geometry_epsilon = 1e-9;//8*std::numeric_limits<double>::epsilon();//1e-9;
+
+static const double geometry_epsilon = 1e-9;
 
 //http://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
-static const double rounding_epsilon = geometry_epsilon;//8*std::numeric_limits<double>::epsilon();
-static const double rounding_epsilonX = 8*std::numeric_limits<double>::epsilon();
+// static const double rounding_epsilon = 8*std::numeric_limits<double>::epsilon();
 
 //forward declare
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
@@ -63,7 +62,7 @@ class IntersectionPointAux {
 
 	/** @brief Local indices of element objects that intersects.
      * 
-     * Can be indices of point (vertex), lines (edge), triangle (side) in intersectinh element,
+     * Can be indices of point (vertex), lines (edge), triangle (side) in intersecting element,
      * depending on the dimensions \p dim_A_, resp. \p dim_B_.
      * 
      * Examples: 
@@ -76,15 +75,14 @@ class IntersectionPointAux {
 	unsigned int idx_B_;
     //@}
 
-    /** @brief Orientation according to Plucker products.
+    /** @brief Intersection result according to Plucker products.
      * 
-     * All Plucker products > 0 then orientation is 1. 
-     * All Plucker products < 0 then orientation is 0.
-     * (In case of line 1D and triangle 2D, the line is going in opposite direction to the normal of triangle.)
-     * 
-     * In pathologic case,  it is > 1.
+     * All Plucker products > 0 then @b positive. 
+     * All Plucker products < 0 then @b negative.
+     * @b degenerate case.
+     * @b none - no intersection.
      */
-	IntersectionResult orientation_;
+	IntersectionResult result_;
 	
 	unsigned int dim_A_;    ///< Dimension of the object A of intersection. Equal \p N, by default.
     unsigned int dim_B_;    ///< Dimension of the object B of intersection. Equal \p M, by default.
@@ -102,12 +100,6 @@ public:
      */
 	IntersectionPointAux(const arma::vec::fixed<N+1> &lcA, const arma::vec::fixed<M+1> &lcB,
                       unsigned int dim_A = N, unsigned int dim_B = M);
-	
-
-	/** Constructor - flipping dimension of an intersection point.
-     * @param IP is intersection point with flipped dimension (N->M, M->N)
-     */
-// 	IntersectionPointAux(IntersectionPointAux<M, N> &IP);
 
 	/** @brief Constructor interpolates the second bary coords 
      * of IntersectionPointAux<N,M-1> to IntersectionPointAux<N,M>
@@ -147,7 +139,7 @@ public:
     
     void set_topology_A(unsigned int idx, unsigned int dim_A);  ///< Sets the topology of object A in Simplex<N>.
     void set_topology_B(unsigned int idx, unsigned int dim_B);  ///< Sets the topology of object B in Simplex<M>.
-    void set_orientation(IntersectionResult orientation);             ///< Setter orientation flag.
+    void set_result(IntersectionResult result);            ///< Setter orientation flag.
     
     //@}
 
@@ -160,19 +152,19 @@ public:
     /// Returns barycentric coordinates in the Simplex<M>.
     const arma::vec::fixed<M+1> &local_bcoords_B() const;
 
-    unsigned int dim_A() const;         ///< Returns dimension of object A.
-    unsigned int dim_B() const;         ///< Returns dimension of object B.
+    unsigned int dim_A() const;     ///< Returns dimension of object A.
+    unsigned int dim_B() const;     ///< Returns dimension of object B.
     unsigned int idx_A() const;     ///<  Returns the index of Simplex<N>.
     unsigned int idx_B() const;     ///<  Returns the index of Simplex<M>.
-    // orientation: 0 - negative sign, 1 - positive sign, 2 - degenerate (zero for all sides)
-    IntersectionResult orientation() const;   ///<  Returns the orientation.
+    /// Result: 0 - negative sign, 1 - positive sign, 2 - degenerate (zero for all sides), 3 - none
+    IntersectionResult result() const;   ///<  Returns the orientation.
     //@}
     
     /// Computes real coordinates of IP, given the element @p ele in which IP lies.
     arma::vec::fixed<3> coords(ElementFullIter ele) const;
     
-    /// Returns true, if this is a pathologic case.
-    bool is_pathologic() const;
+    /// Returns true, if @p other intersection point has the same topology.
+    bool topology_equal(const IntersectionPointAux<N,M> &other) const;
     
 	/** @brief Comparison operator for sorting the IPs in convex hull tracing algorithm.
      * Compares the points by x-coordinate (in case of a tie, compares by y-coordinate).
@@ -200,8 +192,8 @@ void IntersectionPointAux<N,M>::set_topology(unsigned int idx_A,unsigned int dim
 }
     
 template<unsigned int N, unsigned int M>
-void IntersectionPointAux<N,M>::set_orientation(IntersectionResult orientation)
-{   orientation_ = orientation; }
+void IntersectionPointAux<N,M>::set_result(IntersectionResult res)
+{   result_ = res; }
 
 template<unsigned int N, unsigned int M>
 unsigned int IntersectionPointAux<N,M>::dim_A() const
@@ -238,11 +230,7 @@ unsigned int IntersectionPointAux<N,M>::idx_B() const
 {   return idx_B_; }
 
 template<unsigned int N, unsigned int M>
-IntersectionResult IntersectionPointAux<N,M>::orientation() const
-{   return orientation_; }
-
-template<unsigned int N, unsigned int M>
-bool IntersectionPointAux<N,M>::is_pathologic() const
-{   return (unsigned int)(orientation_) > 1; }
+IntersectionResult IntersectionPointAux<N,M>::result() const
+{   return result_; }
 
 #endif /* INTERSECTIONPOINT_H_ */

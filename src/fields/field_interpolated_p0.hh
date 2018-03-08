@@ -32,11 +32,6 @@
 #include "input/storage.hh"                   // for ExcStorageTypeMismatch
 #include "input/type_record.hh"               // for Record::ExcRecordKeyNot...
 #include "mesh/element_impls.hh"              // for Element::dim
-#include "mesh/ngh/include/abscissa.h"        // for TAbscissa
-#include "mesh/ngh/include/ngh_interface.hh"  // for set_abscissa_from_element
-#include "mesh/ngh/include/point.h"           // for TPoint
-#include "mesh/ngh/include/tetrahedron.h"     // for TTetrahedron
-#include "mesh/ngh/include/triangle.h"        // for TTriangle
 #include "system/exceptions.hh"               // for ExcAssertMsg::~ExcAsser...
 #include "system/file_path.hh"                // for FilePath
 #include "tools/time_governor.hh"             // for TimeStep
@@ -110,18 +105,6 @@ protected:
 
 	/// stored flag if last computed element is boundary
 	unsigned int computed_elm_boundary_;
-
-	/// 3D (tetrahedron) element, used for computing intersection
-	ngh::TTetrahedron tetrahedron_;
-
-	/// 2D (triangle) element, used for computing intersection
-	ngh::TTriangle triangle_;
-
-	/// 1D (abscissa) element, used for computing intersection
-	ngh::TAbscissa abscissa_;
-
-	/// 0D (point) element, used for computing intersection
-	ngh::TPoint point_;
 
 private:
     /// Registrar of class to factory

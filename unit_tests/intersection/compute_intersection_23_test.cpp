@@ -15,10 +15,7 @@
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/intersection.h"
-
-#include "../../src/intersection/mixed_mesh_intersections.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/compute_intersection.hh"
 #include "intersection/intersection_point_aux.hh"
 #include "intersection/intersection_aux.hh"
@@ -235,11 +232,11 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     // fixed element indices in the tests
     unsigned int triangle_ele_idx = 0,
                  tetra_ele_idx = 1;
-    Simplex<2> triangle = create_simplex<2>(mesh->element(triangle_ele_idx));
-    Simplex<3> tetra = create_simplex<3>(mesh->element(tetra_ele_idx));
     
     IntersectionAux<2,3> is;
-    ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra, mesh);
+    ComputeIntersection<2,3> CI(mesh->element(triangle_ele_idx),
+                                mesh->element(tetra_ele_idx),
+                                mesh);
     CI.init();
     CI.compute(is);
     
@@ -273,51 +270,11 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     ASSERT(ok);
 }
 
-void compare_with_ngh(Mesh *mesh)
-{
-    double area1, area2 = 0;
-
-    // compute intersection by NGH
-    MessageOut() << "Computing polygon area by NGH algorithm\n";
-    ngh::TTriangle ttr;
-    ngh::TTetrahedron tte;
-    ngh::TIntersectionType it = ngh::area;
-
-    FOR_ELEMENTS(mesh, elm) {
-        if (elm->dim() == 2) {
-        ttr.SetPoints(
-                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
-        }else if(elm->dim() == 3){
-        tte.SetPoints(
-                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
-                ngh::TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
-        }
-    }
-    ngh::GetIntersection(ttr, tte, it, area2);
-    
-    
-    // compute intersection
-    MessageOut() << "Computing polygon area by NEW algorithm\n";
-    MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(IntersectionType::d23);
-    area1 = ie.measure_23();
-
-//     ie.print_mesh_to_file_23("output_intersection_23");
-    
-    MessageOut().fmt("Polygon area: (intersections) {},\t(NGH) {}\n", area1, area2);
-    EXPECT_NEAR(area1, area2, 1e-14);
-//     EXPECT_DOUBLE_EQ(area1,area2);
-}
-
 
 TEST(area_intersections, all) {
     // directory with testing meshes
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d_new/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
 
     std::vector<TestCaseResult> solution_coords;
     fill_solution(solution_coords);
@@ -356,7 +313,6 @@ TEST(area_intersections, all) {
                 }
                 mesh->setup_topology();
                 
-                compare_with_ngh(mesh);
                 compute_intersection_23d(mesh, case_ips);
             }
         }
