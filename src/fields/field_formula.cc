@@ -18,6 +18,7 @@
 
 #include "fields/field_formula.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
+#include "fields/surface_depth.hh"
 #include "fparser.hh"
 #include "input/input_type.hh"
 #include <boost/foreach.hpp>
@@ -44,9 +45,16 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
                                         " - array of strings of size (($N$)) to enter diagonal matrix\n"
                                         " - array of strings of size (($\\frac12N(N+1)$)) to enter symmetric matrix (upper triangle, row by row)\n"
                                         " - just one string to enter (spatially variable) multiple of the unit matrix.\n"
-                                        "Formula can contain variables ```x,y,z,t``` and usual operators and functions." )
+                                        "Formula can contain variables ```x,y,z,t,d``` and usual operators and functions." )
 			//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 			//							"Definition of unit.")
+			.declare_key("surface_direction", it::String(), it::Default("\"0 0 1\""),
+										"The vector used to project evaluation point onto the surface.")
+			.declare_key("surface_region", it::String(), it::Default::optional(),
+										"The name of region set considered as the surface. You have to set surface region if you "
+										"want to use formula variable ```d```.")
+			.declare_key("max_depth", it::Double(0.0), it::Default("1e06"),
+										"Default value of surface depth. If no intersection is found, we use this value.")
 	        .allow_auto_conversion("value")
 			.close();
 }
@@ -79,7 +87,7 @@ void FieldFormula<spacedim, Value>::init_from_input(const Input::Record &rec, co
 
 	// read formulas form input
     STI::init_from_input( formula_matrix_, rec.val<typename STI::AccessType>("value") );
-    value_input_address_ = rec.address_string();
+    in_rec_ = rec;
 }
 
 
@@ -88,6 +96,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 
     bool any_parser_changed = false;
+    std::string value_input_address = in_rec_.address_string();
 
 
     std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
@@ -116,7 +125,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                 else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
                 else
                 	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
-                            var_name, row, col, formula_matrix_.at(row,col), value_input_address_ );
+                            var_name, row, col, formula_matrix_.at(row,col), value_input_address );
             }
 
             // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
@@ -137,7 +146,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
                     xprintf(UsrErr, "ParserError: %s\n in the FieldFormula[%d][%d] == '%s'\n at the input address:\n %s \n",
                         parser_matrix_[row][col].ErrorMsg(),
                         row,col,formula_matrix_.at(row,col).c_str(),
-                        value_input_address_.c_str());
+                        value_input_address.c_str());
                 }
 
                 parser_matrix_[row][col].Optimize();
@@ -149,6 +158,17 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     this->time_=time;
     return any_parser_changed;
+}
+
+
+template <int spacedim, class Value>
+void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
+    // create SurfaceDepth object if surface region is set
+	std::string surface_region;
+	if ( in_rec_.opt_val("surface_region", surface_region) ) {
+		surface_depth_ = std::make_shared<SurfaceDepth>(mesh, surface_region, in_rec_.val<std::string>("surface_direction"));
+		max_depth_ = in_rec_.val<double>("max_depth");
+	}
 }
 
 
