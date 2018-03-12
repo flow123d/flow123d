@@ -55,11 +55,11 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
                 "Allow set default value of elements that have not listed values in mesh data file.")
-        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
-                "Definition of unit of all times defined in mesh data file.")
-        .declare_key("read_from_time", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
+        .declare_key("read_from_time", IT::Double(), IT::Default("0.0"),
                 "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
                 "time shift 'S' and if 't > T', we read time frame 't + S'.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file and in 'read_from_time' key.")
         .close();
 }
 
@@ -244,9 +244,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
 		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
-	    double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_from_time") );
-	    double read_time = (time.end()+time_shift) / time_unit_coef;
-		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
+	    double time_shift = in_rec_.val<double>("read_from_time") * time_unit_coef;
+		BaseMeshReader::HeaderQuery header_query(field_name_, (time.end()+time_shift), this->discretization_, dh_->hash());
 		ReaderCache::get_reader(reader_file_)->find_header(header_query);
 		// TODO: use default and check NaN values in data_vec
 
