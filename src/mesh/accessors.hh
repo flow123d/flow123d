@@ -87,6 +87,11 @@ public:
         if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
         else return  (Element *)(mesh_->element(element_idx_)) ;
     }
+    
+    inline ElementFullIter full_iter() const {
+        if (boundary_) return element()->mesh_->bc_elements(element_idx_);
+        else return element()->mesh_->element(element_idx_);
+    }
 
     inline arma::vec::fixed<spacedim> centre() const {
     	OLD_ASSERT(is_valid(), "Invalid element accessor.");

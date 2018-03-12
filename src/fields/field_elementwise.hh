@@ -114,8 +114,6 @@ public:
     virtual ~FieldElementwise();
 
 private:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_ and check limits of field
-    void scale_and_check_limits();
     /// Is flase whne the data vector is provided at construction. Then, we disallow initialization form input
     /// and do not delete data pointer in destructor.
     bool internal_raw_data;
@@ -130,6 +128,8 @@ private:
     unsigned int n_entities_;
     /// Size of Value
     unsigned int n_components_;
+    /// Default value of element if not set in mesh data file
+    double default_value_;
 
     FilePath reader_file_;
     const Mesh *mesh_;

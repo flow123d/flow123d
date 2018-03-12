@@ -5,7 +5,6 @@
  *      Author: viktor
  */
 
-// #include "mesh/elements.h"
 #include "mesh/mesh.h"
 #include "intersection_point_aux.hh"
 #include "mesh/ref_element.hh"
@@ -22,7 +21,7 @@ void IntersectionPointAux<N,M>::clear()
     local_bcoords_B_.zeros();
     idx_A_ = 0;
     idx_B_ = 0;
-    orientation_ = IntersectionResult::none;
+    result_ = IntersectionResult::none;
     dim_A_ = N;
     dim_B_ = M;
 }
@@ -42,18 +41,6 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const arma::vec::fixed<N+1> &lcA
     {};
 
 
-// template<unsigned int N, unsigned int M>
-// IntersectionPointAux<N,M>::IntersectionPointAux(IntersectionPointAux<M, N> &IP){
-//         local_bcoords_A_ = IP.local_bcoords_B();
-//         local_bcoords_B_ = IP.local_bcoords_A();
-//         idx_A_ = IP.idx_B();
-//         idx_B_ = IP.idx_A();
-//         orientation_ = IP.orientation();
-//         dim_A_ = IP.dim_B();
-//         dim_B_ = IP.dim_A();
-//     };
-
-
 template<unsigned int N, unsigned int M>
 IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1> &IP, unsigned int idx_B){
     ASSERT_DBG(M>1 && M<4);
@@ -63,18 +50,32 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-1
 
     dim_A_ = IP.dim_A();
     idx_A_ = IP.idx_A();
-    orientation_ = IP.orientation();
+    result_ = IP.result();
 
     /**
      * TODO: set correct topology on B. Currently this is done ad hoc after call of this constructor.
      * Problem, dim_B_ can not be used as template parameter. Can we have some variant of interact without
      * template?
+     * TODO: done below, but try getting rid of the switch
      */
     //dim_B_ = IP.dim_B();
     //idx_B_ =RefElement<M>::interact(Interaction<dim_B_, M-1>(IP.idx_B()));
-
-    dim_B_ = M-1;
+    
+    dim_B_ = IP.dim_B();
     idx_B_ = idx_B;
+    
+    // possibly correct topology n-face index
+    if(dim_B_ < M-1){
+        switch(dim_B_){
+            case 0: idx_B_ = RefElement<M>::interact(Interaction<0, M-1>(idx_B))[IP.idx_B()]; 
+                    break;
+            case 1: idx_B_ = RefElement<M>::interact(Interaction<1, M-1>(idx_B))[IP.idx_B()];
+                    break;
+            default: idx_B_ = idx_B;
+        }
+    }
+//     dim_B_ = M-1;
+//     idx_B_ = idx_B;
 };
 
 
@@ -85,11 +86,16 @@ IntersectionPointAux<N,M>::IntersectionPointAux(const IntersectionPointAux<N,M-2
     local_bcoords_A_ = IP.local_bcoords_A();
     local_bcoords_B_ = RefElement<3>::interpolate<1>(IP.local_bcoords_B(), idx_B);
 
-    idx_A_ = IP.idx_A();
-    idx_B_ = idx_B;
-    orientation_ = IP.orientation();
     dim_A_ = IP.dim_A();
-    dim_B_ = M-2;
+    idx_A_ = IP.idx_A();
+    result_ = IP.result();
+    
+    // only case is M=3, so we can do:
+    dim_B_ = IP.dim_B();
+    if(dim_B_ == 0)
+        idx_B_ = RefElement<3>::interact(Interaction<0,1>(idx_B))[IP.idx_B()];
+    else
+        idx_B_ = idx_B;
 };
 
 template<unsigned int N, unsigned int M>
@@ -98,7 +104,7 @@ IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
     IntersectionPointAux<M,N> IP;
     IP.set_coordinates(local_bcoords_B_,local_bcoords_A_);
     IP.set_topology(idx_B_,dim_B_,idx_A_, dim_A_);
-    IP.set_orientation(orientation_);
+    IP.set_result(result_);
     return IP;
 };
 
@@ -124,6 +130,16 @@ template<> bool IntersectionPointAux<2,3>::operator<(const IntersectionPointAux<
 };
 */
 
+template<unsigned int N, unsigned int M>
+bool IntersectionPointAux<N,M>::topology_equal(const IntersectionPointAux<N,M> &other) const
+{
+    return
+            dim_A_ == other.dim_A() &&
+            dim_B_ == other.dim_B() &&
+            idx_A_ == other.idx_A() &&
+            idx_B_ == other.idx_B();
+}
+
 
 
 template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const IntersectionPointAux< N,M >& s)
@@ -132,7 +148,7 @@ template<unsigned int N, unsigned int M> ostream& operator<<(ostream& os, const 
     s.local_bcoords_A_.print(os);
     os << "Local coords on element B(id=" << s.idx_B_ << ", dim=" << s.dim_B_ << ")" << endl;
     s.local_bcoords_B_.print(os);
-    os << "Orientation: " << int(s.orientation_) << " Patological: " << s.is_pathologic() << endl;
+    os << "Result: " << int(s.result_) << endl;
     return os;
 }
 

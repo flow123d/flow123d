@@ -173,6 +173,8 @@ add_library(tools_lib
     tools/adaptivesimpson.cc
     tools/time_marks.cc
     tools/time_governor.cc
+    tools/unit_si.cc
+    tools/unit_converter.cc
 )
 target_link_libraries(tools_lib
     system_lib input_lib )
@@ -196,22 +198,21 @@ add_library(mesh_lib
     mesh/bounding_box.cc
     mesh/bih_tree.cc
     
-    mesh/ngh/src/abscissa.cpp
-    mesh/ngh/src/bisector.cpp
-    mesh/ngh/src/intersection.cpp
-    mesh/ngh/src/intersectionLocal.cpp
-    mesh/ngh/src/mathfce.cpp
-    mesh/ngh/src/matrix.cpp
-    mesh/ngh/src/plain.cpp
-    mesh/ngh/src/point.cpp
-    mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/tetrahedron.cpp
-    mesh/ngh/src/triangle.cpp
-    mesh/ngh/src/vector.cpp
-    mesh/ngh/src/vertex.cpp
+#     mesh/ngh/src/abscissa.cpp
+#     mesh/ngh/src/bisector.cpp
+#     mesh/ngh/src/intersection.cpp
+#     mesh/ngh/src/intersectionLocal.cpp
+#     mesh/ngh/src/mathfce.cpp
+#     mesh/ngh/src/matrix.cpp
+#     mesh/ngh/src/plain.cpp
+#     mesh/ngh/src/point.cpp
+#     mesh/ngh/src/polygon.cpp
+#     mesh/ngh/src/tetrahedron.cpp
+#     mesh/ngh/src/triangle.cpp
+#     mesh/ngh/src/vector.cpp
+#     mesh/ngh/src/vertex.cpp
 
     intersection/plucker.cc
-    intersection/simplex.cc
     intersection/intersection_point_aux.cc
     intersection/intersection_aux.cc
     intersection/intersection_local.cc
@@ -290,8 +291,6 @@ add_library(coupling_lib
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
-    fields/unit_si.cc
-    fields/unit_converter.cc
     fields/generic_field.cc
     fields/field_constant.cc
     fields/field_formula.cc

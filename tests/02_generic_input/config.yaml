@@ -5,6 +5,8 @@ test_cases:
   - 05_interpolation_large_cube.yaml
   - 08_field_init_check.yaml
   - 10_include_csv.yaml
+  - 11_time_unit_conversion.yaml
+  - 12_time_unit_nested_equation.yaml
 
 - files: 04_interpolated.yaml
   proc: [1, 2, 3]
