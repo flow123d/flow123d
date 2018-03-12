@@ -65,7 +65,9 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
-                        "Output file with raw data form MH module.")
+                        "Output file with raw data from MH module.")
+        .declare_key("raw_ngh_output", it::FileName::output(), it::Default::optional(),
+                        "Output file with neighboring data from mesh.")
         .close();
 }
 
@@ -154,6 +156,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
             	try {
             		raw_output_file_path.open_stream(raw_output_file);
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
+            }
+            if (in_rec_specific->opt_val("raw_ngh_output", raw_output_file_path)) {
+            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	try {
+            		raw_output_file_path.open_stream(raw_ngh_output_file);
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
 
@@ -427,11 +435,47 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     
     //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
+    raw_output_file <<  "// fields:\n//ele_id    ele_presure    flux_in_barycenter[3]    n_sides   side_pressures[n]    side_fluxes[n]\n";
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    ;
+    int cit = 0;
+    
+    FOR_ELEMENTS( mesh_,  ele ) {
+        raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
+        for (unsigned int i = 0; i < 3; i++)
+            raw_output_file << ele_flux[3*cit+i] << " ";
+
+        raw_output_file << ele->n_sides() << " ";
+
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
+        }
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
+        }
+        
+        raw_output_file << endl;
+        cit ++;
+    }
+    raw_output_file << "$EndFlowField\n" << endl;
+}
+
+/*
+ * Output of internal flow data.
+ */
+void DarcyFlowMHOutput::output_internal_ngh_data()
+{
+    START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
+
+    if (! raw_ngh_output_file.is_open()) return;
+    
+    //char dbl_fmt[ 16 ]= "%.8g ";
+    // header
+    raw_output_file <<  "// fields:\n//ele_id    n_sides    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
+    raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
+    raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
+
     int cit = 0;
     
     // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
@@ -458,18 +502,8 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     }
     
     FOR_ELEMENTS( mesh_,  ele ) {
-        raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
-        for (unsigned int i = 0; i < 3; i++)
-            raw_output_file << ele_flux[3*cit+i] << " ";
-
+        raw_output_file << ele.id() << " ";
         raw_output_file << ele->n_sides() << " ";
-
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
-        }
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
-        }
         
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
@@ -490,7 +524,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             Edge* edge = ele->side(i)->edge();
             if(ele->side(i)->edge()->n_sides > 1){
-                for (unsigned int j = 0; j < edge->n_sides; j++) {
+                for (int j = 0; j < edge->n_sides; j++) {
                     if(edge->side(j) != ele->side(i))
                         raw_output_file << edge->side(j)->element()->id() << " ";
                 }
