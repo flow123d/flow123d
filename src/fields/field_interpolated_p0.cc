@@ -112,8 +112,9 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
 
     bool boundary_domain_ = false;
     double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
-    double time_shift = in_rec_.val<double>("read_from_time") * time_unit_coef;
-    BaseMeshReader::HeaderQuery header_query(field_name_, (time.end()+time_shift), OutputTime::DiscreteSpace::ELEM_DATA);
+    double time_shift = in_rec_.val<double>("read_from_time");
+    double read_time = (time.end()+time_shift) / time_unit_coef;
+    BaseMeshReader::HeaderQuery header_query(field_name_, read_time, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);

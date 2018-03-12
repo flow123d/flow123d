@@ -244,8 +244,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
 		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
-	    double time_shift = in_rec_.val<double>("read_from_time") * time_unit_coef;
-		BaseMeshReader::HeaderQuery header_query(field_name_, (time.end()+time_shift), this->discretization_, dh_->hash());
+	    double time_shift = in_rec_.val<double>("read_from_time");
+	    double read_time = (time.end()+time_shift) / time_unit_coef;
+		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
 		ReaderCache::get_reader(reader_file_)->find_header(header_query);
 		// TODO: use default and check NaN values in data_vec
 
