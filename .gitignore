@@ -12,6 +12,7 @@ unit_tests/output/*.yaml
 unit_tests/output/test?/
 unit_tests/system/profiler_info*
 unit_tests/system/tokenizer_speed.txt
+unit_tests/tools/tg_steps.yaml
 bin/tests/makefile
 tests/*/test_results
 tests/*/output
