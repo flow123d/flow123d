@@ -14,7 +14,7 @@
 #include <fields/multi_field.hh>
 #include <fields/field_elementwise.hh>
 #include <fields/field_set.hh>
-#include <fields/unit_si.hh>
+#include <tools/unit_si.hh>
 #include <input/type_base.hh>
 #include <input/reader_to_storage.hh>
 #include <input/type_output.hh>
@@ -240,7 +240,8 @@ TEST(Operators, assignment) {
     Input::Type::Array list_type = Input::Type::Array(set_of_field.make_field_descriptor_type("MultiFieldTest"));
     Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
     Input::Array in_list=reader.get_root_interface<Input::Array>();
-    set_of_field.set_input_list(in_list);
+    TimeGovernor tg(0.0, 1.0);
+    set_of_field.set_input_list(in_list, tg);
 
     MultiField<3, FieldValue<3>::Scalar> mf_assignment;
 	EXPECT_EQ("", mf_assignment.name());

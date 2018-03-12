@@ -28,7 +28,7 @@ add_test_directory("${libs}")
 define_test(functors)
 define_test(time_governor)
 define_test(time_marks)
-     
+define_test(unit_si)
 
 
 

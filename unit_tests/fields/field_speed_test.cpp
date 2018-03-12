@@ -242,11 +242,11 @@ public:
 	    Input::Type::Array list_type = Input::Type::Array(set_of_field_.make_field_descriptor_type("FieldSpeedTest"));
 	    Input::ReaderToStorage reader( field_input, list_type, Input::FileFormat::format_JSON);
 	    Input::Array in_list=reader.get_root_interface<Input::Array>();
-	    field_.set_input_list(in_list);
+	    TimeGovernor tg(0.0, 0.5);
+	    field_.set_input_list(in_list, tg);
 
 	    field_.set_mesh(*(this->mesh_));
 	    field_.set_components(component_names_);
-	    TimeGovernor tg(0.0, 0.5);
 	    set_of_field_.set_time(tg.step(), LimitSide::right);
 	}
 

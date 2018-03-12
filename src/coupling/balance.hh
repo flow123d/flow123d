@@ -22,7 +22,7 @@
 #include <iosfwd>               // for ofstream
 #include <string>               // for string
 #include <vector>               // for vector
-#include "fields/unit_si.hh"    // for UnitSI
+#include "tools/unit_si.hh"    // for UnitSI
 #include "input/accessors.hh"   // for Record
 #include "petscmat.h"           // for Mat, _p_Mat
 #include "petscvec.h"           // for Vec, _p_Vec

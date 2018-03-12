@@ -79,9 +79,6 @@ public:
                        std::vector<typename Value::return_type>  &value_list);
 
 protected:
-    /// Multiply @p data_ with @p unit_conversion_coefficient_
-    void scale_data();
-
     /// mesh, which is interpolated
 	std::shared_ptr<Mesh> source_mesh_;
 
@@ -106,6 +103,12 @@ protected:
 	/// stored flag if last computed element is boundary
 	unsigned int computed_elm_boundary_;
 
+
+    /// Default value of element if not set in mesh data file
+    double default_value_;
+
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 private:
     /// Registrar of class to factory
     static const int registrar;
