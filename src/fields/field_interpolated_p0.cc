@@ -147,7 +147,6 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 
 		double total_measure=0.0, measure;
-// 		ngh::TIntersectionType iType;
 
 		START_TIMER("compute_pressure");
 		ADD_CALLS(searched_elements_.size());
@@ -164,7 +163,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                         switch (elm.dim()) {
                             case 0: {
                                 arma::vec::fixed<3> real_point = elm_full_iter->node[0]->point();
-                                arma::mat::fixed<3, 4> elm_map = mapping.element_map(*elm_full_iter);
+                                arma::mat::fixed<3, 4> elm_map = mapping.element_map(*ele);
                                 arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
                                 
                                 measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
