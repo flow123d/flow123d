@@ -153,13 +153,13 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             // optionally open raw output file
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
             	try {
             		raw_output_file_path.open_stream(raw_output_file);
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
             if (in_rec_specific->opt_val("raw_ngh_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	MessageOut() << "Opening raw ngh output: " << raw_output_file_path << "\n";
             	try {
             		raw_output_file_path.open_stream(raw_ngh_output_file);
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
@@ -212,7 +212,10 @@ void DarcyFlowMHOutput::output()
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
+        {
                   output_internal_flow_data();
+                  output_internal_ngh_data();
+        }
 
         if (compute_errors_) compute_l2_difference();
     }
@@ -466,15 +469,15 @@ void DarcyFlowMHOutput::output_internal_flow_data()
  */
 void DarcyFlowMHOutput::output_internal_ngh_data()
 {
-    START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
+    START_TIMER("DarcyFlowMHOutput::output_internal_ngh_data");
 
     if (! raw_ngh_output_file.is_open()) return;
     
     //char dbl_fmt[ 16 ]= "%.8g ";
     // header
-    raw_output_file <<  "// fields:\n//ele_id    n_sides    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
-    raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
-    raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
+    raw_ngh_output_file <<  "// fields:\n//ele_id    n_sides    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
+    raw_ngh_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
+    raw_ngh_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
     
@@ -502,8 +505,8 @@ void DarcyFlowMHOutput::output_internal_ngh_data()
     }
     
     FOR_ELEMENTS( mesh_,  ele ) {
-        raw_output_file << ele.id() << " ";
-        raw_output_file << ele->n_sides() << " ";
+        raw_ngh_output_file << ele.id() << " ";
+        raw_ngh_output_file << ele->n_sides() << " ";
         
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
@@ -518,7 +521,7 @@ void DarcyFlowMHOutput::output_internal_ngh_data()
                     if(search_neigh->second[i] != undefined_ele_id)
                         n_side_neighs = 1;
             }
-            raw_output_file << n_side_neighs << " ";
+            raw_ngh_output_file << n_side_neighs << " ";
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
@@ -526,25 +529,25 @@ void DarcyFlowMHOutput::output_internal_ngh_data()
             if(ele->side(i)->edge()->n_sides > 1){
                 for (int j = 0; j < edge->n_sides; j++) {
                     if(edge->side(j) != ele->side(i))
-                        raw_output_file << edge->side(j)->element()->id() << " ";
+                        raw_ngh_output_file << edge->side(j)->element()->id() << " ";
                 }
             }
             //check vb neighbour
             else if(search_neigh != neigh_vb_map.end() 
                     && search_neigh->second[i] != undefined_ele_id){
-                raw_output_file << search_neigh->second[i] << " ";
+                raw_ngh_output_file << search_neigh->second[i] << " ";
             }
         }
         
         // list higher dim neighbours
-        raw_output_file << ele->n_neighs_vb << " ";
+        raw_ngh_output_file << ele->n_neighs_vb << " ";
         for (unsigned int i = 0; i < ele->n_neighs_vb; i++)
-            raw_output_file << ele->neigh_vb[i]->side()->element()->id() << " ";
+            raw_ngh_output_file << ele->neigh_vb[i]->side()->element()->id() << " ";
         
-        raw_output_file << endl;
+        raw_ngh_output_file << endl;
         cit ++;
     }
-    raw_output_file << "$EndFlowField\n" << endl;
+    raw_ngh_output_file << "$EndFlowField\n" << endl;
 }
 
 
