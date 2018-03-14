@@ -37,7 +37,7 @@ Region Boundary::region() {
 
 
 Element * Boundary::element() {
-    return &( mesh_->bc_elements[bc_ele_idx_] );
+    return &( mesh_->element_vec_[bc_ele_idx_] );
 }
 
 Edge * Boundary::edge() {

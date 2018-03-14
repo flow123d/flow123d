@@ -173,7 +173,7 @@ void MH_DofHandler::make_row_numberings() {
     unsigned int rows_starts[np];
 
     int edge_n_id = mesh_->n_edges(),
-            el_n_id = mesh_->element.size(),
+            el_n_id = mesh_->n_elements(),
             side_n_id = mesh_->n_sides();
 
     // compute shifts on every proc

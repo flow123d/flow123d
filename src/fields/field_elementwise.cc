@@ -157,11 +157,7 @@ void FieldElementwise<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary
     boundary_domain_ = boundary_domain;
 
     mesh_=mesh;
-    if (boundary_domain_) {
-        n_entities_=mesh_->bc_elements.size();
-    } else {
-        n_entities_=mesh_->n_elements();
-    }
+    n_entities_=mesh_->n_elements(boundary_domain_);
 
     // allocate
     if (!data_) {

@@ -82,7 +82,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	bih_tree_ = new BIHTree( source_mesh_.get() );
 
     // allocate data_
-	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
+	unsigned int data_size = source_mesh_->n_elements() * (this->value_.n_rows() * this->value_.n_cols());
 	data_ = std::make_shared<std::vector<typename Value::element_type>>();
 	data_->resize(data_size);
 
@@ -112,7 +112,7 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
-    		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
+    		source_mesh_->n_elements(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
     CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
     		this->unit_conversion_coefficient_, default_value_);
 

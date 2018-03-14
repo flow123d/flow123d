@@ -183,12 +183,13 @@ Mesh::~Mesh() {
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
-    for(unsigned int idx=0; idx < this->bc_elements.size(); idx++) {
-        Element *ele=&(bc_elements[idx]);
+    for(unsigned int idx=0; idx < element_vec_.size(); idx++) {
+        Element *ele=&(element_vec_[idx]);
         if (ele->node) delete[] ele->node;
         if (ele->edge_idx_) delete[] ele->edge_idx_;
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
+        if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
     if (row_4_el != nullptr) delete[] row_4_el;
@@ -269,11 +270,11 @@ void Mesh::setup_topology() {
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
-    IdxInt *id_4_old = new IdxInt[element.size()];
+    IdxInt *id_4_old = new IdxInt[n_elements()];
     int i = 0;
     FOR_ELEMENTS(this, ele)
         id_4_old[i++] = ele.index();
-    part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
+    part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 
     delete[] id_4_old;
 }
@@ -367,7 +368,7 @@ bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
  * - use std::is_any for setting is_neigbour
  * - possibly make appropriate constructors for Edge and Neighbour
  * - check side!=-1 when searching neigbouring element
- * - process bc_elements first, there should be no Neigh, but check it
+ * - process boundary elements first, there should be no Neigh, but check it
  *   set Edge and boundary there
  */
 
@@ -386,12 +387,14 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	for( ElementFullIter bc_ele = bc_elements.begin(); bc_ele != bc_elements.end(); ++bc_ele) {
+	auto bc_range = get_element_range(true);
+	for( unsigned int i=bc_range.first; i<bc_range.second; ++i) {
+		Element &bc_ele = element_vec_[i];
         // Find all elements that share this side.
-        side_nodes.resize(bc_ele->n_nodes());
-        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele->node[n]);
+        side_nodes.resize(bc_ele.n_nodes());
+        for (unsigned n=0; n<bc_ele.n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele.node[n]);
         intersect_element_lists(side_nodes, intersection_list);
-        bool is_neighbour = find_lower_dim_element(element, intersection_list, bc_ele->dim() +1, ngh_element_idx);
+        bool is_neighbour = find_lower_dim_element(element, intersection_list, bc_ele.dim() +1, ngh_element_idx);
         if (is_neighbour) {
             xprintf(UsrErr, "Boundary element (id: %d) match a regular element (id: %d) of lower dimension.\n",
                     bc_ele.id(), element(ngh_element_idx).id());
@@ -399,7 +402,7 @@ void Mesh::make_neighbours_and_edges()
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
             	WarningOut().fmt("Lonely boundary element, id: {}, region: {}, dimension {}.\n",
-            			bc_ele.id(), bc_ele->region().id(), bc_ele->dim());
+            			bc_ele.id(), bc_ele.region().id(), bc_ele.dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
@@ -412,7 +415,7 @@ void Mesh::make_neighbours_and_edges()
             unsigned int bdr_idx=boundary_.size();
             boundary_.resize(bdr_idx+1);
             Boundary &bdr=boundary_.back();
-            bdr.bc_ele_idx_ = bc_ele.index();
+            bdr.bc_ele_idx_ = i;
             bdr.edge_idx_ = last_edge_idx;
             bdr.mesh_=this;
 
@@ -426,12 +429,12 @@ void Mesh::make_neighbours_and_edges()
                         if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
                         	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
-                            int new_bc_ele_idx=bc_ele.index();
+                            int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
-                                    << EI_ElemLast(this->bc_elements.get_id(last_bc_ele_idx))
-                                    << EI_RegLast(this->bc_elements[last_bc_ele_idx].region().label())
-                                    << EI_ElemNew(this->bc_elements.get_id(new_bc_ele_idx))
-                                    << EI_RegNew(this->bc_elements[new_bc_ele_idx].region().label())
+                                    << EI_ElemLast(this->element_vec_[last_bc_ele_idx].id())
+                                    << EI_RegLast(this->element_vec_[last_bc_ele_idx].region().label())
+                                    << EI_ElemNew(this->element_vec_[new_bc_ele_idx].id())
+                                    << EI_RegNew(this->element_vec_[new_bc_ele_idx].region().label())
                                     );
                         }
                         elem->edge_idx_[ecs] = last_edge_idx;
@@ -488,22 +491,21 @@ void Mesh::make_neighbours_and_edges()
                         std::fill( e->boundary_idx_, e->boundary_idx_ + e->n_sides(), Mesh::undef_idx);
                     }
 
-                    unsigned int bdr_idx=boundary_.size();
+                    unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
+                                                             // and bulk elements are indexed from 0
                     boundary_.resize(bdr_idx+1);
                     Boundary &bdr=boundary_.back();
                     e->boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // TODO: old setting, remove all setting of 'bc_ele'
                     vector<Element>::iterator bc_ele_iter = add_element_to_vector(-bdr_idx, true);
-                    bc_ele->init(e->dim()-1, -bdr_idx, this, region_db_.implicit_boundary_region() );
                     bc_ele_iter->init(e->dim()-1, -bdr_idx, this, region_db_.implicit_boundary_region() );
-                    region_db_.mark_used_region( bc_ele->region_idx_.idx() );
-                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] ); // TODO: add nodes of bc_ele_iter
+                    region_db_.mark_used_region( bc_ele_iter->region_idx_.idx() );
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele_iter->node[ni] = &( node_vector[side_nodes[ni]] );
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = bc_ele.index();
+                    bdr.bc_ele_idx_ = element_id_map_.find(-bdr_idx)->second;
                     bdr.mesh_=this;
 
                     continue; // next side of element e
@@ -683,17 +685,18 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
+        for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
         	IdxInt id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
 
-        boundary_elements_id.resize(bc_elements.size());
+        boundary_elements_id.resize(n_elements(true));
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
-        	IdxInt id = bc_elements.get_id(idx);
+        auto bc_range = get_element_range(true);
+        for(unsigned int idx=bc_range.first; idx<bc_range.second; idx++, ++map_it) {
+        	IdxInt id = element_vec_[idx].id();
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
@@ -736,7 +739,7 @@ void Mesh::compute_element_boxes() {
     if (element_box_.size() > 0) return;
 
     // make element boxes
-    element_box_.resize(this->element.size());
+    element_box_.resize(this->n_elements());
     unsigned int i=0;
     FOR_ELEMENTS(this, element) {
          element_box_[i] = element->bounding_box();
@@ -784,7 +787,6 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	region_db_.mark_used_region(region_idx.idx());
 
 	if (region_idx.is_boundary()) {
-		ele = bc_elements.add_item(elm_id);
 		ele_iter = add_element_to_vector(elm_id, true);
 	} else {
 		if(dim == 0 ) {
@@ -794,21 +796,22 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		else {
 			ele = element.add_item(elm_id);
 			ele_iter = add_element_to_vector(elm_id);
+			ele->init(dim, elm_id, this, region_idx);
+			ele->pid = partition_id;
+			unsigned int ni;
+			FOR_ELEMENT_NODES(ele, ni) {
+				unsigned int node_id = node_ids[ni];
+				NodeIter node = node_vector.find_id( node_id );
+				INPUT_CHECK( node != node_vector.end(),
+						"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
+				ele->node[ni] = node;
+			}
 		}
 	}
-	ele->init(dim, elm_id, this, region_idx);
-	ele->pid = partition_id;
 	ele_iter->init(dim, elm_id, this, region_idx);
 	ele_iter->pid = partition_id;
 
 	unsigned int ni;
-	FOR_ELEMENT_NODES(ele, ni) {
-		unsigned int node_id = node_ids[ni];
-		NodeIter node = node_vector.find_id( node_id );
-		INPUT_CHECK( node != node_vector.end(),
-				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
-		ele->node[ni] = node;
-	}
 	FOR_ELEMENT_NODES(&*ele_iter, ni) {
 		unsigned int node_id = node_ids[ni];
 		NodeIter node = node_vector.find_id( node_id );

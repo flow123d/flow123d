@@ -29,7 +29,7 @@ inline unsigned int Element::dim() const {
 
 
 inline unsigned int Element::index() const {
-    return mesh_->element.index( this );
+    return mesh_->element_id_map_.find(this->id_)->second;
 }
 
 

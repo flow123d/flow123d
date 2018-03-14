@@ -75,13 +75,6 @@ template <int spacedim> class ElementAccessor;
 #define NODE_FULL_ITER_NULL(_mesh_) \
     NodeFullIter((_mesh_)->node_vector)
 
-/**
- * Macro for conversion form Iter to FullIter for elements.
- */
-#define ELEM_FULL_ITER(_mesh_,i) \
-    (_mesh_)->element.full_iter(i)
-
-
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
 
@@ -156,10 +149,6 @@ public:
 
     inline unsigned int n_nodes() const {
         return node_vector.size();
-    }
-
-    inline unsigned int n_elements() const {
-        return element.size();
     }
 
     inline unsigned int n_boundaries() const {
@@ -267,10 +256,6 @@ public:
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
     vector<Boundary> boundary_;
-    /// vector of boundary elements - should replace 'boundary'
-    /// TODO: put both bulk and bc elements (on zero level) to the same vector or make better map id->element for field inputs that use element IDs
-    /// the avoid usage of ElementVector etc.
-    ElementVector bc_elements;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<Edge> edges;
@@ -361,13 +346,13 @@ public:
     void init_element_vector(unsigned int size);
 
     /// Returns range (of indexes in element_vector_) of boundary or bulk elements
-    inline pair<unsigned int, unsigned int> get_element_range(bool boundary=false) {
+    inline pair<unsigned int, unsigned int> get_element_range(bool boundary=false) const {
     	if (boundary) return make_pair<unsigned int, unsigned int>(element_vec_.size()-boundary_size_, element_vec_.size());
     	else return make_pair<unsigned int, unsigned int>(0, bulk_size_+0);
     }
 
     /// Returns count of boundary or bulk elements
-    inline unsigned int n_elements(bool boundary=false) {
+    inline unsigned int n_elements(bool boundary=false) const {
     	if (boundary) return boundary_size_;
     	else return bulk_size_;
     }

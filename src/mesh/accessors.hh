@@ -84,12 +84,11 @@ public:
         { return dim_; }
 
     inline const Element * element() const {
-        if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
-        else return  (Element *)(mesh_->element(element_idx_)) ;
+        return &(mesh_->element_vec_[element_idx_]);
     }
 
     inline arma::vec::fixed<spacedim> centre() const {
-    	OLD_ASSERT(is_valid(), "Invalid element accessor.");
+    	ASSERT(is_valid()).error("Invalid element accessor.");
         if (is_regional() ) return arma::vec::fixed<spacedim>();
         else return element()->centre();
     }
@@ -125,10 +124,10 @@ private:
 
     /// Pointer to the mesh owning the element.
     const Mesh *mesh_;
-    /// True if the element is boundary, i.e. stored in Mesh::bc_elements, bulk elements are stored in Mesh::element
+    /// True if the element is boundary
     bool boundary_;
 
-    /// Index into Mesh::bc_elements or Mesh::element array.
+    /// Index into Mesh::element_vec_ array.
     unsigned int element_idx_;
 
     /// Region index.

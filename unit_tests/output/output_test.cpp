@@ -451,7 +451,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     EXPECT_EQ(output_data->items_count, mesh.n_elements());
 
     /* All values has to be equal 10 */
-    for(int i = 0; i < mesh.element.size(); i++) {
+    for(int i = 0; i < mesh.n_elements(); i++) {
         EXPECT_EQ((*(OutputData<int>*)output_data)[i], 10);
     }
 

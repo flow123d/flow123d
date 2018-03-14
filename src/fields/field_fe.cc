@@ -247,9 +247,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_entities;
 		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
-			n_entities = dh_->mesh()->element.size();
+			n_entities = dh_->mesh()->n_elements();
 		} else {
-			n_entities = ReaderCache::get_mesh(reader_file_)->element.size();
+			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary_domain, this->component_idx_);

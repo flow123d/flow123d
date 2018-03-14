@@ -56,7 +56,7 @@ TEST(ReaderCache, get_bulk_element_) {
         		ReaderCache::get_reader(file_name)->get_element_data<int>(9, 1, false, i);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(9, vec.size());
-    	for (j=0; j<mesh->element.size(); j++) EXPECT_EQ( i+1, vec[j] );
+    	for (j=0; j<mesh->n_elements(); j++) EXPECT_EQ( i+1, vec[j] );
     }
 
     // read  to one vector for Field
@@ -67,7 +67,7 @@ TEST(ReaderCache, get_bulk_element_) {
     			ReaderCache::get_reader(file_name)->get_element_data<int>(9, 3, false, 0);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(27, vec.size());
-    	for (j=0; j<3*mesh->element.size(); j++) EXPECT_EQ( 2+(j%3), vec[j] );
+    	for (j=0; j<3*mesh->n_elements(); j++) EXPECT_EQ( 2+(j%3), vec[j] );
     }
 
     delete mesh;
@@ -97,7 +97,7 @@ TEST(ReaderCache, get_boundary_element_) {
         		ReaderCache::get_reader(file_name)->get_element_data<int>(4, 1, true, i);
     	std::vector<int> &vec = *( multifield_.get() );
     	EXPECT_EQ(4, vec.size());
-    	for (j=0; j<mesh->bc_elements.size(); j++) EXPECT_EQ( i+4, vec[j] );
+    	for (j=0; j<mesh->n_elements(true); j++) EXPECT_EQ( i+4, vec[j] );
     }
 
     // read  to one vector for Field
@@ -108,7 +108,7 @@ TEST(ReaderCache, get_boundary_element_) {
     			ReaderCache::get_reader(file_name)->get_element_data<int>(4, 3, true, 0);
     	std::vector<int> &vec = *( field_.get() );
     	EXPECT_EQ(12, vec.size());
-    	for (j=0; j<3*mesh->bc_elements.size(); j++) EXPECT_EQ( 5+(j%3), vec[j] );
+    	for (j=0; j<3*mesh->n_elements(true); j++) EXPECT_EQ( 5+(j%3), vec[j] );
     }
 
     delete mesh;

@@ -68,15 +68,21 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
-    EXPECT_EQ(18, mesh->bc_elements.size());
+    EXPECT_EQ(18, mesh->n_elements(true));
 
-    // check bc_elements
-    EXPECT_EQ(101 , mesh->bc_elements[0].region().id() );
-    EXPECT_EQ(101 , mesh->bc_elements[1].region().id() );
-    EXPECT_EQ(102 , mesh->bc_elements[2].region().id() );
-    EXPECT_EQ(102 , mesh->bc_elements[3].region().id() );
-    EXPECT_EQ( -3 , int( mesh->bc_elements[4].region().id() ) );
-    EXPECT_EQ( -3 , int( mesh->bc_elements[17].region().id() ) );
+	auto bc_range = mesh->get_element_range(true);
+	for( unsigned int i=bc_range.first; i<bc_range.second; ++i) {
+		Element &bc_ele = mesh->element_vec_[i];
+		std::cout << "Element: " << i << ", region: " << mesh->element_vec_[i].region().id() << std::endl;
+	}
+
+    // check boundary elements
+    EXPECT_EQ(101 , mesh->element_vec_[12].region().id() );
+    EXPECT_EQ(101 , mesh->element_vec_[11].region().id() );
+    EXPECT_EQ(102 , mesh->element_vec_[10].region().id() );
+    EXPECT_EQ(102 , mesh->element_vec_[9].region().id() );
+    EXPECT_EQ( -3 , int( mesh->element_vec_[13].region().id() ) );
+    EXPECT_EQ( -3 , int( mesh->element_vec_[26].region().id() ) );
 
     //check edges
     EXPECT_EQ(28,mesh->n_edges());
