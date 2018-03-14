@@ -604,6 +604,7 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
     // fill bulk_elements_id_ vector
     bulk_elements_id_.clear();
     bulk_elements_id_.resize(offsets_vec.size());
+    mesh->init_element_vector(offsets_vec.size());
     unsigned int i_con = 0, last_offset=0, dim;
     vector<unsigned int> node_list;
     for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element

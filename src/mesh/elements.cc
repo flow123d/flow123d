@@ -45,24 +45,26 @@ Element::Element()
   n_neighs_vb(0),
   neigh_vb(NULL),
 
-  dim_(0)
+  dim_(0),
+  id_(0)
 
 {
 }
 
 
-Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
+Element::Element(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg)
 {
-    init(dim, mesh_in, reg);
+    init(dim, id, mesh_in, reg);
 }
 
 
 
-void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
+void Element::init(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg) {
     pid=0;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
+    id_=id;
     mesh_=mesh_in;
     region_idx_=reg;
 
@@ -168,7 +170,7 @@ Region Element::region() const {
 
 
 unsigned int Element::id() const {
-	return mesh_->element.get_id(this);
+	return this->id_; //mesh_->element.get_id(this);
 }
 
 double Element::quality_measure_smooth() {
@@ -211,17 +213,17 @@ void Element::get_bounding_box(BoundingBox &bounding_box) const
 		bounding_box.expand( this->node[i]->point() );
 }
 
-BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
+/*BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
 {
     ASSERT_GT(mesh_->element_box_.size(), 0);
     return mesh_->element_box_[mesh_->element.index(this)];
-}
+}*/
 
 
-unsigned int Element::get_proc() const
+/*unsigned int Element::get_proc() const
 {
   return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
-}
+}*/
     
 
 //-----------------------------------------------------------------------------

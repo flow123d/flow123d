@@ -494,10 +494,12 @@ void Mesh::make_neighbours_and_edges()
                     e->boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
-                    ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // use negative bcd index as ID,
-                    bc_ele->init(e->dim()-1, this, region_db_.implicit_boundary_region() );
+                    ElementFullIter bc_ele = bc_elements.add_item( -bdr_idx ); // TODO: old setting, remove all setting of 'bc_ele'
+                    vector<Element>::iterator bc_ele_iter = add_element_to_vector(-bdr_idx, true);
+                    bc_ele->init(e->dim()-1, -bdr_idx, this, region_db_.implicit_boundary_region() );
+                    bc_ele_iter->init(e->dim()-1, -bdr_idx, this, region_db_.implicit_boundary_region() );
                     region_db_.mark_used_region( bc_ele->region_idx_.idx() );
-                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] ); // TODO: add nodes of bc_ele_iter
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
@@ -773,7 +775,8 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
 void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
 		std::vector<unsigned int> node_ids) {
-	Element *ele=nullptr;
+	Element *ele=nullptr; // old setting TODO: remove all creating and setting 'ele'
+	vector<Element>::iterator ele_iter;
 	RegionIdx region_idx = region_db_.get_region( region_id, dim );
 	if ( !region_idx.is_valid() ) {
 		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
@@ -782,16 +785,21 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 
 	if (region_idx.is_boundary()) {
 		ele = bc_elements.add_item(elm_id);
+		ele_iter = add_element_to_vector(elm_id, true);
 	} else {
 		if(dim == 0 ) {
 			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
 			return;
 		}
-		else
+		else {
 			ele = element.add_item(elm_id);
+			ele_iter = add_element_to_vector(elm_id);
+		}
 	}
-	ele->init(dim, this, region_idx);
+	ele->init(dim, elm_id, this, region_idx);
 	ele->pid = partition_id;
+	ele_iter->init(dim, elm_id, this, region_idx);
+	ele_iter->pid = partition_id;
 
 	unsigned int ni;
 	FOR_ELEMENT_NODES(ele, ni) {
@@ -801,13 +809,20 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
 		ele->node[ni] = node;
 	}
+	FOR_ELEMENT_NODES(&*ele_iter, ni) {
+		unsigned int node_id = node_ids[ni];
+		NodeIter node = node_vector.find_id( node_id );
+		INPUT_CHECK( node != node_vector.end(),
+				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
+		ele_iter->node[ni] = node;
+	}
 
     // check that tetrahedron element is numbered correctly and is not degenerated
-    if(ele->dim() == 3)
+    if(ele_iter->dim() == 3)
     {
-        double jac = ele->tetrahedron_jacobian();
+        double jac = ele_iter->tetrahedron_jacobian();
         if( ! (jac > 0) )
-            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele_iter->id(),jac);
     }
 }
 
@@ -817,6 +832,40 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 		this->create_node_element_lists();
 	}
 	return node_elements_;
+}
+
+
+void Mesh::init_element_vector(unsigned int size) {
+	element_vec_.clear();
+	element_vec_.resize(size);
+	element_id_map_.clear();
+	bulk_size_ = 0;
+	boundary_size_ = 0;
+}
+
+
+vector<Element>::iterator Mesh::add_element_to_vector(int id, bool boundary) {
+	ASSERT( element_id_map_.find(id) == element_id_map_.end())(id).error("Can not add item with given id since it already exists.");
+
+	vector<Element>::iterator ele_iter;
+	if (boundary) {
+		if (id>=0) {
+			unsigned int boundary_pos = element_vec_.size() - boundary_size_ - 1;
+			ele_iter = element_vec_.begin()+boundary_pos;
+			element_id_map_[id]=boundary_pos;
+		} else {
+            element_vec_.push_back( Element() );
+            ele_iter = element_vec_.end()-1;
+			element_id_map_[id]=element_vec_.size()-1;
+		}
+		boundary_size_++;
+	} else {
+		ele_iter = element_vec_.begin()+bulk_size_;
+		element_id_map_[id]=bulk_size_;
+		bulk_size_++;
+	}
+
+	return ele_iter;
 }
 
 //-----------------------------------------------------------------------------

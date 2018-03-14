@@ -357,9 +357,33 @@ public:
     /// Maximal distance of observe point from Mesh relative to its size
     double global_observe_radius() const;
 
-    /// Number of elements read from input.
-    unsigned int n_all_input_elements_;
+    /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
+    void init_element_vector(unsigned int size);
 
+    /// Returns range (of indexes in element_vector_) of boundary or bulk elements
+    inline pair<unsigned int, unsigned int> get_element_range(bool boundary=false) {
+    	if (boundary) return make_pair<unsigned int, unsigned int>(element_vec_.size()-boundary_size_, element_vec_.size());
+    	else return make_pair<unsigned int, unsigned int>(0, bulk_size_+0);
+    }
+
+    /// Returns count of boundary or bulk elements
+    inline unsigned int n_elements(bool boundary=false) {
+    	if (boundary) return boundary_size_;
+    	else return bulk_size_;
+    }
+
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements_;
+
+    /**
+     * Vector of elements of the mesh.
+     *
+     * Store all elements of the mesh in order bulk elements - boundary elements
+     */
+    vector<Element> element_vec_;
+
+    /// Maps element ids to indexes into vector element_vec_
+    std::map<int, unsigned int> element_id_map_;
 
 protected:
 
@@ -415,6 +439,9 @@ protected:
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
+    /// Adds element to mesh data structures (element_vec_, element_id_map_), returns iterator to this element.
+    vector<Element>::iterator add_element_to_vector(int id, bool boundary=false);
+
     unsigned int n_bb_neigh, n_vb_neigh;
 
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
@@ -452,8 +479,13 @@ protected:
      */
     MPI_Comm comm_;
 
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements_;
+    /// Count of bulk elements
+    unsigned int bulk_size_;
+
+    /// Count of boundary elements
+    unsigned int boundary_size_;
+
+
 
 
     friend class RegionSetBase;

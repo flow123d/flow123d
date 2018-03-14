@@ -45,8 +45,8 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
-    void init(unsigned int dim, Mesh *mesh_in, RegionIdx reg);
+    Element(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg);
+    void init(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg);
     ~Element();
 
 
@@ -87,7 +87,7 @@ public:
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
-    unsigned int id() const;
+    int id() const;
 
     int pid; // Id # of mesh partition
 
@@ -113,7 +113,7 @@ public:
     void get_bounding_box(BoundingBox &bounding_box) const;
 
     /// Return precomputed bounding box.
-    BoundingBox &get_bounding_box_fast(BoundingBox &bounding_box) const;
+    //BoundingBox &get_bounding_box_fast(BoundingBox &bounding_box) const;
 
     /**
     * Return bounding box of the element.
@@ -132,7 +132,7 @@ public:
     	return vertices;
     }
     
-    unsigned int get_proc() const;
+    //unsigned int get_proc() const;
 
 
     unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
@@ -147,6 +147,7 @@ protected:
     // Data readed from mesh file
     RegionIdx  region_idx_;
     unsigned int dim_;
+    int id_;
 
     friend class Mesh;
 
