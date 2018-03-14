@@ -45,6 +45,10 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 		//		"Definition of unit.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file.")
         .close();
 }
 
@@ -66,6 +70,7 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 
 
 	// read mesh, create tree
@@ -82,6 +87,9 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	data_->resize(data_size);
 
 	field_name_ = rec.val<std::string>("field_name");
+    if (!rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -100,11 +108,17 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
     bool boundary_domain_ = false;
-    BaseMeshReader::HeaderQuery header_query(field_name_, time.end(), OutputTime::DiscreteSpace::ELEM_DATA);
+    double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+    BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
-    this->scale_data();
+    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+    		this->unit_conversion_coefficient_, default_value_);
+
+    if (checked_data == CheckResult::not_a_number) {
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+    }
 
     return true;
 }
@@ -225,18 +239,6 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 {
 	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
     FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::scale_data()
-{
-	if (Value::is_scalable()) {
-		std::vector<typename Value::element_type> &vec = *( data_.get() );
-		for(unsigned int i=0; i<vec.size(); ++i)
-			vec[i] *= this->unit_conversion_coefficient_;
-	}
 }
 
 

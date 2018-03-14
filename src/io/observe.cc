@@ -23,6 +23,7 @@
 #include "io/observe.hh"
 #include "io/element_data_cache.hh"
 #include "fem/mapping_p1.hh"
+#include "tools/unit_si.hh"
 
 
 namespace IT = Input::Type;
@@ -310,7 +311,7 @@ ObservePointData ObservePoint::point_projection(unsigned int i_elm, Element &elm
  * implementation of Observe
  */
 
-Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision)
+Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str)
 : observe_values_time_(numeric_limits<double>::signaling_NaN()),
   observe_name_(observe_name),
   precision_(precision)
@@ -328,8 +329,8 @@ Observe::Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigne
     auto last = std::unique(observed_element_indices_.begin(), observed_element_indices_.end());
     observed_element_indices_.erase(last, observed_element_indices_.end());
 
-    time_unit_str_ = "s";
-    time_unit_seconds_ = 1.0;
+    time_unit_str_ = unit_str;
+    time_unit_seconds_ = UnitSI().s().convert_unit_from(unit_str);
 
     if (points_.size() == 0) return;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
@@ -355,9 +356,9 @@ ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, doub
 		unsigned int n_cols)
 {
     if ( std::isnan(observe_values_time_) )
-        observe_values_time_ = field_time;
+        observe_values_time_ = field_time / time_unit_seconds_;
     else
-        ASSERT(fabs(field_time - observe_values_time_) < 2*numeric_limits<double>::epsilon())
+        ASSERT(fabs(field_time / time_unit_seconds_ - observe_values_time_) < 2*numeric_limits<double>::epsilon())
               (field_time)(observe_values_time_);
 
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);

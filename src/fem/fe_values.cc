@@ -37,6 +37,14 @@ using namespace std;
 
 
 
+FEInternalData::FEInternalData(unsigned int np, unsigned int nd)
+    : n_points(np),
+      n_dofs(nd)
+{
+    ref_shape_values.resize(np, vector<arma::vec>(nd));
+    ref_shape_grads.resize(np, vector<arma::mat>(nd));
+}
+
 
 
 template<unsigned int dim, unsigned int spacedim>
@@ -81,7 +89,7 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
 
 template<unsigned int dim, unsigned int spacedim>
-void FEValuesBase<dim,spacedim>::ViewsCache::resize(FEValuesBase<dim,spacedim> &fv, unsigned int size)
+void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedim> &fv)
 {
   scalars.clear();
   vectors.clear();
@@ -97,7 +105,7 @@ void FEValuesBase<dim,spacedim>::ViewsCache::resize(FEValuesBase<dim,spacedim> &
       OLD_ASSERT(false, "Not Implemented.");
       break;
     case FEType::FEMixedSystem:
-      FESystem<dim,spacedim> *fe = dynamic_cast<FESystem<dim,spacedim>*>(fv.get_fe());
+      FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(fv.get_fe());
       OLD_ASSERT(fe != nullptr, "Mixed system must be represented by FESystem.");
       std::vector<unsigned int> sc = fe->get_scalar_components();
       std::vector<unsigned int> vc = fe->get_vector_components();
@@ -130,9 +138,8 @@ FEValuesBase<dim,spacedim>::~FEValuesBase() {
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         Quadrature<dim> & _quadrature,
-        FiniteElement<dim,spacedim> & _fe,
+        FiniteElement<dim> & _fe,
         UpdateFlags _flags)
-
 {
     mapping = &_mapping;
     quadrature = &_quadrature;
@@ -156,7 +163,42 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     // add flags required by the finite element or mapping
     data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
     
-    views_cache_.resize(*this, fe->n_components());
+    views_cache_.initialize(*this);
+}
+
+
+
+template<unsigned int dim, unsigned int spacedim>
+FEInternalData *FEValuesBase<dim,spacedim>::init_fe_data(const Quadrature<dim> *q)
+{
+    FEInternalData *data = new FEInternalData(q->size(), fe->n_dofs());
+
+    arma::mat shape_values(fe->n_dofs(), fe->n_components());
+    for (unsigned int i=0; i<q->size(); i++)
+    {
+        for (unsigned int j=0; j<fe->n_dofs(); j++)
+        {
+            for (unsigned int c=0; c<fe->n_components(); c++)
+                shape_values(j,c) = fe->shape_value(j, q->point(i), c);
+            
+            data->ref_shape_values[i][j] = trans(shape_values.row(j));
+        }
+    }
+
+    arma::mat grad(dim, fe->n_components());
+    for (unsigned int i=0; i<q->size(); i++)
+    {
+        for (unsigned int j=0; j<fe->n_dofs(); j++)
+        {
+            grad.zeros();
+            for (unsigned int c=0; c<fe->n_components(); c++)
+                grad.col(c) += fe->shape_grad(j, q->point(i), c);
+            
+            data->ref_shape_grads[i][j] = grad;
+        }
+    }
+    
+    return data;
 }
 
 
@@ -212,6 +254,168 @@ arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(cons
 }
 
 
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_scalar_data(const FEInternalData &fe_data)
+{
+    ASSERT_DBG(fe->type_ == FEScalar);
+    
+    // shape values
+    if (data.update_flags & update_values)
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+                data.shape_values[i][j] = fe_data.ref_shape_values[i][j][0];
+
+    // shape gradients
+    if (data.update_flags & update_gradients)
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+                data.shape_gradients[i][j] = trans(data.inverse_jacobians[i]) * fe_data.ref_shape_grads[i][j];
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_vec_contravariant_data(const FEInternalData &fe_data)
+{
+    ASSERT_DBG(fe->type_ == FEVectorContravariant);
+    
+    // shape values
+    if (data.update_flags & update_values)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::vec fv_vec = data.jacobians[i] * fe_data.ref_shape_values[i][j];
+                for (unsigned int c=0; c<spacedim; c++)
+                    data.shape_values[i][j*spacedim+c] = fv_vec[c];
+            }
+    }
+
+    // shape gradients
+    if (data.update_flags & update_gradients)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::mat grads = trans(data.inverse_jacobians[i]) * fe_data.ref_shape_grads[i][j] * trans(data.jacobians[i]);
+                for (unsigned int c=0; c<spacedim; c++)
+                    data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+            }
+    }
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_vec_piola_data(const FEInternalData &fe_data)
+{
+    ASSERT_DBG(fe->type_ == FEVectorPiola);
+    
+    // shape values
+    if (data.update_flags & update_values)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::vec fv_vec = data.jacobians[i]*fe_data.ref_shape_values[i][j]/data.determinants[i];
+                for (unsigned int c=0; c<spacedim; c++)
+                    data.shape_values[i][j*spacedim+c] = fv_vec(c);
+            }
+    }
+
+    // shape gradients
+    if (data.update_flags & update_gradients)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::mat grads = trans(data.inverse_jacobians[i]) * fe_data.ref_shape_grads[i][j] * trans(data.jacobians[i])
+                        / data.determinants[i];
+                for (unsigned int c=0; c<spacedim; c++)
+                    data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+            }   
+    }
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
+{
+    ASSERT_DBG(fe->type_ == FEMixedSystem);
+    
+    // for mixed system we first fill data in sub-elements
+    FESystem<dim> *fe_sys = dynamic_cast<FESystem<dim>*>(fe);
+    ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
+    for (unsigned int f=0; f<fe_sys->fe().size(); f++)
+    {
+        // fill fe_values for base FE
+        fe_values_vec[f]->data.jacobians = data.jacobians;
+        fe_values_vec[f]->data.inverse_jacobians = data.inverse_jacobians;
+        fe_values_vec[f]->data.determinants = data.determinants;
+        fe_values_vec[f]->fill_data(*fe_values_vec[f]->fe_data);
+    }
+    
+    // shape values
+    if (data.update_flags & update_values)
+    {
+        arma::vec fv_vec;
+        unsigned int comp_offset = 0;
+        unsigned int shape_offset = 0;
+        for (unsigned int f=0; f<fe_sys->fe().size(); f++)
+        {
+            // gather fe_values in vectors for FESystem
+            for (unsigned int i=0; i<fe_data.n_points; i++)
+                for (unsigned int n=0; n<fe_sys->fe()[f]->n_dofs(); n++)
+                    for (unsigned int c=0; c<fe_sys->fe()[f]->n_components(); c++)
+                        data.shape_values[i][shape_offset+fe_sys->function_space_->n_components()*n+comp_offset+c] = fe_values_vec[f]->data.shape_values[i][n*fe_sys->fe()[f]->n_components()+c];
+            
+            comp_offset += fe_sys->fe()[f]->n_components();
+            shape_offset += fe_sys->fe()[f]->n_dofs()*fe_sys->function_space_->n_components();
+        }
+    }
+
+    // shape gradients
+    if (data.update_flags & update_gradients)
+    {
+        arma::mat grads;
+        unsigned int comp_offset = 0;
+        unsigned int shape_offset = 0;
+        for (unsigned int f=0; f<fe_sys->fe().size(); f++)
+        {
+            // gather fe_values in vectors for FESystem
+            for (unsigned int i=0; i<fe_data.n_points; i++)
+                for (unsigned int n=0; n<fe_sys->fe()[f]->n_dofs(); n++)
+                    for (unsigned int c=0; c<fe_sys->fe()[f]->n_components(); c++)
+                        data.shape_gradients[i][shape_offset+fe_sys->function_space_->n_components()*n+comp_offset+c] = fe_values_vec[f]->data.shape_gradients[i][n*fe_sys->fe()[f]->n_components()+c];
+            
+            comp_offset += fe_sys->fe()[f]->n_components();
+            shape_offset += fe_sys->fe()[f]->n_dofs()*fe_sys->function_space_->n_components();
+        }
+    }
+    
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_data(const FEInternalData &fe_data)
+{
+    switch (fe->type_) {
+        case FEScalar:
+            fill_scalar_data(fe_data);
+            break;
+        case FEVectorContravariant:
+            fill_vec_contravariant_data(fe_data);
+            break;
+        case FEVectorPiola:
+            fill_vec_piola_data(fe_data);
+            break;
+        case FEMixedSystem:
+            fill_system_data(fe_data);
+            break;
+        default:
+            ASSERT(false).error("Not implemented.");
+    }
+}
+
+
 
 
 
@@ -221,7 +425,7 @@ arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(cons
 template<unsigned int dim, unsigned int spacedim>
 FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
          Quadrature<dim> &_quadrature,
-         FiniteElement<dim,spacedim> &_fe,
+         FiniteElement<dim> &_fe,
          UpdateFlags _flags)
 :FEValuesBase<dim, spacedim>()
 {
@@ -241,7 +445,17 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
     
     // precompute the maping data and finite element data
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
-    this->fe_data = this->fe->initialize(*this->quadrature);
+    this->fe_data = this->init_fe_data(this->quadrature);
+    
+    // In case of mixed system allocate data for sub-elements.
+    if (this->fe->type_ == FEMixedSystem)
+    {
+        FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(this->fe);
+        ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
+        
+        for (auto fe_sub : fe->fe())
+            this->fe_values_vec.push_back(make_shared<FEValues<dim,spacedim> >(_mapping, _quadrature, *fe_sub, _flags));
+    }
 }
 
 
@@ -258,9 +472,7 @@ void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
                             *this->mapping_data,
                             this->data);
 
-    this->fe->fill_fe_values(*this->quadrature,
-                             *this->fe_data,
-                             this->data);
+    this->fill_data(*this->fe_data);
 }
 
 
@@ -274,7 +486,7 @@ void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
 template<unsigned int dim,unsigned int spacedim>
 FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
                                  Quadrature<dim-1> & _sub_quadrature,
-                                 FiniteElement<dim,spacedim> & _fe,
+                                 FiniteElement<dim> & _fe,
                                  const UpdateFlags _flags)
 :FEValuesBase<dim,spacedim>()
 {
@@ -289,8 +501,18 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
     		// transform the side quadrature points to the cell quadrature points
             side_quadrature[sid][pid] = Quadrature<dim>(_sub_quadrature, sid, pid);
     		side_mapping_data[sid][pid] = this->mapping->initialize(side_quadrature[sid][pid], this->data.update_flags);
-    		side_fe_data[sid][pid] = this->fe->initialize(side_quadrature[sid][pid]);
+    		side_fe_data[sid][pid] = this->init_fe_data(&side_quadrature[sid][pid]);
     	}
+    }
+    
+    // In case of mixed system allocate data for sub-elements.
+    if (this->fe->type_ == FEMixedSystem)
+    {
+        FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(this->fe);
+        ASSERT_DBG(fe != nullptr).error("Mixed system must be represented by FESystem.");
+        
+        for (auto fe_sub : fe->fe())
+            this->fe_values_vec.push_back(make_shared<FESideValues<dim,spacedim> >(_mapping, _sub_quadrature, *fe_sub, _flags));
     }
 }
 
@@ -332,9 +554,7 @@ void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
                                  this->data);
 
     // calculation of finite element data
-    this->fe->fill_fe_values(side_quadrature[sid][pid],
-                             *side_fe_data[sid][pid],
-                             this->data);
+    this->fill_data(*side_fe_data[sid][pid]);
 }
 
 

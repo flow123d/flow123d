@@ -159,7 +159,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"));
+	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"), darcy_flow->time().get_unit_string());
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
     output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
@@ -753,7 +753,7 @@ struct FEDiffData{
     {};
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<dim,3> fe_p0;
+    FE_P_disc<dim> fe_p0;
 
     const unsigned int order; // order of Gauss quadrature
     QGauss<dim> quad;
@@ -763,8 +763,8 @@ struct FEDiffData{
     FEValues<dim,3> fe_values;
     
     // FEValues for velocity.
-    FE_RT0<dim,3> fe_rt;
-    FEValues<dim,3> fv_rt;
+    FE_RT0<dim> fe_rt;
+    FEValues<dim> fv_rt;
 
     
     // XFEM stuff ...
