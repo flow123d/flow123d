@@ -51,7 +51,7 @@ ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vect
   {
     Element e;
     el_vec.add_item(iel);
-    el_vec[iel].init(nodes.size()-1, nullptr, RegionIdx());
+    el_vec[iel].init(nodes.size()-1, 1, nullptr, RegionIdx());
     unsigned int i=0;
     for(auto node : nodes)
       el_vec[iel].node[i++] = &node_vector[node];

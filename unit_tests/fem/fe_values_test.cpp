@@ -73,7 +73,7 @@ TEST(FeValues, test_all) {
         el_vec.add_item(0);
 
         RegionIdx reg;
-        Element ele(1, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
+        Element ele(1, 0, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
 
         ele.node = new Node * [ele.n_nodes()];
         for(int i =0; i < 2; i++) ele.node[i] = nodes(i);
@@ -112,7 +112,7 @@ TEST(FeValues, test_all) {
         el_vec.add_item(0);
 
         RegionIdx reg;
-        Element ele(2, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
+        Element ele(2, 1, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
 
         ele.node = new Node * [ele.n_nodes()];
         for(int i =0; i < 3; i++) ele.node[i] = nodes(i);
@@ -138,7 +138,7 @@ public:
     {
         std::vector<arma::vec3> nodes;
         for(auto str : nodes_str) nodes.push_back( arma::vec3(str));
-        init(nodes.size()-1, nullptr, RegionIdx());
+        init(nodes.size()-1, 1, nullptr, RegionIdx());
         unsigned int i=0;
         for(auto node : nodes)
             this->node[i++] = new Node(node[0], node[1], node[2]);
