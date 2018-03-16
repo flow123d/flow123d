@@ -310,7 +310,7 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
          por_mob, por_immob; // mobile and immobile porosity
    
   // get data from fields
-  ElementFullIter ele = mesh_->element(el_4_loc_[loc_el]);
+  ElementIterator ele = mesh_->bulk_begin() + el_4_loc_[loc_el];
   por_mob = data_.porosity.value(ele->centre(),ele->element_accessor());
   por_immob = data_.porosity_immobile.value(ele->centre(),ele->element_accessor());
   arma::Col<double> diff_vec(substances_.size());

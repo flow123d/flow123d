@@ -42,16 +42,14 @@ NodeVector make_nodes(const std::vector<string> &nodes_str)
 }
 
 
-ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vector<unsigned int> > &node_idx)
+vector<Element> make_elements(NodeVector &node_vector, const std::vector<std::vector<unsigned int> > &node_idx)
 {
-  ElementVector el_vec(node_idx.size());
+  vector<Element> el_vec(node_idx.size());
   
   unsigned int iel = 0;
   for (auto nodes : node_idx)
   {
-    Element e;
-    el_vec.add_item(iel);
-    el_vec[iel].init(nodes.size()-1, 1, nullptr, RegionIdx());
+    el_vec[iel].init(nodes.size()-1, iel, nullptr, RegionIdx());
     unsigned int i=0;
     for(auto node : nodes)
       el_vec[iel].node[i++] = &node_vector[node];
@@ -70,7 +68,7 @@ public:
   FESystemTest()
     : nodes(make_nodes({"1 0 0", "0 1 0", "0 0 1", "0 0 0"})),
       el_vec(make_elements(nodes, { { 3, 0, 1, 2 } })),
-      ele( el_vec(0) ),
+      ele( el_vec.begin() ),
       q(nodes.size())
   {
     for (unsigned int i=0; i<nodes.size(); i++)
@@ -79,8 +77,8 @@ public:
   
 protected:
   NodeVector nodes;
-  ElementVector el_vec;
-  ElementFullIter ele;
+  vector<Element> el_vec;
+  ElementIterator ele;
   MappingP1<3,3> map;
   Quadrature<3> q;
 

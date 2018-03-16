@@ -518,7 +518,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     ElementDataCacheBase *output_data = *output_data_iter;
 
     /* All values has to be equal 20.0 */
-    ElementFullIter ele = ELEMENT_FULL_ITER(&mesh, NULL);
+    ElementIterator ele;
     Node *node;
     int node_id;
     int corner_data_count, corner_id = 0;

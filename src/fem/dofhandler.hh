@@ -21,7 +21,7 @@
 
 #include <vector>              // for vector
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"  // for ElementFullIter
+#include "mesh/mesh_types.hh"  // for ElementIterator
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
@@ -199,7 +199,7 @@ protected:
 //     * TODO: Iterator goes through cells of all dimensions, but
 //     * should go only through dim-dimensional ones.
 //     */
-//    typedef ElementFullIter CellIterator;
+//    typedef ElementIterator CellIterator;
 //
 //    /**
 //     * @brief Distributes degrees of freedom on the mesh needed

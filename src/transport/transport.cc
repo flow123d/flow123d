@@ -339,7 +339,7 @@ void ConvectionTransport::set_boundary_conditions()
 {
     START_TIMER ("set_boundary_conditions");
 
-    ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
+    ElementIterator elm;
 
     unsigned int sbi, loc_el, loc_b = 0;
     
@@ -349,9 +349,9 @@ void ConvectionTransport::set_boundary_conditions()
    	balance_->start_flux_assembly(subst_idx);
 
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element(el_4_loc[loc_el]);
+        elm = mesh_->bulk_begin() + el_4_loc[loc_el];
         if (elm->boundary_idx_ != NULL) {
-        	IdxInt new_i = row_4_el[elm.index()];
+        	IdxInt new_i = row_4_el[mesh_->elem_index( elm->id() )];
 
             FOR_ELEMENT_SIDES(elm,si) {
                 Boundary *b = elm->side(si)->cond();
@@ -680,14 +680,14 @@ void ConvectionTransport::set_target_time(double target_time)
 
 void ConvectionTransport::create_mass_matrix()
 {
-    ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
+    ElementIterator elm;
     
     VecZeroEntries(mass_diag);
     
     balance_->start_mass_assembly(subst_idx);
 
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element(el_4_loc[loc_el]);
+        elm = mesh_->bulk_begin() + el_4_loc[loc_el];
 
         double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
         //double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
@@ -696,7 +696,7 @@ void ConvectionTransport::create_mass_matrix()
         for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
             balance_->add_mass_matrix_values(subst_idx[sbi], elm->region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm->measure()} );
         
-        VecSetValue(mass_diag, row_4_el[elm.index()], csection*por_m, INSERT_VALUES);
+        VecSetValue(mass_diag, row_4_el[mesh_->elem_index( elm->id() )], csection*por_m, INSERT_VALUES);
     }
     
     balance_->finish_mass_assembly(subst_idx);

@@ -403,14 +403,14 @@ void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &val
 
 DOFHandlerMultiDim::~DOFHandlerMultiDim()
 {
-	for (ElementFullIter elem=mesh_->element.begin(); elem!=mesh_->element.end(); ++elem)
-		if (object_dofs[elem.index()] != NULL)
+	for (ElementIterator ele=mesh_->bulk_begin(); ele!=mesh_->bulk_end(); ++ele)
+		if (object_dofs[mesh_->elem_index( ele->id() )] != NULL)
 		{
-			for (unsigned int j=0; j<=elem->dim(); j++)
-				if (object_dofs[elem.index()][j] != NULL)
-					delete[] object_dofs[elem.index()][j];
+			for (unsigned int j=0; j<=ele->dim(); j++)
+				if (object_dofs[mesh_->elem_index( ele->id() )][j] != NULL)
+					delete[] object_dofs[mesh_->elem_index( ele->id() )][j];
 
-			delete[] object_dofs[elem.index()];
+			delete[] object_dofs[mesh_->elem_index( ele->id() )];
 		}
 	delete[] object_dofs;
 }
@@ -443,8 +443,8 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 	for (unsigned int inb=0; inb<mesh_->n_vb_neighbours(); inb++)
 	{
 		Neighbour *nb = &mesh_->vb_neighbours_[inb];
-		if (el_is_local(mesh_->element.index(nb->element()))
-				|| el_is_local(mesh_->elem_index( nb->side()->element()->id() )))
+		if ( el_is_local(mesh_->elem_index(nb->element()->id()))
+				|| el_is_local(mesh_->elem_index( nb->side()->element()->id() )) )
 			nb_4_loc.push_back(inb);
 	}
 }

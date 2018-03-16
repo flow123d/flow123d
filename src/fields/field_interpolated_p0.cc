@@ -164,9 +164,9 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		ADD_CALLS(searched_elements_.size());
 		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
 		{
-			ElementFullIter ele = source_mesh_->element( *it );
+			ElementIterator ele = source_mesh_->bulk_begin() + (*it);
 			if (ele->dim() == 3) {
-			    ngh::set_tetrahedron_from_element(tetrahedron_, ele);
+			    ngh::set_tetrahedron_from_element(tetrahedron_, &(*ele) );
 				// get intersection (set measure = 0 if intersection doesn't exist)
 				switch (elm.dim()) {
 					case 0: {

@@ -585,7 +585,7 @@ void DarcyMH::postprocess()
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
         }
     }
-    //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    //ElementIterator ele;
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux

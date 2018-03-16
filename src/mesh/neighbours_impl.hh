@@ -39,7 +39,7 @@
     }
 
     // element of higher dimension mesh in VB neigh.
-    inline ElementIter Neighbour::element() {
+    inline ElementIterator Neighbour::element() {
         return element_;
     }
 

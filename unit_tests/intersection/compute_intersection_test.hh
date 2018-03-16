@@ -114,7 +114,7 @@ void permute_triangle(ElementIterator ele, unsigned int p)
 }
 
 template<int dim>
-Simplex<dim> create_simplex(ElementFullIter ele)
+Simplex<dim> create_simplex(ElementIterator ele)
 {
     ASSERT_DBG(dim == ele->dim());
     Simplex<dim> s;

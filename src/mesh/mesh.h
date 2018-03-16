@@ -70,7 +70,7 @@ template <int spacedim> class ElementAccessor;
     (_mesh_)->node_vector.full_iter(i)
 
 /**
- * Macro to get "NULL" ElementFullIter.
+ * Macro to get "NULL" NodeFullIter.
  */
 #define NODE_FULL_ITER_NULL(_mesh_) \
     NodeFullIter((_mesh_)->node_vector)
@@ -537,13 +537,6 @@ private:
  */
 #define ELEMENT_FULL_ITER(_mesh_,i) \
     (_mesh_)->element.full_iter(i)
-
-/**
- * Macro to get "NULL" ElementFullIter.
- */
-#define ELEMENT_FULL_ITER_NULL(_mesh_) \
-    ElementFullIter((_mesh_)->element)
-
 
 #define FOR_BOUNDARIES(_mesh_,i) \
 for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \

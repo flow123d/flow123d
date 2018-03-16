@@ -824,7 +824,7 @@ void InspectElementsAlgorithm22::create_component_numbering()
             while(!queue.empty()){
                 unsigned int ele_idx = queue.front();
                 queue.pop();
-                const ElementFullIter& ele = mesh->element(ele_idx);
+                const ElementIterator& ele = mesh->bulk_begin() + ele_idx;
                 for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
                     Edge* edg = ele->side(sid)->edge();
 
@@ -948,8 +948,8 @@ void InspectElementsAlgorithm12::compute_intersections(std::vector< std::vector<
 //     }
 }
 
-// void InspectElementsAlgorithm12::compute_single_intersection(const ElementFullIter& eleA,
-//                                                              const ElementFullIter& eleB)
+// void InspectElementsAlgorithm12::compute_single_intersection(const ElementIterator& eleA,
+//                                                              const ElementIterator& eleB)
 // {
 //     ASSERT_DBG(eleA->dim() == 1);
 //     ASSERT_DBG(eleB->dim() == 2);

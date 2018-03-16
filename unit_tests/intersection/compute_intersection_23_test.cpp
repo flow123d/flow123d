@@ -237,8 +237,8 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     // fixed element indices in the tests
     unsigned int triangle_ele_idx = 0,
                  tetra_ele_idx = 1;
-    Simplex<2> triangle = create_simplex<2>(mesh->element(triangle_ele_idx));
-    Simplex<3> tetra = create_simplex<3>(mesh->element(tetra_ele_idx));
+    Simplex<2> triangle = create_simplex<2>(mesh->bulk_begin() + triangle_ele_idx);
+    Simplex<3> tetra = create_simplex<3>(mesh->bulk_begin() + tetra_ele_idx);
     
     IntersectionAux<2,3> is;
     ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra, mesh);
@@ -258,7 +258,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     //     std::cout << temp_ilc;
     for(unsigned int i=0; i < is.size(); i++)
     {
-        coords[i] = temp_ilc[i].coords(mesh->element(triangle_ele_idx));
+        coords[i] = temp_ilc[i].coords(mesh->bulk_begin() + triangle_ele_idx);
     }
     // sort computed coords according to real coordinates
     //std::sort(coords.begin(), coords.end(),compare_coords);

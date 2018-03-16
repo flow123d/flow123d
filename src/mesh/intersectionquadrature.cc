@@ -24,7 +24,7 @@
 
 // inicializovat objekt, cist zbytek tokenu z tok a naplnit map a shift pro master a slave
 // viz dokumentace k Armadillu
-Intersection::Intersection(const  ElementFullIter ele_master, const ElementFullIter ele_slave,
+Intersection::Intersection(const  ElementIterator ele_master, const ElementIterator ele_slave,
     			 const IntersectionLocal *isec)
 :	dim(isec->n_points() - 1),
 	master(ele_master), slave(ele_slave),

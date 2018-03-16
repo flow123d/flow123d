@@ -117,7 +117,7 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(ElementIter ele, unsigned int edg_idx);
+    void reinit(ElementIterator ele, unsigned int edg_idx);
 
     // side of the edge in higher dim. mesh
     inline SideIter side();
@@ -128,11 +128,11 @@ public:
     inline Edge *edge();
 
     // element of lower dimension mesh in VB neigh.
-    inline ElementIter element();
+    inline ElementIterator element();
 
 //private:
     unsigned int edge_idx_;  // edge
-    ElementIter element_;  // neighbouring elements
+    ElementIterator element_;  // neighbouring elements
                                // for VB  - element[0] is element of lower dimension
 };
 

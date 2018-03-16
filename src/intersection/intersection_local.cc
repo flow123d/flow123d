@@ -3,7 +3,7 @@
 #include "intersection_aux.hh"
 #include "intersection_point_aux.hh"
 // #include "mesh/mesh_types.hh"
-// #include "mesh/elements.h"   //TODO what is the best way of include to use ElementFullIter ?
+// #include "mesh/elements.h"   //TODO what is the best way of include to use ElementIterator ?
 #include "mesh/mesh.h"
 
 #include <iostream>
@@ -105,7 +105,7 @@ IntersectionPoint<dimA,dimB>::IntersectionPoint(const arma::vec::fixed< dimA  >&
 
 
 template<unsigned int dimA, unsigned int dimB>
-arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementFullIter comp_ele) const
+arma::vec3 IntersectionPoint<dimA,dimB>::coords(ElementIterator comp_ele) const
 {
     ASSERT_DBG(dimA == comp_ele->dim());
     

@@ -169,7 +169,7 @@ public:
     //@}
     
     /// Computes real coordinates of IP, given the element @p ele in which IP lies.
-    arma::vec::fixed<3> coords(ElementFullIter ele) const;
+    arma::vec::fixed<3> coords(ElementIterator ele) const;
     
     /// Returns true, if this is a pathologic case.
     bool is_pathologic() const;

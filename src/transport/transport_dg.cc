@@ -1292,7 +1292,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
     for (unsigned int loc_el = 0; loc_el < Model::mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        ElementFullIter elm = Model::mesh_->element(feo->dh()->el_index(loc_el));
+        ElementIterator elm = Model::mesh_->bulk_begin() + feo->dh()->el_index(loc_el);
         if (elm->boundary_idx_ == nullptr) continue;
 
         FOR_ELEMENT_SIDES(elm,si)

@@ -549,7 +549,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 
 	DebugOut() << "Create output submesh containing only local elements.";
 
-	ElementFullIter ele = ELEMENT_FULL_ITER_NULL(orig_mesh_);
+	ElementIterator ele;
 	IdxInt *el_4_loc = orig_mesh_->get_el_4_loc();
 	Distribution *el_ds = orig_mesh_->get_el_ds();
     const unsigned int n_local_elements = el_ds->lsize();
@@ -564,7 +564,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
                  li = 0;        // local node index
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
-		ele = orig_mesh_->element(el_4_loc[loc_el]);
+		ele = orig_mesh_->bulk_begin() + el_4_loc[loc_el];
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -583,7 +583,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
 	Node* node;
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
-		ele = orig_mesh_->element(el_4_loc[loc_el]);
+		ele = orig_mesh_->bulk_begin() + el_4_loc[loc_el];
         FOR_ELEMENT_NODES(ele, li)
         {
             node = ele->node[li];

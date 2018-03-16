@@ -21,7 +21,7 @@
 
 #include <armadillo>
 #include <stddef.h>                          // for NULL
-#include "mesh/mesh_types.hh"                // for ElementFullIter
+#include "mesh/mesh_types.hh"                // for ElementIterator
 #include "system/sys_vector.hh"              // for FullIterator
 
 class Boundary;

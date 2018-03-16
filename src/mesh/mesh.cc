@@ -469,7 +469,7 @@ void Mesh::make_neighbours_and_edges()
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
 
 			if (is_neighbour) { // edge connects elements of different dimensions
-			    neighbour.element_ = &(element_vec_[ngh_element_idx]);
+			    neighbour.element_ = element_vec_.begin() + ngh_element_idx;
             } else { // edge connects only elements of the same dimension
                 // Allocate the array of sides.
                 last_edge_idx=edges.size();
@@ -638,7 +638,7 @@ void Mesh::element_to_neigh_vb()
         }
 
     // fill
-    ElementIter ele;
+    ElementIterator ele;
     FOR_NEIGHBOURS(this,  ngh ) {
         ele = ngh->element();
         ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );

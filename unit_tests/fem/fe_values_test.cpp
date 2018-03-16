@@ -38,7 +38,7 @@ double func( const arma::vec::fixed<dim> & p) {
 
 
 template <int dim>
-double integrate(ElementFullIter &ele) {
+double integrate(ElementIterator &ele) {
     FE_P_disc<dim> fe(0);
     QGauss<dim> quad( 2 );
     MappingP1<dim,3> map;
@@ -69,23 +69,21 @@ TEST(FeValues, test_all) {
         nodes[1].point()[1] = 0.0;
         nodes[1].point()[2] = 0.0;
 
-        ElementVector el_vec(1);
-        el_vec.add_item(0);
+        vector<Element> el_vec(1);
 
         RegionIdx reg;
-        Element ele(1, 0, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
+        el_vec[0].init(1, 0, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
 
-        ele.node = new Node * [ele.n_nodes()];
-        for(int i =0; i < 2; i++) ele.node[i] = nodes(i);
-        el_vec[0] = ele; // dangerous since Element has no deep copy constructor.
+        el_vec[0].node = new Node * [el_vec[0].n_nodes()];
+        for(int i =0; i < 2; i++) el_vec[0].node[i] = nodes(i);
 
 
-        ElementFullIter it( el_vec(0) );
+        ElementIterator it = el_vec.begin();
         EXPECT_DOUBLE_EQ( 2.5 * 2, integrate<1>( it ) );
         
         // projection methods
         MappingP1<1,3> mapping;
-        arma::mat::fixed<3, 2> map = mapping.element_map(ele);
+        arma::mat::fixed<3, 2> map = mapping.element_map(el_vec[0]);
         EXPECT_ARMA_EQ( arma::mat("1 3; 0 0; 0 0"), map);
         EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), mapping.project_real_to_unit( arma::vec("2.0 0.0 0.0"), map ) );
     }
@@ -108,22 +106,20 @@ TEST(FeValues, test_all) {
         nodes[2].point()[1] = 4.0;
         nodes[2].point()[2] = 0.0;
 
-        ElementVector el_vec(1);
-        el_vec.add_item(0);
+        vector<Element> el_vec(1);
 
         RegionIdx reg;
-        Element ele(2, 1, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
+        el_vec[0].init(2, 1, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
 
-        ele.node = new Node * [ele.n_nodes()];
-        for(int i =0; i < 3; i++) ele.node[i] = nodes(i);
-        el_vec[0] = ele; // dangerous since Element has no deep copy constructor.
+        el_vec[0].node = new Node * [el_vec[0].n_nodes()];
+        for(int i =0; i < 3; i++) el_vec[0].node[i] = nodes(i);
 
-        ElementFullIter it( el_vec(0) );
+        ElementIterator it = el_vec.begin();
         EXPECT_DOUBLE_EQ( 19.0 / 12.0 * 9.0 , integrate<2>( it ) );
 
         // projection methods
         MappingP1<2,3> mapping;
-        arma::mat::fixed<3, 3> map = mapping.element_map(ele);
+        arma::mat::fixed<3, 3> map = mapping.element_map(el_vec[0]);
         EXPECT_ARMA_EQ( arma::mat("0 2 3; 1 0 4; 0 0 0"), map);
         EXPECT_ARMA_EQ( arma::vec("0.6 0.2 0.2"), mapping.project_real_to_unit( arma::vec("1.0 1.4 0.0"), map ) );
     }

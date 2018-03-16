@@ -438,7 +438,7 @@ void SorptionBase::make_tables(void)
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 {
-    ElementFullIter elem = mesh_->element(el_4_loc_[loc_el]);
+    ElementIterator elem = mesh_->bulk_begin() + el_4_loc_[loc_el];
     int reg_idx = elem->region().bulk_idx();
     unsigned int i_subst, subst_id;
 

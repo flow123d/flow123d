@@ -162,7 +162,7 @@ public:
     inline bool reinit(const IntersectionLocalBase *isec)
     {
         slave_idx_ = isec->bulk_ele_idx();
-        ElementFullIter ele = mesh_.element(isec->component_ele_idx());
+        ElementIterator ele = mesh_.bulk_begin() + isec->component_ele_idx();
         if (typeid(*isec) == typeid(IntersectionLocal<2,2>)) {
             //
             auto il = static_cast<const IntersectionLocal<2,2> *>(isec);

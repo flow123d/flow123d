@@ -286,7 +286,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		std::fill(sum_val.begin(), sum_val.end(), 0.0);
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-			ElementFullIter elm = source_mesh->element( *it );
+			ElementIterator elm = source_mesh->bulk_begin() + (*it);
 			bool contains=false;
 			switch (elm->dim()) {
 			case 1:

@@ -32,7 +32,7 @@ Neighbour::Neighbour()
 : edge_idx_(-1)
 {}
 
-void Neighbour::reinit(ElementIter ele, unsigned int edg_idx)
+void Neighbour::reinit(ElementIterator ele, unsigned int edg_idx)
 {
     element_=ele;
     edge_idx_=edg_idx;

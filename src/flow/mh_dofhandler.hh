@@ -28,7 +28,7 @@
 #include "mesh/accessors.hh"                 // for ElementAccessor
 #include "mesh/element_impls.hh"             // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh
-#include "mesh/mesh_types.hh"                // for ElementFullIter
+#include "mesh/mesh_types.hh"                // for ElementIterator
 #include "mesh/region.hh"                    // for Region
 #include "mesh/side_impl.hh"                 // for Side::edge_idx
 #include "mesh/sides.h"                      // for SideIter, Side

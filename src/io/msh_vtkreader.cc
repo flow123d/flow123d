@@ -486,7 +486,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementFullIter ele = mesh.element( *it );
+                ElementIterator ele = mesh.bulk_begin() + (*it);
                 FOR_ELEMENT_NODES(ele, i_node)
                 {
                     if ( compare_points(ele->node[i_node]->point(), point) ) {

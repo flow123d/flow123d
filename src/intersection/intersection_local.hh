@@ -184,7 +184,7 @@ public:
      * comp_ele is component element
      */
 
-    arma::vec3 coords(ElementFullIter comp_ele) const;
+    arma::vec3 coords(ElementIterator comp_ele) const;
     
     /// Friend output operator.
     friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPoint<dimA,dimB>& IP);

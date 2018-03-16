@@ -145,7 +145,7 @@
 
 class Intersection {
 public:
-    Intersection(const ElementFullIter ele_master, const ElementFullIter ele_slave,
+    Intersection(const ElementIterator ele_master, const ElementIterator ele_slave,
     			 const IntersectionLocal *isec);
 
     /// dimension of the master element
@@ -163,7 +163,7 @@ public:
     arma::vec map_to_slave(const arma::vec &point) const;
     double intersection_true_size() const;
 
-    ElementFullIter master, slave; // master lower dimension
+    ElementIterator master, slave; // master lower dimension
 
 private:
     /// dimenze pruniku

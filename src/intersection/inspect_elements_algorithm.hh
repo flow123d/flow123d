@@ -222,7 +222,7 @@ private:
     void create_component_numbering();
     
     /// Auxiliary function for front-advancing alg. for component numbering.
-    //void prolongate22(const ElementFullIter& ele, std::queue<unsigned int>& queue);
+    //void prolongate22(const ElementIterator& ele, std::queue<unsigned int>& queue);
     
     friend class MixedMeshIntersections;
 };
@@ -271,7 +271,7 @@ private:
     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
     
     /// Computes fundamental 1D-2D intersection of candidate pair.
-//     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
+//     void compute_single_intersection(const ElementIterator &comp_ele, const ElementIterator &bulk_ele);
     
     friend class MixedMeshIntersections;
 };

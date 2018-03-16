@@ -50,7 +50,7 @@ double MixedMeshIntersections::measure_13()
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_storage13_.size(); i++){
-        ElementFullIter ele = mesh->element(intersection_storage13_[i].component_ele_idx());            
+    	ElementIterator ele = mesh->bulk_begin() + intersection_storage13_[i].component_ele_idx();
         double t1d_length = ele->measure();
         double local_length = intersection_storage13_[i].compute_measure();
         
@@ -90,8 +90,8 @@ double MixedMeshIntersections::measure_22()
     for(unsigned int i = 0; i < intersection_storage22_.size(); i++){
         if(intersection_storage22_[i].size() > 1)
         {
-            ElementFullIter eleA = mesh->element(intersection_storage22_[i].component_ele_idx());
-//             ElementFullIter eleB = mesh->element(intersection_storage22_[i].bulk_ele_idx());
+        	ElementIterator eleA = mesh->bulk_begin() + intersection_storage22_[i].component_ele_idx();
+//             ElementIterator eleB = mesh->bulk_begin() + intersection_storage22_[i].bulk_ele_idx();
             
             arma::vec3 from = intersection_storage22_[i][0].coords(eleA);
             arma::vec3 to = intersection_storage22_[i][1].coords(eleA);
@@ -335,14 +335,14 @@ void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< Intersec
             bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
 
             for(unsigned int i_elm : candidate_list) {
-                ElementFullIter elm = mesh->element( i_elm );
+            	ElementIterator elm = mesh->bulk_begin() + i_elm;
                 if (elm->dim() == 2) {
                     ngh::IntersectionLocal *intersection;
                     GetIntersection( ngh::TAbscissa(ele), ngh::TTriangle(*elm), intersection);
                     if (intersection && intersection->get_type() == ngh::IntersectionLocal::line) {
 
                         // make IntersectionAux<1,2> from IntersectionLocal (from ngh)
-                        IntersectionAux<1,2> is(ele.index(), elm.index());
+                        IntersectionAux<1,2> is(ele.index(), mesh->elem_index( elm->id() ));
                         for(uint i=0; i< intersection->n_points(); i++) {
                             // convert local to barycentric
                             ASSERT_EQ_DBG(intersection->get_point(i)->el1_coord().size(), 1)(i);
@@ -469,8 +469,8 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
 
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
             IntersectionLocal<1,3> il = intersection_storage13_[j];
-            ElementFullIter el1D = mesh->element(il.component_ele_idx());
-//             ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
+            ElementIterator el1D = mesh->bulk_begin() + il.component_ele_idx();
+//             ElementIterator el3D = mesh->bulk_begin() + il.bulk_ele_idx();
             
             for(unsigned int k = 0; k < il.size();k++){
                 number_of_nodes++;
@@ -566,8 +566,8 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
         for(unsigned int j = 0; j < intersection_storage23_.size();j++){
             
             IntersectionLocal<2,3> il = intersection_storage23_[j];
-            ElementFullIter el2D = mesh->element(il.component_ele_idx());
-//             ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
+            ElementIterator el2D = mesh->bulk_begin() + il.component_ele_idx();
+//             ElementIterator el3D = mesh->bulk_begin() + il.bulk_ele_idx();
             
             for(unsigned int k = 0; k < intersection_storage23_[j].size();k++){
 

@@ -236,7 +236,7 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
     for(unsigned int i_ele : element_indices) {
-        ElementFullIter ele = mesh_->element(i_ele);
+        ElementIterator ele = mesh_->bulk_begin() + i_ele;
         ele_pressure[i_ele] = sol[ soi + i_ele];
         ele_piezo_head[i_ele] = sol[soi + i_ele ]
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));

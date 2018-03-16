@@ -90,8 +90,8 @@ IntersectionLocal<1,3> permute_coords(IntersectionLocal<1,3> il,
 void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
-    Simplex<1> line = create_simplex<1>(mesh->element(1));
-    Simplex<3> tetra = create_simplex<3>(mesh->element(0));
+    Simplex<1> line = create_simplex<1>(mesh->bulk_begin() + 1);
+    Simplex<3> tetra = create_simplex<3>(mesh->bulk_begin());
     
     IntersectionAux<1,3> is;
     ComputeIntersection< Simplex<1>, Simplex<3>> CI(line, tetra, mesh);
