@@ -538,7 +538,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             }
             mesh.intersect_element_lists(node_list, candidate_list);
             for (auto i_elm : candidate_list) {
-            	if ( mesh.element( i_elm )->dim() == dim ) result_list.push_back(i_elm);
+            	if ( mesh.element_vec_[i_elm].dim() == dim ) result_list.push_back(i_elm);
             }
             if (result_list.size() != 1) {
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("intersect_element_lists must produce one element")

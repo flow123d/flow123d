@@ -26,7 +26,7 @@
 inline Side::Side(const Element * ele, unsigned int set_lnum)
 : element_(ele), el_idx_(set_lnum)
 {
-	OLD_ASSERT(mesh()->element.full_iter( const_cast<Element *>(element_) ), "Wrong initialization of the Side.\n");
+	ASSERT(mesh()->elem_index(element_->id()) != -1).error("Wrong initialization of the Side.\n");
 }
 
 

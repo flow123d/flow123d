@@ -408,7 +408,7 @@ void ConvectionTransport::compute_concentration_sources() {
   unsigned int loc_el, sbi;
   double csection, source, diag;
 
-  Element *ele;
+  ElementIterator ele;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
     
@@ -425,7 +425,7 @@ void ConvectionTransport::compute_concentration_sources() {
         
         for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
         {
-            ele = mesh_->element(el_4_loc[loc_el]);
+            ele = mesh_->bulk_begin() + el_4_loc[loc_el];
             ele_acc = ele->element_accessor();
             p = ele_acc.centre();
             csection = data_.cross_section.value(p, ele_acc);

@@ -168,7 +168,7 @@ bool ObservePoint::have_observe_element() {
 
 void ObservePoint::snap(Mesh &mesh)
 {
-    Element & elm = mesh.element[observe_data_.element_idx_];
+    Element & elm = mesh.element_vec_[observe_data_.element_idx_];
     switch (elm.dim()) {
         case 1:
         {
@@ -211,7 +211,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
     for (unsigned int i_candidate=0; i_candidate<candidate_list.size(); ++i_candidate) {
         unsigned int i_elm=candidate_list[i_candidate];
-        Element & elm = mesh.element[i_elm];
+        Element & elm = mesh.element_vec_[i_elm];
 
         // project point, add candidate to queue
         auto observe_data = point_projection(i_elm, elm);
@@ -226,7 +226,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         candidate_queue.pop();
 
         unsigned int i_elm=candidate_data.element_idx_;
-        Element & elm = mesh.element[i_elm];
+        Element & elm = mesh.element_vec_[i_elm];
 
         // test if candidate is in region and update projection
         if (elm.region().is_in_region_set(region_set)) {
@@ -243,7 +243,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 		for (unsigned int n=0; n < elm.n_nodes(); n++)
 			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])]) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
-					Element & neighbor_elm = mesh.element[i_node_ele];
+					Element & neighbor_elm = mesh.element_vec_[i_node_ele];
 					auto observe_data = point_projection(i_node_ele, neighbor_elm);
 			        if (observe_data.distance_ <= max_search_radius_)
 			        	candidate_queue.push(observe_data);
@@ -256,7 +256,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) );
     }
     snap( mesh );
-    Element & elm = mesh.element[observe_data_.element_idx_];
+    Element & elm = mesh.element_vec_[observe_data_.element_idx_];
     double dist = arma::norm(elm.centre() - input_point_, 2);
     double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
     if (dist > 2*elm_norm)

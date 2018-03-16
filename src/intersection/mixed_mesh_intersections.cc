@@ -74,7 +74,7 @@ double MixedMeshIntersections::measure_23()
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_storage23_.size(); i++){
-            double t2dArea = mesh->element(intersection_storage23_[i].component_ele_idx())->measure();
+            double t2dArea = ( mesh->bulk_begin() + intersection_storage23_[i].component_ele_idx() )->measure();
             double localArea = intersection_storage23_[i].compute_measure();
             subtotal += 2*localArea*t2dArea;
         }
@@ -140,8 +140,8 @@ void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_
 
         unsigned int ele_a_idx = isec.component_ele_idx();
         unsigned int ele_b_idx = isec.bulk_ele_idx();
-        ASSERT_EQ_DBG(mesh->element(ele_a_idx)->dim(), dim_A)(ele_a_idx);
-        ASSERT_EQ_DBG(mesh->element(ele_b_idx)->dim(), dim_B)(ele_b_idx);
+        ASSERT_EQ_DBG((mesh->bulk_begin()+ele_a_idx)->dim(), dim_A)(ele_a_idx);
+        ASSERT_EQ_DBG((mesh->bulk_begin()+ele_b_idx)->dim(), dim_B)(ele_b_idx);
         element_intersections_[ele_a_idx].push_back(
                     std::make_pair(ele_b_idx, &(isec)) );
 
@@ -328,7 +328,7 @@ void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< Intersec
     const BIHTree &bih_tree =mesh->get_bih_tree();
 
     for(unsigned int i_ele=0; i_ele<mesh->n_elements(); i_ele++) {
-        Element &ele = mesh->element[i_ele];
+        Element &ele = mesh->element_vec_[i_ele];
 
         if (ele.dim() == 1) {
             vector<unsigned int> candidate_list;

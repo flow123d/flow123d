@@ -22,7 +22,6 @@
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
 #include "reaction/dual_porosity.hh"
-#include "semchem/semchem_interface.hh"
 #include "reaction/isotherm.hh"
 
 #include "system/system.hh"

@@ -1062,9 +1062,9 @@ void ComputeIntersection<Simplex<2>, Simplex<3>>::set_links(uint obj_before_ip, 
     }
     //DebugOut().fmt("before: {} ip: {} after: {}\n", obj_before_ip, ip_idx, obj_after_ip );
     ASSERT_DBG( ! have_backlink(obj_after_ip) )
-    (mesh_->element.get_id(intersection_->component_ele_idx()))
-    (mesh_->element.get_id(intersection_->bulk_ele_idx()))
-    (obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
+        (mesh_->element_vec_[intersection_->component_ele_idx()].id())
+        (mesh_->element_vec_[intersection_->bulk_ele_idx()].id())
+        (obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
     object_next[obj_before_ip] = ip_idx;
     IP_next.push_back( obj_after_ip);
     if (object_next[obj_after_ip] == no_idx) {

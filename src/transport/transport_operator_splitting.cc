@@ -38,8 +38,6 @@
 #include "reaction/sorption.hh"
 #include "reaction/dual_porosity.hh"
 
-#include "semchem/semchem_interface.hh"
-
 #include "la/distribution.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"

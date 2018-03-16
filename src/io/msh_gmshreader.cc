@@ -99,7 +99,6 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
         std::vector<unsigned int> node_ids; //node_ids of elements
         node_ids.resize(4); // maximal count of nodes
 
-        mesh->reserve_element_size(n_elements);
         mesh->init_element_vector(n_elements);
 
         for (unsigned int i = 0; i < n_elements; ++i) {

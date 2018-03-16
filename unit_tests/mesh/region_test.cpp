@@ -291,13 +291,13 @@ TEST(Region, read_regions_from_yaml) {
 	EXPECT_EQ( 7, region_db.get_region_set("BULK").size() );
 	EXPECT_EQ( 2, region_db.get_region_set(".BOUNDARY").size() );
 
-	EXPECT_EQ( 37, mesh->element[0].region().id() );
-	EXPECT_EQ( 39, mesh->element[3].region().id() );
-	EXPECT_EQ(  1, mesh->element[4].region().id() );
-	EXPECT_EQ(103, mesh->element[5].region().id() );
-	EXPECT_EQ( 40, mesh->element[6].region().id() );
-	EXPECT_EQ(  1, mesh->element[7].region().id() );
-	EXPECT_EQ("label_1", mesh->element[4].region().label() );
+	EXPECT_EQ( 37, mesh->element_vec_[0].region().id() );
+	EXPECT_EQ( 39, mesh->element_vec_[3].region().id() );
+	EXPECT_EQ(  1, mesh->element_vec_[4].region().id() );
+	EXPECT_EQ(103, mesh->element_vec_[5].region().id() );
+	EXPECT_EQ( 40, mesh->element_vec_[6].region().id() );
+	EXPECT_EQ(  1, mesh->element_vec_[7].region().id() );
+	EXPECT_EQ("label_1", mesh->element_vec_[4].region().label() );
 
 	delete mesh;
 }

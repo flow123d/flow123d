@@ -109,14 +109,14 @@ void OutputMeshBase::create_id_caches()
 	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, 1, this->n_elements());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
-		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element(it->idx()).id();
+		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element_vec_[it->idx()].id();
 		else elm_idx[0] = it->idx();
 		elem_ids_->store_value( i, elm_idx );
 
-		region_idx[0] = orig_mesh_->element(it->idx())->region().id();
+		region_idx[0] = orig_mesh_->element_vec_[it->idx()].region().id();
 		region_ids_->store_value( i, region_idx );
 
-		partition[0] = orig_mesh_->element(it->idx())->pid;
+		partition[0] = orig_mesh_->element_vec_[it->idx()].pid;
 		partitions_->store_value( i, partition );
 
 		std::vector< unsigned int > node_list = it->node_list();

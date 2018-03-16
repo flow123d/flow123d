@@ -777,7 +777,6 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
 void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
 		std::vector<unsigned int> node_ids) {
-	Element *ele=nullptr; // old setting TODO: remove all creating and setting 'ele'
 	vector<Element>::iterator ele_iter;
 	RegionIdx region_idx = region_db_.get_region( region_id, dim );
 	if ( !region_idx.is_valid() ) {
@@ -793,18 +792,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 			return;
 		}
 		else {
-			ele = element.add_item(elm_id);
 			ele_iter = add_element_to_vector(elm_id);
-			ele->init(dim, elm_id, this, region_idx);
-			ele->pid = partition_id;
-			unsigned int ni;
-			FOR_ELEMENT_NODES(ele, ni) {
-				unsigned int node_id = node_ids[ni];
-				NodeIter node = node_vector.find_id( node_id );
-				INPUT_CHECK( node != node_vector.end(),
-						"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
-				ele->node[ni] = node;
-			}
 		}
 	}
 	ele_iter->init(dim, elm_id, this, region_idx);
