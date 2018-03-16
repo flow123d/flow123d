@@ -444,7 +444,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
+void FEValues<dim,spacedim>::reinit(ElementIterator & cell)
 {
 	OLD_ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
@@ -520,7 +520,7 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
+void FESideValues<dim,spacedim>::reinit(ElementIterator & cell,
 		unsigned int sid)
 {
     ASSERT_LT_DBG( sid, cell->n_sides());

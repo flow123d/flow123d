@@ -257,7 +257,7 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
-        ElementFullIter ele = mesh_->element(i_ele);
+    	ElementIterator ele = mesh_->bulk_begin() + i_ele;
 
         flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
@@ -379,7 +379,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
                         ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
                         ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
                 );
-                scalars[node_index] += ele_pressure[ele.index()] *
+                scalars[node_index] += ele_pressure[mesh_->elem_index( ele->id() )] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
@@ -434,7 +434,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     ;
     int cit = 0;
     FOR_ELEMENTS( mesh_,  ele ) {
-        raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
+        raw_output_file << fmt::format("{} {} ", ele->id(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
 
@@ -494,7 +494,7 @@ struct DiffData {
 };
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, 
+void l2_diff_local(ElementIterator &ele,
                    FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
                    ExactSolution &anal_sol,  DiffData &result) {
 
@@ -576,16 +576,16 @@ void l2_diff_local(ElementFullIter &ele,
     }
 
 
-    result.velocity_diff[ele.index()] = velocity_diff;
+    result.velocity_diff[ result.dh->mesh_->elem_index( ele->id() ) ] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
-    	result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+    	result.mask_vel_error += (result.velocity_mask[ result.dh->mesh_->elem_index( ele->id() ) ])? 0 : velocity_diff;
     }
 
-    result.pressure_diff[ele.index()] = pressure_diff;
+    result.pressure_diff[ result.dh->mesh_->elem_index( ele->id() ) ] = pressure_diff;
     result.pressure_error[dim-1] += pressure_diff;
 
-    result.div_diff[ele.index()] = divergence_diff;
+    result.div_diff[ result.dh->mesh_->elem_index( ele->id() ) ] = divergence_diff;
     result.div_error[dim-1] += divergence_diff;
 
 }

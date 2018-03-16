@@ -357,8 +357,36 @@ public:
     	else return bulk_size_;
     }
 
+    /// Begin iterator to bulk part of element vector
+    inline ElementIterator bulk_begin() {
+    	return element_vec_.begin();
+    }
+
+    /// End iterator to bulk part of element vector
+    inline ElementIterator bulk_end() {
+    	return element_vec_.begin() + bulk_size_;
+    }
+
+    /// Begin iterator to boundary part of element vector
+    inline ElementIterator boundary_begin() {
+    	return element_vec_.end() - boundary_size_;
+    }
+
+    /// End iterator to boundary part of element vector
+    inline ElementIterator boundary_end() {
+    	return element_vec_.end();
+    }
+
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
+
+    /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
+    inline int elem_index(int elem_id) const
+    {
+        auto iter = this->element_id_map_.find( elem_id );
+        if (iter != this->element_id_map_.end()) return iter->second;
+        else return (-1);
+    }
 
     /**
      * Vector of elements of the mesh.
@@ -366,9 +394,6 @@ public:
      * Store all elements of the mesh in order bulk elements - boundary elements
      */
     vector<Element> element_vec_;
-
-    /// Maps element ids to indexes into vector element_vec_
-    std::map<int, unsigned int> element_id_map_;
 
 protected:
 
@@ -402,7 +427,7 @@ protected:
      * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
      * if more elements are found we report an user input error.
      */
-    bool find_lower_dim_element(ElementVector&elements, vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
+    bool find_lower_dim_element(vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
 
     /**
      * Returns true if side @p si has same nodes as in the list @p side_nodes.
@@ -470,6 +495,9 @@ protected:
     /// Count of boundary elements
     unsigned int boundary_size_;
 
+    /// Maps element ids to indexes into vector element_vec_
+    std::map<int, unsigned int> element_id_map_;
+
 
 
 
@@ -495,13 +523,13 @@ private:
 #include "mesh/neighbours_impl.hh"
 
 /**
- * Provides for statement to iterate over the Elements of the Mesh.
- * The parameter is FullIter local variable of the cycle, so it need not be declared before.
+ * Provides for statement to iterate over the bulk Elements of the Mesh.
+ * The parameter is ElementIterator local variable of the cycle, so it need not be declared before.
  * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
  */
 #define FOR_ELEMENTS(_mesh_,__i) \
-    for( ElementFullIter __i( (_mesh_)->element.begin() ); \
-        __i != (_mesh_)->element.end(); \
+    for( ElementIterator __i( (_mesh_)->bulk_begin() ); \
+        __i != (_mesh_)->bulk_end(); \
         ++__i)
 
 /**

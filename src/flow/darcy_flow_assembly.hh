@@ -53,11 +53,11 @@ public:
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(ElementFullIter ele, Neighbour *ngh) = 0;
+    virtual void assembly_local_vb(ElementIterator ele, Neighbour *ngh) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(ElementFullIter ele) = 0;
+    virtual arma::vec3 make_element_vector(ElementIterator ele) = 0;
 
     virtual void update_water_content(LocalElementAccessorBase<3> ele)
     {}
@@ -175,14 +175,14 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(ElementFullIter ele, Neighbour *ngh) override
+    void assembly_local_vb(ElementIterator ele, Neighbour *ngh) override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
-        ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
+        ElementIterator ele_higher = ad_->mesh->bulk_begin() + ad_->mesh->elem_index( ngh->side()->element()->id() );
         ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
@@ -201,7 +201,7 @@ public:
     }
 
 
-    arma::vec3 make_element_vector(ElementFullIter ele) override
+    arma::vec3 make_element_vector(ElementIterator ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
         arma::vec3 flux_in_center;
@@ -381,7 +381,7 @@ protected:
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
-        ElementFullIter ele =ele_ac.full_iter();
+        ElementIterator ele =ele_ac.full_iter();
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.get_quadrature()->size();
@@ -447,7 +447,7 @@ protected:
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementIterator ele = ele_ac.full_iter();
         
         // no Neighbours => nothing to asssemble here
         if(ele->n_neighs_vb == 0) return;

@@ -51,7 +51,7 @@ public:
      * TODO: Iterator goes through cells of all dimensions, but
      * should go only through dim-dimensional ones.
      */
-    typedef ElementFullIter CellIterator;
+    typedef ElementIterator CellIterator;
 
     /**
      * @brief Getter for the number of all mesh dofs required by the given
@@ -277,7 +277,7 @@ public:
      *
      * TODO: Notation to be fixed: element or cell
      */
-    typedef ElementFullIter CellIterator;
+    typedef ElementIterator CellIterator;
 
     /**
      * @brief Distributes degrees of freedom on the mesh needed

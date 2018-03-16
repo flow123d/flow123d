@@ -20,6 +20,7 @@
 #define MESH_TYPES_HH_
 
 #include "system/sys_vector.hh"
+#include <vector>
 
 // Forward declarations
 template <int spacedim>
@@ -42,6 +43,8 @@ typedef NodeVector::FullIter NodeFullIter;
 typedef flow::VectorId<Element> ElementVector;
 typedef ElementVector::Iter ElementIter;
 typedef ElementVector::FullIter ElementFullIter;
+// new iterator for access to vector of all (bulk + boundary) elements
+typedef vector<Element>::iterator ElementIterator;
 
 typedef flow::Vector<Boundary> BoundaryVector;
 typedef BoundaryVector::Iter BoundaryIter;

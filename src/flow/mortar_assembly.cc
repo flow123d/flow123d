@@ -110,7 +110,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
 
     //slave_ac_.setup(master_ac);
 
-    ElementFullIter ele = master_ac.full_iter();
+    ElementIterator ele = master_ac.full_iter();
     arma::vec3 ele_centre = ele->centre();
     double m_sigma = data_->sigma.value( ele_centre, ele->element_accessor());
     double m_conductivity = data_->conductivity.value( ele_centre, ele->element_accessor());

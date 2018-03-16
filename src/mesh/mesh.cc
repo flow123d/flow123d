@@ -245,7 +245,7 @@ void Mesh::count_element_types() {
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
-		ElementIter ele = this->element.find_id(elem_to_region.first);
+		vector<Element>::iterator ele = element_vec_.begin() + elem_index(elem_to_region.first);
 		ele->region_idx_ = region_db_.get_region( elem_to_region.second, ele->dim() );
 		region_db_.mark_used_region(ele->region_idx_.idx());
 	}
@@ -260,7 +260,7 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     FOR_ELEMENTS(this, ele)
-        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.id());
+        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele->id());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -273,7 +273,7 @@ void Mesh::setup_topology() {
     IdxInt *id_4_old = new IdxInt[n_elements()];
     int i = 0;
     FOR_ELEMENTS(this, ele)
-        id_4_old[i++] = ele.index();
+        id_4_old[i++] = elem_index( ele->id() );
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 
     delete[] id_4_old;
@@ -335,18 +335,17 @@ void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vecto
 }
 
 
-bool Mesh::find_lower_dim_element( ElementVector &elements, vector<unsigned int> &element_list,
-        unsigned int dim, unsigned int &element_idx) {
+bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx) {
     bool is_neighbour = false;
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
     for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele)
-        if (elements[*ele].dim() == dim) { // keep only indexes of elements of same dimension
+        if (element_vec_[*ele].dim() == dim) { // keep only indexes of elements of same dimension
             *e_dest=*ele;
             ++e_dest;
-        } else if (elements[*ele].dim() == dim-1) { // get only first element of lower dimension
+        } else if (element_vec_[*ele].dim() == dim-1) { // get only first element of lower dimension
             if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
-                    elements(*ele).id(), elements(element_idx).id() );
+            		element_vec_[*ele].id(), element_vec_[element_idx].id() );
 
             is_neighbour = true;
             element_idx = *ele;
@@ -394,10 +393,10 @@ void Mesh::make_neighbours_and_edges()
         side_nodes.resize(bc_ele.n_nodes());
         for (unsigned n=0; n<bc_ele.n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele.node[n]);
         intersect_element_lists(side_nodes, intersection_list);
-        bool is_neighbour = find_lower_dim_element(element, intersection_list, bc_ele.dim() +1, ngh_element_idx);
+        bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele.dim() +1, ngh_element_idx);
         if (is_neighbour) {
             xprintf(UsrErr, "Boundary element (id: %d) match a regular element (id: %d) of lower dimension.\n",
-                    bc_ele.id(), element(ngh_element_idx).id());
+                    bc_ele.id(), element_vec_[ngh_element_idx].id());
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
@@ -422,7 +421,7 @@ void Mesh::make_neighbours_and_edges()
             // for 1d boundaries there can be more then one 1d elements connected to the boundary element
             // we do not detect this case later in the main search over bulk elements
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect)  {
-                Element *elem = &(element[*isect]);
+                Element *elem = &(element_vec_[*isect]);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
@@ -467,10 +466,10 @@ void Mesh::make_neighbours_and_edges()
 			for (unsigned n=0; n<e->side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e->side(s)->node(n));
 			intersect_element_lists(side_nodes, intersection_list);
 
-			bool is_neighbour = find_lower_dim_element(element, intersection_list, e->dim(), ngh_element_idx);
+			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
 
 			if (is_neighbour) { // edge connects elements of different dimensions
-			    neighbour.element_ = &(element[ngh_element_idx]);
+			    neighbour.element_ = &(element_vec_[ngh_element_idx]);
             } else { // edge connects only elements of the same dimension
                 // Allocate the array of sides.
                 last_edge_idx=edges.size();
@@ -505,7 +504,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = element_id_map_.find(-bdr_idx)->second;
+                    bdr.bc_ele_idx_ = elem_index(-bdr_idx);
                     bdr.mesh_=this;
 
                     continue; // next side of element e
@@ -514,7 +513,7 @@ void Mesh::make_neighbours_and_edges()
 
 			// go through the elements connected to the edge or neighbour
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
-                Element *elem = &(element[*isect]);
+                Element *elem = &(element_vec_[*isect]);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     if (elem->edge_idx_[ecs] != Mesh::undef_idx) continue;
                     SideIter si = elem->side(ecs);
@@ -686,7 +685,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
-        	IdxInt id = element.get_id(idx);
+        	IdxInt id = element_vec_[idx].id();
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }

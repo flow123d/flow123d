@@ -598,7 +598,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
     // calculate element averages of solution
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
+        typename DOFHandlerBase::CellIterator elem = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
 
         unsigned int n_dofs;
         switch (elem->dim())
@@ -702,7 +702,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element(feo->dh()->el_index(i_cell));
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
@@ -795,7 +795,7 @@ void TransportDG<Model>::assemble_volume_integrals()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element(feo->dh()->el_index(i_cell));
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
@@ -863,7 +863,7 @@ void TransportDG<Model>::set_sources()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element(feo->dh()->el_index(i_cell));
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
@@ -962,8 +962,8 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 for (int s2=s1+1; s2<edg->n_sides; s2++)
                 {
                     OLD_ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
-                    if (!feo->dh()->el_is_local(edg->side(s1)->element().index())
-                            && !feo->dh()->el_is_local(edg->side(s2)->element().index())) continue;
+                    if (!feo->dh()->el_is_local(Model::mesh_->elem_index( edg->side(s1)->element()->id() ))
+                            && !feo->dh()->el_is_local(Model::mesh_->elem_index( edg->side(s2)->element()->id() ))) continue;
 
                     arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
@@ -981,7 +981,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     // For selected pair of elements:
                     for (int n=0; n<2; n++)
                     {
-                        if (!feo->dh()->el_is_local(edg->side(sd[n])->element().index())) continue;
+                        if (!feo->dh()->el_is_local(Model::mesh_->elem_index( edg->side(sd[n])->element()->id() ))) continue;
 
                         for (int m=0; m<2; m++)
                         {
@@ -1175,7 +1175,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         // skip neighbours of different dimension
         if (nb->element()->dim() != dim-1) continue;
 
-        typename DOFHandlerBase::CellIterator cell_sub = Model::mesh_->element.full_iter(nb->element());
+        typename DOFHandlerBase::CellIterator cell_sub = Model::mesh_->bulk_begin() + Model::mesh_->elem_index( nb->element()->id() );
 		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i] = indices[i];
@@ -1193,8 +1193,8 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 
         // Element id's for testing if they belong to local partition.
         int element_id[2];
-        element_id[0] = cell_sub.index();
-        element_id[1] = cell.index();
+        element_id[0] = Model::mesh_->elem_index( cell_sub->id() );
+        element_id[1] = Model::mesh_->elem_index( cell->id() );
 
         fsv_rt.reinit(cell, nb->side()->el_idx());
         fv_rt.reinit(cell_sub);
@@ -1309,7 +1309,7 @@ void TransportDG<Model>::set_boundary_conditions()
             }
 
             SideIter side = edg->side(0);
-            typename DOFHandlerBase::CellIterator cell = Model::mesh_->element.full_iter(side->element());
+            typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + Model::mesh_->elem_index( side->element()->id() );
             ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
             arma::uvec bc_type;
@@ -1448,7 +1448,7 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
 
 
 // return the ratio of longest and shortest edge
-double elem_anisotropy(const ElementFullIter &e)
+double elem_anisotropy(const ElementIterator &e)
 {
     double h_max = 0, h_min = numeric_limits<double>::infinity();
     for (unsigned int i=0; i<e->n_nodes(); i++)
@@ -1644,7 +1644,7 @@ void TransportDG<Model>::prepare_initial_condition()
 
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
+        typename DOFHandlerBase::CellIterator elem = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
         if (elem->dim() != dim) continue;
 
         ElementAccessor<3> ele_acc = elem->element_accessor();
@@ -1695,7 +1695,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     {
         for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
         {
-            typename DOFHandlerBase::CellIterator elem = Model::mesh_->element(feo->dh()->el_index(i_cell));
+            typename DOFHandlerBase::CellIterator elem = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
 
             unsigned int n_dofs;
             switch (elem->dim())

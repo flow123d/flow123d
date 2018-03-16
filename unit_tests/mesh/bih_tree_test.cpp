@@ -162,7 +162,7 @@ public:
 			vector<unsigned int> bf_result;
 			FOR_ELEMENTS(mesh, ele) {
 				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
-				if (box.intersect(ele->bounding_box()) ) bf_result.push_back(ele.index());
+				if (box.intersect(ele->bounding_box()) ) bf_result.push_back( mesh->elem_index( ele->id() ) );
 			}
 
 			vector<unsigned int> result_vec;
@@ -193,7 +193,7 @@ public:
 
 			vector<unsigned int> bf_point_result;
 			FOR_ELEMENTS(mesh, ele) {
-				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back(ele.index());
+				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back( mesh->elem_index( ele->id() ) );
 			}
 
 			vector<unsigned int> result_point_vec;

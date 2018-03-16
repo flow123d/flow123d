@@ -234,10 +234,10 @@ void ConvectionTransport::set_initial_condition()
 {
     FOR_ELEMENTS(mesh_, elem)
     {
-    	if (!el_ds->is_local(row_4_el[elem.index()])) continue;
+    	if (!el_ds->is_local(row_4_el[mesh_->elem_index( elem->id() )])) continue;
 
-    	IdxInt index = row_4_el[elem.index()] - el_ds->begin();
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
+    	IdxInt index = row_4_el[mesh_->elem_index( elem->id() )] - el_ds->begin();
+    	ElementAccessor<3> ele_acc = mesh_->element_accessor(mesh_->elem_index( elem->id() ));
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
 			conc[sbi][index] = data_.init_conc[sbi].value(elem->centre(), ele_acc);
@@ -715,8 +715,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     START_TIMER("convection_matrix_assembly");
 
-    ElementFullIter el2 = ELEMENT_FULL_ITER_NULL(mesh_);
-    ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
+    ElementIterator el2;
+    ElementIterator elm;
     struct Edge *edg;
     unsigned int n;
     int s, j, np, rank;
@@ -733,8 +733,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     aii = 0.0;
 
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element(el_4_loc[loc_el]);
-        new_i = row_4_el[elm.index()];
+        elm = mesh_->bulk_begin() + el_4_loc[loc_el];
+        new_i = row_4_el[mesh_->elem_index( elm->id() )];
 
         FOR_ELEMENT_SIDES(elm,si) {
             // same dim
@@ -750,7 +750,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                     // These edges on these sides should have just one side
                     if (edg->side(s) != elm->side(si)) {
-                        j = ELEMENT_FULL_ITER(mesh_, edg->side(s)->element()).index();
+                        j = mesh_->elem_index( edg->side(s)->element()->id() );
                         new_j = row_4_el[j];
 
                         flux2 = mh_dh->side_flux( *(edg->side(s)));
@@ -766,9 +766,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             {
-                el2 = ELEMENT_FULL_ITER(mesh_, elm->neigh_vb[n]->side()->element() ); // higher dim. el.
-                OLD_ASSERT( el2 != elm, "Elm. same\n");
-                new_j = row_4_el[el2.index()];
+                el2 = mesh_->bulk_begin() + mesh_->elem_index( elm->neigh_vb[n]->side()->element()->id() ); // higher dim. el.
+                ASSERT( el2 != elm ).error("Elm. same\n");
+                new_j = row_4_el[mesh_->elem_index( el2->id() )];
                 flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
 
                 // volume source - out-flow from higher dimension

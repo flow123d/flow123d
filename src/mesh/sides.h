@@ -66,9 +66,9 @@ public:
     inline const Node * node(unsigned int i) const;
 
     /**
-     * Returns full iterator to the element of the side.
+     * Returns iterator to the element of the side.
      */
-    inline ElementFullIter element() const;
+    inline ElementIterator element() const;
 
     /**
      * Returns pointer to the mesh.

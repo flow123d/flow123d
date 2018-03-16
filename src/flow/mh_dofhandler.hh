@@ -65,7 +65,7 @@ public:
     double side_scalar(const Side &side) const;
 
     /// temporary replacement for DofHandler accessor, scalar (pressure) on element
-    double element_scalar( ElementFullIter &ele ) const;
+    double element_scalar( ElementIterator &ele ) const;
 
     inline double precision() const { return solution_precision; };
 
@@ -113,13 +113,13 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
-    : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->element(ele_global_idx()))
+    : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->bulk_begin() + ele_global_idx())
     {}
 
     void reinit( uint loc_ele_idx)
     {
         local_ele_idx_=loc_ele_idx;
-        ele=dh->mesh_->element(ele_global_idx());
+        ele=dh->mesh_->bulk_begin() + ele_global_idx();
     }
 
     uint dim() {
@@ -130,7 +130,7 @@ public:
         return ele->n_sides();
     }
 
-    ElementFullIter full_iter() {
+    ElementIterator full_iter() {
         return ele;
     }
 
@@ -217,7 +217,7 @@ private:
     int edge_rows_[4];
     MH_DofHandler *dh;
     uint local_ele_idx_;
-    ElementFullIter ele;
+    ElementIterator ele;
 };
 
 /**

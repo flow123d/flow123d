@@ -49,9 +49,9 @@ inline Side::Side(const Element * ele, unsigned int set_lnum)
         return element_->node[ i_n ];
     }
 
-    inline ElementFullIter Side::element() const {
-    	OLD_ASSERT( valid(), "Wrong use of uninitialized accessor.\n");
-        return mesh()->element.full_iter( const_cast<Element *>(element_) );
+    inline ElementIterator Side::element() const {
+    	ASSERT( valid() ).error("Wrong use of uninitialized accessor.\n");
+        return mesh()->bulk_begin() + mesh()->elem_index( element_->id() );
     }
 
     inline Mesh * Side::mesh() const {

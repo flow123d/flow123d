@@ -46,9 +46,9 @@ public:
     IntersectionAlgorithmBase(Mesh* mesh);
 protected:
    
-    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
+    /// Auxiliary function that translates @p ElementIterator to @p Simplex<simplex_dim>.
     template<unsigned int simplex_dim>
-    void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
+    void update_simplex(const ElementIterator &element, Simplex<simplex_dim> & simplex);
     
     /// Mesh pointer.
     Mesh *mesh;
@@ -167,14 +167,14 @@ private:
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
-    void prolongation_decide(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele, 
+    void prolongation_decide(const ElementIterator &comp_ele, const ElementIterator &bulk_ele,
                              IntersectionAux<dim,3> is);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
 
     template<unsigned int ele_dim>
-    std::vector< unsigned int > get_element_neighbors(const ElementFullIter& ele,
+    std::vector< unsigned int > get_element_neighbors(const ElementIterator& ele,
                                                       unsigned int ip_dim,
                                                       unsigned int ip_obj_idx);
     
@@ -215,7 +215,7 @@ private:
     std::vector<unsigned int> component_idx_;
     
     /// Computes fundamental intersection of two 2D elements.
-    void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB,
+    void compute_single_intersection(const ElementIterator &eleA, const ElementIterator &eleB,
                                      std::vector<IntersectionLocal<2,2>> &storage);
     
     /// Creates numbering of the 2D components and fills component_idx_ vector.

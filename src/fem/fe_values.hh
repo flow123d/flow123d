@@ -163,7 +163,7 @@ public:
     /**
      * @brief Iterator to the last reinit-ed cell.
      */
-    ElementFullIter *present_cell;
+    ElementIterator *present_cell;
 
 };
 
@@ -537,7 +537,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(ElementFullIter &cell);
+    void reinit(ElementIterator &cell);
 
 
 };
@@ -587,7 +587,7 @@ public:
 	 * @param cell The actual cell.
 	 * @param sid  Number of the side of the cell.
 	 */
-    void reinit(ElementFullIter &cell,
+    void reinit(ElementIterator &cell,
         		unsigned int sid);
 
 

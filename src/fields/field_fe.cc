@@ -336,7 +336,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	// iterate through elements, assembly global vector and count number of writes
 	FOR_ELEMENTS( dh_->mesh(), ele ) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-		data_vec_i = ele.index() * dof_indices_.size();
+		data_vec_i = dh_->mesh()->elem_index( ele->id() ) * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];
@@ -362,7 +362,7 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
 		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
-		output_data_cache.store_value( ele.index(), loc_values );
+		output_data_cache.store_value( dh_->mesh()->elem_index( ele->id() ), loc_values );
 	}
 
 	output_data_cache.set_dof_handler_hash( dh_->hash() );
