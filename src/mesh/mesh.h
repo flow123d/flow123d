@@ -170,10 +170,10 @@ public:
     	node_vector.reserve(n_nodes);
     }
 
-    /// Reserve size of element vector
-    inline void reserve_element_size(unsigned int n_elements) {
-    	element.reserve(n_elements);
-    }
+//    /// Reserve size of element vector
+//    inline void reserve_element_size(unsigned int n_elements) {
+//    	element.reserve(n_elements);
+//    }
 
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
@@ -250,8 +250,8 @@ public:
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
-    /// Vector of elements of the mesh.
-    ElementVector element;
+//    /// Vector of elements of the mesh.
+//    ElementVector element;
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.

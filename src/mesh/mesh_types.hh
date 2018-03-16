@@ -40,9 +40,9 @@ typedef NodeVector::FullIter NodeFullIter;
 // iterator over elements
 // should be mesh member, but then we have problem how to have ElementIter as memeber of
 // Node or other classes without cyclic inclusion
-typedef flow::VectorId<Element> ElementVector;
-typedef ElementVector::Iter ElementIter;
-typedef ElementVector::FullIter ElementFullIter;
+//typedef flow::VectorId<Element> ElementVector;
+//typedef ElementVector::Iter ElementIter;
+//typedef ElementVector::FullIter ElementFullIter;
 // new iterator for access to vector of all (bulk + boundary) elements
 typedef vector<Element>::iterator ElementIterator;
 
