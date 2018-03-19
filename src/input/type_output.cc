@@ -135,6 +135,7 @@ void OutputBase::print_generic(ostream& stream, const TypeBase *type) {
     if (type->generic_type_hash_) {
         const T *gen_type = Input::TypeRepository<T>::get_instance().find_hash(type->generic_type_hash_).get();
         ASSERT(gen_type)(type->hash_str())(type->type_name());
+        if (was_written(gen_type->content_hash())) return;
         print_base(stream, gen_type);
     }
 }
