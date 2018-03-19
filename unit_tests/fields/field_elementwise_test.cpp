@@ -46,7 +46,7 @@ string input = R"INPUT(
        mesh_data_file="fields/simplest_cube_data.msh",
        field_name="scalar",
        default_value=0.0,
-       read_from_time=1.0
+       read_time_shift=1.0
    },
    vector_fixed={
        TYPE="FieldElementwise",
