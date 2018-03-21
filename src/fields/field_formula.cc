@@ -50,11 +50,12 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 			//							"Definition of unit.")
 			.declare_key("surface_direction", it::String(), it::Default("\"0 0 1\""),
 										"The vector used to project evaluation point onto the surface.")
-			.declare_key("surface_region", it::String(), it::Default::optional(),
+			.declare_key("surface_region", it::String(), it::Default("\".BOUNDARY\""),
 										"The name of region set considered as the surface. You have to set surface region if you "
 										"want to use formula variable ```d```.")
 			.declare_key("max_depth", it::Double(0.0), it::Default("1e06"),
-										"Default value of surface depth. If no intersection is found, we use this value.")
+										"Maximal value of surface depth. If no intersection is found or computed depth is greater, "
+										"we use this value.")
 	        .allow_auto_conversion("value")
 			.close();
 }
@@ -97,9 +98,10 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
     bool any_parser_changed = false;
     std::string value_input_address = in_rec_.address_string();
+    has_depth_var_ = false;
 
 
-    std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
+    std::string vars = string("x,y,z").substr(0, 2*spacedim-1) + string(",d");
     // update parsers
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
@@ -122,6 +124,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             bool time_dependent = false;
             BOOST_FOREACH(std::string &var_name, var_list ) {
                 if (var_name == std::string("t") ) time_dependent=true;
+                else if (var_name == std::string("d") ) has_depth_var_=true;
                 else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
                 else
                 	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
@@ -163,12 +166,10 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
-    // create SurfaceDepth object if surface region is set
-	std::string surface_region;
-	if ( in_rec_.opt_val("surface_region", surface_region) ) {
-		surface_depth_ = std::make_shared<SurfaceDepth>(mesh, surface_region, in_rec_.val<std::string>("surface_direction"));
-		max_depth_ = in_rec_.val<double>("max_depth");
-	}
+    // create SurfaceDepth object on surface region
+	std::string surface_region = in_rec_.val<std::string>("surface_region");
+	surface_depth_ = std::make_shared<SurfaceDepth>(mesh, surface_region, in_rec_.val<std::string>("surface_direction"));
+	max_depth_ = in_rec_.val<double>("max_depth");
 }
 
 
@@ -178,9 +179,11 @@ void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_dom
 template <int spacedim, class Value>
 typename Value::return_type const & FieldFormula<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
+
+    auto p_depth = this->eval_depth_var(p);
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p.memptr());
+            this->value_(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
         }
     return this->r_value_;
 }
@@ -199,12 +202,28 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
         OLD_ASSERT( envelope.n_rows()==this->value_.n_rows(),
                 "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
                 i, envelope.n_rows(),this->value_.n_rows());
+        auto p_depth = this->eval_depth_var(point_list[i]);
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
             for(unsigned int col=0; col < this->value_.n_cols(); col++) {
-                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(point_list[i].memptr());
+                envelope(row,col) = this->unit_conversion_coefficient_ * parser_matrix_[row][col].Eval(p_depth.memptr());
             }
     }
+}
+
+
+template <int spacedim, class Value>
+arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
+{
+	arma::vec p_depth(spacedim+1);
+	for (unsigned int i=0; i<spacedim; i++) p_depth(i) = p(i);
+	if (has_depth_var_) {
+		// add value of depth
+		p_depth(spacedim) = std::min( surface_depth_->compute_distance(p), max_depth_ );
+	} else {
+		p_depth(spacedim) = 0;
+	}
+	return p_depth;
 }
 
 

@@ -93,6 +93,13 @@ public:
 private:
     typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
 
+    /**
+     * Evaluate depth variable if it is contained in formula.
+     *
+     * Return arma vec of point coordinates extended by depth value (or zero if depth is not contained.
+     */
+    arma::vec eval_depth_var(const Point &p);
+
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     StringTensor formula_matrix_;
 
@@ -107,6 +114,9 @@ private:
 
     /// Surface depth object calculate distance from surface.
     std::shared_ptr<SurfaceDepth> surface_depth_;
+
+    /// Flag indicates if depth variable 'd' is used in formula
+    bool has_depth_var_;
 
     /// Registrar of class to factory
     static const int registrar;
