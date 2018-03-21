@@ -9,12 +9,16 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest.hh>
+#include <mesh_constructor.hh>
 
 
 #include "fields/field_constant.hh"
+#include "fields/surface_depth.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
+#include "system/sys_profiler.hh"
+
 
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
@@ -34,6 +38,11 @@ string input = R"INPUT(
    conductivity_3d={ // 3x3 tensor
        TYPE="FieldFormula",
        value=["sin(x)+cos(y)","exp(x)+y^2", "base:=(x+y); base+base^2"]
+   },
+   formula_with_depth={
+       TYPE="FieldFormula",
+       value=["d", "x", "y"],
+       surface_region=".top side"
    }
 }
 )INPUT";
@@ -43,6 +52,8 @@ TEST(FieldFormula, read_from_input) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::TensorFixed > TensorField;
     typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
 
+    Profiler::initialize();
+
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
@@ -50,6 +61,7 @@ TEST(FieldFormula, read_from_input) {
         .declare_key("conductivity_3d", TensorField::get_input_type_instance(), Input::Type::Default::obligatory(),"" )
         .declare_key("init_conc", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .declare_key("init_conc_unit_conversion", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
+		.declare_key("formula_with_depth", VectorField::get_input_type_instance(), Input::Type::Default::obligatory(), "" )
         .close();
 
     // read input string
@@ -145,6 +157,29 @@ TEST(FieldFormula, read_from_input) {
         EXPECT_DOUBLE_EQ( base+base*base,               result.at(2,2));
 
     }
+    FieldAlgoBaseInitData init_data_depth("formula_with_depth", 3, UnitSI::dimensionless());
+    auto depth=VectorField::function_factory(in_rec.val<Input::AbstractRecord>("formula_with_depth"), init_data_depth);
+    {
+    	std::string mesh_in_string = "{mesh_file=\"fields/surface_reg.msh\"}";
+    	Mesh * mesh = mesh_constructor(mesh_in_string);
+        auto reader = reader_constructor(mesh_in_string);
+    	reader->read_physical_names(mesh);
+    	reader->read_raw_mesh(mesh);
+
+    	depth->set_mesh( const_cast<const Mesh *>(mesh), true );
+    	depth->set_time(0.0);
+
+        arma::vec3 result;
+        Space<3>::Point point;
+        for(unsigned int i=0; i < mesh->element.size(); i++) {
+        	auto elem = mesh->element_accessor(i);
+        	point = elem.centre();
+        	result = depth->value(point, elem);
+        	EXPECT_DOUBLE_EQ(result(0), 1-point(2));
+        	EXPECT_DOUBLE_EQ(result(1), point(0));
+        	EXPECT_DOUBLE_EQ(result(2), point(1));
+        }
+    }
 }
 
 
@@ -161,6 +196,8 @@ string set_time_input = R"INPUT(
 
 TEST(FieldFormula, set_time) {
     typedef FieldAlgorithmBase<3, FieldValue<3>::VectorFixed > VectorField;
+
+    Profiler::initialize();
 
     // setup FilePath directories
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
@@ -204,9 +241,6 @@ TEST(FieldFormula, set_time) {
 
 }
 
-#include "fields/surface_depth.hh"
-#include "system/sys_profiler.hh"
-#include <mesh_constructor.hh>
 
 TEST(SurfaceDepth, base_test) {
     Profiler::initialize();
@@ -219,10 +253,8 @@ TEST(SurfaceDepth, base_test) {
 	reader->read_raw_mesh(mesh);
 
 	SurfaceDepth sd(mesh, ".top side", "0 0 1");
-	std::cout << " - " << sd.compute_distance( arma::vec3("1 0.5 -0.9") ) << std::endl;
-	std::cout << " - " << sd.compute_distance( arma::vec3("-1 0.5 0.9") ) << std::endl;
-	std::cout << " - " << sd.compute_distance( arma::vec3("3 0.5 0.9") ) << std::endl;
+	EXPECT_DOUBLE_EQ( sd.compute_distance( arma::vec3("1 0.5 -0.9") ), 1.9 );
+	EXPECT_DOUBLE_EQ( sd.compute_distance( arma::vec3("-1 0.5 0.9") ), 0.1 );
 
 	delete mesh;
 }
-
