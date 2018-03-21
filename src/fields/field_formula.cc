@@ -117,7 +117,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 #pragma GCC diagnostic ignored "-Wunused-variable"
             {
                 int err=tmp_parser.ParseAndDeduceVariables(formula_matrix_.at(row,col), var_list);
-                OLD_ASSERT( err != FunctionParser::FP_NO_ERROR, "ParseAndDeduceVariables error: %s\n", tmp_parser.ErrorMsg() );
+                ASSERT(err != FunctionParser::FP_NO_ERROR)(tmp_parser.ErrorMsg()).error("ParseAndDeduceVariables error\n");
             }
 #pragma GCC diagnostic pop
 
@@ -196,12 +196,11 @@ template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                    std::vector<typename Value::return_type>  &value_list)
 {
-	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
+	ASSERT_EQ( point_list.size(), value_list.size() );
     for(unsigned int i=0; i< point_list.size(); i++) {
         Value envelope(value_list[i]);
-        OLD_ASSERT( envelope.n_rows()==this->value_.n_rows(),
-                "value_list[%d] has wrong number of rows: %d; should match number of components: %d\n",
-                i, envelope.n_rows(),this->value_.n_rows());
+        ASSERT_EQ( envelope.n_rows(), this->value_.n_rows() )(i)(envelope.n_rows())(this->value_.n_rows())
+        		.error("value_list['i'] has wrong number of rows\n");
         auto p_depth = this->eval_depth_var(point_list[i]);
 
         for(unsigned int row=0; row < this->value_.n_rows(); row++)
