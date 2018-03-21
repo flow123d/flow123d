@@ -50,7 +50,7 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 			//							"Definition of unit.")
 			.declare_key("surface_direction", it::String(), it::Default("\"0 0 1\""),
 										"The vector used to project evaluation point onto the surface.")
-			.declare_key("surface_region", it::String(), it::Default("\".BOUNDARY\""),
+			.declare_key("surface_region", it::String(), it::Default::optional(),
 										"The name of region set considered as the surface. You have to set surface region if you "
 										"want to use formula variable ```d```.")
 			.declare_key("max_depth", it::Double(0.0), it::Default("1e06"),
@@ -124,7 +124,13 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             bool time_dependent = false;
             BOOST_FOREACH(std::string &var_name, var_list ) {
                 if (var_name == std::string("t") ) time_dependent=true;
-                else if (var_name == std::string("d") ) has_depth_var_=true;
+                else if (var_name == std::string("d") ) {
+                	if (surface_depth_)
+                		has_depth_var_=true;
+                	else
+                    	WarningOut().fmt("Unset surface region. Variable '{}' in the FieldFormula[{}][{}] == '{}' will be set to zero\n at the input address:\n {} \n",
+                                var_name, row, col, formula_matrix_.at(row,col), value_input_address );
+                }
                 else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
                 else
                 	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
@@ -166,10 +172,12 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
 template <int spacedim, class Value>
 void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) {
-    // create SurfaceDepth object on surface region
-	std::string surface_region = in_rec_.val<std::string>("surface_region");
-	surface_depth_ = std::make_shared<SurfaceDepth>(mesh, surface_region, in_rec_.val<std::string>("surface_direction"));
-	max_depth_ = in_rec_.val<double>("max_depth");
+    // create SurfaceDepth object if surface region is set
+    std::string surface_region;
+    if ( in_rec_.opt_val("surface_region", surface_region) ) {
+        surface_depth_ = std::make_shared<SurfaceDepth>(mesh, surface_region, in_rec_.val<std::string>("surface_direction"));
+        max_depth_ = in_rec_.val<double>("max_depth");
+    }
 }
 
 
@@ -216,7 +224,7 @@ arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 {
 	arma::vec p_depth(spacedim+1);
 	for (unsigned int i=0; i<spacedim; i++) p_depth(i) = p(i);
-	if (has_depth_var_) {
+	if (surface_depth_ && has_depth_var_) {
 		// add value of depth
 		p_depth(spacedim) = std::min( surface_depth_->compute_distance(p), max_depth_ );
 	} else {
