@@ -34,6 +34,7 @@
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/sides.h"                      // for SideIter
 #include "mesh/bounding_box.hh"              // for BoundingBox
+#include "tools/bidirectional_map.hh"
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
 #include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
@@ -497,6 +498,7 @@ protected:
 
     /// Maps element ids to indexes into vector element_vec_
     std::map<int, unsigned int> element_id_map_;
+    BidirectionalMap<int> element_ids_;
 
 
 
