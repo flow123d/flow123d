@@ -13,7 +13,7 @@
  *
  * 
  * @file    general_iterator.hh
- * @brief   Template GeneralIterator serves as general template for internal iterators.
+ * @brief   Template Iter serves as general template for internal iterators.
  */
 
 #ifndef GENERAL_ITERATOR_HH_
@@ -27,17 +27,17 @@
  * - increment operator++()
  */
 template<class Object>
-class GeneralIterator
+class Iter
 {
 public:
-//     GeneralIterator();
+//     Iter();
 
-    GeneralIterator(const Object& object);
+    Iter(const Object& object);
 
     /// equal operator
-    bool operator==(const GeneralIterator& other);
+    bool operator==(const Iter& other);
     /// non-equal operator
-    bool operator!=(const GeneralIterator& other);
+    bool operator!=(const Iter& other);
 
     ///  * dereference operator
     const Object& operator*() const;
@@ -46,7 +46,7 @@ public:
     const Object* operator->() const;
 
     /// prefix increment
-    GeneralIterator& operator++();
+    Iter& operator++();
 
 private:
     /// Output element of the output mesh.
@@ -54,41 +54,41 @@ private:
 };
 
 
-// --------------------------------------------------- GeneralIterator INLINE implementation -----------
-// inline GeneralIterator::GeneralIterator()
+// --------------------------------------------------- Iter INLINE implementation -----------
+// inline Iter::Iter()
 // {}
 
 template<class Object>
-inline GeneralIterator<Object>::GeneralIterator(const Object& object)
+inline Iter<Object>::Iter(const Object& object)
 : object_(object)
 {}
 
 template<class Object>
-inline bool GeneralIterator<Object>::operator==(const GeneralIterator& other)
+inline bool Iter<Object>::operator==(const Iter& other)
 {
     return (object_ == other.object_);
 }
 
 template<class Object>
-inline bool GeneralIterator<Object>::operator!=(const GeneralIterator& other)
+inline bool Iter<Object>::operator!=(const Iter& other)
 {
     return !( *this == other);
 }
 
 template<class Object>
-inline const Object& GeneralIterator<Object>::operator*() const
+inline const Object& Iter<Object>::operator*() const
 {
     return object_;
 }
 
 template<class Object>
-inline const Object* GeneralIterator<Object>::operator->() const
+inline const Object* Iter<Object>::operator->() const
 {
     return &object_;
 }
 
 template<class Object>
-inline GeneralIterator<Object>& GeneralIterator<Object>::operator++()
+inline Iter<Object>& Iter<Object>::operator++()
 {
     object_.inc();
     return (*this);

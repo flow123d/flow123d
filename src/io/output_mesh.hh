@@ -23,7 +23,7 @@
 #include <vector>                     // for vector
 #include "input/accessors.hh"         // for Record
 #include "mesh/point.hh"
-#include "tools/general_iterator.hh"  // for GeneralIterator
+#include "tools/general_iterator.hh"  // for Iter
 
 class Mesh;
 class OutputElement;
@@ -32,7 +32,7 @@ template<class T> class ElementDataCache;
 template<int> class ElementAccessor;
 
 
-typedef GeneralIterator<OutputElement> OutputElementIterator;
+typedef Iter<OutputElement> OutputElementIterator;
 
 
 /**
