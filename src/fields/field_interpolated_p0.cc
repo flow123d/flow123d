@@ -22,10 +22,13 @@
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
 #include "io/reader_cache.hh"
-#include "mesh/ngh/include/intersection.h"
-#include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
 
+#include "fem/mapping_p1.hh"
+
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
+#include "intersection/compute_intersection.hh"
 
 namespace it = Input::Type;
 
@@ -163,63 +166,69 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 
 		double total_measure=0.0, measure;
-		ngh::TIntersectionType iType;
 
 		START_TIMER("compute_pressure");
 		ADD_CALLS(searched_elements_.size());
+                
+                ElementFullIter elm_full_iter = elm.full_iter();
+                
+                MappingP1<3,3> mapping;
+                
 		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
 		{
-			ElementFullIter ele = source_mesh_->element( *it );
-			if (ele->dim() == 3) {
-			    ngh::set_tetrahedron_from_element(tetrahedron_, ele);
-				// get intersection (set measure = 0 if intersection doesn't exist)
-				switch (elm.dim()) {
-					case 0: {
-					    ngh::set_point_from_element(point_, elm.element());
-						if ( tetrahedron_.IsInner(point_) ) {
-							measure = 1.0;
-						} else {
-							measure = 0.0;
-						}
-						break;
-					}
-					case 1: {
-					    ngh::set_abscissa_from_element(abscissa_, elm.element());
-					    ngh::GetIntersection(abscissa_, tetrahedron_, iType, measure);
-						if (iType != ngh::line) {
-							measure = 0.0;
-						}
-						break;
-					}
-			        case 2: {
-			        	ngh::set_triangle_from_element(triangle_, elm.element());
-			        	ngh::GetIntersection(triangle_, tetrahedron_, iType, measure);
-						if (iType != ngh::area) {
-							measure = 0.0;
-						}
-			            break;
-			        }
-			    }
+                    ElementFullIter ele = source_mesh_->element( *it );
+                    if (ele->dim() == 3) {
+                        // get intersection (set measure = 0 if intersection doesn't exist)
+                        switch (elm.dim()) {
+                            case 0: {
+                                arma::vec::fixed<3> real_point = elm_full_iter->node[0]->point();
+                                arma::mat::fixed<3, 4> elm_map = mapping.element_map(*ele);
+                                arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
+                                
+                                measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
+                                                && arma::min( unit_point ) >= 0)
+                                                    ? 1.0 : 0.0;
+                                break;
+                            }
+                            case 1: {
+                                IntersectionAux<1,3> is;
+                                ComputeIntersection<1,3> CI(elm_full_iter, ele, source_mesh_.get());
+                                CI.init();
+                                CI.compute(is);
 
+                                IntersectionLocal<1,3> ilc(is);
+                                measure = ilc.compute_measure() * elm_full_iter->measure();
+                                break;
+                            }
+                            case 2: {
+                                IntersectionAux<2,3> is;
+                                ComputeIntersection<2,3> CI(elm_full_iter, ele, source_mesh_.get());
+                                CI.init();
+                                CI.compute(is);
 
+                                IntersectionLocal<2,3> ilc(is);
+                                measure = 2 * ilc.compute_measure() * elm_full_iter->measure();
+                                break;
+                            }
+                        }
 
-				//adds values to value_ object if intersection exists
-				if (measure > epsilon) {
-					unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
-			        std::vector<typename Value::element_type> &vec = *( data_.get() );
-			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  (typename Value::element_type *)(&vec[index])) );
-					Value tmp_value = Value( ret_type_value );
+                        //adds values to value_ object if intersection exists
+                        if (measure > epsilon) {
+                                unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
+                        std::vector<typename Value::element_type> &vec = *( data_.get() );
+                        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  (typename Value::element_type *)(&vec[index])) );
+                                Value tmp_value = Value( ret_type_value );
 
-					for (unsigned int i=0; i < this->value_.n_rows(); i++) {
-						for (unsigned int j=0; j < this->value_.n_cols(); j++) {
-							this->value_(i,j) += tmp_value(i,j) * measure;
-						}
-					}
-					total_measure += measure;
-				}
-			}
+                                for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+                                        for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+                                                this->value_(i,j) += tmp_value(i,j) * measure;
+                                        }
+                                }
+                                total_measure += measure;
+                        }
+                    }
 		}
-
+                
 		// computes weighted average
 		if (total_measure > epsilon) {
 			for (unsigned int i=0; i < this->value_.n_rows(); i++) {
