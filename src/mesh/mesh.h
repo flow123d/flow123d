@@ -386,9 +386,7 @@ public:
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
     inline int elem_index(int elem_id) const
     {
-        auto iter = this->element_id_map_.find( elem_id );
-        if (iter != this->element_id_map_.end()) return iter->second;
-        else return (-1);
+        return element_ids_.get_position(elem_id);
     }
 
     /**
@@ -452,8 +450,8 @@ protected:
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
 
-    /// Adds element to mesh data structures (element_vec_, element_id_map_), returns iterator to this element.
-    vector<Element>::iterator add_element_to_vector(int id, bool boundary=false);
+    /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
+    Element * add_element_to_vector(int id, bool boundary=false);
 
     unsigned int n_bb_neigh, n_vb_neigh;
 
@@ -499,7 +497,6 @@ protected:
     unsigned int boundary_size_;
 
     /// Maps element ids to indexes into vector element_vec_
-    std::map<int, unsigned int> element_id_map_;
     BidirectionalMap<int> element_ids_;
 
 
