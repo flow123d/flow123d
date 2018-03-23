@@ -119,6 +119,10 @@ public:
         r_idx_ = element()->region_idx();
         dim_=element()->dim();
     }
+
+    bool operator==(const ElementAccessor<spacedim>& other) {
+    	return (element_idx_ == other.element_idx_);
+    }
 private:
     /**
      * When dim_ == undefined_dim_ ; the value of element_idx_ is invalid.

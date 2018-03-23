@@ -54,6 +54,15 @@ private:
 };
 
 
+/**
+ * Create iterator from object
+ */
+template<class Object>
+Iter<Object> make_iter(Object obj) {
+	return Iter<Object>(obj);
+}
+
+
 // --------------------------------------------------- Iter INLINE implementation -----------
 // inline Iter::Iter()
 // {}

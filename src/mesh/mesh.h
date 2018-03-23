@@ -20,6 +20,7 @@
 
 #include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
 #include <boost/exception/info.hpp>          // for error_info::~error_info<...
+//#include <boost/range.hpp>
 #include <memory>                            // for shared_ptr
 #include <string>                            // for string
 #include <vector>                            // for vector, vector<>::iterator
@@ -34,6 +35,7 @@
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/sides.h"                      // for SideIter
 #include "mesh/bounding_box.hh"              // for BoundingBox
+//#include "mesh/accessors.hh"
 #include "tools/bidirectional_map.hh"
 #include "tools/general_iterator.hh"
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
@@ -353,6 +355,9 @@ public:
     	if (boundary) return make_pair<unsigned int, unsigned int>(element_vec_.size()-boundary_size_, element_vec_.size());
     	else return make_pair<unsigned int, unsigned int>(0, bulk_size_+0);
     }
+    //inline boost::iterator_range< ElementIter > bulk_elements_range() {
+    //    return boost::make_iterator_range( make_iter(ElementAccessor<3>(this,0)), make_iter(ElementAccessor<3>(this, bulk_size_)) );
+    //}
 
     /// Returns count of boundary or bulk elements
     inline unsigned int n_elements(bool boundary=false) const {
