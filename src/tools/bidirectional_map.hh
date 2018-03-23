@@ -18,24 +18,41 @@
 #ifndef BIDIRECTIONAL_MAP_HH_
 #define BIDIRECTIONAL_MAP_HH_
 
-/** @brief Bidirectional map templated by <T, unsigned int>.
- * Provides bidirectional access between pair of values.
+/**
+ * @brief Bidirectional map templated by <T, unsigned int>.
+ *
+ * Store pairs of value and its position (index) and allow bidirectional search.
+ * Items of both (values, positions) must be unique.
  */
 template<typename T>
 class BidirectionalMap
 {
 public:
-	BidirectionalMap(unsigned int init_size = 0);
+	/// Constructor
+	BidirectionalMap();
 
-	unsigned int size();
+	/// Return size of map.
+	unsigned int size() const;
 
-	void set_item(T val, unsigned int idx);
+	/**
+	 * Set value of given position.
+	 *
+	 * Position must be in interval set in \p reinit method <0, init_size-1>.
+	 * Element on every position can be set only once.
+	 */
+	void set_item(T val, unsigned int pos);
 
+	/// Add new item at the end position of map.
 	unsigned int add_item(T val);
 
-	int get_index(T val);
+	/// Return position of item of given value.
+	int get_position(T val) const;
 
-	T operator[](unsigned int idx);
+	/// Reset data of map, allow reserve size.
+	void reinit(unsigned int init_size = 0);
+
+	/// Return value on given position.
+	T operator[](unsigned int pos) const;
 
 private:
     std::vector<T> vals_vec_;             ///< Space to save values.
@@ -44,21 +61,20 @@ private:
 
 // --------------------------------------------------- BidirectionalMap INLINE implementation -----------
 template<typename T>
-inline BidirectionalMap<T>::BidirectionalMap(unsigned int init_size)
-: vals_vec_(init_size, -1)
+inline BidirectionalMap<T>::BidirectionalMap()
 {}
 
 template<typename T>
-inline unsigned int BidirectionalMap<T>::size() {
+inline unsigned int BidirectionalMap<T>::size() const {
 	return vals_map_.size();
 }
 
 template<typename T>
-inline void BidirectionalMap<T>::set_item(T val, unsigned int idx) {
-	ASSERT_LT( idx, vals_vec_.size() )(idx)(vals_vec_.size()).error("Value id is out of vector size.");
-	ASSERT( vals_vec_[idx] != -1 )(idx).error("Repeated setting of item.");
-	vals_map_[val] = idx;
-	vals_vec_[idx] = val;
+inline void BidirectionalMap<T>::set_item(T val, unsigned int pos) {
+	ASSERT_LT( pos, vals_vec_.size() )(pos)(vals_vec_.size()).error("Value id is out of vector size.");
+	ASSERT( vals_vec_[pos] != -1 )(pos).error("Repeated setting of item.");
+	vals_map_[val] = pos;
+	vals_vec_[pos] = val;
 }
 
 template<typename T>
@@ -70,16 +86,23 @@ inline unsigned int BidirectionalMap<T>::add_item(T val) {
 }
 
 template<typename T>
-inline int BidirectionalMap<T>::get_index(T val) {
-	typename std::map<T, unsigned int>::iterator iter = vals_map_.find(val);
+inline int BidirectionalMap<T>::get_position(T val) const {
+	typename std::map<T, unsigned int>::const_iterator iter = vals_map_.find(val);
 	if (iter == vals_map_.end()) return -1;
-	else return iter.second;
+	else return iter->second;
 }
 
 template<typename T>
-inline T BidirectionalMap<T>::operator[](unsigned int idx) {
-	ASSERT( idx < vals_vec_.size() );
-	return vals_vec_[idx];
+inline void BidirectionalMap<T>::reinit(unsigned int init_size) {
+	vals_map_.clear();
+	vals_vec_.clear();
+	vals_vec_.resize(init_size, -1);
+}
+
+template<typename T>
+inline T BidirectionalMap<T>::operator[](unsigned int pos) const {
+	ASSERT( pos < vals_vec_.size() );
+	return vals_vec_[pos];
 }
 
 
