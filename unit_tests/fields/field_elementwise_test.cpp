@@ -41,6 +41,13 @@ string input = R"INPUT(
        unit="const; const=100*m^0",
        default_value=0.0
    },
+   scalar_time_shift={
+       TYPE="FieldElementwise",
+       mesh_data_file="fields/simplest_cube_data.msh",
+       field_name="scalar",
+       default_value=0.0,
+       read_time_shift=1.0
+   },
    vector_fixed={
        TYPE="FieldElementwise",
        mesh_data_file="fields/simplest_cube_data.msh",
@@ -96,6 +103,7 @@ public:
         Input::Type::Record rec_type = Input::Type::Record("Test","")
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_time_shift", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
@@ -109,6 +117,7 @@ public:
 
         test_time[0] = 0.0;
         test_time[1] = 1.0;
+        test_time[2] = 2.0;
 
     }
     virtual void TearDown() {
@@ -123,7 +132,7 @@ public:
     Mesh * mesh;
     Input::Record rec;
     Space<3>::Point point;
-    double test_time[2];
+    double test_time[3];
 
 };
 
@@ -177,7 +186,7 @@ TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
     field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
     field.set_mesh(mesh,true);
 
-    for (unsigned int j=0; j<2; j++) {
+    for (unsigned int j=0; j<3; j++) {
     	field.set_time(test_time[j]);
 
         for(unsigned int i=0; i < 4; i++) {
@@ -186,6 +195,19 @@ TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
         EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5, true)) );
     }
 
+}
+
+TEST_F(FieldElementwiseTest, scalar_time_shift) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_time_shift"), init_data("scalar_time_shift"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+        field.set_time(test_time[j]);
+        for(unsigned int i=0; i < mesh->element.size(); i++) {
+            EXPECT_DOUBLE_EQ( j*0.1+(i+2)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
 }
 
 TEST_F(FieldElementwiseTest, vector_fixed) {
