@@ -112,6 +112,13 @@ public:
     inline unsigned int idx() const {
         return element_idx_;
     }
+
+    inline void inc() {
+        ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
+        element_idx_++;
+        r_idx_ = element()->region_idx();
+        dim_=element()->dim();
+    }
 private:
     /**
      * When dim_ == undefined_dim_ ; the value of element_idx_ is invalid.

@@ -35,6 +35,7 @@
 #include "mesh/sides.h"                      // for SideIter
 #include "mesh/bounding_box.hh"              // for BoundingBox
 #include "tools/bidirectional_map.hh"
+#include "tools/general_iterator.hh"
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
 #include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
@@ -82,6 +83,7 @@ template <int spacedim> class ElementAccessor;
 
 /// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
 typedef int IdxInt;
+typedef Iter<ElementAccessor<3>> ElementIter;
 
 
 class BoundarySegment {
