@@ -19,7 +19,6 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     output_specific:
       raw_flow_output: ./raw_output.txt
-      raw_ngh_output: ./raw_ngh_output.txt
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
