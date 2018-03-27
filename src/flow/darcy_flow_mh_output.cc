@@ -66,8 +66,6 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
-        .declare_key("raw_ngh_output", it::FileName::output(), it::Default::optional(),
-                        "Output file with neighboring data from mesh.")
         .close();
 }
 
@@ -158,13 +156,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             		raw_output_file_path.open_stream(raw_output_file);
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
-            if (in_rec_specific->opt_val("raw_ngh_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw ngh output: " << raw_output_file_path << "\n";
-            	try {
-            		raw_output_file_path.open_stream(raw_ngh_output_file);
-            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
-            }
-
         }
     }
 }
@@ -214,7 +205,6 @@ void DarcyFlowMHOutput::output()
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
         {
                   output_internal_flow_data();
-                  output_internal_ngh_data();
         }
 
         if (compute_errors_) compute_l2_difference();
@@ -462,92 +452,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         cit ++;
     }
     raw_output_file << "$EndFlowField\n" << endl;
-}
-
-/*
- * Output of internal flow data.
- */
-void DarcyFlowMHOutput::output_internal_ngh_data()
-{
-    START_TIMER("DarcyFlowMHOutput::output_internal_ngh_data");
-
-    if (! raw_ngh_output_file.is_open()) return;
-    
-    //char dbl_fmt[ 16 ]= "%.8g ";
-    // header
-    raw_ngh_output_file <<  "// fields:\n//ele_id    n_sides    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
-    raw_ngh_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
-    raw_ngh_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
-
-    int cit = 0;
-    
-    // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
-    unsigned int undefined_ele_id = -1;
-    std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
-    FOR_ELEMENTS( mesh_,  ele ) {
-        if(ele->n_neighs_vb > 0){
-            for (unsigned int i = 0; i < ele->n_neighs_vb; i++){
-                ElementFullIter higher_ele = ele->neigh_vb[i]->side()->element();
-                
-                auto search = neigh_vb_map.find(higher_ele->id());
-                if(search != neigh_vb_map.end()){
-                    // if found, add id to correct locel side idx
-                    search->second[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
-                }
-                else{
-                    // if not found, create new vector, each side can have one vb neighbour
-                    std::vector<unsigned int> higher_ele_side_ngh(higher_ele->n_sides(), undefined_ele_id);
-                    higher_ele_side_ngh[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
-                    neigh_vb_map[higher_ele->id()] = higher_ele_side_ngh;
-                }
-            }
-        }
-    }
-    
-    FOR_ELEMENTS( mesh_,  ele ) {
-        raw_ngh_output_file << ele.id() << " ";
-        raw_ngh_output_file << ele->n_sides() << " ";
-        
-        auto search_neigh = neigh_vb_map.end();
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int n_side_neighs = ele->side(i)->edge()->n_sides-1;  //n_sides - the current one
-            // check vb neighbors (lower dimension)
-            if(n_side_neighs == 0){
-                //update search
-                if(search_neigh == neigh_vb_map.end())
-                    search_neigh = neigh_vb_map.find(ele->id());
-                
-                if(search_neigh != neigh_vb_map.end())
-                    if(search_neigh->second[i] != undefined_ele_id)
-                        n_side_neighs = 1;
-            }
-            raw_ngh_output_file << n_side_neighs << " ";
-        }
-        
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Edge* edge = ele->side(i)->edge();
-            if(ele->side(i)->edge()->n_sides > 1){
-                for (int j = 0; j < edge->n_sides; j++) {
-                    if(edge->side(j) != ele->side(i))
-                        raw_ngh_output_file << edge->side(j)->element()->id() << " ";
-                }
-            }
-            //check vb neighbour
-            else if(search_neigh != neigh_vb_map.end() 
-                    && search_neigh->second[i] != undefined_ele_id){
-                raw_ngh_output_file << search_neigh->second[i] << " ";
-            }
-        }
-        
-        // list higher dim neighbours
-        raw_ngh_output_file << ele->n_neighs_vb << " ";
-        for (unsigned int i = 0; i < ele->n_neighs_vb; i++)
-            raw_ngh_output_file << ele->neigh_vb[i]->side()->element()->id() << " ";
-        
-        raw_ngh_output_file << endl;
-        cit ++;
-    }
-    raw_ngh_output_file << "$EndFlowField\n" << endl;
 }
 
 

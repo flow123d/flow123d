@@ -125,7 +125,6 @@ private:
     void make_corner_scalar(vector<double> &node_scalar);
     //void make_neighbour_flux();
     void output_internal_flow_data();
-    void output_internal_ngh_data();
 
     /**
      * Temporary hack.
@@ -182,7 +181,6 @@ private:
 
     /// Raw data output file.
     ofstream raw_output_file;
-    ofstream raw_ngh_output_file;
 };
 
 
