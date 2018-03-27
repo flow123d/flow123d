@@ -62,7 +62,7 @@ public:
     /**
      * Element accessor.
      */
-    ElementAccessor(const Mesh *mesh, unsigned int idx, bool boundary)
+    ElementAccessor(const Mesh *mesh, unsigned int idx, bool boundary = false)
     : mesh_(mesh), boundary_(boundary), element_idx_(idx), r_idx_(element()->region_idx())
     {
        dim_=element()->dim();
@@ -123,6 +123,22 @@ public:
     bool operator==(const ElementAccessor<spacedim>& other) {
     	return (element_idx_ == other.element_idx_);
     }
+
+    /**
+     * -> dereference operator
+     *
+     * Allow simplify calling of element() method. Example:
+ @code
+     ElementAccessor<3> elm_ac(mesh, index);
+     arma::vec centre;
+     centre = elm_ac.element()->centre();  // full format of access to element
+     centre = elm_ac->centre();            // short format with dereference operator
+ @endcode
+     */
+    inline const Element * operator ->() const {
+    	return &(mesh_->element_vec_[element_idx_]);
+    }
+
 private:
     /**
      * When dim_ == undefined_dim_ ; the value of element_idx_ is invalid.

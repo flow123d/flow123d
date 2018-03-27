@@ -119,14 +119,14 @@ public:
     * Return bounding box of the element.
     * Simpler code, but need to check performance penelty.
     */
-    inline BoundingBox bounding_box() {
+    inline BoundingBox bounding_box() const {
      return BoundingBox(this->vertex_list());
     }
 
     /**
      * Return list of element vertices.
      */
-    inline vector<arma::vec3> vertex_list() {
+    inline vector<arma::vec3> vertex_list() const {
     	vector<arma::vec3> vertices(this->n_nodes());
     	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
     	return vertices;
