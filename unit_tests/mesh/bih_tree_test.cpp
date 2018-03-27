@@ -25,6 +25,8 @@
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 class BIHTree_test : public BIHTree {
@@ -160,7 +162,7 @@ public:
 			//cout << "box: " << box <<endl;
 
 			vector<unsigned int> bf_result;
-			FOR_ELEMENTS(mesh, ele) {
+			for (auto ele : mesh->bulk_elements_range()) {
 				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
 				if (box.intersect(ele->bounding_box()) ) bf_result.push_back( mesh->elem_index( ele->id() ) );
 			}
@@ -192,7 +194,7 @@ public:
 			//cout << "point: " << point << endl;
 
 			vector<unsigned int> bf_point_result;
-			FOR_ELEMENTS(mesh, ele) {
+			for (auto ele : mesh->bulk_elements_range()) {
 				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back( mesh->elem_index( ele->id() ) );
 			}
 

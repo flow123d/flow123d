@@ -70,12 +70,6 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->n_elements(true));
 
-	auto bc_range = mesh->get_element_range(true);
-	for( unsigned int i=bc_range.first; i<bc_range.second; ++i) {
-		Element &bc_ele = mesh->element_vec_[i];
-		std::cout << "Element: " << i << ", region: " << mesh->element_vec_[i].region().id() << std::endl;
-	}
-
     // check boundary elements
     EXPECT_EQ(101 , mesh->element_vec_[12].region().id() );
     EXPECT_EQ(101 , mesh->element_vec_[11].region().id() );

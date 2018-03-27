@@ -45,6 +45,7 @@
 class BIHTree;
 class Distribution;
 class Partitioning;
+template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 
 
@@ -350,14 +351,11 @@ public:
     /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
     void init_element_vector(unsigned int size);
 
-    /// Returns range (of indexes in element_vector_) of boundary or bulk elements
-    inline pair<unsigned int, unsigned int> get_element_range(bool boundary=false) const {
-    	if (boundary) return make_pair<unsigned int, unsigned int>(element_vec_.size()-boundary_size_, element_vec_.size());
-    	else return make_pair<unsigned int, unsigned int>(0, bulk_size_+0);
-    }
-    //inline boost::iterator_range< ElementIter > bulk_elements_range() {
-    //    return boost::make_iterator_range( make_iter(ElementAccessor<3>(this,0)), make_iter(ElementAccessor<3>(this, bulk_size_)) );
-    //}
+    /// Returns range of bulk elements
+    Range<ElementAccessor<3>> bulk_elements_range() const;
+
+    /// Returns range of boundary elements
+    Range<ElementAccessor<3>> boundary_elements_range() const;
 
     /// Returns count of boundary or bulk elements
     inline unsigned int n_elements(bool boundary=false) const {

@@ -31,6 +31,7 @@
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/region_set.hh"
+#include "mesh/range_wrapper.hh"
 
 // think about following dependencies
 #include "mesh/boundaries.h"
@@ -385,8 +386,7 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	auto bc_range = get_element_range(true);
-	for( unsigned int i=bc_range.first; i<bc_range.second; ++i) {
+	for( unsigned int i=element_vec_.size()-boundary_size_; i<element_vec_.size(); ++i) {
 		Element &bc_ele = element_vec_[i];
         // Find all elements that share this side.
         side_nodes.resize(bc_ele.n_nodes());
@@ -692,8 +692,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         boundary_elements_id.resize(n_elements(true));
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        auto bc_range = get_element_range(true);
-        for(unsigned int idx=bc_range.first; idx<bc_range.second; idx++, ++map_it) {
+        for(unsigned int idx=element_vec_.size()-boundary_size_; idx<element_vec_.size(); idx++, ++map_it) {
         	IdxInt id = element_vec_[idx].id();
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
@@ -853,6 +852,14 @@ Element * Mesh::add_element_to_vector(int id, bool boundary) {
 	}
 
 	return elem;
+}
+
+Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
+    return Range<ElementAccessor<3>>(this, 0, bulk_size_);
+}
+
+Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
+    return Range<ElementAccessor<3>>(this, element_vec_.size()-boundary_size_, element_vec_.size());
 }
 
 //-----------------------------------------------------------------------------
