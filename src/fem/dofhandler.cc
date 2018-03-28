@@ -19,6 +19,8 @@
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "mesh/partitioning.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
 
 
@@ -93,8 +95,7 @@
 //    	if (proc == myp)
 //    		loffset_ = next_free_dof;
 //
-//    	FOR_ELEMENTS(mesh, cell)
-//		{
+//    	for (auto cell : mesh->bulk_elements_range()) {
 //    		if (cell->dim() != dim) continue;
 //
 //    		if (loc_part[cell.index()] != proc) continue;
@@ -120,8 +121,7 @@
 //    if (mesh->get_part()->get_init_distr()->myp() != 0)
 //    	delete[] loc_part;
 //
-////    FOR_ELEMENTS(mesh,cell)
-////    {
+////    for (auto cell : mesh->bulk_elements_range()) {
 ////        // skip cells of different dimension
 ////        if (cell->dim() != dim) continue;
 ////
@@ -135,8 +135,7 @@
 ////    }
 //
 //
-////    FOR_ELEMENTS(mesh,cell)
-////    {
+////    for (auto cell : mesh->bulk_elements_range()) {
 ////        // skip cells of different dimension
 ////        if (cell->dim != dim) continue;
 ////
@@ -290,8 +289,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
     	if (proc == myp)
     		loffset_ = next_free_dof;
 
-    	FOR_ELEMENTS(mesh_, cell)
-		{
+    	for (auto cell : mesh_->bulk_elements_range()) {
     		if (loc_part[mesh_->elem_index( cell->id() )] != (int)proc) continue;
 
     		unsigned int dim = cell->dim();
@@ -403,7 +401,7 @@ void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &val
 
 DOFHandlerMultiDim::~DOFHandlerMultiDim()
 {
-	for (ElementIterator ele=mesh_->bulk_begin(); ele!=mesh_->bulk_end(); ++ele)
+	for ( auto ele : mesh_->bulk_elements_range() )
 		if (object_dofs[mesh_->elem_index( ele->id() )] != NULL)
 		{
 			for (unsigned int j=0; j<=ele->dim(); j++)

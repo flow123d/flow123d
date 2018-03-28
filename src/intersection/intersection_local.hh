@@ -23,7 +23,7 @@
 #include <armadillo>
 #include <mesh/mesh_types.hh>
 #include "system/system.hh"
-
+template <int spacedim> class ElementAccessor;
 
     
 //forwward declare
@@ -184,7 +184,7 @@ public:
      * comp_ele is component element
      */
 
-    arma::vec3 coords(ElementIterator comp_ele) const;
+    arma::vec3 coords(ElementAccessor<3> comp_ele) const;
     
     /// Friend output operator.
     friend std::ostream& operator<< <>(std::ostream& os, const IntersectionPoint<dimA,dimB>& IP);

@@ -27,6 +27,7 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
+#include "mesh/accessors.hh"
 
 #include "config.h"
 #include <zlib.h>
@@ -486,7 +487,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementIterator ele = mesh.bulk_begin() + (*it);
+                ElementAccessor<3> ele = mesh.element_accessor( *it );
                 FOR_ELEMENT_NODES(ele, i_node)
                 {
                     if ( compare_points(ele->node[i_node]->point(), point) ) {

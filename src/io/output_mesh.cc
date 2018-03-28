@@ -19,6 +19,8 @@
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
 
 
@@ -186,7 +188,7 @@ void OutputMesh::create_mesh()
                  offset = 0,    // offset of node indices of element in node vector
                  li;            // local node index
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
-    FOR_ELEMENTS(orig_mesh_, ele) {
+    for (auto ele : orig_mesh_->bulk_elements_range()) {
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -198,7 +200,7 @@ void OutputMesh::create_mesh()
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
     		1, n_connectivities);
     auto &connect_vec = *( connectivity_->get_component_data(0).get() );
-    FOR_ELEMENTS(orig_mesh_, ele) {
+    for (auto ele : orig_mesh_->bulk_elements_range()) {
         FOR_ELEMENT_NODES(ele, li) {
             node = ele->node[li];
             connect_vec[connect_id] = node->aux;
@@ -268,7 +270,7 @@ void OutputMeshDiscontinuous::create_mesh()
                  li = 0;        // local node index
 
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
-    FOR_ELEMENTS(orig_mesh_, ele) {
+    for (auto ele : orig_mesh_->bulk_elements_range()) {
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -286,8 +288,7 @@ void OutputMeshDiscontinuous::create_mesh()
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
     Node* node;
-    FOR_ELEMENTS(orig_mesh_, ele)
-    {
+    for (auto ele : orig_mesh_->bulk_elements_range()) {
         FOR_ELEMENT_NODES(ele, li)
         {
             node = ele->node[li];
@@ -325,7 +326,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     offset_vec.reserve(4*orig_mesh_->n_elements());
     
 //     DebugOut() << "start refinement\n";
-    FOR_ELEMENTS(orig_mesh_, ele) {
+    for (auto ele : orig_mesh_->bulk_elements_range()) {
         const unsigned int
             dim = ele->dim(),
             ele_idx = ele->index();
@@ -344,9 +345,9 @@ void OutputMeshDiscontinuous::create_refined_mesh()
         std::vector<AuxElement> refinement;
         
         switch(dim){
-            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele->element_accessor()); break;
-            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele->element_accessor()); break;
-            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele->element_accessor()); break;
+            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele); break;
+            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele); break;
+            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele); break;
             default: ASSERT(0 < dim && dim < 4);
         }
         
@@ -549,7 +550,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 
 	DebugOut() << "Create output submesh containing only local elements.";
 
-	ElementIterator ele;
+	ElementAccessor<3> ele;
 	IdxInt *el_4_loc = orig_mesh_->get_el_4_loc();
 	Distribution *el_ds = orig_mesh_->get_el_ds();
     const unsigned int n_local_elements = el_ds->lsize();
@@ -564,7 +565,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
                  li = 0;        // local node index
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
-		ele = orig_mesh_->bulk_begin() + el_4_loc[loc_el];
+		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -583,7 +584,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
 	Node* node;
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
-		ele = orig_mesh_->bulk_begin() + el_4_loc[loc_el];
+		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
         FOR_ELEMENT_NODES(ele, li)
         {
             node = ele->node[li];

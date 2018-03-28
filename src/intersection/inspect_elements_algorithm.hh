@@ -33,9 +33,9 @@ template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 class IntersectionLocalBase;
-
-
 class InspectElementsAlgorithm22;
+template <int spacedim> class ElementAccessor;
+
 
 /// First = element index, Second = pointer to intersection object.
 typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
@@ -48,7 +48,7 @@ protected:
    
     /// Auxiliary function that translates @p ElementIterator to @p Simplex<simplex_dim>.
     template<unsigned int simplex_dim>
-    void update_simplex(const ElementIterator &element, Simplex<simplex_dim> & simplex);
+    void update_simplex(const ElementAccessor<3> &element, Simplex<simplex_dim> & simplex);
     
     /// Mesh pointer.
     Mesh *mesh;
@@ -167,14 +167,14 @@ private:
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
-    void prolongation_decide(const ElementIterator &comp_ele, const ElementIterator &bulk_ele,
+    void prolongation_decide(const ElementAccessor<3> &comp_ele, const ElementAccessor<3> &bulk_ele,
                              IntersectionAux<dim,3> is);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
 
     template<unsigned int ele_dim>
-    std::vector< unsigned int > get_element_neighbors(const ElementIterator& ele,
+    std::vector< unsigned int > get_element_neighbors(const ElementAccessor<3>& ele,
                                                       unsigned int ip_dim,
                                                       unsigned int ip_obj_idx);
     
@@ -215,7 +215,7 @@ private:
     std::vector<unsigned int> component_idx_;
     
     /// Computes fundamental intersection of two 2D elements.
-    void compute_single_intersection(const ElementIterator &eleA, const ElementIterator &eleB,
+    void compute_single_intersection(const ElementAccessor<3> &eleA, const ElementAccessor<3> &eleB,
                                      std::vector<IntersectionLocal<2,2>> &storage);
     
     /// Creates numbering of the 2D components and fills component_idx_ vector.
@@ -271,7 +271,7 @@ private:
     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
     
     /// Computes fundamental 1D-2D intersection of candidate pair.
-//     void compute_single_intersection(const ElementIterator &comp_ele, const ElementIterator &bulk_ele);
+//     void compute_single_intersection(const ElementAccessor<3> &comp_ele, const ElementAccessor<3> &bulk_ele);
     
     friend class MixedMeshIntersections;
 };
