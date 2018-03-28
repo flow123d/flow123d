@@ -173,7 +173,7 @@ int Element::id() const {
 	return this->id_;
 }
 
-double Element::quality_measure_smooth() {
+double Element::quality_measure_smooth() const {
     if (dim_==3) {
         double sum_faces=0;
         double face[4];

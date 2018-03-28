@@ -176,7 +176,7 @@ Mesh::~Mesh() {
     for(Edge &edg : this->edges)
         if (edg.side_) delete[] edg.side_;
 
-    FOR_ELEMENTS( this, ele ) {
+    for (auto ele : this->bulk_elements_range()) {
         if (ele->node) delete[] ele->node;
         if (ele->edge_idx_) delete[] ele->edge_idx_;
         if (ele->permutation_idx_) delete[] ele->permutation_idx_;
@@ -202,14 +202,14 @@ unsigned int Mesh::n_sides()
 {
     if (n_sides_ == NDEF) {
         n_sides_=0;
-        FOR_ELEMENTS(this, ele) n_sides_ += ele->n_sides();
+        for (auto ele : this->bulk_elements_range()) n_sides_ += ele->n_sides();
     }
     return n_sides_;
 }
 
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;
-    FOR_ELEMENTS(this, ele) {
+    for (auto ele : this->bulk_elements_range()) {
         FOR_ELEMENT_NODES(ele, li) {
             count++;
         }
@@ -227,7 +227,7 @@ Partitioning *Mesh::get_part() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-    FOR_ELEMENTS(this, elm)
+	for (auto elm : this->bulk_elements_range())
     switch (elm->dim()) {
         case 1:
             n_lines++;
@@ -259,7 +259,7 @@ void Mesh::setup_topology() {
     count_element_types();
 
     // check mesh quality
-    FOR_ELEMENTS(this, ele)
+    for (auto ele : this->bulk_elements_range())
         if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele->id());
 
     make_neighbours_and_edges();
@@ -272,7 +272,7 @@ void Mesh::setup_topology() {
     // create parallel distribution and numbering of elements
     IdxInt *id_4_old = new IdxInt[n_elements()];
     int i = 0;
-    FOR_ELEMENTS(this, ele)
+    for (auto ele : this->bulk_elements_range())
         id_4_old[i++] = elem_index( ele->id() );
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 
@@ -298,9 +298,9 @@ void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
     node_elements_.resize(node_vector.size());
 
-    FOR_ELEMENTS( this, e )
-        for (unsigned int n=0; n<e->n_nodes(); n++)
-            node_elements_[node_vector.index(e->node[n])].push_back(e->index());
+    for (auto ele : this->bulk_elements_range())
+        for (unsigned int n=0; n<ele->n_nodes(); n++)
+            node_elements_[node_vector.index(ele->node[n])].push_back(ele->index());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -452,8 +452,7 @@ void Mesh::make_neighbours_and_edges()
 
 	}
 	// Now we go through all element sides and create edges and neighbours
-	FOR_ELEMENTS( this, e )
-	{
+	for (vector<Element>:: iterator e = element_vec_.begin(); e!= element_vec_.begin()+bulk_size_; ++e) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
@@ -624,13 +623,14 @@ void Mesh::element_to_neigh_vb()
 
 	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
-    FOR_ELEMENTS(this,ele) ele->n_neighs_vb =0;
+	for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
+		ele->n_neighs_vb =0;
 
     // count vb neighs per element
     FOR_NEIGHBOURS(this,  ngh )  ngh->element_->n_neighs_vb++;
 
     // Allocation of the array per element
-    FOR_ELEMENTS(this,  ele )
+    for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
         if( ele->n_neighs_vb > 0 ) {
             ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
             ele->n_neighs_vb=0;
@@ -738,7 +738,7 @@ void Mesh::compute_element_boxes() {
     // make element boxes
     element_box_.resize(this->n_elements());
     unsigned int i=0;
-    FOR_ELEMENTS(this, element) {
+    for (auto element : this->bulk_elements_range()) {
          element_box_[i] = element->bounding_box();
          i++;
     }

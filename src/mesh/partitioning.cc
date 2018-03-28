@@ -19,6 +19,8 @@
 #include "la/sparse_graph.hh"
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 #include "petscao.h"
 
@@ -97,7 +99,7 @@ void Partitioning::make_element_connection_graph() {
     // Add nigbouring edges only for "any_*" graph types
     bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
 
-    FOR_ELEMENTS( mesh_, ele) {
+    for (auto ele : mesh_->bulk_elements_range()) {
         // skip non-local elements
         if ( !edistr.is_local(mesh_->elem_index( ele->id() )) )
             continue;

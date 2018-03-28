@@ -78,7 +78,7 @@ public:
 * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
 * have always quality 1.
 */
-    double quality_measure_smooth();
+    double quality_measure_smooth() const;
 
     unsigned int n_sides_by_dim(unsigned int side_dim);
     inline SideIter side(const unsigned int loc_index);
