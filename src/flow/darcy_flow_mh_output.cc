@@ -238,7 +238,7 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
     for(unsigned int i_ele : element_indices) {
-        ElementIterator ele = mesh_->bulk_begin() + i_ele;
+        ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
         ele_pressure[i_ele] = sol[ soi + i_ele];
         ele_piezo_head[i_ele] = sol[soi + i_ele ]
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));
@@ -336,7 +336,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**first pass - calculate sums (weights)*/
     if (count_elements){
-        FOR_ELEMENTS(mesh_, ele)
+    	for (auto ele : mesh_->bulk_elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li]; //!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
@@ -369,7 +369,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**second pass - calculate scalar  */
     if (count_elements){
-        FOR_ELEMENTS(mesh_, ele)
+    	for (auto ele : mesh_->bulk_elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele->node[li];//!< get Node pointer from element */
                 node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
@@ -434,7 +434,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     ;
     int cit = 0;
-    FOR_ELEMENTS( mesh_,  ele ) {
+    for (auto ele : mesh_->bulk_elements_range()) {
         raw_output_file << fmt::format("{} {} ", ele->id(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";

@@ -30,6 +30,7 @@
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
+#include "mesh/accessors.hh"
 #include "input/type_selection.hh"
 
 #include "fields/field_set.hh"
@@ -437,7 +438,7 @@ void SorptionBase::make_tables(void)
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 {
-    ElementIterator elem = mesh_->bulk_begin() + el_4_loc_[loc_el];
+    ElementAccessor<3> elem = mesh_->element_accessor( el_4_loc_[loc_el] );
     int reg_idx = elem->region().bulk_idx();
     unsigned int i_subst, subst_id;
 
@@ -458,7 +459,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
         }
         else 
         {
-            isotherm_reinit(isotherms_vec, elem->element_accessor());
+            isotherm_reinit(isotherms_vec, elem);
         
             for(i_subst = 0; i_subst < n_substances_; i_subst++)
             {

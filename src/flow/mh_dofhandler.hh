@@ -113,13 +113,13 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
-    : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->bulk_begin() + ele_global_idx())
+    : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) )
     {}
 
     void reinit( uint loc_ele_idx)
     {
         local_ele_idx_=loc_ele_idx;
-        ele=dh->mesh_->bulk_begin() + ele_global_idx();
+        ele=dh->mesh_->element_accessor(ele_global_idx());
     }
 
     uint dim() {
@@ -130,12 +130,8 @@ public:
         return ele->n_sides();
     }
 
-    ElementIterator full_iter() {
-        return ele;
-    }
-
     ElementAccessor<3> element_accessor() {
-        return ele->element_accessor();
+        return ele;
     }
 
     const arma::vec3 centre() const {
@@ -217,7 +213,7 @@ private:
     int edge_rows_[4];
     MH_DofHandler *dh;
     uint local_ele_idx_;
-    ElementIterator ele;
+    ElementAccessor<3> ele;
 };
 
 /**

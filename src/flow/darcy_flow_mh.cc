@@ -36,6 +36,7 @@
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
@@ -586,13 +587,13 @@ void DarcyMH::postprocess()
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
         }
     }
-    //ElementIterator ele;
+    //ElementAccessor<3> ele;
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
     /*
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        ele = mesh_->element(el_4_loc[i_loc]);
+        ele = mesh_->element_accessor(el_4_loc[i_loc]);
         FOR_ELEMENT_SIDES(ele,i) {
             side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele_ac.side(i) ) ];
             values[i] = -1.0 * ele_ac.measure() *
@@ -726,11 +727,11 @@ void DarcyMH::allocate_mh_matrix()
         
 
         // compatible neighborings rows
-        unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
+        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb;
         for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
+            Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
             tmp_rows.push_back(neigh_edge_row);
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
@@ -756,7 +757,7 @@ void DarcyMH::allocate_mh_matrix()
             }
         }
         /*
-        for(unsigned int i_side=0; i_side < ele_ac.full_iter()->n_sides(); i_side++) {
+        for(unsigned int i_side=0; i_side < ele_ac.element_accessor()->n_sides(); i_side++) {
             DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
         }*/
 
@@ -1000,7 +1001,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     double d_max = std::numeric_limits<double>::max();
     double h1 = d_max, h2 = d_max, h3 = d_max;
     double he2 = d_max, he3 = d_max;
-    FOR_ELEMENTS(mesh_, ele){
+    for (auto ele : mesh_->bulk_elements_range()) {
         switch(ele->dim()){
             case 1: h1 = std::min(h1,ele->measure()); break;
             case 2: h2 = std::min(h2,ele->measure()); break;
@@ -1063,7 +1064,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         isegn.push_back( ele_ac.ele_global_idx() );
         int nne = 0;
 
-        FOR_ELEMENT_SIDES(ele_ac.full_iter(), si) {
+        FOR_ELEMENT_SIDES(ele_ac.element_accessor(), si) {
             // insert local side dof
             int side_row = ele_ac.side_row(si);
             arma::vec3 coord = ele_ac.side(si)->centre();
@@ -1080,7 +1081,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         inet.push_back( el_row );
         nne++;
 
-        FOR_ELEMENT_SIDES(ele_ac.full_iter(), si) {
+        FOR_ELEMENT_SIDES(ele_ac.element_accessor(), si) {
             // insert local edge dof
             int edge_row = ele_ac.edge_row(si);
             arma::vec3 coord = ele_ac.side(si)->centre();
@@ -1091,9 +1092,9 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         }
 
         // insert dofs related to compatible connections
-        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.full_iter()->n_neighs_vb; i_neigh++) {
-            int edge_row = mh_dh.row_4_edge[ ele_ac.full_iter()->neigh_vb[i_neigh]->edge_idx()  ];
-            arma::vec3 coord = ele_ac.full_iter()->neigh_vb[i_neigh]->edge()->side(0)->centre();
+        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb; i_neigh++) {
+            int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
+            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
 
             localDofMap.insert( std::make_pair( edge_row, coord ) );
             inet.push_back( edge_row );
@@ -1235,12 +1236,12 @@ void DarcyMH::make_serial_scatter() {
             // use essentialy row_4_id arrays
             loc_idx = new int [size];
             i = 0;
-            FOR_ELEMENTS(mesh_, ele) {
+            for (auto ele : mesh_->bulk_elements_range()) {
                 FOR_ELEMENT_SIDES(ele,si) {
                     loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
                 }
             }
-            FOR_ELEMENTS(mesh_, ele) {
+            for (auto ele : mesh_->bulk_elements_range()) {
                 loc_idx[i++] = mh_dh.row_4_el[ mesh_->elem_index( ele->id() ) ];
             }
             for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {

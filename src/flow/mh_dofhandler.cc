@@ -21,6 +21,7 @@
 #include "mesh/partitioning.hh"
 #include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "system/sys_profiler.hh"
 
 MH_DofHandler::MH_DofHandler()
@@ -54,10 +55,10 @@ MH_DofHandler::~MH_DofHandler()
 void MH_DofHandler::reinit(Mesh *mesh) {
     mesh_ = mesh;
     elem_side_to_global.resize(mesh->n_elements() );
-    FOR_ELEMENTS(mesh, ele) elem_side_to_global[mesh->elem_index( ele->id() )].resize(ele->n_sides());
+    for (auto ele : mesh->bulk_elements_range()) elem_side_to_global[mesh->elem_index( ele->id() )].resize(ele->n_sides());
 
     unsigned int i_side_global=0;
-    FOR_ELEMENTS(mesh, ele) {
+    for (auto ele : mesh->bulk_elements_range()) {
         for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
             elem_side_to_global[mesh->elem_index( ele->id() )][i_lside] = i_side_global++;
     }
@@ -121,7 +122,7 @@ void MH_DofHandler::prepare_parallel() {
     // create map from mesh global edge id to new local edge id
     unsigned int loc_edge_idx=0;
     for (unsigned int i_el_loc = 0; i_el_loc < el_ds->lsize(); i_el_loc++) {
-        auto ele = mesh_->bulk_begin() + el_4_loc[i_el_loc];
+        auto ele = mesh_->element_accessor( el_4_loc[i_el_loc] );
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
             unsigned int mesh_edge_idx= ele->side(i)->edge_idx();
             if ( edge_new_local_4_mesh_idx_.count(mesh_edge_idx) == 0 )
@@ -216,7 +217,7 @@ void MH_DofHandler::make_row_numberings() {
 void MH_DofHandler::prepare_parallel_bddc() {
 #ifdef FLOW123D_HAVE_BDDCML
     // auxiliary
-    ElementIterator el;
+    ElementAccessor<3> el;
     IdxInt side_row, edge_row;
 
     global_row_4_sub_row = std::make_shared<LocalToGlobalMap>(rows_ds);
@@ -226,7 +227,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
     // for each subdomain:
     // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        el = mesh_->bulk_begin() + el_4_loc[i_loc];
+        el = mesh_->element_accessor( el_4_loc[i_loc] );
         IdxInt el_row = row_4_el[el_4_loc[i_loc]];
 
         global_row_4_sub_row->insert( el_row );

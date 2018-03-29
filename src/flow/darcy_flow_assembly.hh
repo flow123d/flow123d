@@ -54,7 +54,7 @@ public:
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(ElementIterator ele, Neighbour *ngh) = 0;
+    virtual void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
@@ -176,7 +176,7 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(ElementIterator ele, Neighbour *ngh) override
+    void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) override
     {
         ASSERT_LT_DBG(ele->dim(), 3);
         //DebugOut() << "alv " << print_var(this);
@@ -187,12 +187,12 @@ public:
         ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
-        double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
-                        2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
-                        arma::dot(ad_->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
+        double value = ad_->sigma.value( ele->centre(), ele) *
+                        2*ad_->conductivity.value( ele->centre(), ele) *
+                        arma::dot(ad_->anisotropy.value( ele->centre(), ele)*nv, nv) *
                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
-                        ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+                        ad_->cross_section.value( ele->centre(), ele ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
         loc_system_vb_.add_value(0,0, -value);
@@ -448,7 +448,7 @@ protected:
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
-        ElementIterator ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
         // no Neighbours => nothing to asssemble here
         if(ele->n_neighs_vb == 0) return;
@@ -460,7 +460,7 @@ protected:
         for (unsigned int i = 0; i < ele->n_neighs_vb; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            ngh = ele_ac.full_iter()->neigh_vb[i];
+            ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
             loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];

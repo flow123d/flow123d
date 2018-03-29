@@ -23,6 +23,8 @@
 
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "transport/transport.h"
 
 #include "la/distribution.hh"
@@ -157,7 +159,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
 //    int * id_4_old = new int[mesh_->n_elements()];
 //    int i = 0;
-//    FOR_ELEMENTS(mesh_, ele) id_4_old[i++] = ele.index();
+//    for (auto ele : mesh_->bulk_elements_range()) id_4_old[i++] = ele.index();
 //    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 //    delete[] id_4_old;
 	el_ds = mesh_->get_el_ds();
@@ -172,7 +174,7 @@ void ConvectionTransport::make_transport_partitioning() {
     // - possibility to have different ref_output for different num of proc.
     // - or do not test such kind of output
     //
-    //FOR_ELEMENTS(mesh_, ele) {
+    //for (auto ele : mesh_->bulk_elements_range()) {
     //    ele->pid=el_ds->get_proc(row_4_el[ele.index()]);
     //}
 
@@ -232,8 +234,7 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-    FOR_ELEMENTS(mesh_, elem)
-    {
+	for (auto elem : mesh_->bulk_elements_range()) {
     	if (!el_ds->is_local(row_4_el[mesh_->elem_index( elem->id() )])) continue;
 
     	IdxInt index = row_4_el[mesh_->elem_index( elem->id() )] - el_ds->begin();
@@ -339,7 +340,7 @@ void ConvectionTransport::set_boundary_conditions()
 {
     START_TIMER ("set_boundary_conditions");
 
-    ElementIterator elm;
+    ElementAccessor<3> elm;
 
     unsigned int sbi, loc_el, loc_b = 0;
     
@@ -349,7 +350,7 @@ void ConvectionTransport::set_boundary_conditions()
    	balance_->start_flux_assembly(subst_idx);
 
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->bulk_begin() + el_4_loc[loc_el];
+        elm = mesh_->element_accessor( el_4_loc[loc_el] );
         if (elm->boundary_idx_ != NULL) {
         	IdxInt new_i = row_4_el[mesh_->elem_index( elm->id() )];
 
@@ -408,7 +409,6 @@ void ConvectionTransport::compute_concentration_sources() {
   unsigned int loc_el, sbi;
   double csection, source, diag;
 
-  ElementIterator ele;
   ElementAccessor<3> ele_acc;
   arma::vec3 p;
     
@@ -425,8 +425,7 @@ void ConvectionTransport::compute_concentration_sources() {
         
         for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) 
         {
-            ele = mesh_->bulk_begin() + el_4_loc[loc_el];
-            ele_acc = ele->element_accessor();
+            ele_acc = mesh_->element_accessor( el_4_loc[loc_el] );
             p = ele_acc.centre();
             csection = data_.cross_section.value(p, ele_acc);
             
@@ -447,9 +446,9 @@ void ConvectionTransport::compute_concentration_sources() {
                 max_cfl = std::max(max_cfl, fabs(diag));
                 
                 balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                    {- src_sigma * ele->measure() * csection});
+                                                    {- src_sigma * ele_acc->measure() * csection});
                 balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                {source * ele->measure()});
+                                                {source * ele_acc->measure()});
             }
             
             cfl_source_[loc_el] = max_cfl;
@@ -680,18 +679,18 @@ void ConvectionTransport::set_target_time(double target_time)
 
 void ConvectionTransport::create_mass_matrix()
 {
-    ElementIterator elm;
+    ElementAccessor<3> elm;
     
     VecZeroEntries(mass_diag);
     
     balance_->start_mass_assembly(subst_idx);
 
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->bulk_begin() + el_4_loc[loc_el];
+        elm = mesh_->element_accessor( el_4_loc[loc_el] );
 
-        double csection = data_.cross_section.value(elm->centre(), elm->element_accessor());
+        double csection = data_.cross_section.value(elm->centre(), elm);
         //double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
-        double por_m = data_.water_content.value(elm->centre(), elm->element_accessor());
+        double por_m = data_.water_content.value(elm->centre(), elm);
 
         for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
             balance_->add_mass_matrix_values(subst_idx[sbi], elm->region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm->measure()} );
@@ -715,8 +714,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     START_TIMER("convection_matrix_assembly");
 
-    ElementIterator el2;
-    ElementIterator elm;
+    ElementAccessor<3> el2;
+    ElementAccessor<3> elm;
     struct Edge *edg;
     unsigned int n;
     int s, j, np, rank;
@@ -733,7 +732,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     aii = 0.0;
 
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->bulk_begin() + el_4_loc[loc_el];
+        elm = mesh_->element_accessor( el_4_loc[loc_el] );
         new_i = row_4_el[mesh_->elem_index( elm->id() )];
 
         FOR_ELEMENT_SIDES(elm,si) {
@@ -766,8 +765,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         FOR_ELM_NEIGHS_VB(elm,n) // comp model
             {
-                el2 = mesh_->bulk_begin() + mesh_->elem_index( elm->neigh_vb[n]->side()->element()->id() ); // higher dim. el.
-                ASSERT( el2 != elm ).error("Elm. same\n");
+                el2 = mesh_->element_accessor( mesh_->elem_index( elm->neigh_vb[n]->side()->element()->id() ) ); // higher dim. el.
+                ASSERT( el2.idx() != elm.idx() ).error("Elm. same\n");
                 new_j = row_4_el[mesh_->elem_index( el2->id() )];
                 flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
 
