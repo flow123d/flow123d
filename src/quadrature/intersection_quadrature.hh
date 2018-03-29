@@ -49,6 +49,7 @@
 
 
 #include "mesh/mesh_types.hh"
+#include "mesh/accessors.hh"
 #include <armadillo>
 //#include <iostream>
 #include "intersection/intersection_local.hh"
@@ -162,7 +163,7 @@ public:
     inline bool reinit(const IntersectionLocalBase *isec)
     {
         slave_idx_ = isec->bulk_ele_idx();
-        ElementIterator ele = mesh_.bulk_begin() + isec->component_ele_idx();
+        ElementAccessor<3> ele = mesh_.element_accessor( isec->component_ele_idx() );
         if (typeid(*isec) == typeid(IntersectionLocal<2,2>)) {
             //
             auto il = static_cast<const IntersectionLocal<2,2> *>(isec);
