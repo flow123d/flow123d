@@ -330,21 +330,21 @@ void MixedMeshIntersections::compute_intersections_12_ngh_plane(vector< Intersec
     const BIHTree &bih_tree =mesh->get_bih_tree();
 
     for(unsigned int i_ele=0; i_ele<mesh->n_elements(); i_ele++) {
-        Element &ele = mesh->element_vec_[i_ele];
+        ElementAccessor<3> ele = mesh->element_accessor(i_ele);
 
-        if (ele.dim() == 1) {
+        if (ele->dim() == 1) {
             vector<unsigned int> candidate_list;
-            bih_tree.find_bounding_box(ele.bounding_box(), candidate_list);
+            bih_tree.find_bounding_box(ele->bounding_box(), candidate_list);
 
             for(unsigned int i_elm : candidate_list) {
             	ElementAccessor<3> elm = mesh->element_accessor( i_elm );
                 if (elm->dim() == 2) {
                     ngh::IntersectionLocal *intersection;
-                    GetIntersection( ngh::TAbscissa(ele), ngh::TTriangle( *(elm.element()) ), intersection);
+                    GetIntersection( ngh::TAbscissa( *(ele.element()) ), ngh::TTriangle( *(elm.element()) ), intersection);
                     if (intersection && intersection->get_type() == ngh::IntersectionLocal::line) {
 
                         // make IntersectionAux<1,2> from IntersectionLocal (from ngh)
-                        IntersectionAux<1,2> is(ele.index(), mesh->elem_index( elm->id() ));
+                        IntersectionAux<1,2> is(ele->index(), mesh->elem_index( elm->id() ));
                         for(uint i=0; i< intersection->n_points(); i++) {
                             // convert local to barycentric
                             ASSERT_EQ_DBG(intersection->get_point(i)->el1_coord().size(), 1)(i);

@@ -295,7 +295,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 
 	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
 	for(auto i_ele : insec_list) {
-		cout << "idx: " << i_ele << "id: " << mesh->element_vec_[i_ele].id() << endl;
+		cout << "idx: " << i_ele << "id: " << mesh->element_accessor(i_ele)->id() << endl;
 	}
 
 	delete mesh;

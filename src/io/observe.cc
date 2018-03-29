@@ -20,6 +20,7 @@
 #include "mesh/mesh.h"
 #include "mesh/bih_tree.hh"
 #include "mesh/region.hh"
+#include "mesh/accessors.hh"
 #include "io/observe.hh"
 #include "io/element_data_cache.hh"
 #include "fem/mapping_p1.hh"
@@ -42,7 +43,7 @@ public:
 	/// Constructor
 	ProjectionHandler() {};
 
-	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, Element &elm) {
+	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, const Element &elm) {
 		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
 		arma::vec::fixed<dim+1> projection = mapping_.project_real_to_unit(input_point, elm_map);
 		projection = mapping_.clip_to_element(projection);
@@ -59,7 +60,7 @@ public:
     /**
      * Snap local coords to the subelement. Called by the ObservePoint::snap method.
      */
-	void snap_to_subelement(ObservePointData & observe_data, Element & elm, unsigned int snap_dim)
+	void snap_to_subelement(ObservePointData & observe_data, const Element & elm, unsigned int snap_dim)
 	{
 		if (snap_dim <= dim) {
 			double min_dist = 2.0; // on the ref element the max distance should be about 1.0, smaler then 2.0
@@ -168,24 +169,24 @@ bool ObservePoint::have_observe_element() {
 
 void ObservePoint::snap(Mesh &mesh)
 {
-    Element & elm = mesh.element_vec_[observe_data_.element_idx_];
+    ElementAccessor<3> elm = mesh.element_accessor(observe_data_.element_idx_);
     switch (elm.dim()) {
         case 1:
         {
         	ProjectionHandler<1> ph;
-        	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
+        	ph.snap_to_subelement(observe_data_, *(elm.element()), snap_dim_);
             break;
         }
         case 2:
         {
         	ProjectionHandler<2> ph;
-        	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
+        	ph.snap_to_subelement(observe_data_, *(elm.element()), snap_dim_);
             break;
         }
         case 3:
         {
         	ProjectionHandler<3> ph;
-        	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
+        	ph.snap_to_subelement(observe_data_, *(elm.element()), snap_dim_);
             break;
         }
         default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
@@ -211,10 +212,10 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
     for (unsigned int i_candidate=0; i_candidate<candidate_list.size(); ++i_candidate) {
         unsigned int i_elm=candidate_list[i_candidate];
-        Element & elm = mesh.element_vec_[i_elm];
+        ElementAccessor<3> elm = mesh.element_accessor(i_elm);
 
         // project point, add candidate to queue
-        auto observe_data = point_projection(i_elm, elm);
+        auto observe_data = point_projection( i_elm, *(elm.element()) );
         if (observe_data.distance_ <= max_search_radius_)
         	candidate_queue.push(observe_data);
         closed_elements.insert(i_elm);
@@ -226,10 +227,10 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         candidate_queue.pop();
 
         unsigned int i_elm=candidate_data.element_idx_;
-        Element & elm = mesh.element_vec_[i_elm];
+        ElementAccessor<3> elm = mesh.element_accessor(i_elm);
 
         // test if candidate is in region and update projection
-        if (elm.region().is_in_region_set(region_set)) {
+        if (elm->region().is_in_region_set(region_set)) {
             ASSERT_LE(candidate_data.distance_, observe_data_.distance_).error();
 
 			observe_data_.distance_ = candidate_data.distance_;
@@ -240,11 +241,11 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         }
 
         // add candidates to queue
-		for (unsigned int n=0; n < elm.n_nodes(); n++)
-			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm.node[n])]) {
+		for (unsigned int n=0; n < elm->n_nodes(); n++)
+			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm->node[n])]) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
-					Element & neighbor_elm = mesh.element_vec_[i_node_ele];
-					auto observe_data = point_projection(i_node_ele, neighbor_elm);
+					ElementAccessor<3> neighbor_elm = mesh.element_accessor(i_node_ele);
+					auto observe_data = point_projection( i_node_ele, *(neighbor_elm.element()) );
 			        if (observe_data.distance_ <= max_search_radius_)
 			        	candidate_queue.push(observe_data);
 			        closed_elements.insert(i_node_ele);
@@ -256,9 +257,9 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) );
     }
     snap( mesh );
-    Element & elm = mesh.element_vec_[observe_data_.element_idx_];
-    double dist = arma::norm(elm.centre() - input_point_, 2);
-    double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
+    ElementAccessor<3> elm = mesh.element_accessor(observe_data_.element_idx_);
+    double dist = arma::norm(elm->centre() - input_point_, 2);
+    double elm_norm = arma::norm(elm->bounding_box().max() - elm->bounding_box().min(), 2);
     if (dist > 2*elm_norm)
     	WarningOut().fmt("Observe point ({}) is too distant from the mesh.\n", name_);
 }
@@ -277,7 +278,7 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
 
 
 
-ObservePointData ObservePoint::point_projection(unsigned int i_elm, Element &elm) {
+ObservePointData ObservePoint::point_projection(unsigned int i_elm, const Element &elm) {
 	switch (elm.dim()) {
 	case 1:
 	{

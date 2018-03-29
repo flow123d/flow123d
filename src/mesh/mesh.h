@@ -373,16 +373,6 @@ public:
     	return element_vec_.begin() + bulk_size_;
     }
 
-    /// Begin iterator to boundary part of element vector
-    inline ElementIterator boundary_begin() {
-    	return element_vec_.end() - boundary_size_;
-    }
-
-    /// End iterator to boundary part of element vector
-    inline ElementIterator boundary_end() {
-    	return element_vec_.end();
-    }
-
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
@@ -391,13 +381,6 @@ public:
     {
         return element_ids_.get_position(elem_id);
     }
-
-    /**
-     * Vector of elements of the mesh.
-     *
-     * Store all elements of the mesh in order bulk elements - boundary elements
-     */
-    vector<Element> element_vec_;
 
 protected:
 
@@ -493,6 +476,13 @@ protected:
      */
     MPI_Comm comm_;
 
+    /**
+     * Vector of elements of the mesh.
+     *
+     * Store all elements of the mesh in order bulk elements - boundary elements
+     */
+    vector<Element> element_vec_;
+
     /// Count of bulk elements
     unsigned int bulk_size_;
 
@@ -508,6 +498,8 @@ protected:
     friend class RegionSetBase;
     friend class Element;
     friend class BIHTree;
+    friend class Boundary;
+    template <int spacedim> friend class ElementAccessor;
 
 
 
