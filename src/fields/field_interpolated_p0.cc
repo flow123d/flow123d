@@ -21,6 +21,7 @@
 #include "system/system.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
+#include "mesh/accessors.hh"
 #include "io/reader_cache.hh"
 #include "mesh/ngh/include/intersection.h"
 #include "mesh/ngh/include/point.h"
@@ -164,9 +165,9 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		ADD_CALLS(searched_elements_.size());
 		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
 		{
-			ElementIterator ele = source_mesh_->bulk_begin() + (*it);
+			ElementAccessor<3> ele = source_mesh_->element_accessor(*it);
 			if (ele->dim() == 3) {
-			    ngh::set_tetrahedron_from_element(tetrahedron_, &(*ele) );
+			    ngh::set_tetrahedron_from_element(tetrahedron_, ele.element() );
 				// get intersection (set measure = 0 if intersection doesn't exist)
 				switch (elm.dim()) {
 					case 0: {

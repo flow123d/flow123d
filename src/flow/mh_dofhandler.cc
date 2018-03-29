@@ -20,6 +20,7 @@
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
 #include "system/sys_profiler.hh"
 
 MH_DofHandler::MH_DofHandler()
@@ -275,8 +276,8 @@ double MH_DofHandler::side_scalar(const Side &side) const {
 }
 
 
-double MH_DofHandler::element_scalar( ElementIterator &ele ) const {
-    return mh_solution[ ele->mesh_->n_sides() + ele->mesh_->elem_index( ele->id() ) ];
+double MH_DofHandler::element_scalar( ElementAccessor<3> &ele ) const {
+    return mh_solution[ ele->mesh_->n_sides() + ele->id() ];
 }
 
 

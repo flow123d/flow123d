@@ -25,6 +25,8 @@
 #include "mesh/point.hh"
 #include <armadillo>
 
+template <int spacedim> class ElementAccessor;
+
 
 /// Initialization structure of FEValueHandler class.
 struct FEValueInitData
@@ -63,7 +65,7 @@ public:
     void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
     /// Test if element contains given point.
-    bool contains_point(arma::vec point, Element &elm);
+    bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
     /// Destructor.
 	~FEValueHandler();

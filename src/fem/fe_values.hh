@@ -29,6 +29,7 @@
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/mesh_types.hh"                 // for ElementIterator
+#include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
 
 class DOFHandlerBase;
@@ -163,7 +164,7 @@ public:
     /**
      * @brief Iterator to the last reinit-ed cell.
      */
-    ElementIterator *present_cell;
+    ElementAccessor<3> *present_cell;
 
 };
 
@@ -537,7 +538,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(ElementIterator &cell);
+    void reinit(ElementAccessor<3> &cell);
 
 
 };
@@ -587,7 +588,7 @@ public:
 	 * @param cell The actual cell.
 	 * @param sid  Number of the side of the cell.
 	 */
-    void reinit(ElementIterator &cell,
+    void reinit(ElementAccessor<3> &cell,
         		unsigned int sid);
 
 

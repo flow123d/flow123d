@@ -43,8 +43,8 @@ public:
 	/// Constructor
 	ProjectionHandler() {};
 
-	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, const Element &elm) {
-		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
+	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, ElementAccessor<3> elm) {
+		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(*elm.element());
 		arma::vec::fixed<dim+1> projection = mapping_.project_real_to_unit(input_point, elm_map);
 		projection = mapping_.clip_to_element(projection);
 
@@ -60,7 +60,7 @@ public:
     /**
      * Snap local coords to the subelement. Called by the ObservePoint::snap method.
      */
-	void snap_to_subelement(ObservePointData & observe_data, const Element & elm, unsigned int snap_dim)
+	void snap_to_subelement(ObservePointData & observe_data, ElementAccessor<3> elm, unsigned int snap_dim)
 	{
 		if (snap_dim <= dim) {
 			double min_dist = 2.0; // on the ref element the max distance should be about 1.0, smaler then 2.0
@@ -76,7 +76,7 @@ public:
 			observe_data.local_coords_ = min_center;
 		}
 
-		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
+		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(*elm.element());
         observe_data.global_coords_ =  elm_map * RefElement<dim>::local_to_bary(observe_data.local_coords_);
 	}
 
@@ -174,19 +174,19 @@ void ObservePoint::snap(Mesh &mesh)
         case 1:
         {
         	ProjectionHandler<1> ph;
-        	ph.snap_to_subelement(observe_data_, *(elm.element()), snap_dim_);
+        	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
             break;
         }
         case 2:
         {
         	ProjectionHandler<2> ph;
-        	ph.snap_to_subelement(observe_data_, *(elm.element()), snap_dim_);
+        	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
             break;
         }
         case 3:
         {
         	ProjectionHandler<3> ph;
-        	ph.snap_to_subelement(observe_data_, *(elm.element()), snap_dim_);
+        	ph.snap_to_subelement(observe_data_, elm, snap_dim_);
             break;
         }
         default: ASSERT(false).error("Clipping supported only for dim=1,2,3.");
@@ -215,7 +215,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         ElementAccessor<3> elm = mesh.element_accessor(i_elm);
 
         // project point, add candidate to queue
-        auto observe_data = point_projection( i_elm, *(elm.element()) );
+        auto observe_data = point_projection( i_elm, elm );
         if (observe_data.distance_ <= max_search_radius_)
         	candidate_queue.push(observe_data);
         closed_elements.insert(i_elm);
@@ -245,7 +245,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm->node[n])]) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					ElementAccessor<3> neighbor_elm = mesh.element_accessor(i_node_ele);
-					auto observe_data = point_projection( i_node_ele, *(neighbor_elm.element()) );
+					auto observe_data = point_projection( i_node_ele, neighbor_elm );
 			        if (observe_data.distance_ <= max_search_radius_)
 			        	candidate_queue.push(observe_data);
 			        closed_elements.insert(i_node_ele);
@@ -278,7 +278,7 @@ void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int
 
 
 
-ObservePointData ObservePoint::point_projection(unsigned int i_elm, const Element &elm) {
+ObservePointData ObservePoint::point_projection(unsigned int i_elm, ElementAccessor<3> elm) {
 	switch (elm.dim()) {
 	case 1:
 	{

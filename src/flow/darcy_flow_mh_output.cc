@@ -44,6 +44,8 @@
 
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 // #include "coupling/balance.hh"
 #include "intersection/mixed_mesh_intersections.hh"
@@ -257,7 +259,7 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
-    	ElementIterator ele = mesh_->bulk_begin() + i_ele;
+    	ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
 
         flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
@@ -273,8 +275,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 	unsigned int ndofs = dh_->max_elem_dofs();
 	std::vector<IdxInt> indices(ndofs);
 	unsigned int i_node;
-	FOR_ELEMENTS(mesh_, ele)
-	{
+	for (auto ele : mesh_->bulk_elements_range()) {
 		dh_->get_dof_indices(ele, indices);
 		FOR_ELEMENT_NODES(ele, i_node)
 		{
@@ -494,15 +495,15 @@ struct DiffData {
 };
 
 template <int dim>
-void l2_diff_local(ElementIterator &ele,
+void l2_diff_local(ElementAccessor<3> &ele,
                    FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
                    ExactSolution &anal_sol,  DiffData &result) {
 
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
-    double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
+    double conductivity = result.data_->conductivity.value(ele->centre(), ele );
+    double cross = result.data_->cross_section.value(ele->centre(), ele );
 
 
     // get coefficients on the current element
@@ -535,7 +536,7 @@ void l2_diff_local(ElementIterator &ele,
         arma::vec3 q_point = fe_values.point(i_point);
 
 
-        analytical = anal_sol.value(q_point, ele->element_accessor() );
+        analytical = anal_sol.value(q_point, ele );
         for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
 
         // compute postprocesed pressure
@@ -673,7 +674,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     darcy_flow->get_solution_vector(result.solution, solution_size);
 
 
-    FOR_ELEMENTS( mesh_, ele) {
+    for (auto ele : mesh_->bulk_elements_range()) {
 
     	switch (ele->dim()) {
         case 1:

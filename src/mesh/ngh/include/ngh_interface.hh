@@ -28,7 +28,7 @@ namespace ngh {
     /**
      * Create tetrahedron from element
      */
-    inline void set_tetrahedron_from_element( TTetrahedron &te, Element *ele) {
+    inline void set_tetrahedron_from_element( TTetrahedron &te, const Element *ele) {
         OLD_ASSERT(( ele->dim() == 3 ), "Dimension of element must be 3!\n");
 
          te.SetPoints(TPoint(ele->node[0]->point()(0), ele->node[0]->point()(1), ele->node[0]->point()(2)),

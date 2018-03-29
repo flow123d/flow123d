@@ -65,7 +65,7 @@ public:
     double side_scalar(const Side &side) const;
 
     /// temporary replacement for DofHandler accessor, scalar (pressure) on element
-    double element_scalar( ElementIterator &ele ) const;
+    double element_scalar( ElementAccessor<3> &ele ) const;
 
     inline double precision() const { return solution_precision; };
 

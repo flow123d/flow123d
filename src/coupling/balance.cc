@@ -24,6 +24,7 @@
 
 #include <petscmat.h>
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
@@ -208,7 +209,7 @@ void Balance::lazy_initialize()
 	// construct vector of regions of boundary edges
     for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        ElementIterator elm = const_cast<Mesh *>(mesh_)->bulk_begin() + mesh_->get_el_4_loc()[loc_el];
+        ElementAccessor<3> elm = const_cast<Mesh *>(mesh_)->element_accessor( mesh_->get_el_4_loc()[loc_el] );
         if (elm->boundary_idx_ != nullptr)
         {
             FOR_ELEMENT_SIDES(elm,si)

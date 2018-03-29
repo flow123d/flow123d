@@ -20,6 +20,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/bounding_box.hh"
+#include "mesh/accessors.hh"
 #include "fem/fe_values_views.hh"
 
 
@@ -113,7 +114,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_PTR(map_).error();
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->bulk_begin() + elm.idx();
+    DOFHandlerBase::CellIterator cell = dh_->mesh()->element_accessor( elm.idx() );
 	dh_->get_dof_indices(cell, dof_indices);
 
     arma::mat map_mat = map_->element_map(*elm.element());
@@ -135,11 +136,11 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 
 
 template <int elemdim, int spacedim, class Value>
-bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, Element &elm)
+bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, ElementAccessor<3> elm)
 {
 	ASSERT_PTR(map_).error();
 
-	arma::vec projection = map_->project_real_to_unit(point, map_->element_map(elm));
+	arma::vec projection = map_->project_real_to_unit(point, map_->element_map(*elm.element()));
 	return (projection.min() >= -BoundingBox::epsilon);
 }
 

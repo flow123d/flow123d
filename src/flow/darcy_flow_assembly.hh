@@ -9,6 +9,7 @@
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
@@ -57,7 +58,7 @@ public:
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(ElementIterator ele) = 0;
+    virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
 
     virtual void update_water_content(LocalElementAccessorBase<3> ele)
     {}
@@ -182,15 +183,15 @@ public:
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
-        ElementIterator ele_higher = ad_->mesh->bulk_begin() + ad_->mesh->elem_index( ngh->side()->element()->id() );
+        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ad_->mesh->elem_index( ngh->side()->element()->id() ) );
         ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
                         2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
                         arma::dot(ad_->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
+                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
+                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
                         ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
@@ -201,7 +202,7 @@ public:
     }
 
 
-    arma::vec3 make_element_vector(ElementIterator ele) override
+    arma::vec3 make_element_vector(ElementAccessor<3> ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
         arma::vec3 flux_in_center;
@@ -213,7 +214,7 @@ public:
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 
-        flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
+        flux_in_center /= ad_->cross_section.value(ele->centre(), ele );
         return flux_in_center;
     }
 
@@ -381,7 +382,7 @@ protected:
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
-        ElementIterator ele =ele_ac.full_iter();
+        ElementAccessor<3> ele =ele_ac.element_accessor();
         fe_values_.reinit(ele);
         unsigned int ndofs = fe_values_.get_fe()->n_dofs();
         unsigned int qsize = fe_values_.get_quadrature()->size();

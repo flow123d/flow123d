@@ -21,7 +21,8 @@
 
 #include <vector>              // for vector
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"  // for ElementIterator
+#include "mesh/mesh_types.hh"
+#include "mesh/accessors.hh"
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
@@ -51,7 +52,7 @@ public:
      * TODO: Iterator goes through cells of all dimensions, but
      * should go only through dim-dimensional ones.
      */
-    typedef ElementIterator CellIterator;
+    typedef ElementAccessor<3> CellIterator;
 
     /**
      * @brief Getter for the number of all mesh dofs required by the given
@@ -199,7 +200,7 @@ protected:
 //     * TODO: Iterator goes through cells of all dimensions, but
 //     * should go only through dim-dimensional ones.
 //     */
-//    typedef ElementIterator CellIterator;
+//    typedef ElementAccessor<3> CellIterator;
 //
 //    /**
 //     * @brief Distributes degrees of freedom on the mesh needed
@@ -277,7 +278,7 @@ public:
      *
      * TODO: Notation to be fixed: element or cell
      */
-    typedef ElementIterator CellIterator;
+    typedef ElementAccessor<3> CellIterator;
 
     /**
      * @brief Distributes degrees of freedom on the mesh needed

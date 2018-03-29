@@ -598,7 +598,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
     // calculate element averages of solution
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator elem = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
+        typename DOFHandlerBase::CellIterator elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
 
         unsigned int n_dofs;
         switch (elem->dim())
@@ -702,15 +702,14 @@ void TransportDG<Model>::assemble_mass_matrix()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
         feo->dh()->get_dof_indices(cell, dof_indices);
-        ElementAccessor<3> ele_acc = cell->element_accessor();
 
-        Model::compute_mass_matrix_coefficient(fe_values.point_list(), ele_acc, mm_coef);
-        Model::compute_retardation_coefficient(fe_values.point_list(), ele_acc, ret_coef);
+        Model::compute_mass_matrix_coefficient(fe_values.point_list(), cell, mm_coef);
+        Model::compute_retardation_coefficient(fe_values.point_list(), cell, ret_coef);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
@@ -736,7 +735,7 @@ void TransportDG<Model>::assemble_mass_matrix()
                     }
             }
             
-            Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], ele_acc.region().bulk_idx(), dof_indices, local_mass_balance_vector);
+            Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], cell.region().bulk_idx(), dof_indices, local_mass_balance_vector);
             ls_dt[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
             VecSetValues(ret_vec[sbi], ndofs, &(dof_indices[0]), local_retardation_balance_vector, ADD_VALUES);
         }
@@ -795,17 +794,16 @@ void TransportDG<Model>::assemble_volume_integrals()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
         fv_rt.reinit(cell);
-        ElementAccessor<3> ele_acc = cell->element_accessor();
         feo->dh()->get_dof_indices(cell, dof_indices);
 
         calculate_velocity(cell, velocity, fv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values.point_list(), velocity, ele_acc, ad_coef, dif_coef);
-        Model::compute_sources_sigma(fe_values.point_list(), ele_acc, sources_sigma);
+        Model::compute_advection_diffusion_coefficients(fe_values.point_list(), velocity, cell, ad_coef, dif_coef);
+        Model::compute_sources_sigma(fe_values.point_list(), cell, sources_sigma);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -863,13 +861,13 @@ void TransportDG<Model>::set_sources()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
         feo->dh()->get_dof_indices(cell, dof_indices);
 
-        Model::compute_source_coefficients(fe_values.point_list(), cell->element_accessor(), sources_conc, sources_density, sources_sigma);
+        Model::compute_source_coefficients(fe_values.point_list(), cell, sources_conc, sources_density, sources_sigma);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -933,16 +931,15 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
         for (int sid=0; sid<edg->n_sides; sid++)
         {
-            typename DOFHandlerBase::CellIterator cell = edg->side(sid)->element();
-            ElementAccessor<3> ele_acc = cell->element_accessor();
+            typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( edg->side(sid)->element()->id() );
             feo->dh()->get_dof_indices(cell, side_dof_indices[sid]);
             fe_values[sid]->reinit(cell, edg->side(sid)->el_idx());
             fsv_rt.reinit(cell, edg->side(sid)->el_idx());
             calculate_velocity(cell, side_velocity[sid], fsv_rt);
-            Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], ele_acc, ad_coef_edg[sid], dif_coef_edg[sid]);
+            Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], cell, ad_coef_edg[sid], dif_coef_edg[sid]);
             dg_penalty[sid].resize(Model::n_substances());
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-                dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell->centre(), ele_acc);
+                dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell->centre(), cell);
         }
 
         // fluxes and penalty
@@ -1062,17 +1059,16 @@ void TransportDG<Model>::assemble_fluxes_boundary()
         if (edg->side(0)->cond() == NULL) continue;
 
         SideIter side = edg->side(0);
-        typename DOFHandlerBase::CellIterator cell = side->element();
-        ElementAccessor<3> ele_acc = cell->element_accessor();
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( side->element()->id() );
         feo->dh()->get_dof_indices(cell, side_dof_indices);
         fe_values_side.reinit(cell, side->el_idx());
         fsv_rt.reinit(cell, side->el_idx());
 
         calculate_velocity(cell, side_velocity, fsv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
+        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, cell, ad_coef, dif_coef);
         arma::uvec bc_type;
         Model::get_bc_type(side->cond()->element_accessor(), bc_type);
-        data_.cross_section.value_list(fe_values_side.point_list(), ele_acc, csection);
+        data_.cross_section.value_list(fe_values_side.point_list(), cell, csection);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         {
@@ -1090,7 +1086,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
             if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(cell->centre(), ele_acc), gamma_l);
+                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(cell->centre(), cell), gamma_l);
                 gamma[sbi][side->cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }
@@ -1175,7 +1171,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         // skip neighbours of different dimension
         if (nb->element()->dim() != dim-1) continue;
 
-        typename DOFHandlerBase::CellIterator cell_sub = Model::mesh_->bulk_begin() + Model::mesh_->elem_index( nb->element()->id() );
+        typename DOFHandlerBase::CellIterator cell_sub = Model::mesh_->element_accessor( Model::mesh_->elem_index(nb->element()->id()) );
 		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i] = indices[i];
@@ -1183,7 +1179,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         fe_values_vb.reinit(cell_sub);
         n_dofs[0] = fv_sb[0]->n_dofs();
 
-        typename DOFHandlerBase::CellIterator cell = nb->side()->element();
+        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( Model::mesh_->elem_index(nb->side()->element()->id()) );
 		n_indices = feo->dh()->get_dof_indices(cell, indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i+n_dofs[0]] = indices[i];
@@ -1200,9 +1196,9 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         fv_rt.reinit(cell_sub);
         calculate_velocity(cell, velocity_higher, fsv_rt);
         calculate_velocity(cell_sub, velocity_lower, fv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, cell_sub->element_accessor(), ad_coef_edg[0], dif_coef_edg[0]);
+        Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, cell_sub, ad_coef_edg[0], dif_coef_edg[0]);
         Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell->element_accessor(), ad_coef_edg[1], dif_coef_edg[1]);
-        data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), csection_lower);
+        data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub, csection_lower);
         data_.cross_section.value_list(fe_values_vb.point_list(), cell->element_accessor(), csection_higher);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
@@ -1211,7 +1207,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
                 for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
                     local_matrix[i*(n_dofs[0]+n_dofs[1])+j] = 0;
             
-            data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), cell_sub->element_accessor(), frac_sigma);
+            data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), cell_sub, frac_sigma);
 
             // set transmission conditions
             for (unsigned int k=0; k<qsize; k++)
@@ -1309,7 +1305,7 @@ void TransportDG<Model>::set_boundary_conditions()
             }
 
             SideIter side = edg->side(0);
-            typename DOFHandlerBase::CellIterator cell = Model::mesh_->bulk_begin() + Model::mesh_->elem_index( side->element()->id() );
+            typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( Model::mesh_->elem_index(side->element()->id()) );
             ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
             arma::uvec bc_type;
@@ -1644,14 +1640,13 @@ void TransportDG<Model>::prepare_initial_condition()
 
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator elem = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
+        typename DOFHandlerBase::CellIterator elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (elem->dim() != dim) continue;
 
-        ElementAccessor<3> ele_acc = elem->element_accessor();
         feo->dh()->get_dof_indices(elem, dof_indices);
         fe_values.reinit(elem);
 
-        Model::compute_init_cond(fe_values.point_list(), ele_acc, init_values);
+        Model::compute_init_cond(fe_values.point_list(), elem, init_values);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         {
@@ -1695,7 +1690,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     {
         for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
         {
-            typename DOFHandlerBase::CellIterator elem = Model::mesh_->bulk_begin() + feo->dh()->el_index(i_cell);
+            typename DOFHandlerBase::CellIterator elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
 
             unsigned int n_dofs;
             switch (elem->dim())

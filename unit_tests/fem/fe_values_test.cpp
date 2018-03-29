@@ -20,6 +20,7 @@
 #include "mesh/mesh.h"
 #include "mesh/element_impls.hh"
 #include "mesh/region.hh"
+#include "mesh/accessors.hh"
 
 #define INTEGRATE( _func_ ) for( unsigned int i=0; i < quad.size(); i++) sum +=  _func_( quad.point(i) ) * quad.weight(i);
 
@@ -38,7 +39,7 @@ double func( const arma::vec::fixed<dim> & p) {
 
 
 template <int dim>
-double integrate(ElementIterator &ele) {
+double integrate(ElementAccessor<3> &ele) {
     FE_P_disc<dim> fe(0);
     QGauss<dim> quad( 2 );
     MappingP1<dim,3> map;
@@ -58,68 +59,37 @@ TEST(FeValues, test_all) {
   // integrate a polynomial defined on the ref. element over an arbitrary element
     {
         // 1d case interval (1,3)   det(jac) = 2
-        NodeVector nodes(2);
-        nodes.add_item(0);
-        nodes[0].point()[0] = 1.0;
-        nodes[0].point()[1] = 0.0;
-        nodes[0].point()[2] = 0.0;
+    	Mesh mesh;
+    	mesh.add_node(0, arma::vec3("1 0 0"));
+    	mesh.add_node(1, arma::vec3("3 0 0"));
+    	std::vector<unsigned int> node_ids = {0, 1};
+    	mesh.add_element(0, 1, 1, 0, node_ids);
+    	ElementAccessor<3> elm_acc = mesh.element_accessor(0);
 
-        nodes.add_item(1);
-        nodes[1].point()[0] = 3.0;
-        nodes[1].point()[1] = 0.0;
-        nodes[1].point()[2] = 0.0;
-
-        vector<Element> el_vec(1);
-
-        RegionIdx reg;
-        el_vec[0].init(1, 0, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
-
-        el_vec[0].node = new Node * [el_vec[0].n_nodes()];
-        for(int i =0; i < 2; i++) el_vec[0].node[i] = nodes(i);
-
-
-        ElementIterator it = el_vec.begin();
-        EXPECT_DOUBLE_EQ( 2.5 * 2, integrate<1>( it ) );
+        EXPECT_DOUBLE_EQ( 2.5 * 2, integrate<1>( elm_acc ) );
         
         // projection methods
         MappingP1<1,3> mapping;
-        arma::mat::fixed<3, 2> map = mapping.element_map(el_vec[0]);
+        arma::mat::fixed<3, 2> map = mapping.element_map(*elm_acc.element());
         EXPECT_ARMA_EQ( arma::mat("1 3; 0 0; 0 0"), map);
         EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), mapping.project_real_to_unit( arma::vec("2.0 0.0 0.0"), map ) );
     }
 
     {
         // 2d case: triangle (0,1) (2,0) (3,4) surface = 3*4 - 1*2/2 - 1*4/4 - 3*3/2 = 9/2, det(jac) = 9
-        NodeVector nodes(3);
-        nodes.add_item(0);
-        nodes[0].point()[0] = 0.0;
-        nodes[0].point()[1] = 1.0;
-        nodes[0].point()[2] = 0.0;
+    	Mesh mesh;
+    	mesh.add_node(0, arma::vec3("0 1 0"));
+    	mesh.add_node(1, arma::vec3("2 0 0"));
+    	mesh.add_node(2, arma::vec3("3 4 0"));
+    	std::vector<unsigned int> node_ids = {0, 1, 2};
+    	mesh.add_element(1, 2, 1, 0, node_ids);
+    	ElementAccessor<3> elm_acc = mesh.element_accessor(0);
 
-        nodes.add_item(1);
-        nodes[1].point()[0] = 2.0;
-        nodes[1].point()[1] = 0.0;
-        nodes[1].point()[2] = 0.0;
-
-        nodes.add_item(2);
-        nodes[2].point()[0] = 3.0;
-        nodes[2].point()[1] = 4.0;
-        nodes[2].point()[2] = 0.0;
-
-        vector<Element> el_vec(1);
-
-        RegionIdx reg;
-        el_vec[0].init(2, 1, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
-
-        el_vec[0].node = new Node * [el_vec[0].n_nodes()];
-        for(int i =0; i < 3; i++) el_vec[0].node[i] = nodes(i);
-
-        ElementIterator it = el_vec.begin();
-        EXPECT_DOUBLE_EQ( 19.0 / 12.0 * 9.0 , integrate<2>( it ) );
+        EXPECT_DOUBLE_EQ( 19.0 / 12.0 * 9.0 , integrate<2>( elm_acc ) );
 
         // projection methods
         MappingP1<2,3> mapping;
-        arma::mat::fixed<3, 3> map = mapping.element_map(el_vec[0]);
+        arma::mat::fixed<3, 3> map = mapping.element_map(*elm_acc.element());
         EXPECT_ARMA_EQ( arma::mat("0 2 3; 1 0 4; 0 0 0"), map);
         EXPECT_ARMA_EQ( arma::vec("0.6 0.2 0.2"), mapping.project_real_to_unit( arma::vec("1.0 1.4 0.0"), map ) );
     }

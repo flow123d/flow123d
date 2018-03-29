@@ -100,7 +100,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::Cell
         (fv_data.update_flags & update_inverse_jacobians) |
         (fv_data.update_flags & update_quadrature_points))
     {
-        coords = element_map(*cell);
+        coords = element_map(*cell.element());
     }
 
     // calculation of Jacobian dependent data
@@ -173,7 +173,7 @@ void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase:
         (fv_data.update_flags & update_normal_vectors) |
         (fv_data.update_flags & update_quadrature_points))
     {
-        coords = element_map(*cell);
+        coords = element_map(*cell.element());
     }
 
     // calculation of cell Jacobians and dependent data

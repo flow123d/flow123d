@@ -125,7 +125,7 @@ protected:
     void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
     /// Project point to given element by dimension of this element.
-    ObservePointData point_projection(unsigned int i_elm, const Element &elm);
+    ObservePointData point_projection(unsigned int i_elm, ElementAccessor<3> elm);
 
     /// Index in the input array.
     Input::Record in_rec_;
