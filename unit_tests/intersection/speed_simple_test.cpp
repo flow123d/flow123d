@@ -101,7 +101,7 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
     fprintf(file,"$Elements\n");
     fprintf(file,"%d\n",  mesh->n_elements() );
 
-    FOR_ELEMENTS(mesh, elee){
+    for (auto elee : mesh->bulk_elements_range()) {
         if(elee->dim() == 3){
             int id1 = mesh->node_vector.index(elee->node[0]) + 1;
             int id2 = mesh->node_vector.index(elee->node[1]) + 1;

@@ -71,7 +71,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 //     }
 //     
 //     //write the first intersection
-//     FOR_ELEMENTS(mesh, elm){
+//     for (auto elm : mesh->bulk_elements_range()) {
 //         
 //         if( (elm->dim() == 1) && (ie.intersection_map_[elm->index()].size() > 0) )
 //         {
@@ -98,7 +98,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
     for(unsigned int i=0; i < ilc.size(); i++)
     {
         MessageOut().fmt("---------- check IP[{}] ----------\n",i);
-        arma::vec3 ip = ilc[i][0].coords(mesh->element(ilc[i].component_ele_idx()));
+        arma::vec3 ip = ilc[i][0].coords(mesh->element_accessor(ilc[i].component_ele_idx()));
 //         ip.print(DebugOut(),"real ip");
         EXPECT_NEAR(ip[0], il[i][0], 1e-14);
         EXPECT_NEAR(ip[1], il[i][1], 1e-14);

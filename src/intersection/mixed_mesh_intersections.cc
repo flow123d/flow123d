@@ -472,7 +472,7 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
             IntersectionLocal<1,3> il = intersection_storage13_[j];
             ElementAccessor<3> el1D = mesh->element_accessor( il.component_ele_idx() );
-//             ElementIterator el3D = mesh->element_accessor( il.bulk_ele_idx() );
+//             ElementAccessor<3> el3D = mesh->element_accessor( il.bulk_ele_idx() );
             
             for(unsigned int k = 0; k < il.size();k++){
                 number_of_nodes++;

@@ -5,12 +5,10 @@
  *      Author: viktor
  */
 
-// #include "mesh/elements.h"
 #include "mesh/mesh.h"
 #include "intersection_point_aux.hh"
 #include "mesh/ref_element.hh"
-// #include "mesh/elements.h"   //TODO what is the best way of include to use ElementIterator ?
-#include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "system/system.hh"
 
 using namespace std;
@@ -104,7 +102,7 @@ IntersectionPointAux<M,N> IntersectionPointAux<N,M>::switch_objects() const
 
 
 template<unsigned int N, unsigned int M>
-arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementIterator ele) const
+arma::vec::fixed< 3  > IntersectionPointAux<N,M>::coords(ElementAccessor<3> ele) const
 {
     ASSERT_DBG(N == ele->dim());
     

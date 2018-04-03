@@ -94,8 +94,8 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
-    Simplex<2> triaA = create_simplex<2>(mesh->bulk_begin()),
-               triaB = create_simplex<2>(mesh->bulk_begin() + 1);
+    Simplex<2> triaA = create_simplex<2>( mesh->element_accessor(0) ),
+               triaB = create_simplex<2>( mesh->element_accessor(1) );
     
     IntersectionAux<2,2> is;
     ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA, triaB, mesh);
@@ -149,7 +149,7 @@ TEST(intersections_22d, all) {
             reader->read_raw_mesh(mesh);
         
             // permute nodes of one triangle:
-            permute_triangle(mesh->element(0),p);
+            permute_triangle(mesh->element_accessor(0),p);
             
             mesh->setup_topology();
             

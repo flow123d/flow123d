@@ -46,7 +46,7 @@ public:
     IntersectionAlgorithmBase(Mesh* mesh);
 protected:
    
-    /// Auxiliary function that translates @p ElementIterator to @p Simplex<simplex_dim>.
+    /// Auxiliary function that translates @p ElementAccessor<3> to @p Simplex<simplex_dim>.
     template<unsigned int simplex_dim>
     void update_simplex(const ElementAccessor<3> &element, Simplex<simplex_dim> & simplex);
     
@@ -222,7 +222,7 @@ private:
     void create_component_numbering();
     
     /// Auxiliary function for front-advancing alg. for component numbering.
-    //void prolongate22(const ElementIterator& ele, std::queue<unsigned int>& queue);
+    //void prolongate22(const ElementAccessor<3>& ele, std::queue<unsigned int>& queue);
     
     friend class MixedMeshIntersections;
 };

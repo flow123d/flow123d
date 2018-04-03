@@ -2,8 +2,6 @@
 #include "intersection_local.hh"
 #include "intersection_aux.hh"
 #include "intersection_point_aux.hh"
-// #include "mesh/mesh_types.hh"
-// #include "mesh/elements.h"   //TODO what is the best way of include to use ElementIterator ?
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 

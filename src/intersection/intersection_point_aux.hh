@@ -22,6 +22,7 @@
 
 #include <armadillo>
 #include "mesh/mesh_types.hh"
+template <int spacedim> class ElementAccessor;
 
 
 //TODO: idea:replace with relative tolerance and use some user input tolerance (absolute) of the coordinates
@@ -169,7 +170,7 @@ public:
     //@}
     
     /// Computes real coordinates of IP, given the element @p ele in which IP lies.
-    arma::vec::fixed<3> coords(ElementIterator ele) const;
+    arma::vec::fixed<3> coords(ElementAccessor<3> ele) const;
     
     /// Returns true, if this is a pathologic case.
     bool is_pathologic() const;

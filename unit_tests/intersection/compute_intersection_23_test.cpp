@@ -12,6 +12,7 @@
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
@@ -237,8 +238,8 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     // fixed element indices in the tests
     unsigned int triangle_ele_idx = 0,
                  tetra_ele_idx = 1;
-    Simplex<2> triangle = create_simplex<2>(mesh->bulk_begin() + triangle_ele_idx);
-    Simplex<3> tetra = create_simplex<3>(mesh->bulk_begin() + tetra_ele_idx);
+    Simplex<2> triangle = create_simplex<2>( mesh->element_accessor(triangle_ele_idx) );
+    Simplex<3> tetra = create_simplex<3>( mesh->element_accessor(tetra_ele_idx) );
     
     IntersectionAux<2,3> is;
     ComputeIntersection< Simplex<2>, Simplex<3>> CI(triangle, tetra, mesh);
@@ -258,7 +259,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     //     std::cout << temp_ilc;
     for(unsigned int i=0; i < is.size(); i++)
     {
-        coords[i] = temp_ilc[i].coords(mesh->bulk_begin() + triangle_ele_idx);
+        coords[i] = temp_ilc[i].coords( mesh->element_accessor(triangle_ele_idx) );
     }
     // sort computed coords according to real coordinates
     //std::sort(coords.begin(), coords.end(),compare_coords);
@@ -285,7 +286,7 @@ void compare_with_ngh(Mesh *mesh)
     ngh::TTetrahedron tte;
     ngh::TIntersectionType it = ngh::area;
 
-    FOR_ELEMENTS(mesh, elm) {
+    for (auto elm : mesh->bulk_elements_range()) {
         if (elm->dim() == 2) {
         ttr.SetPoints(
                 ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
@@ -349,8 +350,7 @@ TEST(area_intersections, all) {
                 reader->read_raw_mesh(mesh);
                 
                 // permute nodes:
-                FOR_ELEMENTS(mesh,ele)
-                {
+                for (auto ele : mesh->bulk_elements_range()) {
                     if(ele->dim() == 2)
                         permute_triangle(ele,p);
                     if(ele->dim() == 3)

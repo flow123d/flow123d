@@ -28,7 +28,6 @@
 #include <vector>                             // for vector
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "mesh/ref_element.hh"                // for RefElement
-#include "mesh/mesh_types.hh"                 // for ElementIterator
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
 

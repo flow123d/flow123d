@@ -11,6 +11,7 @@
 
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
@@ -70,8 +71,8 @@ std::vector<IntersectionPoint<1,2>> permute_coords(std::vector<IntersectionPoint
 
 void compute_intersection_12d(Mesh *mesh, const std::vector<IntersectionPoint<1,2>> &ips)
 {
-    Simplex<1> line = create_simplex<1>(mesh->bulk_begin() + 1);
-    Simplex<2> tria = create_simplex<2>(mesh->bulk_begin());
+    Simplex<1> line = create_simplex<1>( mesh->element_accessor(1) );
+    Simplex<2> tria = create_simplex<2>( mesh->element_accessor(0) );
     
     IntersectionAux<1,2> is(1, 0);
     ComputeIntersection< Simplex<1>, Simplex<2>> CI(line, tria, mesh);
@@ -127,8 +128,7 @@ TEST(intersections_12d, all) {
             reader->read_raw_mesh(mesh);
         
             // permute nodes:
-            FOR_ELEMENTS(mesh,ele)
-            {
+            for (auto ele : mesh->bulk_elements_range()) {
                 if(ele->dim() == 2)
                     permute_triangle(ele, p);
             }

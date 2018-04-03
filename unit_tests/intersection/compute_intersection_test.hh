@@ -5,9 +5,9 @@
 
 #include "system/file_path.hh"
 #include "system/system.hh"
-#include "mesh/mesh_types.hh"
 #include "mesh/nodes.hh"
 #include "mesh/elements.h"
+#include "mesh/accessors.hh"
 
 #include "intersection/simplex.hh"
 
@@ -79,7 +79,7 @@ void read_files_from_dir(const string &dir_name,
         std::sort(filenames.begin(), filenames.end(), less<string>());
 }
 
-void permute_tetrahedron(ElementIterator ele, unsigned int p)
+void permute_tetrahedron(ElementAccessor<3> ele, unsigned int p)
 {
     ASSERT_DBG(ele->dim() == 3);
     ASSERT_DBG(p < permutations_tetrahedron.size());
@@ -96,7 +96,7 @@ void permute_tetrahedron(ElementIterator ele, unsigned int p)
 //  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
 }
 
-void permute_triangle(ElementIterator ele, unsigned int p)
+void permute_triangle(ElementAccessor<3> ele, unsigned int p)
 {
     ASSERT_DBG(ele->dim() == 2);
     ASSERT_DBG(p < permutations_triangle.size());
@@ -114,7 +114,7 @@ void permute_triangle(ElementIterator ele, unsigned int p)
 }
 
 template<int dim>
-Simplex<dim> create_simplex(ElementIterator ele)
+Simplex<dim> create_simplex(ElementAccessor<3> ele)
 {
     ASSERT_DBG(dim == ele->dim());
     Simplex<dim> s;
