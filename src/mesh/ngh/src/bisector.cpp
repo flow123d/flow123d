@@ -18,6 +18,7 @@
 #include <iostream>
 
 #include "system/global_defs.h"
+#include "mesh/side_impl.hh"
 #include "mesh/element_impls.hh"
 #include "mesh/elements.h"
 

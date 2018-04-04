@@ -16,6 +16,7 @@
  */
 
 #include "system/exc_common.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/element_impls.hh"
 #include "mesh/elements.h"                             // for Element
 #include "mesh/ngh/include/abscissa.h"                 // for TAbscissa

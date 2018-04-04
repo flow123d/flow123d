@@ -15,6 +15,7 @@
  * @brief   
  */
 
+#include "mesh/side_impl.hh"
 #include "flow/mh_dofhandler.hh"
 #include "la/local_to_global_map.hh"
 #include "mesh/mesh.h"
@@ -254,7 +255,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
 
 
 unsigned int MH_DofHandler::side_dof(const SideIter side) const {
-    return elem_side_to_global[ mesh_->elem_index(side->element()->id()) ][ side->el_idx() ];
+    return elem_side_to_global[ mesh_->elem_index(side->element()->id()) ][ side->side_idx() ];
 }
 
 
@@ -267,7 +268,7 @@ void MH_DofHandler::set_solution( double time, double * solution, double precisi
 
 /// temporary replacement for DofHandler accessor, flux through given side
 double MH_DofHandler::side_flux(const Side &side) const {
-    return mh_solution[ elem_side_to_global[ mesh_->elem_index(side.element()->id()) ][ side.el_idx() ] ];
+    return mh_solution[ elem_side_to_global[ mesh_->elem_index(side.element()->id()) ][ side.side_idx() ] ];
 }
 
 /// temporary replacement for DofHandler accessor, scalar (pressure) on edge of the side

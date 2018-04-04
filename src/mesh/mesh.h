@@ -562,7 +562,7 @@ for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
 
 #define FOR_SIDES(_mesh_, it) \
     FOR_ELEMENTS((_mesh_), ele)  \
-        for(SideIter it = ele->side(0); it->el_idx() < ele->n_sides(); ++it)
+        for(SideIter it = ele->side(0); it->side_idx() < ele->n_sides(); ++it)
 
 #define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 

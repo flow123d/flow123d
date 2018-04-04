@@ -184,7 +184,7 @@ public:
         // compute normal vector to side
         arma::vec3 nv;
         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ad_->mesh->elem_index( ngh->side()->element()->id() ) );
-        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
+        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
         double value = ad_->sigma.value( ele->centre(), ele) *

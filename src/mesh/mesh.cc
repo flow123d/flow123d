@@ -552,7 +552,7 @@ void Mesh::make_edge_permutations()
 	for (EdgeVector::iterator edg=edges.begin(); edg!=edges.end(); edg++)
 	{
 		// side 0 is reference, so its permutation is 0
-		edg->side(0)->element()->permutation_idx_[edg->side(0)->el_idx()] = 0;
+		edg->side(0)->element()->permutation_idx_[edg->side(0)->side_idx()] = 0;
 
 		if (edg->n_sides > 1)
 		{
@@ -570,13 +570,13 @@ void Mesh::make_edge_permutations()
 				switch (edg->side(0)->dim())
 				{
 				case 0:
-					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<1>::permutation_index(permutation);
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->side_idx()] = RefElement<1>::permutation_index(permutation);
 					break;
 				case 1:
-					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<2>::permutation_index(permutation);
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->side_idx()] = RefElement<2>::permutation_index(permutation);
 					break;
 				case 2:
-					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->el_idx()] = RefElement<3>::permutation_index(permutation);
+					edg->side(sid)->element()->permutation_idx_[edg->side(sid)->side_idx()] = RefElement<3>::permutation_index(permutation);
 					break;
 				}
 			}
@@ -599,13 +599,13 @@ void Mesh::make_edge_permutations()
 		switch (nb->side()->dim())
 		{
 		case 0:
-			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<1>::permutation_index(permutation);
+			nb->side()->element()->permutation_idx_[nb->side()->side_idx()] = RefElement<1>::permutation_index(permutation);
 			break;
 		case 1:
-			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<2>::permutation_index(permutation);
+			nb->side()->element()->permutation_idx_[nb->side()->side_idx()] = RefElement<2>::permutation_index(permutation);
 			break;
 		case 2:
-			nb->side()->element()->permutation_idx_[nb->side()->el_idx()] = RefElement<3>::permutation_index(permutation);
+			nb->side()->element()->permutation_idx_[nb->side()->side_idx()] = RefElement<3>::permutation_index(permutation);
 			break;
 		}
 	}

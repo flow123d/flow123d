@@ -46,10 +46,10 @@ inline unsigned int Element::n_sides() const {
 
 
 inline SideIter Element::side(const unsigned int loc_index) {
-    return SideIter( Side(this, loc_index) );
+    return SideIter( Side(mesh_, id_, loc_index) );
 }
 
 inline const SideIter Element::side(const unsigned int loc_index) const {
-    return SideIter( Side(this, loc_index) );
+    return SideIter( Side(mesh_, id_, loc_index) );
 }
 #endif /* ELEMENT_IMPLS_HH_ */

@@ -21,14 +21,15 @@
 
 #include <armadillo>
 #include <stddef.h>                          // for NULL
-#include "mesh/mesh_types.hh"                // for ElementIterator
+#include "mesh/mesh.h"
+//#include "mesh/accessors.hh"
 #include "system/sys_vector.hh"              // for FullIterator
 
 class Boundary;
 class Edge;
 class Element;
-class Mesh;
 class Node;
+template <int spacedim> class ElementAccessor;
 
 //=============================================================================
 // STRUCTURE OF THE SIDE OF THE MESH
@@ -39,10 +40,10 @@ class Mesh;
 class Side {
 public:
     Side()
-    : element_(NULL), el_idx_(0)
+    : mesh_(NULL), elem_idx_(0), side_idx_(0)
     {}
 
-    inline Side(const Element * ele, unsigned int set_lnum);
+    inline Side(Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
     double measure() const;
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
@@ -68,7 +69,7 @@ public:
     /**
      * Returns iterator to the element of the side.
      */
-    inline ElementIterator element() const;
+    inline ElementAccessor<3> element() const;
 
     /**
      * Returns pointer to the mesh.
@@ -91,7 +92,12 @@ public:
     /**
      * Returns local index of the side on the element.
      */
-    inline unsigned int el_idx() const;
+    inline unsigned int side_idx() const;
+
+    /**
+     * Returns index of element in Mesh::element_vec_.
+     */
+    inline unsigned int elem_idx() const;
 
     /**
      * Returns true if the side has assigned element.
@@ -104,7 +110,7 @@ public:
     inline void inc();
 
     /// This is necessary by current DofHandler, should change this
-    inline void *make_ptr() const;
+    //inline void *make_ptr() const;
 private:
 
     arma::vec3 normal_point() const;
@@ -113,8 +119,9 @@ private:
 
     // Topology of the mesh
 
-    const Element * element_; // Pointer to element to which belonged
-    unsigned int el_idx_; // Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
+    Mesh * mesh_;           ///< Pointer to Mesh to which belonged
+    unsigned int elem_idx_; ///< Index of element in Mesh::element_vec_
+    unsigned int side_idx_; ///< Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
 };
 
@@ -132,7 +139,8 @@ public:
     {}
 
     inline bool operator==(const SideIter &other) {
-        return (side_.element() == other.side_.element() ) && ( side_.el_idx() == other.side_.el_idx() );
+        return (side_.mesh() == other.side_.mesh() ) && ( side_.elem_idx() == other.side_.elem_idx() )
+        		&& ( side_.side_idx() == other.side_.side_idx() );
     }
 
 

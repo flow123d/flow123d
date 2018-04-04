@@ -518,11 +518,10 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     ElementDataCacheBase *output_data = *output_data_iter;
 
     /* All values has to be equal 20.0 */
-    ElementIterator ele;
     Node *node;
     int node_id;
     int corner_data_count, corner_id = 0;
-    FOR_ELEMENTS(&mesh, ele) {
+    for (auto ele : mesh->bulk_elements_range()) {
         FOR_ELEMENT_NODES(ele, node_id) {
             EXPECT_EQ((*(OutputData<double>*)output_data)[corner_id], 20.0);
             corner_id++;
@@ -542,7 +541,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
 
     /* All values has to be equal 100 */
     corner_id = 0;
-    FOR_ELEMENTS(&mesh, ele) {
+    for (auto ele : mesh->bulk_elements_range()) {
         FOR_ELEMENT_NODES(ele, node_id) {
             EXPECT_EQ((*(OutputData<int>*)output_data)[corner_id], -1);
             corner_id++;
