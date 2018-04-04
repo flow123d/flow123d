@@ -631,14 +631,12 @@ void l2_diff_local(ElementFullIter &ele,
 
 
 template <int dim>
-void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac, 
-                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
+                   XFEValues<dim,3> &fe_values, XFEValues<dim,3> &fv_rt,
                    ExactSolution &anal_sol,  DiffData &result) {
 //     DBGCOUT(<< "local diff\n");
     
     ElementFullIter ele = ele_ac.full_iter();
-    fv_rt.reinit(ele);
-    fe_values.reinit(ele);
     
 //     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
     double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
@@ -745,12 +743,24 @@ void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
 
 template<int dim>
 struct FEDiffData{
-    FEDiffData()
+    FEDiffData(bool single_enr)
     : fe_p0(0), order(4), quad(order),
       fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
       fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points),
+      single_enr(single_enr),
       qfactory(13-2*dim)
-    {};
+    {
+        if(single_enr)
+        {
+            fv_rt_xfem = std::make_shared<XFEValues<dim,3>> (mapp, fe_rt, fe_p0, update_values |
+                                                            update_JxW_values | update_jacobians |
+                                                            update_inverse_jacobians | update_quadrature_points
+                                                            | update_divergence);
+            fv_p0_xfem = std::make_shared<XFEValues<dim,3>> (mapp, fe_p0, fe_p0,
+                                                            update_JxW_values | update_jacobians |
+                                                            update_inverse_jacobians | update_quadrature_points);
+        }
+    };
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
     FE_P_disc<dim> fe_p0;
@@ -764,45 +774,32 @@ struct FEDiffData{
     
     // FEValues for velocity.
     FE_RT0<dim> fe_rt;
-    FEValues<dim> fv_rt;
+    FEValues<dim, 3> fv_rt;
 
     
     // XFEM stuff ...
+    bool single_enr;
+    
     QXFEMFactory qfactory;
     shared_ptr<QXFEM<dim,3>> qxfem;
     
-    shared_ptr<FiniteElementEnriched<dim,3>> fe_rt_xfem;
-    shared_ptr<FEValues<dim,3>> fv_rt_xfem;
+    shared_ptr<XFEValues<dim,3>> fv_rt_xfem;
     shared_ptr<FESideValues<dim,3>> fv_side_xfem;
     
-    shared_ptr<FiniteElementEnriched<dim,3>> fe_p0_xfem;
-    shared_ptr<FEValues<dim,3>> fv_p0_xfem;
+    shared_ptr<XFEValues<dim,3>> fv_p0_xfem;
     
     shared_ptr<FEValues<dim,3>> fv_rt_sing;
     // end XFEM stuff ...
     
-    void prepare_xfem(LocalElementAccessorBase<3> ele_ac, bool single_enr)
+    void prepare_xfem(LocalElementAccessorBase<3> ele_ac)
     {
         ElementFullIter ele = ele_ac.full_iter();
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
         
         qxfem = qfactory.create_singular(xdata->sing_vec(), ele);
         
-        if(single_enr) fe_rt_xfem = std::make_shared<FE_RT0_XFEM_S<dim,3>>(&fe_rt,xdata->enrichment_func_vec());
-        else fe_rt_xfem = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt,xdata->enrichment_func_vec());
-        
-        
-        fv_rt_xfem = std::make_shared<FEValues<dim,3>> 
-                            (mapp, *qxfem, *fe_rt_xfem, update_values |
-                                                        update_JxW_values | update_jacobians |
-                                                        update_inverse_jacobians | update_quadrature_points 
-                                                        | update_divergence);
-        
-        fe_p0_xfem = std::make_shared<FE_P0_XFEM<dim,3>>(&fe_p0,xdata->enrichment_func_vec());
-        fv_p0_xfem = std::make_shared<FEValues<dim,3>> 
-                            (mapp, *qxfem, *fe_p0_xfem, update_values |
-                                                        update_JxW_values |
-                                                        update_quadrature_points);
+        fv_rt_xfem->reinit(ele, *xdata, *qxfem);
+        fv_p0_xfem->reinit(ele, *xdata, *qxfem);
     }
 };
     
@@ -810,9 +807,9 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
-    FEDiffData<1> fe_data_1d;
-    FEDiffData<2> fe_data_2d;
-    FEDiffData<3> fe_data_3d;
+    FEDiffData<1> fe_data_1d(darcy_flow->get_mh_dofhandler().single_enr);
+    FEDiffData<2> fe_data_2d(darcy_flow->get_mh_dofhandler().single_enr);
+    FEDiffData<3> fe_data_3d(darcy_flow->get_mh_dofhandler().single_enr);
     
     ASSERT(python_solution_filename_.exists());
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
@@ -884,7 +881,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 //                 break;
             case 2:
                 if(ele->xfem_data != nullptr){
-                    fe_data_2d.prepare_xfem(ele_ac,result.dh->single_enr);
+                    fe_data_2d.prepare_xfem(ele_ac);
                     l2_diff_local_xfem<2>(ele_ac, *fe_data_2d.fv_p0_xfem, *fe_data_2d.fv_rt_xfem,
                                           anal_sol_2d, result);
                 }
@@ -894,7 +891,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
                 break;
             case 3:
                 if(ele->xfem_data != nullptr){
-                    fe_data_3d.prepare_xfem(ele_ac,result.dh->single_enr);
+                    fe_data_3d.prepare_xfem(ele_ac);
                     l2_diff_local_xfem<3>(ele_ac, *fe_data_3d.fv_p0_xfem, *fe_data_3d.fv_rt_xfem,
                                           anal_sol_3d, result);
                 }

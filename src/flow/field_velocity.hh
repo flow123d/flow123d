@@ -26,9 +26,7 @@
 #include "fem/fe_rt.hh"
 
 #include "fem/singularity.hh"
-#include "fem/fe_p0_xfem.hh"
-#include "fem/fe_rt_xfem.hh"
-#include "fem/fe_rt_xfem_single.hh"
+#include "fem/xfe_values.hh"
 
 #include "quadrature/quadrature_lib.hh"
 #include "quadrature/qxfem.hh"
@@ -46,8 +44,11 @@ public:
     typedef typename arma::vec3 Value;
     
     FieldVelocityInternal(MH_DofHandler* mh_dh, bool enr=false, bool reg=true)
-    : mh_dh_(mh_dh), enr_(enr), reg_(reg)
-    {}
+    : mh_dh_(mh_dh), fe_p0_(0), enr_(enr), reg_(reg)
+    {
+        fv_rt_xfem_ = std::make_shared<XFEValues<dim,3>>(map_, fe_rt_, fe_p0_, update_values | update_jacobians |
+                                                           update_inverse_jacobians | update_quadrature_points);
+    }
     
     Value value_vector(const ElementAccessor<spacedim> &elm, const Point &p){
         //HACK to get accessor; only for SINGLE processor
@@ -99,11 +100,10 @@ public:
         ElementFullIter ele = ele_ac.full_iter();
         
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
-        if(mh_dh_->single_enr) fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM_S<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
-        else fe_rt_xfem_ = std::make_shared<FE_RT0_XFEM<dim,3>>(&fe_rt_,xdata->enrichment_func_vec());
-        
-        fv_rt_xfem_ = std::make_shared<FEValues<dim,3>>(map_,quad_, *fe_rt_xfem_, update_values);
-        fv_rt_xfem_->reinit(ele);
+
+        //TODO select enr type
+        if(mh_dh_->single_enr)
+            fv_rt_xfem_->reinit(ele, *xdata, quad_);
         auto velocity = fv_rt_xfem_->vector_view(0);
         
         int dofs[fv_rt_xfem_->n_dofs()];
@@ -115,7 +115,7 @@ public:
     //     cout << "\n";
         
         int li = 0;
-        if(!reg_) li = fe_rt_xfem_->n_regular_dofs();  //skip regular part
+        if(!reg_) li = fv_rt_xfem_->n_regular_dofs();  //skip regular part
         for (; li < ndofs; li++) {
             flux += mh_dh_->mh_solution[dofs[li]]
                         * velocity.value(li,0);
@@ -131,11 +131,11 @@ private:
     QXFEM<dim,3> quad_;
     
     // assembly volume integrals
-    FE_RT0<dim,3> fe_rt_;
+    FE_RT0<dim> fe_rt_;
+    FE_P_disc<dim> fe_p0_;
     std::shared_ptr<FEValues<dim,3>> fv_rt_;
     
-    std::shared_ptr<FiniteElementEnriched<dim,3>> fe_rt_xfem_;
-    std::shared_ptr<FEValues<dim,3>> fv_rt_xfem_;
+    std::shared_ptr<XFEValues<dim,3>> fv_rt_xfem_;
     
     bool enr_, reg_;
 };
