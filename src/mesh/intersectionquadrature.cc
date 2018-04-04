@@ -17,6 +17,7 @@
 
 #include "mesh/intersection.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
@@ -24,7 +25,7 @@
 
 // inicializovat objekt, cist zbytek tokenu z tok a naplnit map a shift pro master a slave
 // viz dokumentace k Armadillu
-Intersection::Intersection(const  ElementIterator ele_master, const ElementIterator ele_slave,
+Intersection::Intersection(ElementAccessor<3> ele_master, ElementAccessor<3> ele_slave,
     			 const IntersectionLocal *isec)
 :	dim(isec->n_points() - 1),
 	master(ele_master), slave(ele_slave),
