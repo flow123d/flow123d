@@ -139,11 +139,13 @@ template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         Quadrature<dim> & _quadrature,
         FiniteElement<dim> & _fe,
+        unsigned int ndofs,
         UpdateFlags _flags)
 {
     mapping = &_mapping;
     quadrature = &_quadrature;
     fe = &_fe;
+    n_dofs_ = ndofs;
 
     switch (fe->type_) {
         case FEScalar:
@@ -161,7 +163,7 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
             break;
     }
     // add flags required by the finite element or mapping
-    data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
+    data.allocate(quadrature->size(), update_each(_flags), ndofs*n_components_);
     
     views_cache_.initialize(*this);
 }
@@ -429,7 +431,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
          UpdateFlags _flags)
 :FEValuesBase<dim, spacedim>()
 {
-    this->allocate(_mapping, _quadrature, _fe, _flags);
+    this->allocate(_mapping, _quadrature, _fe, _fe.n_dofs(), _flags);
 
     //UpdateFlags map_update_flags = this->data.update_flags;
     
@@ -492,7 +494,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
 {
     sub_quadrature = &_sub_quadrature;
     Quadrature<dim> *q = new Quadrature<dim>(_sub_quadrature.size());
-    this->allocate(_mapping, *q, _fe, _flags);
+    this->allocate(_mapping, *q, _fe, _fe.n_dofs(), _flags);
 
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {

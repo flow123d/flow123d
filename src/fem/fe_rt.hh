@@ -23,7 +23,6 @@
 #include "system/logger.hh"
 #include "mesh/ref_element.hh"
 
-template <unsigned int dim, unsigned int spacedim> class FE_RT0_XFEM;
 /**
  * Space of Raviart-Thomas polynomials of order 0 (affine functions).
  * The basis functions are defined as
@@ -67,8 +66,6 @@ public:
      * @brief Constructor.
      */
     FE_RT0();
-
-friend class FE_RT0_XFEM<dim,spacedim>;
 };
 
 

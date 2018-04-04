@@ -75,6 +75,7 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
     ASSERT_DBG(dim == ele->dim());
 //     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
     sing_quads_.resize(this->n_enrichments());
+    this->enrichment_intersects_.resize(this->n_enrichments());
     
     MappingP1<dim,3> map;
     arma::mat proj = map.element_map(*ele);

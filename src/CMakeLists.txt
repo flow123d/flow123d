@@ -244,6 +244,7 @@ add_library(fem_lib
     fem/mapping_p1.cc
     fem/singularity.cc
     fem/xfem_element_data.cc
+    fem/xfe_values.cc
 )
 target_link_libraries(fem_lib
     system_lib mesh_lib 

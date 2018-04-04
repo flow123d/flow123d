@@ -165,15 +165,6 @@ UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
 
 
 
-template<unsigned int dim, unsigned int spacedim>
-const arma::mat& FiniteElement<dim,spacedim>::get_node_matrix()
-{
-    return node_matrix;
-}
-
-
-
-
 template class FiniteElement<0>;
 template class FiniteElement<1>;
 template class FiniteElement<2>;

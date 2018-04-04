@@ -262,9 +262,10 @@ public:
      * @param _fe The finite element.
      * @param flags The update flags.
      */
-    void allocate(Mapping<dim,spacedim> &_mapping,
+    virtual void allocate(Mapping<dim,spacedim> &_mapping,
             Quadrature<dim> &_quadrature,
             FiniteElement<dim> &_fe,
+            unsigned int ndofs,
             UpdateFlags flags);
     
     /**
@@ -424,7 +425,7 @@ public:
      */
     inline unsigned int n_dofs()
     {
-        return fe->n_dofs();
+        return n_dofs_;
     }
 
 
@@ -463,7 +464,7 @@ protected:
      *
      * @param fe_data Precomputed finite element data.
      */
-    void fill_data(const FEInternalData &fe_data);
+    virtual void fill_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for scalar FE.
     void fill_scalar_data(const FEInternalData &fe_data);
@@ -513,6 +514,8 @@ protected:
     
     /// Number of components of the FE.
     unsigned int n_components_;
+    
+    unsigned int n_dofs_;
     
     /// Auxiliary storage of FEValuesViews accessors.
     ViewsCache views_cache_;

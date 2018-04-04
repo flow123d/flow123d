@@ -29,8 +29,6 @@
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/global_defs.h"                        // for OLD_ASSERT, msg
 
-template <unsigned int dim, unsigned int spacedim> class FE_P0_XFEM;
-
 /**
  * @brief Space of polynomial functions.
  *
@@ -98,8 +96,6 @@ protected:
 
     /// Maximum degree of polynomials.
     unsigned int degree_;
-    
-    friend class FE_P0_XFEM<dim,spacedim>;
 };
 
 
@@ -116,8 +112,6 @@ public:
 
     /// Constructor.
     FE_P_disc(unsigned int degree);
-    
-    friend class FE_P0_XFEM<dim,spacedim>;
 };
 
 
