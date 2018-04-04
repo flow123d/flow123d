@@ -7,6 +7,8 @@
 
 #include "fields/generic_field.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "fields/field_flag.hh"
@@ -29,7 +31,7 @@ TEST(GenericField, all) {
 
     region_id = GenericField<3>::region_id(*mesh);
     region_id.set_time(TimeGovernor().step(), LimitSide::right);
-    FOR_ELEMENTS(mesh, ele)
+    for (auto ele : mesh->bulk_elements_range())
     	EXPECT_EQ( ele->region().id(),
     			   region_id.value(ele->centre(), ele->element_accessor())
     			   );
