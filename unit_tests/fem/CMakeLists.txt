@@ -32,6 +32,7 @@ define_test(fe_values)
 define_test(enr_function)
 define_mpi_test(qxfem 1)
 # define_mpi_test(fe_xfem 1)
+define_test(xfe_values)
 
 define_test(fe_system)
 
