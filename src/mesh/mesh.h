@@ -35,7 +35,7 @@
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/sides.h"                      // for SideIter
 #include "mesh/bounding_box.hh"              // for BoundingBox
-//#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "tools/bidirectional_map.hh"
 #include "tools/general_iterator.hh"
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
@@ -363,16 +363,6 @@ public:
     	else return bulk_size_;
     }
 
-    /// Begin iterator to bulk part of element vector
-    inline ElementIterator bulk_begin() {
-    	return element_vec_.begin();
-    }
-
-    /// End iterator to bulk part of element vector
-    inline ElementIterator bulk_end() {
-    	return element_vec_.begin() + bulk_size_;
-    }
-
     // For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
@@ -519,41 +509,7 @@ private:
 #include "mesh/neighbours_impl.hh"
 
 /**
- * Provides for statement to iterate over the bulk Elements of the Mesh.
- * The parameter is ElementIterator local variable of the cycle, so it need not be declared before.
- * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
- */
-#define FOR_ELEMENTS(_mesh_,__i) \
-    for( ElementIterator __i( (_mesh_)->bulk_begin() ); \
-        __i != (_mesh_)->bulk_end(); \
-        ++__i)
-
-/**
- * Macro for conversion form Iter to FullIter for elements.
- */
-#define ELEMENT_FULL_ITER(_mesh_,i) \
-    (_mesh_)->element.full_iter(i)
-
-#define FOR_BOUNDARIES(_mesh_,i) \
-for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
-    i != (_mesh_)->boundary_.end(); \
-    ++i)
-
-/**
- * Macro for conversion form Iter to FullIter for boundaries.
- */
-#define BOUNDARY_FULL_ITER(_mesh_,i) \
-    (_mesh_)->boundary.full_iter(i)
-
-/**
- * Macro to get "NULL" BoundaryFullIter.
- */
-#define BOUNDARY_NULL(_mesh_) \
-    BoundaryFullIter((_mesh_)->boundary)
-
-
-/**
- * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
+ * Provides for statement to iterate over the Edges of the Mesh.
  */
 #define FOR_EDGES(_mesh_,__i) \
     for( vector<Edge>::iterator __i = (_mesh_)->edges.begin(); \
@@ -561,18 +517,13 @@ for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
         ++__i)
 
 #define FOR_SIDES(_mesh_, it) \
-    FOR_ELEMENTS((_mesh_), ele)  \
+	for (auto ele : (_mesh_)->bulk_elements_range())  \
         for(SideIter it = ele->side(0); it->side_idx() < ele->n_sides(); ++it)
-
-#define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
 
 
 #define FOR_NEIGHBOURS(_mesh_, it) \
     for( std::vector<Neighbour>::iterator it = (_mesh_)->vb_neighbours_.begin(); \
          (it)!= (_mesh_)->vb_neighbours_.end(); ++it)
-
-#define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
-#define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
 
 
 #endif
