@@ -179,7 +179,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     {
         MessageOut().fmt("---------- check Intersection[{}] el_1d: {} el_3d: {} ----------\n",i,
                 ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
-        DebugOut()<< "bary: " << ilc[i][j].comp_coords();
+//         DebugOut()<< "bary: " << ilc[i][j].comp_coords();
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
         EXPECT_ARMA_EQ(il[i][j], ip);
         //EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);

@@ -453,7 +453,7 @@ protected:
      *
      * Called from make_instance method and set data of Record or its descendants.
      */
-    void set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec);
+    ParameterMap set_instance_data(Record &rec,  std::vector<ParameterPair> vec);
 
     /**
      * @brief Internal data class.

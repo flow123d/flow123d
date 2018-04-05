@@ -25,7 +25,7 @@
 
 //forward declare
 template<unsigned int, unsigned int> class IntersectionPointAux;
-template<typename U, typename V> class ComputeIntersection;
+template<unsigned int, unsigned int> class ComputeIntersection;
 
 /** @brief Internal auxiliary class representing intersection object of simplex<dimA> and simplex<dimB>.
  * 
@@ -42,8 +42,10 @@ class IntersectionAux{
     unsigned int component_element_idx_;
     /// Index of intersecting element in the bulk.
     unsigned int bulk_element_idx_;
-    /// Flag for pathologic case.
-    bool pathologic_;
+    /// Local index of face/side in which all IPs lie.
+    unsigned int ips_in_face_;
+    /// Number of duplicit intersections.
+    unsigned int n_duplicities_;
     
 public:
 
@@ -67,17 +69,22 @@ public:
     unsigned int size() const;              ///< Returns number of intersection points.
     unsigned int component_ele_idx() const; ///< Returns index of component element.
     unsigned int bulk_ele_idx() const;      ///< Returns index of bulk element.
-    unsigned int is_pathologic() const;      ///< Returns index of bulk element.
     
     /// Computes the relative measure of intersection object.
     /// TODO: unifiy implementation with IntersectionLocalb
     double compute_measure();
     
+    /// Returns idx of face when all IPs lie on it; -1 otherwise.
+    unsigned int ips_in_face() const;
+    unsigned int duplicities() const;
+    void set_duplicities(unsigned int n_duplicities);
+    void set_ips_in_face(unsigned int face_idx);
+    
     /// Friend output operator.
     template<unsigned int dimAA, unsigned int dimBB>
     friend std::ostream& operator<<(std::ostream& os, const IntersectionAux<dimAA,dimBB>& intersection);
     
-    template<typename U, typename V>
+    template<unsigned int, unsigned int>
     friend class ComputeIntersection;
 };
 
@@ -110,8 +117,19 @@ inline unsigned int IntersectionAux<dimA,dimB>::bulk_ele_idx() const
 {   return bulk_element_idx_; }
 
 template<unsigned int dimA, unsigned int dimB>
-inline unsigned int IntersectionAux<dimA,dimB>::is_pathologic() const
-{   return pathologic_; }
+inline unsigned int IntersectionAux<dimA,dimB>::ips_in_face() const
+{   return ips_in_face_;}
 
+template<unsigned int dimA, unsigned int dimB>
+inline unsigned int IntersectionAux<dimA,dimB>::duplicities() const
+{   return n_duplicities_;}
+
+template<unsigned int dimA, unsigned int dimB>
+inline void IntersectionAux<dimA,dimB>::set_duplicities(unsigned int n_duplicities)
+{   n_duplicities_ = n_duplicities; }
+
+template<unsigned int dimA, unsigned int dimB>
+inline void IntersectionAux<dimA,dimB>::set_ips_in_face(unsigned int face_idx)
+{   ips_in_face_ = face_idx; }
 
 #endif /* INTERSECTIONAUX_H_ */

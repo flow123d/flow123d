@@ -40,10 +40,6 @@
 
 #include "mesh/bih_tree.hh"
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
-
 #include "intersection/mixed_mesh_intersections.hh"
 
 
@@ -811,7 +807,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
     {
         double jac = ele->tetrahedron_jacobian();
         if( ! (jac > 0) )
-            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->id(),jac);
     }
 }
 
