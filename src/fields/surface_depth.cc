@@ -56,6 +56,11 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
 	RegionSet region_set = mesh->region_db().get_region_set(surface_region);
     if (region_set.size() == 0)
         THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(surface_region) );
+    for (auto reg : region_set) {
+    	if (reg.dim() != 2)
+    		THROW( ExcSurfaceProjection()
+    		    			<< EI_Message("Dimension of surface region " + surface_region + " must be 2!") );
+    }
 
     // make element boxes
     unsigned int i=0;
@@ -63,10 +68,6 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     arma::vec3 project_node("0 0 0");
     for( ElementFullIter it = mesh->bc_elements.begin(); it != mesh->bc_elements.end(); ++it) {
         if (it->region().is_in_region_set(region_set)) {
-        	if (it->dim()==3) { // dimension 3 is forbidden for surface elements
-        		THROW( ExcSurfaceProjection()
-        		    			<< EI_Message("Surface region contains one or more elements of dimension 3. Maximal dimension is 2!") );
-        	} else if (it->dim()<2) continue; // dimension 0,1 has no effect
         	ASSERT_EQ(it->n_nodes(), 3);
 
         	arma::mat coords(3,3);
@@ -98,9 +99,9 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
 double SurfaceDepth::compute_distance(arma::vec3 point)
 {
 	double distance = std::numeric_limits<double>::max();
-	arma::vec projection = m_ * point;
 	arma::vec3 project_point;
-	project_point(0) = projection(0); project_point(1) = projection(1); project_point(2) = 0;
+	project_point.subvec(0,1) = m_ * point;
+	project_point(2) = 0;
 
 	std::vector<unsigned int> searched_elements;
 	bih_tree_.find_point(project_point, searched_elements);

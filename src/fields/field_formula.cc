@@ -72,7 +72,8 @@ const int FieldFormula<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
-  formula_matrix_(this->value_.n_rows(), this->value_.n_cols())
+  formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
+  first_time_set_(true)
 {
     parser_matrix_.resize(this->value_.n_rows());
     for(unsigned int row=0; row < this->value_.n_rows(); row++) {
@@ -101,7 +102,8 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
     has_depth_var_ = false;
 
 
-    std::string vars = string("x,y,z").substr(0, 2*spacedim-1) + string(",d");
+    std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
+    std::vector<bool> time_dependent(this->value_.n_rows() * this->value_.n_cols(), false);
     // update parsers
     for(unsigned int row=0; row < this->value_.n_rows(); row++)
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
@@ -121,9 +123,8 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             }
 #pragma GCC diagnostic pop
 
-            bool time_dependent = false;
             BOOST_FOREACH(std::string &var_name, var_list ) {
-                if (var_name == std::string("t") ) time_dependent=true;
+                if (var_name == std::string("t") ) time_dependent[row*this->value_.n_rows()+col]=true;
                 else if (var_name == std::string("d") ) {
                 	if (surface_depth_)
                 		has_depth_var_=true;
@@ -140,15 +141,22 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             // Seems that we can not just add 't' constant to tmp_parser, since it was already Parsed.
             parser_matrix_[row][col].AddConstant("Pi", 3.14159265358979323846);
             parser_matrix_[row][col].AddConstant("E", 2.71828182845904523536);
-            if (time_dependent) {
+            if (time_dependent[row*this->value_.n_rows()+col]) {
                 parser_matrix_[row][col].AddConstant("t", time.end());
             }
+        }
 
+    if (has_depth_var_)
+        vars += string(",d");
+
+	// update parsers
+	for(unsigned int row=0; row < this->value_.n_rows(); row++)
+		for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             // TODO:
             // - possibly add user defined constants and units here ...
             // - optimization; possibly parse only if time_dependent  || formula_matrix[][] has changed ...
             //parser_matrix_[row][col] = tmp_parser;
-            if (time_dependent || this->time_ == TimeStep() ) {
+            if (time_dependent[row*this->value_.n_rows()+col] || first_time_set_ ) {
                 parser_matrix_[row][col].Parse(formula_matrix_.at(row,col), vars);
 
                 if ( parser_matrix_[row][col].GetParseErrorType() != FunctionParser::FP_NO_ERROR ) {
@@ -165,6 +173,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
 
         }
 
+    first_time_set_ = false;
     this->time_=time;
     return any_parser_changed;
 }
@@ -220,17 +229,17 @@ void FieldFormula<spacedim, Value>::value_list (const std::vector< Point >  &poi
 
 
 template <int spacedim, class Value>
-arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
+inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 {
-	arma::vec p_depth(spacedim+1);
-	for (unsigned int i=0; i<spacedim; i++) p_depth(i) = p(i);
 	if (surface_depth_ && has_depth_var_) {
 		// add value of depth
+		arma::vec p_depth(spacedim+1);
+		p_depth.subvec(0,spacedim-1) = p;
 		p_depth(spacedim) = std::min( surface_depth_->compute_distance(p), max_depth_ );
+		return p_depth;
 	} else {
-		p_depth(spacedim) = 0;
+		return p;
 	}
-	return p_depth;
 }
 
 

@@ -55,7 +55,7 @@ public:
 	 */
 	~BIHTree();
 
-	void add_boxes(std::vector<BoundingBox> boxes);
+	void add_boxes(const std::vector<BoundingBox> &boxes);
 
 	void construct();
 

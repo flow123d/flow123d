@@ -39,7 +39,7 @@ BIHTree::~BIHTree() {
 }
 
 
-void BIHTree::add_boxes(std::vector<BoundingBox> boxes) {
+void BIHTree::add_boxes(const std::vector<BoundingBox> &boxes) {
     for(BoundingBox box : boxes) {
         this->elements_.push_back(box);
         main_box_.expand(box);

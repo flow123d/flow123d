@@ -98,7 +98,7 @@ private:
      *
      * Return arma vec of point coordinates extended by depth value (or zero if depth is not contained.
      */
-    arma::vec eval_depth_var(const Point &p);
+    inline arma::vec eval_depth_var(const Point &p);
 
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     StringTensor formula_matrix_;
@@ -117,6 +117,9 @@ private:
 
     /// Flag indicates if depth variable 'd' is used in formula
     bool has_depth_var_;
+
+    /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
+    bool first_time_set_;
 
     /// Registrar of class to factory
     static const int registrar;
