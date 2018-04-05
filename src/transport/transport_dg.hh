@@ -58,7 +58,7 @@ class Mesh;
 class Distribution;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
 namespace Input { namespace Type { class Selection; } }
@@ -77,10 +77,10 @@ public:
 	~FEObjects();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim,3> *fe();
+	inline FiniteElement<dim> *fe();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim,3> *fe_rt();
+	inline FiniteElement<dim> *fe_rt();
 
 	template<unsigned int dim>
 	inline Quadrature<dim> *q();
@@ -93,14 +93,14 @@ public:
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
-	FiniteElement<1,3> *fe1_;
-	FiniteElement<2,3> *fe2_;
-	FiniteElement<3,3> *fe3_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
 
 	/// Finite elements for the water velocity field.
-	FiniteElement<1,3> *fe_rt1_;
-	FiniteElement<2,3> *fe_rt2_;
-	FiniteElement<3,3> *fe_rt3_;
+	FiniteElement<1> *fe_rt1_;
+	FiniteElement<2> *fe_rt2_;
+	FiniteElement<3> *fe_rt3_;
 
 	/// Quadratures used in assembling methods.
 	Quadrature<0> *q0_;

@@ -132,7 +132,7 @@ Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a
 template <class T>
 void OutputBase::print_generic(ostream& stream, const TypeBase *type) {
     // print possible generic
-    if (type->generic_type_hash_) {
+    if (type->generic_type_hash_ != TypeBase::none_hash) {
         const T *gen_type = Input::TypeRepository<T>::get_instance().find_hash(type->generic_type_hash_).get();
         ASSERT(gen_type)(type->hash_str())(type->type_name());
         print_base(stream, gen_type);
@@ -143,11 +143,9 @@ void OutputBase::print_base(ostream& stream, const TypeBase *type) {
     ASSERT(type);
 
 	if (typeid(*type) == typeid(Type::Tuple)) {
-	    print_generic<Tuple>(stream, type);
 		print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Record)) {
-	    print_generic<Record>(stream, type);
 	    print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
@@ -572,6 +570,11 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
+    if (typeid(*type) == typeid(Type::Tuple)) {
+        print_generic<Tuple>(stream, type);
+    } else {
+        print_generic<Record>(stream, type);
+    }
 
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;

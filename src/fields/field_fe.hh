@@ -150,11 +150,11 @@ private:
      *
      * For correct functionality must be created proper descendant of FiniteElement class.
      */
-    FiniteElement<1,3> *fe1_;
+    FiniteElement<1> *fe1_;
     /// Same as previous, but represents 2D element.
-    FiniteElement<2,3> *fe2_;
+    FiniteElement<2> *fe2_;
     /// Same as previous, but represents 3D element.
-    FiniteElement<3,3> *fe3_;
+    FiniteElement<3> *fe3_;
 
 	/// mesh reader file
 	FilePath reader_file_;
@@ -167,6 +167,12 @@ private:
 
 	/// Field flags.
 	FieldFlag::Flags flags_;
+
+    /// Default value of element if not set in mesh data file
+    double default_value_;
+
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 
     /// Registrar of class to factory
     static const int registrar;
