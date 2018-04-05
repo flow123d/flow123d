@@ -15,10 +15,6 @@
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/tetrahedron.h"
-#include "mesh/ngh/include/intersection.h"
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/compute_intersection.hh"
 #include "intersection/intersection_point_aux.hh"
