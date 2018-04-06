@@ -128,6 +128,7 @@ public:
     inline arma::vec::fixed<spacedim> normal_vector(unsigned int point_no) override
     {
         ASSERT_DBG(0).error("Not available in XFEM XFEValues.");
+        return arma::vec::fixed<spacedim>();
 //         ASSERT_LT_DBG(point_no, quadrature->size());
 //         return data.normal_vectors[point_no];
     }

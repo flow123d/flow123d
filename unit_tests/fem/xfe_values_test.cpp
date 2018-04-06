@@ -49,11 +49,11 @@ double integrate(ElementFullIter &ele) {
 }
 
 
-void create_xfem_data(ElementFullIter ele,
-                      std::shared_ptr<Singularity<0>> sing,
+void create_xfem_data_2d(ElementFullIter ele,
+                      std::shared_ptr<Singularity<0>> &sing,
                       XFEMElementSingularData<2>* &xdata)
 {
-    cout << "create\n" << endl;
+    cout << "create 2d xfem data\n" << endl;
     //create singularity
     Space<3>::Point center ({0.5, 0.5, 0});
     Space<3>::Point direction_vector ({0,0,1});
@@ -74,15 +74,11 @@ void create_xfem_data(ElementFullIter ele,
     ele->xfem_data = xdata;
     
     std::vector<std::vector<int>>& dofs = xdata->global_enriched_dofs()[1];
-    cout << xdata->n_enrichments() << endl;
-    cout << ele->n_nodes() << endl;
 //     dofs.resize(xdata->n_enrichments(), std::vector<int>(ele->n_nodes(), -1));.
     dofs.resize(xdata->n_enrichments());
     for(unsigned int w=0; w < xdata->n_enrichments(); w++){
         dofs[w].resize(ele->n_nodes(), -1);
-        cout << dofs[w].size() << endl;
         for(unsigned int i=0; i < ele->n_nodes(); i++){
-                cout << w << "  " << i << endl;
                 dofs[w][i] = w*i + i;
             }
         }
@@ -90,11 +86,9 @@ void create_xfem_data(ElementFullIter ele,
     ele->xfem_data = xdata;
 }
 
-TEST(FeValues, test_all) {
-  // integrate a polynomial defined on the ref. element over an arbitrary element
-
+TEST(FeValues, test_2d) {
     {
-        // 2d case: triangle (0,1) (2,0) (3,4) surface = 3*4 - 1*2/2 - 1*4/4 - 3*3/2 = 9/2, det(jac) = 9
+        Mesh mesh;
         NodeVector nodes(3);
         nodes.add_item(0);
         nodes[0].point()[0] = 0.0;
@@ -111,55 +105,194 @@ TEST(FeValues, test_all) {
         nodes[2].point()[1] = 2.0;
         nodes[2].point()[2] = 0.0;
 
-        ElementVector el_vec(1);
-        el_vec.add_item(0);
-
-        RegionIdx reg;
-        Element ele(2, NULL, reg);      //NULL - mesh pointer, empty RegionIdx
+        ElementFullIter it = mesh.element.add_item(0);
+        Element ele(2, &mesh, RegionIdx());      //NULL - mesh pointer, empty RegionIdx
 
         ele.node = new Node * [ele.n_nodes()];
-        for(int i =0; i < 3; i++) ele.node[i] = nodes(i);
-        el_vec[0] = ele; // dangerous since Element has no deep copy constructor.
+        for(int i =0; i < ele.n_nodes(); i++) ele.node[i] = nodes(i);
+        mesh.element[0] = ele; // dangerous since Element has no deep copy constructor.
+        mesh.side_nodes.resize(ele.n_nodes());
+        mesh.side_nodes[1] = {{0,1},{0,2},{2,1}};
 
-        ElementFullIter it( el_vec(0) );
         EXPECT_DOUBLE_EQ( 6+1.0/3, integrate<2>( it ) );
 
         std::shared_ptr<Singularity<0>> sing;
         XFEMElementSingularData<2> *xdata = nullptr;
-        create_xfem_data(it, sing, xdata);
+        create_xfem_data_2d(it, sing, xdata);
         
-        QXFEMFactory* qfact = new QXFEMFactory();
-        std::shared_ptr<QXFEM<2,3>> qxfem = qfact->create_singular(xdata->sing_vec(), it);
-        
-        delete qfact;
-//         // projection methods
-//         MappingP1<2,3> mapping;
-//         arma::mat::fixed<3, 3> map = mapping.element_map(ele);
-//         EXPECT_ARMA_EQ( arma::mat("0 2 3; 1 0 4; 0 0 0"), map);
-//         EXPECT_ARMA_EQ( arma::vec("0.6 0.2 0.2"), mapping.project_real_to_unit( arma::vec("1.0 1.4 0.0"), map ) );
+        QXFEMFactory qfact;
+        std::shared_ptr<QXFEM<2,3>> qxfem = qfact.create_singular(xdata->sing_vec(), it);
         
         FE_P_disc<2> fe_p0(0);
         FE_RT0<2> fe;
         MappingP1<2,3> map;
-        cout << "create xfe_values\n" << endl;
-        XFEValues<2,3> xfe_values(map, fe, fe_p0, update_JxW_values | update_quadrature_points);
-        
+        XFEValues<2,3> xfe_values(map, fe, fe_p0, update_values |
+                                                    update_JxW_values | update_jacobians |
+                                                    update_inverse_jacobians | update_quadrature_points
+                                                    | update_divergence);
         xfe_values.reinit(it, *xdata, *qxfem);
+        auto velocity = xfe_values.vector_view(0);
         
         EXPECT_EQ(qxfem->size(), xfe_values.n_points());
         EXPECT_EQ(4, xfe_values.n_dofs());
         
+        {
+            double sum = 0,
+                   sum_enr = 0;
+            for(unsigned int q=0; q < xfe_values.n_points(); q++) {
+                sum += arma::dot(velocity.value(0,q),velocity.value(0,q)) * xfe_values.JxW(q);
+                sum_enr += arma::dot(velocity.value(3,q),velocity.value(3,q)) * xfe_values.JxW(q);
+            }
+            EXPECT_NEAR(0.3328906523792483, sum, 1e-12);
+            EXPECT_NEAR(459.220342181639, sum_enr, 1e-12);
+        }
         
-        cout << "create xfe_values_p\n" << endl;
-        XFEValues<2,3> xfe_values_p(map, fe_p0, fe_p0, update_JxW_values | update_quadrature_points);
-        
+        XFEValues<2,3> xfe_values_p(map, fe_p0, fe_p0, update_values |
+                                                        update_JxW_values | update_jacobians |
+                                                        update_inverse_jacobians | update_quadrature_points
+                                                        | update_divergence);
         xfe_values_p.reinit(it, *xdata, *qxfem);
+        auto pressure = xfe_values_p.scalar_view(0);
         
         EXPECT_EQ(qxfem->size(), xfe_values_p.n_points());
         EXPECT_EQ(2, xfe_values_p.n_dofs());
         
+        {
+            double sum = 0.0;
+            for(unsigned int q=0; q < xfe_values_p.n_points(); q++) {
+                sum += pressure.value(0,q) * xfe_values_p.JxW(q);
+            }
+//             cout << it->measure() - sing->geometry().volume()- sum << endl;
+            EXPECT_NEAR(it->measure() - sing->geometry().volume(), sum, 1e-5);
+        }
+        
         if(xdata != nullptr)
             delete xdata;
     }
+}
 
+
+
+void create_xfem_data_3d(ElementFullIter ele,
+                      std::shared_ptr<Singularity<1>> &sing,
+                      XFEMElementSingularData<3>* &xdata)
+{
+    cout << "create 3d xfem data\n" << endl;
+    //create singularity
+    Space<3>::Point a ({0.5, 0.5, 0});
+    Space<3>::Point b ({0.5, 0.5, 2});
+    
+    sing = std::make_shared<Singularity<1>>(a, b, 0.03, 1000, 100);
+    sing->set_sigma(10);
+    sing->set_pressure(100);
+    
+    //create xfem data
+    xdata = new XFEMElementSingularData<3>();
+    //TODO: set number of quantities
+    xdata->global_enriched_dofs().resize(2);
+    xdata->global_enriched_dofs()[0].resize(1);
+    xdata->global_enriched_dofs()[1].resize(1);
+    xdata->set_element(0, 0); // 3d ele index, 1d ele index
+    xdata->add_data(sing, 0);   // sing index
+    ele->xfem_data = xdata;
+    
+    std::vector<std::vector<int>>& dofs = xdata->global_enriched_dofs()[1];
+//     dofs.resize(xdata->n_enrichments(), std::vector<int>(ele->n_nodes(), -1));.
+    dofs.resize(xdata->n_enrichments());
+    for(unsigned int w=0; w < xdata->n_enrichments(); w++){
+        dofs[w].resize(ele->n_nodes(), -1);
+        for(unsigned int i=0; i < ele->n_nodes(); i++){
+                dofs[w][i] = w*i + i;
+            }
+        }
+//     xdata.print(cout);
+    ele->xfem_data = xdata;
+}
+
+TEST(FeValues, test_3d) {
+        Mesh mesh;
+        NodeVector nodes(4);
+        nodes.add_item(0);
+        nodes[0].point()[0] = 0.0;
+        nodes[0].point()[1] = 0.0;
+        nodes[0].point()[2] = 0.0;
+
+        nodes.add_item(1);
+        nodes[1].point()[0] = 2.0;
+        nodes[1].point()[1] = 0.0;
+        nodes[1].point()[2] = 0.0;
+
+        nodes.add_item(2);
+        nodes[2].point()[0] = 0.0;
+        nodes[2].point()[1] = 2.0;
+        nodes[2].point()[2] = 0.0;
+        
+        nodes.add_item(3);
+        nodes[3].point()[0] = 0.0;
+        nodes[3].point()[1] = 0.0;
+        nodes[3].point()[2] = 2.0;
+
+        ElementFullIter it = mesh.element.add_item(0);
+        Element ele(3, &mesh, RegionIdx());      //NULL - mesh pointer, empty RegionIdx
+
+        ele.node = new Node * [ele.n_nodes()];
+        for(int i =0; i < ele.n_nodes(); i++) ele.node[i] = nodes(i);
+        mesh.element[0] = ele; // dangerous since Element has no deep copy constructor.
+        mesh.side_nodes.resize(ele.n_nodes());
+        mesh.side_nodes[2] = {{ 0, 1, 2 }, { 0, 1, 3 }, { 0, 2, 3 }, { 1, 2, 3 }};
+
+        std::shared_ptr<Singularity<1>> sing;
+        XFEMElementSingularData<3> *xdata = nullptr;
+        create_xfem_data_3d(it, sing, xdata);
+        
+        QXFEMFactory qfact(7);
+        std::shared_ptr<QXFEM<3,3>> qxfem = qfact.create_singular(xdata->sing_vec(), it);
+        
+        FE_P_disc<3> fe_p0(0);
+        FE_RT0<3> fe;
+        MappingP1<3,3> map;
+        XFEValues<3,3> xfe_values(map, fe, fe_p0, update_values |
+                                                    update_JxW_values | update_jacobians |
+                                                    update_inverse_jacobians | update_quadrature_points
+                                                    | update_divergence);
+        xfe_values.reinit(it, *xdata, *qxfem);
+        auto velocity = xfe_values.vector_view(0);
+        
+        EXPECT_EQ(qxfem->size(), xfe_values.n_points());
+        EXPECT_EQ(5, xfe_values.n_dofs());
+        
+        {
+            double sum = 0,
+                sum_enr = 0;
+            for(unsigned int q=0; q < xfe_values.n_points(); q++) {
+                sum += arma::dot(velocity.value(0,q),velocity.value(0,q)) * xfe_values.JxW(q);
+                sum_enr += arma::dot(velocity.value(4,q),velocity.value(4,q)) * xfe_values.JxW(q);
+            }
+//             cout << setprecision(15) << sum << endl;
+//             cout << setprecision(15) << sum_enr << endl;
+            EXPECT_NEAR(0.26616240907934, sum, 1e-12);
+            EXPECT_NEAR(119.995717102827, sum_enr, 1e-12);
+        }
+        
+        XFEValues<3,3> xfe_values_p(map, fe_p0, fe_p0, update_values |
+                                                        update_JxW_values | update_jacobians |
+                                                        update_inverse_jacobians | update_quadrature_points
+                                                        | update_divergence);
+        xfe_values_p.reinit(it, *xdata, *qxfem);
+        auto pressure = xfe_values_p.scalar_view(0);
+        
+        EXPECT_EQ(qxfem->size(), xfe_values_p.n_points());
+        EXPECT_EQ(2, xfe_values_p.n_dofs());
+        
+        {
+            double sum = 0.0;
+            for(unsigned int q=0; q < xfe_values_p.n_points(); q++) {
+                sum += pressure.value(0,q) * xfe_values_p.JxW(q);
+            }
+//             cout << it->measure() - sing->geometry().volume()/2 - sum << endl;
+            EXPECT_NEAR(it->measure() - sing->geometry().volume()/2, sum, 3e-5);
+        }
+        
+        if(xdata != nullptr)
+            delete xdata;
 }
