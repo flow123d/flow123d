@@ -9,8 +9,6 @@
 #include "mesh/elements.h"
 #include "mesh/accessors.hh"
 
-#include "intersection/simplex.hh"
-
 
 static const std::vector<std::vector<unsigned int>> permutations_triangle = {
     {0,1,2},
@@ -111,19 +109,6 @@ void permute_triangle(ElementAccessor<3> ele, unsigned int p)
 //      ele->node[i]->point().print(cout);
     }
 //  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-}
-
-template<int dim>
-Simplex<dim> create_simplex(ElementAccessor<3> ele)
-{
-    ASSERT_DBG(dim == ele->dim());
-    Simplex<dim> s;
-    arma::vec3 *points_tetra[dim+1];
-    for(unsigned int i=0; i < dim+1; i++)
-        points_tetra[i]= &(ele->node[i]->point());
-    
-    s.set_simplices(points_tetra);
-    return s;
 }
 
 

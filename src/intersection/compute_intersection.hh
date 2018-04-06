@@ -35,14 +35,15 @@
 #ifndef COMPUTE_INTERSECTION_H_
 #define COMPUTE_INTERSECTION_H_
 
-#include "simplex.hh"
 #include "system/system.hh"
 #include "mesh/ref_element.hh"
 #include "intersection/intersection_point_aux.hh"
 
+#include "mesh/mesh.h"
+
 // forward declare
 class Mesh;
-template<class A, class B> class ComputeIntersection;
+template<unsigned int, unsigned int> class ComputeIntersection;
 class Plucker;
 template<unsigned int, unsigned int> class IntersectionAux;
 template<unsigned int, unsigned int> class IntersectionPointAux;
@@ -62,16 +63,17 @@ static const double plucker_empty = std::numeric_limits<double>::infinity();
  * Can be used both as sub-algorithm to higher dimnesional intersection
  * and also for 1D-2D intersection as a result.
  */
-template<> class ComputeIntersection<Simplex<1>, Simplex<2>> {
+template<> class ComputeIntersection<1,2> {
 public:
-
+    typedef IntersectionPointAux<1,2> IPAux12;
+    
     /// Default constructor. Use when this is NOT final intersection object.
 	ComputeIntersection();
     /** @brief Constructor, sets abscissa and triangle object.
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-	ComputeIntersection(Simplex<1> &abscissa, Simplex<2> &triangle, Mesh *mesh);
+    ComputeIntersection(const Element * abscissa, const Element * triangle, Mesh *mesh);
 	~ComputeIntersection();
     
     /** @brief Computes intersection points of line and triangle.
@@ -90,23 +92,23 @@ public:
      * NOTE: Why this is not done in constructor?
      * Because default constructor is called in 1d-3d, 2d-3d and compute() is called later.
      */
-	IntersectionResult compute(std::vector<IntersectionPointAux<1,2>> &IP12s);
+	IntersectionResult compute(IPAux12 &IP);
     
     /** Computes final 1d-2d intersection. (Use when this is the resulting dimension object).
      * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
      * @return number of intersection points found
      */
-    unsigned int compute_final(std::vector<IntersectionPointAux<1,2>> &IP12s);
+    unsigned int compute_final(std::vector<IPAux12> &IP12s);
+    
+    /** Computes final 1d-2d intersection, supposing situation in 2d plane (only degenerate case).
+     * (Use when this is the resulting dimension object).
+     * @param IP12s input/output vector of IPs. If IP found, it is pushed back. Should be empty on start.
+     * @return number of intersection points found
+     */
+    unsigned int compute_final_in_plane(std::vector<IPAux12> &IP12s);
     
     /// @name Setters and Getters
     //@{ 
-    /** @brief Sets the abscissa and triangle.
-     * 
-     * Use mostly when this is not final intersection computation.
-     * @param abscissa intersecting line
-     * @param triangle intersecting triangle
-     */
-	void set_data(Simplex<1> &abscissa, Simplex<2> &triangle);
 
     /// Sets the pointer to Plucker coordinates of the abscissa.
     void set_pc_abscissa(Plucker *p){
@@ -154,6 +156,14 @@ public:
     
 	//@}
 
+	/** Checks the position of IP on abscissa, possibly changes topology to end points. 
+     * Returns -2, -1, 0, 1, 2; -1.
+     * 0 - inside abscissa
+     * -2, 2 - outside of abscissa
+     * -1, 1 - end points
+     */
+	int check_abscissa_topology(IPAux12& IP);
+	
     /// Prints out all the Plucker coordinates.
 	void print_plucker_coordinates(std::ostream &os);
 
@@ -180,7 +190,7 @@ private:
      * @param local local coordinates of IP (got from Plucker products)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_plucker(IntersectionPointAux<1,2> &IP, const arma::vec3 &local);
+    bool compute_plucker(IPAux12 &IP, const arma::vec3 &local);
     
     /** Computes intersection of abscissa and triangle side in degenerate case (all products are zero).
      * Inspects also topology.
@@ -188,15 +198,17 @@ private:
      * @param IP is the intersection point (if found)
      * @return true, if intersection is found; false otherwise
      */
-    bool compute_degenerate(unsigned int side_idx, IntersectionPointAux<1,2> &IP);
+    bool compute_degenerate(unsigned int side_idx, IPAux12 &IP);
+    
+    /** @brief After interpolation, the topology information in tetrahedron must be updated.
+     * @param ip intersection point to be corrected
+     */
+    void correct_triangle_ip_topology(double t, unsigned int i, std::vector<IPAux12> &ip);
     
     /// Flag 'computed'; is true if intersection has been computed already.
     bool computed_;
     ///
     double scale_line_, scale_triangle_;
-    
-	Simplex<1> *abscissa_;
-	Simplex<2> *triangle_;
 
     /// Pointer to plucker coordinates of abscissa.
 	Plucker* plucker_coordinates_abscissa_;
@@ -217,7 +229,7 @@ private:
  * @brief Class for 2D-2D intersections.
  * 
  * Computes the intersection of triangle A and triangle B.
- * Uses 6 ComputeIntersection<Simplex<1>,Simplex<2>>:
+ * Uses 6 ComputeIntersection<1,2>:
  *  - 3x side of triangle A X triangle B
  *  - 3x side of triangle B X triangle A
  * 
@@ -225,9 +237,11 @@ private:
  * 
  * TODO: do not remember, if the function correct_triangle_ip_topology used to have some meaning here..
  */
-template<> class ComputeIntersection<Simplex<2>, Simplex<2>> {
+template<> class ComputeIntersection<2,2> {
 public:
-
+    typedef IntersectionPointAux<1,2> IPAux12;
+    typedef IntersectionPointAux<2,2> IPAux22;
+    
     /** @brief Default constructor, creates empty object.
      * Resizes vectors for Plucker coordinates and products.
      */
@@ -235,7 +249,7 @@ public:
     /** @brief Constructor, sets both triangle objects.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(Simplex<2> &triaA,Simplex<2> &triaB, Mesh *mesh);
+    ComputeIntersection(const Element * triaA, const Element * triaB, Mesh *mesh);
     ~ComputeIntersection();
     
     /** @brief Initializes lower dimensional objects.
@@ -253,12 +267,6 @@ public:
     
      /// @name Setters and Getters
     //@{
-    /**
-     * @brief Sets the abscissa and tetrahedron.
-     * @param triaA intersecting triangle A
-     * @param triaB intersecting triangle B
-     */
-    void set_data(Simplex<2> &triaA, Simplex<2> &triaB);
     
     /** Sets the pointer to Plucker coordinates of the triangle A side.
      * @param p pointer to Plucker coordinates
@@ -316,7 +324,7 @@ private:
     /// Pointers to Plucker products of triangles sides [3x[sideA x triaB]]], size 9.
     std::vector<double *> plucker_products_;
     /// Compute intersection for side x triangle [3x[sideA x tria B],3x[sideB x triaA]].
-    ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
+    ComputeIntersection<1,2> CI12[6];
     
     // After interpolation, the topology information in triangle must be updated.
 //     void correct_triangle_ip_topology(IntersectionPointAux<2,2> &ip);
@@ -331,9 +339,9 @@ private:
  * @brief * @brief Class for 1D-3D intersections.
  *
  * Computes the intersection of an abscissa and a tetrahedron.
- * Uses 4 ComputeIntersection<Simplex<1>,Simplex<2>> for abscissa and tetrahedron sides intersections.
+ * Uses 4 ComputeIntersection<1,2> for abscissa and tetrahedron sides intersections.
  */
-template<> class ComputeIntersection<Simplex<1>, Simplex<3>> {
+template<> class ComputeIntersection<1,3> {
 
 public:
     typedef IntersectionPointAux<1,3> IPAux;
@@ -344,7 +352,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-	ComputeIntersection(Simplex<1> &abscissa,Simplex<3> &tetrahedron, Mesh *mesh);
+    ComputeIntersection(const Element * abscissa, const Element * tetrahedron, Mesh *mesh);
 	~ComputeIntersection();
 	
     /** @brief Initializes lower dimensional objects.
@@ -376,13 +384,6 @@ public:
     
      /// @name Setters and Getters
     //@{ 
-    /**
-     * @brief Sets the abscissa and tetrahedron.
-     * Use mainly when this is not final intersection computation.
-     * @param abscissa intersecting line
-     * @param tetrahedron intersecting tetrahedron
-     */
-    void set_data(Simplex<1> &abscissa, Simplex<3> &tetrahedron);
     
     /// Sets the pointer to Plucker coordinates of the abscissa.
     void set_pc_abscissa(Plucker *p){
@@ -443,7 +444,7 @@ private:
     /// Pointers to Plucker products of abscissa and tetrahedron edges.
     std::vector<double *> plucker_products_;
     /// Compute 1D-2D intersection objects [4x line X tetrahedron face]
-    ComputeIntersection<Simplex<1>, Simplex<2>> CI12[4];
+    ComputeIntersection<1,2> CI12[4];
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -454,10 +455,10 @@ private:
  * @brief Class for 2D-2D intersections.
  * 
  * Computes the intersection of a triangle and a tetrahedron.
- * Uses 3 ComputeIntersection<Simplex<1>,Simplex<3>> for triangle sides vs tetrahedron intersections.
- * Uses 6 ComputeIntersection<Simplex<1>,Simplex<2>> for tetrahedron sides vs triangle intersections.
+ * Uses 3 ComputeIntersection<1,3> for triangle sides vs tetrahedron intersections.
+ * Uses 6 ComputeIntersection<1,2> for tetrahedron sides vs triangle intersections.
  */
-template<> class ComputeIntersection<Simplex<2>, Simplex<3> > {
+template<> class ComputeIntersection<2,3> {
 public:
     typedef IntersectionPointAux<1,2> IPAux12;
     typedef IntersectionPointAux<1,3> IPAux13;
@@ -474,7 +475,7 @@ public:
      * @param triangle intersecting triangle object
      * @param tetrahedron intersecting tetrahedron object
      */
-    ComputeIntersection(Simplex<2> &triangle, Simplex<3> &tetrahedron, Mesh *mesh);
+    ComputeIntersection(const Element * triangle, const Element * tetrahedron, Mesh *mesh);
     ~ComputeIntersection();
 
     /** @brief Initializes lower dimensional objects.
@@ -524,9 +525,9 @@ private:
     std::vector<double *> plucker_products_;
     
     /// Compute 1D-3D intersection objects [3]
-    ComputeIntersection<Simplex<1>, Simplex<3>> CI13[3];
+    ComputeIntersection<1,3> CI13[3];
     /// Compute 1D-2D intersection objects [6]
-    ComputeIntersection<Simplex<1>, Simplex<2>> CI12[6];
+    ComputeIntersection<1,2> CI12[6];
 
 
     // successors of IPs
@@ -535,8 +536,6 @@ private:
     // 4 vertices, 6 edges, 4 faces, 1 volume, 3 corners, 3 sides, 1 surface; total 22
     std::vector<unsigned int> object_next;
 
-
-    bool ips_topology_equal(const IPAux23 &first, const IPAux23 &second);
     bool obj_have_back_link(unsigned int i_obj);
     auto edge_faces(uint i_edge) -> FacePair;
     auto vertex_faces(uint i_vtx) -> FacePair;
@@ -548,9 +547,11 @@ private:
      * if obj_after have null successor, set obj_after -> IP (backlink)
      */
     inline void set_links(uint obj_before_ip, uint ip_idx, uint obj_after_ip);
+    
+    const std::vector<std::vector<arma::uvec>> on_faces;
+    std::vector<std::vector<arma::uvec>> _on_faces();
 
-
-    IntersectionAux< 2 , 3  >* intersection_;
+    IntersectionAux<2,3>* intersection_;
     Mesh *mesh_;
 };
 

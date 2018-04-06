@@ -41,10 +41,6 @@
 
 #include "mesh/bih_tree.hh"
 
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
-
 #include "intersection/mixed_mesh_intersections.hh"
 
 

@@ -49,6 +49,9 @@ const Input::Type::Record & FieldElementwise<spacedim, Value>::get_input_type()
                 "Allow set default value of elements that have not listed values in mesh data file.")
         .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
                 "Definition of unit of all times defined in mesh data file.")
+		.declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
+                "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
+                "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .close();
 }
 
@@ -130,7 +133,9 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
     //if (time.end() == numeric_limits< double >::infinity()) return false;
     
     double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
-    BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, OutputTime::DiscreteSpace::ELEM_DATA);
+	double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
+	double read_time = (time.end()+time_shift) / time_unit_coef;
+	BaseMeshReader::HeaderQuery header_query(field_name_, read_time, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_)->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
     		n_entities_, n_components_, boundary_domain_, this->component_idx_);

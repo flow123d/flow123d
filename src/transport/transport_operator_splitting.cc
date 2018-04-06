@@ -155,7 +155,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
-	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), TimeMark::none_type, false);
 	convection->set_time_governor(time());
 
 	// Initialize list of substances.

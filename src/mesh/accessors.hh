@@ -86,7 +86,7 @@ public:
     inline const Element * element() const {
         return &(mesh_->element_vec_[element_idx_]);
     }
-
+    
     inline arma::vec::fixed<spacedim> centre() const {
     	ASSERT(is_valid()).error("Invalid element accessor.");
         if (is_regional() ) return arma::vec::fixed<spacedim>();

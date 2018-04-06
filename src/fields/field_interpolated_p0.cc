@@ -23,10 +23,13 @@
 #include "mesh/bih_tree.hh"
 #include "mesh/accessors.hh"
 #include "io/reader_cache.hh"
-#include "mesh/ngh/include/intersection.h"
-#include "mesh/ngh/include/point.h"
 #include "system/sys_profiler.hh"
 
+#include "fem/mapping_p1.hh"
+
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
+#include "intersection/compute_intersection.hh"
 
 namespace it = Input::Type;
 
@@ -50,6 +53,9 @@ const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type
                 "Allow set default value of elements that have not listed values in mesh data file.")
         .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
                 "Definition of unit of all times defined in mesh data file.")
+		.declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
+                "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
+                "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .close();
 }
 
@@ -110,7 +116,9 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
 
     bool boundary_domain_ = false;
     double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
-    BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, OutputTime::DiscreteSpace::ELEM_DATA);
+	double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
+	double read_time = (time.end()+time_shift) / time_unit_coef;
+	BaseMeshReader::HeaderQuery header_query(field_name_, read_time, OutputTime::DiscreteSpace::ELEM_DATA);
     ReaderCache::get_reader(reader_file_ )->find_header(header_query);
     data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
     		source_mesh_->n_elements(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
@@ -159,45 +167,50 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 
 		double total_measure=0.0, measure;
-		ngh::TIntersectionType iType;
 
 		START_TIMER("compute_pressure");
 		ADD_CALLS(searched_elements_.size());
-		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
-		{
-			ElementAccessor<3> ele = source_mesh_->element_accessor(*it);
-			if (ele->dim() == 3) {
-			    ngh::set_tetrahedron_from_element(tetrahedron_, ele.element() );
-				// get intersection (set measure = 0 if intersection doesn't exist)
-				switch (elm.dim()) {
-					case 0: {
-					    ngh::set_point_from_element(point_, elm.element());
-						if ( tetrahedron_.IsInner(point_) ) {
-							measure = 1.0;
-						} else {
-							measure = 0.0;
-						}
-						break;
-					}
-					case 1: {
-					    ngh::set_abscissa_from_element(abscissa_, elm.element());
-					    ngh::GetIntersection(abscissa_, tetrahedron_, iType, measure);
-						if (iType != ngh::line) {
-							measure = 0.0;
-						}
-						break;
-					}
-			        case 2: {
-			        	ngh::set_triangle_from_element(triangle_, elm.element());
-			        	ngh::GetIntersection(triangle_, tetrahedron_, iType, measure);
-						if (iType != ngh::area) {
-							measure = 0.0;
-						}
-			            break;
-			        }
-			    }
+                
+                
+        MappingP1<3,3> mapping;
+                
+        for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
+        {
+            ElementAccessor<3> ele = source_mesh_->element_accessor(*it);
+            if (ele->dim() == 3) {
+                // get intersection (set measure = 0 if intersection doesn't exist)
+                switch (elm.dim()) {
+                    case 0: {
+                        arma::vec::fixed<3> real_point = elm->node[0]->point();
+                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(*ele.element());
+                        arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
 
+                        measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
+                                        && arma::min( unit_point ) >= 0)
+                                            ? 1.0 : 0.0;
+                        break;
+                    }
+                    case 1: {
+                        IntersectionAux<1,3> is;
+                        ComputeIntersection<1,3> CI(elm.element(), ele.element(), source_mesh_.get());
+                        CI.init();
+                        CI.compute(is);
 
+                        IntersectionLocal<1,3> ilc(is);
+                        measure = ilc.compute_measure() * elm->measure();
+                        break;
+                    }
+                    case 2: {
+                        IntersectionAux<2,3> is;
+                        ComputeIntersection<2,3> CI(elm.element(), ele.element(), source_mesh_.get());
+                        CI.init();
+                        CI.compute(is);
+
+                        IntersectionLocal<2,3> ilc(is);
+                        measure = 2 * ilc.compute_measure() * elm->measure();
+                        break;
+                    }
+                }
 
 				//adds values to value_ object if intersection exists
 				if (measure > epsilon) {
@@ -215,7 +228,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 				}
 			}
 		}
-
+                
 		// computes weighted average
 		if (total_measure > epsilon) {
 			for (unsigned int i=0; i < this->value_.n_rows(); i++) {

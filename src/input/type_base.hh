@@ -100,6 +100,7 @@ class TypeBase {
 public:
 	/// Type returned by content_hash methods.
 	typedef std::size_t TypeHash;
+	const static TypeHash none_hash = std::numeric_limits<TypeHash>::max();
 
 	/// String stored in JSON format.
 	typedef std::string json_string;
