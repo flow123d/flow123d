@@ -20,6 +20,7 @@
 
 #include "mesh/sides.h"
 #include "mesh/edges.h"
+#include "mesh/mesh_types.hh"
 
 
     // side of the edge in higher dim. mesh

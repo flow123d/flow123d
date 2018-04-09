@@ -21,7 +21,6 @@
 
 #include <vector>              // for vector
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
 #include "mesh/accessors.hh"
 #include "petscvec.h"          // for Vec
 

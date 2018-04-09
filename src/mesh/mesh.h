@@ -45,6 +45,7 @@
 class BIHTree;
 class Distribution;
 class Partitioning;
+class MixedMeshIntersections;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 

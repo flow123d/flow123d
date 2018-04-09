@@ -19,7 +19,6 @@
 #define ACCESSORS_HH_
 
 #include "mesh/bounding_box.hh"
-#include "mesh/mesh_types.hh"
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"

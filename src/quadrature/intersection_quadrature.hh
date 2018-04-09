@@ -48,7 +48,6 @@
  */
 
 
-#include "mesh/mesh_types.hh"
 #include "mesh/accessors.hh"
 #include <armadillo>
 //#include <iostream>

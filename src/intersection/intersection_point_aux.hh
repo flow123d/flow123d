@@ -21,7 +21,6 @@
 #define INTERSECTIONPOINT_H_
 
 #include <armadillo>
-#include "mesh/mesh_types.hh"
 template <int spacedim> class ElementAccessor;
 
 

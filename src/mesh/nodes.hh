@@ -19,7 +19,6 @@
 #define NODE_H
 
 #include "system/global_defs.h"
-#include "mesh/mesh_types.hh"
 #include <armadillo>
 
 

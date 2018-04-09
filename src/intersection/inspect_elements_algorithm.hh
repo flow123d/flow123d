@@ -21,13 +21,13 @@
 #define INSPECT_ELEMENTS_ALGORITHM_H_
 
 #include "mesh/bounding_box.hh"
-#include "mesh/mesh_types.hh"
 
 // #include "simplex.hh"
 
 #include <queue>
 
 class Mesh; // forward declare
+class BIHTree;
 
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;

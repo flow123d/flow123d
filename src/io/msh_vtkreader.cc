@@ -26,7 +26,6 @@
 #include "system/system.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
 #include "mesh/accessors.hh"
 
 #include "config.h"
