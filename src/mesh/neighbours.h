@@ -22,7 +22,7 @@
 #include "mesh/edges.h"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
+#include "mesh/accessors.hh"
 
 
 
@@ -121,7 +121,7 @@ class Neighbour
 public:
     Neighbour();
 
-    void reinit(ElementIterator ele, unsigned int edg_idx);
+    void reinit(Mesh *mesh, unsigned int elem_idx, unsigned int edge_idx);
 
     // side of the edge in higher dim. mesh
     inline SideIter side();
@@ -132,12 +132,14 @@ public:
     inline Edge *edge();
 
     // element of lower dimension mesh in VB neigh.
-    inline ElementIterator element();
+    inline ElementAccessor<3> element();
 
-//private:
-    unsigned int edge_idx_;  // edge
-    ElementIterator element_;  // neighbouring elements
-                               // for VB  - element[0] is element of lower dimension
+private:
+    Mesh * mesh_;            ///< Pointer to Mesh to which belonged
+    unsigned int elem_idx_;  ///< Index of element in Mesh::element_vec_
+    unsigned int edge_idx_;  ///< Index of Edge in Mesh
+
+    friend class Mesh;
 };
 
 
@@ -154,12 +156,12 @@ inline unsigned int Neighbour::edge_idx() {
 
 // edge of lower dimensional mesh in VB neigh.
 inline Edge *Neighbour::edge() {
-    return &( element_->mesh_->edges[ edge_idx_] );
+    return &( mesh_->edges[ edge_idx_] );
 }
 
 // element of higher dimension mesh in VB neigh.
-inline ElementIterator Neighbour::element() {
-    return element_;
+inline ElementAccessor<3> Neighbour::element() {
+    return mesh_->element_accessor(elem_idx_);
 }
 
 

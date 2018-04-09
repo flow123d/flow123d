@@ -135,7 +135,7 @@ public:
     //unsigned int get_proc() const;
 
 
-    unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
+    mutable unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
                             // only ngh from this element to higher dimension edge
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 

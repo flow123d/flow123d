@@ -378,6 +378,8 @@ void Mesh::make_neighbours_and_edges()
     Edge *edg;
     unsigned int ngh_element_idx, last_edge_idx;
 
+    neighbour.mesh_ = this;
+
     create_node_element_lists();
 
 	// pointers to created edges
@@ -468,7 +470,7 @@ void Mesh::make_neighbours_and_edges()
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
 
 			if (is_neighbour) { // edge connects elements of different dimensions
-			    neighbour.element_ = element_vec_.begin() + ngh_element_idx;
+			    neighbour.elem_idx_ = ngh_element_idx;
             } else { // edge connects only elements of the same dimension
                 // Allocate the array of sides.
                 last_edge_idx=edges.size();
@@ -628,7 +630,7 @@ void Mesh::element_to_neigh_vb()
 		ele->n_neighs_vb =0;
 
     // count vb neighs per element
-    for (auto & ngh : this->vb_neighbours_)  ngh.element_->n_neighs_vb++;
+    for (auto & ngh : this->vb_neighbours_)  ngh.element()->n_neighs_vb++;
 
     // Allocation of the array per element
     for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
@@ -638,7 +640,7 @@ void Mesh::element_to_neigh_vb()
         }
 
     // fill
-    ElementIterator ele;
+    ElementAccessor<3> ele;
     for (auto & ngh : this->vb_neighbours_) {
         ele = ngh.element();
         ele->neigh_vb[ ele->n_neighs_vb++ ] = &ngh;
