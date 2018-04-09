@@ -25,6 +25,7 @@
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
+#include "mesh/neighbours.h"
 #include "transport/transport.h"
 
 #include "la/distribution.hh"

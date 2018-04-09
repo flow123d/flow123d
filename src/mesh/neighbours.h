@@ -18,6 +18,10 @@
 #ifndef MAKE_NEIGHBOURS_H
 #define MAKE_NEIGHBOURS_H
 
+#include "mesh/sides.h"
+#include "mesh/edges.h"
+#include "mesh/elements.h"
+#include "mesh/mesh.h"
 #include "mesh/mesh_types.hh"
 
 
@@ -136,6 +140,27 @@ public:
                                // for VB  - element[0] is element of lower dimension
 };
 
+
+// side of the edge in higher dim. mesh
+inline SideIter Neighbour::side() {
+	OLD_ASSERT( edge()->n_sides == 1 , "VB neighbouring with %d sides.\n", edge()->n_sides);
+    //DebugOut().fmt("VB neighbouring with {} sides.\n", edge_->n_sides);
+    return edge()->side(0);
+}
+
+inline unsigned int Neighbour::edge_idx() {
+    return edge_idx_;
+}
+
+// edge of lower dimensional mesh in VB neigh.
+inline Edge *Neighbour::edge() {
+    return &( element_->mesh_->edges[ edge_idx_] );
+}
+
+// element of higher dimension mesh in VB neigh.
+inline ElementIterator Neighbour::element() {
+    return element_;
+}
 
 
 #endif

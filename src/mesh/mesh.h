@@ -31,7 +31,6 @@
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
 #include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
-#include "mesh/neighbours.h"                 // for Neighbour
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/sides.h"                      // for SideIter
 #include "mesh/bounding_box.hh"              // for BoundingBox
@@ -46,6 +45,7 @@ class BIHTree;
 class Distribution;
 class Partitioning;
 class MixedMeshIntersections;
+class Neighbour;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 
@@ -206,9 +206,7 @@ public:
 
     unsigned int n_sides();
 
-    inline unsigned int n_vb_neighbours() const {
-        return vb_neighbours_.size();
-    }
+    unsigned int n_vb_neighbours() const;
 
     /**
      * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
@@ -507,7 +505,6 @@ private:
 
 #include "mesh/side_impl.hh"
 #include "mesh/element_impls.hh"
-#include "mesh/neighbours_impl.hh"
 
 /**
  * Provides for statement to iterate over the Edges of the Mesh.
@@ -520,11 +517,6 @@ private:
 #define FOR_SIDES(_mesh_, it) \
 	for (auto ele : (_mesh_)->bulk_elements_range())  \
         for(SideIter it = ele->side(0); it->side_idx() < ele->n_sides(); ++it)
-
-
-#define FOR_NEIGHBOURS(_mesh_, it) \
-    for( std::vector<Neighbour>::iterator it = (_mesh_)->vb_neighbours_.begin(); \
-         (it)!= (_mesh_)->vb_neighbours_.end(); ++it)
 
 
 #endif

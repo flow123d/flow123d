@@ -37,6 +37,7 @@
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
+#include "mesh/neighbours.h"
 
 
 #include "mesh/bih_tree.hh"
@@ -201,6 +202,10 @@ unsigned int Mesh::n_sides()
         for (auto ele : this->bulk_elements_range()) n_sides_ += ele->n_sides();
     }
     return n_sides_;
+}
+
+unsigned int Mesh::n_vb_neighbours() const {
+    return vb_neighbours_.size();
 }
 
 unsigned int Mesh::n_corners() {
@@ -623,7 +628,7 @@ void Mesh::element_to_neigh_vb()
 		ele->n_neighs_vb =0;
 
     // count vb neighs per element
-    FOR_NEIGHBOURS(this,  ngh )  ngh->element_->n_neighs_vb++;
+    for (auto & ngh : this->vb_neighbours_)  ngh.element_->n_neighs_vb++;
 
     // Allocation of the array per element
     for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
@@ -634,9 +639,9 @@ void Mesh::element_to_neigh_vb()
 
     // fill
     ElementIterator ele;
-    FOR_NEIGHBOURS(this,  ngh ) {
-        ele = ngh->element();
-        ele->neigh_vb[ ele->n_neighs_vb++ ] = &( *ngh );
+    for (auto & ngh : this->vb_neighbours_) {
+        ele = ngh.element();
+        ele->neigh_vb[ ele->n_neighs_vb++ ] = &ngh;
     }
 
     //MessageOut() << "... O.K.\n"/*orig verb 6*/;

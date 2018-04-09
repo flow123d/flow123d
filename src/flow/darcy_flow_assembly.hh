@@ -10,6 +10,7 @@
 
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
+#include "mesh/neighbours.h"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"

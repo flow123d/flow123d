@@ -23,6 +23,7 @@
 #include "mesh/side_impl.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
+#include "mesh/neighbours.h"
 #include "system/sys_profiler.hh"
 
 MH_DofHandler::MH_DofHandler()

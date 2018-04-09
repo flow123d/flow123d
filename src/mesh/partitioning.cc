@@ -21,6 +21,7 @@
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
+#include "mesh/neighbours.h"
 
 #include "petscao.h"
 
