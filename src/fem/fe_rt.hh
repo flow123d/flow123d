@@ -21,7 +21,6 @@
 
 #include "fem/finite_element.hh"
 #include "system/logger.hh"
-#include "mesh/ref_element.hh"
 
 /**
  * Space of Raviart-Thomas polynomials of order 0 (affine functions).
@@ -66,6 +65,7 @@ public:
      * @brief Constructor.
      */
     FE_RT0();
+
 };
 
 

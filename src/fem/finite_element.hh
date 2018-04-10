@@ -43,7 +43,7 @@ template<unsigned int dim, unsigned int spacedim> class XFEValues;
 
 
 // Possible types are: value, gradient, cell integral, ...
-enum DofType { Value = 1, Singular = 20 };
+enum DofType { Value = 1 };
 
 /**
  * Class Dof is a general description of functionals (degrees of freedom)
@@ -346,6 +346,8 @@ protected:
      */
     const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const
     { return nonzero_components_[sys_idx]; }
+    
+    
     
     /// Type of FiniteElement.
     FEType type_;

@@ -29,6 +29,7 @@
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/global_defs.h"                        // for OLD_ASSERT, msg
 
+
 /**
  * @brief Space of polynomial functions.
  *
@@ -112,6 +113,7 @@ public:
 
     /// Constructor.
     FE_P_disc(unsigned int degree);
+    
 };
 
 
