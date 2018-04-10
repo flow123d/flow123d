@@ -95,6 +95,8 @@ void XFEValues<dim,spacedim>::reinit(ElementFullIter & ele,
         this->data.points = q->get_real_points();
     }
     
+    // possibly delete previously created data 
+    if (this->mapping_data) delete this->mapping_data;
     // precompute the maping data and finite element data
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
     
@@ -165,15 +167,13 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
     ElementFullIter ele = *this->data.present_cell;
     typedef typename Space<spacedim>::Point Point;
     unsigned int j;
-
-    vector<arma::vec::fixed<spacedim>> normals;
     vector<vector<double>> enr_dof_val;
     
     if (this->data.update_flags & (update_values | update_divergence | update_gradients))
     {
         ASSERT_DBG(this->data.inverse_jacobians.size() > 0);
         
-        normals.resize(RefElement<dim>::n_sides);
+        vector<arma::vec::fixed<spacedim>> normals(RefElement<dim>::n_sides);
 //         DBGCOUT("normals\n");
         // compute normals - TODO: this should do mapping, but it does it for fe_side_values..
         for (unsigned int j = 0; j < RefElement<dim>::n_sides; j++){
