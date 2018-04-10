@@ -59,18 +59,18 @@ typename XFEValues<dim,spacedim>::EleCache XFEValues<dim,spacedim>::ele_cache;
 
 template<unsigned int dim,unsigned int spacedim>
 XFEValues<dim,spacedim>::XFEValues(
-            Mapping<dim,spacedim> &mapping,
-            FiniteElement<dim> &fe,
+            Mapping<dim,spacedim> &_mapping,
+            FiniteElement<dim> &_fe,
             FiniteElement<dim> &pu,
             UpdateFlags flags)
 : FEValuesBase<dim, spacedim>(),
 pu(&pu),
-n_regular_dofs_ (fe.n_dofs()),
+n_regular_dofs_ (_fe.n_dofs()),
 n_enriched_dofs_(0)
 {
-    this->mapping = &mapping;
-    this->fe = &fe;
-    this->data.update_flags = flags;
+    mapping = &_mapping;
+    fe = &_fe;
+    data.update_flags = flags;
 }
 
 template<unsigned int dim,unsigned int spacedim>
@@ -79,33 +79,33 @@ void XFEValues<dim,spacedim>::reinit(ElementFullIter & ele,
                                      Quadrature<dim> &_quadrature)
 {
     ASSERT_EQ_DBG( dim, ele->dim() );
-    this->data.present_cell = &ele;
-    this->quadrature = &_quadrature;
+    data.present_cell = &ele;
+    quadrature = &_quadrature;
     
     enr = xdata.enrichment_func_vec();
     n_enriched_dofs_ = enr.size()*pu->n_dofs();
     
-    this->allocate(*this->mapping, *this->quadrature, *this->fe, n_regular_dofs_ + n_enriched_dofs_, this->data.update_flags);
+    this->allocate(*mapping, *quadrature, *fe, n_regular_dofs_ + n_enriched_dofs_, data.update_flags);
     
     if(typeid(_quadrature) == typeid(QXFEM<dim,spacedim>)){
         QXFEM<dim,spacedim>* q = static_cast<QXFEM<dim,spacedim>*>(&_quadrature);
         
-        this->data.update_flags = this->data.update_flags & (~update_quadrature_points);
+        data.update_flags = data.update_flags & (~update_quadrature_points);
         //TODO: think of way to avoid copying the whole vector
-        this->data.points = q->get_real_points();
+        data.points = q->get_real_points();
     }
     
     // possibly delete previously created data 
-    if (this->mapping_data) delete this->mapping_data;
+    if (mapping_data) delete mapping_data;
     // precompute the maping data and finite element data
-    this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
+    mapping_data = mapping->initialize(*quadrature, data.update_flags);
     
 
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
-    this->mapping->fill_fe_values(ele,
-                            *this->quadrature,
-                            *this->mapping_data,
-                            this->data);
+    mapping->fill_fe_values(ele,
+                            *quadrature,
+                            *mapping_data,
+                            data);
 
     this->fill_data(*this->fe_data);
 }
@@ -139,22 +139,22 @@ void XFEValues<dim,spacedim>::fill_scalar_xfem_single()
     ASSERT_DBG(fe->type_ == FEScalar);
     
     // shape values
-    if (this->data.update_flags & update_values)
-        for (unsigned int i = 0; i < this->quadrature->size(); i++)
+    if (data.update_flags & update_values)
+        for (unsigned int i = 0; i < quadrature->size(); i++)
             for (unsigned int j = 0; j < fe->n_dofs(); j++)
-                this->data.shape_values[i][j] = fe->shape_value(j, this->quadrature->point(i), 0);
+                data.shape_values[i][j] = fe->shape_value(j, quadrature->point(i), 0);
         
     // shape gradients
     arma::mat grad(dim, 0);
-    if (this->data.update_flags & update_gradients)
-        for (unsigned int i = 0; i < this->quadrature->size(); i++)
+    if (data.update_flags & update_gradients)
+        for (unsigned int i = 0; i < quadrature->size(); i++)
             for (unsigned int j = 0; j < fe->n_dofs(); j++)
             {
                 grad.zeros();
                 for (unsigned int c=0; c<fe->n_components(); c++)
-                    grad.col(c) += fe->shape_grad(j, this->quadrature->point(i), c);
+                    grad.col(c) += fe->shape_grad(j, quadrature->point(i), c);
         
-                this->data.shape_gradients[i][j] = trans(this->data.inverse_jacobians[i]) * grad;
+                data.shape_gradients[i][j] = trans(data.inverse_jacobians[i]) * grad;
             }
 }
 
@@ -164,20 +164,20 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
 //     DebugOut() << "XFEValues::fill_vec_piola_xfem_single\n";
     ASSERT_DBG(fe->type_ == FEVectorPiola);
     
-    ElementFullIter ele = *this->data.present_cell;
+    ElementFullIter ele = *data.present_cell;
     typedef typename Space<spacedim>::Point Point;
     unsigned int j;
     vector<vector<double>> enr_dof_val;
     
-    if (this->data.update_flags & (update_values | update_divergence | update_gradients))
+    if (data.update_flags & (update_values | update_divergence | update_gradients))
     {
-        ASSERT_DBG(this->data.inverse_jacobians.size() > 0);
+        ASSERT_DBG(data.inverse_jacobians.size() > 0);
         
         vector<arma::vec::fixed<spacedim>> normals(RefElement<dim>::n_sides);
 //         DBGCOUT("normals\n");
         // compute normals - TODO: this should do mapping, but it does it for fe_side_values..
         for (unsigned int j = 0; j < RefElement<dim>::n_sides; j++){
-            normals[j] = arma::trans(this->data.inverse_jacobians[0])*RefElement<dim>::normal_vector(j);
+            normals[j] = arma::trans(data.inverse_jacobians[0])*RefElement<dim>::normal_vector(j);
             normals[j] = normals[j]/norm(normals[j],2);
 //             normals[j].print(cout, "internal normal");
         }
@@ -253,11 +253,11 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
     
     // shape values
 //     DBGCOUT("shape values\n");
-    if (this->data.update_flags & update_values)
+    if (data.update_flags & update_values)
     {
-        ASSERT_DBG(this->data.jacobians.size() == this->quadrature->size());
-        ASSERT_DBG(this->data.determinants.size() == this->quadrature->size());
-        ASSERT_DBG(this->data.points.size() == this->quadrature->size());
+        ASSERT_DBG(data.jacobians.size() == quadrature->size());
+        ASSERT_DBG(data.determinants.size() == quadrature->size());
+        ASSERT_DBG(data.points.size() == quadrature->size());
         
         vector<arma::vec::fixed<spacedim> > vectors(this->n_dofs_);
         
@@ -265,14 +265,14 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
         {
             //fill regular shape functions
 //             DBGCOUT("regular shape vals\n");
-            arma::mat shape_values(this->fe->n_dofs(), this->fe->n_components());
-            for (unsigned int j=0; j<this->fe->n_dofs(); j++)
-                for (unsigned int c=0; c<this->fe->n_components(); c++)
-                    shape_values(j,c) = this->fe->shape_value(j, this->quadrature->point(q), c);
+            arma::mat shape_values(fe->n_dofs(), fe->n_components());
+            for (unsigned int j=0; j<fe->n_dofs(); j++)
+                for (unsigned int c=0; c<fe->n_components(); c++)
+                    shape_values(j,c) = fe->shape_value(j, quadrature->point(q), c);
             
 //             DBGCOUT("times jacobians\n");
             for (j=0; j<n_regular_dofs_; j++)
-                vectors[j] = this->data.jacobians[q] * arma::trans(shape_values.row(j)) / this->data.determinants[q];
+                vectors[j] = data.jacobians[q] * arma::trans(shape_values.row(j)) / data.determinants[q];
             
             //fill enriched shape functions
 //             DBGCOUT("enriched shape vals\n");
@@ -285,25 +285,25 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
                 for (unsigned int k=0; k < n_regular_dofs_; k++)
                     interpolant += vectors[k] * enr_dof_val[w][k];
                 
-                vectors[j] =  enr[w]->vector(this->data.points[q]) - interpolant;
+                vectors[j] =  enr[w]->vector(data.points[q]) - interpolant;
                 j++;
             }   
             
 //             DBGCOUT("enriched shape vals - decomp on components\n");
             for (unsigned int k=0; k<this->n_dofs_; k++)
                 for (unsigned int c=0; c<spacedim; c++)
-                    this->data.shape_values[q][k*spacedim+c] = vectors[k][c];
+                    data.shape_values[q][k*spacedim+c] = vectors[k][c];
         }
     }
 
     // divergence
 //     DBGCOUT("divergence\n");
-    if (this->data.update_flags & update_divergence)
+    if (data.update_flags & update_divergence)
     {
-        ASSERT_DBG(this->data.jacobians.size() == this->quadrature->size());
-        ASSERT_DBG(this->data.inverse_jacobians.size() == this->quadrature->size());
-        ASSERT_DBG(this->data.determinants.size() == this->quadrature->size());
-        ASSERT_DBG(this->data.points.size() == this->quadrature->size());
+        ASSERT_DBG(data.jacobians.size() == quadrature->size());
+        ASSERT_DBG(data.inverse_jacobians.size() == quadrature->size());
+        ASSERT_DBG(data.determinants.size() == quadrature->size());
+        ASSERT_DBG(data.points.size() == quadrature->size());
         
         vector<double> divs(this->n_dofs_);
         
@@ -318,10 +318,10 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
 //                 // grads on ref element
                 unit_grad.zeros();
                 for (unsigned int c=0; c<fe->n_components(); c++)
-                    unit_grad.col(c) += this->fe->shape_grad(k, this->quadrature->point(q),c);
+                    unit_grad.col(c) += fe->shape_grad(k, quadrature->point(q),c);
                 
                 // map grads on real element
-                real_grad = trans(this->data.inverse_jacobians[q]) * unit_grad * trans(this->data.jacobians[q])/this->data.determinants[q];
+                real_grad = trans(data.inverse_jacobians[q]) * unit_grad * trans(data.jacobians[q])/data.determinants[q];
 
 //                 for (unsigned int c=0; c<spacedim; c++)
 //                     data.shape_gradients[i][j*spacedim+c] = grads.col(c);
@@ -347,7 +347,7 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
                 j++;
             }
             
-            this->data.shape_divergence[q] = divs;
+            data.shape_divergence[q] = divs;
         }
     }
 }

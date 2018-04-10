@@ -18,18 +18,17 @@
 #ifndef XFE_VALUES_HH_
 #define XFE_VALUES_HH_
 
-#include <string.h>                           // for memcpy
-#include <algorithm>                          // for swap
-#include <new>                                // for operator new[]
-#include <string>                             // for operator<<
+// #include <string.h>                           // for memcpy
+// #include <algorithm>                          // for swap
+// #include <new>                                // for operator new[]
+// #include <string>                             // for operator<<
 #include <vector>                             // for vector
-#include "mesh/ref_element.hh"                // for RefElement
+// #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/mesh_types.hh"                 // for ElementFullIter
 #include "fem/update_flags.hh"                // for UpdateFlags
-#include "fem/fe_values_views.hh"             // for FEValuesViews
+// #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "fem/fe_values.hh"                   // for FEValues
 
-class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
@@ -37,9 +36,6 @@ template<unsigned int dim, unsigned int spacedim> class Mapping;
 
 template<int dim, int spacedim> class GlobalEnrichmentFunc;
 template<int dim, int spacedim> class XFEMElementData;
-
-struct MappingInternalData;
-
 template<int dim, int spacedim> class QXFEM;
 
 
@@ -66,11 +62,11 @@ public:
 	 * @brief Constructor.
 	 *
 	 * Initializes structures and calculates
-     * cell-independent data.
+         * cell-independent data.
 	 *
 	 * @param _mapping The mapping between the reference and actual cell.
-	 * @param _quadrature The quadrature rule.
-	 * @param _fe The finite element.
+	 * @param _fe The regular finite element.
+         * @param pu The finite element representing partition of unity.
 	 * @param _flags The update flags.
 	 */
     XFEValues(Mapping<dim,spacedim> &_mapping,
@@ -87,11 +83,6 @@ public:
                 XFEMElementData<dim,spacedim> &xdata,
                 Quadrature<dim> &_quadrature);
     
-//     void allocate(Mapping<dim,spacedim> &_mapping,
-//             Quadrature<dim> &_quadrature,
-//             FiniteElement<dim> &_fe,
-//             UpdateFlags flags) override;
-    
     /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
      *
@@ -107,18 +98,6 @@ public:
 //         return data.determinants[point_no];
 //     }
 
-    /**
-     * @brief Return the product of Jacobian determinant and the quadrature
-     * weight at given quadrature point.
-     *
-     * @param point_no Number of the quadrature point.
-     */
-//     inline double JxW(const unsigned int point_no) override
-//     {
-// TODO:optimize for affine mapping - is constant
-//         ASSERT_LT_DBG(point_no, quadrature->size());
-//         return data.JxW_values[point_no];
-//     }
     
     /**
      * @brief Returns the normal vector to a side at given quadrature point.
@@ -132,50 +111,6 @@ public:
 //         ASSERT_LT_DBG(point_no, quadrature->size());
 //         return data.normal_vectors[point_no];
     }
-	
-    /**
-     * @brief Return coordinates of the quadrature point in the actual cell system.
-     *
-     * @param point_no Number of the quadrature point.
-     */
-//     inline Point point(const unsigned int point_no) override
-//     {
-//         return qxfem->real_point(point_no);
-//     }
-
-    /**
-     * @brief Return coordinates of all quadrature points in the actual cell system.
-     *
-     */
-//     inline vector<Point > &point_list() override
-//     {
-//         return qxfem->get_real_points();
-//     }
-    
-    /**
-     * @brief Returns the number of quadrature points.
-     */
-//     inline unsigned int n_points() override
-//     {
-//         return qxfem->size();
-//     }
-
-    /**
-     * @brief Returns the number of shape functions.
-     */
-//     inline unsigned int n_dofs() override
-//     {
-// //         return this->fe->n_dofs() + enr.size()*pu->n_dofs();
-//         return n_regular_dofs + n_enriched_dofs;
-//     }
-    
-    /**
-     * @brief Returns the quadrature in use.
-     */
-//     inline Quadrature<dim> * get_quadrature() const override
-//     {
-//         return qxfem->get();
-//     }
 
     inline unsigned int n_regular_dofs()
     {   return n_regular_dofs_;}
@@ -184,16 +119,17 @@ public:
     {   return n_enriched_dofs_;}
 
 private:
-    
+    //enable access to (templated) base class members
     using FEValuesBase<dim,spacedim>::mapping;
+    using FEValuesBase<dim,spacedim>::mapping_data;
     using FEValuesBase<dim,spacedim>::fe;
+    using FEValuesBase<dim,spacedim>::data;
+    using FEValuesBase<dim,spacedim>::quadrature;
     
     void fill_data(const FEInternalData &fe_data) override;
 //     void fill_xfem();
     void fill_scalar_xfem_single();
     void fill_vec_piola_xfem_single();
-    
-//     void setup_dofs();
     
     /// Awful HACK function for getting quadrature based on Singularity0D or Singularity1D
     std::shared_ptr<QXFEM<dim,spacedim>> qxfem_side(ElementFullIter ele, unsigned int sid);
@@ -208,14 +144,15 @@ private:
     };
     static EleCache ele_cache;
     
-    
-//     shared_ptr<QXFEM<dim,spacedim>> qxfem;
-    
+    /// Finite element used as Partition of Unity.
     FiniteElement<dim> *pu;
+    /// XFEM Element data.
     XFEMElementData<dim,spacedim> *xdata;
     
-    unsigned int n_regular_dofs_, n_enriched_dofs_;
+    unsigned int n_regular_dofs_,   ///< Number of regular dofs of the used FE.
+                 n_enriched_dofs_;  ///< Number of enriched dofs, given by FE, enrichment technique and number of enrichments.
     
+    /// Vector of enrichments.
     std::vector<EnrichmentPtr> enr;
 
 };
