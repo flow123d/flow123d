@@ -15,13 +15,15 @@ flow123d="/home/paulie/docker_flow123d/flow123d/bin/flow123d"
 # CON file 
 # template_file="triangle_const_template.yaml"
 # template_file="triangle_sigma_template.yaml"
-template_file="sigma_a_template.yaml"
+# template_file="sigma_a_template.yaml"
 # template_file="sigma_source_a_template.yaml"
 # template_file="sigma_2w_template.yaml"
 # template_file="sigma_5w_template.yaml"
 # template_file="triangle_sigma_source_template.yaml"
 # template_file="triangle_sigma_2w_koeppl_template.yaml"
 # template_file="tetrahedron3t_sigma_template.yaml"
+# template_file="23_2d_circle_well_template.yaml"
+template_file="51_single_aquifer_analytical_template.yaml"
 yaml_file="scale_test_run.yaml"
 
 summary_file="summary_${template_file}.log"
@@ -32,15 +34,17 @@ for index in  1 2 3 4 5
 do
   
 #       mesh_name="triangle_const_${index}.msh"
-      mesh_name="big_circle_${index}.msh"
+#       mesh_name="big_circle_${index}.msh"
+#     mesh_name="big_circle\/big_circle_well_${index}.msh"
+    mesh_name="aquifers\/single_aquifer_12d_${index}.msh"
 #       mesh_name="aquifer_${index}.msh"
 #       mesh_name="cylinder_${index}.msh"
 #       mesh_name="tetrahedron3t_${index}.msh"
       echo $mesh_name
       output_name="output_${index}"
       
-#       max_level=`expr 6 - $index`
-      max_level=1
+      max_level=`expr 6 - $index`
+#       max_level=1
 
       cat $template_file | sed "s/MESH_FILE_PARAM/${mesh_name}/; s/MAX_LEVEL_PARAM/${max_level}/" > $yaml_file
       #cat $yaml_file | sed "s/MAX_LEVEL_PARAM/${max_level}/" > $yaml_file

@@ -12,5 +12,6 @@ test_cases:
       #- 05_3d_single_cylinder.yaml
       - 21_2d_triangle_well.yaml
       - 23_2d_circle_well.yaml
+      - 24_2d_circle_well_source.yaml
       - 25_3d_cylinder_well.yaml
     proc: [1]

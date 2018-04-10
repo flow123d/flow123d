@@ -71,7 +71,7 @@ class Parameters :
     wells = []
     
     # source
-    U = 20.0
+    U = 80.0
     omg = 1
     
     def __init__(self):

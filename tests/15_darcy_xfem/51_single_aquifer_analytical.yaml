@@ -5,7 +5,7 @@
 ###Description
 ##Similar setting as the tutorial 51 with different BC and analytic solution provided.
 ##
-##This example should show the convergence, but is not working properly at the moment.
+##This example shows the optimal convergence.
 ##Convergence on these meshes:
 ##single_aquifer_12d_1.msh
 ##single_aquifer_12d_2.msh
@@ -53,12 +53,12 @@ problem: !Coupling_Sequential
 
       - region: well_1
         anisotropy: 1e7
-        sigma: 200
+        sigma: 20
         cross_section: !FieldFormula
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
       - region: well_2
         anisotropy: 1e7
-        sigma: 100
+        sigma: 10
         cross_section: !FieldFormula
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
       - region: well_3
@@ -68,12 +68,12 @@ problem: !Coupling_Sequential
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
       - region: well_4
         anisotropy: 1e7
-        sigma: 100
+        sigma: 10
         cross_section: !FieldFormula
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
       - region: well_5
         anisotropy: 1e7
-        sigma: 200
+        sigma: 20
         cross_section: !FieldFormula
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
 
@@ -95,19 +95,19 @@ problem: !Coupling_Sequential
     
       - region: .well_1_bot
         bc_type: dirichlet
-        bc_pressure: 100
+        bc_pressure: -150
       - region: .well_2_bot
         bc_type: dirichlet
-        bc_pressure: -150
+        bc_pressure: -30
       - region: .well_3_bot
         bc_type: dirichlet
-        bc_pressure: 200
+        bc_pressure: 120
       - region: .well_4_bot
         bc_type: dirichlet
-        bc_pressure: 50
+        bc_pressure: -50
       - region: .well_5_bot
         bc_type: dirichlet
-        bc_pressure: -50
+        bc_pressure: 100
 
     balance: {}
     output:
