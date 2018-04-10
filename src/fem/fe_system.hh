@@ -28,70 +28,13 @@
 
 
 /**
- * @brief Compound finite element on @p dim dimensional simplex.
- *
- * This type of FE is used for vector-valued functions and for systems of equations.
- */
-template <unsigned int dim, unsigned int spacedim>
-class FESystem : public FiniteElement<dim,spacedim>
-{
-public:
-  
-    /**
-     * @brief Constructor. FESystem for vector or tensor created from a scalar FE.
-     * @param fe Base finite element class.
-     * @param t  Type (vector or tensor).
-     */
-    FESystem(std::shared_ptr<FiniteElement<dim,spacedim> > fe, FEType t);
-    
-    /**
-     * @brief Constructor. FESystem with @p n components created from a scalar FE.
-     * @param fe Base finite element class.
-     * @param n  Multiplicity (number of components).
-     */
-    FESystem(const std::shared_ptr<FiniteElement<dim,spacedim> > &fe, unsigned int n);
-    
-    /**
-     * @brief Constructor. FESystem for mixed elements.
-     * @param fe Base finite element classes.
-     */
-    FESystem(std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe);
-    
-    std::vector<unsigned int> get_scalar_components() const
-    { return scalar_components_; }
-    
-    std::vector<unsigned int> get_vector_components() const
-    { return vector_components_; }
-
-    /**
-     * @brief The vector variant of basis_value must be implemented but need not be used.
-     */
-    double basis_value(const unsigned int i, 
-                       const arma::vec::fixed<dim> &p, 
-                       const unsigned int comp) const override;
-
-    /**
-     * @brief The vector variant of basis_grad must be implemented but need not be used.
-     */
-    arma::vec::fixed<dim> basis_grad(const unsigned int i, 
-                                     const arma::vec::fixed<dim> &p, 
-                                     const unsigned int comp) const override;
-    
-    unsigned int n_components() const override { return n_components_; }
-
-    UpdateFlags update_each(UpdateFlags flags) override;
-
-
-private:
-
-  /**
-   * Auxiliary class that stores the relation of dofs in the FESystem to the base FE class.
-   * For each dof in FESystem it provides:
-   * - base FE class,
-   * - index of the basis function within base FE,
-   * - component index of the dof in FESystem.
-   */
-  struct DofComponentData {
+* Auxiliary class that stores the relation of dofs in the FESystem to the base FE class.
+* For each dof in FESystem it provides:
+* - base FE class,
+* - index of the basis function within base FE,
+* - component index of the dof in FESystem.
+*/
+struct DofComponentData {
 
     DofComponentData(unsigned int fei, unsigned int bi, unsigned co)
       : fe_index(fei),
@@ -105,30 +48,102 @@ private:
     unsigned int basis_index;
     /// Component index in the FESystem.
     unsigned int component_offset;
-  };
+};
+
+
+
+class FESystemFunctionSpace: public FunctionSpace
+{
+public:
+
+	/**
+	 * @brief Constructor.
+	 */
+    FESystemFunctionSpace(const std::vector<std::shared_ptr<FunctionSpace> > &fs_vector);
+
+    const double basis_value(unsigned int basis_index,
+                             const arma::vec &point,
+                             unsigned int comp_index = 0
+                            ) const override;
+    
+    const arma::vec basis_grad(unsigned int basis_index,
+                               const arma::vec &point,
+                               unsigned int comp_index = 0
+                              ) const override;
+
+    const unsigned int dim() const override { return dim_; }
+    
+    virtual ~FESystemFunctionSpace() {};
+
+private:
+
+    /// Function spaces that are put together.
+    std::vector<std::shared_ptr<FunctionSpace> > fs_;
+    
+    /// Indices of basis functions relative to the sub-spaces.
+    std::vector<DofComponentData> dof_indices_;
+    
+    /// Number of basis functions.
+    unsigned int dim_;
+    
+};
+
+
+
+/**
+ * @brief Compound finite element on @p dim dimensional simplex.
+ *
+ * This type of FE is used for vector-valued functions and for systems of equations.
+ */
+template <unsigned int dim>
+class FESystem : public FiniteElement<dim>
+{
+public:
   
+    /**
+     * @brief Constructor. FESystem for vector or tensor created from a scalar FE.
+     * @param fe Base finite element class.
+     * @param t  Type (vector or tensor).
+     */
+    FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t);
+    
+    /**
+     * @brief Constructor. FESystem with @p n components created from a scalar FE.
+     * @param fe Base finite element class.
+     * @param n  Multiplicity (number of components).
+     */
+    FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, unsigned int n);
+    
+    /**
+     * @brief Constructor. FESystem for mixed elements.
+     * @param fe Base finite element classes.
+     */
+    FESystem(std::vector<std::shared_ptr<FiniteElement<dim> > > fe);
+    
+    std::vector<unsigned int> get_scalar_components() const
+    { return scalar_components_; }
+    
+    std::vector<unsigned int> get_vector_components() const
+    { return vector_components_; }
+
+    UpdateFlags update_each(UpdateFlags flags) override;
+    
+    const std::vector<std::shared_ptr<FiniteElement<dim> > > &fe()
+    { return fe_; }
+    
+
+private:
+
   /// Initialization of the internal structures from the vector of base FE.
   void initialize();
-  
-  FEInternalData *initialize(const Quadrature<dim> &q) override;
 
-  void fill_fe_values(
-      const Quadrature<dim> &q,
-      FEInternalData &data,
-      FEValuesData<dim,spacedim> &fv_data) override;
-  
   void compute_node_matrix() override;
   
   /// Pointers to base FE objects.
-  std::vector<std::shared_ptr<FiniteElement<dim,spacedim> > > fe_;
-  
-  /// Information about dofs.
-  std::vector<DofComponentData> fe_dof_indices_;
+  std::vector<std::shared_ptr<FiniteElement<dim> > > fe_;
   
   std::vector<unsigned int> scalar_components_;
   std::vector<unsigned int> vector_components_;
-  
-  unsigned int n_components_;
   
 };
 

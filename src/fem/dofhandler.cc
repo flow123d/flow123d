@@ -241,8 +241,8 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	make_elem_partitioning();
 }
 
-void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1, 3>& fe1d,
-		FiniteElement<2, 3>& fe2d, FiniteElement<3, 3>& fe3d,
+void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
+		FiniteElement<2>& fe2d, FiniteElement<3>& fe3d,
 		const unsigned int offset)
 {
 	// First check if dofs are already distributed.
@@ -464,9 +464,9 @@ std::size_t DOFHandlerMultiDim::hash() const {
 
 
 
-template<> FiniteElement<1,3> *DOFHandlerMultiDim::fe<1>() const { return fe1d_; }
-template<> FiniteElement<2,3> *DOFHandlerMultiDim::fe<2>() const { return fe2d_; }
-template<> FiniteElement<3,3> *DOFHandlerMultiDim::fe<3>() const { return fe3d_; }
+template<> FiniteElement<1> *DOFHandlerMultiDim::fe<1>() const { return fe1d_; }
+template<> FiniteElement<2> *DOFHandlerMultiDim::fe<2>() const { return fe2d_; }
+template<> FiniteElement<3> *DOFHandlerMultiDim::fe<3>() const { return fe3d_; }
 
 
 //template class DOFHandler<0,3>;

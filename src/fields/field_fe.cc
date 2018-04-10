@@ -57,6 +57,9 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "Allow set default value of elements that have not listed values in mesh data file.")
         .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
                 "Definition of unit of all times defined in mesh data file.")
+        .declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
+                "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
+                "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .close();
 }
 
@@ -201,9 +204,9 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	fe1_ = new FE_P_disc<1,3>(0);
-	fe2_ = new FE_P_disc<2,3>(0);
-	fe3_ = new FE_P_disc<3,3>(0);
+	fe1_ = new FE_P_disc<1>(0);
+	fe2_ = new FE_P_disc<2>(0);
+	fe3_ = new FE_P_disc<3>(0);
 
 	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
@@ -241,7 +244,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
 		bool boundary_domain = false;
 		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
-		BaseMeshReader::HeaderQuery header_query(field_name_, time.end() / time_unit_coef, this->discretization_, dh_->hash());
+		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
+		double read_time = (time.end()+time_shift) / time_unit_coef;
+		BaseMeshReader::HeaderQuery header_query(field_name_, read_time, this->discretization_, dh_->hash());
 		ReaderCache::get_reader(reader_file_)->find_header(header_query);
 		// TODO: use default and check NaN values in data_vec
 

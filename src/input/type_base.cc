@@ -78,7 +78,7 @@ using namespace std;
 
 TypeBase::TypeBase()
 : attributes_( std::make_shared<attribute_map>() ), root_of_generic_subtree_(false),
-  generic_type_hash_(0) {}
+  generic_type_hash_(TypeBase::none_hash) {}
 
 
 
