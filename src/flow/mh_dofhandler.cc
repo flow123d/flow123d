@@ -716,8 +716,13 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
                 clear_mesh_flags();
                 find_ele_to_enrich(singularities.back(), ele->index(), bulk_ele, enr_radius, new_enrich_node_idx);
                 
-                // in 3d, create only one singularity per 1d element
-                if(dim == 3) break;
+//                 // in 3d, create only one singularity per 1d element
+//                 if(dim == 3) break;
+                //TODO: in 2d detect whether 2d intersection elements are lying in a common plane
+                // if so, then create only single singularity, otherwise create another singularity in the other plane
+                // => create a single singularity per detected plane
+                // both in 2d and 3d, create only one singularity per 1d element
+                break;
             }
         }
     }

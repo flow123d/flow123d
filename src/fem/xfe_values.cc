@@ -252,7 +252,7 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
     
     
     // shape values
-    DBGCOUT("shape values\n");
+//     DBGCOUT("shape values\n");
     if (this->data.update_flags & update_values)
     {
         ASSERT_DBG(this->data.jacobians.size() == this->quadrature->size());
@@ -297,7 +297,7 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
     }
 
     // divergence
-    DBGCOUT("divergence\n");
+//     DBGCOUT("divergence\n");
     if (this->data.update_flags & update_divergence)
     {
         ASSERT_DBG(this->data.jacobians.size() == this->quadrature->size());
