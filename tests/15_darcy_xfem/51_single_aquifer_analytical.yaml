@@ -63,7 +63,7 @@ problem: !Coupling_Sequential
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
       - region: well_3
         anisotropy: 1e7
-        sigma: 100
+        sigma: 10
         cross_section: !FieldFormula
           value: 3.141592653589793 * 0.03*0.03 # pi*r^2
       - region: well_4

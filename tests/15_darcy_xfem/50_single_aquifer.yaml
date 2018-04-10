@@ -93,7 +93,7 @@ flow123d_version: 2.0.0_rc
 problem: !Coupling_Sequential
   description: Test15 - Steady flow with xfem singular connection 1D-2D
   mesh:
-    mesh_file: ./input/aquifers/single_aquifer_12d.msh
+    mesh_file: ./input/aquifers/single_aquifer_12d_1.msh
     
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
@@ -106,7 +106,7 @@ problem: !Coupling_Sequential
       enrich_velocity: true
       enrich_pressure: false
       single: true
-      enr_radius: 1.5
+      enr_radius: 0.8
       dim: 2
     input_fields:
       - region: aquifer

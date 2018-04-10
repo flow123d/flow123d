@@ -14,4 +14,6 @@ test_cases:
       - 23_2d_circle_well.yaml
       - 24_2d_circle_well_source.yaml
       - 25_3d_cylinder_well.yaml
+      - 50_single_aquifer.yaml
+      - 51_single_aquifer_analytical.yaml
     proc: [1]
