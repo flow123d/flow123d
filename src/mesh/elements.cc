@@ -46,7 +46,7 @@ Element::Element()
   neigh_vb(NULL),
 
   dim_(0),
-  id_(0)
+  id_(0) // TODO fix
 
 {
 }
@@ -64,8 +64,8 @@ void Element::init(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg) {
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
-    id_=id;
-    mesh_=mesh_in;
+    id_=id; // TODO fix
+    mesh_=mesh_in; // TODO fix
     region_idx_=reg;
 
     node = new Node * [ n_nodes()];
@@ -156,22 +156,6 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
     return n;
 }
 
-
-ElementAccessor< 3 > Element::element_accessor() const
-{
-  return mesh_->element_accessor( mesh_->elem_index(this->id_) );
-}
-
-
-
-Region Element::region() const {
-    return Region( region_idx_, mesh_->region_db());
-}
-
-
-int Element::id() const {
-	return this->id_;
-}
 
 double Element::quality_measure_smooth() const {
     if (dim_==3) {

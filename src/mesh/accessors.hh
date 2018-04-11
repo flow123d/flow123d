@@ -22,6 +22,7 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include "mesh/sides.h"
 #include <armadillo>
 
 /**
@@ -110,6 +111,10 @@ public:
 
     inline unsigned int idx() const {
         return element_idx_;
+    }
+
+    inline unsigned int index() const {
+    	return (unsigned int)mesh_->elem_index(element_idx_);
     }
 
     inline void inc() {

@@ -112,11 +112,11 @@ void OutputMeshBase::create_id_caches()
 	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, 1, this->n_elements());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
-		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element_accessor(it->idx())->id();
+		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->element_accessor(it->idx()).idx();
 		else elm_idx[0] = it->idx();
 		elem_ids_->store_value( i, elm_idx );
 
-		region_idx[0] = orig_mesh_->element_accessor(it->idx())->region().id();
+		region_idx[0] = orig_mesh_->element_accessor(it->idx()).region().id();
 		region_ids_->store_value( i, region_idx );
 
 		partition[0] = orig_mesh_->element_accessor(it->idx())->pid;
@@ -330,7 +330,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     for (auto ele : orig_mesh_->bulk_elements_range()) {
         const unsigned int
             dim = ele->dim(),
-            ele_idx = ele->index();
+            ele_idx = ele.index();
 //         DebugOut() << "ele index " << ele_idx << "\n";
         
         AuxElement aux_ele;

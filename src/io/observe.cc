@@ -230,7 +230,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         ElementAccessor<3> elm = mesh.element_accessor(i_elm);
 
         // test if candidate is in region and update projection
-        if (elm->region().is_in_region_set(region_set)) {
+        if (elm.region().is_in_region_set(region_set)) {
             ASSERT_LE(candidate_data.distance_, observe_data_.distance_).error();
 
 			observe_data_.distance_ = candidate_data.distance_;

@@ -28,11 +28,6 @@ inline unsigned int Element::dim() const {
 }
 
 
-inline unsigned int Element::index() const {
-    return (unsigned int)mesh_->elem_index(this->id_);
-}
-
-
 inline unsigned int Element::n_nodes() const {
     return dim()+1;
 }
@@ -46,10 +41,10 @@ inline unsigned int Element::n_sides() const {
 
 
 inline SideIter Element::side(const unsigned int loc_index) {
-    return SideIter( Side(mesh_, id_, loc_index) );
+    return SideIter( Side(mesh_, id_, loc_index) ); // TODO: fix
 }
 
 inline const SideIter Element::side(const unsigned int loc_index) const {
-    return SideIter( Side(mesh_, id_, loc_index) );
+    return SideIter( Side(mesh_, id_, loc_index) ); // TODO: fix
 }
 #endif /* ELEMENT_IMPLS_HH_ */

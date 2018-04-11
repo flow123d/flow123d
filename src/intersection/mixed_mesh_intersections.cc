@@ -92,7 +92,7 @@ double MixedMeshIntersections::measure_22()
             val = arma::norm(from - to, 2);
 
 //             DebugOut().fmt("{}--{}:sublength from [{} {} {}] to [{} {} {}] = {}\n",
-//                eleA->id(), eleB->id(),
+//                eleA.idx(), eleB.idx(),
 //                from[0], from[1], from[2],
 //                to[0], to[1], to[2],
 //                val);
@@ -173,7 +173,7 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
     storage.reserve(iea.n_intersections_);
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int idx = elm->index(); 
+        unsigned int idx = elm.index();
         
         if(elm->dim() == dim)
         {
@@ -226,8 +226,8 @@ void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal<
 //                                                     ));
 //         
 // //             DebugOut().fmt("2D-2D intersection [{} - {}]:\n",
-// //                            mesh->element(is.component_ele_idx())->id(),
-// //                            mesh->element(is.bulk_ele_idx())->id());
+// //                            mesh->element_accessor(is.component_ele_idx()).idx(),
+// //                            mesh->element_accessor(is.bulk_ele_idx()).idx());
 // //             for(const IntersectionPointAux<2,2>& ip : is.points()) {
 // //                 DebugOut() << ip;
 // //                 auto p = ip.coords(mesh->element(is.component_ele_idx()));
@@ -388,7 +388,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     // release temporary links from 3d elements
     for (auto elm : mesh->bulk_elements_range()) {
-        if(elm->dim() == 3) element_intersections_[elm->index()].clear();
+        if(elm->dim() == 3) element_intersections_[elm.index()].clear();
     }
 
 
@@ -460,17 +460,17 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
                 int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee->id(), elee->region().id(), elee->pid, id1, id2, id3, id4);
+                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid, id1, id2, id3, id4);
             }else if(elee->dim() == 2){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee->id(), elee->region().id(), elee->pid, id1, id2, id3);
+                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid, id1, id2, id3);
 
             }else if(elee->dim() == 1){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                fprintf(file,"%d 1 2 %d %d %d %d\n",elee->id(), elee->region().id(), elee->pid, id1, id2);
+                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid, id1, id2);
             }
         }
 
@@ -557,17 +557,17 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
                 int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee->id(), elee->region().id(), elee->pid, id1, id2, id3, id4);
+                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid, id1, id2, id3, id4);
             }else if(elee->dim() == 2){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee->id(), elee->region().id(), elee->pid, id1, id2, id3);
+                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid, id1, id2, id3);
 
             }else{
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                fprintf(file,"%d 1 2 %d %d %d %d\n",elee->id(), elee->region().id(), elee->pid, id1, id2);
+                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid, id1, id2);
             }
         }
 

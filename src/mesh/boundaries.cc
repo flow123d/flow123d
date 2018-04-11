@@ -32,7 +32,7 @@ Boundary::Boundary()
 
 
 Region Boundary::region() {
-    return element()->region();
+    return element_accessor().region();
 }
 
 

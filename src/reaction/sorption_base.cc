@@ -439,7 +439,7 @@ void SorptionBase::make_tables(void)
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 {
     ElementAccessor<3> elem = mesh_->element_accessor( el_4_loc_[loc_el] );
-    int reg_idx = elem->region().bulk_idx();
+    int reg_idx = elem.region().bulk_idx();
     unsigned int i_subst, subst_id;
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];

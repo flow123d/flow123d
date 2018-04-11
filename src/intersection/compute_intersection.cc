@@ -1100,8 +1100,8 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
     }
     //DebugOut().fmt("before: {} ip: {} after: {}\n", obj_before_ip, ip_idx, obj_after_ip );
     ASSERT_DBG( ! have_backlink(obj_after_ip) )
-        (mesh_->element_accessor(intersection_->component_ele_idx())->id())
-        (mesh_->element_accessor(intersection_->bulk_ele_idx())->id())
+        (mesh_->element_accessor(intersection_->component_ele_idx()).idx())
+        (mesh_->element_accessor(intersection_->bulk_ele_idx()).idx())
         (obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
     object_next[obj_before_ip] = ip_idx;
     IP_next.push_back( obj_after_ip);

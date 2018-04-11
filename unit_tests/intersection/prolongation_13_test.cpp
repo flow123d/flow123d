@@ -152,13 +152,13 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 //     //write the first intersection
 //     for (auto elm : mesh->bulk_elements_range()) {
 //         
-//         if( (elm->dim() == 1) && (ie.intersection_map_[elm->index()].size() > 0) )
+//         if( (elm->dim() == 1) && (ie.intersection_map_[elm.index()].size() > 0) )
 //         {
 //             IntersectionLocal<1,3>* il13 = 
-//                 static_cast<IntersectionLocal<1,3>*> (ie.intersection_map_[elm->index()][0].second);
+//                 static_cast<IntersectionLocal<1,3>*> (ie.intersection_map_[elm.index()][0].second);
 //             if(il13 != nullptr)
 //             {
-// //                 DebugOut().fmt("comp idx {}, bulk idx {}, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
+// //                 DebugOut().fmt("comp idx {}, bulk idx {}, \n",elm.index(),ie.intersection_map_[elm.index()][0].first);
 //                 DebugOut() << *il13;
 //                 break;
 //             }

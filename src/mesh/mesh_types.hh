@@ -32,12 +32,6 @@ typedef flow::VectorId<Node> NodeVector;
 typedef NodeVector::Iter NodeIter;
 typedef NodeVector::FullIter NodeFullIter;
 
-// iterator over elements
-// should be mesh member, but then we have problem how to have ElementIter as memeber of
-// Node or other classes without cyclic inclusion
-// temporary iterator for access to vector of all (bulk + boundary) elements
-typedef vector<Element>::iterator ElementIterator;
-
 typedef flow::Vector<Edge> EdgeVector;
 
 #endif /* MESH_TYPES_HH_ */

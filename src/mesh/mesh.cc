@@ -261,7 +261,7 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     for (auto ele : this->bulk_elements_range())
-        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele->id());
+        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -274,7 +274,7 @@ void Mesh::setup_topology() {
     IdxInt *id_4_old = new IdxInt[n_elements()];
     int i = 0;
     for (auto ele : this->bulk_elements_range())
-        id_4_old[i++] = elem_index( ele->id() );
+        id_4_old[i++] = elem_index( ele.idx() );
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 
     delete[] id_4_old;
@@ -301,7 +301,7 @@ void Mesh::create_node_element_lists() {
 
     for (auto ele : this->bulk_elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
-            node_elements_[node_vector.index(ele->node[n])].push_back(ele->index());
+            node_elements_[node_vector.index(ele->node[n])].push_back(ele.index());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -346,7 +346,7 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
             ++e_dest;
         } else if (element_vec_[*ele].dim() == dim-1) { // get only first element of lower dimension
             if (is_neighbour) xprintf(UsrErr, "Too matching elements id: %d and id: %d in the same mesh.\n",
-            		element_vec_[*ele].id(), element_vec_[element_idx].id() );
+            		this->elem_index(*ele), this->elem_index(element_idx) );
 
             is_neighbour = true;
             element_idx = *ele;
@@ -390,20 +390,20 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
 	for( unsigned int i=element_vec_.size()-boundary_size_; i<element_vec_.size(); ++i) {
-		Element &bc_ele = element_vec_[i];
+		ElementAccessor<3> bc_ele = this->element_accessor(i);
         // Find all elements that share this side.
-        side_nodes.resize(bc_ele.n_nodes());
-        for (unsigned n=0; n<bc_ele.n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele.node[n]);
+        side_nodes.resize(bc_ele->n_nodes());
+        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele->node[n]);
         intersect_element_lists(side_nodes, intersection_list);
-        bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele.dim() +1, ngh_element_idx);
+        bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
             xprintf(UsrErr, "Boundary element (id: %d) match a regular element (id: %d) of lower dimension.\n",
-                    bc_ele.id(), element_vec_[ngh_element_idx].id());
+                    bc_ele.idx(), this->elem_index(ngh_element_idx));
         } else {
             if (intersection_list.size() == 0) {
                 // no matching dim+1 element found
             	WarningOut().fmt("Lonely boundary element, id: {}, region: {}, dimension {}.\n",
-            			bc_ele.id(), bc_ele.region().id(), bc_ele.dim());
+            			bc_ele.idx(), bc_ele.region().id(), bc_ele->dim());
                 continue; // skip the boundary element
             }
             last_edge_idx=edges.size();
@@ -423,7 +423,7 @@ void Mesh::make_neighbours_and_edges()
             // for 1d boundaries there can be more then one 1d elements connected to the boundary element
             // we do not detect this case later in the main search over bulk elements
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect)  {
-                Element *elem = &(element_vec_[*isect]);
+                ElementAccessor<3> elem = this->element_accessor(*isect);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem->side(ecs);
                     if ( same_sides( si, side_nodes) ) {
@@ -432,18 +432,19 @@ void Mesh::make_neighbours_and_edges()
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
                             THROW( ExcDuplicateBoundary()
-                                    << EI_ElemLast(this->element_vec_[last_bc_ele_idx].id())
-                                    << EI_RegLast(this->element_vec_[last_bc_ele_idx].region().label())
-                                    << EI_ElemNew(this->element_vec_[new_bc_ele_idx].id())
-                                    << EI_RegNew(this->element_vec_[new_bc_ele_idx].region().label())
+                                    << EI_ElemLast(this->elem_index(last_bc_ele_idx))
+                                    << EI_RegLast(this->element_accessor(last_bc_ele_idx).region().label())
+                                    << EI_ElemNew(this->elem_index(new_bc_ele_idx))
+                                    << EI_RegNew(this->element_accessor(new_bc_ele_idx).region().label())
                                     );
                         }
                         elem->edge_idx_[ecs] = last_edge_idx;
                         edg->side_[ edg->n_sides++ ] = si;
 
                         if (elem->boundary_idx_ == NULL) {
-                            elem->boundary_idx_ = new unsigned int [ elem->n_sides() ];
-                            std::fill( elem->boundary_idx_, elem->boundary_idx_ + elem->n_sides(), Mesh::undef_idx);
+                        	Element *el = &(element_vec_[*isect]);
+                        	el->boundary_idx_ = new unsigned int [ el->n_sides() ];
+                            std::fill( el->boundary_idx_, el->boundary_idx_ + el->n_sides(), Mesh::undef_idx);
                         }
                         elem->boundary_idx_[ecs] = bdr_idx;
                         break; // next element in intersection list
@@ -487,7 +488,7 @@ void Mesh::make_neighbours_and_edges()
                     e->edge_idx_[s] = last_edge_idx;
 
                     if (e->boundary_idx_ == NULL) {
-                        e->boundary_idx_ = new unsigned int [ e->n_sides() ];
+                    	e->boundary_idx_ = new unsigned int [ e->n_sides() ];
                         std::fill( e->boundary_idx_, e->boundary_idx_ + e->n_sides(), Mesh::undef_idx);
                     }
 
@@ -687,7 +688,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
-        	IdxInt id = element_vec_[idx].id();
+        	IdxInt id = this->elem_index(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
@@ -696,7 +697,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=element_vec_.size()-boundary_size_; idx<element_vec_.size(); idx++, ++map_it) {
-        	IdxInt id = element_vec_[idx].id();
+        	IdxInt id = this->elem_index(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
@@ -813,7 +814,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
     {
         double jac = ele->tetrahedron_jacobian();
         if( ! (jac > 0) )
-            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->id(),jac);
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id,jac);
     }
 }
 

@@ -380,7 +380,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
                         ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
                         ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
                 );
-                scalars[node_index] += ele_pressure[mesh_->elem_index( ele->id() )] *
+                scalars[node_index] += ele_pressure[mesh_->elem_index( ele.idx() )] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
@@ -435,7 +435,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     ;
     int cit = 0;
     for (auto ele : mesh_->bulk_elements_range()) {
-        raw_output_file << fmt::format("{} {} ", ele->id(), ele_pressure[cit]);
+        raw_output_file << fmt::format("{} {} ", ele.idx(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
 
@@ -577,16 +577,16 @@ void l2_diff_local(ElementAccessor<3> &ele,
     }
 
 
-    result.velocity_diff[ result.dh->mesh_->elem_index( ele->id() ) ] = velocity_diff;
+    result.velocity_diff[ result.dh->mesh_->elem_index( ele.idx() ) ] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
-    	result.mask_vel_error += (result.velocity_mask[ result.dh->mesh_->elem_index( ele->id() ) ])? 0 : velocity_diff;
+    	result.mask_vel_error += (result.velocity_mask[ result.dh->mesh_->elem_index( ele.idx() ) ])? 0 : velocity_diff;
     }
 
-    result.pressure_diff[ result.dh->mesh_->elem_index( ele->id() ) ] = pressure_diff;
+    result.pressure_diff[ result.dh->mesh_->elem_index( ele.idx() ) ] = pressure_diff;
     result.pressure_error[dim-1] += pressure_diff;
 
-    result.div_diff[ result.dh->mesh_->elem_index( ele->id() ) ] = divergence_diff;
+    result.div_diff[ result.dh->mesh_->elem_index( ele.idx() ) ] = divergence_diff;
     result.div_error[dim-1] += divergence_diff;
 
 }

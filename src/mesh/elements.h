@@ -51,12 +51,8 @@ public:
 
 
     inline unsigned int dim() const;
-    inline unsigned int index() const;
     unsigned int n_sides() const; // Number of sides
     unsigned int n_nodes() const; // Number of nodes
-    
-    ///Gets ElementAccessor of this element
-    ElementAccessor<3> element_accessor() const;
     
     /// Computes the measure of the element.
     double measure() const;
@@ -83,12 +79,9 @@ public:
     unsigned int n_sides_by_dim(unsigned int side_dim);
     inline SideIter side(const unsigned int loc_index);
     inline const SideIter side(const unsigned int loc_index) const;
-    Region region() const;
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
-    int id() const;
-
     int pid; // Id # of mesh partition
 
     // Type specific data
@@ -140,6 +133,7 @@ public:
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
 
+    // TODO fix
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
 
@@ -147,7 +141,7 @@ protected:
     // Data readed from mesh file
     RegionIdx  region_idx_;
     unsigned int dim_;
-    int id_;
+    int id_;  // TODO fix
 
     friend class Mesh;
 

@@ -102,7 +102,7 @@ void Partitioning::make_element_connection_graph() {
 
     for (auto ele : mesh_->bulk_elements_range()) {
         // skip non-local elements
-        if ( !edistr.is_local(mesh_->elem_index( ele->id() )) )
+        if ( !edistr.is_local(mesh_->elem_index( ele.idx() )) )
             continue;
 
         // for all connected elements
@@ -111,11 +111,11 @@ void Partitioning::make_element_connection_graph() {
 
             FOR_EDGE_SIDES( edg, li ) {
             	OLD_ASSERT(edg->side(li)->valid(),"NULL side of edge.");
-                e_idx = mesh_->elem_index( edg->side(li)->element()->id() );
+                e_idx = mesh_->elem_index( edg->side(li)->element().idx() );
 
                 // for elements of connected elements, excluding element itself
-                if ( e_idx != mesh_->elem_index( ele->id() ) ) {
-                    graph_->set_edge(mesh_->elem_index( ele->id() ), e_idx);
+                if ( e_idx != mesh_->elem_index( ele.idx() ) ) {
+                    graph_->set_edge(mesh_->elem_index( ele.idx() ), e_idx);
                 }
             }
         }
@@ -126,9 +126,9 @@ void Partitioning::make_element_connection_graph() {
             for (i_neigh = 0; i_neigh < ele->n_neighs_vb; i_neigh++) {
                n_s = ele->neigh_vb[i_neigh]->edge()->n_sides;
                 for (i_s = 0; i_s < n_s; i_s++) {
-                   e_idx = mesh_->elem_index( ele->neigh_vb[i_neigh]->edge()->side(i_s)->element()->id() );
-                    graph_->set_edge(mesh_->elem_index( ele->id() ), e_idx);
-                    graph_->set_edge(e_idx, mesh_->elem_index( ele->id() ));
+                   e_idx = mesh_->elem_index( ele->neigh_vb[i_neigh]->edge()->side(i_s)->element().idx() );
+                    graph_->set_edge(mesh_->elem_index( ele.idx() ), e_idx);
+                    graph_->set_edge(e_idx, mesh_->elem_index( ele.idx() ));
                 }
             }
         }

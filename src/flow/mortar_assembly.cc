@@ -147,7 +147,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         //DebugOut() << print_var(cs) << print_var(isec_measure);
         cs_sqr_avg += cs*cs*isec_measure;
         isec_sum += isec_measure;
-        //DebugOut().fmt("Assembly23: {} {} {} ", ele->id(), slave_ac_.element_accessor()->id(), isec_measure);
+        //DebugOut().fmt("Assembly23: {} {} {} ", ele.idx(), slave_ac_.element_accessor()->id(), isec_measure);
         pressure_diff(slave_ac_, isec_measure);
     }
     if ( ! (slave_ac_.dim() == 2 && master_ac.dim() ==2 ) ) {
@@ -155,12 +155,12 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
             string out;
             for(auto & isec : isec_list) {
                 slave_ac_.reinit(isec.second->bulk_ele_idx());
-                out += fmt::format(" {}", slave_ac_.element_accessor()->id());
+                out += fmt::format(" {}", slave_ac_.element_accessor().idx());
             }
 
             double diff = (isec_sum - ele->measure())/ele->measure();
             WarningOut() << print_var(diff)
-                    << print_var(ele->id())
+                    << print_var(ele.idx())
                     << endl
                     << out;
 
@@ -186,7 +186,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
                 slave_ac_.reinit( quadrature_.slave_idx() );
                 double isec_measure = quadrature_.measure();
                 isec_sum += isec_measure;
-                //DebugOut().fmt("Assembly22: {} {} {}", ele->id(), slave_ac_.element_accessor()->id(), isec_measure);
+                //DebugOut().fmt("Assembly22: {} {} {}", ele.idx(), slave_ac_.element_accessor().idx(), isec_measure);
                 pressure_diff(slave_ac_, isec_measure);
         }
         pressure_diff(master_ac, -isec_sum);

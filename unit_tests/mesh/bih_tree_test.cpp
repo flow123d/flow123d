@@ -164,7 +164,7 @@ public:
 			vector<unsigned int> bf_result;
 			for (auto ele : mesh->bulk_elements_range()) {
 				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
-				if (box.intersect(ele->bounding_box()) ) bf_result.push_back( mesh->elem_index( ele->id() ) );
+				if (box.intersect(ele->bounding_box()) ) bf_result.push_back( mesh->elem_index( ele.idx() ) );
 			}
 
 			vector<unsigned int> result_vec;
@@ -174,9 +174,9 @@ public:
 			std::sort(result_vec.begin(), result_vec.end());
 
 			//cout << endl << "full search: " << endl;
-			//for(unsigned int i_el : bf_result) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : bf_result) cout << " " << this->mesh->element_accessor(i_el).idx();
 			//cout << endl << "bih search: " << endl;
-			//for(unsigned int i_el : result_vec) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : result_vec) cout << " " << this->mesh->element_accessor(i_el).idx();
 
 			ASSERT_EQ(bf_result.size(), result_vec.size());
 			for(unsigned int j=0; j< bf_result.size(); j++) {
@@ -195,7 +195,7 @@ public:
 
 			vector<unsigned int> bf_point_result;
 			for (auto ele : mesh->bulk_elements_range()) {
-				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back( mesh->elem_index( ele->id() ) );
+				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back( mesh->elem_index( ele.idx() ) );
 			}
 
 			vector<unsigned int> result_point_vec;
@@ -205,9 +205,9 @@ public:
 			std::sort(result_point_vec.begin(), result_point_vec.end());
 
 			//cout << endl << "full search: " << endl;
-			//for(unsigned int i_el : bf_point_result) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : bf_point_result) cout << " " << this->mesh->element_accessor(i_el).idx();
 			//cout << endl << "bih search: " << endl;
-			//for(unsigned int i_el : result_point_vec) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : result_point_vec) cout << " " << this->mesh->element_accessor(i_el).idx();
 
 			ASSERT_EQ(bf_point_result.size(), result_point_vec.size());
 			for(unsigned int j=0; j< bf_point_result.size(); j++) {
@@ -295,7 +295,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 
 	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
 	for(auto i_ele : insec_list) {
-		cout << "idx: " << i_ele << "id: " << mesh->element_accessor(i_ele)->id() << endl;
+		cout << "idx: " << i_ele << "id: " << mesh->element_accessor(i_ele).idx() << endl;
 	}
 
 	delete mesh;

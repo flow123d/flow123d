@@ -142,7 +142,7 @@ public:
     }
 
     Region region() const {
-        return ele->region();
+        return ele.region();
     }
 
     uint ele_global_idx() {
@@ -187,7 +187,7 @@ public:
     }
 
     uint side_global_idx(uint i) {
-        return dh->elem_side_to_global[ ele->index() ][ i ];
+        return dh->elem_side_to_global[ ele.index() ][ i ];
     }
 
     uint side_local_idx(uint i) {
