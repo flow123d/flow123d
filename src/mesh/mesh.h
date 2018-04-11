@@ -350,7 +350,7 @@ public:
     IntersectionSearch get_intersection_search();
 
     /// Maximal distance of observe point from Mesh relative to its size
-    double global_observe_radius() const;
+    double global_snap_radius() const;
 
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;

@@ -80,9 +80,10 @@ const IT::Record & Mesh::get_input_type() {
 	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
-		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
-					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
-					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
+		.declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
+					 "Maximal snapping distance from Mesh in various search operations. In particular is used "
+					 "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+					 "element in plan view (Z projection).")
 		.close();
 }
 
@@ -749,8 +750,8 @@ const BIHTree &Mesh::get_bih_tree() {
     return *bih_tree_;
 }
 
-double Mesh::global_observe_radius() const {
-	return in_record_.val<double>("global_observe_search_radius");
+double Mesh::global_snap_radius() const {
+	return in_record_.val<double>("global_snap_radius");
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
