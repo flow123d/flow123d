@@ -7,6 +7,7 @@ test_cases:
   - 10_include_csv.yaml
   - 11_time_unit_conversion.yaml
   - 12_time_unit_nested_equation.yaml
+  - 15_formula_surface_depth.yaml
 
 - files: 04_interpolated.yaml
   proc: [1, 2, 3]
