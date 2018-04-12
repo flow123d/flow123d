@@ -944,7 +944,7 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
             xdata->global_enriched_dofs()[0].resize(1);
             xdata->global_enriched_dofs()[1].resize(1);
         }
-        xdata->set_element(ele->index(), ele1d_global_idx);
+        xdata->set_element(ele->index());
         ele->xfem_data = xdata;
     }
     else{
@@ -954,7 +954,7 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
         ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMElementSingularData<dim> Type!");
     }
     
-    xdata->add_data(sing, sing_idx);
+    xdata->add_data(sing, sing_idx, ele1d_global_idx);
     
     //HACK for xfem without enriching:
     // shortcut when not enriching

@@ -49,13 +49,12 @@ public:
     { return ele_global_idx_;}
     
     ///Index of element intersecting this enriched element
-    unsigned int intersection_ele_global_idx() const
-    { return intersection_ele_global_idx_;}
+    unsigned int intersection_ele_global_idx(unsigned int local_enrichment_index) const
+    {   ASSERT_DBG(local_enrichment_index < n_enrichments());
+        return intersection_ele_global_indices_[local_enrichment_index];}
     
-    void set_element(int global_idx, int intersection_global_idx)
-    { ele_global_idx_ = global_idx;
-      intersection_ele_global_idx_ = intersection_global_idx;
-    }
+    void set_element(int global_idx)
+    { ele_global_idx_ = global_idx;}
     
     ///Returns number of wells comunicating with the cell
     unsigned int n_enrichments() const
@@ -110,7 +109,8 @@ protected:
     /// Index of element to which this data belongs to.
     unsigned int ele_global_idx_;
     
-    unsigned int intersection_ele_global_idx_;
+    /// Indices of (lower dimensional) elements that are sources of the enrichment.
+    std::vector<unsigned int> intersection_ele_global_indices_;
     
     ///global indices of the wells
     std::vector<unsigned int> global_enrichment_indices_;
@@ -182,10 +182,12 @@ public:
      * @param well_index is index of the well in the global vector of wells in model class
      */
     void add_data(EnrichmentPtr enrichment_func,
-                  unsigned int global_enrichment_index)
+                  unsigned int global_enrichment_index,
+                  unsigned int intersection_ele_global_idx)
     {
         enrichment_func_.push_back(enrichment_func);
         global_enrichment_indices_.push_back(global_enrichment_index);
+        intersection_ele_global_indices_.push_back(intersection_ele_global_idx);
     }
     
 //     void set_node_values(std::vector<std::map<int, double> > *node_vals,

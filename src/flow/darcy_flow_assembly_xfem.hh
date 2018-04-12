@@ -251,6 +251,7 @@ protected:
         int ndofs = ele_ac.get_dofs(dofs);
         
         loc_system_.reset(ndofs, ndofs);
+//         DBGVAR(ndofs);
         
 //         DBGCOUT("####################### DOFS\n");
         for(int i =0; i < ndofs; i++){
@@ -687,6 +688,9 @@ protected:
         double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
         double val;
         
+        // dof index of singularity in local system (only for enrichments which intersects element)
+        unsigned int loc_sing_dof = loc_edge_dofs[0] + loc_edge_dofs.size();
+        
         for(unsigned int w=0; w < xd->n_enrichments(); w++){
             if(xd->enrichment_intersects(w)){
                 auto sing = static_pointer_cast<Singularity<dim-2>>(xd->enrichment_func(w));
@@ -695,8 +699,7 @@ protected:
                 fe_values_rt_xfem_->reinit(ele, *xd, quad);
                 auto velocity = fe_values_rt_xfem_->vector_view(0);
 
-                unsigned int loc_sing_dof = loc_edge_dofs[0] + loc_edge_dofs.size() + w;
-    //             DBGVAR(loc_sing_dof);
+//                 DBGVAR(loc_sing_dof);
                 
                 // robin like condition with sigma
                 // well lagrange multiplier test function is 1
@@ -741,13 +744,16 @@ protected:
                 
 //                 DBGVAR(val);
                 int sing_row = ele_ac.sing_row(w);
-                int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx()];
+                int ele1d_row = ad_->mh_dh->row_4_el[xd->intersection_ele_global_idx(w)];
 //                 DBGVAR(sing_row);
 //                 DBGVAR(ele1d_row);
                 ad_->lin_sys->mat_set_value(sing_row, ele1d_row, val);
                 ad_->lin_sys->mat_set_value(ele1d_row, sing_row, val);
                 ad_->lin_sys->mat_set_value(sing_row, sing_row, -val);
                 ad_->lin_sys->mat_set_value(ele1d_row, ele1d_row, -val);
+                
+                // increment to next singularity which intersects the element
+                loc_sing_dof++;
             }
         }
     }
