@@ -68,11 +68,13 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
     if (update_flags & update_values)
     {
+        shape_values.clear();
         shape_values.resize(size, vector<double>(n_comp));
     }
 
     if (update_flags & update_gradients)
     {
+        shape_gradients.clear();
         shape_gradients.resize(size, vector<arma::vec::fixed<spacedim> >(n_comp));
     }
     
