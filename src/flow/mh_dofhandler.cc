@@ -614,7 +614,7 @@ std::shared_ptr<Singularity<0>> MH_DofHandler::create_sing<2>(IntersectionLocal<
     ElementFullIter bulk_ele = mesh_->element(il->bulk_ele_idx());
     //create singularity
     Space<3>::Point center = (*il)[0].coords(ele);
-    center.print(MessageOut(),"center");
+//     center.print(DebugOut(),"center");
     
     double radius = std::sqrt(cross_section/M_PI);
     DebugOut() << "radius " << radius << "\n";
@@ -637,19 +637,15 @@ std::shared_ptr<Singularity<1>> MH_DofHandler::create_sing<3>(IntersectionLocal<
 {
     DebugOut().fmt("intersection:  c {} b {}\n", il->component_ele_idx(), il->bulk_ele_idx());
     ElementFullIter ele = mesh_->element(il->component_ele_idx());
-    ElementFullIter bulk_ele = mesh_->element(il->bulk_ele_idx());
-    //create singularity
-    Space<3>::Point center = (*il)[0].coords(ele);
-    center.print(MessageOut(),"center");
     
+    //create singularity
     double radius = std::sqrt(cross_section/M_PI);
     DebugOut() << "radius " << radius << "\n";
     
     Space<3>::Point a = ele->node[0]->point();
     Space<3>::Point b = ele->node[1]->point();
-    a.print(MessageOut(),"pointA");
-    b.print(MessageOut(),"pointB");
-    DebugOut() << "radius " << radius << "\n";
+//     a.print(DebugOut(),"pointA");
+//     b.print(DebugOut(),"pointB");
     
     const unsigned int n_qpoints = 300;
     const unsigned int m_qpoints = 1000;
@@ -666,7 +662,7 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
                                       Field<3, FieldValue<3>::Scalar>& cross_section,
                                       Field<3, FieldValue<3>::Scalar>& sigma)
 {
-    DBGCOUT(<< "MH_DofHandler - create_singularities " << dim << "\n");
+    DBGCOUT(<< "MH_DofHandler - create_singularities " << dim << "d\n");
     //TODO:
     //- count different types of intersections inside InspectElements to be able to allocate other objects
     //- differ 1d-2d intersections: one point intersection in plane versus in 3D
@@ -795,7 +791,7 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
     for(auto& xdata : xfem_data){
         ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
         xdata.create_sing_quads(ele);
-        DBGVAR(xdata.n_enrichments_intersect());
+//         DBGVAR(xdata.n_enrichments_intersect());
 //         xdata.print(cout);
         ele->xfem_data = &xdata;
     }
@@ -948,9 +944,9 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
         ele->xfem_data = xdata;
     }
     else{
-        DBGCOUT(<< "existing XData\n");
+//         DBGCOUT(<< "existing XData\n");
         xdata = static_cast<XFEMElementSingularData<dim>*>(ele->xfem_data);
-        xdata->print(cout);
+//         xdata->print(cout);
         ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMElementSingularData<dim> Type!");
     }
     
@@ -985,7 +981,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
                                    int& new_enrich_node_idx
                                   )
 {   
-    DBGVAR(ele->index());
+//     DBGVAR(ele->index());
     // check flag at the element so element is checked only once
     if(mesh_flags_[ele->index()]) return;
     
@@ -1032,7 +1028,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
                                        int& new_enrich_node_idx)
 {   
     typedef Space<3>::Point Point;
-    DBGVAR(ele->index());
+//     DBGVAR(ele->index());
     // check flag at the element so element is checked only once
     if(mesh_flags_[ele->index()]) return;
     
@@ -1041,6 +1037,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
 //     bool enrich = true;
     
     bool enrich = false;
+    // enrich all other 3d elements intersecting the 1d
     auto& intersections = mesh_->mixed_intersections().element_intersections_[ele1d_global_idx];
     for(auto& il:intersections){
 //         DBGCOUT(<< il.first << "\n");
@@ -1056,10 +1053,10 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
             Point dp = geom.dist_vector(ele->node[i]->point());
             double d = arma::norm(dp,2);
             
-            DBGCOUT(<< d << "\n");
             // test distance to line
             if(d < radius){
                 
+//                 DebugOut().fmt("d: {} < enr_r: {}\n",d,radius);
                 Point p = ele->node[i]->point() - dp;
                 MappingP1<1,3> map;
                 arma::vec up = map.project_real_to_unit(p,map.element_map(mesh_->element[ele1d_global_idx]));
@@ -1087,6 +1084,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
     
     // front advancing enrichment of neighboring elements
     if(enrich){
+//         DebugOut() << "Enrich when intersecting.\n";
         enrich_ele(sing, singularities_13d_.size()-1, xfem_data_3d, ele1d_global_idx, ele, new_enrich_node_idx);
         
 //         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";

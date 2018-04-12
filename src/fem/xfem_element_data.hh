@@ -99,7 +99,7 @@ public:
      */
     unsigned int n_enrichments_intersect() const;
     
-    void print(std::ostream& out) const;
+//     void print(std::ostream& out) const;
 
 protected:
 ///iterator of the cell to which this data object belongs

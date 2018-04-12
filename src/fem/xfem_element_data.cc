@@ -50,9 +50,9 @@ unsigned int XFEMElementDataBase::n_enrichments_intersect() const
 }
 
 
-void XFEMElementDataBase::print(ostream& out) const
-{
-    out << this << "xdata: ele " << this->ele_global_idx_;
+// void XFEMElementDataBase::print(ostream& out) const
+// {
+//     out << this << "xdata: ele " << this->ele_global_idx_;
 //     out << " dofs[ ";
 // //     for(unsigned int q=0; q<global_enriched_dofs_.size(); q++)
 //     for(unsigned int q=0; q<2; q++)
@@ -61,7 +61,7 @@ void XFEMElementDataBase::print(ostream& out) const
 //                 out << global_enriched_dofs_[q][w][j] << " ";
 //             }
 //     out << "]\n";
-}
+// }
 
 
 
@@ -83,7 +83,6 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
     
     std::map<unsigned int, arma::vec> unit_points_inside;
     
-    DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
     for(unsigned int w=0; w < this->n_enrichments(); w++){
         const Geometry& geom = this->enrichment_func(w)->geometry();
         unit_points_inside.clear();
@@ -119,14 +118,16 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
         //determine if enrichment is cross-secting the element
         this->enrichment_intersects_[w] = (qxfem.size() > 0);
         
-        DBGCOUT(<< "quad[" << this->global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
-        
-//         if(qxfem.size() > 0){
+        //debug output
+        if(qxfem.size() > 0){
+            DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
+            DBGCOUT(<< "quad[" << this->global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
+            DBGVAR(this->n_enrichments_intersect());
 //             QXFEMFactory qfact;
 //             qfact.gnuplot_refinement<dim>(ele,
 //                                 FilePath("qxfem/", FilePath::output_file),
 //                                 qxfem);
-//         }
+        }
     }
 }
 
