@@ -1044,7 +1044,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
     auto& intersections = mesh_->mixed_intersections().element_intersections_[ele1d_global_idx];
     for(auto& il:intersections){
 //         DBGCOUT(<< il.first << "\n");
-        if(il.first = ele->index()){
+        if(il.first == ele->index()){
             enrich = true;
             break;
         }
