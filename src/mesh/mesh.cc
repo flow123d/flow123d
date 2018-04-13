@@ -83,6 +83,8 @@ const IT::Record & Mesh::get_input_type() {
 		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
 					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
 					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
+                .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
+                        "Output file with neighboring data from mesh.")
 		.close();
 }
 
@@ -113,6 +115,19 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 	    in_record_ = reader.get_root_interface<Input::Record>();
 	}
 
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0) {
+            // optionally open raw output file
+            FilePath raw_output_file_path;
+            if (in_record_.opt_val("raw_ngh_output", raw_output_file_path)) {
+            	MessageOut() << "Opening raw ngh output: " << raw_output_file_path << "\n";
+            	try {
+            		raw_output_file_path.open_stream(raw_ngh_output_file);
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (in_record_))
+            }
+
+        }
 	reinit(in_record_);
 }
 
@@ -272,6 +287,8 @@ void Mesh::setup_topology() {
     part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
 
     delete[] id_4_old;
+    
+    output_internal_ngh_data();
 }
 
 
@@ -818,6 +835,92 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 	}
 	return node_elements_;
 }
+
+
+/*
+ * Output of internal flow data.
+ */
+void Mesh::output_internal_ngh_data()
+{
+    START_TIMER("Mesh::output_internal_ngh_data");
+
+    if (! raw_ngh_output_file.is_open()) return;
+    
+    // header
+    raw_ngh_output_file <<  "// fields:\n//ele_id    n_sides    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
+    raw_ngh_output_file <<  fmt::format("{}\n" , n_elements());
+
+    int cit = 0;
+    
+    // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
+    unsigned int undefined_ele_id = -1;
+    std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
+    FOR_ELEMENTS( this,  ele ) {
+        if(ele->n_neighs_vb > 0){
+            for (unsigned int i = 0; i < ele->n_neighs_vb; i++){
+                ElementFullIter higher_ele = ele->neigh_vb[i]->side()->element();
+                
+                auto search = neigh_vb_map.find(higher_ele->id());
+                if(search != neigh_vb_map.end()){
+                    // if found, add id to correct local side idx
+                    search->second[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
+                }
+                else{
+                    // if not found, create new vector, each side can have one vb neighbour
+                    std::vector<unsigned int> higher_ele_side_ngh(higher_ele->n_sides(), undefined_ele_id);
+                    higher_ele_side_ngh[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
+                    neigh_vb_map[higher_ele->id()] = higher_ele_side_ngh;
+                }
+            }
+        }
+    }
+    
+    FOR_ELEMENTS( this,  ele ) {
+        raw_ngh_output_file << ele.id() << " ";
+        raw_ngh_output_file << ele->n_sides() << " ";
+        
+        auto search_neigh = neigh_vb_map.end();
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            unsigned int n_side_neighs = ele->side(i)->edge()->n_sides-1;  //n_sides - the current one
+            // check vb neighbors (lower dimension)
+            if(n_side_neighs == 0){
+                //update search
+                if(search_neigh == neigh_vb_map.end())
+                    search_neigh = neigh_vb_map.find(ele->id());
+                
+                if(search_neigh != neigh_vb_map.end())
+                    if(search_neigh->second[i] != undefined_ele_id)
+                        n_side_neighs = 1;
+            }
+            raw_ngh_output_file << n_side_neighs << " ";
+        }
+        
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            Edge* edge = ele->side(i)->edge();
+            if(ele->side(i)->edge()->n_sides > 1){
+                for (int j = 0; j < edge->n_sides; j++) {
+                    if(edge->side(j) != ele->side(i))
+                        raw_ngh_output_file << edge->side(j)->element()->id() << " ";
+                }
+            }
+            //check vb neighbour
+            else if(search_neigh != neigh_vb_map.end()
+                    && search_neigh->second[i] != undefined_ele_id){
+                raw_ngh_output_file << search_neigh->second[i] << " ";
+            }
+        }
+        
+        // list higher dim neighbours
+        raw_ngh_output_file << ele->n_neighs_vb << " ";
+        for (unsigned int i = 0; i < ele->n_neighs_vb; i++)
+            raw_ngh_output_file << ele->neigh_vb[i]->side()->element()->id() << " ";
+        
+        raw_ngh_output_file << endl;
+        cit ++;
+    }
+    raw_ngh_output_file << "$EndFlowField\n" << endl;
+}
+
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

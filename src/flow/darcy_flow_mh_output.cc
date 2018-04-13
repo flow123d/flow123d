@@ -69,7 +69,7 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
         .declare_key("python_solution", it::FileName::input(), it::Default::optional(),
                         "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
-                        "Output file with raw data form MH module.")
+                        "Output file with raw data from MH module.")
         .close();
 }
 
@@ -179,12 +179,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             // optionally open raw output file
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
             	try {
             		raw_output_file_path.open_stream(raw_output_file);
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
-
         }
     }
 }
@@ -236,7 +235,9 @@ void DarcyFlowMHOutput::output()
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
+        {
                   output_internal_flow_data();
+        }
 
         if (compute_errors_) compute_l2_difference();
     }
@@ -469,26 +470,21 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
+    
     FOR_ELEMENTS( mesh_,  ele ) {
         raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
 
         raw_output_file << ele->n_sides() << " ";
-        std::vector< std::vector<unsigned int > > old_to_new_side =
-        { {0, 1},
-          {0, 1, 2},
-          {0, 1, 2, 3}
-        };
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            raw_output_file << dh.side_scalar( *(ele->side(i_new_side) ) ) << " ";
-        }
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            raw_output_file << dh.side_flux( *(ele->side(i_new_side) ) ) << " ";
-        }
 
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
+        }
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
+        }
+        
         raw_output_file << endl;
         cit ++;
     }
@@ -935,4 +931,5 @@ void DarcyFlowMHOutput::compute_l2_difference() {
         << "sing LP: " << result.dh->mh_solution[result.dh->row_4_sing[0]];
     }
 }
+
 

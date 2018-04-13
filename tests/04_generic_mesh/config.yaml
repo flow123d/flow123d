@@ -1,0 +1,3 @@
+common_config:
+  proc: [1, 2]
+  memory_limit: 1000

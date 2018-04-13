@@ -400,7 +400,14 @@ private:
     static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
 
     //TODO: implement for 1d and 2d
-    static const IdxVector<(n_lines > n_nodes) ? n_lines : n_nodes> topology_zeros_[dim+1];   ///< Maps the zero mask of the barycentric coordinates to topology indices.
+    /**
+     * Consider an n-face (node, edge, face, bulk) with dimension `subdim` and
+     * index within subdimension `idx`. Barycentric coordinates of all points
+     * on the n-face have unique pattern of zero coordinates.
+     *
+     * topology_zeros_[subdim][idx] is a bitfield with '1' where the pattern have zeros.
+     */
+    static const IdxVector<(n_lines > n_nodes) ? n_lines : n_nodes> topology_zeros_[dim+1];
 };
 
 
@@ -427,6 +434,7 @@ template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_sid
 template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side];
 template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side];
 
+template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
 template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
 template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
 
