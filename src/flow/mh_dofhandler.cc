@@ -105,7 +105,7 @@ void MH_DofHandler::prepare_parallel() {
     id_4_old = new IdxInt[mesh_->n_edges()];
     {
         loc_i = 0;
-        FOR_EDGES(mesh_, edg ) {
+        for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
             unsigned int i_edg = edg - mesh_->edges.begin();
             // partition
             e_idx = mesh_->elem_index(edg->side(0)->element().idx());
@@ -141,16 +141,17 @@ void MH_DofHandler::prepare_parallel() {
     {
         int is = 0;
         loc_i = 0;
-        FOR_SIDES(mesh_, side ) {
-            // partition
-            if (init_side_ds.is_local(is)) {
-                // find (new) proc of the element of the side
-                loc_part[loc_i++] = el_ds->get_proc(
-                        row_4_el[mesh_->elem_index(side->element().idx())]);
+    	for (auto ele : mesh_->bulk_elements_range())
+            for(SideIter side = ele->side(0); side->side_idx() < ele->n_sides(); ++side) {
+                // partition
+                if (init_side_ds.is_local(is)) {
+                    // find (new) proc of the element of the side
+                    loc_part[loc_i++] = el_ds->get_proc(
+                            row_4_el[mesh_->elem_index(side->element().idx())]);
+                }
+                // id array
+                id_4_old[is++] = side_dof( side );
             }
-            // id array
-            id_4_old[is++] = side_dof( side );
-        }
     }
 
     Partitioning::id_maps(mesh_->n_sides(), id_4_old, init_side_ds, loc_part, side_ds,

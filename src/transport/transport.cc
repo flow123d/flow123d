@@ -355,7 +355,7 @@ void ConvectionTransport::set_boundary_conditions()
         if (elm->boundary_idx_ != NULL) {
         	IdxInt new_i = row_4_el[mesh_->elem_index( elm.idx() )];
 
-            FOR_ELEMENT_SIDES(elm,si) {
+        	for (unsigned int si=0; si<elm->n_sides(); si++) {
                 Boundary *b = elm->side(si)->cond();
                 if (b != NULL) {
                     double flux = mh_dh->side_flux( *(elm->side(si)) );
@@ -718,8 +718,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementAccessor<3> el2;
     ElementAccessor<3> elm;
     struct Edge *edg;
-    unsigned int n;
-    int s, j, np, rank;
+    int j, np, rank;
     IdxInt new_j, new_i;
     double aij, aii;
         
@@ -736,7 +735,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         elm = mesh_->element_accessor( el_4_loc[loc_el] );
         new_i = row_4_el[mesh_->elem_index( elm.idx() )];
 
-        FOR_ELEMENT_SIDES(elm,si) {
+        for (unsigned int si=0; si<elm->n_sides(); si++) {
             // same dim
             flux = mh_dh->side_flux( *(elm->side(si)) );
             if (elm->side(si)->cond() == NULL) {
@@ -746,7 +745,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                    flux2 = mh_dh->side_flux( *(edg->side(s)) );
                    if ( flux2 > 0)  edg_flux+= flux2;
                  }
-                 FOR_EDGE_SIDES(edg,s)
+                 for(unsigned int s=0; s<edg->n_sides; s++)
                     // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                     // These edges on these sides should have just one side
                     if (edg->side(s) != elm->side(si)) {
@@ -764,7 +763,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
               aii -= (flux / elm->measure() );
         }  // end same dim     //ELEMENT_SIDES
 
-        FOR_ELM_NEIGHS_VB(elm,n) // comp model
+        for (unsigned int n=0; n<elm->n_neighs_vb; n++) // comp model
             {
                 el2 = mesh_->element_accessor( mesh_->elem_index( elm->neigh_vb[n]->side()->element().idx() ) ); // higher dim. el.
                 ASSERT( el2.idx() != elm.idx() ).error("Elm. same\n");

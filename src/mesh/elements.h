@@ -151,13 +151,6 @@ protected:
 };
 
 
-
-
-#define FOR_ELEMENT_NODES(i,j)  for((j)=0;(j)<(i)->n_nodes();(j)++)
-#define FOR_ELEMENT_SIDES(i,j)  for(unsigned int j=0; j < (i)->n_sides(); j++)
-#define FOR_ELM_NEIGHS_VB(i,j)  for((j)=0;(j)<(i)->n_neighs_vb;(j)++)
-
-
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

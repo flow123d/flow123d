@@ -93,7 +93,7 @@ void Partitioning::make_element_connection_graph() {
     Distribution edistr = graph_->get_distr();
 
     Edge *edg;
-    int li, e_idx;
+    int e_idx;
     unsigned int i_neigh;
     int i_s, n_s;
 
@@ -106,11 +106,11 @@ void Partitioning::make_element_connection_graph() {
             continue;
 
         // for all connected elements
-        FOR_ELEMENT_SIDES( ele, si ) {
+        for (unsigned int si=0; si<ele->n_sides(); si++) {
             edg = ele->side(si)->edge();
 
-            FOR_EDGE_SIDES( edg, li ) {
-            	OLD_ASSERT(edg->side(li)->valid(),"NULL side of edge.");
+            for (unsigned int li=0; li<edg->n_sides; li++) {
+            	ASSERT(edg->side(li)->valid()).error("NULL side of edge.");
                 e_idx = mesh_->elem_index( edg->side(li)->element().idx() );
 
                 // for elements of connected elements, excluding element itself

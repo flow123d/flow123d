@@ -212,7 +212,7 @@ void Balance::lazy_initialize()
         ElementAccessor<3> elm = const_cast<Mesh *>(mesh_)->element_accessor( mesh_->get_el_4_loc()[loc_el] );
         if (elm->boundary_idx_ != nullptr)
         {
-            FOR_ELEMENT_SIDES(elm,si)
+        	for(unsigned int si=0; si<elm->n_sides(); si++)
             {
                 Boundary *b = elm->side(si)->cond();
                 if (b != nullptr)

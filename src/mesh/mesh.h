@@ -69,21 +69,6 @@ template <int spacedim> class ElementAccessor;
         i != (_mesh_)->node_vector.end(); \
         ++i)
 
-/**
- * Macro for conversion form Iter to FullIter for nodes.
- */
-#define NODE_FULL_ITER(_mesh_,i) \
-    (_mesh_)->node_vector.full_iter(i)
-
-/**
- * Macro to get "NULL" NodeFullIter.
- */
-#define NODE_FULL_ITER_NULL(_mesh_) \
-    NodeFullIter((_mesh_)->node_vector)
-
-#define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
-#define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
-
 
 /// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
 typedef int IdxInt;
@@ -510,19 +495,6 @@ private:
 
 #include "mesh/side_impl.hh"
 #include "mesh/element_impls.hh"
-
-/**
- * Provides for statement to iterate over the Edges of the Mesh.
- */
-#define FOR_EDGES(_mesh_,__i) \
-    for( vector<Edge>::iterator __i = (_mesh_)->edges.begin(); \
-        __i !=(_mesh_)->edges.end(); \
-        ++__i)
-
-#define FOR_SIDES(_mesh_, it) \
-	for (auto ele : (_mesh_)->bulk_elements_range())  \
-        for(SideIter it = ele->side(0); it->side_idx() < ele->n_sides(); ++it)
-
 
 #endif
 //-----------------------------------------------------------------------------

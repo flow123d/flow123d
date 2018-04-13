@@ -1292,7 +1292,7 @@ void TransportDG<Model>::set_boundary_conditions()
         ElementAccessor<3> elm = Model::mesh_->element_accessor( feo->dh()->el_index(loc_el) );
         if (elm->boundary_idx_ == nullptr) continue;
 
-        FOR_ELEMENT_SIDES(elm,si)
+        for (unsigned int si=0; si<elm->n_sides(); si++)
         {
             Edge *edg = elm->side(si)->edge();
             if (edg->n_sides > 1) continue;

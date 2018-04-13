@@ -202,7 +202,7 @@ void OutputMesh::create_mesh()
     		1, n_connectivities);
     auto &connect_vec = *( connectivity_->get_component_data(0).get() );
     for (auto ele : orig_mesh_->bulk_elements_range()) {
-        FOR_ELEMENT_NODES(ele, li) {
+    	for (li=0; li<ele->n_nodes(); li++) {
             node = ele->node[li];
             connect_vec[connect_id] = node->aux;
             connect_id++;
@@ -290,7 +290,7 @@ void OutputMeshDiscontinuous::create_mesh()
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
     Node* node;
     for (auto ele : orig_mesh_->bulk_elements_range()) {
-        FOR_ELEMENT_NODES(ele, li)
+    	for (li=0; li<ele->n_nodes(); li++)
         {
             node = ele->node[li];
             node_vec[coord_id] = node->getX();  ++coord_id;
@@ -338,7 +338,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
         aux_ele.level = 0;
         
         Node* node; unsigned int li;
-        FOR_ELEMENT_NODES(ele, li) {
+        for (li=0; li<ele->n_nodes(); li++) {
             node = ele->node[li];
             aux_ele.nodes[li] = node->point();
         }
@@ -586,7 +586,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	Node* node;
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
 		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
-        FOR_ELEMENT_NODES(ele, li)
+		for (li=0; li<ele->n_nodes(); li++)
         {
             node = ele->node[li];
             node_vec[coord_id] = node->getX();  ++coord_id;

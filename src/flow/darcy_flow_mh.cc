@@ -594,7 +594,7 @@ void DarcyMH::postprocess()
     /*
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         ele = mesh_->element_accessor(el_4_loc[i_loc]);
-        FOR_ELEMENT_SIDES(ele,i) {
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
             side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele_ac.side(i) ) ];
             values[i] = -1.0 * ele_ac.measure() *
               data.cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) *
@@ -769,10 +769,10 @@ void DarcyMH::allocate_mh_matrix()
 /*
     // alloc edge diagonal entries
     if(rank == 0)
-    FOR_EDGES(mesh_, edg){
+    for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
         int edg_idx = mh_dh.row_4_edge[edg->side(0)->edge_idx()];
         
-//        FOR_EDGES(mesh_, edg2){
+//        for( vector<Edge>::iterator edg2 = mesh_->edges.begin(); edg2 != mesh_->edges.end(); ++edg2){
 //            int edg_idx2 = mh_dh.row_4_edge[edg2->side(0)->edge_idx()];
 //            if(edg_idx == edg_idx2){
 //                 DBGCOUT(<< "P[ " << rank << " ] " << "edg alloc: " << edg_idx << "  " << edg_idx2 << "\n");
@@ -1008,7 +1008,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
             case 3: h3 = std::min(h3,ele->measure()); break;
         }
         
-        FOR_ELEMENT_SIDES(ele,j){
+        for (unsigned int j=0; j<ele->n_sides(); j++) {
             switch(ele->dim()){
                 case 2: he2 = std::min(he2, ele->side(j)->measure()); break;
                 case 3: he3 = std::min(he3, ele->side(j)->measure()); break;
@@ -1064,7 +1064,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         isegn.push_back( ele_ac.ele_global_idx() );
         int nne = 0;
 
-        FOR_ELEMENT_SIDES(ele_ac.element_accessor(), si) {
+        for (unsigned int si=0; si<ele_ac.element_accessor()->n_sides(); si++) {
             // insert local side dof
             int side_row = ele_ac.side_row(si);
             arma::vec3 coord = ele_ac.side(si)->centre();
@@ -1081,7 +1081,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         inet.push_back( el_row );
         nne++;
 
-        FOR_ELEMENT_SIDES(ele_ac.element_accessor(), si) {
+        for (unsigned int si=0; si<ele_ac.element_accessor()->n_sides(); si++) {
             // insert local edge dof
             int edge_row = ele_ac.edge_row(si);
             arma::vec3 coord = ele_ac.side(si)->centre();
@@ -1237,7 +1237,7 @@ void DarcyMH::make_serial_scatter() {
             loc_idx = new int [size];
             i = 0;
             for (auto ele : mesh_->bulk_elements_range()) {
-                FOR_ELEMENT_SIDES(ele,si) {
+            	for (unsigned int si=0; si<ele->n_sides(); si++) {
                     loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
                 }
             }

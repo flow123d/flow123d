@@ -76,7 +76,7 @@ public:
     void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
-        FOR_ELEMENT_SIDES(ele.element_accessor(), i) {
+        for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
             double phead = ad_->phead_edge_[ele.edge_local_idx(i)];
@@ -103,7 +103,7 @@ public:
         if (genuchten_on) {
             conductivity=0;
             head=0;
-            FOR_ELEMENT_SIDES(ele.element_accessor(), i)
+            for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
                 uint local_edge = ele.edge_local_idx(i);
                 double phead = ad_->phead_edge_[local_edge];
@@ -134,7 +134,7 @@ public:
         double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
         update_water_content(ele);
-        FOR_ELEMENT_SIDES(ele.element_accessor(), i)
+        for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
 
             uint local_edge = ele.edge_local_idx(i);

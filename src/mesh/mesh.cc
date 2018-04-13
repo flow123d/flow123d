@@ -226,7 +226,7 @@ unsigned int Mesh::n_vb_neighbours() const {
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;
     for (auto ele : this->bulk_elements_range()) {
-        FOR_ELEMENT_NODES(ele, li) {
+    	for (li=0; li<ele->n_nodes(); li++) {
             count++;
         }
     }
@@ -304,10 +304,11 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-    FOR_SIDES(this,  sde ) {
-        if (sde->is_external()) n_exsides++;
-        else n_insides++;
-    }
+	for (auto ele : this->bulk_elements_range())
+        for(SideIter sde = ele->side(0); sde->side_idx() < ele->n_sides(); ++sde) {
+            if (sde->is_external()) n_exsides++;
+            else n_insides++;
+        }
 }
 
 
@@ -817,8 +818,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	ele->init(dim, elm_id, this, region_idx);
 	ele->pid = partition_id;
 
-	unsigned int ni;
-	FOR_ELEMENT_NODES(ele, ni) {
+	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
 		unsigned int node_id = node_ids[ni];
 		NodeIter node = node_vector.find_id( node_id );
 		INPUT_CHECK( node != node_vector.end(),

@@ -73,7 +73,7 @@ void Element::init(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg) {
     boundary_idx_ = NULL;
     permutation_idx_ = new unsigned int[n_sides()];
 
-    FOR_ELEMENT_SIDES(this, si) {
+    for (unsigned int si=0; si<this->n_sides(); si++) {
         edge_idx_[ si ]=Mesh::undef_idx;
         permutation_idx_[si] = Mesh::undef_idx;
     }
@@ -130,12 +130,10 @@ double Element::tetrahedron_jacobian() const
  */
 
 arma::vec3 Element::centre() const {
-    unsigned int li;
-
     arma::vec3 centre;
     centre.zeros();
 
-    FOR_ELEMENT_NODES(this, li) {
+    for (unsigned int li=0; li<this->n_nodes(); li++) {
         centre += node[ li ]->point();
     }
     centre /= (double) n_nodes();

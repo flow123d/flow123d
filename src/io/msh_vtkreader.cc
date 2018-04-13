@@ -487,7 +487,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
                 ElementAccessor<3> ele = mesh.element_accessor( *it );
-                FOR_ELEMENT_NODES(ele, i_node)
+                for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
                     if ( compare_points(ele->node[i_node]->point(), point) ) {
                     	i_elm_node = mesh.node_vector.index(ele->node[i_node]);
