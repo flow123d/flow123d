@@ -109,9 +109,6 @@ private:
     /// Accessor to Input::Record
     Input::Record in_rec_;
 
-    /// Default value of surface depth. Used if no intersection is found.
-    double max_depth_;
-
     /// Surface depth object calculate distance from surface.
     std::shared_ptr<SurfaceDepth> surface_depth_;
 

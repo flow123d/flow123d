@@ -32,7 +32,17 @@ class SurfaceDepth
 public:
 	/// Declaration of exceptions
 	TYPEDEF_ERR_INFO( EI_Message, const std::string);
+	TYPEDEF_ERR_INFO( EI_RegionName, const std::string);
+	TYPEDEF_ERR_INFO( EI_FieldTime, double);
+	TYPEDEF_ERR_INFO( EI_Xcoord, double);
+	TYPEDEF_ERR_INFO( EI_Ycoord, double);
+	TYPEDEF_ERR_INFO( EI_Zcoord, double);
+	TYPEDEF_ERR_INFO( EI_SnapDistance, double);
     DECLARE_INPUT_EXCEPTION(ExcSurfaceProjection, << EI_Message::val );
+    DECLARE_INPUT_EXCEPTION(ExcTooLargeSnapDistance, << "Distance of projected point during calculation of surface depth is larger "
+    		<< "than the global snap radius limit!\nRegion: " << EI_RegionName::qval << ", time: " << EI_FieldTime::val
+			<< ", coordinates of projected point: [" << EI_Xcoord::val << ", " << EI_Ycoord::val << ", " << EI_Zcoord::val
+			<< "], distance of nearest element: " << EI_SnapDistance::val );
 
     /**
 	 * Constructor
@@ -60,6 +70,12 @@ protected:
 
 	/// vector of nodes coordinates of elements above which BIH tree is created
 	std::vector<arma::mat> nodes_coords_;
+
+	/// Projection search radius given from global_snap_radius of mesh
+	double projection_search_radius_;
+
+	/// Surface region name (need for exception)
+	std::string surface_region_;
 };
 
 #endif /* SURFACE_DEPTH_HH_ */

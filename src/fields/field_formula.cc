@@ -53,9 +53,6 @@ const Input::Type::Record & FieldFormula<spacedim, Value>::get_input_type()
 			.declare_key("surface_region", it::String(), it::Default::optional(),
 										"The name of region set considered as the surface. You have to set surface region if you "
 										"want to use formula variable ```d```.")
-			.declare_key("max_depth", it::Double(0.0), it::Default("1e06"),
-										"Maximal value of surface depth. If no intersection is found or computed depth is greater, "
-										"we use this value.")
 	        .allow_auto_conversion("value")
 			.close();
 }
@@ -185,7 +182,6 @@ void FieldFormula<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_dom
     std::string surface_region;
     if ( in_rec_.opt_val("surface_region", surface_region) ) {
         surface_depth_ = std::make_shared<SurfaceDepth>(mesh, surface_region, in_rec_.val<std::string>("surface_direction"));
-        max_depth_ = in_rec_.val<double>("max_depth");
     }
 }
 
@@ -235,7 +231,13 @@ inline arma::vec FieldFormula<spacedim, Value>::eval_depth_var(const Point &p)
 		// add value of depth
 		arma::vec p_depth(spacedim+1);
 		p_depth.subvec(0,spacedim-1) = p;
-		p_depth(spacedim) = std::min( surface_depth_->compute_distance(p), max_depth_ );
+		try {
+			p_depth(spacedim) = surface_depth_->compute_distance(p);
+		} catch (SurfaceDepth::ExcTooLargeSnapDistance &e) {
+			e << SurfaceDepth::EI_FieldTime(this->time_.end());
+			e << in_rec_.ei_address();
+			throw;
+		}
 		return p_depth;
 	} else {
 		return p;

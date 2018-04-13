@@ -24,9 +24,10 @@
 
 
 SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction)
-{
+: surface_region_(surface_region) {
     this->create_projection_matrix( arma::vec3(surface_direction) );
     this->construct_bih_tree( const_cast<Mesh*>(mesh), surface_region);
+    this->projection_search_radius_ = mesh->global_snap_radius();
 }
 
 
@@ -96,10 +97,25 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     bih_tree_.construct();
 }
 
+double distance_from_abscissa(arma::vec3 a, arma::vec3 b, arma::vec3 &p)
+{
+	arma::vec3 u = b-a;
+	double d = - arma::dot( u, p );
+	double t = - ( a(0)*u(0) + a(1)*u(1) + a(2)*u(2) + d) / ( u(0)*u(0) + u(1)*u(1) + u(2)*u(2) );
+	if (t<0.0) t=0.0;
+	else if (t>1.0) t=1.0;
+
+	arma::vec3 insec;
+	for (unsigned int i=0;i<3;++i) insec(i) = a(i) + u(i) * t;
+	return arma::norm( (insec-p), 2 );
+}
+
 double SurfaceDepth::compute_distance(arma::vec3 point)
 {
 	double distance = std::numeric_limits<double>::max();
+	double snap_dist = std::numeric_limits<double>::max();
 	arma::vec3 project_point;
+	arma::vec3 proj_to_surface_plane;
 	project_point.subvec(0,1) = m_ * point;
 	project_point(2) = 0;
 
@@ -119,8 +135,23 @@ double SurfaceDepth::compute_distance(arma::vec3 point)
 		arma::solve(x, a_mat, b_vec);
 		if ( (x(0)>=0) && (x(1)>=0) && (x(0)+x(1)<=1) ) { // point is in triangle
 			double new_distance = -x(2);
-			if ( (new_distance>=0) && (new_distance<distance) ) distance = new_distance;
+			if ( (new_distance>=0) && (new_distance<distance) || (snap_dist>0.0) ) distance = new_distance;
+			snap_dist = 0.0;
+		} else if (snap_dist > 0.0) { // check snap distance of point from triangle
+			proj_to_surface_plane = point - x(2)*surface_norm_vec_;
+			double new_snap_dist = distance_from_abscissa( coords.col(0), coords.col(1), proj_to_surface_plane );
+			new_snap_dist = std::min(new_snap_dist, distance_from_abscissa( coords.col(0), coords.col(2), proj_to_surface_plane ) );
+			new_snap_dist = std::min(new_snap_dist, distance_from_abscissa( coords.col(1), coords.col(2), proj_to_surface_plane ) );
+			if (new_snap_dist<snap_dist) {
+				snap_dist = new_snap_dist;
+				distance = -x(2);
+			}
 		}
+	}
+
+	if (snap_dist > projection_search_radius_) {
+        THROW(ExcTooLargeSnapDistance() << EI_Xcoord(proj_to_surface_plane(0)) << EI_Ycoord(proj_to_surface_plane(1))
+        		<< EI_Zcoord(proj_to_surface_plane(2)) << EI_SnapDistance(snap_dist) << EI_RegionName(surface_region_) );
 	}
 
 	return distance;
