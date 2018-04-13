@@ -433,6 +433,9 @@ protected:
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
     unsigned int max_edge_sides_[3];
 
+    /// Output of neighboring data into raw output.
+    void output_internal_ngh_data();
+    
     /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
@@ -500,6 +503,8 @@ private:
     IdxInt *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+        
+    ofstream raw_ngh_output_file;
 };
 
 
