@@ -22,7 +22,7 @@
 #include "system/system.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "element_impls.hh"
+#include "elements.h"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"

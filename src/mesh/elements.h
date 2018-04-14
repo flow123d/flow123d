@@ -30,10 +30,13 @@
 #include "mesh/ref_element.hh"                 // for RefElement
 #include "mesh/region.hh"                      // for RegionIdx, Region
 #include "system/asserts.hh"                   // for Assert, ASSERT
+#include "sides.h"
+#include "mesh/mesh.h"
+#include "side_impl.hh"
 
-class Mesh;
+//class Mesh;
 class Neighbour;
-class SideIter;
+//class SideIter;
 template <int spacedim> class ElementAccessor;
 
 
@@ -151,6 +154,28 @@ protected:
 };
 
 
+inline unsigned int Element::dim() const {
+    return dim_;
+}
+
+
+inline unsigned int Element::n_nodes() const {
+    return dim()+1;
+}
+
+
+
+inline unsigned int Element::n_sides() const {
+    return dim()+1;
+}
+
+inline SideIter Element::side(const unsigned int loc_index) {
+    return SideIter( Side(mesh_, id_, loc_index) ); // TODO: fix
+}
+
+inline const SideIter Element::side(const unsigned int loc_index) const {
+    return SideIter( Side(mesh_, id_, loc_index) ); // TODO: fix
+}
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:
