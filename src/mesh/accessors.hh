@@ -124,6 +124,14 @@ public:
         dim_=element()->dim();
     }
 
+    inline SideIter side(const unsigned int loc_index) {
+        return SideIter( Side(mesh_, element_idx_, loc_index) );
+    }
+
+    inline const SideIter side(const unsigned int loc_index) const {
+        return SideIter( Side(mesh_, element_idx_, loc_index) );
+    }
+
     bool operator==(const ElementAccessor<spacedim>& other) {
     	return (element_idx_ == other.element_idx_);
     }

@@ -215,7 +215,7 @@ void Balance::lazy_initialize()
         {
         	for(unsigned int si=0; si<elm->n_sides(); si++)
             {
-                Boundary *b = elm->side(si)->cond();
+                Boundary *b = elm.side(si)->cond();
                 if (b != nullptr)
                 	be_regions_.push_back(b->region().boundary_idx());
             }

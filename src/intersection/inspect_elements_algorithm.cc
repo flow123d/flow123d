@@ -561,7 +561,7 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>
             }
             // CASE B: incompatible neighboring with lower dim element
             else {
-                Edge* edg = bulk_ele->side(sid)->edge();
+                const Edge* edg = bulk_ele.side(sid)->edge();
                 if(edg->n_sides > 1){
                     //set n_sides duplicities
                     is.set_duplicities(edg->n_sides);
@@ -846,7 +846,7 @@ void InspectElementsAlgorithm22::create_component_numbering()
                 queue.pop();
                 const ElementAccessor<3>& elm = mesh->element_accessor( ele_idx );
                 for(unsigned int sid=0; sid < elm->n_sides(); sid++) {
-                    Edge* edg = elm->side(sid)->edge();
+                    const Edge* edg = elm.side(sid)->edge();
 
                     for(int j=0; j < edg->n_sides;j++) {
                         uint neigh_idx = edg->side(j)->element().index();

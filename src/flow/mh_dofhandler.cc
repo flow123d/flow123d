@@ -126,7 +126,7 @@ void MH_DofHandler::prepare_parallel() {
     for (unsigned int i_el_loc = 0; i_el_loc < el_ds->lsize(); i_el_loc++) {
         auto ele = mesh_->element_accessor( el_4_loc[i_el_loc] );
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int mesh_edge_idx= ele->side(i)->edge_idx();
+            unsigned int mesh_edge_idx= ele.side(i)->edge_idx();
             if ( edge_new_local_4_mesh_idx_.count(mesh_edge_idx) == 0 )
                 // new local edge
                 edge_new_local_4_mesh_idx_[mesh_edge_idx] = loc_edge_idx++;
@@ -142,7 +142,7 @@ void MH_DofHandler::prepare_parallel() {
         int is = 0;
         loc_i = 0;
     	for (auto ele : mesh_->bulk_elements_range())
-            for(SideIter side = ele->side(0); side->side_idx() < ele->n_sides(); ++side) {
+            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 // partition
                 if (init_side_ds.is_local(is)) {
                     // find (new) proc of the element of the side
@@ -237,8 +237,8 @@ void MH_DofHandler::prepare_parallel_bddc() {
 
         unsigned int nsides = el->n_sides();
         for (unsigned int i = 0; i < nsides; i++) {
-            side_row = side_row_4_id[ side_dof( el->side(i) ) ];
-            edge_row = row_4_edge[el->side(i)->edge_idx()];
+            side_row = side_row_4_id[ side_dof( el.side(i) ) ];
+            edge_row = row_4_edge[el.side(i)->edge_idx()];
 
             global_row_4_sub_row->insert( side_row );
             global_row_4_sub_row->insert( edge_row );
@@ -281,7 +281,7 @@ double MH_DofHandler::side_scalar(const Side &side) const {
 
 
 double MH_DofHandler::element_scalar( ElementAccessor<3> &ele ) const {
-    return mh_solution[ ele->mesh_->n_sides() + ele.idx() ];
+    return mh_solution[ mesh_->n_sides() + ele.idx() ];
 }
 
 

@@ -190,7 +190,7 @@ public:
 
     MixedMeshIntersections &mixed_intersections();
 
-    unsigned int n_sides();
+    unsigned int n_sides() const;
 
     unsigned int n_vb_neighbours() const;
 
@@ -224,7 +224,7 @@ public:
     void elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const;
 
 
-    ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
+    ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false) const;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
@@ -272,7 +272,7 @@ public:
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
-    int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
+    mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements

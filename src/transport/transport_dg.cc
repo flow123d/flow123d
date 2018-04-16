@@ -1294,7 +1294,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
         for (unsigned int si=0; si<elm->n_sides(); si++)
         {
-            Edge *edg = elm->side(si)->edge();
+            const Edge *edg = elm.side(si)->edge();
             if (edg->n_sides > 1) continue;
             // skip edges lying not on the boundary
             if (edg->side(0)->cond() == NULL) continue;
@@ -1439,7 +1439,7 @@ void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellI
         velocity[k].zeros();
         for (unsigned int sid=0; sid<cell->n_sides(); sid++)
           for (unsigned int c=0; c<3; ++c)
-            velocity[k][c] += fv.shape_value_component(sid,k,c) * Model::mh_dh->side_flux( *(cell->side(sid)) );
+            velocity[k][c] += fv.shape_value_component(sid,k,c) * Model::mh_dh->side_flux( *(cell.side(sid)) );
     }
 }
 

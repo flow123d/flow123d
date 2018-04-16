@@ -105,7 +105,7 @@ public:
     {
         std::vector<arma::vec3> nodes;
         for(auto str : nodes_str) nodes.push_back( arma::vec3(str));
-        init(nodes.size()-1, 1, nullptr, RegionIdx());
+        init(nodes.size()-1, RegionIdx());
         unsigned int i=0;
         for(auto node : nodes)
             this->node[i++] = new Node(node[0], node[1], node[2]);

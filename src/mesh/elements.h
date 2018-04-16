@@ -48,8 +48,8 @@ class Element
 {
 public:
     Element();
-    Element(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg);
-    void init(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg);
+    Element(unsigned int dim, RegionIdx reg);
+    void init(unsigned int dim, RegionIdx reg);
     ~Element();
 
 
@@ -77,11 +77,8 @@ public:
 * We scale the measure so that is gives value 1 for regular elements. Line 1d elements
 * have always quality 1.
 */
-    double quality_measure_smooth() const;
+    double quality_measure_smooth(SideIter side) const;
 
-    unsigned int n_sides_by_dim(unsigned int side_dim);
-    inline SideIter side(const unsigned int loc_index);
-    inline const SideIter side(const unsigned int loc_index) const;
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
@@ -92,7 +89,7 @@ public:
 
 
     unsigned int *edge_idx_; // Edges on sides
-    unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
+    mutable unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
     /**
     * Indices of permutations of nodes on sides.
@@ -136,15 +133,10 @@ public:
     Neighbour **neigh_vb; // List og neighbours, V-B type (comp.)
 
 
-    // TODO fix
-    Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
-
-
 protected:
     // Data readed from mesh file
     RegionIdx  region_idx_;
     unsigned int dim_;
-    int id_;  // TODO fix
 
     friend class Mesh;
 
@@ -169,13 +161,6 @@ inline unsigned int Element::n_sides() const {
     return dim()+1;
 }
 
-inline SideIter Element::side(const unsigned int loc_index) {
-    return SideIter( Side(mesh_, id_, loc_index) ); // TODO: fix
-}
-
-inline const SideIter Element::side(const unsigned int loc_index) const {
-    return SideIter( Side(mesh_, id_, loc_index) ); // TODO: fix
-}
 #endif
 //-----------------------------------------------------------------------------
 // vim: set cindent:

@@ -211,7 +211,7 @@ public:
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
+            flux_in_center += ad_->mh_dh->side_flux( *(ele.side( li ) ) )
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 

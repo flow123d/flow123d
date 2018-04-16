@@ -162,7 +162,7 @@ public:
     }
 
     uint edge_global_idx(uint i) {
-        return ele->side(i)->edge_idx();
+        return ele.side(i)->edge_idx();
     }
 
     uint edge_local_idx(uint i) {
@@ -183,7 +183,7 @@ public:
     }
 
     SideIter side(uint i) {
-        return ele->side(i);
+        return ele.side(i);
     }
 
     uint side_global_idx(uint i) {

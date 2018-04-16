@@ -46,27 +46,24 @@ Element::Element()
   n_neighs_vb(0),
   neigh_vb(NULL),
 
-  dim_(0),
-  id_(0) // TODO fix
+  dim_(0)
 
 {
 }
 
 
-Element::Element(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg)
+Element::Element(unsigned int dim, RegionIdx reg)
 {
-    init(dim, id, mesh_in, reg);
+    init(dim, reg);
 }
 
 
 
-void Element::init(unsigned int dim, int id, Mesh *mesh_in, RegionIdx reg) {
+void Element::init(unsigned int dim, RegionIdx reg) {
     pid=0;
     n_neighs_vb=0;
     neigh_vb=NULL;
     dim_=dim;
-    id_=id; // TODO fix
-    mesh_=mesh_in; // TODO fix
     region_idx_=reg;
 
     node = new Node * [ n_nodes()];
@@ -145,6 +142,7 @@ arma::vec3 Element::centre() const {
  * Count element sides of the space dimension @p side_dim.
  */
 
+/* If we use this method, it will be moved to mesh accessor class.
 unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 {
     if (side_dim == dim()) return 1;
@@ -153,14 +151,14 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
     for (unsigned int i=0; i<n_sides(); i++)
         if (side(i)->dim() == side_dim) n++;
     return n;
-}
+}*/
 
 
-double Element::quality_measure_smooth() const {
+double Element::quality_measure_smooth(SideIter side) const {
     if (dim_==3) {
         double sum_faces=0;
         double face[4];
-        for(unsigned int i=0;i<4;i++) sum_faces+=( face[i]=side(i)->measure());
+        for(unsigned int i=0; i<4; i++, ++side) sum_faces+=( face[i]=side->measure());
 
         double sum_pairs=0;
         for(unsigned int i=0;i<3;i++)

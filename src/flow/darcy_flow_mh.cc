@@ -752,7 +752,7 @@ void DarcyMH::allocate_mh_matrix()
                 ElementAccessor<3> slave_ele = mesh_->element_accessor( local->bulk_ele_idx() );
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
                 for(unsigned int i_side=0; i_side < slave_ele->n_sides(); i_side++) {
-                    tmp_rows.push_back( mh_dh.row_4_edge[ slave_ele->side(i_side)->edge_idx() ] );
+                    tmp_rows.push_back( mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ] );
                     //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
                 }
             }
@@ -1011,8 +1011,8 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         
         for (unsigned int j=0; j<ele->n_sides(); j++) {
             switch(ele->dim()){
-                case 2: he2 = std::min(he2, ele->side(j)->measure()); break;
-                case 3: he3 = std::min(he3, ele->side(j)->measure()); break;
+                case 2: he2 = std::min(he2, ele.side(j)->measure()); break;
+                case 3: he3 = std::min(he3, ele.side(j)->measure()); break;
             }
         }
     }
@@ -1239,7 +1239,7 @@ void DarcyMH::make_serial_scatter() {
             i = 0;
             for (auto ele : mesh_->bulk_elements_range()) {
             	for (unsigned int si=0; si<ele->n_sides(); si++) {
-                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
+                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
                 }
             }
             for (auto ele : mesh_->bulk_elements_range()) {

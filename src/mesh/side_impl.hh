@@ -23,7 +23,7 @@
 #include "mesh/edges.h"
 
 
-inline Side::Side(Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
+inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
 : mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
 {
 	ASSERT(mesh_->elem_index(elem_idx) != -1).error("Wrong initialization of the Side.\n");
@@ -54,7 +54,7 @@ inline Side::Side(Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
         return mesh_->element_accessor( elem_idx_ );
     }
 
-    inline Mesh * Side::mesh() const {
+    inline const Mesh * Side::mesh() const {
         return this->mesh_;
     }
 
@@ -62,14 +62,14 @@ inline Side::Side(Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
         return element()->edge_idx_[side_idx_];
     }
 
-    inline Edge * Side::edge() const {
+    inline const Edge * Side::edge() const {
         if (edge_idx() == Mesh::undef_idx) return NULL;
         else return &( mesh_->edges[ edge_idx() ] );
     }
 
     inline Boundary * Side::cond() const {
             if (cond_idx() == Mesh::undef_idx) return NULL;
-            else return &( mesh_->boundary_[ cond_idx() ] );
+            else return &( const_cast<Mesh *>(mesh_)->boundary_[ cond_idx() ] );
     }
 
     inline unsigned int Side::cond_idx() const {

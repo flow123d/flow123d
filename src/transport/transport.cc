@@ -357,9 +357,9 @@ void ConvectionTransport::set_boundary_conditions()
         	IdxInt new_i = row_4_el[mesh_->elem_index( elm.idx() )];
 
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
-                Boundary *b = elm->side(si)->cond();
+                Boundary *b = elm.side(si)->cond();
                 if (b != NULL) {
-                    double flux = mh_dh->side_flux( *(elm->side(si)) );
+                    double flux = mh_dh->side_flux( *(elm.side(si)) );
                     if (flux < 0.0) {
                         double aij = -(flux / elm->measure() );
 
@@ -718,7 +718,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     ElementAccessor<3> el2;
     ElementAccessor<3> elm;
-    struct Edge *edg;
+    const Edge *edg;
     int j, np, rank;
     IdxInt new_j, new_i;
     double aij, aii;
@@ -738,9 +738,9 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
         for (unsigned int si=0; si<elm->n_sides(); si++) {
             // same dim
-            flux = mh_dh->side_flux( *(elm->side(si)) );
-            if (elm->side(si)->cond() == NULL) {
-                 edg = elm->side(si)->edge();
+            flux = mh_dh->side_flux( *(elm.side(si)) );
+            if (elm.side(si)->cond() == NULL) {
+                 edg = elm.side(si)->edge();
                  edg_flux = 0;
                  for( int s=0; s < edg->n_sides; s++) {
                    flux2 = mh_dh->side_flux( *(edg->side(s)) );
@@ -749,7 +749,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                  for(unsigned int s=0; s<edg->n_sides; s++)
                     // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
                     // These edges on these sides should have just one side
-                    if (edg->side(s) != elm->side(si)) {
+                    if (edg->side(s) != elm.side(si)) {
                         j = mesh_->elem_index( edg->side(s)->element().idx() );
                         new_j = row_4_el[j];
 

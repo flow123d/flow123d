@@ -353,7 +353,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     }
     if (count_sides){
     	for (auto ele : mesh_->bulk_elements_range())
-            for(SideIter side = ele->side(0); side->side_idx() < ele->n_sides(); ++side) {
+            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
                     node = side->node(li);//!< get Node pointer from element */
                     node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
@@ -389,7 +389,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     }
     if (count_sides) {
     	for (auto ele : mesh_->bulk_elements_range())
-            for(SideIter side = ele->side(0); side->side_idx() < ele->n_sides(); ++side) {
+            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
                     node = side->node(li);//!< get Node pointer from element */
                     node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
@@ -444,10 +444,10 @@ void DarcyFlowMHOutput::output_internal_flow_data()
         raw_output_file << ele->n_sides() << " ";
 
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
+            raw_output_file << dh.side_scalar( *(ele.side(i) ) ) << " ";
         }
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
+            raw_output_file << dh.side_flux( *(ele.side(i) ) ) << " ";
         }
         
         raw_output_file << endl;
@@ -507,7 +507,7 @@ void l2_diff_local(ElementAccessor<3> &ele,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = result.dh->side_flux( *(ele->side( li ) ) );
+        fluxes[li] = result.dh->side_flux( *(ele.side( li ) ) );
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     double pressure_mean = result.dh->element_scalar(ele);

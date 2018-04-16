@@ -212,7 +212,7 @@ Mesh::~Mesh() {
 }
 
 
-unsigned int Mesh::n_sides()
+unsigned int Mesh::n_sides() const
 {
     if (n_sides_ == NDEF) {
         n_sides_=0;
@@ -278,7 +278,7 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     for (auto ele : this->bulk_elements_range())
-        if (ele->quality_measure_smooth() < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+        if (ele->quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -307,7 +307,7 @@ void Mesh::count_side_types()
     n_insides = 0;
     n_exsides = 0;
 	for (auto ele : this->bulk_elements_range())
-        for(SideIter sde = ele->side(0); sde->side_idx() < ele->n_sides(); ++sde) {
+        for(SideIter sde = ele.side(0); sde->side_idx() < ele->n_sides(); ++sde) {
             if (sde->is_external()) n_exsides++;
             else n_insides++;
         }
@@ -445,7 +445,7 @@ void Mesh::make_neighbours_and_edges()
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect)  {
                 ElementAccessor<3> elem = this->element_accessor(*isect);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
-                    SideIter si = elem->side(ecs);
+                    SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
                         	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
@@ -476,7 +476,7 @@ void Mesh::make_neighbours_and_edges()
 
 	}
 	// Now we go through all element sides and create edges and neighbours
-	for (vector<Element>:: iterator e = element_vec_.begin(); e!= element_vec_.begin()+bulk_size_; ++e) {
+	for (auto e : this->bulk_elements_range()) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
@@ -484,8 +484,8 @@ void Mesh::make_neighbours_and_edges()
 
 
 			// Find all elements that share this side.
-			side_nodes.resize(e->side(s)->n_nodes());
-			for (unsigned n=0; n<e->side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e->side(s)->node(n));
+			side_nodes.resize(e.side(s)->n_nodes());
+			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e.side(s)->node(n));
 			intersect_element_lists(side_nodes, intersection_list);
 
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
@@ -504,7 +504,7 @@ void Mesh::make_neighbours_and_edges()
 
                 if (intersection_list.size() == 1) { // outer edge, create boundary object as well
                     edg->n_sides=1;
-                    edg->side_[0] = e->side(s);
+                    edg->side_[0] = e.side(s);
                     e->edge_idx_[s] = last_edge_idx;
 
                     if (e->boundary_idx_ == NULL) {
@@ -520,7 +520,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill boundary element
                     Element * bc_ele = add_element_to_vector(-bdr_idx, true);
-                    bc_ele->init(e->dim()-1, -bdr_idx, this, region_db_.implicit_boundary_region() );
+                    bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
                     region_db_.mark_used_region( bc_ele->region_idx_.idx() );
                     for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
 
@@ -535,10 +535,10 @@ void Mesh::make_neighbours_and_edges()
 
 			// go through the elements connected to the edge or neighbour
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
-                Element *elem = &(element_vec_[*isect]);
+            	ElementAccessor<3> elem = this->element_accessor(*isect);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     if (elem->edge_idx_[ecs] != Mesh::undef_idx) continue;
-                    SideIter si = elem->side(ecs);
+                    SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (is_neighbour) {
                             // create a new edge and neighbour for this side, and element to the edge
@@ -692,7 +692,7 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 
 
 
-ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
+ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) const {
     return ElementAccessor<3>(this, idx, (idx>=bulk_size_));
 }
 
@@ -817,7 +817,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 			ele = add_element_to_vector(elm_id);
 		}
 	}
-	ele->init(dim, elm_id, this, region_idx);
+	ele->init(dim, region_idx);
 	ele->pid = partition_id;
 
 	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
@@ -929,7 +929,7 @@ void Mesh::output_internal_ngh_data()
         
         auto search_neigh = neigh_vb_map.end();
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int n_side_neighs = ele->side(i)->edge()->n_sides-1;  //n_sides - the current one
+            unsigned int n_side_neighs = ele.side(i)->edge()->n_sides-1;  //n_sides - the current one
             // check vb neighbors (lower dimension)
             if(n_side_neighs == 0){
                 //update search
@@ -944,10 +944,10 @@ void Mesh::output_internal_ngh_data()
         }
         
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            Edge* edge = ele->side(i)->edge();
-            if(ele->side(i)->edge()->n_sides > 1){
+            const Edge* edge = ele.side(i)->edge();
+            if(ele.side(i)->edge()->n_sides > 1){
                 for (int j = 0; j < edge->n_sides; j++) {
-                    if(edge->side(j) != ele->side(i))
+                    if(edge->side(j) != ele.side(i))
                         raw_ngh_output_file << edge->side(j)->element().idx() << " ";
                 }
             }

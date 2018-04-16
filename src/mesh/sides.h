@@ -43,7 +43,7 @@ public:
     : mesh_(NULL), elem_idx_(0), side_idx_(0)
     {}
 
-    inline Side(Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
+    inline Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
     double measure() const;
     arma::vec3 centre() const; // Centre of side
     arma::vec3 normal() const; // Vector of (generalized) normal
@@ -74,7 +74,7 @@ public:
     /**
      * Returns pointer to the mesh.
      */
-    inline Mesh * mesh() const;
+    inline const Mesh * mesh() const;
 
     /**
      * Returns global index of the edge connected to the side.
@@ -84,7 +84,7 @@ public:
     /**
      * Returns pointer to the edge connected to the side.
      */
-    inline Edge * edge() const;
+    inline const Edge * edge() const;
 
     inline Boundary * cond() const;
     inline unsigned int cond_idx() const;
@@ -119,7 +119,7 @@ private:
 
     // Topology of the mesh
 
-    Mesh * mesh_;           ///< Pointer to Mesh to which belonged
+    const Mesh * mesh_;     ///< Pointer to Mesh to which belonged
     unsigned int elem_idx_; ///< Index of element in Mesh::element_vec_
     unsigned int side_idx_; ///< Local # of side in element  (to remove it, we heve to remove calc_side_rhs)
 
