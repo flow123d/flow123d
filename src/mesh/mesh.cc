@@ -28,6 +28,7 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/region_set.hh"
@@ -38,6 +39,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
+#include "mesh/sides.h"
 
 
 #include "mesh/bih_tree.hh"

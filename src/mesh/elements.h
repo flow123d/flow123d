@@ -25,6 +25,7 @@
 #include <string>                              // for operator<<
 #include <vector>                              // for vector
 #include <armadillo>
+#include "side_impl.hh"
 #include "mesh/bounding_box.hh"                // for BoundingBox
 #include "mesh/nodes.hh"                       // for Node
 #include "mesh/ref_element.hh"                 // for RefElement
@@ -32,7 +33,6 @@
 #include "system/asserts.hh"                   // for Assert, ASSERT
 #include "sides.h"
 #include "mesh/mesh.h"
-#include "side_impl.hh"
 
 //class Mesh;
 class Neighbour;

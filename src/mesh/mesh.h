@@ -32,7 +32,6 @@
 #include "mesh/edges.h"                      // for Edge
 #include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
-#include "mesh/sides.h"                      // for SideIter
 #include "mesh/nodes.hh"
 #include "mesh/bounding_box.hh"              // for BoundingBox
 #include "mesh/range_wrapper.hh"
@@ -47,6 +46,7 @@ class Distribution;
 class Partitioning;
 class MixedMeshIntersections;
 class Neighbour;
+class SideIter;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 
@@ -490,8 +490,6 @@ private:
         
     ofstream raw_ngh_output_file;
 };
-
-#include "mesh/side_impl.hh"
 
 #endif
 //-----------------------------------------------------------------------------

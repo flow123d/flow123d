@@ -20,9 +20,10 @@
 #include <string>
 
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
+#include "elements.h"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "elements.h"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"

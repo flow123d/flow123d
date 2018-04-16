@@ -21,6 +21,7 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"

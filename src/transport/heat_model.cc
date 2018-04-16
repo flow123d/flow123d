@@ -17,6 +17,7 @@
  */
 
 #include "input/input_type.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 //#include "transport/transport_operator_splitting.hh"

@@ -18,6 +18,7 @@
 #include "mesh/partitioning.hh"
 #include "la/sparse_graph.hh"
 #include "la/distribution.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"

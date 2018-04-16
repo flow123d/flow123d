@@ -23,6 +23,7 @@
 #include "system/sys_profiler.hh"
 
 #include <petscmat.h>
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
