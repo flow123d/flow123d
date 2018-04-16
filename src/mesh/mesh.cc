@@ -571,7 +571,7 @@ void Mesh::make_neighbours_and_edges()
 
 void Mesh::make_edge_permutations()
 {
-	for (EdgeVector::iterator edg=edges.begin(); edg!=edges.end(); edg++)
+	for (std::vector<Edge>::iterator edg=edges.begin(); edg!=edges.end(); edg++)
 	{
 		// side 0 is reference, so its permutation is 0
 		edg->side(0)->element()->permutation_idx_[edg->side(0)->side_idx()] = 0;

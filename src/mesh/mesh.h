@@ -365,8 +365,6 @@ protected:
      *  TODO:
      *  - Avoid maps:
      *
-     *    4) replace EdgeVector by std::vector<Edge> (need not to know the size)
-     *
      *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
      *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
      *

@@ -24,14 +24,10 @@
 
 // Forward declarations
 class Node;
-class Element;
-class Edge;
 
 // Preparation for next development
 typedef flow::VectorId<Node> NodeVector;
 typedef NodeVector::Iter NodeIter;
 typedef NodeVector::FullIter NodeFullIter;
-
-typedef flow::Vector<Edge> EdgeVector;
 
 #endif /* MESH_TYPES_HH_ */
