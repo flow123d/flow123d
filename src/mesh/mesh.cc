@@ -192,8 +192,6 @@ Mesh::~Mesh() {
 
     for (auto ele : this->bulk_elements_range()) {
         if (ele->node) delete[] ele->node;
-        if (ele->edge_idx_) delete[] ele->edge_idx_;
-        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
@@ -201,8 +199,6 @@ Mesh::~Mesh() {
     for(unsigned int idx=element_vec_.size()-boundary_size_; idx < element_vec_.size(); idx++) {
         Element *ele=&(element_vec_[idx]);
         if (ele->node) delete[] ele->node;
-        if (ele->edge_idx_) delete[] ele->edge_idx_;
-        if (ele->permutation_idx_) delete[] ele->permutation_idx_;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
 
@@ -447,7 +443,7 @@ void Mesh::make_neighbours_and_edges()
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
-                        if (elem->edge_idx_[ecs] != Mesh::undef_idx) {
+                        if (elem->edge_idx(ecs) != Mesh::undef_idx) {
                         	OLD_ASSERT(elem->boundary_idx_!=nullptr, "Null boundary idx array.\n");
                             int last_bc_ele_idx=this->boundary_[elem->boundary_idx_[ecs]].bc_ele_idx_;
                             int new_bc_ele_idx=i;
@@ -458,7 +454,7 @@ void Mesh::make_neighbours_and_edges()
                                     << EI_RegNew(this->element_accessor(new_bc_ele_idx).region().label())
                                     );
                         }
-                        elem->edge_idx_[ecs] = last_edge_idx;
+                        element_vec_[*isect].edge_idx_[ecs] = last_edge_idx;
                         edg->side_[ edg->n_sides++ ] = si;
 
                         if (elem->boundary_idx_ == NULL) {
@@ -480,7 +476,7 @@ void Mesh::make_neighbours_and_edges()
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
-			if (e->edge_idx_[s] != Mesh::undef_idx) continue;
+			if (e->edge_idx(s) != Mesh::undef_idx) continue;
 
 
 			// Find all elements that share this side.
@@ -503,20 +499,21 @@ void Mesh::make_neighbours_and_edges()
                 	max_edge_sides_[e->dim()-1] = intersection_list.size();
 
                 if (intersection_list.size() == 1) { // outer edge, create boundary object as well
+                	Element &elm = element_vec_[e.idx()];
                     edg->n_sides=1;
                     edg->side_[0] = e.side(s);
-                    e->edge_idx_[s] = last_edge_idx;
+                    element_vec_[e.idx()].edge_idx_[s] = last_edge_idx;
 
                     if (e->boundary_idx_ == NULL) {
-                    	e->boundary_idx_ = new unsigned int [ e->n_sides() ];
-                        std::fill( e->boundary_idx_, e->boundary_idx_ + e->n_sides(), Mesh::undef_idx);
+                    	elm.boundary_idx_ = new unsigned int [ e->n_sides() ];
+                        std::fill( elm.boundary_idx_, elm.boundary_idx_ + e->n_sides(), Mesh::undef_idx);
                     }
 
                     unsigned int bdr_idx=boundary_.size()+1; // need for VTK mesh that has no boundary elements
                                                              // and bulk elements are indexed from 0
                     boundary_.resize(bdr_idx+1);
                     Boundary &bdr=boundary_.back();
-                    e->boundary_idx_[s] = bdr_idx;
+                    elm.boundary_idx_[s] = bdr_idx;
 
                     // fill boundary element
                     Element * bc_ele = add_element_to_vector(-bdr_idx, true);
@@ -537,7 +534,7 @@ void Mesh::make_neighbours_and_edges()
             for( vector<unsigned int>::iterator isect = intersection_list.begin(); isect!=intersection_list.end(); ++isect) {
             	ElementAccessor<3> elem = this->element_accessor(*isect);
                 for (unsigned int ecs=0; ecs<elem->n_sides(); ecs++) {
-                    if (elem->edge_idx_[ecs] != Mesh::undef_idx) continue;
+                    if (elem->edge_idx(ecs) != Mesh::undef_idx) continue;
                     SideIter si = elem.side(ecs);
                     if ( same_sides( si, side_nodes) ) {
                         if (is_neighbour) {
@@ -548,7 +545,7 @@ void Mesh::make_neighbours_and_edges()
                             edg->n_sides = 1;
                             edg->side_ = new struct SideIter[1];
                             edg->side_[0] = si;
-                            elem->edge_idx_[ecs] = last_edge_idx;
+                            element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
 
                             neighbour.edge_idx_ = last_edge_idx;
 
@@ -556,7 +553,7 @@ void Mesh::make_neighbours_and_edges()
                         } else {
                             // connect the side to the edge, and side to the edge
                             edg->side_[ edg->n_sides++ ] = si;
-                            elem->edge_idx_[ecs] = last_edge_idx;
+                            element_vec_[elem.idx()].edge_idx_[ecs] = last_edge_idx;
                         }
                         break; // next element from intersection list
                     }
@@ -648,23 +645,23 @@ void Mesh::element_to_neigh_vb()
 	//MessageOut() << "Element to neighbours of vb2 type... "/*orig verb 5*/;
 
 	for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
-		ele->n_neighs_vb =0;
+		ele->n_neighs_vb_ =0;
 
     // count vb neighs per element
-    for (auto & ngh : this->vb_neighbours_)  ngh.element()->n_neighs_vb++;
+    for (auto & ngh : this->vb_neighbours_)  ngh.element()->n_neighs_vb_++;
 
     // Allocation of the array per element
     for (vector<Element>::iterator ele = element_vec_.begin(); ele!= element_vec_.begin()+bulk_size_; ++ele)
-        if( ele->n_neighs_vb > 0 ) {
-            ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb];
-            ele->n_neighs_vb=0;
+        if( ele->n_neighs_vb() > 0 ) {
+            ele->neigh_vb = new struct Neighbour* [ele->n_neighs_vb()];
+            ele->n_neighs_vb_=0;
         }
 
     // fill
     ElementAccessor<3> ele;
     for (auto & ngh : this->vb_neighbours_) {
         ele = ngh.element();
-        ele->neigh_vb[ ele->n_neighs_vb++ ] = &ngh;
+        ele->neigh_vb[ ele->n_neighs_vb_++ ] = &ngh;
     }
 
     //MessageOut() << "... O.K.\n"/*orig verb 6*/;
@@ -818,7 +815,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 		}
 	}
 	ele->init(dim, region_idx);
-	ele->pid = partition_id;
+	ele->pid_ = partition_id;
 
 	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
 		unsigned int node_id = node_ids[ni];
@@ -904,8 +901,8 @@ void Mesh::output_internal_ngh_data()
     unsigned int undefined_ele_id = -1;
     std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
     for (auto ele : this->bulk_elements_range()) {
-        if(ele->n_neighs_vb > 0){
-            for (unsigned int i = 0; i < ele->n_neighs_vb; i++){
+        if(ele->n_neighs_vb() > 0){
+            for (unsigned int i = 0; i < ele->n_neighs_vb(); i++){
                 ElementAccessor<3> higher_ele = ele->neigh_vb[i]->side()->element();
                 
                 auto search = neigh_vb_map.find(higher_ele.idx());
@@ -959,8 +956,8 @@ void Mesh::output_internal_ngh_data()
         }
         
         // list higher dim neighbours
-        raw_ngh_output_file << ele->n_neighs_vb << " ";
-        for (unsigned int i = 0; i < ele->n_neighs_vb; i++)
+        raw_ngh_output_file << ele->n_neighs_vb() << " ";
+        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++)
             raw_ngh_output_file << ele->neigh_vb[i]->side()->element().idx() << " ";
         
         raw_ngh_output_file << endl;

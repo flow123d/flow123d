@@ -59,7 +59,7 @@ inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnu
     }
 
     inline unsigned int Side::edge_idx() const {
-        return element()->edge_idx_[side_idx_];
+        return element()->edge_idx(side_idx_);
     }
 
     inline const Edge * Side::edge() const {

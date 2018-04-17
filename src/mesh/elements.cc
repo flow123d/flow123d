@@ -34,20 +34,12 @@
 
 
 Element::Element()
-:  pid(0),
-
-  node(NULL),
-
-//  material(NULL),
-  edge_idx_(NULL),
+: node(NULL),
   boundary_idx_(NULL),
-  permutation_idx_(NULL),
-
-  n_neighs_vb(0),
   neigh_vb(NULL),
-
+  pid_(0),
+  n_neighs_vb_(0),
   dim_(0)
-
 {
 }
 
@@ -60,16 +52,16 @@ Element::Element(unsigned int dim, RegionIdx reg)
 
 
 void Element::init(unsigned int dim, RegionIdx reg) {
-    pid=0;
-    n_neighs_vb=0;
+    pid_=0;
+    n_neighs_vb_=0;
     neigh_vb=NULL;
     dim_=dim;
     region_idx_=reg;
 
     node = new Node * [ n_nodes()];
-    edge_idx_ = new unsigned int [ n_sides()];
+    edge_idx_.resize( n_sides() );
+    permutation_idx_.resize( n_sides() );
     boundary_idx_ = NULL;
-    permutation_idx_ = new unsigned int[n_sides()];
 
     for (unsigned int si=0; si<this->n_sides(); si++) {
         edge_idx_[ si ]=Mesh::undef_idx;

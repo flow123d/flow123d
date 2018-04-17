@@ -452,13 +452,13 @@ protected:
         ElementAccessor<3> ele = ele_ac.element_accessor();
         
         // no Neighbours => nothing to asssemble here
-        if(ele->n_neighs_vb == 0) return;
+        if(ele->n_neighs_vb() == 0) return;
         
         int ele_row = ele_ac.ele_row();
         Neighbour *ngh;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-        for (unsigned int i = 0; i < ele->n_neighs_vb; i++) {
+        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             ngh = ele_ac.element_accessor()->neigh_vb[i];

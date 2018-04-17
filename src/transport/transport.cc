@@ -177,7 +177,7 @@ void ConvectionTransport::make_transport_partitioning() {
     // - or do not test such kind of output
     //
     //for (auto ele : mesh_->bulk_elements_range()) {
-    //    ele->pid=el_ds->get_proc(row_4_el[ele.index()]);
+    //    ele->pid()=el_ds->get_proc(row_4_el[ele.index()]);
     //}
 
 }
@@ -764,7 +764,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
               aii -= (flux / elm->measure() );
         }  // end same dim     //ELEMENT_SIDES
 
-        for (unsigned int n=0; n<elm->n_neighs_vb; n++) // comp model
+        for (unsigned int n=0; n<elm->n_neighs_vb(); n++) // comp model
             {
                 el2 = mesh_->element_accessor( mesh_->elem_index( elm->neigh_vb[n]->side()->element().idx() ) ); // higher dim. el.
                 ASSERT( el2.idx() != elm.idx() ).error("Elm. same\n");

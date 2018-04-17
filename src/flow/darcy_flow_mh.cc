@@ -728,7 +728,7 @@ void DarcyMH::allocate_mh_matrix()
         
 
         // compatible neighborings rows
-        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb;
+        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
         for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
@@ -1093,7 +1093,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         }
 
         // insert dofs related to compatible connections
-        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb; i_neigh++) {
+        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
             int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
             arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
 

@@ -244,7 +244,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
             global_row_4_sub_row->insert( edge_row );
         }
 
-        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb(); i_neigh++) {
             // mark this edge
             edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
             global_row_4_sub_row->insert( edge_row );

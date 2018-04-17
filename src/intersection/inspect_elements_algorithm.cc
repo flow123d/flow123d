@@ -464,34 +464,34 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     {
         // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
         case 0: if(ele_dim == 1) {
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[ip_obj_idx]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
                     break;
                 }
                 
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_node; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<ele_dim-1,0>(ip_obj_idx))[j];
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[local_edge]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(local_edge)]));
                 }
                 //DebugOut() << "prolong (node)\n";
                 break;
         
         // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
         case 1: if(ele_dim == 2) {
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[ip_obj_idx]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
                     break;
                 }
             
                 ASSERT_DBG(ele_dim == 3);
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_line; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<2,1>(ip_obj_idx))[j];
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[local_edge]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(local_edge)]));
                 }
                 //DebugOut() << "prolong (edge)\n";
                 break;
                 
         // IP is on a side of tetrahedron; only possible edge is from the given side (1)
         case 2: ASSERT_DBG(ele_dim == 3);
-                edges.push_back(&(mesh->edges[ele->edge_idx_[ip_obj_idx]]));
+                edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
                 //DebugOut() << "prolong (side)\n";
                 break;
         default: ASSERT_DBG(0);
@@ -553,9 +553,9 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>
             // CASE A: compatible vb neighboring
 //             DBGVAR(comp_ele.idx());
 //             DBGVAR(bulk_ele.idx());
-            if(comp_ele->n_neighs_vb > 1){
+            if(comp_ele->n_neighs_vb() > 1){
                 //set n_neighs_vb duplicities
-                is.set_duplicities(comp_ele->n_neighs_vb);
+                is.set_duplicities(comp_ele->n_neighs_vb());
 //                 DBGCOUT(<< "vb neigh: N = " << is.duplicities() << "\n");
                 //possibly copy intersection object
             }

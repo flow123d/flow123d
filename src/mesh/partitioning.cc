@@ -124,7 +124,7 @@ void Partitioning::make_element_connection_graph() {
         // include connections from lower dim. edge
         // to the higher dimension
         if (neigh_on) {
-            for (i_neigh = 0; i_neigh < ele->n_neighs_vb; i_neigh++) {
+            for (i_neigh = 0; i_neigh < ele->n_neighs_vb(); i_neigh++) {
                n_s = ele->neigh_vb[i_neigh]->edge()->n_sides;
                 for (i_s = 0; i_s < n_s; i_s++) {
                    e_idx = mesh_->elem_index( ele->neigh_vb[i_neigh]->edge()->side(i_s)->element().idx() );

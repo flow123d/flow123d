@@ -108,17 +108,17 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
             int id3 = mesh->node_vector.index(elee->node[2]) + 1;
             int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-            fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx()+1, 3, elee->pid, id1, id2, id3, id4);
+            fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx()+1, 3, elee->pid(), id1, id2, id3, id4);
         }else if(elee->dim() == 2){
             int id1 = mesh->node_vector.index(elee->node[0]) + 1;
             int id2 = mesh->node_vector.index(elee->node[1]) + 1;
             int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-            fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx()+1, 2, elee->pid, id1, id2, id3);
+            fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx()+1, 2, elee->pid(), id1, id2, id3);
 
         }else{
             int id1 = mesh->node_vector.index(elee->node[0]) + 1;
             int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-            fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx()+1, 1, elee->pid, id1, id2);
+            fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx()+1, 1, elee->pid(), id1, id2);
         }
     }
 

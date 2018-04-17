@@ -119,7 +119,7 @@ void OutputMeshBase::create_id_caches()
 		region_idx[0] = orig_mesh_->element_accessor(it->idx()).region().id();
 		region_ids_->store_value( i, region_idx );
 
-		partition[0] = orig_mesh_->element_accessor(it->idx())->pid;
+		partition[0] = orig_mesh_->element_accessor(it->idx())->pid();
 		partitions_->store_value( i, partition );
 
 		std::vector< unsigned int > node_list = it->node_list();
