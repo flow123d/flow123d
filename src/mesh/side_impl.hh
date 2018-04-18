@@ -26,7 +26,7 @@
 inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
 : mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
 {
-	ASSERT(mesh_->elem_index(elem_idx) != -1).error("Wrong initialization of the Side.\n");
+	mesh_->check_element_size(elem_idx);
 }
 
 

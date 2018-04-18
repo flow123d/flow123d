@@ -357,7 +357,7 @@ TEST(Region, read_regions_error_messages) {
 				"Empty result of Intersection operation.");
 	}
 
-	delete mesh;
+//	delete mesh;
 }
 
 

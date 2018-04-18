@@ -804,7 +804,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	region_db_.mark_used_region(region_idx.idx());
 
 	if (region_idx.is_boundary()) {
-		ele = add_element_to_vector(elm_id);
+		ele = add_element_to_vector(elm_id, true);
 	} else {
 		if(dim == 0 ) {
 			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
@@ -880,6 +880,11 @@ Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
 
 Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
     return Range<ElementAccessor<3>>(this, element_vec_.size()-boundary_size_, element_vec_.size());
+}
+
+inline void Mesh::check_element_size(unsigned int elem_idx) const
+{
+    ASSERT(elem_idx < element_vec_.size())(elem_idx)(element_vec_.size()).error("Index of element is out of bound of element vector!");
 }
 
 /*

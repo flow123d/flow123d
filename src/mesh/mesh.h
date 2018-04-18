@@ -357,6 +357,9 @@ public:
         return element_ids_.get_position(elem_id);
     }
 
+    /// Check if given index is in element_vec_
+    void check_element_size(unsigned int elem_idx) const;
+
 protected:
 
     /**
