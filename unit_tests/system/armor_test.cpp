@@ -2,7 +2,7 @@
 #include "system/armor.hh"
 
 TEST(Armor_test, indexing1) {
-	Armor::Mat<double, 3, 1> m1;
+	armor::Mat<double, 3, 1> m1;
 	m1[0] = 1;
 	m1[1] = 2;
 	m1[2] = 3;
@@ -12,48 +12,48 @@ TEST(Armor_test, indexing1) {
 }
 
 TEST(Armor_test, equality_operator) {
-	Armor::Mat<double, 3, 1> m1;
+	armor::Mat<double, 3, 1> m1;
 	arma::Mat<double>::fixed<3, 1> a1;
 	a1[0] = m1[0] = 1;
 	a1[1] = m1[1] = 2;
 	a1[2] = m1[2] = 3;
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 	a1[1] = 7;
-	EXPECT_FALSE(m1 == a1);
+	EXPECT_FALSE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, constructor_list1) {
-	Armor::Mat<double, 3, 1> m1{1, 2, 3};
+	armor::Mat<double, 3, 1> m1{1, 2, 3};
 	EXPECT_EQ(1, m1[0]);
 	EXPECT_EQ(2, m1[1]);
 	EXPECT_EQ(3, m1[2]);
 }
 
 TEST(Armor_test, constructor_list2) {
-	Armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+	armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 	arma::Mat<double>::fixed<3, 3> a1{1, 4, 7, 2, 5, 8, 3, 6, 9};
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, constructor_arma) {
 	arma::Mat<double>::fixed<3, 3> a1{1, 4, 7, 2, 5, 8, 3, 6, 9};
-	Armor::Mat<double, 3, 3> m1{a1};
-	EXPECT_TRUE(m1 == a1);
+	armor::Mat<double, 3, 3> m1{a1};
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, indexing2) {
 	arma::Mat<double>::fixed<3, 3> a1{1, 4, 7, 2, 5, 8, 3, 6, 9};
-	Armor::Mat<double, 3, 3> m1;
+	armor::Mat<double, 3, 3> m1;
 	for (uint i{0}; i < 3; ++i) {
 		for (uint j{0}; j < 3; ++j) {
 			m1(i,j) = a1(i,j);
 		}
 	}
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, assignment_list1) {
-	Armor::Mat<double, 3, 1> m1;
+	armor::Mat<double, 3, 1> m1;
 	m1 = {1, 2, 3};
 	EXPECT_EQ(1, m1[0]);
 	EXPECT_EQ(2, m1[1]);
@@ -62,53 +62,47 @@ TEST(Armor_test, assignment_list1) {
 
 TEST(Armor_test, assignment_list2) {
 	arma::Mat<double>::fixed<3, 3> a1{1, 4, 7, 2, 5, 8, 3, 6, 9};
-	Armor::Mat<double, 3, 3> m1;
+	armor::Mat<double, 3, 3> m1;
 	m1 = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, assignment_armor) {
-	Armor::Mat<double, 3, 3> m1, m2;
+	armor::Mat<double, 3, 3> m1, m2;
 	m2 = {{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 	m1 = m2;
-	EXPECT_TRUE(m1 == m2);
+	EXPECT_TRUE(approx_equal(m1, m2, "absdiff", 0.0));
 }
 
 TEST(Armor_test, assignment_arma) {
-	Armor::Mat<double, 3, 3> m1;
+	armor::Mat<double, 3, 3> m1;
 	arma::Mat<double>::fixed<3, 3> a1{1, 4, 7, 2, 5, 8, 3, 6, 9};
 	m1 = a1;
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, size) {
-	Armor::Mat<double, 3, 1> m1;
-	Armor::Mat<double, 3, 3> m2;
-	EXPECT_EQ(3, m1.size());
-	EXPECT_EQ(9, m2.size());
+	armor::Mat<double, 3, 1> m1;
+	armor::Mat<double, 3, 3> m2;
+	EXPECT_EQ((uint) 3, m1.size());
+	EXPECT_EQ((uint) 9, m2.size());
 }
 
 TEST(Armor_test, memptr) {
-	Armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+	armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, arma) {
-	Armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+	armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
-    arma::Mat<double>::fixed<3, 3> a2 = m1.arma();
-    bool res = true;
-    for (uint i{0}; i < 9; ++i) {
-        if (a1[i] != a2[i]) {
-            res = false;
-        }
-    }
-	EXPECT_TRUE(res);
+	arma::Mat<double>::fixed<3, 3> a2 = m1.arma();
+	EXPECT_TRUE(approx_equal(a1, a2, "absdiff", 0.0));
 }
 
 TEST(Armor_test, dot) {
-	Armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+	armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
 	double a = dot(a1, a1);
 	double m = dot(m1, m1);
@@ -120,7 +114,7 @@ TEST(Armor_test, plus) {
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
 	a1 = a1 + a1;
 	m1 = m1 + m1;
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, minus) {
@@ -128,7 +122,7 @@ TEST(Armor_test, minus) {
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
 	a1 = a1 - a1;
 	m1 = m1 - m1;
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, multiplication) {
@@ -136,7 +130,7 @@ TEST(Armor_test, multiplication) {
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
 	a1 = a1 * a1;
 	m1 = m1 * m1;
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }
 
 TEST(Armor_test, multiplication_per_elements) {
@@ -144,5 +138,13 @@ TEST(Armor_test, multiplication_per_elements) {
 	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
 	a1 = a1 % a1;
 	m1 = m1 % m1;
-	EXPECT_TRUE(m1 == a1);
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
+}
+
+TEST(Armor_test, zeros) {
+	Armor::Mat<double, 3, 3> m1{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
+	arma::Mat<double>::fixed<3, 3> a1{m1.memptr()};
+    m1.zeros();
+    a1.zeros();
+	EXPECT_TRUE(approx_equal(m1, a1, "absdiff", 0.0));
 }

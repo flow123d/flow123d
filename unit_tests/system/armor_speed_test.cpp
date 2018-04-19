@@ -45,14 +45,14 @@ TEST(Armor_speed, compare_speed) {
     
     arma::Mat<double>::fixed<3, 3> armaMat{1, 2, 3, 4, 5, 6, 7, 8, 9};
     
-    std::vector<Armor::Mat<double, 3, 1>> armorArray1(N);
+    std::vector<armor::Mat<double, 3, 1>> armorArray1(N);
     for (auto & item : armorArray1) {
         item[0] = fRand(-100,100);
         item[1] = fRand(-100,100);
         item[2] = fRand(-100,100);
     }
     
-    std::vector<Armor::Mat<double, 3, 1>> armorArray2(N);
+    std::vector<armor::Mat<double, 3, 1>> armorArray2(N);
     for (auto & item : armorArray2) {
         item[0] = fRand(-100,100);
         item[1] = fRand(-100,100);
@@ -61,9 +61,9 @@ TEST(Armor_speed, compare_speed) {
     
     double armorDotResults[N];
     
-    Armor::Mat<double, 3, 1> armorSum{0, 0, 0};
+    armor::Mat<double, 3, 1> armorSum{0, 0, 0};
     
-    Armor::Mat<double, 3, 3> armorMat{1, 2, 3, 4, 5, 6, 7, 8, 9};
+    armor::Mat<double, 3, 3> armorMat{1, 2, 3, 4, 5, 6, 7, 8, 9};
     
     {
         START_TIMER("armadillo_sum");

@@ -19,6 +19,7 @@
 #define POINT_HH_
 
 #include <armadillo>
+#include "system/armor.hh"
 
 
 /*
@@ -31,6 +32,7 @@ template<int spacedim>
 class Space {
 public:
     typedef typename arma::vec::fixed<spacedim> Point;
+    typedef typename armor::vec<spacedim> APoint;
 };
 
 

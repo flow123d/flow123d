@@ -23,6 +23,8 @@
 #include "mesh/bounding_box.hh"
 #include "mesh/ref_element.hh"
 
+#include "system/armor.hh"
+
 template <int spacedim>
 class ElementAccessor;
 
@@ -55,6 +57,7 @@ public:
     
     double measure() const;
     arma::vec3 centre() const;
+    void precalculate_centre();
     /**
      * Quality of the element based on the smooth and scale-invariant quality measures proposed in:
      * J. R. Schewchuk: What is a Good Linear Element?
@@ -94,7 +97,7 @@ public:
     /**
      * Computes bounding box of element (OBSOLETE)
      */
-    void get_bounding_box(BoundingBox &bounding_box) const;
+    //void get_bounding_box(BoundingBox &bounding_box) const;
 
     /**
      * Return bounding box of the element.
@@ -111,7 +114,7 @@ public:
      */
     inline arma::mat element_map() const
     {
-        arma::vec3 &v0 = node[0]->point();
+        arma::vec3 v0 = node[0]->point();
         arma::mat A(3, dim()+1);
 
         for(unsigned int i=0; i < dim(); i++ ) {
@@ -154,9 +157,9 @@ public:
     /**
      * Return list of element vertices.
      */
-    inline vector<arma::vec3> vertex_list() {
-    	vector<arma::vec3> vertices(this->n_nodes());
-    	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
+    inline vector<BoundingBox::Point> vertex_list() {
+    	vector<BoundingBox::Point> vertices(this->n_nodes());
+    	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point_armor();
     	return vertices;
     }
 
@@ -178,6 +181,8 @@ protected:
 
     template<int spacedim, class Value>
     friend class Field;
+    
+    armor::vec<3> central_point;
 
 };
 

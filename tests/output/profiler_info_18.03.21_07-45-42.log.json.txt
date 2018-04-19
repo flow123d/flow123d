@@ -1,0 +1,36 @@
+Program name        Flow123d
+Program version     2.1.2
+Program branch      PK_Armadillo
+Program revision    95d17fd
+Program build       Mar 21 2018, 07:44:46 flags: -g -O0 -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations -std=c++11
+Timer resolution    0.00010291
+
+Task description    Test6 - Coupling between dimension 2D-3D - influence of sigma and cross section parameters.
+Task size           51118
+
+Run process count   1
+Run started         2018-03-21 07:45:42
+Run ended           2018-03-21 07:45:59
+
+                                      tag                                      call count (max)   max T   min/max T   avg T    total T                            source                              line    
+
+ 100.00  100.00 Whole Program                                                      1      17.2657   1.0000    17.2657   17.2657  system/sys_profiler.cc, ()                                      294   
+  90.70  .  90.70 Application::run                                                 1      15.6607   1.0000    15.6607   15.6607  main.cc, run()                                                  300   
+   5.87  .  .   6.47 HC run simulation                                             1      1.0140    1.0000    1.0140    1.0140   coupling/hc_explicit_sequential.cc, run_simulation()            200   
+   5.87  .  .  .  100.00 HC water zero time step                                   1      1.0139    1.0000    1.0139    1.0139   coupling/hc_explicit_sequential.cc, run_simulation()            209   
+   5.87  .  .  .  .  99.88 DarcyFlowMH_Steady::assembly_linear_system              1      1.0128    1.0000    1.0128    1.0128   flow/darcy_flow_mh.cc, assembly_linear_system()                1309   
+   5.87  .  .  .  .  .  99.99 full assembly                                        1      1.0127    1.0000    1.0127    1.0127   flow/darcy_flow_mh.cc, assembly_linear_system()                1318   
+   5.11  .  .  .  .  .  .  87.04 assembly source term                              1      0.8815    1.0000    0.8815    0.8815   flow/darcy_flow_mh.cc, assembly_source_term()                   953   
+   0.31  .  .  .  .  .  .   5.35 DarcyFlowMH_Steady::assembly_steady_mh_matrix     1      0.0542    1.0000    0.0542    0.0542   flow/darcy_flow_mh.cc, assembly_mh_matrix()                     655   
+  81.42  .  .  89.77 HC constructor                                                1      14.0584   1.0000    14.0584   14.0584  coupling/hc_explicit_sequential.cc, HC_ExplicitSequential()     122   
+  10.78  .  .  .  13.24 preallocation                                              1      1.8618    1.0000    1.8618    1.8618   flow/darcy_flow_mh.cc, create_linear_system()                  1211   
+  10.74  .  .  .  .  99.60 PETSC PREALLOCATION                                     1      1.8543    1.0000    1.8543    1.8543   flow/darcy_flow_mh.cc, create_linear_system()                  1287   
+  10.70  .  .  .  .  .  99.65 DarcyFlowMH_Steady::assembly_steady_mh_matrix        1      1.8478    1.0000    1.8478    1.8478   flow/darcy_flow_mh.cc, assembly_mh_matrix()                     655   
+   0.04  .  .  .   0.04 data init                                                  1      0.0062    1.0000    0.0062    0.0062   flow/darcy_flow_mh.cc, init_eq_data()                           298   
+  60.94  .  .  .  74.84 HC read mesh                                               1      10.5214   1.0000    10.5214   10.5214  coupling/hc_explicit_sequential.cc, HC_ExplicitSequential()     127   
+  60.94  .  .  .  .  100.00 BaseMeshReader - mesh factory                          1      10.5213   1.0000    10.5213   10.5213  io/msh_basereader.cc, mesh_factory()                             43   
+  30.78  .  .  .  .  .  50.51 MESH - setup topology                                1      5.3139    1.0000    5.3139    5.3139   mesh/mesh.cc, setup_topology()                                  231   
+   0.07  .  .  .   0.08 Darcy constructor                                          1      0.0117    1.0000    0.0117    0.0117   flow/darcy_flow_mh.cc, DarcyMH()                                263   
+   4.66  .  .  .   5.73 prepare parallel                                           1      0.8052    1.0000    0.8052    0.8052   flow/mh_dofhandler.cc, prepare_parallel()                        76   
+   0.78  .  .  .   0.96 prepare scatter                                            1      0.1348    1.0000    0.1348    0.1348   flow/darcy_flow_mh.cc, make_serial_scatter()                   1544   
+   3.39  .  .   3.74 Read Input                                                    1      0.5858    1.0000    0.5858    0.5858   main.cc, run()                                                  303   

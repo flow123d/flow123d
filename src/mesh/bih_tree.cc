@@ -45,9 +45,9 @@ BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
 	nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
 	// make root box
 	Node* node = mesh_->node_vector.begin();
-	main_box_ = BoundingBox(node->point(), node->point());
+	main_box_ = BoundingBox(node->point_armor(), node->point_armor());
 	FOR_NODES(mesh_, node ) {
-		main_box_.expand( node->point() );
+		main_box_.expand( node->point_armor() );
 	}
 
 	make_node(main_box_, 0);
@@ -238,6 +238,11 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 
 
 void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const
+{
+	find_bounding_box(BoundingBox(BoundingBox::Point(point)), result_list);
+}
+
+void BIHTree::find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list) const
 {
 	find_bounding_box(BoundingBox(point), result_list);
 }

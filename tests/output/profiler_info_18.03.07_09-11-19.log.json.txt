@@ -1,0 +1,26 @@
+Program name        Flow123d
+Program version     2.1.2
+Program branch      PK_Armadillo
+Program revision    95d17fd
+Program build       Feb 26 2018, 20:58:33 flags: -O3 -g -DNDEBUG -DFLOW123D_DEBUG_PROFILER -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations -std=c++11
+Timer resolution    7.367e-05
+
+Task description    Test6 - Coupling between dimension 2D-3D - influence of sigma and cross section parameters.
+Task size           51118
+
+Run process count   1
+Run started         2018-03-07 09:11:19
+Run ended           2018-03-07 09:11:22
+
+                           tag                           call count (max)   max T   min/max T   avg T    total T                            source                              line    
+
+ 100.00  100.00 Whole Program                                1      2.5406    1.0000    2.5406    2.5406   system/sys_profiler.cc, ()                                      294   
+  97.05  .  97.05 Application::run                           1      2.4657    1.0000    2.4657    2.4657   main.cc, run()                                                  300   
+  87.22  .  .  89.87 HC constructor                          1      2.2159    1.0000    2.2159    2.2159   coupling/hc_explicit_sequential.cc, HC_ExplicitSequential()     122   
+   0.03  .  .  .   0.03 data init                            1      0.0008    1.0000    0.0008    0.0008   flow/darcy_flow_mh.cc, init_eq_data()                           298   
+  70.37  .  .  .  80.68 HC read mesh                         1      1.7878    1.0000    1.7878    1.7878   coupling/hc_explicit_sequential.cc, HC_ExplicitSequential()     127   
+  70.37  .  .  .  .  99.99 BaseMeshReader - mesh factory     1      1.7877    1.0000    1.7877    1.7877   io/msh_basereader.cc, mesh_factory()                             43   
+  30.08  .  .  .  .  .  42.74 MESH - setup topology          1      0.7641    1.0000    0.7641    0.7641   mesh/mesh.cc, setup_topology()                                  231   
+   0.05  .  .  .   0.06 Darcy constructor                    1      0.0013    1.0000    0.0013    0.0013   flow/darcy_flow_mh.cc, DarcyMH()                                263   
+   7.88  .  .  .   9.04 prepare parallel                     1      0.2003    1.0000    0.2003    0.2003   flow/mh_dofhandler.cc, prepare_parallel()                        76   
+   3.27  .  .   3.37 Read Input                              1      0.0831    1.0000    0.0831    0.0831   main.cc, run()                                                  303   

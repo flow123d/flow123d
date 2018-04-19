@@ -56,7 +56,7 @@ public:
     /// stabilization parameter
     static const double epsilon;
     /// Currently we assume
-    typedef Space<dimension>::Point Point;
+    typedef Space<dimension>::APoint Point;
 
 
 	/**
@@ -79,6 +79,12 @@ public:
 	 * From given minimal and maximal vertex.
 	 */
 	BoundingBox(const Point &min, const Point &max)
+	: min_vertex_(min), max_vertex_(max)
+	{
+		OLD_ASSERT( arma::min( min.arma() <= max.arma() ) , "Wrong coordinates in constructor.");
+	};
+    
+    BoundingBox(const Space<3>::Point &min, const Space<3>::Point &max)
 	: min_vertex_(min), max_vertex_(max)
 	{
 		OLD_ASSERT( arma::min( min <= max ) , "Wrong coordinates in constructor.");
@@ -149,7 +155,7 @@ public:
 	/**
 	 *  Return center of the bounding box.
 	 */
-	Point center() const {
+	Point::ArmaType center() const {
 		return (max_vertex_ + min_vertex_) / 2.0;
 	}
 

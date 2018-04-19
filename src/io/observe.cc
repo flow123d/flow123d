@@ -10,6 +10,7 @@
 #include <cmath>
 #include <algorithm>
 #include <unordered_set>
+#include "mesh/point.hh"
 
 #include "system/global_defs.h"
 #include "input/accessors.hh"
@@ -143,7 +144,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     std::unordered_set<unsigned int> closed_elements(1023);
 
     // search for the initial element
-    auto projected_point = bih_tree.tree_box().project_point(input_point_);
+    auto projected_point = bih_tree.tree_box().project_point(Space<3>::APoint(input_point_));
     bih_tree.find_point( projected_point, candidate_list );
     process_list.swap(candidate_list);
     candidate_list.clear();

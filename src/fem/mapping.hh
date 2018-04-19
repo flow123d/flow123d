@@ -87,7 +87,12 @@ template<> inline double determinant(const arma::mat::fixed<3,2> &M)
 
 template<unsigned int n> inline double determinant(const arma::mat::fixed<n,n> &M)
 {
-    return det(M);
+    return arma::det(M);
+}
+
+template<unsigned long long n> inline double determinant(const arma::mat::fixed<n,n> &M)
+{
+    return arma::det(M);
 }
 
 

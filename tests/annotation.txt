@@ -1,0 +1,71 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 2-way associative
+D1 cache:         32768 B, 64 B, 8-way associative
+LL cache:         2097152 B, 64 B, 16-way associative
+Command:          ../bin/flow123d 06_cube_simple.yaml
+Data file:        cachegrind.out.8106
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: DLmw DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+            Ir       I1mr    ILmr            Dr        D1mr        DLmr            Dw       D1mw       DLmw 
+--------------------------------------------------------------------------------
+31,870,183,493 90,183,260 161,519 8,554,541,119 307,204,605 126,206,281 4,317,309,735 28,897,503 14,947,994  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+           Ir      I1mr   ILmr          Dr        D1mr       DLmr          Dw      D1mw      DLmw  file:function
+--------------------------------------------------------------------------------
+   27,723,994   321,055    205     574,157          96         35  12,284,296 2,490,670 2,424,064  /build/glibc-bfm8X4/glibc-2.23/string/../sysdeps/x86_64/multiarch/../memset.S:__GI_memset
+1,645,398,682        72     71 302,266,465  20,021,984  9,780,573  53,748,735 5,291,270 2,067,076  ???:MatILUFactorSymbolic_SeqAIJ
+  199,742,999   387,245    666  31,031,694   1,870,528  1,618,321  23,020,027 1,559,053 1,437,821  /build/glibc-bfm8X4/glibc-2.23/string/../sysdeps/x86_64/multiarch/memcpy-sse2-unaligned.S:__memcpy_sse2_unaligned
+1,399,222,680        43     43 392,875,852  31,423,799 15,643,930 167,630,995 2,784,972 1,229,722  ???:MatLUFactorNumeric_SeqAIJ
+  559,056,924 1,507,615  3,310  99,700,218     350,960     16,553  89,027,131 1,226,442   942,105  /build/glibc-bfm8X4/glibc-2.23/malloc/malloc.c:_int_malloc
+  671,509,672   882,195    149 177,529,241   2,964,630  1,173,206  78,767,940 1,044,985   767,577  ???:MatSetValues_SeqAIJ
+  367,297,370       126    126 129,006,454  24,367,587  8,866,319   5,850,272   731,380   731,380  ???:MatMult_SeqAIJ
+2,227,307,298       490    490 913,094,123 160,973,032 59,287,167  11,092,476   693,636   693,453  ???:MatSolve_SeqAIJ_NaturalOrdering
+   21,774,116       860    860   5,442,424   1,360,554  1,128,562   2,722,564   680,420   680,420  ???:VecWAXPY_Seq
+  149,265,185       321    316  54,799,287   1,068,929    956,708  18,623,410   891,117   508,847  ???:MatAssemblyEnd_SeqAIJ
+  227,527,278       358    350  45,863,599   1,292,799  1,270,968  26,290,520   499,269   489,583  ???:MatGetSubMatrix_SeqAIJ
+   57,136,607       379    338  14,012,382     326,962    191,065   7,402,527   462,730   462,615  ???:MatSeqAIJSetPreallocation_SeqAIJ
+   45,086,843   323,570     42  17,786,655           0          0   5,165,644   435,709   364,670  /home/kingis/Dokumenty/PK_Flow/external_projects/boost_build/include/boost/unordered/detail/table.hpp:Profiler::notify_free(long) [clone .part.254]
+    8,388,657         5      5           0           0          0   2,097,166   262,148   262,145  /home/kingis/Dokumenty/PK_Flow/flow123d/src/system/simple_allocator.hh:boost::unordered::detail::table<boost::unordered::detail::map<internal::SimpleAllocator<std::pair<long const, int> >, long, int, boost::hash<long>, std::equal_to<long> > >::create_buckets(unsigned long)
+  111,672,804       177    177  29,510,761   1,216,710  1,159,681   5,905,903   250,469   249,389  ???:MatMarkDiagonal_SeqAIJ
+  126,079,377       411    411  41,186,721     186,345    102,446  11,866,868   113,900   113,068  ???:MatSeqAIJCheckInode
+   10,507,219         9      9   3,275,712      65,397     35,278   1,246,066   147,588   110,606  /home/kingis/Dokumenty/PK_Flow/flow123d/src/mesh/mesh.cc:Mesh::make_edge_permutations()
+      477,728         0      0           0           0          0     477,728   104,503   104,503  /home/kingis/Dokumenty/PK_Flow/flow123d/src/mesh/elements.cc:Element::Element()
+   54,212,652        70     70  10,132,878     411,554    386,484   1,024,516    64,032    64,028  ???:MatCreateSeqAIJWithArrays
+    6,146,832        64     64   2,048,864          40          8   1,024,504    64,056    63,470  ???:ISGetIndices_Stride
+    9,225,214        23     22   2,880,135      74,926     73,083   1,012,575    63,285    63,283  /home/kingis/Dokumenty/PK_Flow/flow123d/src/la/sparse_graph.cc:SparseGraph::finalize()
+  272,351,157 5,254,270 15,690 169,081,554   1,455,503    147,792  23,869,227   118,161    53,978  ???:???
+      306,720         3      3      51,123      51,121     51,121      51,121    51,118    51,118  /home/kingis/Dokumenty/PK_Flow/flow123d/src/mesh/mesh.cc:Mesh::element_to_neigh_vb()
+    2,521,943         5      5     405,178     121,410    121,409     200,703    51,116    51,012  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/mh_dofhandler.cc:MH_DofHandler::reinit(Mesh*)
+   16,487,650        62     62   3,801,976     629,654    465,496     598,404    50,180    50,180  ???:MatMult_SeqAIJ_Inode
+      426,048         9      9      65,552           9          2     163,849    45,059    45,055  ???:MPIDI_RMA_init
+    2,138,857        21     21     712,914      66,838     66,838     356,493    44,562    44,562  ???:VecScatterBegin_SGToSS_Stride1
+    4,990,232        13     10   1,425,791      89,120     89,120     712,902    44,556    44,556  /home/kingis/Dokumenty/PK_Flow/flow123d/src/la/linsys_PETSC.cc:LinSys_PETSC::preallocate_matrix()
+      912,631         2      2           1           1          1     182,518    45,630    44,555  /usr/include/c++/5/bits/stl_algobase.h:Balance::lazy_initialize()
+    5,792,549        46     38   1,782,304      89,173     50,460     802,068    66,858    43,933  /home/kingis/Dokumenty/PK_Flow/flow123d/src/mesh/partitioning.cc:Partitioning::id_maps(int, int*, Distribution const&, int*, Distribution*&, int*&, int*&)
+   14,983,880        23     22   5,635,827     147,768    140,377   1,787,004    38,169    38,169  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/mh_dofhandler.cc:MH_DofHandler::prepare_parallel()
+    1,204,922         1      1     262,142      32,741     29,540     366,766    32,769    32,764  /usr/include/c++/5/bits/stl_construct.h:std::vector<Edge, std::allocator<Edge> >::_M_default_append(unsigned long)
+      327,660        14      3     163,830      32,690     23,222     163,830    32,754    32,754  /home/kingis/Dokumenty/PK_Flow/flow123d/src/mesh/elements.h:std::vector<Element, std::allocator<Element> >::_M_default_append(unsigned long)
+  137,759,554       124    123  47,733,660   1,478,561    390,101  16,242,196    32,034    32,026  ???:MatMatMultSymbolic_SeqAIJ_SeqAIJ
+    1,126,224         0      0     375,408           0          0     375,408    31,963    31,359  /usr/include/c++/5/ext/new_allocator.h:SparseGraph::set_edge(int, int, int)
+      298,580         0      0           0           0          0     298,580    29,858    29,858  /usr/include/armadillo_bits/Mat_meat.hpp:Element::Element()
+   11,103,406         8      8   2,151,462     308,511     63,663   1,652,460    30,389    29,746  /usr/include/armadillo_bits/arrayops_meat.hpp:Element::precalculate_centre()
+    1,615,620         1      1     419,648           5          1     370,723   141,548    27,784  /usr/include/c++/5/ext/new_allocator.h:Mesh::create_node_element_lists()
+      313,872         1      1     104,624           0          0     209,248    26,152    26,146  /home/kingis/Dokumenty/PK_Flow/flow123d/src/mesh/edges.cc:Edge::Edge()
+    3,322,670   153,356      3   1,022,360      12,785     12,782     255,590    31,951    25,782  /home/kingis/Dokumenty/PK_Flow/flow123d/src/io/element_data_cache.cc:ElementDataCache<double>::store_value(unsigned int, double const*)
+    2,876,016         6      5   1,062,163     259,343    113,207     251,828    25,088    25,088  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/darcy_flow_mh_output.cc:DarcyFlowMHOutput::make_corner_scalar(std::vector<double, std::allocator<double> >&)
+      188,374         6      6           0           0          0     188,259    23,529    23,527  /usr/include/c++/5/bits/stl_vector.h:std::vector<std::vector<unsigned int, std::allocator<unsigned int> >, std::allocator<std::vector<unsigned int, std::allocator<unsigned int> > > >::_M_default_append(unsigned long)
+    5,295,576        18     17   1,336,373      73,411     73,409     478,687    22,278    22,278  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/darcy_flow_mh.cc:DarcyMH::make_serial_scatter()
+   15,151,090       248    246   2,673,774     178,351     53,609   1,248,024    22,339    22,278  ???:AOCreate_Basic
+    8,198,887        87     76   2,495,258      66,868          0   1,069,461    22,284    21,060  ???:ISPartitioningToNumbering
+    2,823,527         7      7     806,578     389,726    220,955     349,451    29,109    19,869  /home/kingis/Dokumenty/PK_Flow/flow123d/src/io/output_mesh.cc:OutputMesh::create_identical_mesh()
+    1,175,744         5      4     408,957      54,368     54,330     204,480    19,223    19,170  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/darcy_flow_mh_output.cc:DarcyFlowMHOutput::make_element_vector(std::vector<unsigned int, std::allocator<unsigned int> > const&)
+       98,298        14      3      49,149      20,426     14,311      49,149    16,382    16,382  /usr/include/armadillo_bits/arrayops_meat.hpp:std::vector<Element, std::allocator<Element> >::_M_default_append(unsigned long)
+

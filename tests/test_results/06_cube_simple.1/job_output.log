@@ -1,0 +1,22 @@
+00:00:00.040      MPI size: 1
+00:00:00.041      This is Flow123d, version 2.1.2 commit: 95d17fd
+00:00:00.041      Branch: PK_Armadillo
+                  Build: Feb 26 2018, 20:58:33 flags: -O3 -g -DNDEBUG -DFLOW123D_DEBUG_PROFILER -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations -std=c++11
+                  Fetch URL:  git@github.com:flow123d/flow123d.git
+00:00:00.177      - Reading nodes...
+00:00:00.295      ... 11626 nodes read. 
+00:00:00.296      - Reading elements...
+terminate called after throwing an instance of 'boost::exception_detail::clone_impl<ExcSignal>'
+  what():  --------------------------------------------------------
+Program Error: [ Signal 11 (Segmentation fault) received! ]
+
+** Diagnosting info **
+/home/kingis/Dokumenty/PK_Flow/flow123d/src/system/application_base.cc(45): Throw in function PetscErrorCode petsc_signal_handler(int, void*)
+Dynamic exception type: N5boost16exception_detail10clone_implI9ExcSignalEE
+[P13EI_Signal_TAG] = 11
+[P17EI_SignalName_TAG] = Segmentation fault
+
+** Stacktrace **
+
+--------------------------------------------------------
+

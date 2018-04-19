@@ -81,6 +81,8 @@ public:
 	 * @param searchedElements vector of ids of suspect elements
 	 */
     void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const;
+    
+    void find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list) const;
 
     /**
      * Get vector of mesh elements bounding boxes

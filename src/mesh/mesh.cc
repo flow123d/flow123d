@@ -746,7 +746,7 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 	NodeFullIter node = node_vector.add_item(node_id);
-	node->point() = coords;
+	node->set_point(coords);
 }
 
 
@@ -780,6 +780,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
 		ele->node[ni] = node;
 	}
+	ele->precalculate_centre();
 
 }
 

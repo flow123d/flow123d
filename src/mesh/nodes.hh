@@ -21,6 +21,7 @@
 #include "system/global_defs.h"
 #include "mesh/mesh_types.hh"
 #include <armadillo>
+#include "system/armor.hh"
 
 
 
@@ -32,7 +33,7 @@
 class Node {
 private:
     /// Node point in 3D space.
-    arma::vec3 coordinates;
+    armor::vec<3> coordinates;
 
 public:
     /**
@@ -65,11 +66,31 @@ public:
     /**
      * Getter method for nodal point. Can be used also for modification.
      */
+    /*
     inline arma::vec3 &point()
-    { return coordinates; }
-
-    inline const arma::vec3 &point() const
-        { return coordinates; }
+    { return coordinates.arma(); }
+    */
+    
+    inline void set_point(double x, double y, double z) {
+        coordinates(0) = x;
+        coordinates(1) = y;
+        coordinates(2) = z;
+    }
+    
+    inline void set_point(arma::vec3 a) {
+        coordinates = a;
+    }
+    
+    inline arma::vec3 point() const
+        { return coordinates.arma(); }
+        
+    inline const armor::vec<3> & point_armor() const {
+        return coordinates;
+    }
+    
+    inline armor::vec<3> & point_armor() {
+        return coordinates;
+    }
 
     /**
      * Difference of two nodes is a vector.

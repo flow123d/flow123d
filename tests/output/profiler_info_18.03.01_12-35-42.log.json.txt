@@ -1,0 +1,22 @@
+Program name        Flow123d
+Program version     2.1.2
+Program branch      PK_Armadillo
+Program revision    95d17fd
+Program build       Feb 26 2018, 20:58:33 flags: -O3 -g -DNDEBUG -DFLOW123D_DEBUG_PROFILER -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations -std=c++11
+Timer resolution    0.00010226
+
+Task description    
+Task size           1
+
+Run process count   1
+Run started         2018-03-01 12:35:42
+Run ended           2018-03-01 12:35:43
+
+                           tag                           call count (max)   max T   min/max T   avg T    total T                            source                              line    
+
+ 100.00  100.00 Whole Program                                1      0.6399    1.0000    0.6399    0.6399   system/sys_profiler.cc, ()                                      294   
+  26.82  .  26.82 Application::run                           1      0.1716    1.0000    0.1716    0.1716   main.cc, run()                                                  300   
+  12.79  .  .  47.69 HC constructor                          1      0.0818    1.0000    0.0818    0.0818   coupling/hc_explicit_sequential.cc, HC_ExplicitSequential()     122   
+  12.78  .  .  .  99.92 HC read mesh                         1      0.0818    1.0000    0.0818    0.0818   coupling/hc_explicit_sequential.cc, HC_ExplicitSequential()     127   
+  12.76  .  .  .  .  99.87 BaseMeshReader - mesh factory     1      0.0817    1.0000    0.0817    0.0817   io/msh_basereader.cc, mesh_factory()                             43   
+  13.86  .  .  51.66 Read Input                              1      0.0887    1.0000    0.0887    0.0887   main.cc, run()                                                  303   

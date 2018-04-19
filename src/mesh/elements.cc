@@ -118,16 +118,18 @@ double Element::measure() const {
  */
 
 arma::vec3 Element::centre() const {
+    return central_point.arma();
+}
+
+void Element::precalculate_centre() {
     unsigned int li;
 
-    arma::vec3 centre;
-    centre.zeros();
+    central_point.zeros();
 
     FOR_ELEMENT_NODES(this, li) {
-        centre += node[ li ]->point();
+        central_point += node[ li ]->point_armor();
     }
-    centre /= (double) n_nodes();
-    return centre;
+    central_point /= (double) n_nodes();
 }
 
 /**
@@ -192,7 +194,7 @@ double Element::quality_measure_smooth() {
     return 1.0;
 }
 
-
+/*
 void Element::get_bounding_box(BoundingBox &bounding_box) const
 {
 	bounding_box = BoundingBox( this->node[0]->point() );
@@ -200,7 +202,7 @@ void Element::get_bounding_box(BoundingBox &bounding_box) const
 	for (unsigned int i=1; i<n_nodes(); i++)
 		bounding_box.expand( this->node[i]->point() );
 }
-
+*/
 
 arma::vec Element::project_point(const arma::vec3 &point, const arma::mat &map) const
 {

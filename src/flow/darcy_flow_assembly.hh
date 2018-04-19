@@ -101,6 +101,8 @@
             arma::mat::fixed<dim+1,dim+1> local_matrix;
             local_matrix.zeros();
             arma::vec3 &gravity_vec = ad_->gravity_vec_;
+            
+            auto pre_value = (ad_->anisotropy.value(ele->centre(), ele->element_accessor() )).i();
 
             for (unsigned int k=0; k<qsize; k++)
             {
@@ -109,7 +111,7 @@
                      for (unsigned int j=0; j<ndofs; j++)
                         local_matrix[i*ndofs+j] +=
                                 arma::dot(fe_values_.shape_vector(i,k),
-                                            (ad_->anisotropy.value(ele->centre(), ele->element_accessor() )).i()
+                                            pre_value
                                              * fe_values_.shape_vector(j,k)
                                            )
                                 * fe_values_.JxW(k);

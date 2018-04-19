@@ -31,6 +31,7 @@ add_test_directory("${libs}")
     define_mpi_test(vtk_reader 1)
     define_test(intersection)
     define_mpi_test(bih_tree 1)
+    define_mpi_test(bih_armor 1)
     define_test(bounding_box)
     #define_test(intersection_1_3)
     

@@ -390,6 +390,9 @@ void VtkMeshReader::parse_compressed_data(ElementDataCacheBase &data_cache, unsi
 	}
 }
 
+inline bool compare_points(armor::vec<3> & p1, armor::vec<3> & p2, double tol) {
+	return arma::max(arma::abs(p1.arma() - p2.arma())) < tol;
+}
 
 void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 {
@@ -420,7 +423,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
         std::vector<double> &node_vec = *(node_cache.get_component_data(0) );
         ASSERT_EQ(node_vec.size(), point_header.n_components*point_header.n_entities).error();
         for (unsigned int i=0; i<point_header.n_entities; ++i) {
-            arma::vec3 point = { node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
+            armor::vec<3> point{ node_vec[3*i], node_vec[3*i+1], node_vec[3*i+2] };
             int found_i_node = -1;
             bih_tree.find_point(point, searched_elements);
 
@@ -428,7 +431,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                 ElementFullIter ele = mesh.element( *it );
                 FOR_ELEMENT_NODES(ele, i_node)
                 {
-                    if ( compare_points(ele->node[i_node]->point(), point) ) {
+                    if ( compare_points(ele->node[i_node]->point_armor(), point, point_tolerance) ) {
                     	i_elm_node = mesh.node_vector.index(ele->node[i_node]);
                         if (found_i_node == -1) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
@@ -503,13 +506,6 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
     }
 
     has_compatible_mesh_ = true;
-}
-
-
-bool VtkMeshReader::compare_points(arma::vec3 &p1, arma::vec3 &p2) {
-	return fabs(p1[0]-p2[0]) < point_tolerance
-		&& fabs(p1[1]-p2[1]) < point_tolerance
-		&& fabs(p1[2]-p2[2]) < point_tolerance;
 }
 
 

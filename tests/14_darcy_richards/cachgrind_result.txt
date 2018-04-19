@@ -1,0 +1,77 @@
+--------------------------------------------------------------------------------
+I1 cache:         32768 B, 64 B, 2-way associative
+D1 cache:         32768 B, 64 B, 8-way associative
+LL cache:         2097152 B, 64 B, 16-way associative
+Command:          ../../bin/flow123d 02_1d_dirichlet.yaml
+Data file:        cachegrind.out.12037
+Events recorded:  Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Events shown:     Ir I1mr ILmr Dr D1mr DLmr Dw D1mw DLmw
+Event sort order: DLmw DLmr
+Thresholds:       0.1 100
+Include dirs:     
+User annotated:   
+Auto-annotation:  off
+
+--------------------------------------------------------------------------------
+            Ir        I1mr    ILmr            Dr       D1mr    DLmr            Dw      D1mw    DLmw 
+--------------------------------------------------------------------------------
+10,748,789,039 113,425,591 115,602 2,790,874,652 31,030,407 483,539 1,666,085,346 9,153,904 323,263  PROGRAM TOTALS
+
+--------------------------------------------------------------------------------
+         Ir      I1mr   ILmr          Dr      D1mr    DLmr          Dw    D1mw   DLmw  file:function
+--------------------------------------------------------------------------------
+769,148,070 3,140,022    370 156,628,882 1,494,553   9,423 110,067,119 761,584 80,915  /build/glibc-bfm8X4/glibc-2.23/malloc/malloc.c:_int_malloc
+144,638,316 5,801,530 11,807  86,508,522 3,264,745 145,781  11,730,123 122,267 53,726  ???:???
+    426,048         9      9      65,552         9       2     163,849  45,059 45,055  ???:MPIDI_RMA_init
+ 38,740,622   284,564     48   5,962,138   512,739  11,620   4,175,350 203,861 25,325  /build/glibc-bfm8X4/glibc-2.23/string/../sysdeps/x86_64/multiarch/memcpy-sse2-unaligned.S:__memcpy_sse2_unaligned
+    524,297         0      0           0         0       0     131,074  16,384 16,384  /home/kingis/Dokumenty/PK_Flow/flow123d/src/system/simple_allocator.hh:boost::unordered::detail::table<boost::unordered::detail::map<internal::SimpleAllocator<std::pair<long const, int> >, long, int, boost::hash<long>, std::equal_to<long> > >::create_buckets(unsigned long)
+  9,835,265   346,488     24     343,236       313       0   3,381,277 652,684 12,652  /build/glibc-bfm8X4/glibc-2.23/string/../sysdeps/x86_64/multiarch/../memset.S:__GI_memset
+  1,680,981         1      1     308,738    50,705   3,134     365,505  27,423  6,663  /home/kingis/Dokumenty/PK_Flow/external_projects/boost_build/include/boost/multi_index/detail/ord_index_node.hpp:boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::basic_ptree(boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+    977,380        33      3     306,200    76,766   6,749     306,200  15,634  6,188  /usr/include/c++/5/bits/basic_string.h:boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::basic_ptree(boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+116,693,632    44,483     45  23,697,582   418,153       1  14,255,431 229,742  6,035  ???:MatGetSubMatrix_SeqAIJ
+    502,570        36     33     119,955    10,634   9,814      50,921   6,388  5,403  /build/glibc-bfm8X4/glibc-2.23/elf/../sysdeps/x86_64/dl-machine.h:_dl_relocate_object
+794,267,138 3,340,684    140 196,776,309   211,501  11,868  88,212,624  26,522  5,169  /build/glibc-bfm8X4/glibc-2.23/malloc/malloc.c:_int_free
+    850,058         0      0     243,320    74,680   5,639     245,858  57,710  4,135  /home/kingis/Dokumenty/PK_Flow/external_projects/boost_build/include/boost/multi_index/sequenced_index.hpp:boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::basic_ptree(boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+  1,221,535    10,101     21     388,740    34,494      88     211,686  23,390  3,266  ???:VecScatterBegin_SGToSS_Stride1
+     74,272     3,229     18       7,224       661       5      49,778   4,054  2,627  ???:PyDict_New
+  1,372,620       930     11     259,524       425       2     122,636   9,012  2,625  /home/kingis/Dokumenty/PK_Flow/external_projects/boost_build/include/boost/multi_index/detail/copy_map.hpp:boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > >::basic_ptree(boost::property_tree::basic_ptree<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::less<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&)
+    469,140     3,000      5      98,742        86       7      98,784   3,791  2,049  ???:_PyObject_GC_Malloc
+  1,292,655    10,009     65     391,930     6,665      35     110,202   3,275  1,850  ???:PyCode_New
+    599,824         0      0     149,956         0       0     251,866   7,764  1,821  /usr/include/c++/5/bits/basic_string.h:void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char*>(char*, char*, std::forward_iterator_tag) [clone .isra.286]
+ 49,881,224    26,397     11  14,692,056   206,848       0   3,521,204 156,152  1,736  ???:MatMarkDiagonal_SeqAIJ
+  1,877,498    13,924     37     291,801       163       1     505,526   7,760  1,476  ???:PyUnicode_New
+ 95,831,881   135,900     11  38,278,271         0       0  14,115,528  94,960  1,095  /home/kingis/Dokumenty/PK_Flow/external_projects/boost_build/include/boost/unordered/detail/table.hpp:Profiler::notify_free(long) [clone .part.254]
+    222,719     7,364     13      68,791     7,970     157      73,187   2,018  1,093  ???:PyFunction_NewWithQualName
+    824,110    29,319     92     141,084     1,138      23     112,694   3,119  1,037  /build/glibc-bfm8X4/glibc-2.23/string/../sysdeps/x86_64/multiarch/../memcpy.S:__GI_memcpy
+    951,274    11,230     35     305,121    19,418     562     294,029  15,785  1,036  ???:PyFrame_New
+  1,151,355       128      3     298,829     3,173     285     291,613   4,952  1,033  /usr/include/c++/5/bits/char_traits.h:void std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >::_M_construct<char*>(char*, char*, std::forward_iterator_tag) [clone .isra.286]
+ 49,049,110   163,725      2   9,809,822         0       0  24,524,555  70,102  1,026  /home/kingis/Dokumenty/PK_Flow/flow123d/src/system/simple_allocator.hh:boost::unordered::detail::table_impl<boost::unordered::detail::map<internal::SimpleAllocator<std::pair<long const, int> >, long, int, boost::hash<long>, std::equal_to<long> > >::operator[](long const&)
+    182,356     2,015    318      43,539       350       0      25,583   1,822    918  ???:MatSeqAIJSetPreallocation_SeqAIJ
+    884,721        14     14     187,640       242     200      61,431   1,280    842  ???:PyGrammar_AddAccelerators
+    450,125    13,160     13      36,010       488       0     303,315  26,550    770  ???:VecCreate
+     27,171       820      7       7,741       196       0      12,991   1,257    735  /usr/include/c++/5/bits/stl_tree.h:Input::Type::Record::Key::Key(Input::Type::Record::Key&&)
+    424,242     1,925      1      30,303         0       0     212,121  38,252    729  /usr/include/armadillo_bits/Mat_meat.hpp:std::vector<arma::Col<double>, std::allocator<arma::Col<double> > >::operator=(std::vector<arma::Col<double>, std::allocator<arma::Col<double> > > const&)
+      6,055        10     10          73         0       0       3,009     714    714  /build/glibc-bfm8X4/glibc-2.23/string/../sysdeps/x86_64/multiarch/../memset.S:memset
+ 28,244,615   105,737     98   8,849,005   446,432  29,405   4,888,887  11,539    704  /build/glibc-bfm8X4/glibc-2.23/malloc/malloc.c:malloc_consolidate
+    188,420       516     14      65,758     9,273      21      33,008   3,299    630  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/darcy_flow_mh_output.cc:DarcyFlowMHOutput::make_element_vector(std::vector<unsigned int, std::allocator<unsigned int> > const&)
+    214,398     4,648     11      30,342       377      10      55,470   1,756    579  ???:PyBytes_FromStringAndSize
+     95,277       578      2      45,370     3,332      75      40,833   1,417    568  /home/kingis/Dokumenty/PK_Flow/flow123d/src/input/type_record.hh:Input::Type::Record::Key::Key(Input::Type::Record::Key const&)
+     45,942         2      2       8,778     1,589   1,149      12,583     513    509  ???:PyType_ClearCache
+ 22,085,258   468,206      3  11,042,629    78,520       2   8,116,413  69,807    508  /usr/include/armadillo_bits/arrayops_meat.hpp:void arma::arrayops::copy_small<double>(double*, double const*, unsigned long long)
+     72,150         0      0      36,075         0       0      36,075   8,968    498  /usr/include/armadillo_bits/arrayops_meat.hpp:std::vector<arma::Col<double>::fixed<3ull>, std::allocator<arma::Col<double>::fixed<3ull> > >::_M_fill_insert(__gnu_cxx::__normal_iterator<arma::Col<double>::fixed<3ull>*, std::vector<arma::Col<double>::fixed<3ull>, std::allocator<arma::Col<double>::fixed<3ull> > > >, unsigned long, arma::Col<double>::fixed<3ull> const&)
+      3,500         2      2           0         0       0       3,000     499    479  /usr/include/armadillo_bits/Mat_meat.hpp:std::vector<BoundingBox, std::allocator<BoundingBox> >::_M_default_append(unsigned long)
+      8,500         2      2       3,000       127       0       4,500     501    479  /usr/include/armadillo_bits/arrayops_meat.hpp:BIHTree::element_boxes()
+  2,012,494    85,164     25     426,465         0       0     830,760  21,737    462  /build/glibc-bfm8X4/glibc-2.23/libio/genops.c:_IO_no_init
+     32,194       844     16       1,065       124       0      12,261   1,665    450  ???:_PyDict_NewPresized
+  5,562,000   154,191      3   2,781,000         0       0   2,781,000 393,729    443  /usr/include/armadillo_bits/arrayops_meat.hpp:std::vector<arma::Mat<double>::fixed<3ull, 3ull>, std::allocator<arma::Mat<double>::fixed<3ull, 3ull> > >::operator=(std::vector<arma::Mat<double>::fixed<3ull, 3ull>, std::allocator<arma::Mat<double>::fixed<3ull, 3ull> > > const&)
+  1,913,550    16,797     12     170,586         0       0   1,401,792  17,683    434  /build/glibc-bfm8X4/glibc-2.23/libio/genops.c:_IO_old_init
+    624,180       309      1           0         0       0       7,416   1,400    417  /usr/include/armadillo_bits/Mat_meat.hpp:std::vector<arma::Mat<double>::fixed<3ull, 3ull>, std::allocator<arma::Mat<double>::fixed<3ull, 3ull> > >::operator=(std::vector<arma::Mat<double>::fixed<3ull, 3ull>, std::allocator<arma::Mat<double>::fixed<3ull, 3ull> > > const&)
+ 12,659,896     9,179  3,155   3,963,958    10,205       0   1,113,125  30,082    416  ???:MatILUFactorSymbolic_SeqAIJ
+ 21,659,004   313,918    890   6,998,003   131,325   2,713   2,414,264  12,731    412  ???:PyEval_EvalFrameEx
+     66,650     2,477    324       4,185        17       0      49,445   3,085    411  ???:MatCreate
+    106,782     1,443      1           0         0       0     106,782  21,697    392  /usr/include/armadillo_bits/Mat_meat.hpp:std::vector<arma::Col<double>, std::allocator<arma::Col<double> > >::_M_default_append(unsigned long)
+    138,528       481      1           0         0       0     138,528   8,618    386  /usr/include/c++/5/bits/stl_vector.h:FiniteElement<3u, 3u>::initialize(Quadrature<3u> const&, UpdateFlags)
+    109,850     2,116      2      32,955     3,379      50      43,940     776    352  ???:_PyObject_GC_New
+436,554,037 1,411,533     23 120,130,198 2,319,927     859  70,554,773  46,256    343  ???:MatSetValues_SeqAIJ
+    205,010       430     15     106,416     1,860     312      41,174   2,644    325  /home/kingis/Dokumenty/PK_Flow/flow123d/src/flow/darcy_flow_mh_output.cc:DarcyFlowMHOutput::make_element_scalar(std::vector<unsigned int, std::allocator<unsigned int> > const&)
+

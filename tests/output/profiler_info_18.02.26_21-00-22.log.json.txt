@@ -1,0 +1,19 @@
+Program name        Flow123d
+Program version     2.1.2
+Program branch      PK_Armadillo
+Program revision    95d17fd
+Program build       Feb 26 2018, 20:58:33 flags: -O3 -g -DNDEBUG -DFLOW123D_DEBUG_PROFILER -Wall -Wno-unused-local-typedefs -Wno-deprecated-declarations -std=c++11
+Timer resolution    6.594e-05
+
+Task description    
+Task size           1
+
+Run process count   1
+Run started         2018-02-26 21:00:22
+Run ended           2018-02-26 21:00:23
+
+                tag                call count (max)   max T   min/max T   avg T    total T            source             line    
+
+ 100.00  100.00 Whole Program          1      0.8805    1.0000    0.8805    0.8805   system/sys_profiler.cc, ()     294   
+  19.82  .  19.82 Application::run     1      0.1745    1.0000    0.1745    0.1745   main.cc, run()                 300   
+  19.75  .  .  99.67 Read Input        1      0.1739    1.0000    0.1739    0.1739   main.cc, run()                 303   
