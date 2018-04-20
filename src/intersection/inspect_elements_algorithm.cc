@@ -346,7 +346,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
             
             // Go through all element which bounding box intersects the component element bounding box
             for (auto ele_3D : mesh->bulk_elements_range()) {
-                unsigned int bulk_ele_idx = mesh->elem_index( ele_3D.idx() );
+                unsigned int bulk_ele_idx = ele_3D.idx();
 
                 // if:
                 // check 3D only

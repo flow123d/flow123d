@@ -1243,7 +1243,7 @@ void DarcyMH::make_serial_scatter() {
                 }
             }
             for (auto ele : mesh_->bulk_elements_range()) {
-                loc_idx[i++] = mh_dh.row_4_el[ mesh_->elem_index( ele.idx() ) ];
+                loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
             }
             for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
                 loc_idx[i++] = mh_dh.row_4_edge[i_edg];

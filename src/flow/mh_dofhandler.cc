@@ -57,12 +57,12 @@ MH_DofHandler::~MH_DofHandler()
 void MH_DofHandler::reinit(Mesh *mesh) {
     mesh_ = mesh;
     elem_side_to_global.resize(mesh->n_elements() );
-    for (auto ele : mesh->bulk_elements_range()) elem_side_to_global[mesh->elem_index( ele.idx() )].resize(ele->n_sides());
+    for (auto ele : mesh->bulk_elements_range()) elem_side_to_global[ ele.idx() ].resize(ele->n_sides());
 
     unsigned int i_side_global=0;
     for (auto ele : mesh->bulk_elements_range()) {
         for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
-            elem_side_to_global[mesh->elem_index( ele.idx() )][i_lside] = i_side_global++;
+            elem_side_to_global[ ele.idx() ][i_lside] = i_side_global++;
     }
 
     prepare_parallel();
@@ -108,7 +108,7 @@ void MH_DofHandler::prepare_parallel() {
         for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
             unsigned int i_edg = edg - mesh_->edges.begin();
             // partition
-            e_idx = mesh_->elem_index(edg->side(0)->element().idx());
+            e_idx = edg->side(0)->element().idx();
             if (init_edge_ds.is_local(i_edg)) {
                 // find (new) proc of the first element of the edge
                 loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
@@ -147,7 +147,7 @@ void MH_DofHandler::prepare_parallel() {
                 if (init_side_ds.is_local(is)) {
                     // find (new) proc of the element of the side
                     loc_part[loc_i++] = el_ds->get_proc(
-                            row_4_el[mesh_->elem_index(side->element().idx())]);
+                            row_4_el[ side->element().idx() ]);
                 }
                 // id array
                 id_4_old[is++] = side_dof( side );
@@ -257,7 +257,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
 
 
 unsigned int MH_DofHandler::side_dof(const SideIter side) const {
-    return elem_side_to_global[ mesh_->elem_index(side->element().idx()) ][ side->side_idx() ];
+    return elem_side_to_global[ side->element().idx() ][ side->side_idx() ];
 }
 
 
@@ -270,7 +270,7 @@ void MH_DofHandler::set_solution( double time, double * solution, double precisi
 
 /// temporary replacement for DofHandler accessor, flux through given side
 double MH_DofHandler::side_flux(const Side &side) const {
-    return mh_solution[ elem_side_to_global[ mesh_->elem_index(side.element().idx()) ][ side.side_idx() ] ];
+    return mh_solution[ elem_side_to_global[ side.element().idx() ][ side.side_idx() ] ];
 }
 
 /// temporary replacement for DofHandler accessor, scalar (pressure) on edge of the side

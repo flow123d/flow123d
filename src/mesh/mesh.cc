@@ -259,9 +259,9 @@ void Mesh::count_element_types() {
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
-		vector<Element>::iterator ele = element_vec_.begin() + elem_index(elem_to_region.first);
-		ele->region_idx_ = region_db_.get_region( elem_to_region.second, ele->dim() );
-		region_db_.mark_used_region(ele->region_idx_.idx());
+		Element &ele = element_vec_[elem_to_region.first];
+		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
+		region_db_.mark_used_region(ele.region_idx_.idx());
 	}
 }
 
@@ -287,7 +287,7 @@ void Mesh::setup_topology() {
     IdxInt *id_4_old = new IdxInt[n_elements()];
     int i = 0;
     for (auto ele : this->bulk_elements_range())
-        id_4_old[i++] = elem_index( ele.idx() );
+        id_4_old[i++] = ele.idx();
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 
     delete[] id_4_old;
@@ -317,7 +317,7 @@ void Mesh::create_node_element_lists() {
 
     for (auto ele : this->bulk_elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
-            node_elements_[node_vector.index(ele->node[n])].push_back(ele.index());
+            node_elements_[node_vector.index(ele->node[n])].push_back(ele.idx());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -356,7 +356,7 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
     bool is_neighbour = false;
 
     vector<unsigned int>::iterator e_dest=element_list.begin();
-    for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele)
+    for( vector<unsigned int>::iterator ele = element_list.begin(); ele!=element_list.end(); ++ele) {
         if (element_vec_[*ele].dim() == dim) { // keep only indexes of elements of same dimension
             *e_dest=*ele;
             ++e_dest;
@@ -367,6 +367,7 @@ bool Mesh::find_lower_dim_element( vector<unsigned int> &element_list, unsigned 
             is_neighbour = true;
             element_idx = *ele;
         }
+    }
     element_list.resize( e_dest - element_list.begin());
     return is_neighbour;
 }
@@ -523,7 +524,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = elem_index(-bdr_idx);
+                    bdr.bc_ele_idx_ = element_ids_[-bdr_idx]; // elem_index(-bdr_idx);
                     bdr.mesh_=this;
 
                     continue; // next side of element e
