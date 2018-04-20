@@ -19,6 +19,7 @@
 #define BALANCE_HH_
 
 
+#include <fstream>
 #include "la/distribution.hh"
 #include "transport/substance.hh"
 #include "petscmat.h"
@@ -28,6 +29,7 @@
 class RegionDB;
 class TimeGovernor;
 class TimeStep;
+
 
 
 
@@ -140,6 +142,8 @@ public:
 	/// Input selection for file format.
 	static const Input::Type::Selection & get_format_selection_input_type();
 
+	/// Set global variable to output balance files into YAML format (in addition to the table format).
+	static void set_yaml_output();
 
 	/**
 	 * Constructor.
@@ -152,6 +156,7 @@ public:
 	 * Destructor.
 	 */
 	~Balance();
+
 
     /**
      * Initialize the balance object according to the input.
@@ -415,6 +420,10 @@ private:
 	/// Format double value of csv output. If delimiter is space, align text to column.
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
+
+	//**********************************************
+
+	static bool do_yaml_output_;
 
 	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
     unsigned int n_loc_dofs_;
