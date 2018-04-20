@@ -22,6 +22,7 @@
 
 #include "system/sys_profiler.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
@@ -164,7 +165,7 @@ public:
 			vector<unsigned int> bf_result;
 			for (auto ele : mesh->bulk_elements_range()) {
 				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
-				if (box.intersect(ele->bounding_box()) ) bf_result.push_back( mesh->elem_index( ele.idx() ) );
+				if (box.intersect(ele->bounding_box()) ) bf_result.push_back( ele.idx() );
 			}
 
 			vector<unsigned int> result_vec;
@@ -195,7 +196,7 @@ public:
 
 			vector<unsigned int> bf_point_result;
 			for (auto ele : mesh->bulk_elements_range()) {
-				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back( mesh->elem_index( ele.idx() ) );
+				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back( ele.idx() );
 			}
 
 			vector<unsigned int> result_point_vec;

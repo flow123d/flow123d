@@ -64,6 +64,7 @@ TEST(FeValues, test_all) {
     	mesh.add_node(0, arma::vec3("1 0 0"));
     	mesh.add_node(1, arma::vec3("3 0 0"));
     	std::vector<unsigned int> node_ids = {0, 1};
+    	mesh.init_element_vector(1);
     	mesh.add_element(0, 1, 1, 0, node_ids);
     	ElementAccessor<3> elm_acc = mesh.element_accessor(0);
 
@@ -83,6 +84,7 @@ TEST(FeValues, test_all) {
     	mesh.add_node(1, arma::vec3("2 0 0"));
     	mesh.add_node(2, arma::vec3("3 4 0"));
     	std::vector<unsigned int> node_ids = {0, 1, 2};
+    	mesh.init_element_vector(1);
     	mesh.add_element(1, 2, 1, 0, node_ids);
     	ElementAccessor<3> elm_acc = mesh.element_accessor(0);
 
