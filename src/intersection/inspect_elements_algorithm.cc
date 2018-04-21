@@ -1036,7 +1036,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
 
 void InspectElementsAlgorithm12::compute_intersections_1(const BIHTree& bih)
 {
-    //DebugOut() << "Intersections 1d-2d (2-bihtree) in 2D plane.\n";
+    DebugOut() << "Intersections 1d-2d (2-bihtree) in 2D plane.\n";
     intersectionaux_storage12_.clear();
     START_TIMER("Element iteration");
     

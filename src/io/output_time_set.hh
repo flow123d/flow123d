@@ -20,7 +20,10 @@ namespace Input { class Array; }
 /**
  * Set of times. Simple extension of std::set<double> providing
  * initialization by an array of time grids.
+ * Some common functionalities with TimeMarks, but unlike them this is more flexible.
  * TODO: replace by std::set with non-member read and initialize functions.
+ * TODO: possibly move to the same lib as time governor etc. OR even rethink concept of TimeMarks
+ * TODO: deal with duplicate times, or very close ones
  *
  * Finally we store just doubles, since it is like a set of the time marks with same type.
  * So we need not to save the type.
