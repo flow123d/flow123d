@@ -29,7 +29,6 @@ add_test_directory("${libs}")
 define_test(quadrature)
 define_test(fe_values)
 
-
-
+define_test(fe_system)
 
 

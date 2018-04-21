@@ -6,16 +6,14 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
-
-#include "mesh/ngh/include/point.h"
-#include "mesh/ngh/include/intersection.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/compute_intersection.hh"
@@ -199,8 +197,6 @@ void fill_solution(std::vector< TestCaseResult> &c)
                 {0.25, 0, 0},
                 {0, 0, 0}
                 }});
-
-
     c.push_back({ "61_p", {
                 {0, 0.25, 0.25},
                 {0.25, 0, 0},
@@ -274,51 +270,11 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     ASSERT(ok);
 }
 
-void compare_with_ngh(Mesh *mesh)
-{
-    double area1, area2 = 0;
-
-    // compute intersection by NGH
-    MessageOut() << "Computing polygon area by NGH algorithm\n";
-    ngh::TTriangle ttr;
-    ngh::TTetrahedron tte;
-    ngh::TIntersectionType it = ngh::area;
-
-    FOR_ELEMENTS(mesh, elm) {
-        if (elm->dim() == 2) {
-        ttr.SetPoints(
-                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)) );
-        }else if(elm->dim() == 3){
-        tte.SetPoints(
-                ngh::TPoint(elm->node[0]->point()(0), elm->node[0]->point()(1), elm->node[0]->point()(2)),
-                ngh::TPoint(elm->node[1]->point()(0), elm->node[1]->point()(1), elm->node[1]->point()(2)),
-                ngh::TPoint(elm->node[2]->point()(0), elm->node[2]->point()(1), elm->node[2]->point()(2)),
-                ngh::TPoint(elm->node[3]->point()(0), elm->node[3]->point()(1), elm->node[3]->point()(2)));
-        }
-    }
-    ngh::GetIntersection(ttr, tte, it, area2);
-    
-    
-    // compute intersection
-    MessageOut() << "Computing polygon area by NEW algorithm\n";
-    MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(IntersectionType::d23);
-    area1 = ie.measure_23();
-
-//     ie.print_mesh_to_file_23("output_intersection_23");
-    
-    MessageOut().fmt("Polygon area: (intersections) {},\t(NGH) {}\n", area1, area2);
-    EXPECT_NEAR(area1, area2, 1e-14);
-//     EXPECT_DOUBLE_EQ(area1,area2);
-}
-
 
 TEST(area_intersections, all) {
     // directory with testing meshes
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d_new/";
+    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/simple_meshes_23d/";
 
     std::vector<TestCaseResult> solution_coords;
     fill_solution(solution_coords);
@@ -330,7 +286,7 @@ TEST(area_intersections, all) {
         string file_name=test_case.first+"_triangle_tetrahedron.msh";
         TestCaseIPs &case_ips=test_case.second;
 
-        FilePath mesh_file(dir_name + file_name, FilePath::input_file);
+        string in_mesh_string = "{mesh_file=\"" + dir_name + file_name + "\"}";
         
         const unsigned int np = 1;//permutations_triangle.size();
         for(unsigned int p=0; p<np; p++){
@@ -342,10 +298,10 @@ TEST(area_intersections, all) {
                 MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## permutation:  triangle #{}, tetrahedron #{}\n",
                                  i_file,  file_name, p, pt);
                 
-                Mesh *mesh = mesh_constructor();
+                Mesh *mesh = mesh_constructor(in_mesh_string);
                 // read mesh with gmshreader
-                GmshMeshReader reader(mesh_file);
-                reader.read_mesh(mesh);
+                auto reader = reader_constructor(in_mesh_string);
+                reader->read_raw_mesh(mesh);
                 
                 // permute nodes:
                 FOR_ELEMENTS(mesh,ele)
@@ -357,7 +313,6 @@ TEST(area_intersections, all) {
                 }
                 mesh->setup_topology();
                 
-                compare_with_ngh(mesh);
                 compute_intersection_23d(mesh, case_ips);
             }
         }

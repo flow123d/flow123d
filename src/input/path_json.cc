@@ -16,11 +16,13 @@
  */
 
 #include "input/path_json.hh"
-#include "input/reader_to_storage.hh"
+#include "input/reader_internal_base.hh"
 #include "input/comment_filter.hh"
 #include "system/system.hh"
 
 #include "json_spirit/json_spirit_error_position.h"
+#include "input/json_spirit/json_spirit_reader.h"            // for read_or_...
+
 #include <boost/iostreams/device/file.hpp>
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/algorithm/string.hpp>
@@ -43,8 +45,8 @@ PathJSON::PathJSON(istream &in)
     try {
         json_spirit::read_or_throw( filter_in, *root_node_);
     } catch (json_spirit::Error_position &e ) {
-        THROW( ReaderToStorage::ExcNotJSONFormat() << ReaderToStorage::EI_JSONLine(e.line_) << ReaderToStorage::EI_JSONColumn(e.column_)
-        	<< ReaderToStorage::EI_JSONReason(e.reason_));
+        THROW( ReaderInternalBase::ExcNotJSONFormat() << ReaderInternalBase::EI_JSONLine(e.line_) << ReaderInternalBase::EI_JSONColumn(e.column_)
+        	<< ReaderInternalBase::EI_JSONReason(e.reason_));
     }
 
     nodes_.push_back( root_node_.get() );
@@ -86,7 +88,7 @@ bool PathJSON::down(unsigned int index)
 }
 
 
-bool PathJSON::down(const string& key)
+bool PathJSON::down(const string& key, int index)
 {
     const Node * head_node = nodes_.back();
     const json_spirit::mObject &obj = head_node->get_obj(); // the type should be checked in make_storage
@@ -95,7 +97,7 @@ bool PathJSON::down(const string& key)
     if (it == obj.end()) {
         return false;
     } else {
-        path_.push_back( make_pair( (int)(-1), key) );
+        path_.push_back( make_pair( index, key) );
         nodes_.push_back( &( it->second ) );
     }
     return true;
@@ -200,7 +202,7 @@ bool PathJSON::get_bool_value() const {
     if (head()->type() == json_spirit::bool_type) {
         return head()->get_bool();
     } else {
-        THROW( ReaderToStorage::ExcInputError()  );
+        THROW( ReaderInternalBase::ExcInputError()  );
     }
 	return false;
 }
@@ -211,7 +213,7 @@ std::int64_t PathJSON::get_int_value() const {
     if (head()->type() == json_spirit::int_type) {
         return head()->get_int64();
     } else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
     }
 	return 0;
 }
@@ -224,7 +226,7 @@ double PathJSON::get_double_value() const {
          || value_type == json_spirit::int_type) {
         return head()->get_real();
     } else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
     }
 	return 0.0;
 }
@@ -235,7 +237,7 @@ std::string PathJSON::get_string_value() const {
     if (head()->type() == json_spirit::str_type) {
         return head()->get_str();
     } else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
     }
 	return "";
 }
@@ -295,23 +297,25 @@ PathJSON * PathJSON::clone() const {
 
 
 
-std::string PathJSON::get_record_name() const {
-	std::string desc_name = "";
+std::string PathJSON::get_record_tag() const {
+	std::string tag_value;
 	if ( this->is_record_type() ) {
 		PathJSON type_path(*this);
 		if ( type_path.down("TYPE") ) {
 		    //check if TYPE key is reference
 			PathBase * ref_path = type_path.find_ref_node();
 		    if (ref_path) {
-		        desc_name = ref_path->get_string_value();
+		    	tag_value = ref_path->get_string_value();
 		    	delete ref_path;
 		    } else {
-		    	desc_name = type_path.get_string_value();
+		    	tag_value = type_path.get_string_value();
 			}
 		}
+	} else {
+		tag_value = "";
 	}
 
-	return desc_name;
+	return tag_value;
 }
 
 

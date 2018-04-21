@@ -24,7 +24,6 @@
 // Forward declarations
 template <int spacedim>
     class ElementAccessor;
-class GmshMeshReader;
 class BIHTree;
 class Node;
 class Element;

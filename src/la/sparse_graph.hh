@@ -23,6 +23,8 @@
 #include <stack>
 #include <ostream>
 #include <petscmat.h>
+#include "mpi.h"               // for MPI_Comm
+#include "petscistypes.h"      // for IS, _p_IS
 
 #include "la/distribution.hh"
 using namespace std;

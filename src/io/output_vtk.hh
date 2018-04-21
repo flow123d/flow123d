@@ -18,15 +18,23 @@
 #ifndef OUTPUT_VTK_HH_
 #define OUTPUT_VTK_HH_
 
-#include "input/accessors_forward.hh"
+#include <memory>          // for shared_ptr
+#include <ostream>         // for ofstream, stringstream, ostringstream
+#include <string>          // for string
+#include "output_time.hh"  // for OutputTime, OutputTime::OutputDataFieldVec
 
-#include "output_data_base.hh"
-#include "output_time.hh"
-
-#include <ostream>
-#include <cstdint>
+class Mesh;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+template <typename T> class ElementDataCache;
 
 using namespace std;
+
 
 /**
  * \brief This class is used for output data to VTK file format
@@ -58,6 +66,8 @@ public:
 	 */
     static const Input::Type::Selection & get_input_type_variant();
 
+
+
     /**
      * \brief This function write data to VTK (.pvd) file format
      * for curent time
@@ -75,7 +85,7 @@ public:
     int write_tail(void);
 
     /// Override @p OutputTime::init_from_input.
-    void init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec) override;
+    void init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str) override;
 
 protected:
 
@@ -121,15 +131,23 @@ protected:
     /// Registrar of class to factory
     static const int registrar;
 
-    /**
+    /// Formats of DataArray section
+	static const std::vector<std::string> formats;
+
+	/**
+	 * Used internally by write_data.
+	 */
+	string form_vtu_filename_(string basename, int i_step, int rank);
+
+	/**
      * \brief Write header of VTK file (.vtu)
      */
     void write_vtk_vtu_head(void);
 
     /**
-     * \brief Fills the given vector with VTK element types indicators.
+     * \brief Fills the data cache with VTK element types indicators.
      */
-    void fill_element_types_vector(std::vector<unsigned int> &data);
+    std::shared_ptr<ElementDataCache<unsigned int>> fill_element_types_data();
 
     /**
      * Write registered data of all components of given Field to output stream
@@ -157,6 +175,13 @@ protected:
      * \brief Write data on elements to the VTK file (.vtu)
      */
    void write_vtk_element_data(void);
+
+   /**
+    * \brief Write native data (part of our own data skipped by Paraview) to the VTK file (.vtu)
+    *
+    * Tags of native data are subtags of 'Flow123dData' tag, that is subtag of 'Piece' tag
+    */
+  void write_vtk_native_data(void);
 
    /**
     * \brief Write tail of VTK file (.vtu)

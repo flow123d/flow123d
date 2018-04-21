@@ -1048,6 +1048,6 @@ void P01_CouplingAssembler::fix_velocity_local(const IsecData &row_ele, const Is
     double * solution = data_->lin_sys->get_solution_array();
     for(uint icol=0; icol < n_cols; icol++ ) pressure[icol] = solution[col_ele.dofs[icol]];
     add_velocity =  loc_system_.get_matrix() * pressure - loc_system_.get_rhs();
-    DebugOut() << "fix_velocity\n" << pressure << add_velocity;
+    //DebugOut() << "fix_velocity\n" << pressure << add_velocity;
     for(uint irow=0; irow < n_rows; irow++ ) solution[row_ele.vel_dofs[irow]] += add_velocity[irow] ;
 }

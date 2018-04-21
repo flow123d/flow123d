@@ -18,6 +18,7 @@
 #include "input_type.hh"
 #include "type_repository.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal_base.hh"
 #include "attribute_lib.hh"
 
 #include <boost/typeof/typeof.hpp>
@@ -28,6 +29,7 @@ namespace Input {
 namespace Type {
 
 using namespace std;
+
 
 /*******************************************************************
  * implementation of Default
@@ -71,10 +73,10 @@ bool Default::check_validity(std::shared_ptr<TypeBase> type) const
 		reader.read_stream(is, Array(type), FileFormat::format_JSON);
 		storage_ = reader.get_storage()->get_item(0);
 		return true;
-	} catch ( Input::ReaderToStorage::ExcNotJSONFormat &e ) {
+	} catch ( Input::ReaderInternalBase::ExcNotJSONFormat &e ) {
 		THROW( ExcWrongDefaultJSON() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
 				<< make_nested_ei(e) );
-	} catch ( Input::ReaderToStorage::ExcInputError &e ) {
+	} catch ( Input::ReaderInternalBase::ExcInputError &e ) {
 		THROW( ExcWrongDefault() << EI_DefaultStr( value_ ) << EI_TypeName(type->type_name())
 				<< make_nested_ei(e) );
 	}
@@ -354,30 +356,41 @@ Record &Record::add_attribute(std::string key, TypeBase::json_string value) {
 
 
 TypeBase::MakeInstanceReturnType Record::make_instance(std::vector<ParameterPair> vec) {
-	Record rec = this->deep_copy();
-	ParameterMap parameter_map;
-	this->set_instance_data(rec, parameter_map, vec);
-
-	return std::make_pair( std::make_shared<Record>(rec.close()), parameter_map );
+    Record instance_rec = this->deep_copy();
+    auto parameter_map = this->set_instance_data(instance_rec, vec);
+	return std::make_pair( std::make_shared<Record>(instance_rec.close()), parameter_map );
 }
 
 
-void Record::set_instance_data(Record &rec, ParameterMap &parameter_map, std::vector<ParameterPair> vec) {
-	// Replace keys of type Parameter
-	for (std::vector<Key>::iterator key_it=rec.data_->keys.begin(); key_it!=rec.data_->keys.end(); key_it++) {
+TypeBase::ParameterMap Record::set_instance_data(Record &instance_rec,  std::vector<ParameterPair> vec) {
+    ParameterMap p_map;
+
+    // Replace keys of type Parameter
+	for (std::vector<Key>::iterator key_it=instance_rec.data_->keys.begin(); key_it!=instance_rec.data_->keys.end(); key_it++) {
 		if ( key_it->key_ != "TYPE" ) { // TYPE key isn't substituted
 			MakeInstanceReturnType inst = key_it->type_->make_instance(vec);
 			key_it->type_ = inst.first;
 			ParameterMap other_map = inst.second;
-			parameter_map.insert(other_map.begin(), other_map.end());
+			p_map.insert(other_map.begin(), other_map.end());
 		}
 	}
-	// Set attributes
-	rec.parameter_map_ = parameter_map;
-	rec.generic_type_hash_ = this->content_hash();
 
-	this->set_generic_attributes(parameter_map);
+    // Set attributes
+    instance_rec.parameter_map_ = p_map;
+    this->set_generic_attributes(p_map);
+
+    // Set reference to generic type of the instance.
+    bool param_substituted = (p_map.size() > 0);
+    auto generic_hash = this->content_hash();
+	auto instance_hash = instance_rec.content_hash();
+	ASSERT(param_substituted == (generic_hash != instance_hash));
+	if (param_substituted) {
+	    // Avoid self reference for non-parametrized types.
+	    instance_rec.generic_type_hash_ = generic_hash;
+	}
+	return p_map;
 }
+
 
 
 Record Record::deep_copy() const {

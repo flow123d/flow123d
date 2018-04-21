@@ -5,12 +5,13 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include "arma_expect.hh"
 
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "intersection/compute_intersection.hh"
@@ -150,16 +151,18 @@ TEST(intersections_12d, all) {
         FilePath mesh_file(dir_name + file_name, FilePath::input_file);
         ASSERT(mesh_file.exists())(dir_name+file_name);
         
+        string in_mesh_string = "{mesh_file=\"" + (string)mesh_file + "\"}";
+        
         const unsigned int np = permutations_triangle.size();
 //         const unsigned int np = 1;
         for(unsigned int p=0; p<np; p++){
             MessageOut().fmt("## Computing intersection on mesh #{}: {} \n ## triangle permutation: #{}\n",
                                 i_file,  file_name, p);
             
-            Mesh *mesh = mesh_constructor();
+            Mesh *mesh = mesh_constructor(in_mesh_string);
             // read mesh with gmshreader
-            GmshMeshReader reader(mesh_file);
-            reader.read_mesh(mesh);
+            auto reader = reader_constructor(in_mesh_string);
+            reader->read_raw_mesh(mesh);
             
             // permute nodes:
             FOR_ELEMENTS(mesh,ele)
@@ -171,7 +174,8 @@ TEST(intersections_12d, all) {
             
 //                 compare_with_ngh(mesh);
             // compute both ways
-            if(degenerate) compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), false);
+            if(degenerate)
+                compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), false);
             
             compute_intersection_12d(mesh, permute_coords(case_ips, permutations_triangle[p]), degenerate);
         }

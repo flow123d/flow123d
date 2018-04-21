@@ -31,7 +31,7 @@
 
 #include "fields/field_set.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -125,8 +125,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Read mesh
     {
         START_TIMER("HC read mesh");
-        mesh = new Mesh( in_record.val<Record>("mesh") );
-        mesh->init_from_input();
+
+   		mesh = BaseMeshReader::mesh_factory( in_record.val<Record>("mesh") );
         
         //getting description for the Profiler
         string description;

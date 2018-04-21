@@ -30,7 +30,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 #include <iostream>
 
@@ -67,8 +67,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
         region="set_2",
@@ -88,8 +88,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", gmsh_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     }
 ]
 )JSON";
@@ -117,11 +117,7 @@ public:
 
 	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh_->read_gmsh_from_stream(in);
-
+	    mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         set_values();
 	}
 
@@ -246,11 +242,11 @@ public:
 	    Input::Type::Array list_type = Input::Type::Array(set_of_field_.make_field_descriptor_type("FieldSpeedTest"));
 	    Input::ReaderToStorage reader( field_input, list_type, Input::FileFormat::format_JSON);
 	    Input::Array in_list=reader.get_root_interface<Input::Array>();
-	    field_.set_input_list(in_list);
+	    TimeGovernor tg(0.0, 0.5);
+	    field_.set_input_list(in_list, tg);
 
 	    field_.set_mesh(*(this->mesh_));
 	    field_.set_components(component_names_);
-	    TimeGovernor tg(0.0, 0.5);
 	    set_of_field_.set_time(tg.step(), LimitSide::right);
 	}
 

@@ -19,12 +19,29 @@
 #ifndef CONC_TRANS_MODEL_HH_
 #define CONC_TRANS_MODEL_HH_
 
+#include <boost/exception/info.hpp>                   // for operator<<, err...
+#include <memory>                                     // for shared_ptr
+#include <string>                                     // for string
+#include <vector>                                     // for vector
+#include <armadillo>
 #include "advection_diffusion_model.hh"
-
-#include "fields/bc_field.hh"
+#include "fields/field_values.hh"                     // for FieldValue<>::S...
 #include "fields/bc_multi_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
+#include "input/type_base.hh"                         // for Array
+#include "input/type_generic.hh"                      // for Instance
+#include "input/type_record.hh"                       // for Record
+#include "input/type_selection.hh"                    // for Selection
+#include "transport/substance.hh"                     // for SubstanceList
+#include "transport/transport_operator_splitting.hh"  // for ConcentrationTr...
+
+class Balance;
+class MH_DofHandler;
+class Mesh;
+class OutputTime;
+namespace Input { class Record; }
+template <int spacedim> class ElementAccessor;
 
 
 
@@ -57,7 +74,7 @@ public:
 		/// Transversal dispersivity (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> disp_t;
 		/// Molecular diffusivity (for each substance).
-		MultiField<3, FieldValue<3>::Scalar> diff_m;
+		MultiField<3, FieldValue<3>::TensorFixed> diff_m;
 
 	    Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
 	    MultiField<3, FieldValue<3>::Scalar > sorption_coefficient;     ///< Coefficient of linear sorption.
@@ -105,7 +122,7 @@ public:
 
 	void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values) override;
+			std::vector<std::vector<double> > &init_values) override;
 
 	void get_bc_type(const ElementAccessor<3> &ele_acc,
 				arma::uvec &bc_types) override;
@@ -124,13 +141,13 @@ public:
 
 	void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_conc,
-				std::vector<arma::vec> &sources_density,
-				std::vector<arma::vec> &sources_sigma) override;
+				std::vector<std::vector<double> > &sources_conc,
+				std::vector<std::vector<double> > &sources_density,
+				std::vector<std::vector<double> > &sources_sigma) override;
 
 	void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 				const ElementAccessor<3> &ele_acc,
-				std::vector<arma::vec> &sources_sigma) override;
+				std::vector<std::vector<double> > &sources_sigma) override;
 
 	~ConcentrationTransportModel() override;
 
@@ -199,7 +216,7 @@ protected:
 	 * @param K         Dispersivity tensor (output).
 	 */
 	void calculate_dispersivity_tensor(const arma::vec3 &velocity,
-			double Dm,
+			const arma::mat33 &Dm,
 			double alphaL,
 			double alphaT,
 			double water_content,

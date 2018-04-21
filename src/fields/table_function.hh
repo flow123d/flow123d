@@ -18,11 +18,18 @@
 #ifndef TABLE_FUNCTION_HH_
 #define TABLE_FUNCTION_HH_
 
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
-#include "input/input_exception.hh"
-#include "fields/field_values.hh"
-#include <vector>
+#include <string.h>                        // for memcpy
+#include <vector>                          // for vector
+#include <armadillo>
+#include "fields/field_values.hh"          // for FieldValue<>::TensorFixed
+
+namespace Input {
+	class Record;
+	namespace Type {
+		class Record;
+		class Tuple;
+	}
+}
 
 
 

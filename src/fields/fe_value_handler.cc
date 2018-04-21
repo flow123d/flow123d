@@ -20,6 +20,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/bounding_box.hh"
+#include "fem/fe_values_views.hh"
 
 
 /**
@@ -31,6 +32,7 @@
 template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
 public:
+
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
@@ -59,7 +61,7 @@ class FEShapeHandler<1, elemdim, spacedim, Value> {
 public:
 	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
 	{
-		return fe_val.shape_vector(i_dof, i_qp);
+		return fe_val.vector_view(0).value(i_dof, i_qp);
 	}
 };
 
@@ -67,8 +69,7 @@ public:
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
-: dof_indices(nullptr),
-  value_(r_value_),
+: value_(r_value_),
   map_(nullptr)
 {}
 
@@ -76,11 +77,11 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
-	ASSERT(dof_indices == nullptr).error("Multiple initialization.");
+	ASSERT_EQ(dof_indices.size(), 0).error("Multiple initialization.");
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
-    dof_indices = new unsigned int[init_data.ndofs];
+    dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
 
     if (map == nullptr) {
@@ -113,21 +114,22 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
     DOFHandlerBase::CellIterator cell = dh_->mesh()->element( elm.idx() );
-	dh_->get_loc_dof_indices(cell, dof_indices);
+	dh_->get_dof_indices(cell, dof_indices);
 
     arma::mat map_mat = map_->element_map(*elm.element());
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-        FEValues<elemdim,3> fe_values(*map_, quad, *dh_->fe<elemdim>(), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(), update_values);
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++)
+		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++) {
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
+		}
 	}
 }
 
@@ -144,9 +146,7 @@ bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, E
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
-{
-	if (dof_indices != nullptr) delete[] dof_indices;
-}
+{}
 
 
 // Instantiations of FEValueHandler and FEShapeHandler

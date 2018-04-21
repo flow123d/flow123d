@@ -90,7 +90,7 @@ public:
 	 */
 	virtual void compute_init_cond(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector< arma::vec > &init_values) = 0;
+			std::vector<std::vector<double> > &init_values) = 0;
 
 	/**
 	 * Return types of boundary conditions for each solution component.
@@ -147,9 +147,9 @@ public:
 	 */
 	virtual void compute_source_coefficients(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_conc,
-			std::vector<arma::vec> &sources_density,
-			std::vector<arma::vec> &sources_sigma) = 0;
+			std::vector<std::vector<double> > &sources_conc,
+			std::vector<std::vector<double> > &sources_density,
+			std::vector<std::vector<double> > &sources_sigma) = 0;
 
 	/**
 	 * Compute coefficients of volume sources.
@@ -159,7 +159,7 @@ public:
 	 */
 	virtual void compute_sources_sigma(const std::vector<arma::vec3> &point_list,
 			const ElementAccessor<3> &ele_acc,
-			std::vector<arma::vec> &sources_sigma) = 0;
+			std::vector<std::vector<double> > &sources_sigma) = 0;
 
 	/// Destructor.
 	virtual ~AdvectionDiffusionModel() {};

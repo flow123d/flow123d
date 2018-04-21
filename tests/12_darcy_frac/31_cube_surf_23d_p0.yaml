@@ -1,6 +1,6 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Cube with vertical fractures, Dirichlet BC on top simulating simple terrain. 
+  description: Cube with vertical fractures, Dirichlet BC on top simulating simple terrain.
   mesh:
     mesh_file: ../00_mesh/big_cube_23d.msh # 20x20 km
   flow_equation: !Flow_Darcy_MH
@@ -21,7 +21,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_piezo_head: !FieldFormula
           value: 200.0/(1.0 + 4*(x/10000)^2 + 4*(y/10000)^2)  # simple bell shape
-      
       - region: 2d
         conductivity: 1e-5
         cross_section: 1
@@ -42,6 +41,6 @@ problem: !Coupling_Sequential
 #        - pressure_diff
 #        - div_diff
     balance: {}
-    output_stream: 
+    output_stream:
       format: !vtk
         variant: ascii

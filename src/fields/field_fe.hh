@@ -26,7 +26,8 @@
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
-#include "mesh/element_data_cache.hh"
+#include "io/element_data_cache.hh"
+#include "io/msh_basereader.hh"
 #include "fem/dofhandler.hh"
 #include "input/factory.hh"
 
@@ -54,6 +55,11 @@ public:
      * Return Record for initialization of FieldFE that is derived from Abstract
      */
     static const Input::Type::Record & get_input_type();
+
+    /**
+     * Return Input selection for discretization type (determines the section of VTK file).
+     */
+    static const Input::Type::Selection & get_disc_selection_input_type();
 
     /**
      * Setter for the finite element data. The mappings are required for computation of local coordinates.
@@ -98,6 +104,20 @@ public:
     void set_mesh(const Mesh *mesh, bool boundary_domain) override;
 
 
+    /**
+     * Copy data vector to given output ElementDataCache
+     */
+    void fill_data_to_cache(ElementDataCache<double> &output_data_cache);
+
+
+    /**
+     * Return size of vector of data stored in Field
+     */
+    inline unsigned int data_size() const {
+    	return data_vec_->size();
+    }
+
+
     /// Destructor.
 	virtual ~FieldFE();
 
@@ -108,12 +128,15 @@ private:
 	/// Interpolate data over all elements of target mesh.
 	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
 
+	/// Calculate native data over all elements of target mesh.
+	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    unsigned int *dof_indices;
+    std::vector<IdxInt> dof_indices_;
 
     /// Value handler that allows get value of 1D elements.
     FEValueHandler<1, spacedim, Value> value_handler1_;
@@ -127,11 +150,11 @@ private:
      *
      * For correct functionality must be created proper descendant of FiniteElement class.
      */
-    FiniteElement<1,3> *fe1_;
+    FiniteElement<1> *fe1_;
     /// Same as previous, but represents 2D element.
-    FiniteElement<2,3> *fe2_;
+    FiniteElement<2> *fe2_;
     /// Same as previous, but represents 3D element.
-    FiniteElement<3,3> *fe3_;
+    FiniteElement<3> *fe3_;
 
 	/// mesh reader file
 	FilePath reader_file_;
@@ -139,8 +162,17 @@ private:
 	/// field name read from input
 	std::string field_name_;
 
+	/// Specify section where to find the field data in input mesh file
+	OutputTime::DiscreteSpace discretization_;
+
 	/// Field flags.
 	FieldFlag::Flags flags_;
+
+    /// Default value of element if not set in mesh data file
+    double default_value_;
+
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
 
     /// Registrar of class to factory
     static const int registrar;

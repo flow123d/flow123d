@@ -20,8 +20,29 @@
 #include "attribute_lib.hh"
 
 #include "system/system.hh"
-
+#include "input/storage.hh"
 #include <boost/functional/hash.hpp>
+
+#include <stddef.h>                                    // for NULL
+#include <algorithm>                                   // for find
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <boost/functional/hash/hash.hpp>              // for hash_combine
+#include <map>                                         // for _Rb_tree_iterator
+#include <memory>                                      // for shared_ptr
+#include <string>                                      // for basic_string
+#include <utility>                                     // for make_pair, pair
+#include <vector>                                      // for vector
+#include "input/storage.hh"                            // for StorageBase
+#include "input/type_abstract.hh"                      // for Abstract, Abst...
+#include "input/type_base.hh"                          // for ExcWrongDefault
+#include "input/type_generic.hh"                       // for ExcGenericWith...
+#include "input/type_record.hh"                        // for Record, Default
+#include "input/type_selection.hh"                     // for Selection
+#include "system/asserts.hh"                           // for Assert, ASSERT
+#include "system/exceptions.hh"                        // for ExcGenericWith...
+
+
 
 namespace Input {
 namespace Type {

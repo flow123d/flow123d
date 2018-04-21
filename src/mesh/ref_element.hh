@@ -71,8 +71,10 @@
 #ifndef REF_ELEMENT_HH_
 #define REF_ELEMENT_HH_
 
+#include <vector>                      // for vector
+#include <array>
 #include <armadillo>
-#include "system/system.hh"
+#include "system/asserts.hh"
 
 
 /*
@@ -307,6 +309,13 @@ public:
     static CentersList centers_of_subelements(unsigned int sub_dim);
     
     /**
+     * Return (1) number of zeros and (2) positions of zeros in barycentric coordinates.
+     * @p tolerance serves for testing zero values of @p barycentric coordinates.
+     */
+    static std::pair<unsigned int, unsigned int> zeros_positions(const BaryPoint &barycentric,
+                                                                 double tolerance = std::numeric_limits<double>::epsilon()*2);
+    
+    /**
      * According to positions of zeros in barycentric coordinates, it gives the index of subdim-simplex
      * in the reference element. Number of zeros must be equal to (3-subdim).
      * e.g.:
@@ -394,8 +403,46 @@ private:
     static const IdxVector<n_lines_per_side> side_lines_[n_sides]; ///< For given side, returns lines indices. For @p dim == 3.
 
     //TODO: implement for 1d and 2d
-    static const IdxVector<n_lines> topology_zeros_[dim];   ///< Maps the zero mask of the barycentric coordinates to topology indices.
+    /**
+     * Consider an n-face (node, edge, face, bulk) with dimension `subdim` and
+     * index within subdimension `idx`. Barycentric coordinates of all points
+     * on the n-face have unique pattern of zero coordinates.
+     *
+     * topology_zeros_[subdim][idx] is a bitfield with '1' where the pattern have zeros.
+     */
+    static const IdxVector<(n_lines > n_nodes) ? n_lines : n_nodes> topology_zeros_[dim+1];
 };
+
+
+
+
+
+
+template<> const IdxVector<2> RefElement<1>::line_nodes_[];
+template<> const IdxVector<2> RefElement<2>::line_nodes_[];
+template<> const IdxVector<2> RefElement<3>::line_nodes_[];
+
+template<> const IdxVector<1> RefElement<1>::node_lines_[];
+template<> const IdxVector<2> RefElement<2>::node_lines_[];
+template<> const IdxVector<3> RefElement<3>::node_lines_[];
+
+template<> const IdxVector<3> RefElement<3>::side_nodes_[];
+template<> const IdxVector<3> RefElement<3>::node_sides_[];
+
+template<> const IdxVector<2> RefElement<3>::line_sides_[];
+
+template<> const IdxVector<3> RefElement<3>::side_lines_[];
+
+template<> const unsigned int RefElement<1>::side_permutations[][n_nodes_per_side];
+template<> const unsigned int RefElement<2>::side_permutations[][n_nodes_per_side];
+template<> const unsigned int RefElement<3>::side_permutations[][n_nodes_per_side];
+
+template<> const IdxVector<2> RefElement<1>::topology_zeros_[];
+template<> const IdxVector<3> RefElement<2>::topology_zeros_[];
+template<> const IdxVector<6> RefElement<3>::topology_zeros_[];
+
+
+
 
 
 
@@ -463,12 +510,24 @@ template<> template<> inline unsigned int RefElement<3>::count<1>()
 { return n_lines; }
 template<> template<> inline unsigned int RefElement<3>::count<2>()
 { return n_sides; }
+template<> template<> inline unsigned int RefElement<3>::count<3>()
+{ return 1; }
 template<> template<> inline unsigned int RefElement<2>::count<0>()
 { return n_nodes; }
 template<> template<> inline unsigned int RefElement<2>::count<1>()
 { return n_lines; }
+template<> template<> inline unsigned int RefElement<2>::count<2>()
+{ return 1; }
+template<> template<> inline unsigned int RefElement<2>::count<3>()
+{ return 0; }
 template<> template<> inline unsigned int RefElement<1>::count<0>()
 { return n_nodes; }
+template<> template<> inline unsigned int RefElement<1>::count<1>()
+{ return 1; }
+template<> template<> inline unsigned int RefElement<1>::count<2>()
+{ return 0; }
+template<> template<> inline unsigned int RefElement<1>::count<3>()
+{ return 0; }
 
 template<unsigned int dim>
 template<unsigned int subdim>

@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test of gravity vector
   mesh:
@@ -22,7 +22,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - piezo_head_p0
         - velocity_p0
-    output_stream: 
+    output_stream:
       file: ./flow.pvd
       format: !vtk
         variant: ascii

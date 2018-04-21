@@ -1,0 +1,13 @@
+#!/bin/bash
+# Simple script which will use correct python version and execute runtest.py
+
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+EXECUTABLE="${SCRIPT_DIR}/../build_tree/bin/flow123d"
+if [ ! -x "${EXECUTABLE}" ]
+then
+    echo "Can not find executable: ${EXECUTABLE} "
+else    
+    "${EXECUTABLE}" "$@"
+fi
+

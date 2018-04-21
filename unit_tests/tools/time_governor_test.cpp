@@ -14,7 +14,7 @@
 #include <input/accessors.hh>
 #include "tools/time_governor.hh"
 #include "tools/time_marks.hh"
-
+#include "tools/unit_converter.hh"
 
 
 
@@ -43,7 +43,7 @@ Input::Record read_input(const string &json_input)
 
 
 TEST(TimeStep, all) {
-    TimeStep step(2.0);
+    TimeStep step(2.0, std::make_shared<TimeUnitConversion>());
     EXPECT_EQ(2.0, step.end());
     EXPECT_EQ(1.0, step.length());
     EXPECT_EQ(0, step.index());
@@ -90,7 +90,7 @@ TEST(TimeGovernor, step) {
     EXPECT_EQ(1, tg.step(-2).index());
 
     unsigned int n_recent_steps=3;
-    for(int i= 2; i<n_recent_steps; i++) tg.next_time();
+    for(unsigned int i= 2; i<n_recent_steps; i++) tg.next_time();
 
     EXPECT_THROW( {tg.step(0);}, TimeGovernor::ExcMissingTimeStep);
     EXPECT_THROW( {tg.step(n_recent_steps + 1);}, TimeGovernor::ExcMissingTimeStep);
@@ -195,7 +195,7 @@ TEST (TimeGovernor, time_step_constraints)
     TimeGovernor *tm_tg = new TimeGovernor( read_input(flow_json), my_mark_type  );
 
     //set permanent min_dt and max_dt
-    tm_tg->set_permanent_constraint(0.01, 20.0);
+    tm_tg->set_dt_limits(0.01, 20.0, Input::Array());
 
     //testing setting of upper constraint
     //if out of allowed interval, cannot change the user constraints
@@ -324,7 +324,7 @@ TEST (TimeGovernor, time_governor_marks_iterator)
     //-----------------
 
     //set permanent min_dt and max_dt
-    tm_tg->set_permanent_constraint(0.01, 20.0);
+    tm_tg->set_dt_limits(0.01, 20.0, Input::Array());
 
 
     //upper time step constraint for next change of time_step
@@ -453,7 +453,7 @@ TEST(TimeGovernor, reduce_timestep)
     string tg_in="{time = { start_time = 0.0, end_time = 100.0 } }";
     TimeGovernor tg( read_input(tg_in));
     tg.marks().add(TimeMark(10, tg.equation_fixed_mark_type()));
-    tg.set_permanent_constraint(0.5, 20.0);
+    tg.set_dt_limits(0.5, 20.0, Input::Array());
 
     tg.set_upper_constraint(5, "My upper constraint");
     tg.set_lower_constraint(1, "My lower constraint");
@@ -569,4 +569,112 @@ TEST (TimeGovernor, steady_time_governor)
     
     delete steady_tg;
     delete steady_tg_2;
+}
+
+
+TEST(TimeGovernor, unit_conversion_coefficient) {
+    TimeGovernor::marks().reinit();
+
+    {
+        string tg_in="{time = { end_time = 1, common_time_unit = \"min\" } }";
+        TimeGovernor tg( read_input(tg_in) );
+        EXPECT_EQ(60, tg.end_time() );
+    }
+    {
+        string tg_in="{time = { end_time = 1, common_time_unit = \"ms\" } }";
+        TimeGovernor tg( read_input(tg_in) );
+        EXPECT_EQ(0.001, tg.end_time() );
+    }
+    {
+        string tg_in="{time = { end_time = 1, common_time_unit = \"week; week = 168*h\" } }";
+        TimeGovernor tg( read_input(tg_in) );
+        EXPECT_EQ(7*24*3600, tg.end_time() );
+    }
+    {
+        string tg_in="{time = { common_time_unit = \"kg\" } }";
+		EXPECT_THROW_WHAT( { TimeGovernor tg( read_input(tg_in) ); }, ExcNoncorrespondingUnit,
+				"Non-corresponding definition of unit: 'kg'" );
+    }
+    {
+        string tg_in="{time = { start_time = [1, \"min\"], end_time = 0.5, min_dt = [0.1, \"min\"], max_dt = [0.25, \"min\"], common_time_unit = \"h\" } }";
+        TimeGovernor tg( read_input(tg_in) );
+        EXPECT_EQ(60, tg.init_time() );
+        EXPECT_EQ(1800, tg.end_time() );
+        EXPECT_EQ(6, tg.lower_constraint() );
+        EXPECT_EQ(15, tg.upper_constraint() );
+    }
+}
+
+TEST(TimeGovernor, dt_limits_table) {
+    TimeGovernor::marks().reinit();
+
+    {
+    	// table of dt_limits is filled with data of min_dt and max_dt
+        string tg_in="{time = { start_time = 0, end_time = 60, min_dt = 0.2, max_dt = 2 } }";
+        TimeGovernor tg( read_input(tg_in) );
+        tg.marks().add(TimeMark(9.9, tg.equation_fixed_mark_type()));
+        tg.marks().add(TimeMark(10.0, tg.equation_fixed_mark_type()));
+        for (unsigned int i=0; i<6; ++i) {
+        	EXPECT_EQ( 1.98*i, tg.t() );
+        	tg.next_time();
+        }
+        for (unsigned int i=0; i<26; ++i) {
+        	EXPECT_EQ( 2*i+10.0, tg.t() );
+        	tg.next_time();
+        }
+        EXPECT_EQ( 60.0, tg.t() );
+    }
+
+    {
+        string tg_in="{time = { start_time = 0, end_time = 60, min_dt = 0.2, max_dt = 2, "
+        		"dt_limits = [ [4, 0.5, 3], [10, 0.0, 0.0], [20, 0.1, 3], [30, 0.4, 0.0], [65, 1, 2] ], "
+        		"add_dt_limits_time_marks = true } }";
+        std::vector<double> expected_vals = { 0, 2, 4, 7, 10, 12, 14, 16, 18, 20 };
+        TimeGovernor tg( read_input(tg_in) );
+        for (unsigned int i=0; i<10; ++i) {
+        	EXPECT_EQ( expected_vals[i], tg.t() );
+        	tg.next_time();
+        }
+    }
+
+    {
+        string tg_in="{time = { start_time = 8, end_time = 60, min_dt = 0.2, max_dt = 2, "
+        		"dt_limits = [ [0, 0.5, 3], [2, 0.5, 4], [10, 0.0, 0.0], [20, 0.1, 5] ] } }";
+        std::vector<double> expected_vals = { 8, 12, 14, 16, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 60 };
+        TimeGovernor tg( read_input(tg_in) );
+        for (unsigned int i=0; i<15; ++i) {
+        	EXPECT_EQ( expected_vals[i], tg.t() );
+        	tg.next_time();
+        }
+    }
+
+    {
+    	// complete example of usage of dt_limits table
+        string tg_in="{time = { start_time = 0, end_time = 60, min_dt = 0.2, max_dt = 2, "
+        		"dt_limits = [ [0, 0.5, 3], [10, 0.0, 0.0], [20, 0.1, 1], [30, 0.4, 0.0], [65, 1, 2] ], "
+        		"add_dt_limits_time_marks = true, write_used_timesteps = \"./tg_steps.yaml\" } }";
+        std::vector<double> expected_vals = { 0, 2, 4, 7, 10, 12, 14, 16, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30,
+        		32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 60 };
+        {
+        TimeGovernor tg( read_input(tg_in) );
+        tg.marks().add(TimeMark(4, tg.equation_fixed_mark_type()));
+        for (unsigned int i=0; i<36; ++i) {
+        	EXPECT_EQ( expected_vals[i], tg.t() );
+        	tg.next_time();
+        }
+        EXPECT_EQ( 60, tg.t() );
+        }
+
+        // check result of YAML file of used time steps
+	    std::ifstream  out_file("tg_steps.yaml");
+	    std::stringstream str_out_file;
+	    str_out_file << out_file.rdbuf();
+	    out_file.close();
+	    std::ifstream  ref_file("tg_steps_ref.yaml");
+	    std::stringstream str_ref_file;
+	    str_ref_file << ref_file.rdbuf();
+	    ref_file.close();
+
+	    EXPECT_EQ(str_ref_file.str(), str_out_file.str());
+    }
 }

@@ -61,7 +61,7 @@ if (USE_DEAL_II)
     set(DEAL_II_COMPONENT_MESH_CONVERTER OFF)
     set(DEAL_II_COMPONENT_PARAMETER_GUI OFF)
 
-    add_subdirectory("dealii")
+#add_subdirectory("dealii")
     set(DEAL_II_LIBRARY_NAME ${DEAL_II_LIBRARY_NAME} PARENT_SCOPE)
     message(STATUS "===========================================")
 
@@ -95,11 +95,9 @@ add_library(system_lib
     system/sys_profiler.cc
     system/time_point.cc
     system/system.cc
-#    system/xio.cc
     system/exceptions.cc
     system/stack_trace.cc
     system/asserts.cc
-#    io/read_ini.cc
     system/file_path.cc
     system/tokenizer.cc
     system/application_base.cc
@@ -128,12 +126,18 @@ add_library(input_lib
     input/type_tuple.cc
     input/storage.cc
     input/reader_to_storage.cc
+    input/reader_internal_base.cc
+    input/reader_internal.cc
+    input/reader_internal_transpose.cc
+    input/reader_internal_csv.cc
     input/path_base.cc
     input/path_json.cc
     input/path_yaml.cc
     input/type_output.cc
     
     input/accessors.cc
+    
+    input/csv_tokenizer.cc
 )
 target_link_libraries(input_lib 
     system_lib json_spirit
@@ -169,6 +173,8 @@ add_library(tools_lib
     tools/adaptivesimpson.cc
     tools/time_marks.cc
     tools/time_governor.cc
+    tools/unit_si.cc
+    tools/unit_converter.cc
 )
 target_link_libraries(tools_lib
     system_lib input_lib )
@@ -177,8 +183,7 @@ target_link_libraries(tools_lib
 
 # mesh_lib
 add_library(mesh_lib 
-        mesh/region.cc
-    mesh/msh_gmshreader.cc
+    mesh/region.cc
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
@@ -192,24 +197,22 @@ add_library(mesh_lib
     
     mesh/bounding_box.cc
     mesh/bih_tree.cc
-    mesh/reader_instances.cc
     
-    mesh/ngh/src/abscissa.cpp
-    mesh/ngh/src/bisector.cpp
-    mesh/ngh/src/intersection.cpp
-    mesh/ngh/src/intersectionLocal.cpp
-    mesh/ngh/src/mathfce.cpp
-    mesh/ngh/src/matrix.cpp
-    mesh/ngh/src/plain.cpp
-    mesh/ngh/src/point.cpp
-    mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/tetrahedron.cpp
-    mesh/ngh/src/triangle.cpp
-    mesh/ngh/src/vector.cpp
-    mesh/ngh/src/vertex.cpp
+#     mesh/ngh/src/abscissa.cpp
+#     mesh/ngh/src/bisector.cpp
+#     mesh/ngh/src/intersection.cpp
+#     mesh/ngh/src/intersectionLocal.cpp
+#     mesh/ngh/src/mathfce.cpp
+#     mesh/ngh/src/matrix.cpp
+#     mesh/ngh/src/plain.cpp
+#     mesh/ngh/src/point.cpp
+#     mesh/ngh/src/polygon.cpp
+#     mesh/ngh/src/tetrahedron.cpp
+#     mesh/ngh/src/triangle.cpp
+#     mesh/ngh/src/vector.cpp
+#     mesh/ngh/src/vertex.cpp
 
     intersection/plucker.cc
-    intersection/simplex.cc
     intersection/intersection_point_aux.cc
     intersection/intersection_aux.cc
     intersection/intersection_local.cc
@@ -221,17 +224,21 @@ add_library(mesh_lib
 target_link_libraries(mesh_lib
     input_lib system_lib la_lib
     armadillo 
-    ${Boost_LIBRARIES})
-
+    ${Boost_LIBRARIES}
+    ${PugiXml_LIBRARY}
+    ${Zlib_LIBRARY})
 
 # fem_lib    
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
     quadrature/intersection_quadrature.cc
-    fem/fe_p.cc
     fem/dofhandler.cc
-    fem/fe_values.cc
     fem/finite_element.cc
+    fem/fe_p.cc
+    fem/fe_rt.cc
+    fem/fe_system.cc
+    fem/fe_values.cc
+    fem/fe_values_views.cc
     fem/mapping_p1.cc
 )
 target_link_libraries(fem_lib
@@ -241,6 +248,31 @@ target_link_libraries(fem_lib
 
 
 
+# io_lib  
+add_library(io_lib 
+    io/msh_basereader.cc
+    io/msh_gmshreader.cc
+    io/msh_vtkreader.cc
+    io/msh_pvdreader.cc
+    io/element_data_cache.cc
+    io/reader_cache.cc
+
+    io/output_time.cc
+    io/output_vtk.cc
+    io/output_msh.cc
+    io/observe.cc
+    io/output_mesh.cc
+    io/output_time_set.cc
+)
+
+target_link_libraries(io_lib
+    system_lib input_lib mesh_lib fem_lib la_lib
+    armadillo 
+    ${Boost_LIBRARIES}
+    ${PugiXml_LIBRARY}
+    ${Zlib_LIBRARY})
+
+
 
 
 
@@ -248,17 +280,8 @@ target_link_libraries(fem_lib
 add_library(coupling_lib 
    # unfortunatelly field sources depends on output sources
    # and viceversa
-    io/output_data.cc
-    io/output_time.cc
-    io/output_vtk.cc
-    io/output_msh.cc
-    io/observe.cc
-    io/output_mesh_data.cc
-    io/output_mesh.cc
-    io/output_time_set.cc
-    io/equation_output.cc
     
-    
+    fields/equation_output.cc
     fields/field_values.cc
     fields/field_common.cc
     fields/field.cc
@@ -268,8 +291,6 @@ add_library(coupling_lib
     fields/field_algo_base.cc    
     fields/field_flag.cc
     fields/field_set.cc
-    fields/unit_si.cc
-    fields/unit_converter.cc
     fields/generic_field.cc
     fields/field_constant.cc
     fields/field_formula.cc
@@ -284,11 +305,10 @@ add_library(coupling_lib
     # coupling/hc_explicit_sequential.cc
 )
 target_link_libraries(coupling_lib
-    system_lib input_lib mesh_lib tools_lib fem_lib
+    system_lib input_lib mesh_lib tools_lib fem_lib io_lib
     fparser     
     armadillo
-    ${Boost_LIBRARIES}
-    ${Zlib_LIBRARY})
+    ${Boost_LIBRARIES})
 
 
 
@@ -339,12 +359,12 @@ add_library(flow123d_lib
 )    
     
 target_link_libraries(flow123d_lib 
-    fem_lib mesh_lib la_lib input_lib system_lib 
-    tools_lib coupling_lib
+    fem_lib mesh_lib la_lib input_lib io_lib
+    system_lib tools_lib coupling_lib
     fparser  
     armadillo 
 #    ${TBB_LIBRARIES}
-    ${DEAL_II_LIBRARY_NAME}
+#    ${DEAL_II_LIBRARY_NAME}
     ${PETSC_LIBRARIES} 
     ${BDDCML_LIBRARIES} 
     ${PETSC_EXTERNAL_LIB} 

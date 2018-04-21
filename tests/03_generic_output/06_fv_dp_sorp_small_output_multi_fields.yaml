@@ -1,5 +1,5 @@
 # problem
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Transport 1D-2D, (convection, dual porosity, sorption)
   mesh:
@@ -31,10 +31,10 @@ problem: !Coupling_Sequential
         - conductivity
         - anisotropy
     balance: {}
-    nonlinear_solver: 
-        linear_solver: !Petsc
-            a_tol: 1.0e-12
-            r_tol: 1.0e-12
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
   # primary equation
     output_stream:
       file: flow.pvd
@@ -116,6 +116,7 @@ problem: !Coupling_Sequential
         variant: ascii
       times:
         - step: 0.1
+      precision: 15         
     time:
       end_time: 1.0
     balance:

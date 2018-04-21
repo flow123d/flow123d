@@ -256,7 +256,7 @@ void LinSys_BDDC::apply_constrains( double scalar )
 #endif // FLOW123D_HAVE_BDDCML
 }
 
-int LinSys_BDDC::solve()    // ! params are not currently used
+LinSys::SolveInfo LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef FLOW123D_HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
@@ -290,9 +290,9 @@ int LinSys_BDDC::solve()    // ! params are not currently used
     // upper bound on the residual error
     residual_norm_ = r_tol_ * bddcml_->normRhs( ) ;
 
-    return bddcml_ -> giveConvergedReason();
+    return LinSys::SolveInfo(bddcml_ -> giveConvergedReason(), bddcml_ -> giveNumIterations());
 #else
-	return 0;
+    return LinSys::SolveInfo(0,0);
 #endif // FLOW123D_HAVE_BDDCML
 
 }

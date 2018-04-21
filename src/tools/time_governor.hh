@@ -22,22 +22,81 @@
 #include <limits>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 #include <boost/circular_buffer.hpp>
-
+#include <boost/exception/info.hpp>
+#include <iosfwd>
+#include <string>
 
 #include "system/global_defs.h"
 #include "system/system.hh"
+#include "system/file_path.hh"
 #include "input/accessors_forward.hh"
 #include "input/input_exception.hh"
+#include "system/exc_common.hh"
+#include "system/exceptions.hh"
 #include "tools/time_marks.hh"
 
 namespace Input {
     class Record;
+    class Tuple;
+    template<class T> class Iterator;
     namespace Type {
         class Record;
+        class Tuple;
     }
 }
 
+
+
+/**
+ * @brief Helper class storing unit conversion coefficient and functionality for conversion of units.
+ *
+ * This class has created one instance for each TimeGovernor object. This object is shared with all
+ * TimeSteps.
+ */
+class TimeUnitConversion {
+public:
+	// Constructor set coef_ from user defined unit
+	TimeUnitConversion(std::string user_defined_unit);
+
+	// Default constructor
+	TimeUnitConversion();
+
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in coeff_. If time Tuple is not defined (e. g. Tuple is optional key) return default_time value.
+     */
+	double read_time(Input::Iterator<Input::Tuple> time_it, double default_time) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in coeff_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	inline double get_coef() const {
+		return coef_;
+	}
+
+    /**
+     * Return string representation of global time unit.
+     */
+	inline std::string get_unit_string() const {
+		return unit_string_;
+	}
+
+protected:
+    /// Conversion coefficient of all time values within the equation.
+	double coef_;
+
+	/// String representation of global unit of all time values within the equation.
+	std::string unit_string_;
+
+};
 
 
 
@@ -56,7 +115,7 @@ public:
     /**
      * Constructor of the zero time step.
      */
-    TimeStep(double init_time);
+    TimeStep(double init_time, std::shared_ptr<TimeUnitConversion> time_unit_conversion = std::make_shared<TimeUnitConversion>());
 
     /**
      * Default constructor.
@@ -126,6 +185,24 @@ public:
         { return this->ge(other_time) && this->lt(other_time + length_); }
 
     /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
+     * default_time value.
+     */
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in time_unit_conversion_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	double get_coef() const;
+
+    /**
      * Returns true if two time steps are exactly the same.
      */
     bool operator==(const TimeStep & other)
@@ -147,6 +224,8 @@ private:
     double length_;
     /// End time point of the time step.
     double end_;
+    /// Conversion unit of all time values within the equation.
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
 };
 
 std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
@@ -163,7 +242,7 @@ std::ostream& operator<<(std::ostream& out, const TimeStep& t_step);
  * Step estimating is constrained by several bounds (permanent maximal and minimal time step, upper 
  * and lower constraint of time step). The permanent constraints are set in the constructor from the input 
  * record so that user can set the time step constraints for the whole simulation.
- * Function set_permanent_constraint() should be used only in very specific cases and possibly right after 
+ * Function set_dt_limits() should be used only in very specific cases and possibly right after
  * the constructor before using other functions of TG.
  * 
  * Choice of the very next time step can be constrained using functions set_upper_constraint()
@@ -227,6 +306,9 @@ public:
 
     static const Input::Type::Record & get_input_type();
 
+    static const Input::Type::Tuple & get_input_time_type(double lower_bound= -std::numeric_limits<double>::max(),
+                                                          double upper_bound=std::numeric_limits<double>::max());
+
     /**
      * Getter for time marks.
      */
@@ -238,11 +320,13 @@ public:
      *
      * @param input accessor to input data
      * @param fixed_time_mask TimeMark mask used to select fixed time marks from all the time marks. 
+     * @param timestep_output enable/forbid output of time steps to YAML file
      * This value is bitwise added to the default one defined in TimeMarks::type_fixed_time().
      *
      */
    TimeGovernor(const Input::Record &input,
-                TimeMark::Type fixed_time_mask = TimeMark::none_type);
+                TimeMark::Type fixed_time_mask = TimeMark::none_type,
+				bool timestep_output = true);
 
    /**
     * @brief Default constructor - steady time governor.
@@ -270,6 +354,11 @@ public:
     */
    TimeGovernor(double init_time, double dt);
 
+	/**
+	 * Destructor.
+	 */
+	~TimeGovernor();
+
    /**
     * Returns true if the time governor was set from default values
     */
@@ -279,15 +368,16 @@ public:
    }
 
    /**
-    * @brief Sets permanent constraints for time step.
-    * 
+    * @brief Sets dt limits for time dependent DT limits in simulation.
+    *
     * This function should not be normally used. These values are to be set in constructor
     * from the input record or by default.
     * @param min_dt is the minimal value allowed for time step
     * @param max_dt is the maximal value allowed for time step
+    * @param dt_limits_list list of time dependent values of minimal and maximal value allowed for time step
     */
-   void set_permanent_constraint( double min_dt, double max_dt);
-    
+   void set_dt_limits( double min_dt, double max_dt, Input::Array dt_limits_list);
+
     /**
      * @brief Sets upper constraint for the next time step estimating.
      * 
@@ -501,7 +591,30 @@ public:
      */
     void view(const char *name="") const;
 
-    // Maximal tiem of simulation. More then age of the universe in seconds.
+    /**
+     * Read and return time value multiplied by coefficient of given unit or global coefficient of equation
+     * stored in time_unit_conversion_. If time Tuple is not defined (e. g. Tuple is optional key) return
+     * default_time value.
+     */
+    double read_time(Input::Iterator<Input::Tuple> time_it, double default_time=std::numeric_limits<double>::quiet_NaN()) const;
+
+    /**
+     * Read and return time unit coefficient given in unit_it or global coefficient of equation stored
+     * in time_unit_conversion_, if iterator is not defined.
+     */
+	double read_coef(Input::Iterator<std::string> unit_it) const;
+
+    /**
+     * Return global time unit coefficient of equation stored in coeff_.
+     */
+	double get_coef() const;
+
+    /**
+     * Return string representation of global time unit.
+     */
+	std::string get_unit_string() const;
+
+	// Maximal tiem of simulation. More then age of the universe in seconds.
     static const double max_end_time;
 
     /// Infinity time used for steady case.
@@ -515,6 +628,19 @@ public:
 
 private:
 
+    /// Structure that stores one record of DT limit.
+    struct DtLimitRow {
+
+    	DtLimitRow(double t, double min, double max)
+        : time(t),
+		  min_dt(min),
+		  max_dt(max)
+      {};
+
+      double time;    ///< time of DT limits record
+      double min_dt;  ///< min DT limit
+      double max_dt;  ///< max DT limit
+    };
 
     /**
      * \brief Common part of the constructors. Set most important parameters, check they are valid and set default values to other.
@@ -525,6 +651,11 @@ private:
      * Set time marks for the start time and end time (if finite).
      */
     void init_common(double init_time, double end_time, TimeMark::Type type);
+
+    /**
+     * \brief Sets permanent constraints for actual time step.
+     */
+    void set_permanent_constraint();
 
     /**
      *  Size of the time step buffer, i.e. recent_time_steps_.
@@ -578,6 +709,30 @@ private:
     
     /// True if the time governor is used for steady problem.
     bool steady_;
+
+    /// Conversion unit of all time values within the equation.
+    std::shared_ptr<TimeUnitConversion> time_unit_conversion_;
+
+    /// Table of DT limits
+    std::vector<DtLimitRow> dt_limits_table_;
+
+    /// Index to actual position of DT limits
+    unsigned int dt_limits_pos_;
+
+    /// File path for timesteps_output_ stream.
+    FilePath timesteps_output_file_;
+
+    /// Handle for file for output time steps to YAML format.
+    std::ofstream timesteps_output_;
+
+    /// Store last printed time to YAML output, try multiplicity output of one time
+    double last_printed_timestep_;
+
+    /// Special flag allows forbid output time steps during multiple initialization of TimeGovernor
+    bool timestep_output_;
+
+    /// Allows add all times defined in dt_limits_table_ to list of TimeMarks
+    bool limits_time_marks_;
 
     friend TimeMarks;
 };
