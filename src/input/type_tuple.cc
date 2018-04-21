@@ -142,11 +142,9 @@ unsigned int Tuple::obligatory_keys_count() const {
 
 
 TypeBase::MakeInstanceReturnType Tuple::make_instance(std::vector<ParameterPair> vec)  {
-	Tuple tuple = this->deep_copy();
-	ParameterMap parameter_map;
-	this->set_instance_data(tuple, parameter_map, vec);
-
-	return std::make_pair( std::make_shared<Tuple>(tuple.close()), parameter_map );
+	Tuple instance_tuple = this->deep_copy();
+    auto parameter_map = this->set_instance_data(instance_tuple, vec);
+    return std::make_pair( std::make_shared<Tuple>(instance_tuple.close()), parameter_map );
 }
 
 

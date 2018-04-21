@@ -19,9 +19,10 @@
 #define TYPE_GENERIC_HH_
 
 
-
-#include <input/type_base.hh>
-#include <input/input_exception.hh>
+#include <string>                    // for string
+#include <vector>                    // for vector
+#include "system/exceptions.hh"      // for ExcStream, operator<<, DECLARE_E...
+#include "input/type_base.hh"
 
 
 

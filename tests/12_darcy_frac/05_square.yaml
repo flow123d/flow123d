@@ -1,7 +1,6 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test6 - Coupling between dimension 1D-2D - influence of sigma and cross
-    section parameters.
+  description: Test6 - Coupling between dimension 1D-2D - influence of sigma and cross section parameters.
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac.msh
   flow_equation: !Flow_Darcy_MH
@@ -35,7 +34,7 @@ problem: !Coupling_Sequential
       - region: .channel
         bc_type: total_flux
         bc_flux: !FieldFormula
-          value: '-(0)'
+          value: -(0)
     output:
       fields:
         - piezo_head_p0

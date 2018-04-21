@@ -18,12 +18,21 @@
 #ifndef BOX_ELEMENT_HH_
 #define BOX_ELEMENT_HH_
 
-#include "system/system.hh"
-#include "system/global_defs.h"
-#include "mesh/point.hh"
-
-#include <vector>
+#include <string.h>                                    // for memcpy
+#include <algorithm>                                   // for max, min
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <new>                                         // for operator new[]
+#include <ostream>                                     // for operator<<
+#include <string>                                      // for basic_string
+#include <vector>                                      // for vector
 #include <armadillo>
+#include "mesh/point.hh"                               // for Space, Space<>...
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcStream, ope...
+#include "system/global_defs.h"                        // for msg, rank, ss
+
+using namespace std;
 
 /**
  * @brief Bounding box in 3d ambient space.
@@ -246,12 +255,28 @@ public:
     /**
      * Return index of the axis in which the box has longest projection.
      */
-   unsigned char longest_axis() const {
+    unsigned char longest_axis() const {
 	   auto diff=max_vertex_ - min_vertex_;
 	   return (diff[1] > diff[0])
 			   	   ?  ( diff[2] > diff[1] ? 2 : 1 )
 			   	   :  ( diff[2] > diff[0] ? 2 : 0 );
-   }
+    }
+
+    /**
+     * Project point to bounding box.
+     *
+     * If point is in bounding box, returns its.
+     */
+    Point project_point(const Point &point) const {
+        Point projected_point;
+        for (unsigned int i=0; i<dimension; ++i) {
+            if ( projection_gt(i, point[i]) ) projected_point[i] = min_vertex_(i);
+            else if ( projection_lt(i, point[i]) ) projected_point[i] = max_vertex_(i);
+            else projected_point[i] = point[i];
+        }
+
+        return projected_point;
+    }
 
 
 private:

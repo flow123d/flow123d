@@ -11,13 +11,13 @@
 #include <mesh_constructor.hh>
 
 #include "fields/field_set.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
@@ -93,18 +93,15 @@ public:
 
 	SomeEquation() {
 	    Profiler::initialize();
-
-        FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-        mesh_ = mesh_constructor();
-        ifstream in(string(mesh_file).c_str());
-        mesh_->read_gmsh_from_stream(in);
+	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        mesh_ = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 	}
 
 	~SomeEquation() {
-	    delete mesh_;
+		delete mesh_;
 	}
 
-	Mesh    *mesh_;
+	Mesh * mesh_;
 	std::vector<string> component_names_;
 };
 
@@ -218,9 +215,9 @@ TEST_F(SomeEquation, collective_interface) {
 
     EXPECT_EQ(nullptr,data["init_pressure"].mesh());
     data.set_mesh(*mesh_);
-    EXPECT_EQ(mesh_,data["init_pressure"].mesh());
-    EXPECT_EQ(mesh_,data["velocity"].mesh());
-    EXPECT_EQ(mesh_,data["reaction_type"].mesh());
+    EXPECT_EQ(mesh_, data["init_pressure"].mesh());
+    EXPECT_EQ(mesh_, data["velocity"].mesh());
+    EXPECT_EQ(mesh_, data["reaction_type"].mesh());
 
     // flags_add
     FieldFlag::Flags matrix(
@@ -241,9 +238,9 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ( matrix, data["reaction_type"].flags() );
 
     data.output_type(OutputTime::CORNER_DATA);
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["init_pressure"].output_type() );
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["velocity"].output_type() );
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["reaction_type"].output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["init_pressure"].get_output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["velocity"].get_output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["reaction_type"].get_output_type() );
 }
 
 TEST_F(SomeEquation, input_related) {
@@ -254,9 +251,9 @@ TEST_F(SomeEquation, input_related) {
     Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation"));
     Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
     Input::Array in=reader.get_root_interface<Input::Array>();
-    data.set_input_list(in);
-    data.set_mesh(*mesh_);
     TimeGovernor tg(0.0, 0.5);
+    data.set_input_list(in, tg);
+    data.set_mesh(*mesh_);
 
     data.mark_input_times(tg);
     Region front_3d = mesh_->region_db().find_id(40);

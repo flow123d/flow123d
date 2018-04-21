@@ -18,6 +18,7 @@
 #ifndef ACCESSORS_IMPL_HH_
 #define ACCESSORS_IMPL_HH_
 
+#include "input/factory.hh"
 
 namespace Input {
 

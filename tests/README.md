@@ -23,6 +23,7 @@ runtest [-h] [-a] [-v [VALGRIND]] [--massif] [-p PARALLEL] [--batch]
         [--random-output-dir [RANDOM_OUTPUT_DIR]] [--no-clean]
         [--no-compare] [--death-test] [--export] [--status-file]
         FOLDER_1 [FOLDER_2 ... FOLDER_N]
+        [-- [ARG [ARG ...]]]
 ```
 
 to list all options run
@@ -51,7 +52,10 @@ common_config:
                         #   to disable test use empty array []
   time_limit:   5.0     # float     - allowed time in seconds
   memory_limit: 800     # int       - allowed memory for ALL processes
+  death_test: false     # bool      - true to require the test to fail in
+                        #   order to pass the case, default is false
   tags: [foo, bar]      # str[]     - list of tags for the test cases
+  args: ['--no-log']    # str[]     - additional arguments passed to the Flow123d binary
   check_rules:          # object    - section where rules can be specified
       - ndiff:          # object[]  - name of the rule, based on this name
                         #   appropriate module will be loaded

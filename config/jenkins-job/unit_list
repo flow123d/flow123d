@@ -2,10 +2,13 @@ coupling
 dealii
 fem
 fields
+flow
 input
+intersection
 la
 mesh
 output
 scripts
 system
+test_scripts
 tools

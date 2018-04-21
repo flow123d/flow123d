@@ -1,0 +1,25 @@
+regular cases:
+1 IC: non
+2 IC: non
+3 IC: 1 triangle node, 2 on single tetra face
+      1 on tetra edge, 2 on tetra faces
+      3 on tetra edges
+      whole triangle inside
+
+4 IC: 4 on tetra faces
+      1 triangle node, 1 on tetra edge, 2 on tetra faces
+      2 triangle node, 2 on single tetra face
+
+5 IC: 1 triangle node, 2 on tetra edges, 2 on tetra faces
+
+
+spec:
+
+these were used, but modified:
+triangle_tetrahedron01 <- triangle_tetrahedron21.msh
+triangle_tetrahedron04 <- triangle_tetrahedron14.msh
+s_triangle_tetrahedron11 <- spec_triangle_tetrahedron11.msh
+s_triangle_tetrahedron18 <- spec_triangle_tetrahedron18.msh
+s_triangle_tetrahedron19 <- spec_triangle_tetrahedron19.msh
+s_triangle_tetrahedron20 <- spec_triangle_tetrahedron20.msh
+s_triangle_tetrahedron25 <- spec_triangle_tetrahedron25.msh

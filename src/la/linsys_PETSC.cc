@@ -22,6 +22,7 @@
 #include "petscksp.h"
 #include "petscmat.h"
 #include "system/sys_profiler.hh"
+#include "system/system.hh"
 
 
 //#include <boost/bind.hpp>
@@ -53,8 +54,9 @@ const it::Record & LinSys_PETSC::get_input_type() {
 const int LinSys_PETSC::registrar = LinSys_PETSC::get_input_type().size();
 
 
-LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
+LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds, const std::string &params)
         : LinSys( rows_ds ),
+          params_(params),
           init_guess_nonzero(false),
           matrix_(0)
 {
@@ -66,7 +68,6 @@ LinSys_PETSC::LinSys_PETSC( const Distribution * rows_ds)
     ierr = VecZeroEntries( rhs_ ); CHKERRV( ierr );
     VecDuplicate(rhs_, &residual_);
 
-    params_ = "";
     matrix_ = NULL;
     solution_precision_ = std::numeric_limits<double>::infinity();
     matrix_changed_ = true;
@@ -219,8 +220,8 @@ void LinSys_PETSC::preallocate_matrix()
     VecGetArray( off_vec_, &off_array );
 
     for ( unsigned int i=0; i<rows_ds_->lsize(); i++ ) {
-        on_nz[i]  = static_cast<PetscInt>( on_array[i]+0.1  );  // small fraction to ensure correct rounding
-        off_nz[i] = static_cast<PetscInt>( off_array[i]+0.1 );
+        on_nz[i]  = std::min( rows_ds_->lsize(), static_cast<uint>( on_array[i]+0.1  ) );  // small fraction to ensure correct rounding
+        off_nz[i] = std::min( rows_ds_->size() - rows_ds_->lsize(), static_cast<uint>( off_array[i]+0.1 ) );
     }
 
     VecRestoreArray(on_vec_,&on_array);
@@ -238,6 +239,7 @@ void LinSys_PETSC::preallocate_matrix()
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
 
     delete[] on_nz;
     delete[] off_nz;
@@ -263,6 +265,11 @@ void LinSys_PETSC::finish_assembly( MatAssemblyType assembly_type )
     ierr = VecAssemblyEnd(rhs_); CHKERRV( ierr ); 
 
     if (assembly_type == MAT_FINAL_ASSEMBLY) status_ = DONE;
+
+    //PetscViewerPushFormat(PETSC_VIEWER_STDOUT_SELF, PETSC_VIEWER_ASCII_INDEX);
+    //MatView(matrix_, PETSC_VIEWER_STDOUT_SELF);
+    //VecView(rhs_, PETSC_VIEWER_STDOUT_SELF);
+    //this->view();
 
     matrix_changed_ = true;
     rhs_changed_ = true;
@@ -319,7 +326,7 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 }
 
 
-int LinSys_PETSC::solve()
+LinSys::SolveInfo LinSys_PETSC::solve()
 {
 
     const char *petsc_dflt_opt;
@@ -391,7 +398,7 @@ int LinSys_PETSC::solve()
 
     KSPDestroy(&system);
 
-    return static_cast<int>(reason);
+    return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 
 }
 
@@ -428,6 +435,7 @@ LinSys_PETSC::~LinSys_PETSC( )
     if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
+    if (residual_ != NULL) VecDestroy(&residual_);
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 
@@ -438,7 +446,10 @@ void LinSys_PETSC::set_from_input(const Input::Record in_rec)
 	LinSys::set_from_input( in_rec );
 
 	// PETSC specific parameters
-	params_ = in_rec.val<string>("options");
+    // If parameters are specified in input file, they are used,
+    // otherwise keep settings provided in constructor of LinSys_PETSC.
+    std::string user_params = in_rec.val<string>("options");
+	if (user_params != "") params_ = user_params;
 }
 
 

@@ -87,7 +87,7 @@
 ##
 ##
 ##
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Example 2 inspirated of real locality - 2D model of the tunnel with transport
   mesh:
@@ -102,7 +102,7 @@ problem: !Coupling_Sequential
         conductivity: 2.59E-02
       - region: .tunnel
         bc_type: total_flux
-        bc_flux: -9.16E-02 
+        bc_flux: -9.16E-02
       - region: .base
         bc_type: dirichlet
         bc_pressure: 270

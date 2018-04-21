@@ -31,7 +31,7 @@
 
 #include "fields/field_set.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "system/sys_profiler.hh"
 #include "input/input_type.hh"
 #include "input/accessors.hh"
@@ -125,8 +125,8 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Read mesh
     {
         START_TIMER("HC read mesh");
-        mesh = new Mesh( in_record.val<Record>("mesh") );
-        mesh->init_from_input();
+
+   		mesh = BaseMeshReader::mesh_factory( in_record.val<Record>("mesh") );
         
         //getting description for the Profiler
         string description;
@@ -143,6 +143,10 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
     // Need explicit template types here, since reference is used (automatically passing by value)
     water = prim_eq.factory< DarcyFlowInterface, Mesh &, const Input::Record>(*mesh, prim_eq);
     water->initialize();
+    std::stringstream ss; // print warning message with table of uninitialized fields
+    if ( FieldCommon::print_message_table(ss, "HC explicit sequential") ) {
+        WarningOut() << ss.str();
+    }
 
     RegionSet bulk_set = mesh->region_db().get_region_set("BULK");
     water_content_saturated_ = water->data().field("water_content_saturated");

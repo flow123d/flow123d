@@ -1,0 +1,17 @@
+# pymongo section for authentication
+pymongo:
+  username: "USERNAME"
+  password: "PASSWORD"
+
+
+# flow123d configuration
+flow123d:
+  dir: "/path/to/repo"                                    # location of the git repo
+  git: "git@github.com:flow123d/flow123d.git"             # url of the repo
+  cfg: "config/localpbs/mpich or config/pbspro/openmpi"   # which script use for the installation
+  pbs: "pbs.pbspro.PBS or pbs.localpbs.LocalPBS"          # which module to use for pbs
+  monitor:
+    per_branch: 5                                         # how many runs there will be for each commit
+    branches:
+      - origin/master                                     # name of the branch we want to monitor
+      - origin/3.0.0_dev

@@ -256,7 +256,7 @@ void LinSys_BDDC::apply_constrains( double scalar )
 #endif // FLOW123D_HAVE_BDDCML
 }
 
-int LinSys_BDDC::solve()    // ! params are not currently used
+LinSys::SolveInfo LinSys_BDDC::solve()    // ! params are not currently used
 {
 #ifdef FLOW123D_HAVE_BDDCML
     std::vector<int> *  numSubAtLevels = NULL;  //!< number of subdomains at levels
@@ -290,9 +290,9 @@ int LinSys_BDDC::solve()    // ! params are not currently used
     // upper bound on the residual error
     residual_norm_ = r_tol_ * bddcml_->normRhs( ) ;
 
-    return bddcml_ -> giveConvergedReason();
+    return LinSys::SolveInfo(bddcml_ -> giveConvergedReason(), bddcml_ -> giveNumIterations());
 #else
-	return 0;
+    return LinSys::SolveInfo(0,0);
 #endif // FLOW123D_HAVE_BDDCML
 
 }
@@ -385,3 +385,17 @@ double LinSys_BDDC::get_solution_precision()
 }
 
 
+void LinSys_BDDC::print_matrix(std::ostream& out)
+{
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    
+    if(rank == 0){
+        out << "zzz = [\n";
+    
+        bddcml_->writeMatrix(out);
+        out << "];\n" 
+            << "zzz(:,1:2) = zzz(:,1:2) + ones(size(zzz),2);\n" // fix matlab indices (+1)
+            << "matrix_bddc = spconvert(zzz);\n";
+    }
+}

@@ -677,12 +677,13 @@ class TestPrinterStatus(object):
         '0':    'passed',
         'None': 'skipped',
         '-1':   'skipped',
+        '100':  'death',
     }
 
     errors = {
-        'clean': '| could not clean directory',
-        'pypy':  '| error while running',
-        'comp':  '| wrong result: {sub_detail}'
+        'clean': '{sub_detail}',
+        'pypy':  '{sub_detail}',
+        'comp':  '{sub_detail}'
     }
 
     @classmethod
@@ -694,12 +695,41 @@ class TestPrinterStatus(object):
         """
         :type thread: scripts.core.threads.RuntestMultiThread
         """
+        if thread.comp.returncode.succeeded:
+            return ''
+
+        result = '| wrong result: '
         with Printer.all.with_level(3):
-            result = ''
             for t in thread.comp.threads:
                 if t.returncode != 0:
                     result += '\n{}[ WRONG ] in {}'.format(Printer.indent(), t.name)
         return result
+
+    @classmethod
+    def detail_pypy(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        if thread.pypy.returncode.succeeded:
+            if thread.pypy.returncode.reversed:
+                return '| OK death test failed'
+            return ''
+        elif thread.pypy.returncode.failed:
+            if thread.pypy.returncode.reversed:
+                return '| test did NOT failed but should have failed'
+            return '| error while execution'
+
+        # skipped
+        return ''
+
+    @classmethod
+    def detail_clean(cls, thread):
+        """
+        :type thread: scripts.core.threads.RuntestMultiThread
+        """
+        if thread.clean.returncode.failed:
+            return '| could not clean directory'
+        return ''
 
 
 class RunnerFormatter(object):
@@ -718,16 +748,36 @@ class StatusPrinter(object):
         case_name = thread.pypy.case.as_string
 
         detail = ''
-        for ti in ['clean', 'pypy', 'comp']:
+        thread_names = ['clean', 'pypy', 'comp']
+        thread_rcs = dict()
+        thread_msg = dict()
+
+        for ti in thread_names:
             subthread = getattr(thread, ti)
-            if subthread.returncode not in (0, None):
-                if hasattr(formatter, 'detail_{}'.format(ti)):
-                    sub_detail = getattr(formatter, 'detail_{}'.format(ti))(thread)
+            thread_rcs[ti] = subthread.returncode
+            thread_msg[ti] = getattr(formatter, 'detail_{}'.format(ti))(thread)
+
+        # first non zero rc will be formatted
+        # otherwise first non empty detail
+        for ti in thread_names:
+            subthread = getattr(thread, ti)
+            if subthread.returncode.failed:
+                sub_detail = thread_msg[ti]
                 detail = formatter.errors[ti].format(**locals())
-                break
+                Printer.all.out(formatter.template.format(**locals()))
+                return
+
+        # first non empty detail
+        for ti in thread_names:
+            subthread = getattr(thread, ti)
+            sub_detail = thread_msg[ti]
+            if sub_detail:
+                detail = formatter.errors[ti].format(**locals())
+                Printer.all.out(formatter.template.format(**locals()))
+                return
 
         Printer.all.out(formatter.template.format(**locals()))
-    
+
     @classmethod
     def print_runner_stat(cls, runner, formatter=RunnerFormatter):
         """

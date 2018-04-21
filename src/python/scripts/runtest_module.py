@@ -6,7 +6,7 @@ import time
 import sys
 # ----------------------------------------------
 from scripts.pbs import pbs_control
-from scripts.yamlc.yaml_config import ConfigPool
+from scripts.yamlc.yaml_config import ConfigPool, ConfigBase
 from scripts.core.base import Paths, PathFilters, Printer, Command, IO, GlobalResult, DynamicSleep, StatusPrinter
 from scripts.core.threads import ParallelThreads, RuntestMultiThread
 from scripts.pbs.common import get_pbs_module
@@ -50,16 +50,24 @@ class ModuleRuntest(ScriptModule):
                     Printer.all.out('{: >4s} {: <40s} {}', '', basename, Paths.relpath(Paths.join(dirname, basename), test_dir))
             Printer.all.newline()
 
-    @staticmethod
-    def read_configs(all_yamls):
+    def read_configs(self, all_yamls):
         """
         Add yamls to ConfigPool and parse configs
         :rtype: ConfigPool
         """
+        
+        # by default we will create dummy cases for files
+        # which are not specified in the config.yaml file
+        missing_policy = ConfigBase.MISSING_POLICY_CREATE_DEFAULT
+        if self.dir_mode:
+            # however if we are in the diectory mode (meaning only directory were passed)
+            # we will skip cases which are not present in the config.yaml
+            missing_policy = ConfigBase.MISSING_POLICY_IGNORE
+        
         configs = ConfigPool()
         for y in all_yamls:
             configs += y
-        configs.parse()
+        configs.parse(missing_policy)
         return configs
 
     @property
@@ -108,7 +116,7 @@ class ModuleRuntest(ScriptModule):
         Method creates pbs start script which will be passed to
         some qsub command
 
-        :type case: scripts.config.yaml_config.ConfigCase
+        :type case: scripts.yamlc.yaml_config.ConfigCase
         :type module: scripts.pbs.modules.pbs_tarkil_cesnet_cz
         :rtype : str
         """
@@ -119,11 +127,14 @@ class ModuleRuntest(ScriptModule):
             runtest_command,
 
             python=sys.executable,
-            script=pkgutil.get_loader('runtest').filename,
+            script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
-            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
+            random_output_dir='' if not self.arg_options.random_output_dir else '--random-output-dir ' + str(self.arg_options.random_output_dir),
+            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit} --input {case.input}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
             dump_output=case.fs.dump_output,
+            save_to_db='' if not self.arg_options.save_to_db else '--save-to-db',
+            status_file='' if not self.arg_options.status_file else '--status-file',
             log_file=case.fs.job_output
         )
 
@@ -200,8 +211,7 @@ class ModuleRuntest(ScriptModule):
 
         with Printer.all.with_level(1):
             for thread in runner.threads:
-                multithread = thread
-                """ :type: RuntestMultiThread """
+                multithread = thread  # type: RuntestMultiThread
                 StatusPrinter.print_test_result(multithread)
             Printer.all.sep()
             StatusPrinter.print_runner_stat(runner)
@@ -214,6 +224,7 @@ class ModuleRuntest(ScriptModule):
         super(ModuleRuntest, self).__init__(arg_options)
         self.all_yamls = None
         self.configs = None
+        self.dir_mode = None
 
     def _check_arguments(self):
         """
@@ -232,11 +243,14 @@ class ModuleRuntest(ScriptModule):
         """
         Run method for this module
         """
-
         if self.arg_options.random_output_dir:
             import scripts.yamlc as yamlc
             yamlc.TEST_RESULTS = 'test_results-{}'.format(self.arg_options.random_output_dir)
-
+        
+        # switching processing logic
+        self.dir_mode = False
+        
+        # in this loop we are processing all given files/folders
         self.all_yamls = list()
         for path in self.arg_options.args:
             if not Paths.exists(path):
@@ -245,10 +259,11 @@ class ModuleRuntest(ScriptModule):
 
             # append files to all_yamls
             if Paths.is_dir(path):
+                self.dir_mode = True
                 self.all_yamls.extend(Paths.walk(path, ConfigPool.yaml_filters))
             else:
                 self.all_yamls.append(path)
-
+        
         Printer.all.out("Found {} yaml file/s", len(self.all_yamls))
         if not self.all_yamls:
             Printer.all.wrn('No yaml files found in locations: \n  {}', '\n  '.join(self.arg_options.args))
@@ -259,6 +274,7 @@ class ModuleRuntest(ScriptModule):
             proc=self.arg_options.cpu,
             time_limit=self.arg_options.time_limit,
             memory_limit=self.arg_options.memory_limit,
+            input=self.arg_options.input,
         )
 
         # filter tags for includes and excludes
@@ -283,7 +299,29 @@ def do_work(arg_options=None, debug=False):
     :type arg_options: utils.argparser.RuntestArgs
     """
     module = ModuleRuntest(arg_options)
-    result = module.run(debug)
+    result = module.run(debug)  # type: ParallelThreads
+
+    if not arg_options.queue:
+        Printer.all.sep()
+        if arg_options.save_to_db:
+            from scripts.artifacts.collect.loader import load_data, save_to_database
+            from scripts.artifacts.collect.modules.flow123d_profiler import Flow123dProfiler
+
+            for t in result.threads:
+                thread = t  # type: RuntestMultiThread
+                with Printer.all.with_level(1):
+                    Printer.all.out('Processing %s' % thread.pypy.case.fs.output)
+                    data = load_data(thread.pypy.case.fs.output, Flow123dProfiler())
+
+                    if data:
+                        with Printer.all.with_level(1):
+                            Printer.all.out(' - found %d file(s)' % len(data))
+                            with Printer.all.with_level(1):
+                                for item in data:
+                                    Printer.all.out(' %d element(s)' % len(item.items))
+                    else:
+                        Printer.all.err('No profiler data found')
+                    save_to_database(data)
 
     # pickle out result on demand
     if arg_options.dump:
@@ -291,4 +329,5 @@ def do_work(arg_options=None, debug=False):
             import pickle
             pickle.dump(result.dump(), open(arg_options.dump, 'wb'))
         except: pass
-    return result
+
+    return result.returncode, result

@@ -19,13 +19,16 @@
 #include "field_interpolated_p0.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "system/system.hh"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
-#include "mesh/reader_instances.hh"
-#include "mesh/ngh/include/intersection.h"
-#include "mesh/ngh/include/point.h"
+#include "io/reader_cache.hh"
 #include "system/sys_profiler.hh"
 
+#include "fem/mapping_p1.hh"
+
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
+#include "intersection/compute_intersection.hh"
 
 namespace it = Input::Type;
 
@@ -36,15 +39,22 @@ FLOW123D_FORCE_LINK_IN_CHILD(field_interpolated)
 template <int spacedim, class Value>
 const Input::Type::Record & FieldInterpolatedP0<spacedim, Value>::get_input_type()
 {
-    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field constant in space.")
+    return it::Record("FieldInterpolatedP0", FieldAlgorithmBase<spacedim,Value>::template_name()+" Field interpolated from external mesh data and piecewise constant on mesh elements.")
         .derive_from(FieldAlgorithmBase<spacedim, Value>::get_input_type())
         .copy_keys(FieldAlgorithmBase<spacedim, Value>::get_field_algo_common_keys())
-        .declare_key("gmsh_file", IT::FileName::input(), IT::Default::obligatory(),
+        .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "Input file with ASCII GMSH file format.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
 		//.declare_key("unit", FieldAlgorithmBase<spacedim, Value>::get_input_type_unit_si(), it::Default::optional(),
 		//		"Definition of unit.")
+        .declare_key("default_value", IT::Double(), IT::Default::optional(),
+                "Allow set default value of elements that have not listed values in mesh data file.")
+        .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
+                "Definition of unit of all times defined in mesh data file.")
+		.declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
+                "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
+                "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .close();
 }
 
@@ -66,16 +76,16 @@ FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_c
 template <int spacedim, class Value>
 void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &rec, const struct FieldAlgoBaseInitData& init_data) {
 	this->init_unit_conversion_coefficient(rec, init_data);
+	this->in_rec_ = rec;
 
 
 	// read mesh, create tree
     {
-       source_mesh_ = new Mesh( Input::Record() );
-       reader_file_ = FilePath( rec.val<FilePath>("gmsh_file") );
-       ReaderInstances::instance()->get_reader(reader_file_)->read_mesh( source_mesh_ );
+       reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
+       source_mesh_ = ReaderCache::get_mesh(reader_file_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
-	bih_tree_ = new BIHTree( source_mesh_ );
+	bih_tree_ = new BIHTree( source_mesh_.get() );
 
     // allocate data_
 	unsigned int data_size = source_mesh_->element.size() * (this->value_.n_rows() * this->value_.n_cols());
@@ -83,6 +93,9 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
 	data_->resize(data_size);
 
 	field_name_ = rec.val<std::string>("field_name");
+    if (!rec.opt_val("default_value", default_value_) ) {
+    	default_value_ = numeric_limits<double>::signaling_NaN();
+    }
 }
 
 
@@ -100,19 +113,22 @@ bool FieldInterpolatedP0<spacedim, Value>::set_time(const TimeStep &time) {
     // value of last computed element must be recalculated if time is changed
     computed_elm_idx_ = numeric_limits<unsigned int>::max();
 
-    GMSH_DataHeader search_header;
-    search_header.actual = false;
-    search_header.field_name = field_name_;
-    search_header.n_components = this->value_.n_rows() * this->value_.n_cols();
-    search_header.n_entities = source_mesh_->element.size();
-    search_header.time = time.end();
-    
     bool boundary_domain_ = false;
-    data_ = ReaderInstances::instance()->get_reader(reader_file_)->template get_element_data<typename Value::element_type>(search_header,
-    		source_mesh_->elements_id_maps(boundary_domain_), this->component_idx_);
-    this->scale_data();
+    double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
+	double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
+	double read_time = (time.end()+time_shift) / time_unit_coef;
+	BaseMeshReader::HeaderQuery header_query(field_name_, read_time, OutputTime::DiscreteSpace::ELEM_DATA);
+    ReaderCache::get_reader(reader_file_ )->find_header(header_query);
+    data_ = ReaderCache::get_reader(reader_file_ )->template get_element_data<typename Value::element_type>(
+    		source_mesh_->element.size(), this->value_.n_rows() * this->value_.n_cols(), boundary_domain_, this->component_idx_);
+    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
+    		this->unit_conversion_coefficient_, default_value_);
 
-    return search_header.actual;
+    if (checked_data == CheckResult::not_a_number) {
+        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
+    }
+
+    return true;
 }
 
 
@@ -150,63 +166,69 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		}
 
 		double total_measure=0.0, measure;
-		TIntersectionType iType;
 
 		START_TIMER("compute_pressure");
 		ADD_CALLS(searched_elements_.size());
+                
+                ElementFullIter elm_full_iter = elm.full_iter();
+                
+                MappingP1<3,3> mapping;
+                
 		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++)
 		{
-			ElementFullIter ele = source_mesh_->element( *it );
-			if (ele->dim() == 3) {
-			    ngh::set_tetrahedron_from_element(tetrahedron_, ele);
-				// get intersection (set measure = 0 if intersection doesn't exist)
-				switch (elm.dim()) {
-					case 0: {
-					    ngh::set_point_from_element(point_, elm.element());
-						if ( tetrahedron_.IsInner(point_) ) {
-							measure = 1.0;
-						} else {
-							measure = 0.0;
-						}
-						break;
-					}
-					case 1: {
-					    ngh::set_abscissa_from_element(abscissa_, elm.element());
-						GetIntersection(abscissa_, tetrahedron_, iType, measure);
-						if (iType != line) {
-							measure = 0.0;
-						}
-						break;
-					}
-			        case 2: {
-			        	ngh::set_triangle_from_element(triangle_, elm.element());
-						GetIntersection(triangle_, tetrahedron_, iType, measure);
-						if (iType != area) {
-							measure = 0.0;
-						}
-			            break;
-			        }
-			    }
+                    ElementFullIter ele = source_mesh_->element( *it );
+                    if (ele->dim() == 3) {
+                        // get intersection (set measure = 0 if intersection doesn't exist)
+                        switch (elm.dim()) {
+                            case 0: {
+                                arma::vec::fixed<3> real_point = elm_full_iter->node[0]->point();
+                                arma::mat::fixed<3, 4> elm_map = mapping.element_map(*ele);
+                                arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
+                                
+                                measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
+                                                && arma::min( unit_point ) >= 0)
+                                                    ? 1.0 : 0.0;
+                                break;
+                            }
+                            case 1: {
+                                IntersectionAux<1,3> is;
+                                ComputeIntersection<1,3> CI(elm_full_iter, ele, source_mesh_.get());
+                                CI.init();
+                                CI.compute(is);
 
+                                IntersectionLocal<1,3> ilc(is);
+                                measure = ilc.compute_measure() * elm_full_iter->measure();
+                                break;
+                            }
+                            case 2: {
+                                IntersectionAux<2,3> is;
+                                ComputeIntersection<2,3> CI(elm_full_iter, ele, source_mesh_.get());
+                                CI.init();
+                                CI.compute(is);
 
+                                IntersectionLocal<2,3> ilc(is);
+                                measure = 2 * ilc.compute_measure() * elm_full_iter->measure();
+                                break;
+                            }
+                        }
 
-				//adds values to value_ object if intersection exists
-				if (measure > epsilon) {
-					unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
-			        std::vector<typename Value::element_type> &vec = *( data_.get() );
-			        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  (typename Value::element_type *)(&vec[index])) );
-					Value tmp_value = Value( ret_type_value );
+                        //adds values to value_ object if intersection exists
+                        if (measure > epsilon) {
+                                unsigned int index = this->value_.n_rows() * this->value_.n_cols() * (*it);
+                        std::vector<typename Value::element_type> &vec = *( data_.get() );
+                        typename Value::return_type & ret_type_value = const_cast<typename Value::return_type &>( Value::from_raw(this->r_value_,  (typename Value::element_type *)(&vec[index])) );
+                                Value tmp_value = Value( ret_type_value );
 
-					for (unsigned int i=0; i < this->value_.n_rows(); i++) {
-						for (unsigned int j=0; j < this->value_.n_cols(); j++) {
-							this->value_(i,j) += tmp_value(i,j) * measure;
-						}
-					}
-					total_measure += measure;
-				}
-			}
+                                for (unsigned int i=0; i < this->value_.n_rows(); i++) {
+                                        for (unsigned int j=0; j < this->value_.n_cols(); j++) {
+                                                this->value_(i,j) += tmp_value(i,j) * measure;
+                                        }
+                                }
+                                total_measure += measure;
+                        }
+                    }
 		}
-
+                
 		// computes weighted average
 		if (total_measure > epsilon) {
 			for (unsigned int i=0; i < this->value_.n_rows(); i++) {
@@ -231,18 +253,6 @@ void FieldInterpolatedP0<spacedim, Value>::value_list(const std::vector< Point >
 {
 	OLD_ASSERT( elm.is_elemental(), "FieldInterpolatedP0 works only for 'elemental' ElementAccessors.\n");
     FieldAlgorithmBase<spacedim, Value>::value_list(point_list, elm, value_list);
-}
-
-
-
-template <int spacedim, class Value>
-void FieldInterpolatedP0<spacedim, Value>::scale_data()
-{
-	if (Value::is_scalable()) {
-		std::vector<typename Value::element_type> &vec = *( data_.get() );
-		for(unsigned int i=0; i<vec.size(); ++i)
-			vec[i] *= this->unit_conversion_coefficient_;
-	}
 }
 
 

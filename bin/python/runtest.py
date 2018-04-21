@@ -12,7 +12,6 @@ import utils.parsers as parsers
 import utils.argparser as argparser
 from utils.timer import Timer
 from utils.strings import format_dict
-from scripts.artifacts.artifacts import ArtifactProcessor
 # ----------------------------------------------
 
 
@@ -60,6 +59,14 @@ def create_parser():
              - range           "1:4"   = "[1,2,3,4]"
              - range with step "1:7:2" = "[1,3,5,7]"
     """)
+    argparser.Parser.add(group, '--input', type=str, help="""R|
+        Specify input folder name for the test, by default value 'input' is used in tests
+        Som configurable tests use this value to specify mesh file with different
+        amount of elements.
+        Value is not path but only a name of a folder. In yaml file may be specified
+        something like this:
+            mesh_file: /${INPUT}/mesh.msh
+    """)
     argparser.Parser.add(group, '--queue, -q', nargs='?', default=False, help="""R|
         Optional PBS queue name to use. If the parameter is not used,
         the application is executed in the same process and without PBS.
@@ -93,7 +100,8 @@ def create_parser():
 
     group = parser.add_argument_group('Special options', 'Options are debug features or machine specific options')
     argparser.Parser.add(group, '--root', help="""R|
-        Path to base directory of flow123d.
+        Path to base directory of flow123d. If not set value will be determined by python scripts
+        location.
     """)
     argparser.Parser.add(group, '--json', help="""R|
         Output result to json file.
@@ -121,7 +129,7 @@ def create_parser():
         Perform death test, instead of regular one.
         Death test will succeed if and only if tests fails.
     """)
-    argparser.Parser.add(group, '--export', action=argparser.Parser.STORE_TRUE, help="""R|
+    argparser.Parser.add(group, '--save-to-db', action=argparser.Parser.STORE_TRUE, help="""R|
         If set, will process artifacts yaml file in order to save/copy file
         or export them to database.
     """)
@@ -148,10 +156,10 @@ if __name__ == '__main__':
     parser = create_parser()
     arg_options = argparser.Parser.parse_runtest(parser)
 
-    overrides = ('memory_limit', 'time_limit', 'cpu')
+    overrides = ('memory_limit', 'time_limit', 'cpu', 'input')
     global_changes = {k: arg_options.get(k) for k in overrides if arg_options.get(k)}
     if global_changes:
-        Printer.all.out('Detected global resource override:')
+        Printer.all.out('Detected global resource override: ')
         Printer.all.out(format_dict(global_changes, indent=1))
         Printer.all.sep()
 
@@ -161,11 +169,9 @@ if __name__ == '__main__':
     # run work
     with Timer.app_timer:
         BinExecutor.register_sigint()
-        returncode = do_work(arg_options)
+        returncode, debug = do_work(arg_options)
 
     # run work
-    returncode = returncode.returncode if type(returncode) is not int else returncode
-
     if arg_options.death:
         if returncode == 0:
             Printer.all.err('Command did exit with 0 but should not (--death flag was set)!')
@@ -174,6 +180,6 @@ if __name__ == '__main__':
             Printer.all.suc('Command did not with 0 (--death flag was set)')
             sys.exit(0)
     else:
-        sys.exit(returncode)
+        sys.exit(returncode())
 
 

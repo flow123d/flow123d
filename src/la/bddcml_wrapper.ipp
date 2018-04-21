@@ -186,7 +186,8 @@ void la::BddcmlWrapper::insertToMatrix( const SubMat_  & subMat,
         for ( unsigned j = 0; j < colIndices.size(); j++) {
 
             // insert value
-            coo_.insert( rowIndices[i], colIndices[j], subMat(i,j) );
+            if (subMat(i,j) != 0.0)
+              coo_.insert( rowIndices[i], colIndices[j], subMat(i,j) );
         }
     }
 

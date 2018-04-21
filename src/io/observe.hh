@@ -8,15 +8,49 @@
 #ifndef SRC_IO_OBSERVE_HH_
 #define SRC_IO_OBSERVE_HH_
 
-#include <string>
-
-#include "input/input_type.hh"
-#include "fields/field.hh"
-#include "io/output_data.hh"
-#include "tools/time_governor.hh"
-#include "system/exceptions.hh"
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <iosfwd>                            // for ofstream, ostream
+#include <map>                               // for map, map<>::value_compare
+#include <memory>                            // for shared_ptr
+#include <new>                               // for operator new[]
+#include <string>                            // for string, operator<<
+#include <vector>                            // for vector
 #include <armadillo>
+#include "input/accessors.hh"                // for Array (ptr only), Record
+#include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
+#include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 
+class ElementDataCacheBase;
+class Mesh;
+namespace Input { namespace Type { class Record; } }
+template <typename T> class ElementDataCache;
+
+
+
+/**
+ * Helper class stores base data of ObservePoint and allows to evaluate
+ * the nearest point to input_point_.
+ */
+class ObservePointData {
+public:
+	/// Constructor
+	ObservePointData()
+	: distance_(numeric_limits<double>::infinity()) {};
+
+	/// Final element of the observe point. The index in the mesh.
+	unsigned int element_idx_;
+
+	/// Global coordinates of the observation point.
+	arma::vec3 global_coords_;
+
+	/// Local (barycentric) coordinates on the element.
+	arma::vec local_coords_;
+
+	/// Distance of found projection from the initial point.
+	/// If we find more candidates we pass in the closest one.
+	double distance_;
+
+};
 
 
 /**
@@ -29,12 +63,23 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcNoInitialPoint,
             << "Failed to find the element containing the initial observe point.\n");
     TYPEDEF_ERR_INFO(EI_RegionName, std::string);
-    TYPEDEF_ERR_INFO(EI_NLevels, unsigned int);
     DECLARE_INPUT_EXCEPTION(ExcNoObserveElement,
             << "Failed to find the observe element with snap region: " << EI_RegionName::qval
-            << " close to the initial observe point. Using maximal number of neighbour levels: " << EI_NLevels::val << "\n");
+            << " close to the initial observe point. Change maximal distance of observe element." << "\n");
 
     static const Input::Type::Record & get_input_type();
+
+    /**
+     * Return index of observation point in the mesh.
+     */
+    inline unsigned int element_idx() const
+    { return observe_data_.element_idx_; }
+
+    /**
+     * Return global coordinates of the observation point.
+     */
+    inline arma::vec3 global_coords() const
+    { return observe_data_.global_coords_; }
 
 protected:
     /**
@@ -45,23 +90,12 @@ protected:
     /**
      * Constructor. Read from input.
      */
-    ObservePoint(Input::Record in_rec, unsigned int point_idx);
-
-    /**
-     * Update the observe element and the projection of the initial point on it.
-     */
-    void update_projection(unsigned int i_elm, arma::vec local_coords, arma::vec3 global_coords);
+    ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_idx);
 
     /**
      * Returns true if we have already found any observe element.
      */
     bool have_observe_element();
-
-    /**
-     * Snap local coords to the subelement. Called by the snap method.
-     */
-    template <int ele_dim>
-    void snap_to_subelement();
 
     /**
      *  Snap to the center of closest subelement with dimension snap_dim_.
@@ -90,20 +124,20 @@ protected:
      */
     void output(ostream &out, unsigned int indent_spaces, unsigned int precision);
 
+    /// Project point to given element by dimension of this element.
+    ObservePointData point_projection(unsigned int i_elm, Element &elm);
+
     /// Index in the input array.
     Input::Record in_rec_;
 
     /// Observation point name.
     std::string name_;
 
-    /// Input coordinates of the initial position of the observation point.
-    arma::vec3 input_point_;
-
-    /**
-     * Snap to the center of the object of given dimension.
-     * Value 4 and greater means no snapping.
-     */
-    unsigned int snap_dim_;
+	/**
+	 * Snap to the center of the object of given dimension.
+	 * Value 4 and greater means no snapping.
+	 */
+	unsigned int snap_dim_;
 
     /**
      * Region of the snapping element.
@@ -111,22 +145,15 @@ protected:
     string snap_region_name_;
 
     /**
-     * Maximal number of observe element search levels.
+     * Maximal distance of observe element from input point.
      */
-    unsigned int max_levels_;
+    double max_search_radius_;
 
-    /// Final element of the observe point. The index in the mesh.
-    unsigned int element_idx_;
+	/// Input coordinates of the initial position of the observation point.
+	arma::vec3 input_point_;
 
-    /// Global coordinates of the observation point.
-    arma::vec3 global_coords_;
-
-    /// Local (barycentric) coordinates on the element.
-    arma::vec local_coords_;
-
-    /// Distance of found projection from the initial point.
-    /// If we find more candidates we pass in the closest one.
-    double distance_;
+    /// Helper object stored projection data
+    ObservePointData observe_data_;
 
     /// Only Observe should use this class directly.
     friend class Observe;
@@ -142,6 +169,9 @@ protected:
 class Observe {
 public:
 
+    typedef std::shared_ptr<ElementDataCacheBase> OutputDataPtr;
+    typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
+
     /**
      * Construct the observation object.
      *
@@ -149,17 +179,11 @@ public:
      * mesh - the mesh used for search for the observe points
      * in_array - the array of observe points
      */
-    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision);
+    Observe(string observe_name, Mesh &mesh, Input::Array in_array, unsigned int precision, std::string unit_str);
 
     /// Destructor, must close the file.
     ~Observe();
 
-
-    /**
-     * Evaluates and store values of the given field in the observe points.
-     */
-    template<int spacedim, class Value>
-    void compute_field_values(Field<spacedim, Value> &field);
 
     /**
      * Provides a vector of element indices on which the observation values are evaluated.
@@ -179,22 +203,37 @@ public:
      */
     void output_time_frame(double time);
 
+    /**
+     * Return \p points_ vector
+     */
+    inline const std::vector<ObservePoint> & points() const
+    { return points_; }
+
+    /**
+     * Prepare data for computing observe values.
+     *
+     * Method:
+     *  - check that all fields of one time frame are evaluated at the same time
+     *  - find and return ElementDataCache of given field_name, create its if doesn't exist.
+     *
+     * @param field_name Quantity name of founding ElementDataCache
+     * @param field_time Actual computing time
+     * @param n_rows     Count of rows of data cache (used only if new cache is created)
+     * @param n_cols     Count of columns of data cache (used only if new cache is created)
+     */
+    template <typename T>
+    ElementDataCache<T> & prepare_compute_data(std::string field_name, double field_time, unsigned int n_rows, unsigned int n_cols);
+
 
 
 protected:
     // MPI rank.
     int rank_;
 
-    // Mesh used for search of points.
-    Mesh *mesh_;
-
     /// Full information about observe points.
     std::vector<ObservePoint> points_;
     /// Elements of the o_points.
     std::vector<unsigned int> observed_element_indices_;
-
-    typedef std::shared_ptr<OutputDataBase> OutputDataPtr;
-    typedef std::map< string,  OutputDataPtr > OutputDataFieldMap;
 
     /// Stored field values.
     OutputDataFieldMap observe_field_values_;

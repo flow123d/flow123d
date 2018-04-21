@@ -228,7 +228,7 @@ void RichardsLMH::assembly_linear_system()
     VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
     VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
 
-    is_linear_ = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
+    data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
     bool is_steady = zero_time_term();
     //DebugOut() << "Assembly linear system\n";
@@ -243,17 +243,13 @@ void RichardsLMH::assembly_linear_system()
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
 
-        if (balance_ != nullptr) {
-            balance_->start_source_assembly(water_balance_idx_);
-            balance_->start_mass_assembly(water_balance_idx_);
-        }
+        balance_->start_source_assembly(data_->water_balance_idx);
+        balance_->start_mass_assembly(data_->water_balance_idx);
 
         assembly_mh_matrix( multidim_assembler ); // fill matrix
 
-        if (balance_ != nullptr) {
-            balance_->finish_source_assembly(water_balance_idx_);
-            balance_->finish_mass_assembly(water_balance_idx_);
-        }
+        balance_->finish_source_assembly(data_->water_balance_idx);
+        balance_->finish_mass_assembly(data_->water_balance_idx);
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -283,8 +279,7 @@ void RichardsLMH::setup_time_term()
 void RichardsLMH::postprocess() {
 
     // update structures for balance of water volume
-    if (balance_ != nullptr)
-      assembly_linear_system();
+    assembly_linear_system();
 
 
 

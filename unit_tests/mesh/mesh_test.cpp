@@ -11,12 +11,12 @@
 #include <mesh_constructor.hh>
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include <iostream>
 #include <vector>
 #include "mesh/accessors.hh"
+#include "mesh/partitioning.hh"
 #include "input/reader_to_storage.hh"
-#include "input/accessors.hh"
 #include "system/sys_profiler.hh"
 
 
@@ -26,7 +26,7 @@ using namespace std;
 class MeshTest :  public testing::Test, public Mesh {
 public:
     MeshTest()
-    : Mesh(*mesh_constructor())
+    : Mesh()
     {
     }
 
@@ -37,10 +37,10 @@ public:
 
 
 TEST_F(MeshTest, intersect_nodes_lists) {
-	node_elements.resize(3);
-	node_elements[0]={ 0, 1, 2, 3, 4};
-	node_elements[1]={ 0, 2, 3, 4};
-	node_elements[2]={ 0, 1, 2, 4};
+	node_elements_.resize(3);
+	node_elements_[0]={ 0, 1, 2, 3, 4};
+	node_elements_[1]={ 0, 2, 3, 4};
+	node_elements_[2]={ 0, 1, 2, 4};
 
     vector<unsigned int> node_list={0,1,2};
     vector<unsigned int> result;
@@ -60,15 +60,12 @@ TEST_F(MeshTest, intersect_nodes_lists) {
 
 
 TEST(MeshTopology, make_neighbours_and_edges) {
-    // has to introduce some flag for passing absolute path to 'test_units' in source tree
-    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
+	// has to introduce some flag for passing absolute path to 'test_units' in source tree
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     Profiler::initialize();
     
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string(mesh_file).c_str());
-    mesh->read_gmsh_from_stream(in);
-
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     EXPECT_EQ(9, mesh->n_elements());
     EXPECT_EQ(18, mesh->bc_elements.size());
@@ -88,7 +85,6 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     EXPECT_EQ(6, mesh->n_vb_neighbours() );
 
     delete mesh;
-
 }
 
 
@@ -114,8 +110,7 @@ regions:
 TEST(Mesh, init_from_input) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor(mesh_input, Input::FileFormat::format_YAML);
-    mesh->init_from_input();
+    Mesh * mesh = mesh_full_constructor(mesh_input, Input::FileFormat::format_YAML);
 
     EXPECT_EQ( 37, mesh->element_accessor(0).region().id() );
     EXPECT_EQ( "1D rename", mesh->element_accessor(0).region().label() );
@@ -137,28 +132,16 @@ TEST(Mesh, init_from_input) {
 }
 
 
-// simplest mesh
-string small_mesh = R"CODE(
-$MeshFormat
-2.2 0 8
-$EndMeshFormat
-$Nodes
-4
-1 -1 1 1
-2 -1 -1 1
-3 1 1 -1
-4 -1 1 -1
-$EndNodes
-$Elements
-1
-1 4 2 39 40 2 3 1 4
-$EndElements
-)CODE";
-
 TEST(Mesh, decompose_problem) {
-    Mesh * mesh = mesh_constructor();
-    stringstream in(small_mesh.c_str());
-    EXPECT_THROW_WHAT( { mesh->read_gmsh_from_stream(in); }, Partitioning::ExcDecomposeMesh,
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	std::string mesh_in_string = "{mesh_file=\"mesh/decompose_problem.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
+    reader->read_physical_names(mesh);
+    reader->read_raw_mesh(mesh);
+    EXPECT_THROW_WHAT( { mesh->setup_topology(); }, Partitioning::ExcDecomposeMesh,
     		"greater then number of elements 1. Can not make partitioning of the mesh");
+
     delete mesh;
 }

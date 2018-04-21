@@ -9,7 +9,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <memory>
-#include <boost/regex.hpp>
+#include <regex>
 
 #include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
@@ -27,7 +27,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 
 
 
@@ -49,11 +49,9 @@ public:
 
 	void SetUp() {
 	    Profiler::initialize();
+	    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-	    FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-	    my_mesh = mesh_constructor();
-	    ifstream in(string(mesh_file).c_str());
-	    my_mesh->read_gmsh_from_stream(in);
+	    my_mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
 
 	    field_.name("test_field");
@@ -136,7 +134,7 @@ public:
 	    3       40      "3D front"
 	    $EndPhysicalNames
 	 */
-	Mesh *my_mesh;
+	Mesh * my_mesh;
 
 	typename FieldType::Point point_;
 
@@ -211,19 +209,20 @@ TYPED_TEST(FieldFix, set_input_list) {
 			"{time=2, a=0}]";
 
 	if (this->is_enum_valued) {
-		boost::regex e("=0");
-		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
-		list_ko = boost::regex_replace(list_ko, e, "=\"white\"");
+		std::regex e("=0");
+		list_ok = std::regex_replace(list_ok, e, "=\"white\"");
+		list_ko = std::regex_replace(list_ko, e, "=\"white\"");
 	}
 
+	TimeGovernor tg(0.0, 1.0);
 	this->field_.name("a");
-	this->field_.set_input_list( this->input_list(list_ok) );
+	this->field_.set_input_list( this->input_list(list_ok), tg );
 
 	this->field_.name("b");
-	this->field_.set_input_list( this->input_list(list_ok) );
+	this->field_.set_input_list( this->input_list(list_ok), tg );
 
 	this->field_.name("a");
-	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko) );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
+	EXPECT_THROW_WHAT( {	this->field_.set_input_list( this->input_list(list_ko), tg );}, FieldCommon::ExcNonascendingTime, "for field 'a'" );
 }
 
 
@@ -240,14 +239,15 @@ TYPED_TEST(FieldFix, mark_input_times) {
             "{time=5, a=0, b=0}]";
 
 	if (this->is_enum_valued) {
-		boost::regex e("=0");
-		list_ok = boost::regex_replace(list_ok, e, "=\"white\"");
+		std::regex e("=0");
+		list_ok = std::regex_replace(list_ok, e, "=\"white\"");
 	}
 
-	this->field_.name("b");
-	this->field_.set_input_list(this->input_list(list_ok));
-
 	TimeGovernor tg;
+
+	this->field_.name("b");
+	this->field_.set_input_list(this->input_list(list_ok), tg);
+
 	TimeMark::Type mark_type = TimeMark::Type(tg.marks().type_fixed_time().bitmap_, tg.equation_mark_type().equation_index_);
 	this->field_.mark_input_times(tg);
 	auto it = tg.marks().next(tg, mark_type);
@@ -324,17 +324,17 @@ TYPED_TEST(FieldFix, update_history) {
 			"{time=5, region=\"ALL\", a =1}"
 			"]";
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
 	}
 
+	TimeGovernor tg(0.0, 1.0);
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok) );
+	this->set_input_list( this->input_list(list_ok), tg );
 	this->units( UnitSI().m() );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 1.0);
 	this->update_history(tg.step());
 
     Region diagonal_1d = this->mesh()->region_db().find_label("1D diagonal");
@@ -456,17 +456,17 @@ TYPED_TEST(FieldFix, set_time) {
 			"]";
 
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex(" =0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex(" =0"), "=\"black\"");
 	}
 
+	TimeGovernor tg(0.0, 0.5);
 	this->name("a");
 	this->set_mesh(*(this->my_mesh));
-	this->set_input_list( this->input_list(list_ok) );
+	this->set_input_list( this->input_list(list_ok), tg );
 	this->units( UnitSI().m() );
 
 	// time = 0.0
-	TimeGovernor tg(0.0, 0.5);
 	this->set_time(tg.step(), LimitSide::right);
 	EXPECT_EQ(0, this->_value_( *this ));
 	EXPECT_TRUE( this->is_jump_time() );
@@ -518,16 +518,15 @@ TYPED_TEST(FieldFix, constructors) {
 			"{time=5,  region=\"BULK\", a=0, b=0}]";
 
 	if (this->is_enum_valued) {
-		list_ok = boost::regex_replace(list_ok, boost::regex("=1"), "=\"white\"");
-		list_ok = boost::regex_replace(list_ok, boost::regex("=0"), "=\"black\"");
+		list_ok = std::regex_replace(list_ok, std::regex("=1"), "=\"white\"");
+		list_ok = std::regex_replace(list_ok, std::regex("=0"), "=\"black\"");
 	}
 
-	this->field_.set_input_list(this->input_list(list_ok));
-	field_default.set_input_list(this->input_list(list_ok));
-
-
-
 	TimeGovernor tg(2.0, 1.0);
+	this->field_.set_input_list(this->input_list(list_ok), tg);
+	field_default.set_input_list(this->input_list(list_ok), tg);
+
+
 
 	typename TestFixture::FieldType f2(this->field_);	// default constructor
 	field_default = this->field_; // assignment, should overwrite name "b" by name "a"
@@ -584,11 +583,9 @@ static const it::Selection &get_sorption_type_selection() {
 TEST(Field, init_from_input) {
 	::testing::FLAGS_gtest_death_test_style = "threadsafe";
 	Profiler::initialize();
-
-	Mesh * mesh = mesh_constructor();
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-	ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-	mesh->read_gmsh_from_stream(in);
+
+	Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
@@ -669,7 +666,6 @@ TEST(Field, init_from_input) {
    }
 
     delete mesh;
-
 }
 
 
@@ -721,13 +717,11 @@ public:
 TEST(Field, field_result) {
     ::testing::FLAGS_gtest_death_test_style = "threadsafe";
     Profiler::initialize();
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
     TimeGovernor tg(0.0, 1.0);
 
-    Mesh * mesh = mesh_constructor();
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     it::Array main_array =IT::Array(
             TestFieldSet().make_field_descriptor_type("TestFieldSet")
@@ -740,7 +734,7 @@ TEST(Field, field_result) {
 
     TestFieldSet data;
     data.set_mesh(*mesh);
-    data.set_input_list(array);
+    data.set_input_list(array, tg);
 
 
     Region diagonal_1d = mesh->region_db().find_label("1D diagonal");
@@ -802,9 +796,7 @@ TEST(Field, init_from_default) {
 
     Profiler::initialize();
     
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     Space<3>::Point p("1 2 3");
 
@@ -845,10 +837,9 @@ TEST(Field, init_from_default) {
 
         EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(0, true)) );
 
-        delete mesh;
-
     }
 
+    delete mesh;
 }
 
 /// Test optional fields dependent e.g. on BC type
@@ -875,9 +866,7 @@ TEST(Field, disable_where) {
 
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-    Mesh * mesh = mesh_constructor();
-    ifstream in(string( FilePath("mesh/simplest_cube.msh", FilePath::input_file) ).c_str());
-    mesh->read_gmsh_from_stream(in);
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
 
     bc_type.set_mesh(*mesh);
     bc_flux.set_mesh(*mesh);
