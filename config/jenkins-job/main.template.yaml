@@ -1,12 +1,12 @@
 #########################################################################################
-# Template for project Flow123d
+# Template YAML config for Jenkins Job Builder.
 #########################################################################################
 
-# TODO for some reason including both files at once causes problem, each file seperatedly 
-# included works fine
+# TODO for some reason including two files at once causes problem, each file seperatedly 
+# included works fine. So we keep all config in single file.
 
 
-# defaults values
+# defaults values for jobs
 - defaults:
     name: flow123d-build
     node: "{platform}"
@@ -18,18 +18,20 @@
 
 
 #########################################################################################
-# Template for project Flow123d - DEVELOPER BUILDS
+# Project to instantiate the job templates.
 #########################################################################################
-
 - project:
-    name: "Multijob project debug"
+    name: "Flow123d project"
     platform: ci2runner
-    build-type: debug
+    build-type: 
+        - debug
+        - release
     unit-dir:
       - $PLACEHOLDER_unit_list$
     test-dir:
       - $PLACEHOLDER_test_list$
     jobs:
+#      - "Flow123d-update-repository-clone"  
       - "Flow123d-{platform}-{build-type}-install-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
@@ -39,6 +41,29 @@
       - "Flow123d-{platform}-{build-type}-stop-image"
       - "Flow123d-{platform}-debug-start-image"
       - "Flow123d-{platform}-debug-multijob"
+
+# ---------------------------------------------------------------------------- #
+# ---------- UPDATE REPOSITORY CLONE ----------------------------------------- #
+# ---------------------------------------------------------------------------- #
+#    - job-template:
+#        name: "Flow123d-update-repository-clone"
+#        display-name: "Flow123d update repository clone"
+#        node: "{platform}"
+#        workspace: "F123-repo-clone"
+#        # TODO log rotate 200 days
+#        wrappers:
+#        - build-name:
+#            name:  "${{PROPFILE,file=\"prop.file\",property=\"BUILD_NAME\"}}  #${{BUILD_NUMBER}}"
+#        scm:
+#        - git:
+#            url: https://github.com/flow123d/flow123d.git
+#            branches:
+#                - "*"
+#            basedir: flow123d
+#            browser: githubweb
+#            browser-url: https://github.com/flow123d/flow123d/
+#            skip-tag: true
+#            wipe-workspace: false  
 
 # ---------------------------------------------------------------------------- #
 # ---------- INSTALL IMAGE --------------------------------------------------- #
@@ -293,30 +318,6 @@
 
 
 
-#########################################################################################
-# Template for project Flow123d - RELEASE BUILDS
-#########################################################################################
-
-
-- project:
-    name: "Multijob project release"
-    platform: ci2runner
-    build-type: release
-    unit-dir:
-      - $PLACEHOLDER_unit_list$
-    test-dir:
-      - $PLACEHOLDER_test_list$
-    jobs:
-      - "Flow123d-{platform}-{build-type}-install-image"
-      - "Flow123d-{platform}-{build-type}-configure"
-      - "Flow123d-{platform}-{build-type}-build"
-      - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
-      - "Flow123d-{platform}-{build-type}-test-{test-dir}"
-      - "Flow123d-{platform}-{build-type}-make-doc"
-      - "Flow123d-{platform}-{build-type}-package"
-      - "Flow123d-{platform}-{build-type}-stop-image"
-      - "Flow123d-{platform}-release-start-image"
-      - "Flow123d-{platform}-release-multijob"
 
 
 
