@@ -6,13 +6,14 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include "arma_expect.hh"
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "intersection/compute_intersection.hh"
@@ -89,11 +90,8 @@ IntersectionLocal<1,3> permute_coords(IntersectionLocal<1,3> il,
 void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
-    Simplex<1> line = create_simplex<1>(mesh->element(1));
-    Simplex<3> tetra = create_simplex<3>(mesh->element(0));
-    
     IntersectionAux<1,3> is;
-    ComputeIntersection< Simplex<1>, Simplex<3>> CI(line, tetra, mesh);
+    ComputeIntersection<1,3> CI(mesh->element(1), mesh->element(0), mesh);
     CI.init();
     CI.compute(is);
     
@@ -134,12 +132,12 @@ TEST(intersections_13d, all) {
         for(unsigned int p=0; p<np; p++)
         {
             MessageOut().fmt("Computing intersection on mesh #{} permutation #{} :  {}\n", s, p,  filenames[s]);
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
             
-            Mesh *mesh = mesh_constructor();
+            Mesh *mesh = mesh_constructor(in_mesh_string);
             // read mesh with gmshreader
-            GmshMeshReader reader(mesh_file);
-            reader.read_mesh(mesh);
+            auto reader = reader_constructor(in_mesh_string);
+            reader->read_raw_mesh(mesh);
         
             // permute nodes:
             FOR_ELEMENTS(mesh,ele)

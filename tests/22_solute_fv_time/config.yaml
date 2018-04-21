@@ -4,6 +4,11 @@ common_config:
 
 test_cases:
 - files:
+  - 01_fv_dp_sorp_small.yaml
+  - 02_bc.yaml
+  - 03_bc_short_pulse.yaml
+
+- files:
   - 04_unsteady_flow.yaml
   time_limit: 240
 

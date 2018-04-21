@@ -22,6 +22,7 @@
 #include "petscksp.h"
 #include "petscmat.h"
 #include "system/sys_profiler.hh"
+#include "system/system.hh"
 
 
 //#include <boost/bind.hpp>
@@ -238,6 +239,7 @@ void LinSys_PETSC::preallocate_matrix()
 
     if (symmetric_) MatSetOption(matrix_, MAT_SYMMETRIC, PETSC_TRUE);
     MatSetOption(matrix_, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    MatSetOption(matrix_, MAT_IGNORE_ZERO_ENTRIES, PETSC_TRUE);
 
     delete[] on_nz;
     delete[] off_nz;
@@ -324,7 +326,7 @@ void LinSys_PETSC::set_initial_guess_nonzero(bool set_nonzero)
 }
 
 
-int LinSys_PETSC::solve()
+LinSys::SolveInfo LinSys_PETSC::solve()
 {
 
     const char *petsc_dflt_opt;
@@ -396,7 +398,7 @@ int LinSys_PETSC::solve()
 
     KSPDestroy(&system);
 
-    return static_cast<int>(reason);
+    return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 
 }
 
@@ -433,6 +435,7 @@ LinSys_PETSC::~LinSys_PETSC( )
     if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
+    if (residual_ != NULL) VecDestroy(&residual_);
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 

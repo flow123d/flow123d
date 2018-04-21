@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: heat_transfer
   mesh:
@@ -38,7 +38,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: flow.pvd
       format: !vtk
         variant: ascii
@@ -61,7 +61,7 @@ problem: !Coupling_Sequential
         porosity: 0.001
       - region: fracture
         porosity: 1
-    output_stream: 
+    output_stream:
       file: ./heat.pvd
       format: !vtk
         variant: ascii

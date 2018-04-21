@@ -15,14 +15,24 @@
  * @brief   
  */
 
-#include <iostream>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <time.h>
+//#include <iostream>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string>
+//#include <time.h>
 
-#include "config.h"
+//#include "config.h"
 #include "time_point.hh"
+#include <type_traits>  // for enable_if<>::type
+
+/**
+ * Include either Windows or chrono lib
+ */
+#ifdef FLOW123D_HAVE_TIMER_QUERY_PERFORMANCE_COUNTER
+#include <windows.h>
+#else
+#include <chrono>
+#endif //FLOW123D_HAVE_TIMER_CHRONO_HIGH_RESOLUTION
 
 using namespace std;
 

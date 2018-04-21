@@ -16,14 +16,15 @@
  */
 
 #include "output_vtk.hh"
-#include "output_data_base.hh"
-#include "output_mesh_data.hh"
+#include "element_data_cache_base.hh"
+#include "element_data_cache.hh"
 #include "output_mesh.hh"
 
 #include <limits.h>
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
+#include "tools/unit_si.hh"
 
 #include "config.h"
 #include <zlib.h>
@@ -40,8 +41,8 @@ const Record & OutputVTK::get_input_type() {
 		.declare_key("variant", OutputVTK::get_input_type_variant(), Default("\"ascii\""),
 			"Variant of output stream file format.")
 		// The parallel or serial variant
-		//.declare_key("parallel", Bool(), Default("false"),
-		//	"Parallel or serial version of file format.")
+		.declare_key("parallel", Bool(), Default("false"),
+			"Parallel or serial version of file format.")
 		.close();
 }
 
@@ -64,6 +65,9 @@ const int OutputVTK::registrar = Input::register_class< OutputVTK >("vtk") +
 		OutputVTK::get_input_type().size();
 
 
+const std::vector<std::string> OutputVTK::formats = { "ascii", "appended", "appended" };
+
+
 
 OutputVTK::OutputVTK()
 {
@@ -79,78 +83,115 @@ OutputVTK::~OutputVTK()
 
 
 
-void OutputVTK::init_from_input(const std::string &equation_name, Mesh &mesh, const Input::Record &in_rec)
+void OutputVTK::init_from_input(const std::string &equation_name, const Input::Record &in_rec, std::string unit_str)
 {
-	OutputTime::init_from_input(equation_name, mesh, in_rec);
+	OutputTime::init_from_input(equation_name, in_rec, unit_str);
+
+    auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
+    variant_type_ = format_rec.val<VTKVariant>("variant");
+    this->parallel_ = format_rec.val<bool>("parallel");
+    this->fix_main_file_extension(".pvd");
 
     if(this->rank == 0) {
-        auto format_rec = (Input::Record)(input_record_.val<Input::AbstractRecord>("format"));
-        variant_type_ = format_rec.val<VTKVariant>("variant");
-
-        this->fix_main_file_extension(".pvd");
         try {
             this->_base_filename.open_stream( this->_base_file );
+            this->set_stream_precision(this->_base_file);
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << "Writing flow output file: " << this->_base_filename << " ... ";
-
-        this->make_subdirectory();
-        this->write_head();
     }
+
+    this->make_subdirectory();
+    this->write_head();
 
 }
 
+string OutputVTK::form_vtu_filename_(string basename, int i_step, int rank) {
+    ostringstream ss;
+    if (this->parallel_) {
+        // parallel file
+        ss << main_output_basename_ << "/" << main_output_basename_ << "-"
+           << std::setw(6) << std::setfill('0') << current_step << "." << rank << ".vtu";
+    } else {
+        // serial file
+        ss << main_output_basename_ << "/" << main_output_basename_ << "-"
+           << std::setw(6) << std::setfill('0') << current_step << ".vtu";
+    }
+    return ss.str();
+}
 
+string pvd_dataset_line(double step, int rank, string file) {
+    ostringstream ss;
+    ss
+        << "<DataSet timestep=\"" << step
+        << "\" group=\"\" part=\"" << rank
+        << "\" file=\"" << file
+        << "\"/>\n";
+    return ss.str();
+}
 
 int OutputVTK::write_data(void)
 {
-    ASSERT_PTR(output_mesh_).error();
+    ASSERT_PTR(this->nodes_).error();
 
-    /* It's possible now to do output to the file only in the first process */
-    if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
+    /* Output of serial format is implemented only in the first process */
+    if ( (this->rank != 0) && (!parallel_) ) {
         return 0;
     }
 
-    ASSERT(this->_base_file.is_open())(this->_base_filename).error();
+    /**
+     * TODO:
+     * - common creation of the VTU filename
+     * - names of parallel file: <base name>_<frame>.<rank>.vtu
+     * - for serial case use rank=0
+     */
 
-    ostringstream ss;
-    ss << main_output_basename_ << "-"
-       << std::setw(6) << std::setfill('0') << this->current_step
-       << ".vtu";
+    /* Write DataSets to the PVD file only in the first process */
+    if (this->rank == 0) {
+        ASSERT(this->_base_file.is_open())(this->_base_filename).error();
 
+        /* Set floating point precision to max */
+        //this->_base_file.precision(std::numeric_limits<double>::digits10);
+    	//int current_step = this->get_parallel_current_step();
 
-    std::string frame_file_name = ss.str();
-    FilePath frame_file_path({main_output_dir_, main_output_basename_, frame_file_name}, FilePath::output_file);
+        /* Write dataset lines to the PVD file. */
+        double corrected_time = (isfinite(this->time)?this->time:0);
+        corrected_time /= UnitSI().s().convert_unit_from(this->unit_string_);
+        if (parallel_) {
+        	for (int i_rank=0; i_rank<n_proc; ++i_rank) {
+                string file = this->form_vtu_filename_(main_output_basename_, current_step, i_rank);
+                this->_base_file << pvd_dataset_line(corrected_time, i_rank, file);
+        	}
+        } else {
+            string file = this->form_vtu_filename_(main_output_basename_, current_step, -1);
+            this->_base_file << pvd_dataset_line(corrected_time, 0, file);
+        }
+    }
 
-    /* Set up data file */
-    try {
-        frame_file_path.open_stream(_data_file);
-    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
+    /* write VTU file */
+    {
+        /* Open VTU file */
+        std::string frame_file_name = this->form_vtu_filename_(main_output_basename_, current_step, this->rank);
+        FilePath frame_file_path({main_output_dir_, frame_file_name}, FilePath::output_file);
+        try {
+            frame_file_path.open_stream(_data_file);
+            this->set_stream_precision(_data_file);
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
+        LogOut() << __func__ << ": Writing output (frame: " << this->current_step
+                 << ", rank: " << this->rank
+                 << ") file: " << frame_file_name << " ... ";
 
-    LogOut() << __func__ << ": Writing output file " << this->_base_filename << " ... ";
+        this->write_vtk_vtu();
 
-    /* Set floating point precision to max */
-    this->_base_file.precision(std::numeric_limits<double>::digits10);
+        /* Close stream for file of current frame */
+        _data_file.close();
+        //delete data_file;
+        //this->_data_file = NULL;
 
-    /* Strip out relative path and add "base/" string */
-    std::string relative_frame_file = main_output_basename_ + "/" + frame_file_name;
-    this->_base_file << scientific << "<DataSet timestep=\"" << (isfinite(this->time)?this->time:0)
-            << "\" group=\"\" part=\"0\" file=\"" << relative_frame_file <<"\"/>" << endl;
+        LogOut() << "O.K.";
 
-    LogOut() << "O.K.";
-
-    LogOut() << __func__ << ": Writing output (frame " << this->current_step << ") file " << relative_frame_file << " ... ";
-
-    this->write_vtk_vtu();
-
-    /* Close stream for file of current frame */
-    _data_file.close();
-    //delete data_file;
-    //this->_data_file = NULL;
-
-    LogOut() << "O.K.";
+    }
 
     return 1;
 }
@@ -164,9 +205,11 @@ void OutputVTK::make_subdirectory()
 	main_output_dir_ = this->_base_filename.parent_path();
 	main_output_basename_ = this->_base_filename.stem();
 
-    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
-    FilePath fp(sub_path, FilePath::output_file);
-    fp.create_output_dir();
+	if(this->rank == 0) {
+	    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
+	    FilePath fp(sub_path, FilePath::output_file);
+	    fp.create_output_dir();
+	}
 }
 
 
@@ -192,12 +235,13 @@ void OutputVTK::write_vtk_vtu_head(void)
 
 
 
-void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
+std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_data()
 {    
-    auto offsets = output_mesh_->offsets_->data_;
+    auto &offsets = *( this->offsets_->get_component_data(0).get() );
     unsigned int n_elements = offsets.size();
     
-    data.resize(n_elements);
+    auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
     int n_nodes;
     
     n_nodes = offsets[0];
@@ -228,6 +272,8 @@ void OutputVTK::fill_element_types_vector(std::vector< unsigned int >& data)
             break;
         }
     }
+
+    return types;
 }
 
 
@@ -237,27 +283,25 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     // names of types in DataArray section
 	static const std::vector<std::string> types = {
         "Int8", "UInt8", "Int16", "UInt16", "Int32", "UInt32", "Float32", "Float64" };
-    // formats of DataArray section
-	static const std::vector<std::string> formats = { "ascii", "appended", "appended" };
 
     ofstream &file = this->_data_file;
 
-    file    << "<DataArray type=\"" << types[output_data->vtk_type_] << "\" ";
+    file    << "<DataArray type=\"" << types[output_data->vtk_type()] << "\" ";
     // possibly write name
-    if( ! output_data->output_field_name.empty()) 
-        file << "Name=\"" << output_data->output_field_name <<"\" ";
+    if( ! output_data->field_input_name().empty())
+        file << "Name=\"" << output_data->field_input_name() <<"\" ";
     // write number of components
-    if (output_data->n_elem_ > 1)
+    if (output_data->n_elem() > 1)
     {
         file
-            << "NumberOfComponents=\"" << output_data->n_elem_ << "\" ";
+            << "NumberOfComponents=\"" << output_data->n_elem() << "\" ";
     }
     file    << "format=\"" << formats[this->variant_type_] << "\"";
 
     if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
     	// ascii output
     	file << ">" << endl;
-    	file << std::fixed << std::setprecision(10); // Set precision to max
+    	//file << std::fixed << std::setprecision(10); // Set precision to max
     	output_data->print_ascii_all(file);
     	file << "\n</DataArray>" << endl;
     } else {
@@ -361,17 +405,17 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 
     file << "Scalars=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem_ == OutputDataBase::N_SCALAR) file << data->output_field_name << ",";
+		if (data->n_elem() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem_ == OutputDataBase::N_VECTOR) file << data->output_field_name << ",";
+		if (data->n_elem() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem_ == OutputDataBase::N_TENSOR) file << data->output_field_name << ",";
+		if (data->n_elem() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
 	file << "\"";
 }
 
@@ -423,6 +467,54 @@ void OutputVTK::write_vtk_element_data(void)
 }
 
 
+void OutputVTK::write_vtk_native_data(void)
+{
+    ofstream &file = this->_data_file;
+
+    auto &data_map = this->output_data_vec_[NATIVE_DATA];
+    if (data_map.empty()) return;
+
+    /* Write Flow123dData begin */
+    file << "<Flow123dData ";
+    write_vtk_data_names(file, data_map);
+    file << ">" << endl;
+
+    /* Write own data */
+    for(OutputDataPtr output_data : data_map) {
+        file  << "<DataArray type=\"Float64\" ";
+        file  << "Name=\"" << output_data->field_input_name() <<"\" ";
+        file  << "format=\"" << formats[this->variant_type_] << "\" ";
+        file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
+        file  << "n_dofs_per_element=\"" << output_data->n_elem() << "\"";
+
+        if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
+        	// ascii output
+        	file << ">" << endl;
+        	file << std::fixed << std::setprecision(10); // Set precision to max
+        	output_data->print_ascii_all(file);
+        	file << "\n</DataArray>" << endl;
+        } else {
+        	// binary output is stored to appended_data_ stream
+        	double range_min, range_max;
+        	output_data->get_min_max_range(range_min, range_max);
+        	file    << " offset=\"" << appended_data_.tellp() << "\" ";
+        	file    << "RangeMin=\"" << range_min << "\" RangeMax=\"" << range_max << "\"/>" << endl;
+        	if ( this->variant_type_ == VTKVariant::VARIANT_BINARY_UNCOMPRESSED ) {
+        		output_data->print_binary_all( appended_data_ );
+        	} else { // ZLib compression
+        		stringstream uncompressed_data, compressed_data;
+        		output_data->print_binary_all( uncompressed_data, false );
+        		this->compress_data(uncompressed_data, compressed_data);
+        		appended_data_ << compressed_data.str();
+        	}
+        }
+    }
+
+    /* Write Flow123dData end */
+    file << "</Flow123dData>" << endl;
+}
+
+
 void OutputVTK::write_vtk_vtu_tail(void)
 {
     ofstream &file = this->_data_file;
@@ -446,65 +538,34 @@ void OutputVTK::write_vtk_vtu(void)
     /* Write header */
     this->write_vtk_vtu_head();
 
-    /* When there is no discontinuous data, then write classical vtu */
-    if ( this->output_data_vec_[CORNER_DATA].empty() )
-    {
-        /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
+    /* Write Piece begin */
+    file << "<Piece NumberOfPoints=\"" << this->nodes_->n_values()
+              << "\" NumberOfCells=\"" << this->offsets_->n_values() <<"\">" << endl;
 
-        /* Write VTK Geometry */
-        file << "<Points>" << endl;
-            write_vtk_data(output_mesh_->nodes_);
-        file << "</Points>" << endl;
-    
-        
-        /* Write VTK Topology */
-        file << "<Cells>" << endl;
-            write_vtk_data(output_mesh_->connectivity_);
-            write_vtk_data(output_mesh_->offsets_);
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
-           	write_vtk_data( types );
-        file << "</Cells>" << endl;
+    /* Write VTK Geometry */
+    file << "<Points>" << endl;
+        write_vtk_data(this->nodes_);
+    file << "</Points>" << endl;
 
-        /* Write VTK scalar and vector data on nodes to the file */
-        this->write_vtk_node_data();
+    /* Write VTK Topology */
+    file << "<Cells>" << endl;
+        write_vtk_data(this->connectivity_);
+        write_vtk_data(this->offsets_);
+        auto types = fill_element_types_data();
+       	write_vtk_data( types );
+    file << "</Cells>" << endl;
 
-        /* Write VTK data on elements */
-        this->write_vtk_element_data();
+    /* Write VTK scalar and vector data on nodes to the file */
+    this->write_vtk_node_data();
 
-        /* Write Piece end */
-        file << "</Piece>" << endl;
+    /* Write VTK data on elements */
+    this->write_vtk_element_data();
 
-    } else {
-        /* Write Piece begin */
-        file << "<Piece NumberOfPoints=\"" << output_mesh_discont_->n_nodes()
-                  << "\" NumberOfCells=\"" << output_mesh_->n_elements() <<"\">" << endl;
+    /* Write own VTK native data (skipped by Paraview) */
+    this->write_vtk_native_data();
 
-        /* Write VTK Geometry */
-        file << "<Points>" << endl;
-            write_vtk_data(output_mesh_discont_->nodes_);
-        file << "</Points>" << endl;
-
-        /* Write VTK Topology */
-        file << "<Cells>" << endl;
-            write_vtk_data(output_mesh_discont_->connectivity_);
-            write_vtk_data(output_mesh_discont_->offsets_);
-            auto types = std::make_shared<MeshData<unsigned int>>("types");
-            fill_element_types_vector(types->data_);
-           	write_vtk_data( types );
-        file << "</Cells>" << endl;
-
-        /* Write VTK scalar and vector data on nodes to the file */
-        this->write_vtk_node_data();
-
-        /* Write VTK data on elements */
-        this->write_vtk_element_data();
-
-        /* Write Piece end */
-        file << "</Piece>" << endl;
-    }
+    /* Write Piece end */
+    file << "</Piece>" << endl;
 
     /* Write tail */
     this->write_vtk_vtu_tail();
@@ -514,9 +575,8 @@ void OutputVTK::write_vtk_vtu(void)
 
 int OutputVTK::write_head(void)
 {
-    /* It's possible now to do output to the file only in the first process */
+    /* Output to PVD file is implemented only in the first process */
     if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 
@@ -534,9 +594,8 @@ int OutputVTK::write_head(void)
 
 int OutputVTK::write_tail(void)
 {
-    /* It's possible now to do output to the file only in the first process */
+    /* Output to PVD file is implemented only in the first process */
     if(this->rank != 0) {
-        /* TODO: do something, when support for Parallel VTK is added */
         return 0;
     }
 

@@ -4,5 +4,9 @@ common_config:
 
 test_cases:
 - files:
+  - 01_sources_small.yaml
+  - 03_bc.yaml
+  
+- files:
   - 02_sources.yaml
   time_limit: 120

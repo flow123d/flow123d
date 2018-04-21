@@ -1,4 +1,4 @@
-"time"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+"time [s]"	"region"	"quantity [kg]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
 0	"rock"	"O-18"	0	0	0	0	0	0	0	0	0	0	0	0
 0	".surface"	"O-18"	6.34e-06	6.34e-06	0	0	0	0	0	0	0	0	0	0
 0	".tunnel"	"O-18"	0	0	0	0	0	0	0	0	0	0	0	0

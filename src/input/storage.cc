@@ -57,6 +57,12 @@ const std::string & StorageBase::get_string() const {
 
 
 
+void StorageBase::set_item(unsigned int index, StorageBase* item) {
+	THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
+}
+
+
+
 StorageBase * StorageBase::get_item(const unsigned int index) const {
     THROW( ExcStorageTypeMismatch() << EI_RequestedType("array") << EI_StoredType( typeid(*this).name()) );
     return 0;
@@ -107,10 +113,8 @@ StorageArray::StorageArray(unsigned int size)
 
  void StorageArray::set_item(unsigned int index, StorageBase* item) {
 	ASSERT_LT(index, array_.size()).error("Index is out of array.");
-	ASSERT( array_[index] == NULL || typeid(*array_[index]) == typeid(StorageNull) )(index)
-			.error("Can not replace non NULL pointer.");
 
-    if ( typeid(*array_[index]) == typeid(StorageNull) ) delete array_[index];
+	if ( array_[index] != NULL ) delete array_[index];
     array_[index] = item;
  }
 

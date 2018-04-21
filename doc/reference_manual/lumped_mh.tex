@@ -139,3 +139,66 @@ At the MH scheme one can observe oscillations in the wavefront
     \label{fig:LMH}
 \end{figure}
 
+\section{Mixed-Hybrid Method on Non-conforming Mixed Meshes}
+The non-conforming coupling introduces a new term $c_F(h, \mr h, q, \mr q)$ to the formulation $\eqref{eq:hybrid-frac-1} - 
+\eqref{eq:hybrid-frac-2}$ similar to the term $c_f$ responsible for the compatible coupling. We distinguish coupling of codimension $d'=1$, i.e. 2d in 3d and 1d in 2d,
+and coupling of codimension $d'=0$, 2d-2d in 3d space and 1d-1d in 2d space. This way we split $c_F$ into
+\[
+    c_F= \sum_{d'=0,1} \sum_{d=1,2} c_{F,d',d}
+\]
+All these terms have a common structure. For codimension 1 we have:
+\begin{equation*}
+  c_{F,1,d}(h, \mr h, q, \mr q) =  \int_{T^d} \sigma_d
+                \big(R({\mr{h}_d}) - T({\mr{h}_{d+1}}) \big)
+                 \big(R({\mr{\phi}_d}) - T({\mr{\phi}_{d+1}}) \big),
+\end{equation*}
+where $R$ is the reconstruction operator of the pressure he and $T$ is the trace approximation.
+For the sake of consistency with codimension $0$, we name $T_d$ a \emph{master} element and 
+intersecting elements of dimension $d+1$ \emph{slave} elements.
+
+
+For codimension 0 we first introduce a numbering $\mathcal{S}_d$ of $d$ dimensional manifolds (2d or 1d fractures), for every intersection line $I_{i,j}$ 
+of two manifolds  $i,j \in \mathcal{S}_d$ we define the manifold with smaller number as a \emph{master} while the other as a \emph{slave}. 
+The intersection curve $I_{i,j}$ of manifolds $S_i$ and $S_j$, $i<j$ is decomposed into segments corresponding to the elements of the master manifold, i.e.
+\[
+    I_{i,j} =\cup_{T\in S_i} I_{T, S_j}
+\]    
+With such a notation at our disposal we can write the coupling term as:
+\begin{equation*}
+  c_{F,0,d}(h, \mr h, q, \mr q) =  \sum_{I_{i,j}, i<j} \sum_{T\in S_i} \int_{I_{T, S_j}} \sigma_d
+                \big(R({\mr{h}_i}) - T({\mr{h}_{j}}) \big)
+                 \big(R({\mr{\phi}_i}) - T({\mr{\phi}_{j}}) \big),
+\end{equation*}
+where $R$ is the trace approximation on the master element while $T$ is the trace approximation of the slave manifold, mapping
+the local discrete spaces of all intersecting slave elements to the discrete space of the master element.
+
+
+
+\subsection{$P0$ method}
+Denoting $\overline{h}_T$ the average of the pressures on the edges of a master element $T$, i.e. components of $\mr h$ and 
+$\overline{h}_{T_i}$, $i=1,\dots,m_T$ the average of the edge pressures on the intersecting slave elements $T_i$. We prescribe the operators $R$ and $T$ restricted 
+to $T$ as:
+\[
+    R(\mr{h}) = \overline{h}_T,\quad   
+    T(\mr{h}) = \frac{1}{\overline{\delta}_T} \sum_{i} \delta_{T,i} \overline{h}_{T_i}, \quad
+    \overline{delta}_T = \sum_{i} \delta_{T,i}. 
+\]
+
+
+\subsection{$P1$ method}
+First, we introduce local projection of the edge pressures to the linear broken space. Let us denote $P_i$, $i=0,\dots,d$ the edge barycenters of an element $T$ 
+of dimension $d$. We find a basis $\phi_i(\vc x)$, $i=0,\dots,d$ of the space of linear functions on $T$ that is ortogonal to the functionals $\Phi_j(\phi)= \phi(P_i)$, 
+$j=0,\dots, d$. Denoting $\mr h_i$, $i=0,\dots, d$ the edge values (of the pressure) on element $T$, we introduce the projection:
+\[
+  X_T(\mr h) = \sum_i \mr h_i \phi_i(\vc x).
+\]
+Resulting functions of neigbouring elements are continuous in the edge barycenters.
+
+Finally, let $I_{K,L}$ be an intersection of the elements $K$ and $L$. Operators $R$ and $T$ are defined on every such intersection independently
+as:
+\[
+   R(\mr{h}) = X_K(\mr h_K)|_{I_{K,L}},\quad   
+   T(\mr{h}) = X_L(\mr h_L)|_{I_{K,L}}, 
+\]
+i.e. the restriction of the linear functions on individual elements to the intersection set.
+

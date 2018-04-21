@@ -33,28 +33,44 @@
 #ifndef DARCY_FLOW_MH_HH
 #define DARCY_FLOW_MH_HH
 
-#include <memory>
-#include "input/input_type_forward.hh"
+#include <petscmat.h>                           // for Mat
+#include <string.h>                             // for memcpy
+#include <algorithm>                            // for swap
+#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+#include <memory>                               // for shared_ptr, allocator...
+#include <new>                                  // for operator new[]
+#include <string>                               // for string, operator<<
+#include <vector>                               // for vector, vector<>::con...
+#include <armadillo>
+#include "fields/bc_field.hh"                   // for BCField
+#include "fields/field.hh"                      // for Field
+#include "fields/field_set.hh"                  // for FieldSet
+#include "fields/field_values.hh"               // for FieldValue<>::Scalar
+#include "flow/darcy_flow_interface.hh"         // for DarcyFlowInterface
+#include "flow/mh_dofhandler.hh"                // for MH_DofHandler, uint
+#include "input/input_exception.hh"             // for DECLARE_INPUT_EXCEPTION
+#include "input/type_base.hh"                   // for Array
+#include "input/type_generic.hh"                // for Instance
+#include "mesh/mesh.h"                          // for Mesh
+#include "petscvec.h"                           // for Vec, _p_Vec, VecScatter
+#include "system/exceptions.hh"                 // for ExcStream, operator<<
+#include "tools/time_governor.hh"               // for TimeGovernor
 
-#include <petscmat.h>
-#include "system/sys_vector.hh"
-#include "coupling/equation.hh"
-#include "flow/mh_dofhandler.hh"
-
-#include "fields/bc_field.hh"
-#include "fields/field.hh"
-#include "fields/field_set.hh"
-#include "flow/darcy_flow_interface.hh"
-#include "input/input_exception.hh"
-
-
-/// external types:
+class AssemblyBase;
+class Balance;
+class DarcyFlowMHOutput;
+class Element;
+class Intersection;
 class LinSys;
 class LinSys_BDDC;
-class Mesh;
-class DarcyFlowMHOutput;
-class Balance;
-class AssemblyBase;
+namespace Input {
+	class AbstractRecord;
+	class Record;
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.

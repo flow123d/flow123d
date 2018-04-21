@@ -9,9 +9,11 @@
 #define	_HYDRO_FUNCTIONS_HH
 
 
-namespace fadbad {
-  template <class T> class B;
-}
+#include "badiff.h"  // for B::d, B::deriv, B::diff, B::getBTypeNameHV, B::o...
+#include "fadbad.h"  // for B
+namespace internal { class Irmay; }
+namespace internal { class VanGenuchten; }
+
 
 // todo: 
 // objekt por SoilModel - jedna sada primarnich i pomocnych parametru
@@ -79,7 +81,7 @@ public:
 
     typedef SoilModelBase::DiffDouble DiffDouble;
 
-    SoilModelImplBase(double cut_fraction=0.999);
+    SoilModelImplBase(double cut_fraction = 0.999);
 
     void reset(SoilData data) override;
 

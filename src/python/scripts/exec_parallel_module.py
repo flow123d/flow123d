@@ -175,7 +175,7 @@ class ModuleExecParallel(ScriptModule):
 
         # set limits
         pypy.limit_monitor.time_limit = self.time_limit
-        pypy.limit_monitor.memory_limit = self.memory_limit
+        pypy.limit_monitor.memory_limit = self.memory_limit * max(1, proc)
 
         # catch output to variable
         # in batched mode we will keep the files

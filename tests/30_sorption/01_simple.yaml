@@ -1,7 +1,6 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Simple sorption test - no flow, no transport, known values of sorbed
-    substances.
+  description: Simple sorption test - no flow, no transport, known values of sorbed substances.
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
     regions:

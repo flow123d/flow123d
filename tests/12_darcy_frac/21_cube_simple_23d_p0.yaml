@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Simple noncompatible 3d-2d interaction.
   # Geometry : 3d rectangular, split by a fracture.
@@ -6,12 +6,11 @@ problem: !Coupling_Sequential
   # For given 3d conductivity C and 2d-3d transition coef. S we have:
   # 3d pressure at fracture: P1 = F/2/C  ( = 4)
   # 2d pressure on fracture: P2 = F/2/C + F/sigma/4  ( = 4 + 1.5 )
-  
   # Wrong balance data?
   mesh:
     mesh_file: ../00_mesh/cube_23d_nc_extrude.msh
   flow_equation: !Flow_Darcy_MH
-    gravity: [0,0,0]
+    gravity: [0, 0, 0]
 #    output_specific:
 #      compute_errors: true
     nonlinear_solver:
@@ -34,7 +33,7 @@ problem: !Coupling_Sequential
       - region: [.IMPLICIT_BOUNDARY, .2d]
         bc_type: total_flux
         bc_flux: 0.0
-        
+
     output:
       fields:
  #       - piezo_head_p0
@@ -44,7 +43,7 @@ problem: !Coupling_Sequential
  #       - pressure_diff
  #       - div_diff
     balance: {}
-    output_stream: 
+    output_stream:
       format: !vtk
         variant: ascii
 

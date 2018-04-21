@@ -1,0 +1,42 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Operation with unknown region set .side at address /problem/solute_equation/output_stream/observe_points/0
+  mesh:
+    mesh_file: ../00_mesh/strip_xz.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 2
+    input_fields:
+      - region: ALL
+        conductivity: 1e-6
+    balance: {}
+    output:
+      fields:
+        - velocity_p0
+    output_stream:
+      format: !gmsh
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_AdvectionDiffusion_DG
+      input_fields:
+        - region: ALL
+          bc_conc: 100
+      solver:
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    substances: O-18
+    time:
+      end_time: 3600000
+    balance: {}
+    output_stream:
+      format: !gmsh
+        variant: ascii
+      times:
+        - step: 36000
+      observe_points:
+### ERROR unknown region_set .side
+        - snap_region: .side
+          point: [0.05, 0, 0.01]

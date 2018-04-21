@@ -23,7 +23,7 @@
 
 #set(super_test_libs fast_intersection_lib field_lib mesh_lib system_lib)
 
-set(libs mesh_lib system_lib)
+set(libs mesh_lib system_lib io_lib)
 add_test_directory("${libs}")
     
     define_mpi_test(compute_intersection_12 1)
@@ -36,15 +36,7 @@ add_test_directory("${libs}")
     define_mpi_test(prolongation_23 1)
     
     define_mpi_test(intersection_22 1)
-    define_mpi_test(intersection_in_3D_mesh 1)
     
     define_mpi_test(speed_simple 1)
-    define_mpi_test(speed 1)
-    
-    define_test(simplex_class)
-
-
-
-
-
+#     define_mpi_test(speed 1)
 

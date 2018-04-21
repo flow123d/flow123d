@@ -345,14 +345,24 @@ double SchurComplement::get_solution_precision()
 }
 
 
-int SchurComplement::solve() {
+LinSys::SolveInfo SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
     this->form_schur();
-    int converged_reason = Compl->solve();
+    
+    //output schur complement in matlab file
+//     string output_file = FilePath("schur.m", FilePath::output_file);
+//     PetscViewer    viewer;
+//     PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+//     PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+//     MatView( *const_cast<Mat*>(Compl->get_matrix()), viewer);
+//     VecView( *const_cast<Vec*>(Compl->get_rhs()), viewer);
+    
+    LinSys::SolveInfo si = Compl->solve();
+//     VecView(Compl->get_solution(), viewer);
 
     // TODO: Resolve step is not necessary inside of nonlinear solver. Can optimize.
     this->resolve();
-	return converged_reason;
+    return si;
 }
 
 
@@ -389,6 +399,7 @@ SchurComplement :: ~SchurComplement() {
 
     if ( B  != NULL )             MatDestroy(&B);
     if ( Bt != NULL )             MatDestroy(&Bt);
+    if ( C != NULL )             MatDestroy(&C);
     if ( xA != NULL )             MatDestroy(&xA);
     if ( IA != NULL )             MatDestroy(&IA);
     if ( IAB != NULL )            MatDestroy(&IAB);

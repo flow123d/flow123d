@@ -11,7 +11,7 @@
 # 0.3      0.2275        0.3574
 # 0.6      0.0518        0.0813
 # 1        0.0072        0.0113
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
@@ -20,9 +20,9 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     output_specific:
     time:
-        end_time: 1
-        max_dt: 0.01
-        min_dt: 0.01
+      end_time: 1
+      max_dt: 0.01
+      min_dt: 0.01
 
     input_fields:
       - region: ALL
@@ -31,7 +31,7 @@ problem: !Coupling_Sequential
         conductivity: 0.5
         cross_section: 1.0
         init_pressure: !FieldFormula
-            value: sin(Pi*x)
+          value: sin(Pi*x)
         # default
         #storativity: 1
         # default
@@ -53,10 +53,11 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance:
       cumulative: true
-    output_stream: 
+    output_stream:
       file: ./test10.pvd
       format: !vtk
         variant: ascii
       name: flow_output_stream
       times:
         - step: 0.1
+      precision: 15  

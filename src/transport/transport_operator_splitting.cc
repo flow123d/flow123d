@@ -78,7 +78,7 @@ const Record & TransportOperatorSplitting::get_input_type() {
 				"Time governor setting for the secondary equation.")
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
 				"Settings for computing balance.")
-		.declare_key("output_stream", OutputTime::get_input_type(), Default::obligatory(),
+		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
 				"Parameters of output stream.")
 		.declare_key("substances", Array( Substance::get_input_type(), 1), Default::obligatory(),
 				"Specification of transported substances.")
@@ -152,19 +152,19 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
-	int *el_4_loc;
+	IdxInt *el_4_loc;
 
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
 
-	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+	time_ = new TimeGovernor(in_rec.val<Input::Record>("time"), TimeMark::none_type, false);
 	convection->set_time_governor(time());
 
 	// Initialize list of substances.
 	convection->substances().initialize(in_rec.val<Input::Array>("substances"));
 
 	// Initialize output stream.
-    convection->set_output_stream(OutputTime::create_output_stream("solute", *mesh_, in_rec.val<Input::Record>("output_stream")));
+    convection->set_output_stream(OutputTime::create_output_stream("solute", in_rec.val<Input::Record>("output_stream"), time().get_unit_string()));
 
 
     // initialization of balance object

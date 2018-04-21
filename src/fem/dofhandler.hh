@@ -19,16 +19,15 @@
 #ifndef DOFHANDLER_HH_
 #define DOFHANDLER_HH_
 
-#include <map>
-#include <petscmat.h>
-#include "mesh/mesh_types.hh"
-#include "mesh/elements.h"
-#include "la/distribution.hh"
+#include <vector>              // for vector
+#include "mesh/mesh.h"
+#include "mesh/mesh_types.hh"  // for ElementFullIter
+#include "petscvec.h"          // for Vec
 
-
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 class Mesh;
 class Distribution;
+
 
 /**
  * Class DOFHandlerBase provides an abstract interface for various dof handlers:
@@ -75,26 +74,37 @@ public:
      * @brief Returns the offset of the local part of dofs.
      */
     const unsigned int loffset() const { return loffset_; }
+    
+    /**
+     * @brief Returns max. number of dofs on one element.
+     */
+    const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
+    /**
+     * @brief Returns the parallel distribution of dofs.
+     */
     Distribution *distr() const { return ds_; }
 
+    /**
+     * @brief Returns the mesh.
+     */
     Mesh *mesh() const { return mesh_; }
 
     /**
-     * @brief Returns the global indices of dofs associated to the @p cell.
+     * @brief Fill vector of the global indices of dofs associated to the @p cell.
      *
      * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param indices Vector of dof indices on the cell.
      */
-    virtual void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const = 0;
+    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const = 0;
 
     /**
-     * @brief Returns the indices of dofs associated to the @p cell on the local process.
+     * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
      *
      * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
+     * @param indices Vector of dof indices on the cell.
      */
-    virtual void get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const =0;
+    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const =0;
     
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -105,6 +115,11 @@ public:
      */
     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
             double local_values[]) const = 0;
+
+    /**
+     * @brief Compute hash value of DOF handler.
+     */
+    virtual std::size_t hash() const =0;
 
     /// Destructor.
     virtual ~DOFHandlerBase() {};
@@ -134,6 +149,9 @@ protected:
      * @brief Index of the first dof on the local process.
      */
     unsigned int loffset_;
+
+    /// Max. number of dofs per element.
+    unsigned int max_elem_dofs_;
 
     /**
      * @brief Pointer to the mesh to which the dof handler is associated.
@@ -274,9 +292,9 @@ public:
      * @param fe3d The 3D finite element.
      * @param offset The offset.
      */
-    void distribute_dofs(FiniteElement<1,3> &fe1d,
-    		FiniteElement<2,3> &fe2d,
-    		FiniteElement<3,3> &fe3d,
+    void distribute_dofs(FiniteElement<1> &fe1d,
+    		FiniteElement<2> &fe2d,
+    		FiniteElement<3> &fe3d,
     		const unsigned int offset = 0);
 
     /**
@@ -285,7 +303,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    void get_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
+    unsigned int get_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const override;
     
     /**
      * @brief Returns the indices of dofs associated to the @p cell on the local process.
@@ -293,7 +311,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    void get_loc_dof_indices(const CellIterator &cell, unsigned int indices[]) const override;
+    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const override;
 
     /**
      * @brief Returns the dof values associated to the @p cell.
@@ -317,14 +335,14 @@ public:
      *
      * @param loc_edg Local index of edge.
      */
-    inline int edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
+    inline IdxInt edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
 	 * @brief Returns the global index of local neighbour.
 	 *
 	 * @param loc_nb Local index of neighbour.
 	 */
-	inline int nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+	inline IdxInt nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 
 	/**
 	 * @brief Returns number of local edges.
@@ -344,7 +362,12 @@ public:
 
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
-    FiniteElement<dim,3> *fe() const;
+    FiniteElement<dim> *fe() const;
+
+    /**
+     * Implements @p DOFHandlerBase::hash.
+     */
+    std::size_t hash() const override;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
@@ -360,9 +383,9 @@ private:
      * @brief Pointer to the finite element class for which the handler
      * distributes dofs.
      */
-    FiniteElement<1,3> *fe1d_;
-    FiniteElement<2,3> *fe2d_;
-    FiniteElement<3,3> *fe3d_;
+    FiniteElement<1> *fe1d_;
+    FiniteElement<2> *fe2d_;
+    FiniteElement<3> *fe3d_;
 
     /**
      * @brief Number of dofs associated to geometrical entities.
@@ -371,21 +394,21 @@ private:
      * 1D edges (object_dofs[1]), 2D faces (object_difs[2]) and
      * volumes (object_dofs[3]).
      */
-    int ***object_dofs;
+    IdxInt ***object_dofs;
 
 
 	/// Global element index -> index according to partitioning
-    int *row_4_el;
+    IdxInt *row_4_el;
     /// Local element index -> global element index
-    int *el_4_loc;
+    IdxInt *el_4_loc;
     /// Distribution of elements
     Distribution *el_ds_;
 
     /// Local edge index -> global edge index
-    vector<int> edg_4_loc;
+    vector<IdxInt> edg_4_loc;
 
     /// Local neighbour index -> global neighbour index
-    vector<int> nb_4_loc;
+    vector<IdxInt> nb_4_loc;
 
 };
 

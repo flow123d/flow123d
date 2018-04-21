@@ -6,6 +6,7 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
 #include <armadillo>
@@ -13,7 +14,7 @@
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "../../src/intersection/mixed_mesh_intersections.hh"
@@ -178,7 +179,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
     {
         MessageOut().fmt("---------- check Intersection[{}] el_1d: {} el_3d: {} ----------\n",i,
                 ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
-        DebugOut()<< "bary: " << ilc[i][j].comp_coords();
+//         DebugOut()<< "bary: " << ilc[i][j].comp_coords();
         arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
         EXPECT_ARMA_EQ(il[i][j], ip);
         //EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
@@ -213,12 +214,12 @@ TEST(intersection_prolongation_13d, all) {
         */
 
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-        FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+        string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
         
-        Mesh *mesh = mesh_constructor();
+        Mesh *mesh = mesh_constructor(in_mesh_string);
         // read mesh with gmshreader
-        GmshMeshReader reader(mesh_file);
-        reader.read_mesh(mesh);
+        auto reader = reader_constructor(in_mesh_string);
+        reader->read_raw_mesh(mesh);
         
         mesh->setup_topology();
         

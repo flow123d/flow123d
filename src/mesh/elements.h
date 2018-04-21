@@ -18,18 +18,23 @@
 #ifndef ELEMENTS_H
 #define ELEMENTS_H
 
-#include "mesh/nodes.hh"
-#include "mesh/region.hh"
-#include "mesh/bounding_box.hh"
-#include "mesh/ref_element.hh"
-
-template <int spacedim>
-class ElementAccessor;
+#include <ext/alloc_traits.h>                  // for __alloc_traits<>::valu...
+#include <string.h>                            // for memcpy
+#include <new>                                 // for operator new[]
+#include <ostream>                             // for operator<<
+#include <string>                              // for operator<<
+#include <vector>                              // for vector
+#include <armadillo>
+#include "mesh/bounding_box.hh"                // for BoundingBox
+#include "mesh/nodes.hh"                       // for Node
+#include "mesh/ref_element.hh"                 // for RefElement
+#include "mesh/region.hh"                      // for RegionIdx, Region
+#include "system/asserts.hh"                   // for Assert, ASSERT
 
 class Mesh;
-class Side;
-class SideIter;
 class Neighbour;
+class SideIter;
+template <int spacedim> class ElementAccessor;
 
 
 
@@ -126,6 +131,8 @@ public:
     	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
     	return vertices;
     }
+    
+    unsigned int get_proc() const;
 
 
     unsigned int      n_neighs_vb;   // # of neighbours, V-B type (comp.)
@@ -141,7 +148,6 @@ protected:
     RegionIdx  region_idx_;
     unsigned int dim_;
 
-    friend class GmshMeshReader;
     friend class Mesh;
 
     template<int spacedim, class Value>

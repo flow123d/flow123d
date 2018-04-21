@@ -36,13 +36,13 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 #include "fields/multi_field.hh"
 #include "coupling/equation.hh"
 
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh/region.hh"
 #include <armadillo>
 
@@ -156,10 +156,7 @@ protected:
         //data.gravity_=arma::vec4("3.0 2.0 1.0 -5.0");
         FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
-        FilePath mesh_file("mesh/simplest_cube.msh", FilePath::input_file);
-        mesh = mesh_constructor();
-        ifstream in(string( mesh_file ).c_str());
-        mesh->read_gmsh_from_stream(in);
+        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
         component_names = { "comp_0", "comp_1", "comp_2" };
 
     }
@@ -193,7 +190,7 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_input_list( inputs[input_last] );
+        data.set_input_list( inputs[input_last], tg );
         data.set_time(tg.step(), LimitSide::right);
     }
 
@@ -202,7 +199,7 @@ protected:
     };
 
 
-    Mesh *mesh;
+    Mesh * mesh;
 };
 
 
@@ -296,9 +293,9 @@ TEST_F(SomeEquation, values) {
 
     // bulk fields
     EXPECT_DOUBLE_EQ(1.1, data.init_pressure.value(p, el_1d) );
-    auto conc_mobile_val = data.conc_mobile.value(p, el_1d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
-        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
+        auto conc_mobile_val = data.conc_mobile[i].value(p, el_1d);
+        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val );
     }
 
     FieldValue<3>::TensorFixed::return_type value = data.anisotropy.value(p, el_1d);
@@ -316,9 +313,9 @@ TEST_F(SomeEquation, values) {
 
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_2d) );
     EXPECT_DOUBLE_EQ(2.2, data.init_pressure.value(p, el_3d) );
-    conc_mobile_val = data.conc_mobile.value(p, el_2d);
     for (unsigned int i=0; i<data.conc_mobile.size(); ++i) {     // multifield
-        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val[i] );
+        auto conc_mobile_val = data.conc_mobile[i].value(p, el_2d);
+        EXPECT_DOUBLE_EQ( 1.0 + i, conc_mobile_val );
     }
 
     // init_conc - fixed length vector

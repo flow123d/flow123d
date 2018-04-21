@@ -5,13 +5,14 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 #include "arma_expect.hh"
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "intersection/intersection_point_aux.hh"
@@ -93,11 +94,8 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
-    Simplex<2> triaA = create_simplex<2>(mesh->element(0)),
-               triaB = create_simplex<2>(mesh->element(1));
-    
     IntersectionAux<2,2> is;
-    ComputeIntersection< Simplex<2>, Simplex<2>> CI(triaA, triaB, mesh);
+    ComputeIntersection<2,2> CI(mesh->element(0), mesh->element(1), mesh);
     CI.init();
     CI.compute(is);
     
@@ -140,12 +138,12 @@ TEST(intersections_22d, all) {
         for(unsigned int p=0; p<np; p++)
         {
             MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-            FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
             
-            Mesh *mesh = mesh_constructor();
+            Mesh *mesh = mesh_constructor(in_mesh_string);
             // read mesh with gmshreader
-            GmshMeshReader reader(mesh_file);
-            reader.read_mesh(mesh);
+            auto reader = reader_constructor(in_mesh_string);
+            reader->read_raw_mesh(mesh);
         
             // permute nodes of one triangle:
             permute_triangle(mesh->element(0),p);

@@ -20,8 +20,7 @@
 
 #include <iostream>
 #include <string>
-#include <sstream>
-#include <cstdlib>
+#include <vector>                // for vector
 #include "system/exceptions.hh"
 
 namespace feal {

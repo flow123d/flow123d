@@ -18,7 +18,12 @@
 #ifndef INTERPOLATION_H
 #define INTERPOLATION_H
 
-#include "functors.hh"
+#include <utility>
+#include <vector>
+#include "fadbad.h"
+
+template <class Type> class FunctorBase;
+template <class Type> class IFunctorBase;
 
 /** This pair contains both the function and the first derivative values and is used
  * to as return value for functions of interpolation objects.

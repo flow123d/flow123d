@@ -15,21 +15,26 @@
  * @brief   
  */
 
+#include <string>
+//#include <limits>
+#include <regex>
+
+#include "system/exceptions.hh"                        // for ExcUnknownDesc...
 #include "input/type_output.hh"
 #include "input/type_repository.hh"
 #include "input/type_generic.hh"
 #include "input/type_tuple.hh"
 #include "input/type_selection.hh"
-#include "system/system.hh"
+//#include "system/system.hh"
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/iostreams/filtering_stream.hpp>
-#include <boost/iostreams/concepts.hpp>
-#include <boost/iostreams/operations.hpp> // put
+#include <boost/tokenizer.hpp>                         // for tokenizer<>::i...
+
+//#include <boost/iostreams/filtering_stream.hpp>
+//#include <boost/iostreams/concepts.hpp>
+//#include <boost/iostreams/operations.hpp> // put
+#include <boost/functional/hash.hpp>
 
 
-#include <string>
-#include <limits>
-#include <boost/regex.hpp>
 
 namespace Input {
 namespace Type {
@@ -127,7 +132,7 @@ Abstract::ChildDataIter OutputBase::get_adhoc_parent_data(const AdHocAbstract *a
 template <class T>
 void OutputBase::print_generic(ostream& stream, const TypeBase *type) {
     // print possible generic
-    if (type->generic_type_hash_) {
+    if (type->generic_type_hash_ != TypeBase::none_hash) {
         const T *gen_type = Input::TypeRepository<T>::get_instance().find_hash(type->generic_type_hash_).get();
         ASSERT(gen_type)(type->hash_str())(type->type_name());
         print_base(stream, gen_type);
@@ -138,11 +143,9 @@ void OutputBase::print_base(ostream& stream, const TypeBase *type) {
     ASSERT(type);
 
 	if (typeid(*type) == typeid(Type::Tuple)) {
-	    print_generic<Tuple>(stream, type);
 		print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Record)) {
-	    print_generic<Record>(stream, type);
 	    print_impl(stream, static_cast<const Type::Record *>(type) );
 	} else
 	if (typeid(*type) == typeid(Type::Array)) {
@@ -475,22 +478,22 @@ OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num
 
 
 std::string OutputJSONMachine::escape_description(std::string desc) {
-	static std::vector< std::pair<boost::regex, std::string> > rewrite_rules = {
+	static std::vector< std::pair<std::regex, std::string> > rewrite_rules = {
 	        // replace single slash with two slashes
-			{boost::regex("\\\\"), "\\\\\\\\"},
+			{std::regex("\\\\"), "\\\\\\\\"},
 	        // replace quote with slash quote
-			{boost::regex("\\\""), "\\\\\""},
+			{std::regex("\\\""), "\\\\\""},
 	        // replace special chars with escaped slash + special chars
-			{boost::regex("\\n"), "\\\\n"},
-			{boost::regex("\\t"), "\\\\t"},
-			{boost::regex("\\r"), "\\\\r"}
+			{std::regex("\\n"), "\\\\n"},
+			{std::regex("\\t"), "\\\\t"},
+			{std::regex("\\r"), "\\\\r"}
 	};
 
 
     std::string tmp = std::string(desc);
 
     for (auto rewrite_rule : rewrite_rules) {
-        tmp = boost::regex_replace(tmp, rewrite_rule.first, rewrite_rule.second);
+        tmp = std::regex_replace(tmp, rewrite_rule.first, rewrite_rule.second);
     }
 
     return tmp;
@@ -567,6 +570,11 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
 
 
 void OutputJSONMachine::print_impl(ostream& stream, const Record *type) {
+    if (typeid(*type) == typeid(Type::Tuple)) {
+        print_generic<Tuple>(stream, type);
+    } else {
+        print_generic<Record>(stream, type);
+    }
 
 	TypeBase::TypeHash hash=type->content_hash();
     if (was_written(hash)) return;

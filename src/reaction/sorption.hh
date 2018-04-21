@@ -27,11 +27,24 @@
 #ifndef SORPTION_H
 #define SORPTION_H
 
-#include "fields/field_algo_base.hh"
+#include <boost/exception/info.hpp>   // for operator<<, error_info::error_i...
+#include <string>                     // for string
+#include <vector>                     // for vector
+#include "fields/field.hh"            // for Field
+#include "fields/field_values.hh"     // for FieldValue<>::Scalar, FieldValue
+#include "input/type_base.hh"         // for Array
+#include "input/type_generic.hh"      // for Instance
+#include "reaction/reaction_term.hh"  // for ReactionTerm
 #include "reaction/sorption_base.hh"
 
 class Mesh;
 class Isotherm;
+namespace Input {
+	class Record;
+	namespace Type { class Record; }
+}
+template <int spacedim> class ElementAccessor;
+
 
 /** @brief Simple sorption model without dual porosity.
  * 

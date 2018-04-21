@@ -16,10 +16,11 @@
  */
 
 #include "input/path_yaml.hh"
-#include "input/reader_to_storage.hh"
+#include "input/reader_internal_base.hh"
 
 #include "system/global_defs.h"
 #include "system/system.hh"
+#include "yaml-cpp/yaml.h"
 
 
 namespace Input {
@@ -59,11 +60,11 @@ bool PathYAML::down(unsigned int index) {
 }
 
 
-bool PathYAML::down(const string& key) {
+bool PathYAML::down(const string& key, int index) {
 	ASSERT(head().IsMap()).error("Head node must be of type Record.");
 
     if ( head()[key] ) {
-    	path_.push_back( make_pair( (int)(-1), key) );
+    	path_.push_back( make_pair( index, key) );
     	nodes_.push_back( head()[key] );
     } else {
         return false;
@@ -90,10 +91,10 @@ bool PathYAML::get_bool_value() const {
 		try {
 			return head().as<bool>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return false;
 }
@@ -104,10 +105,10 @@ std::int64_t PathYAML::get_int_value() const {
 		try {
 			return head().as<std::int64_t>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return 0;
 }
@@ -118,10 +119,10 @@ double PathYAML::get_double_value() const {
 		try {
 			return head().as<double>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return 0.0;
 }
@@ -132,10 +133,10 @@ std::string PathYAML::get_string_value() const {
 		try {
 			return head().as<std::string>();
 		} catch (YAML::Exception) {
-	        THROW( ReaderToStorage::ExcInputError() );
+	        THROW( ReaderInternalBase::ExcInputError() );
 		}
 	} else {
-        THROW( ReaderToStorage::ExcInputError() );
+        THROW( ReaderInternalBase::ExcInputError() );
 	}
 	return "";
 }
@@ -194,9 +195,9 @@ PathBase * PathYAML::find_ref_node()
 
 
 
-std::string PathYAML::get_record_name() const {
+std::string PathYAML::get_record_tag() const {
 	std::string tag = head().Tag();
-	if (tag == "?") {
+	if ( (tag == "?") || (tag.size() == 0) ) {
 		return "";
 	} else {
 		return tag.erase(0, 1); // tag starts with '!' char

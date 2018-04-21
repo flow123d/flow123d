@@ -15,20 +15,18 @@
  * @brief   This file should contain only creation of Application object.
  */
 
-#include <petsc.h>
-
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
-#include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
+#include "input/reader_internal_base.hh"
 
 #include <iostream>
 #include <fstream>
-#include <boost/regex.hpp>
+#include <regex>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -135,10 +133,10 @@ Input::Record Application::read_input() {
     try {
     	Input::ReaderToStorage json_reader(fpath, get_input_type() );
         root_record = json_reader.get_root_interface<Input::Record>();
-    } catch (Input::ReaderToStorage::ExcInputError &e ) {
-      e << Input::ReaderToStorage::EI_File(fpath); throw;
-    } catch (Input::ReaderToStorage::ExcNotJSONFormat &e) {
-      e << Input::ReaderToStorage::EI_File(fpath); throw;
+    } catch (Input::ReaderInternalBase::ExcInputError &e ) {
+      e << Input::ReaderInternalBase::EI_File(fpath); throw;
+    } catch (Input::ReaderInternalBase::ExcNotJSONFormat &e) {
+      e << Input::ReaderInternalBase::EI_File(fpath); throw;
     }  
     return root_record;
 }
@@ -196,6 +194,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     }
     passed_argc_ = arg_i;
     */
+
+    // possibly turn off profilling
+    if (vm.count("no_profiler")) use_profiler=false;
 
     // if there is "help" option
     if (vm.count("help")) {
@@ -255,9 +256,6 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (input_filename == "")
         THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
-    // possibly turn off profilling
-    if (vm.count("no_profiler")) use_profiler=false;
-
     // preserves output of balance in YAML format
     if (vm.count("yaml_balance")) yaml_balance_output_=true;
 
@@ -308,11 +306,11 @@ void Application::run() {
     {
         using namespace Input;
         // check input file version against the version of executable
-        boost::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
-        boost::smatch match;
+        std::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
+        std::smatch match;
         std::string version(FLOW123D_VERSION_NAME_);
         vector<string> ver_fields(3);
-        if ( boost::regex_match(version, match, version_re) ) {
+        if ( std::regex_match(version, match, version_re) ) {
             ver_fields[0]=match[1];
             ver_fields[1]=match[2];
             ver_fields[2]=match[3];
@@ -322,7 +320,7 @@ void Application::run() {
 
         std::string input_version = i_rec.val<string>("flow123d_version");
         vector<string> iver_fields(3);
-        if ( boost::regex_match(input_version, match, version_re) ) {
+        if ( std::regex_match(input_version, match, version_re) ) {
             iver_fields[0]=match[1];
             iver_fields[1]=match[2];
             iver_fields[2]=match[3];

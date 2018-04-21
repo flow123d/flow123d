@@ -39,7 +39,7 @@ double func( const arma::vec::fixed<dim> & p) {
 
 template <int dim>
 double integrate(ElementFullIter &ele) {
-    FE_P_disc<0,dim,3> fe;
+    FE_P_disc<dim> fe(0);
     QGauss<dim> quad( 2 );
     MappingP1<dim,3> map;
     FEValues<dim,3> fe_values(map, quad,   fe, update_JxW_values | update_quadrature_points);

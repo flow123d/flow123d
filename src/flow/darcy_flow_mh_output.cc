@@ -37,10 +37,12 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
+#include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 
 // #include "coupling/balance.hh"
@@ -96,7 +98,10 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
-  compute_errors_(false)
+  compute_errors_(false),
+  fe1(1),
+  fe2(1),
+  fe3(1)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -138,10 +143,10 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", *mesh_, main_mh_in_rec.val<Input::Record>("output_stream"));
+	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"), darcy_flow->time().get_unit_string());
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, in_rec_output, darcy_flow->time() );
+    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -153,12 +158,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             // optionally open raw output file
             FilePath raw_output_file_path;
             if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw output: " << raw_output_file_path << "\n";
+            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
             	try {
             		raw_output_file_path.open_stream(raw_output_file);
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
-
         }
     }
 }
@@ -181,7 +185,7 @@ void DarcyFlowMHOutput::output()
 {
     START_TIMER("Darcy fields output");
 
-    ElementSetRef observed_elements = output_stream->observe()->observed_elements();
+    ElementSetRef observed_elements = output_stream->observe(mesh_)->observed_elements();
     {
         START_TIMER("post-process output fields");
 
@@ -212,7 +216,9 @@ void DarcyFlowMHOutput::output()
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
+        {
                   output_internal_flow_data();
+        }
 
         if (compute_errors_) compute_l2_difference();
     }
@@ -280,8 +286,8 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = max(dh_->fe<1>()->n_dofs(), max(dh_->fe<2>()->n_dofs(), dh_->fe<3>()->n_dofs()));
-	unsigned int indices[ndofs];
+	unsigned int ndofs = dh_->max_elem_dofs();
+	std::vector<IdxInt> indices(ndofs);
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{
@@ -441,28 +447,22 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
-    ;
     int cit = 0;
+    
     FOR_ELEMENTS( mesh_,  ele ) {
         raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
 
         raw_output_file << ele->n_sides() << " ";
-        std::vector< std::vector<unsigned int > > old_to_new_side =
-        { {0, 1},
-          {0, 1, 2},
-          {0, 1, 2, 3}
-        };
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            raw_output_file << dh.side_scalar( *(ele->side(i_new_side) ) ) << " ";
-        }
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int i_new_side = old_to_new_side[ele->dim()-1][i];
-            raw_output_file << dh.side_flux( *(ele->side(i_new_side) ) ) << " ";
-        }
 
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
+        }
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
+        }
+        
         raw_output_file << endl;
         cit ++;
     }
@@ -570,7 +570,7 @@ void l2_diff_local(ElementFullIter &ele,
         flux_in_q_point.zeros();
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) {
             flux_in_q_point += fluxes[ i_shape ]
-                              * fv_rt.shape_vector(i_shape, i_point)
+                              * fv_rt.vector_view(0).value(i_shape, i_point)
                               / cross;
         }
 
@@ -613,8 +613,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
     // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<0,1,3> fe_1d;
-    FE_P_disc<0,2,3> fe_2d;
+    FE_P_disc<1> fe_1d(0);
+    FE_P_disc<2> fe_2d(0);
 
     QGauss<1> quad_1d( order );
     QGauss<2> quad_2d( order );
@@ -626,8 +626,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
     
     // FEValues for velocity.
-    FE_RT0<1,3> fe_rt1d;
-    FE_RT0<2,3> fe_rt2d;
+    FE_RT0<1> fe_rt1d;
+    FE_RT0<2> fe_rt2d;
     FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
     FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
 
@@ -705,4 +705,5 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
 }
+
 

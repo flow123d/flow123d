@@ -1,8 +1,7 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Zero flow + transport with source. Substance A - increase of concentration,
-    B - decrease of concentration, C - rapid increase of concentration with high sigma,
-    such that it determines CFL condition (t equals 1/(10/0.9)).
+  description: Zero flow + transport with source. Substance A - increase of concentration, B - decrease of concentration,
+    C - rapid increase of concentration with high sigma, such that it determines CFL condition (t equals 1/(10/0.9)).
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
@@ -25,7 +24,7 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance:
       cumulative: true
-    output_stream: 
+    output_stream:
       file: ./flow_test16.pvd
       format: !vtk
         variant: ascii
@@ -49,12 +48,13 @@ problem: !Coupling_Sequential
             - 0.6
             - 0.6
           porosity: 0.9
-    output_stream: 
+    output_stream:
       file: ./transport_test16.pvd
       format: !vtk
         variant: ascii
       times:
         - step: 0.2
+      precision: 15
     substances:
       - A
       - B

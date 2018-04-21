@@ -1,0 +1,71 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Test of timesteps of transport TG as function and output of timesteps to YAML format.
+  mesh:
+    mesh_file: ../00_mesh/square_1x1_40el.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    n_schurs: 2
+    input_fields:
+      - region: ALL
+        conductivity: 1.0e-10
+      - region: .boundary
+        bc_type: dirichlet
+        bc_pressure: 0
+    output:
+      fields:
+        - pressure_p0
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+        variant: ascii
+      name: flow_output_stream
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: .boundary
+          bc_conc: 0
+        - region: ALL
+          init_conc:
+            - 0
+            - 0.9
+            - 0
+          sources_sigma:
+            - 3
+            - 3
+            - 10
+          sources_conc:
+            - 0.6
+            - 0.6
+            - 0.6
+          porosity: 0.9
+    output_stream:
+      file: ./transport_test13.pvd
+      format: !vtk
+        variant: ascii
+      times:
+        - 0.0
+        - 5.0
+        - 120.0
+      precision: 15
+    substances:
+      - A
+      - B
+      - C
+    balance: {}
+    time:
+      start_time: 0
+      end_time: 120
+      dt_limits:
+        - [0,   0.5, 11.5]
+        - [25,  0.1, 1]
+        - [30,  0.2, 5]
+        - [40,  0.2, 10]
+        - [90,  0.1, 2]
+        - [100, 0.1, 6]
+      write_used_timesteps: ./transport_steps.yaml

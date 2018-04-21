@@ -81,6 +81,7 @@ TEST(FieldTableFunction, table_function) {
     Space<3>::Point point;
     point(0)=1.0; point(1)=2.0; point(2)=3.0;
     ElementAccessor<3> elm;
+    auto conversion_ptr = std::make_shared<TimeUnitConversion>();
 
     {
         std::shared_ptr< ScalarField > scalar_base =

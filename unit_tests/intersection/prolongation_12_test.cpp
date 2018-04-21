@@ -6,6 +6,7 @@
  *      Author: VF, PE
  */
 #define TEST_USE_PETSC
+#define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest_mpi.hh>
 
 #include <armadillo>
@@ -13,7 +14,7 @@
 #include "system/global_defs.h"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
-#include "mesh/msh_gmshreader.h"
+#include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
@@ -22,26 +23,32 @@
 #include "intersection/intersection_local.hh"
 
 #include "compute_intersection_test.hh"
+#include "arma_expect.hh"
 
 using namespace std;
 
 /// Create results for the meshes in directory 'prolong_meshes_13d'.
-void fill_12d_solution(std::vector<std::vector<arma::vec3>> &ils)
+void fill_12d_solution(std::vector<std::vector<std::vector<arma::vec3>>> &ils)
 {
-    unsigned int n_files=1;
+    unsigned int n_files=2;
     ils.clear();
     ils.resize(n_files);
     
     ils[0].resize(9);
-    ils[0][0] = {2.4, 4.4, 10};
-    ils[0][1] = {2.4, 4.4, 4.48};
-    ils[0][2] = {2.4, 4.4, 0};
-    ils[0][3] = {3.0571428571428583, 8.4, 10};
-    ils[0][4] = {5.1842105263157876, 8.4, 5.03684210526316};
-    ils[0][5] = {7.3428571428571425, 8.4, 0};
-    ils[0][6] = {8.4, 4.4, 10};
-    ils[0][7] = {8.4, 4.4, 5.68};
-    ils[0][8] = {8.4, 4.4, 0};
+    ils[0][0] = {{2.4, 4.4, 10}};
+    ils[0][1] = {{2.4, 4.4, 4.48}};
+    ils[0][2] = {{2.4, 4.4, 0}};
+    ils[0][3] = {{3.0571428571428583, 8.4, 10}};
+    ils[0][4] = {{5.1842105263157876, 8.4, 5.03684210526316}};
+    ils[0][5] = {{7.3428571428571425, 8.4, 0}};
+    ils[0][6] = {{8.4, 4.4, 10}};
+    ils[0][7] = {{8.4, 4.4, 5.68}};
+    ils[0][8] = {{8.4, 4.4, 0}};
+    
+    ils[1].resize(3);
+    ils[1][0] = {arma::vec3({0,0,0}), arma::vec3({1,0,0})};
+    ils[1][1] = {arma::vec3({0,0,0}), arma::vec3({1,0,0})};
+    ils[1][2] = {arma::vec3({0,0,0}), arma::vec3({1,0,0})};
 }
 
 /// auxiliary function for sorting intersection storage 13d
@@ -54,7 +61,7 @@ bool compare_is12(const IntersectionLocal<1,2>& a,
         return a.component_ele_idx() < b.component_ele_idx();
 }
 
-void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
+void compute_intersection_12d(Mesh *mesh, const std::vector<std::vector<arma::vec3>> &il)
 {
     // compute intersection
     MixedMeshIntersections ie(mesh);
@@ -68,7 +75,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
 //     {
 //         DebugOut() << ie.intersection_storage12_[i];
 //     }
-//     
+    
 //     //write the first intersection
 //     FOR_ELEMENTS(mesh, elm){
 //         
@@ -95,13 +102,16 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<arma::vec3> &il)
     EXPECT_EQ(ilc.size(), il.size());
     
     for(unsigned int i=0; i < ilc.size(); i++)
+        for(unsigned int j=0; j < ilc[i].size(); j++)
     {
-        MessageOut().fmt("---------- check IP[{}] ----------\n",i);
-        arma::vec3 ip = ilc[i][0].coords(mesh->element(ilc[i].component_ele_idx()));
-//         ip.print(DebugOut(),"real ip");
-        EXPECT_NEAR(ip[0], il[i][0], 1e-14);
-        EXPECT_NEAR(ip[1], il[i][1], 1e-14);
-        EXPECT_NEAR(ip[2], il[i][2], 1e-14);
+        MessageOut().fmt("---------- check Intersection[{}] el_1d: {} el_3d: {} ----------\n",i,
+                ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
+//         DebugOut()<< "bary: " << ilc[i][j].comp_coords();
+        arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
+        EXPECT_ARMA_EQ(il[i][j], ip);
+        //EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
+        //EXPECT_NEAR(il[i][j][1], ip[1], 1e-14);
+        //EXPECT_NEAR(il[i][j][2], ip[2], 1e-14);
     }
 }
 
@@ -114,19 +124,19 @@ TEST(intersection_prolongation_12d, all) {
     
     read_files_from_dir(dir_name, "msh", filenames);
         
-    std::vector<std::vector<arma::vec3>> solution;
+    std::vector<std::vector<std::vector<arma::vec3>>> solution;
     fill_12d_solution(solution);
     
     // for each mesh, compute intersection area and compare with old NGH
     for(unsigned int s=0; s<filenames.size(); s++)
     {
         MessageOut() << "Computing intersection on mesh: " << filenames[s] << "\n";
-        FilePath mesh_file(dir_name + filenames[s], FilePath::input_file);
+        string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
         
-        Mesh *mesh = mesh_constructor();
+        Mesh *mesh = mesh_constructor(in_mesh_string);
         // read mesh with gmshreader
-        GmshMeshReader reader(mesh_file);
-        reader.read_mesh(mesh);
+        auto reader = reader_constructor(in_mesh_string);
+        reader->read_raw_mesh(mesh);
         
         mesh->setup_topology();
         

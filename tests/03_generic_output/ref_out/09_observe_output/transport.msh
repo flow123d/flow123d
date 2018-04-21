@@ -1006,28 +1006,6 @@ $ElementData
 $EndElementData
 $ElementData
 1
-"age_init_conc"
-1
-100000
-3
-1
-1
-1
-4 0 
-$EndElementData
-$ElementData
-1
-"U235_init_conc"
-1
-100000
-3
-1
-1
-1
-4 0 
-$EndElementData
-$ElementData
-1
 "age_conc"
 1
 100000
@@ -1296,22 +1274,11 @@ $ElementData
 $EndElementData
 $ElementData
 1
-"porosity"
-1
-200000
-3
-2
-1
-1
-4 0 
-$EndElementData
-$ElementData
-1
 "age_init_conc"
 1
-200000
+100000
 3
-2
+1
 1
 1
 4 0 
@@ -1320,9 +1287,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-200000
+100000
 3
-2
+1
 1
 1
 4 0 
@@ -1599,9 +1566,9 @@ $ElementData
 1
 "porosity"
 1
-300000
+200000
 3
-3
+2
 1
 1
 4 0 
@@ -1610,9 +1577,9 @@ $ElementData
 1
 "age_init_conc"
 1
-300000
+200000
 3
-3
+2
 1
 1
 4 0 
@@ -1621,9 +1588,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-300000
+200000
 3
-3
+2
 1
 1
 4 0 
@@ -1900,6 +1867,39 @@ $ElementData
 1
 "porosity"
 1
+300000
+3
+3
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+300000
+3
+3
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+300000
+3
+3
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"porosity"
+1
 400000
 3
 4
@@ -2029,28 +2029,6 @@ $ElementData
 149 0.25 
 150 0.25 
 151 0.25 
-$EndElementData
-$ElementData
-1
-"age_init_conc"
-1
-400000
-3
-4
-1
-1
-4 0 
-$EndElementData
-$ElementData
-1
-"U235_init_conc"
-1
-400000
-3
-4
-1
-1
-4 0 
 $EndElementData
 $ElementData
 1
@@ -2322,22 +2300,11 @@ $ElementData
 $EndElementData
 $ElementData
 1
-"porosity"
-1
-500000
-3
-5
-1
-1
-4 0 
-$EndElementData
-$ElementData
-1
 "age_init_conc"
 1
-500000
+400000
 3
-5
+4
 1
 1
 4 0 
@@ -2346,9 +2313,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-500000
+400000
 3
-5
+4
 1
 1
 4 0 
@@ -2625,9 +2592,9 @@ $ElementData
 1
 "porosity"
 1
-600000
+500000
 3
-6
+5
 1
 1
 4 0 
@@ -2636,9 +2603,9 @@ $ElementData
 1
 "age_init_conc"
 1
-600000
+500000
 3
-6
+5
 1
 1
 4 0 
@@ -2647,9 +2614,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-600000
+500000
 3
-6
+5
 1
 1
 4 0 
@@ -2926,9 +2893,9 @@ $ElementData
 1
 "porosity"
 1
-700000
+600000
 3
-7
+6
 1
 1
 4 0 
@@ -2937,9 +2904,9 @@ $ElementData
 1
 "age_init_conc"
 1
-700000
+600000
 3
-7
+6
 1
 1
 4 0 
@@ -2948,9 +2915,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-700000
+600000
 3
-7
+6
 1
 1
 4 0 
@@ -3227,9 +3194,9 @@ $ElementData
 1
 "porosity"
 1
-800000
+700000
 3
-8
+7
 1
 1
 4 0 
@@ -3238,9 +3205,9 @@ $ElementData
 1
 "age_init_conc"
 1
-800000
+700000
 3
-8
+7
 1
 1
 4 0 
@@ -3249,9 +3216,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-800000
+700000
 3
-8
+7
 1
 1
 4 0 
@@ -3528,9 +3495,9 @@ $ElementData
 1
 "porosity"
 1
-900000
+800000
 3
-9
+8
 1
 1
 4 0 
@@ -3539,9 +3506,9 @@ $ElementData
 1
 "age_init_conc"
 1
-900000
+800000
 3
-9
+8
 1
 1
 4 0 
@@ -3550,9 +3517,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-900000
+800000
 3
-9
+8
 1
 1
 4 0 
@@ -3829,9 +3796,9 @@ $ElementData
 1
 "porosity"
 1
-1000000
+900000
 3
-10
+9
 1
 1
 4 0 
@@ -3840,9 +3807,9 @@ $ElementData
 1
 "age_init_conc"
 1
-1000000
+900000
 3
-10
+9
 1
 1
 4 0 
@@ -3851,9 +3818,9 @@ $ElementData
 1
 "U235_init_conc"
 1
-1000000
+900000
 3
-10
+9
 1
 1
 4 0 
@@ -4125,4 +4092,37 @@ $ElementData
 149 0.292700847363634 
 150 0.302139548662328 
 151 0.338023453185508 
+$EndElementData
+$ElementData
+1
+"porosity"
+1
+1000000
+3
+10
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"age_init_conc"
+1
+1000000
+3
+10
+1
+1
+4 0 
+$EndElementData
+$ElementData
+1
+"U235_init_conc"
+1
+1000000
+3
+10
+1
+1
+4 0 
 $EndElementData
