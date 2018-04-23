@@ -187,7 +187,7 @@ public:
     }
 
     uint side_global_idx(uint i) {
-        return dh->elem_side_to_global[ ele.index() ][ i ];
+        return dh->elem_side_to_global[ ele.idx() ][ i ];
     }
 
     uint side_local_idx(uint i) {

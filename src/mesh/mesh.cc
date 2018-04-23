@@ -259,7 +259,7 @@ void Mesh::count_element_types() {
 
 void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 	for (auto elem_to_region : map) {
-		Element &ele = element_vec_[elem_to_region.first];
+		Element &ele = element_vec_[ elem_index(elem_to_region.first) ];
 		ele.region_idx_ = region_db_.get_region( elem_to_region.second, ele.dim() );
 		region_db_.mark_used_region(ele.region_idx_.idx());
 	}
@@ -524,7 +524,7 @@ void Mesh::make_neighbours_and_edges()
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
-                    bdr.bc_ele_idx_ = element_ids_[-bdr_idx]; // elem_index(-bdr_idx);
+                    bdr.bc_ele_idx_ = elem_index(-bdr_idx);
                     bdr.mesh_=this;
 
                     continue; // next side of element e
