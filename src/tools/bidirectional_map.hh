@@ -18,6 +18,11 @@
 #ifndef BIDIRECTIONAL_MAP_HH_
 #define BIDIRECTIONAL_MAP_HH_
 
+#include <vector>
+#include <map>
+#include "system/asserts.hh"
+
+
 /**
  * @brief Bidirectional map templated by <T, unsigned int>.
  *
@@ -101,7 +106,7 @@ inline void BidirectionalMap<T>::reinit(unsigned int init_size) {
 
 template<typename T>
 inline T BidirectionalMap<T>::operator[](unsigned int pos) const {
-	ASSERT( pos < vals_vec_.size() );
+	ASSERT( pos < vals_vec_.size() )(pos)(vals_vec_.size());
 	return vals_vec_[pos];
 }
 
