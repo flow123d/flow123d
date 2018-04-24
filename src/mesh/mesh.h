@@ -357,6 +357,12 @@ public:
         return element_ids_.get_position(elem_id);
     }
 
+    /// Return element id (in GMSH file) of element of given position in element vector.
+    inline int find_elem_id(unsigned int pos) const
+    {
+        return element_ids_[pos];
+    }
+
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const;
 
