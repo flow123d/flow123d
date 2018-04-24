@@ -9,6 +9,7 @@
 #include <flow_gtest.hh>
 #include <mesh_constructor.hh>
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "system/sys_profiler.hh"

@@ -149,7 +149,7 @@ TEST(VtkReaderTest, read_ascii_vtu) {
     	EXPECT_EQ( 6, data_attr.dof_handler_hash );
     }
 
-    delete mesh;
+    //delete mesh;
 }
 
 
@@ -221,7 +221,7 @@ TEST(VtkReaderTest, read_binary_vtu) {
     	}
     }
 
-    delete mesh;
+   // delete mesh;
 }
 
 
@@ -248,7 +248,7 @@ TEST(VtkReaderTest, read_compressed_vtu) {
     	EXPECT_EQ( 6, data_attr.n_entities );
     }
 
-    delete mesh;
+    //delete mesh;
 }
 
 
