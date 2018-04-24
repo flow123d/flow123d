@@ -20,6 +20,7 @@
 #include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
+#include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "input/reader_internal_base.hh"
@@ -257,7 +258,7 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
         THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
     // preserves output of balance in YAML format
-    if (vm.count("yaml_balance")) yaml_balance_output_=true;
+    if (vm.count("yaml_balance")) Balance::set_yaml_output();
 
     string input_dir;
     string output_dir;
@@ -365,23 +366,6 @@ void Application::after_run() {
 
 Application::~Application() {
 	if (problem_) delete problem_;
-
-	// remove balance output files in YAML format if "yaml_balance" option is not set
-	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
-		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );
-		boost::filesystem::path water_file( string(FilePath("water_balance.yaml", FilePath::output_file)) );
-		boost::filesystem::path energy_file( string(FilePath("energy_balance.yaml", FilePath::output_file)) );
-
-		if (boost::filesystem::exists(mass_file)) {
-		    boost::filesystem::remove(mass_file);
-		}
-		if (boost::filesystem::exists(water_file)) {
-		    boost::filesystem::remove(water_file);
-		}
-		if (boost::filesystem::exists(energy_file)) {
-		    boost::filesystem::remove(energy_file);
-		}
-	}
 
     if (use_profiler) {
         if (petsc_initialized) {

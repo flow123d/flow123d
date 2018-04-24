@@ -109,8 +109,11 @@ protected:
     /// split tree node given by node_idx, distribute elements to child nodes
     void split_node(const BoundingBox &node_box, unsigned int node_idx);
 
-    /// create child nodes of node given by node_idx
-    void make_node(const BoundingBox &box, unsigned int node_idx);
+    /**
+     * create child nodes of node given by node_idx.
+     * Return heigh of the created tree.
+     */
+    uint make_node(const BoundingBox &box, unsigned int node_idx);
 
     /**
      * For given node takes projection of centers of bounding boxes of its elements to axis given by
@@ -121,10 +124,14 @@ protected:
      */
     double estimate_median(unsigned char axis, const BIHNode &node);
 
+    /// mesh
+    //Mesh* mesh_;
 	/// vector of mesh elements bounding boxes (from mesh)
     std::vector<BoundingBox> elements_;
     /// Main bounding box. (from mesh)
     BoundingBox main_box_;
+    /// Stack for search algorithms.
+    mutable std::vector<unsigned int>  node_stack_;
 
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;

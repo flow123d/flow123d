@@ -144,9 +144,10 @@ public:
 
 	void test_find_boxes() {
 		test_insec_elements();
-		test_insec_points();
+		//test_insec_points();
 
-		Profiler::instance()->output(MPI_COMM_WORLD, cout);
+        //Profiler::instance()->output(MPI_COMM_WORLD, cout);
+		Profiler::instance()->output();
 
 		bt->test_tree_params();
 		//bt->BIH_output();
@@ -168,6 +169,7 @@ public:
 			}
 
 			vector<unsigned int> result_vec;
+			result_vec.reserve(1000);
 			START_TIMER("find bounding box");
 			bt->find_bounding_box(box, result_vec);
 			END_TIMER("find bounding box");
@@ -199,6 +201,7 @@ public:
 			}
 
 			vector<unsigned int> result_point_vec;
+			result_point_vec.reserve(100);
 			START_TIMER("find point");
 			bt->find_point(point, result_point_vec);
 			END_TIMER("find point");
@@ -240,7 +243,7 @@ public:
 	const static int n_test_trials=5;
 };
 
-
+/*
 TEST_F(BIH_test, find_bounding_box_1) {
 	this->create_tree("{mesh_file=\"mesh/test_108_elem.msh\"}");
 	this->test_find_boxes();
@@ -260,7 +263,7 @@ TEST_F(BIH_test, find_bounding_box_4) {
 	this->create_tree("{mesh_file=\"mesh/test_188_elem.msh\"}");
 	this->test_find_boxes();
 }
-
+*/
 TEST_F(BIH_test, find_bounding_box_5) {
 	this->create_tree("{mesh_file=\"mesh/test_27936_elem.msh\"}");
 	this->test_find_boxes();
