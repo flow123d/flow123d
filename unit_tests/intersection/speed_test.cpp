@@ -19,15 +19,12 @@
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 
-#include "input/reader_to_storage.hh"
+#include "mesh_constructor.hh"
 
-// #include "mesh/ngh/include/point.h"
-// #include "mesh/ngh/include/intersection.h"
-
-#include "intersection/inspect_elements.hh"
-#include "intersection/intersection_point_aux.hh"
+// #include "intersection/intersection_point_aux.hh"
 // #include "intersection/intersection_aux.hh"
 #include "intersection/intersection_local.hh"
+#include "intersection/mixed_mesh_intersections.hh"
 
 #include "compute_intersection_test.hh"
 
@@ -38,27 +35,18 @@ using namespace std;
 static const std::string profiler_file = "speed_test_profiler.log";
 static const unsigned int profiler_loop = 10;
 
-// Test input for mesh
-const string mesh_input = R"YAML(
-mesh_file: "NotUsed"
-intersection_search: BIHonly
-)YAML";
-// intersection_search: BIHsearch
-// intersection_search: BIHonly
-// intersection_search: BBsearch
-
-bool compare_il_idx(const ILpair &ilA,
-                    const ILpair &ilB)
-{
-    return ilA.first < ilB.first;
-}
+// bool compare_il_idx(const ILpair &ilA,
+//                     const ILpair &ilB)
+// {
+//     return ilA.first < ilB.first;
+// }
 
 void compute_intersection(Mesh *mesh)
 {
     // compute intersection
     
     MixedMeshIntersections ie(mesh);
-    ie.compute_intersections(IntersectionType::d23);
+    ie.compute_intersections(IntersectionType::all);
 //     ie.compute_intersections((IntersectionType)(IntersectionType::d23 | IntersectionType::d22));
 //     ie.print_mesh_to_file_13("output_intersection_speed_13");
 //     ie.print_mesh_to_file_23("output_intersection_speed_23");
@@ -95,64 +83,50 @@ void compute_intersection(Mesh *mesh)
 //     }
 }
 
-string get_intersection_search_string(Mesh::IntersectionSearch is)
-{
-    switch(is){
-        case 1: return "BIHsearch";
-        case 2: return "BIHonly";
-        case 3: return "BBsearch";
-    }
-    return "";
-}
 
-TEST(benchmark_meshes, all) {
-    Profiler::initialize();
-    
-    // directory with testing meshes
-    string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";
-    std::vector<string> filenames;
-    read_files_from_dir(dir_name, "msh", filenames, false);
-    
-    
-    if(filenames.size() == 0)
-    {
-        WarningOut().fmt("No benchmark meshes were found in directory: '{}'\n", dir_name.c_str());
-        EXPECT_EQ(1,1);
-        return;
-    }
-    
-    MessageOut().fmt("tolerances: {}\t{}\n", rounding_epsilon, geometry_epsilon);
-    Profiler::instance()->set_task_info("Speed test Inspect Elements Algorithm. "+filenames[0],2);
+/// This test is currently turned off.
+/// Its purpose is to compute intersections on large meshes (bedrichov, melechov, cube etc. on bacula).
 
-    // for each mesh, compute intersection area and compare with old NGH
-    for(unsigned int s=0; s< filenames.size(); s++)
-    {
-            MessageOut().fmt("Computing intersection on mesh: {}\n",filenames[s].c_str());
-//             FilePath::set_io_dirs(".","","",".");
-            FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
-            string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
-            
-            Input::ReaderToStorage input_reader( mesh_input, Mesh::get_input_type(), Input::FileFormat::format_YAML );
-            auto rec = input_reader.get_root_interface<Input::Record>();
-            Mesh mesh( rec );
-            MessageOut() << "IntersectionSearch: " << get_intersection_search_string(mesh.get_intersection_search()) << "\n";
-//             Mesh mesh();
-            // read mesh with gmshreader
-            auto reader = reader_constructor(in_mesh_string);
-            reader->read_raw_mesh(&mesh);
-            mesh.setup_topology();
-            
-            MessageOut() << "==============\n";
-            for(unsigned int loop = 0; loop < profiler_loop; loop++)
-                compute_intersection(&mesh);
-            MessageOut() <<  "==============\n";
-    }
-    std::fstream fs;
-    fs.open(profiler_file.c_str(), std::fstream::out /*| std::fstream::app*/);
-    Profiler::instance()->output(PETSC_COMM_WORLD, fs);
-    Profiler::uninitialize();
-}
-
-//*/
+// TEST(benchmark_meshes, all) {
+//     Profiler::initialize();
+//     
+//     // directory with testing meshes
+//     string dir_name = string(UNIT_TESTS_SRC_DIR) + "/intersection/benchmarks/";
+//     std::vector<string> filenames;
+//     read_files_from_dir(dir_name, "msh", filenames, false);
+//     
+//     
+//     if(filenames.size() == 0)
+//     {
+//         WarningOut().fmt("No benchmark meshes were found in directory: '{}'\n", dir_name.c_str());
+//         EXPECT_EQ(1,1);
+//         return;
+//     }
+//     
+//     Profiler::instance()->set_task_info("Speed test Inspect Elements Algorithm. "+filenames[0],2);
+// 
+//     // for each mesh, compute intersection area and compare with old NGH
+//     for(unsigned int s=0; s< filenames.size(); s++)
+//     {
+//             MessageOut().fmt("Computing intersection on mesh: {}\n",filenames[s].c_str());
+//             FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+//             string in_mesh_string = "{mesh_file=\"" + dir_name + filenames[s] + "\"}";
+//             
+//             Mesh *mesh = mesh_constructor(in_mesh_string);
+//             // read mesh with gmshreader
+//             auto reader = reader_constructor(in_mesh_string);
+//             reader->read_raw_mesh(mesh);
+//             mesh->setup_topology();
+//             
+//             MessageOut() << "==============\n";
+//             for(unsigned int loop = 0; loop < profiler_loop; loop++)
+//                 compute_intersection(mesh);
+//             MessageOut() <<  "==============\n";
+//     }
+//     std::fstream fs;
+//     fs.open(profiler_file.c_str(), std::fstream::out /*| std::fstream::app*/);
+//     Profiler::instance()->output(PETSC_COMM_WORLD, fs);
+//     Profiler::uninitialize();
+// }
 
 #endif // FLOW123D_RUN_UNIT_BENCHMARKS
