@@ -706,7 +706,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
-        	IdxInt id = this->elem_index(idx);
+        	IdxInt id = this->find_elem_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
@@ -714,8 +714,8 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         boundary_elements_id.resize(n_elements(true));
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=element_vec_.size()-boundary_size_; idx<element_vec_.size(); idx++, ++map_it) {
-        	IdxInt id = this->elem_index(idx);
+        for(unsigned int idx=element_vec_.size()-1; idx>=element_vec_.size()-boundary_size_; idx--, ++map_it) {
+        	IdxInt id = this->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
