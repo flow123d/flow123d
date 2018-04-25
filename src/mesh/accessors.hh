@@ -114,7 +114,7 @@ public:
     }
 
     inline unsigned int index() const {
-    	return (unsigned int)mesh_->elem_index(element_idx_);
+    	return (unsigned int)mesh_->find_elem_id(element_idx_);
     }
 
     inline void inc() {

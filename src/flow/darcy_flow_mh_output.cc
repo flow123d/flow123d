@@ -437,7 +437,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 
     int cit = 0;
     for (auto ele : mesh_->bulk_elements_range()) {
-        raw_output_file << fmt::format("{} {} ", ele.idx(), ele_pressure[cit]);
+        raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
 
