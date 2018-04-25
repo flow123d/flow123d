@@ -19,6 +19,7 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
+#include "mesh/mesh.h" // TODO remove this line after fix including of IdxInt type
 #include "coupling/hc_explicit_sequential.hh"
 #include "coupling/balance.hh"
 #include "input/accessors.hh"
