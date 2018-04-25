@@ -28,6 +28,8 @@
  */
 const double BIHTree::size_reduce_factor = 0.8;
 
+const unsigned int BIHTree::default_leaf_size_limit = 20;
+
 
 BIHTree::BIHTree(unsigned int soft_leaf_size_limit)
 : leaf_size_limit(soft_leaf_size_limit) //, r_gen(123)

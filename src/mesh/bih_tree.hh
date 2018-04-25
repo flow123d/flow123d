@@ -41,6 +41,8 @@ public:
     static const unsigned int dimension = 3;
     /// max count of elements to estimate median - value must be even
     static const unsigned int max_median_sample_size = 5;
+    /// Default leaf size limit
+    static const unsigned int default_leaf_size_limit;
 
     /**
 	 * Constructor
@@ -48,7 +50,7 @@ public:
 	 * Set class members and call functions which create tree
 	 * @param soft_leaf_size_limit - Maximal number of elements stored in a leaf node of BIH tree.
 	 */
-	BIHTree(unsigned int soft_leaf_size_limit = 20);
+	BIHTree(unsigned int soft_leaf_size_limit = BIHTree::default_leaf_size_limit);
 
 	/**
 	 * Destructor

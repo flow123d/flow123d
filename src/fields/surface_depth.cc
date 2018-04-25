@@ -21,6 +21,7 @@
 
 #include "fields/surface_depth.hh"
 #include "mesh/mesh.h"
+#include "mesh/ref_element.hh"
 
 
 SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction)
@@ -28,6 +29,7 @@ SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region, std::st
     this->create_projection_matrix( arma::vec3(surface_direction) );
     this->construct_bih_tree( const_cast<Mesh*>(mesh), surface_region);
     this->projection_search_radius_ = mesh->global_snap_radius();
+    this->searched_elements_.reserve(BIHTree::default_leaf_size_limit);
 }
 
 
@@ -97,62 +99,64 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     bih_tree_.construct();
 }
 
-double distance_from_abscissa(arma::vec3 a, arma::vec3 b, arma::vec3 &p)
-{
-	arma::vec3 u = b-a;
-	double d = - arma::dot( u, p );
-	double t = - ( a(0)*u(0) + a(1)*u(1) + a(2)*u(2) + d) / ( u(0)*u(0) + u(1)*u(1) + u(2)*u(2) );
-	if (t<0.0) t=0.0;
-	else if (t>1.0) t=1.0;
-
-	arma::vec3 insec;
-	for (unsigned int i=0;i<3;++i) insec(i) = a(i) + u(i) * t;
-	return arma::norm( (insec-p), 2 );
-}
-
 double SurfaceDepth::compute_distance(arma::vec3 point)
 {
 	double distance = std::numeric_limits<double>::max();
-	double snap_dist = std::numeric_limits<double>::max();
+	bool found_surface_projection = false;
 	arma::vec3 project_point;
-	arma::vec3 proj_to_surface_plane;
+	arma::mat a_mat(3,3);
+	arma::vec3 x;
+
 	project_point.subvec(0,1) = m_ * point;
 	project_point(2) = 0;
 
-	std::vector<unsigned int> searched_elements;
-	bih_tree_.find_point(project_point, searched_elements);
-	for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-		auto coords = nodes_coords_[(*it)];
-		arma::vec3 va = coords.col(1) - coords.col(0);
-		arma::vec3 vb = coords.col(2) - coords.col(0);
-
-		arma::mat a_mat(3,3);
-		a_mat.col(0) = va;
-		a_mat.col(1) = vb;
-		a_mat.col(2) = surface_norm_vec_;
-		arma::vec3 b_vec = point - coords.col(0);
-		arma::vec3 x;
-		arma::solve(x, a_mat, b_vec);
+	searched_elements_.clear();
+	bih_tree_.find_point(project_point, searched_elements_);
+	for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
+		prepare_distance_solve( (*it), point, a_mat, x );
 		if ( (x(0)>=0) && (x(1)>=0) && (x(0)+x(1)<=1) ) { // point is in triangle
 			double new_distance = -x(2);
-			if ( (new_distance>=0) && (new_distance<distance) || (snap_dist>0.0) ) distance = new_distance;
-			snap_dist = 0.0;
-		} else if (snap_dist > 0.0) { // check snap distance of point from triangle
+			if ( (new_distance>=0) && (new_distance<distance) ) distance = new_distance;
+			found_surface_projection = true;
+		}
+	}
+
+	if (!found_surface_projection) {
+		double snap_dist = std::numeric_limits<double>::max();
+		arma::vec3 proj_to_surface_plane;
+
+		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
+			// check snap distance point - triangle
+			prepare_distance_solve( (*it), point, a_mat, x );
+
 			proj_to_surface_plane = point - x(2)*surface_norm_vec_;
-			double new_snap_dist = distance_from_abscissa( coords.col(0), coords.col(1), proj_to_surface_plane );
-			new_snap_dist = std::min(new_snap_dist, distance_from_abscissa( coords.col(0), coords.col(2), proj_to_surface_plane ) );
-			new_snap_dist = std::min(new_snap_dist, distance_from_abscissa( coords.col(1), coords.col(2), proj_to_surface_plane ) );
+			arma::vec local_point = x.subvec(0,1);
+			auto bary_point = RefElement<2>::local_to_bary(local_point);
+			auto clip_point = RefElement<2>::clip(bary_point);
+			auto proj_ref = RefElement<2>::bary_to_local(clip_point);
+			auto proj_3d = a_mat.submat(0,0,2,1) * proj_ref;
+			double new_snap_dist = arma::norm(proj_3d - proj_to_surface_plane, 2);
 			if (new_snap_dist<snap_dist) {
 				snap_dist = new_snap_dist;
 				distance = -x(2);
 			}
 		}
-	}
 
-	if (snap_dist > projection_search_radius_) {
-        THROW(ExcTooLargeSnapDistance() << EI_Xcoord(proj_to_surface_plane(0)) << EI_Ycoord(proj_to_surface_plane(1))
-        		<< EI_Zcoord(proj_to_surface_plane(2)) << EI_SnapDistance(snap_dist) << EI_RegionName(surface_region_) );
+		if (snap_dist > projection_search_radius_) {
+	        THROW(ExcTooLargeSnapDistance() << EI_Xcoord(proj_to_surface_plane(0)) << EI_Ycoord(proj_to_surface_plane(1))
+	        		<< EI_Zcoord(proj_to_surface_plane(2)) << EI_SnapDistance(snap_dist) << EI_RegionName(surface_region_) );
+		}
 	}
 
 	return distance;
+}
+
+void SurfaceDepth::prepare_distance_solve(unsigned int elem_idx, arma::vec3 &point, arma::mat &a_mat, arma::vec3 &x)
+{
+	auto coords = nodes_coords_[elem_idx];
+	a_mat.col(0) = coords.col(1) - coords.col(0);
+	a_mat.col(1) = coords.col(2) - coords.col(0);
+	a_mat.col(2) = surface_norm_vec_;
+	arma::vec3 b_vec = point - coords.col(0);
+	arma::solve(x, a_mat, b_vec);
 }

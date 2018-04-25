@@ -59,6 +59,9 @@ protected:
 	/// Construct BIH tree above surface region of given name.
 	void construct_bih_tree(Mesh *mesh, std::string surface_region);
 
+	/// Precompute solve of distance in transformed coordinations of surface element plane.
+	void prepare_distance_solve(unsigned int elem_idx, arma::vec3 &point, arma::mat &a_mat, arma::vec3 &x);
+
 	/// Tree of mesh elements
 	BIHTree bih_tree_;
 
@@ -76,6 +79,9 @@ protected:
 
 	/// Surface region name (need for exception)
 	std::string surface_region_;
+
+	/// Surface region name (need for exception)
+	std::vector<unsigned int> searched_elements_;
 };
 
 #endif /* SURFACE_DEPTH_HH_ */
