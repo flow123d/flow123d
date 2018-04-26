@@ -174,7 +174,7 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
     storage.reserve(iea.n_intersections_);
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int idx = elm.index();
+        unsigned int idx = elm.idx();
         
         if(elm->dim() == dim)
         {
@@ -389,7 +389,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
 
     // release temporary links from 3d elements
     for (auto elm : mesh->bulk_elements_range()) {
-        if(elm->dim() == 3) element_intersections_[elm.index()].clear();
+        if(elm->dim() == 3) element_intersections_[elm.idx()].clear();
     }
 
 

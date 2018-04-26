@@ -74,15 +74,15 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
         bool first_3d_element = true;
         for (auto elm : mesh->bulk_elements_range()) {
 
-            elements_bb[elm.index()] = elm->bounding_box();
+            elements_bb[elm.idx()] = elm->bounding_box();
 
                 if (elm->dim() == 3){
                     if(first_3d_element){
                         first_3d_element = false;
-                        mesh_3D_bb = elements_bb[elm.index()];
+                        mesh_3D_bb = elements_bb[elm.idx()];
                     }else{
-                        mesh_3D_bb.expand(elements_bb[elm.index()].min());
-                        mesh_3D_bb.expand(elements_bb[elm.index()].max());
+                        mesh_3D_bb.expand(elements_bb[elm.idx()].min());
+                        mesh_3D_bb.expand(elements_bb[elm.idx()].max());
                     }
                 }
         }
@@ -94,8 +94,8 @@ template<unsigned int dim>
 bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementAccessor<3> &comp_ele,
                                                        const ElementAccessor<3> &bulk_ele)
 {
-    unsigned int component_ele_idx = comp_ele.index(),
-                 bulk_ele_idx = bulk_ele.index();
+    unsigned int component_ele_idx = comp_ele.idx(),
+                 bulk_ele_idx = bulk_ele.idx();
     
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
@@ -149,7 +149,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
     START_TIMER("Element iteration");
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int component_ele_idx = elm.index();
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm->dim() == dim &&                                // is component element
             !closed_elements[component_ele_idx] &&                    // is not closed yet
@@ -276,7 +276,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
     START_TIMER("Element iteration");
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int component_ele_idx = elm.index();
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm.dim() == dim &&                                    // is component element
             bih.ele_bounding_box(component_ele_idx).intersect(bih.tree_box()))   // its bounding box intersects 3D mesh bounding box
@@ -335,7 +335,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
     
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int component_ele_idx = elm.index();
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm.dim() == dim &&                                // is component element
             !closed_elements[component_ele_idx] &&                    // is not closed yet
@@ -503,7 +503,7 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     for(Edge* edg : edges)
     for(int j=0; j < edg->n_sides;j++) {
         if ( edg->side(j)->element().idx() != ele.idx() )
-            elements_idx.push_back(edg->side(j)->element().index());
+            elements_idx.push_back(edg->side(j)->element().idx());
     }
     
     return elements_idx;
@@ -590,7 +590,7 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>
 //                 cout << mesh->element_accessor(comp_neighbor_idx).idx() << "  ";
 //             cout << "\n";
             
-            unsigned int bulk_current = bulk_ele.index();
+            unsigned int bulk_current = bulk_ele.idx();
             
             // add all component neighbors with current bulk element into component queue
             for(unsigned int& comp_neighbor_idx : comp_neighbors) {
@@ -611,7 +611,7 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>
 //                 cout << mesh->element_accessor(bulk_neighbor_idx).idx() << "  ";
 //             cout << "\n";
             
-            unsigned int comp_current = comp_ele.index();
+            unsigned int comp_current = comp_ele.idx();
             unsigned int n_prolongations = 0;
             // prolong over current comp element to other bulk elements (into bulk queue) (covering comp ele)
             for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
@@ -628,14 +628,14 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>
             // it means we are at the boundary and cannot prolongate further
             if(n_prolongations == 0)
             {
-                Prolongation pr = {comp_ele.index(), undefined_elm_idx_, undefined_elm_idx_};
+                Prolongation pr = {comp_ele.idx(), undefined_elm_idx_, undefined_elm_idx_};
                 bulk_queue_.push(pr);
             }
         }
     }
     
     // close component element if it has all vertices inside bulk element
-    if(n_ip_vertices == is.size()) closed_elements[comp_ele.index()] = true;
+    if(n_ip_vertices == is.size()) closed_elements[comp_ele.idx()] = true;
 }
 
 
@@ -726,7 +726,7 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
     for (auto ele : mesh->bulk_elements_range()) {
     if (ele->dim() == 3)
     {
-        ele_idx = ele.index();
+        ele_idx = ele.idx();
         // if there are not at least 2 2D elements intersecting 3D element; continue
         if(intersection_map[ele_idx].size() < 2) continue;
         
@@ -811,9 +811,9 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementAccess
 {
     ASSERT_DBG(eleA.dim() == 2);
     ASSERT_DBG(eleB.dim() == 2);
-    ASSERT_DBG(eleA.idx() != eleB.index());
+    ASSERT_DBG(eleA.idx() != eleB.idx());
     
-    IntersectionAux<2,2> is(eleA.index(), eleB.index());
+    IntersectionAux<2,2> is(eleA.idx(), eleB.idx());
     
     ComputeIntersection<2,2> CI(eleA.element(), eleB.element(), mesh);
     CI.init();
@@ -836,10 +836,10 @@ void InspectElementsAlgorithm22::create_component_numbering()
 
     for (auto ele : mesh->bulk_elements_range()) {
         if (ele->dim() == 2 &&
-            component_idx_[ele.index()] == (unsigned int)-1)
+            component_idx_[ele.idx()] == (unsigned int)-1)
         {
             // start component
-            queue.push(ele.index());
+            queue.push(ele.idx());
             
             while(!queue.empty()){
                 unsigned int ele_idx = queue.front();
@@ -849,7 +849,7 @@ void InspectElementsAlgorithm22::create_component_numbering()
                     const Edge* edg = elm.side(sid)->edge();
 
                     for(int j=0; j < edg->n_sides;j++) {
-                        uint neigh_idx = edg->side(j)->element().index();
+                        uint neigh_idx = edg->side(j)->element().idx();
                         if (component_idx_[neigh_idx] == (unsigned int)-1) {
                             component_idx_[neigh_idx] = component_counter_;
                             queue.push(neigh_idx);
@@ -890,7 +890,7 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
     for (auto ele : mesh->bulk_elements_range()) {
     if (ele->dim() == 3)
     {
-        unsigned int ele_idx = ele.index();
+        unsigned int ele_idx = ele.idx();
         // if there are not at least 2 elements intersecting 3D element; continue
         if(intersection_map[ele_idx].size() < 2) continue;
         
@@ -997,7 +997,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
     START_TIMER("Element iteration");
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int component_ele_idx = elm.index();
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm.dim() == 1)                                    // is component element
             //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
@@ -1043,7 +1043,7 @@ void InspectElementsAlgorithm12::compute_intersections_1(const BIHTree& bih)
     START_TIMER("Element iteration");
     
     for (auto elm : mesh->bulk_elements_range()) {
-        unsigned int component_ele_idx = elm.index();
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm->dim() == 1)                                    // is component element
             //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
