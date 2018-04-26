@@ -120,7 +120,9 @@ public:
 
 	    int leaf_size_limit = 10;
 	    START_TIMER("create bih tree");
-	    bt = new BIHTree_test(mesh, leaf_size_limit);
+        for(int i=0; i < 100; i++) {
+            bt = new BIHTree_test(mesh, leaf_size_limit);
+        }
 	    END_TIMER("create bih tree");
 
 	    EXPECT_EQ(mesh->n_elements(), bt->get_element_count());
@@ -144,7 +146,7 @@ public:
 		test_insec_elements();
 		test_insec_points();
 
-		Profiler::instance()->output(MPI_COMM_WORLD, cout);
+		Profiler::instance()->output();
 
 		bt->test_tree_params();
 		//bt->BIH_output();
@@ -251,10 +253,10 @@ public:
 	Mesh *mesh;
 	BIHTree_test *bt;
 	std::uniform_real_distribution<> rx_, ry_, rz_;
-	const static int n_test_trials=5;
+	const static int n_test_trials=50000; // zvetseno
 };
 
-
+/*
 TEST_F(BIH_test, find_bounding_box_1) {
 	this->create_tree("{mesh_file=\"mesh/test_108_elem.msh\"}");
 	this->test_find_boxes();
@@ -274,6 +276,7 @@ TEST_F(BIH_test, find_bounding_box_4) {
 	this->create_tree("{mesh_file=\"mesh/test_188_elem.msh\"}");
 	this->test_find_boxes();
 }
+*/
 
 TEST_F(BIH_test, find_bounding_box_5) {
 	this->create_tree("{mesh_file=\"mesh/test_27936_elem.msh\"}");
