@@ -62,8 +62,8 @@ public:
     /**
      * Element accessor.
      */
-    ElementAccessor(const Mesh *mesh, unsigned int idx, bool boundary = false)
-    : mesh_(mesh), boundary_(boundary), element_idx_(idx), r_idx_(element()->region_idx())
+    ElementAccessor(const Mesh *mesh, unsigned int idx)
+    : mesh_(mesh), boundary_(idx>=mesh->n_elements()), element_idx_(idx), r_idx_(element()->region_idx())
     {
        dim_=element()->dim();
     }
@@ -122,6 +122,7 @@ public:
         element_idx_++;
         r_idx_ = element()->region_idx();
         dim_=element()->dim();
+        boundary_ = (element_idx_>=mesh_->n_elements());
     }
 
     inline SideIter side(const unsigned int loc_index) {

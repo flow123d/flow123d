@@ -47,7 +47,7 @@ Edge * Boundary::edge() {
 
 ElementAccessor<3> Boundary::element_accessor()
 {
-	return mesh_->element_accessor(bc_ele_idx_, true);
+	return mesh_->element_accessor(bc_ele_idx_);
 }
 
 //-----------------------------------------------------------------------------

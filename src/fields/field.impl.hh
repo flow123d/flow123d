@@ -359,7 +359,7 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
         const Value &obs_value =
                         Value( const_cast<typename Value::return_type &>(
                                 this->value(o_point.global_coords(),
-                                        ElementAccessor<spacedim>(this->mesh(), ele_index, false)) ));
+                                        ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
         ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
@@ -608,7 +608,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                                 this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
                              );
                 output_data.add(node_index, node_value.mem_ptr() );
                 count[node_index]++;
@@ -630,7 +630,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                         		this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false) ))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
                              );
                 ASSERT_EQ(output_data.n_elem(), node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
@@ -645,7 +645,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
             const Value &ele_value =
                         Value( const_cast<typename Value::return_type &>(
                         		this->value(ele.centre(),
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx(),false))
+                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
                                                                         )
                              );
             ASSERT_EQ(output_data.n_elem(), ele_value.n_rows()*ele_value.n_cols()).error();

@@ -224,7 +224,7 @@ public:
     void elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const;
 
 
-    ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false) const;
+    ElementAccessor<3> element_accessor(unsigned int idx) const;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file

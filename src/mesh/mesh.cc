@@ -269,6 +269,7 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 
 void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");
+    //std::reverse(element_vec_.end()-boundary_size_, element_vec_.end()); //TODO change in bidirectional map
     
     count_element_types();
 
@@ -690,8 +691,8 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
 
 
 
-ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) const {
-    return ElementAccessor<3>(this, idx, (idx>=bulk_size_));
+ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
+    return ElementAccessor<3>(this, idx);
 }
 
 
