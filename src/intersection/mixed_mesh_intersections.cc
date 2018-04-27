@@ -19,6 +19,7 @@
 #include "mixed_mesh_intersections.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"
 
 
@@ -420,7 +421,7 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
         fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
 
         unsigned int idx = 1;
-        FOR_NODES(mesh, nod){
+        for (auto nod : mesh->node_range()) {
             arma::vec3 _nod = nod->point();
             fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
             idx++;
@@ -516,7 +517,7 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
         fprintf(file, "%d\n", (mesh->n_nodes() + number_of_intersection_points));
 
         unsigned int idx = 1;
-        FOR_NODES(mesh, nod){
+        for (auto nod : mesh->node_range()) {
             arma::vec3 _nod = nod->point();
             fprintf(file,"%d %.16f %.16f %.16f\n", idx, _nod[0], _nod[1], _nod[2]);
             idx++;

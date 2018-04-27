@@ -59,7 +59,7 @@ public:
     }
 
     inline void inc() {
-        ASSERT(!is_valid()).error("Do not call inc() for invalid accessor!");
+        ASSERT(is_valid()).error("Do not call inc() for invalid accessor!");
         node_idx_++;
     }
 

@@ -61,17 +61,6 @@ template <int spacedim> class NodeAccessor;
  */
 #define MESH_CRITICAL_VOLUME 1.0E-12
 
-/**
- * Provides for statement to iterate over the Nodes of the Mesh.
- * The parameter is FullIter local variable of the cycle, so it need not be declared before.
- * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
- */
-#define FOR_NODES(_mesh_, i) \
-    for( NodeFullIter i( (_mesh_)->node_vector.begin() ); \
-        i != (_mesh_)->node_vector.end(); \
-        ++i)
-
-
 /// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
 typedef int IdxInt;
 typedef Iter<ElementAccessor<3>> ElementIter;

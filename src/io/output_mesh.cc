@@ -21,6 +21,7 @@
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
 
@@ -170,7 +171,7 @@ void OutputMesh::create_mesh()
     unsigned int coord_id = 0,  // coordinate id in vector
                  node_id = 0;   // node id
     auto &node_vec = *( nodes_->get_component_data(0).get() );
-    FOR_NODES(orig_mesh_, node) {
+    for (auto node : orig_mesh_->node_range()) {
         node->aux = node_id;   // store node index in the auxiliary variable
 
         // use store value

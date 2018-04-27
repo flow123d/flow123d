@@ -774,11 +774,11 @@ void Mesh::compute_element_boxes() {
     }
 
     // make mesh box
-    Node* node = this->node_vector.begin();
-    mesh_box_ = BoundingBox(node->point(), node->point());
-    FOR_NODES(this, node ) {
-        mesh_box_.expand( node->point() );
-    }
+    auto point = this->node_accessor(0)->point();
+    mesh_box_ = BoundingBox(point, point);
+	for (auto node : this->node_range()) {
+		mesh_box_.expand( node->point() );
+	}
 
 }
 

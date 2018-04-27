@@ -89,7 +89,8 @@ public:
 
 
     // Misc
-    int aux; // Auxiliary flag
+    mutable int aux; // Auxiliary flag
+    // TODO fix in OutputMesh::create_mesh() and remove this class member
 };
 
 #endif

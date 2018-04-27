@@ -88,7 +88,7 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
     fprintf(file, "$Nodes\n");
     fprintf(file, "%d\n", number_of_nodes);
 
-    FOR_NODES(mesh, nod){
+    for (auto nod : mesh->node_range()) {
         arma::vec3 _nod = nod->point();
         fprintf(file,"%d %f %f %f\n", nod.id()+1, _nod[0], _nod[1], _nod[2]);
     }
