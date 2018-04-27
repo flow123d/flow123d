@@ -578,6 +578,7 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 	std::vector<double> &vect = *( dynamic_cast<ElementDataCache<double> &>(*(it->second)).get_component_data(0).get() );
 	unsigned int n_nodes = vect.size()/3;
     mesh->reserve_node_size(n_nodes);
+    mesh->init_node_vector( n_nodes );
 	arma::vec3 point;
 	for (unsigned int i=0, ivec=0; i<n_nodes; ++i) {
         point(0)=vect[ivec]; ++ivec;

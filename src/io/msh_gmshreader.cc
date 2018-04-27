@@ -62,6 +62,7 @@ void GmshMeshReader::read_nodes(Mesh * mesh) {
     	tok_.next_line(false);
         n_nodes = lexical_cast<unsigned int> (*tok_);
         mesh->reserve_node_size( n_nodes );
+        mesh->init_node_vector( n_nodes );
         INPUT_CHECK( n_nodes > 0, "Zero number of nodes, %s.\n", tok_.position_msg().c_str() );
         ++tok_; // end of line
 

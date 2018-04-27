@@ -49,6 +49,7 @@ class Neighbour;
 class SideIter;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
+template <int spacedim> class NodeAccessor;
 
 
 #define ELM  0
@@ -74,6 +75,7 @@ template <int spacedim> class ElementAccessor;
 /// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
 typedef int IdxInt;
 typedef Iter<ElementAccessor<3>> ElementIter;
+typedef Iter<NodeAccessor<3>> NodeIter;
 
 
 class BoundarySegment {
@@ -141,7 +143,7 @@ public:
     ~Mesh();
 
     inline unsigned int n_nodes() const {
-        return node_vector.size();
+        return node_vec_.size();
     }
 
     inline unsigned int n_boundaries() const {
@@ -159,7 +161,7 @@ public:
     }
 
     /// Reserve size of node vector
-    inline void reserve_node_size(unsigned int n_nodes) {
+    inline void reserve_node_size(unsigned int n_nodes) { // TODO remove this obsolete method
     	node_vector.reserve(n_nodes);
     }
 
@@ -223,8 +225,11 @@ public:
      */
     void elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const;
 
-
+    /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const;
+
+    /// Create and return NodeAccessor to node of given idx
+    NodeAccessor<3> node_accessor(unsigned int idx) const;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
@@ -336,11 +341,17 @@ public:
     /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
     void init_element_vector(unsigned int size);
 
+    /// Initialize node_vec_, set size
+    void init_node_vector(unsigned int size);
+
     /// Returns range of bulk elements
     Range<ElementAccessor<3>> bulk_elements_range() const;
 
     /// Returns range of boundary elements
     Range<ElementAccessor<3>> boundary_elements_range() const;
+
+    /// Returns range of nodes
+    Range<NodeAccessor<3>> node_range() const;
 
     /// Returns count of boundary or bulk elements
     inline unsigned int n_elements(bool boundary=false) const {
@@ -361,6 +372,18 @@ public:
     inline int find_elem_id(unsigned int pos) const
     {
         return element_ids_[pos];
+    }
+
+    /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
+    inline int node_index(int node_id) const
+    {
+        return node_ids_.get_position(node_id);
+    }
+
+    /// Return node id (in GMSH file) of node of given position in node vector.
+    inline int find_node_id(unsigned int pos) const
+    {
+        return node_ids_[pos];
     }
 
     /// Check if given index is in element_vec_
@@ -477,6 +500,14 @@ protected:
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
 
+    /**
+     * Vector of nodes of the mesh.
+     */
+    vector<Node> node_vec_;
+
+    /// Maps node ids to indexes into vector node_vec_
+    BidirectionalMap<int> node_ids_;
+
 
 
 
@@ -485,6 +516,7 @@ protected:
     friend class BIHTree;
     friend class Boundary;
     template <int spacedim> friend class ElementAccessor;
+    template <int spacedim> friend class NodeAccessor;
 
 
 

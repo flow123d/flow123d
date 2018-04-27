@@ -37,6 +37,7 @@
 // think about following dependencies
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
 #include "mesh/sides.h"
@@ -314,7 +315,7 @@ void Mesh::count_side_types()
 
 void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
-    node_elements_.resize(node_vector.size());
+    node_elements_.resize( this->n_nodes() );
 
     for (auto ele : this->bulk_elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
@@ -697,6 +698,12 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
 
 
 
+NodeAccessor<3> Mesh::node_accessor(unsigned int idx) const {
+    return NodeAccessor<3>(this, idx);
+}
+
+
+
 void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const
 {
     if (bulk_elements_id.size() ==0) {
@@ -791,8 +798,13 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
-	NodeFullIter node = node_vector.add_item(node_id);
-	node->point() = coords;
+	NodeFullIter node_it = node_vector.add_item(node_id);
+	node_it->point() = coords;
+
+    node_vec_.push_back( Node() );
+    Node &node = node_vec_[node_vec_.size()-1];
+    node.point() = coords;
+    node_ids_.add_item(node_id);
 }
 
 
@@ -821,7 +833,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 
 	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
 		unsigned int node_id = node_ids[ni];
-		NodeIter node = node_vector.find_id( node_id );
+		auto node = node_vector.find_id( node_id );
 		INPUT_CHECK( node != node_vector.end(),
 				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
 		ele->node[ni] = node;
@@ -854,6 +866,13 @@ void Mesh::init_element_vector(unsigned int size) {
 }
 
 
+void Mesh::init_node_vector(unsigned int size) {
+	node_vec_.clear();
+	node_vec_.reserve(size);
+	node_ids_.reinit(0);
+}
+
+
 Element * Mesh::add_element_to_vector(int id, bool boundary) {
 	Element * elem=nullptr;
 	if (boundary) {
@@ -882,6 +901,10 @@ Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
 
 Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
     return Range<ElementAccessor<3>>(this, element_vec_.size()-boundary_size_, element_vec_.size());
+}
+
+Range<NodeAccessor<3>> Mesh::node_range() const {
+    return Range<NodeAccessor<3>>(this, 0, node_vec_.size());
 }
 
 inline void Mesh::check_element_size(unsigned int elem_idx) const
