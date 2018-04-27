@@ -216,7 +216,7 @@ void Balance::lazy_initialize()
 	// construct vector of regions of boundary edges
     for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        ElementAccessor<3> elm = const_cast<Mesh *>(mesh_)->element_accessor( mesh_->get_el_4_loc()[loc_el] );
+        ElementAccessor<3> elm = mesh_->element_accessor( mesh_->get_el_4_loc()[loc_el] );
         if (elm->boundary_idx_ != nullptr)
         {
         	for(unsigned int si=0; si<elm->n_sides(); si++)

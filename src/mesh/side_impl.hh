@@ -69,7 +69,7 @@ inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnu
 
     inline Boundary * Side::cond() const {
             if (cond_idx() == Mesh::undef_idx) return NULL;
-            else return &( const_cast<Mesh *>(mesh_)->boundary_[ cond_idx() ] );
+            else return &( mesh_->boundary_[ cond_idx() ] );
     }
 
     inline unsigned int Side::cond_idx() const {

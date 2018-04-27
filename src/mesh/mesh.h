@@ -246,7 +246,7 @@ public:
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
-    vector<Boundary> boundary_;
+    mutable vector<Boundary> boundary_;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<Edge> edges;
