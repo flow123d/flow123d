@@ -354,7 +354,10 @@ LinSys::SolveInfo LinSys_PETSC::solve()
 
     if (params_ == "") params_ = petsc_dflt_opt;
     LogOut().fmt("inserting petsc options: {}\n",params_.c_str());
-    PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
+    
+    // now takes an optional PetscOptions object as the first argument
+    // value NULL will preserve previous behaviour previous behavior.
+    PetscOptionsInsertString(NULL, params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
