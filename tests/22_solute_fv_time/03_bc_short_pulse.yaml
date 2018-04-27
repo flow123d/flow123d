@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test14 - 2D transport with time variable boundary
   mesh:
@@ -24,7 +24,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
     balance: {}
-    output_stream: 
+    output_stream:
       file: ./test14.pvd
       format: !vtk
         variant: ascii
@@ -50,12 +50,13 @@ problem: !Coupling_Sequential
       # but still larger then 0.01 necessary for capture input
       max_dt: 0.05
       end_time: 1.0
-    output_stream: 
+    output_stream:
       file: ./transport.pvd
       format: !vtk
         variant: ascii
       name: transport_output_stream
       times:
         - step: 0.1
+      precision: 15  
     balance:
       cumulative: true

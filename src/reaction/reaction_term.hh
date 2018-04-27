@@ -21,12 +21,23 @@
 #ifndef REACTION_TERM_H
 #define REACTION_TERM_H
 
-#include "coupling/equation.hh"
-#include "transport/substance.hh"
+#include <memory>                    // for shared_ptr
+#include <string>                    // for string
+#include "coupling/equation.hh"      // for EquationBase
+#include "mesh/partitioning.hh"      // for IdxInt
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
+#include "transport/substance.hh"    // for SubstanceList
 
-class Mesh;
 class Distribution;
+class Mesh;
 class OutputTime;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Abstract;
+	}
+}
 
 
 class ReactionTerm: public EquationBase
@@ -73,7 +84,7 @@ public:
    * all substances and on all elements (given by transport).
    */
   ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, 
-                                     int *el_4_loc, int *row_4_el)
+                                     IdxInt *el_4_loc, IdxInt *row_4_el)
   {
     concentration_matrix_ = concentration;
     distribution_ = conc_distr;
@@ -113,9 +124,9 @@ protected:
   double **concentration_matrix_;
   
   /// Indices of elements belonging to local dofs.
-  int *el_4_loc_;
+  IdxInt *el_4_loc_;
   /// Indices of rows belonging to elements.
-  int *row_4_el_;
+  IdxInt *row_4_el_;
   
   /// Pointer to reference to distribution of elements between processors.
   Distribution *distribution_;

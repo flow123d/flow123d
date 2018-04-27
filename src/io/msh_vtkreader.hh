@@ -19,14 +19,27 @@
 #ifndef MSH_VTK_READER_HH
 #define	MSH_VTK_READER_HH
 
-#include <string>
-#include <istream>
-#include <pugixml.hpp>
+#include <boost/exception/info.hpp>          // for error_info::~error_info<...
+#include <istream>                           // for istream
+#include <map>                               // for map, map<>::value_compare
+#include <string>                            // for string
+#include <armadillo>
+#include "io/msh_basereader.hh"              // for MeshDataHeader, DataType
+#include "system/exceptions.hh"              // for ExcStream, operator<<, EI
+#include "system/file_path.hh"               // for FilePath
+#include "system/tokenizer.hh"               // for Tokenizer, Tokenizer::Po...
 
-#include "io/msh_basereader.hh"
-#include "system/file_path.hh"
+class ElementDataCacheBase;
+class Mesh;
+class PvdMeshReader;
+namespace pugi { class xml_node; }
+
+
+
 
 class VtkMeshReader : public BaseMeshReader {
+    friend class PvdMeshReader;
+
 public:
 	TYPEDEF_ERR_INFO(EI_VTKFile, std::string);
 	TYPEDEF_ERR_INFO(EI_ExpectedFormat, std::string);
@@ -45,6 +58,8 @@ public:
 			<< "Incompatible meshes, " << EI_ErrMessage::val << "\n" << "for VTK input file: " << EI_VTKFile::qval);
 	DECLARE_EXCEPTION(ExcMissingTag,
 			<< "Missing " << EI_TagType::val << " " << EI_TagName::val << "\n" << " in the input file: " << EI_VTKFile::qval);
+    DECLARE_EXCEPTION(ExcInvalidDofHandler,
+            << "Invalid DOF handler hash for field: " << EI_FieldName::qval << " in the input file: " << EI_VTKFile::qval << ".\n");
 
 	/// Possible data sections in UnstructuredGrid - Piece node.
 	enum DataSections {
@@ -57,20 +72,13 @@ public:
 	};
 
 	/**
-	 * Map of DataArray sections in VTK file.
-	 *
-	 * For each field_name contains MeshDataHeader.
-	 */
-	typedef typename std::map< std::string, MeshDataHeader > HeaderTable;
-
-	/**
      * Construct the VTK format reader from given FilePath.
      * This opens the file for reading.
      */
 	VtkMeshReader(const FilePath &file_name);
 
 	/// Destructor
-	~VtkMeshReader();
+	virtual ~VtkMeshReader();
 
     /**
      * Read regions from the VTK file and save the physical sections as regions in the RegionDB.
@@ -90,7 +98,27 @@ public:
 	 */
 	void check_compatible_mesh(Mesh &mesh) override;
 
+    /**
+	 * Find header of DataArray section of VTK file by field name given by header_query.
+	 */
+    MeshDataHeader & find_header(HeaderQuery &header_query) override;
+
 protected:
+	/**
+	 * Map of DataArray sections in VTK file.
+	 *
+	 * For each field_name contains MeshDataHeader.
+	 */
+	typedef typename std::multimap< std::string, MeshDataHeader > HeaderTable;
+
+    /**
+     * Special constructor of VTK files defined in PVD file. Constructor is called from PVD mesh reader.
+     *
+     * Construct the VTK format reader from given FilePath and set shared map of element data values.
+     * This opens the file for reading.
+     */
+    VtkMeshReader(const FilePath &file_name, std::shared_ptr<ElementDataFieldMap> element_data_values, double time_step);
+
     /**
      * private method for reading of nodes
      */
@@ -103,17 +131,15 @@ protected:
     void read_elements(Mesh * mesh);
 
     /**
-	 * Find header of DataArray section of VTK file given by field_name.
-	 *
-	 * Note: \p time has no effect (it is only for continuity with GMSH reader).
-	 */
-	MeshDataHeader & find_header(double time, std::string field_name) override;
+     * create data caches of node and elements DataArray tags
+     */
+    void create_node_element_caches();
 
     /// Reads table of DataArray headers through pugixml interface
     void make_header_table() override;
 
     /// Helper method that create DataArray header of given xml node (used from \p make_header_table)
-    MeshDataHeader create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos);
+    MeshDataHeader create_header(pugi::xml_node node, unsigned int n_entities, Tokenizer::Position pos, OutputTime::DiscreteSpace disc);
 
     /// Get DataType by value of string
 	DataType get_data_type(std::string type_str);
@@ -170,6 +196,8 @@ protected:
     /// store count of read entities
     unsigned int n_read_;
 
+    /// time of VTK file (getting only during initialization from PVD reader)
+    double time_step_;
 };
 
 #endif	/* MSH_VTK_READER_HH */

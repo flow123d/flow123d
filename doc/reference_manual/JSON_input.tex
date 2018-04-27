@@ -158,18 +158,17 @@ Selection type defines a finite number of valid string values which may appear o
 These elementary types are further organized into Records and Arrays in order to specify strongly typed definition of the 
 input data file. Array and Records forms so called input structure tree (IST).
 
-In order to allow simple input of simple things while keeping complex things possible, the input system provides
-so called automatic conversions from simple types to complex ones. 
-So if the type of a value on input does not match the expected data type the automatic conversion tries to convert 
-the given type to the expected type. Automatic conversion rules for individual composed types follows.
+In order to make {\it "simple things simple and complex things possible" (Alan Kay)} the input system provides
+so called {\it automatic conversions}. If the YAML type on input does not match the expected data type automatic conversion tries to convert 
+the input to the expected type. Automatic conversion rules for individual composed types follows.
 
-\subsubsection{Record $=$ Mapping}
+\subsubsection{Record (YAML Mapping, JSON object)}
 A Record is initialized from the YAML mapping. However, in contrast to YAML mappings 
 the Records have fixed keys with fixed types. 
-This is natural as a Records is used for initialization of C++ objects which 
+This is natural as Records are used for initialization of C++ objects which 
 are also strongly typed. Every Record type have unique name and have defined list of its keys.
-Keys are lowercase strings without spaces, possibly using digits and underscore. Every key have 
-specified its type and default value specification. Default value specification can be:
+Keys are lowercase strings without spaces, possibly using digits and underscore. Every key has
+a type and default value specification. Default value specification can be:
 \begin{description} 
  \item[obligatory] --- means no default value, which has to be specified at input. 
  \item[optional] --- means no default value, but value is needs not to be specified. Unspecified value usually means that you turn off some functionality.
@@ -195,7 +194,7 @@ is converted to:
 with the key \verb'regions' being optional and the last three keys having its default values. 
 
 
-\subsubsection{Array $=$ List}
+\subsubsection{Array (YAML List, JSON array)}
 An Array is initialized from a YAML list. But, in opposition to the YAML mapping, the values in a single Array 
 have all the same type. So the particular Array type is given by the type of its elements and a specification of its size range.
 
@@ -229,7 +228,7 @@ while the transposition is processed.
 
 
 
-\subsubsection{Abstract (record)}
+\subsubsection{Abstract}
 \label{sec:abstract}
 An Abstract type allows a certain kind of polymorphism corresponding to a pure abstract class in C++ or to an interface in Java. 
 Every Abstract type have unique name and set of Records that implements the Abstract. The particular type must be provided on input through the YAML tag.
@@ -247,47 +246,134 @@ where conductivity is of Abstract type \verb'Field' with scalar values, is in fa
 \end{verbatim}
 as the \verb'FieldConstant' is default implementation of the field and it is auto=convertible from the key \verb'value'. 
 
+\subsubsection{Flow123d specific tags}
+\label{sec:spec_tags}
+Currently just two specific tags are implemented, both allowing inclusion of data in other files.
 
+{\bf Include other YAML file} The tag \verb'!include' can be used to read a key value from other YAML file.
+Path to the file is specified as the value of the key. A relative path is rooted in the folder of the main input file.
+A particular type of an Abstract key is specified as a composed tag \verb'!include,<TYPE>'.
 
+Example, the main input file:
+\begin{verbatim}
+    flow123d_version: 2.0.0
+    problem: !Coupling_Sequential
+        description: Test8 - Steady flow with sources
+        mesh:
+            mesh_file: ../00_mesh/square_1x1_shift.msh
+        flow_equation: !include,Flow_Darcy_MH
+            input_darcy.yaml
+\end{verbatim}
+Content of \verb'input_darcy.yaml', included Record:
+\begin{verbatim}
+    nonlinear_solver:
+        linear_solver: !Petsc
+    input_fields:
+        darcy_input_fields.yaml
+    balance: {}
+    output_stream: 
+        file: ./flow.pvd
+\end{verbatim}
+Content of \verb'darcy_input_fields.yaml', included Array:
+\begin{verbatim}
+    - region: plane
+        anisotropy: 1
+        water_source_density: !FieldFormula
+        value: 2*(1-x^2)+2*(1-y^2)
+    - region: .plane_boundary
+        bc_type: dirichlet
+        bc_pressure: 0    
+\end{verbatim}
 
+{\bf Include general CSV data}
+The custom tag \verb'include_csv' can be used to include a table (e.g. coma separated values, CSV file) as an Array of Records. 
+Every line of the input table is converted to a single element of the Array.
+The tag is followed by a Record with several keys to specify format of the data:
+\begin{description}
+  \item {\bf\verb'file'} \\A valid path to a text data file. Relative to the main input file.
+  \item {\bf\verb'separator'}\\ A string of characters used as separators of the values on the single line (default is coma ",").
+  Tab and space are always added. Double quotas can be used to express string values containing separators, 
+  backslash can be used to escaping any character with special meaning. Consecutive row of separators is interpreted as a single separator. 
+  \item {\bf\verb'n_head_lines'}\\ Skip given number of lines at the beginning.
+  \item {\bf\verb'format'}\\ An input structure of a single element in the resulting array. Type of Abstracts must be same through 
+  the whole resulting Array. String scalar values with a placeholder \verb"'$<column>'" will be replaced by the value 
+  at corresponding column in the input file.
+\end{description}
 
-%\item[INCLUDE\_RECORD]:\\
-%This is a simple inclusion of another file as a content of a record:
-%\begin{verbatim}
-%{
-%        INCLUDE_RECORD = "<file name>"
-%}
-%\end{verbatim}
-%
-%\item[INCLUDE\_ARRAY]:\\
-%\begin{verbatim}
-%array=
-%{
-%        INCLUDE_ARRAY = "<file name>"
-%        FORMAT = "<format string>"
-%}       
-%\end{verbatim}
-%The reader will substitute the include record by a sequentially accessible array. The file has fixed number of 
-%space separated data fields on every line. Every line becomes one element in the array of type record. Every line forms a 
-%record with key names given by the \verb'<format string>' 
-%and corresponding data taken form the line.
+Current implementation have substantial limitation as it can not be combined with auto conversions. This makes these includes
+little bit verbose. For example consider this section from a main input file:
+\begin{verbatim}
+    ...
+    substances: [A, B]
+    ...    
+    inpute_fields:
+    - region: A
+      porosity: !FieldTimeFunction
+        time_function: !include_csv
+          values:
+            file: data.txt  
+            separator: " "
+            n_head_lines: 1
+            format: 
+              time: #0
+              value: #1
+              
+    - region: .boundary_A        
+      bc_conc: 
+        - !FieldTimeFunction    # Substance A
+          time_function: !include_csv
+            values:
+              file: data.txt  
+              separator: " "
+              n_head_lines: 1
+              format: 
+                time: #0
+                value: #2
+        - !FieldTimeFunction    # Substance B
+          time_function: !include_csv
+            values:
+              file: data.txt  
+              separator: " "
+              n_head_lines: 1
+              format: 
+                time: #0
+                value: #3
+\end{verbatim}
+Content of \verb'data.txt':
+\begin{verbatim}
+time    porosity        bc_conc_X     bc_conc_Y
+0.0     0.01            1.0           0.6
+0.1     0.015           0.9           0.5
+0.2     0.03            0.8           0.4
+\end{verbatim}
 
-%The key difference compared to regular JSON arrays is that included arrays can be accessed only sequentially 
-%within the program and thus we minimize reader memory overhead for large input data. The idea is to translate raw data into structured
-%format and use uniform access to the data.
+This together will be eqivalent to:
+\begin{verbatim}
+    inpute_fields:
+    - region: A
+      porosity: !FieldTimeFunction
+        time_function: 
+          - time: 0.0
+            value: 0.01
+          - time: 0.1
+            value: 0.015
+          - time: 0.2
+            value: 0.03
+           
+    - region: .boundary_A        
+      bc_conc: !FieldTimeFunction
+        time_function: 
+          - time: 0.0
+            value: [ 1.0, 0.6]
+          - time: 0.1
+            value: [ 0.9, 0.5]
+          - time:  0.2
+            value: [ 0.8, 0.4]
+\end{verbatim}
 
-%Basic syntax for format string could be an array of strings --- formats of individual columns.
-%Every format string is an address of key that is given the column. Onother possibility is to give an arbitrary 
-%JSON file, where all values are numbers of columns where to take the value.
+So in this particular case it would be simpler to write data directly into the main file. The include from 
+the text table is efficient for the long time series.
 
-%[\dots better specify format string]
-
-
-%Possible extensions:
-% have sections in the file for setting time dependent data
-% have number of lines at the beginning
-% have variable format
-% allow vectors in the 'line records']
 
 
 
@@ -295,7 +381,7 @@ as the \verb'FieldConstant' is default implementation of the field and it is aut
 This section provides some implementation details about the Flow123d input subsystem. This may be helpful to better understand behavior of the program for 
 some special input constructions.
 
-\begin{figure}
+\begin{figure}[b]
  \begin{center}
  \includegraphics[scale=0.4]{\fig/input_subsystem.pdf}
  % input_subsystem.pdf: 0x0 pixel, -2147483648dpi, 0.00x0.00 cm, bb=

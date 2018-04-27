@@ -58,7 +58,8 @@ table_function_tensor: !FieldTimeFunction
 
 
 FieldAlgoBaseInitData get_field_init_data(std::string field_name, double max_limit = std::numeric_limits<double>::max() ) {
-	return FieldAlgoBaseInitData(field_name, 3, UnitSI::dimensionless(), std::make_pair(0, max_limit) );
+	return FieldAlgoBaseInitData(field_name, 3, UnitSI::dimensionless(), std::make_pair(0, max_limit),
+			(FieldFlag::declare_input & FieldFlag::equation_input & FieldFlag::allow_output) );
 }
 
 
@@ -80,6 +81,7 @@ TEST(FieldTableFunction, table_function) {
     Space<3>::Point point;
     point(0)=1.0; point(1)=2.0; point(2)=3.0;
     ElementAccessor<3> elm;
+    auto conversion_ptr = std::make_shared<TimeUnitConversion>();
 
     {
         std::shared_ptr< ScalarField > scalar_base =

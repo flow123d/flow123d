@@ -17,6 +17,7 @@
 
 #include "mesh/bih_tree.hh"
 #include "mesh/bih_node.hh"
+#include "mesh/mesh.h"
 #include "system/global_defs.h"
 #include <ctime>
 #include <stack>
@@ -29,33 +30,36 @@ const double BIHTree::size_reduce_factor = 0.8;
 
 
 BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
-: mesh_(mesh), leaf_size_limit(soft_leaf_size_limit), r_gen(123)
+: elements_(mesh->element_box_),
+  main_box_(mesh->mesh_box_),
+  leaf_size_limit(soft_leaf_size_limit) //, r_gen(123)
 {
 	OLD_ASSERT(mesh != nullptr, " ");
-	max_n_levels = 2*log(mesh->n_elements())/log(2);
 
-	nodes_.reserve(2*mesh_->n_elements() / leaf_size_limit);
-	element_boxes();
+	mesh->compute_element_boxes();
 
+    max_n_levels = 2*log(mesh->n_elements())/log(2);
+	nodes_.reserve(2*mesh->n_elements() / leaf_size_limit);
 	in_leaves_.resize(elements_.size());
 	for(unsigned int i=0; i<in_leaves_.size(); i++) in_leaves_[i] = i;
 
 	// make root node
 	nodes_.push_back(BIHNode());
 	nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
-	// make root box
-	Node* node = mesh_->node_vector.begin();
-	main_box_ = BoundingBox(node->point_armor(), node->point_armor());
-	FOR_NODES(mesh_, node ) {
-		main_box_.expand( node->point_armor() );
-	}
+	uint height = make_node(main_box_, 0);
 
-	make_node(main_box_, 0);
+	node_stack_.reserve(2*height);
 }
 
 
 BIHTree::~BIHTree() {
 
+}
+
+const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
+{
+    ASSERT_DBG(ele_idx < elements_.size());
+    return elements_[ele_idx];
 }
 
 
@@ -108,13 +112,17 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 	nodes_.back().set_leaf(left_end, right_end, right_bound, depth);
 
 	nodes_[node_idx].set_non_leaf(nodes_.size()-2, nodes_.size()-1, axis);
+    
+//     xprintf(Msg, "%d %f %f %f %f %d %d\n", node_idx, node_box.min(axis), left_bound, right_bound, node_box.max(axis),
+//         left_end - left_begin, right_end - left_end );
 }
 
 
-void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
+uint BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 	// we must refer to the node by index to prevent seg. fault due to nodes_ reallocation
 
-	split_node(box,node_idx);
+	uint height = 0;
+    split_node(box,node_idx);
 
 	{
 		BIHNode &node = nodes_[node_idx];
@@ -122,13 +130,19 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 		BoundingBox node_box(box);
 		node_box.set_max(node.axis(), child.bound() );
 		if (	child.leaf_size() > leaf_size_limit
-			&&  child.depth() < max_n_levels
-			&&  ( node.axis() != node_box.longest_axis()
-			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
-			)
+			&&  child.depth() < max_n_levels)
+// 			&&  ( node.axis() != node_box.longest_axis()
+// 			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
+// 			)
 		{
-				make_node(node_box, node.child(0) );
+				uint ht = make_node(node_box, node.child(0) );
+				height = max(height, ht);
 		}
+// 		else{
+//             xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
+//                                            node_box.size(node_box.longest_axis()),
+//                                            box.size(node.axis()));
+//         }
 	}
 
 	{
@@ -137,14 +151,21 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 		BoundingBox node_box(box);
 		node_box.set_min(node.axis(), child.bound() );
 		if (	child.leaf_size() > leaf_size_limit
-			&&  child.depth() < max_n_levels
-			&&  ( node.axis() != node_box.longest_axis()
-			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
-			)
+			&&  child.depth() < max_n_levels)
+// 			&&  ( node.axis() != node_box.longest_axis()
+// 			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
+// 			)
 		{
-				make_node(node_box, node.child(1) );
+				uint ht = make_node(node_box, node.child(1) );
+				height = max(height, ht);
 		}
+// 		else{
+// 		            xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
+//                                            node_box.size(node_box.longest_axis()),
+//                                            box.size(node.axis()));
+//         }
 	}
+	return height+1;
 }
 
 
@@ -153,17 +174,24 @@ double BIHTree::estimate_median(unsigned char axis, const BIHNode &node)
 	unsigned int median_idx;
 	unsigned int n_elements = node.leaf_size();
 
-	if (n_elements > max_median_sample_size) {
-		// random sample
-		std::uniform_int_distribution<unsigned int> distribution(node.leaf_begin(), node.leaf_end()-1);
-		coors_.resize(max_median_sample_size);
-		for (unsigned int i=0; i<coors_.size(); i++) {
-			median_idx = distribution(this->r_gen);
-
-			coors_[i] = elements_[ in_leaves_[ median_idx ] ].projection_center(axis);
-		}
-
-	} else {
+    // TODO: possible optimizations:
+    // - try to apply nth_element directly to in_leaves_ array
+    // - if current approach is better (due to cache memory), check randomization of median for large meshes 
+    // - good balancing of tree is crutial both for creation and find method
+    
+//     unsigned int sample_size = 50+n_elements/5;
+// 	if (n_elements > sample_size) {
+// 		// random sample
+// 		std::uniform_int_distribution<unsigned int> distribution(node.leaf_begin(), node.leaf_end()-1);
+// 		coors_.resize(sample_size);
+// 		for (unsigned int i=0; i<coors_.size(); i++) {
+// 			median_idx = distribution(this->r_gen);
+// 
+// 			coors_[i] = elements_[ in_leaves_[ median_idx ] ].projection_center(axis);
+// 		}
+// 
+//     } else 
+    {
 		// all elements
 		coors_.resize(n_elements);
 		for (unsigned int i=0; i<coors_.size(); i++) {
@@ -180,7 +208,7 @@ double BIHTree::estimate_median(unsigned char axis, const BIHNode &node)
 }
 
 
-unsigned int BIHTree::get_element_count() {
+unsigned int BIHTree::get_element_count() const {
 	return elements_.size();
 }
 
@@ -190,23 +218,26 @@ const BoundingBox &BIHTree::tree_box() const {
 }
 
 
-void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list) const
+void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list, bool full_list) const
 {
-	std::stack<unsigned int, std::vector<unsigned int> > node_stack;
-	OLD_ASSERT_EQUAL(result_list.size() , 0);
 
-	node_stack.push(0);
-	while (! node_stack.empty()) {
-		const BIHNode &node = nodes_[node_stack.top()];
+	ASSERT_EQ(result_list.size() , 0);
+
+    unsigned int counter = 0;
+    node_stack_.clear();
+    node_stack_.push_back(0);
+	while (! node_stack_.empty()) {
+		const BIHNode &node = nodes_[node_stack_.back()];
 		//DebugOut().fmt("node: {}\n", node_stack.top() );
-		node_stack.pop();
+		node_stack_.pop_back();
 
 
 		if (node.is_leaf()) {
 
+            counter ++;
 			//START_TIMER("leaf");
 			for (unsigned int i=node.leaf_begin(); i<node.leaf_end(); i++) {
-				if (elements_[ in_leaves_[i] ].intersect(box)) {
+				if (full_list || elements_[ in_leaves_[i] ].intersect(box)) {
 
 					result_list.push_back(in_leaves_[i]);
 				}
@@ -216,44 +247,39 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 			//START_TIMER("recursion");
 			if ( ! box.projection_gt( node.axis(), nodes_[node.child(0)].bound() ) ) {
 				// box intersects left group
-				node_stack.push( node.child(0) );
+				node_stack_.push_back( node.child(0) );
 			}
 			if ( ! box.projection_lt( node.axis(), nodes_[node.child(1)].bound() ) ) {
 				// box intersects right group
-				node_stack.push( node.child(1) );
+				node_stack_.push_back( node.child(1) );
 			}
 			//END_TIMER("recursion");
 		}
 	}
+	//node_stack_.pop_back();
+	//cout << "stack size: " << node_stack_.size();
 
+// 	xprintf(Msg,"leaves: %d\n",counter);
 
-#ifdef FLOW123D_DEBUG_ASSERTS
-	// check uniqueness of element indexes
-	std::vector<unsigned int> cpy(result_list);
-	sort(cpy.begin(), cpy.end());
-	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
-	OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
-#endif
+//#ifdef FLOW123D_DEBUG_ASSERTS
+//	// check uniqueness of element indexes
+//	std::vector<unsigned int> cpy(result_list);
+//	sort(cpy.begin(), cpy.end());
+//	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
+//	OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
+//#endif
 }
 
 
-void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list) const
+void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list, bool full_list) const
 {
 	find_bounding_box(BoundingBox(BoundingBox::Point(point)), result_list);
 }
 
 void BIHTree::find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list) const
 {
-	find_bounding_box(BoundingBox(point), result_list);
+	find_bounding_box(BoundingBox(point), result_list, full_list);
 }
 
 
-void BIHTree::element_boxes() {
-	elements_.resize(mesh_->element.size());
-	unsigned int i=0;
-	FOR_ELEMENTS(mesh_, element) {
-		elements_[i] = element->bounding_box();
 
-		i++;
-	}
-}

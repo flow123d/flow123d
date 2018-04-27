@@ -192,15 +192,13 @@ void MultiField<spacedim, Value>::field_output(std::shared_ptr<OutputTime> strea
 {
 	// currently we cannot output boundary fields
 	if (!is_bc()) {
-		const OutputTime::DiscreteSpace type = this->output_type();
+		const OutputTime::DiscreteSpace type = this->get_output_type();
 
 		ASSERT_LT(type, OutputTime::N_DISCRETE_SPACES).error();
 
-		OutputTime::DiscreteSpaceFlags flags = 1 << type;
-	    for (unsigned long index=0; index < this->size(); index++)
-	        for(unsigned int ids=0; ids < OutputTime::N_DISCRETE_SPACES; ids++)
-	            if (flags & (1 << ids))
-	                    sub_fields_[index].compute_field_data( OutputTime::DiscreteSpace(ids), stream );
+	    for (unsigned long index=0; index < this->size(); index++) {
+            sub_fields_[index].compute_field_data( type, stream );
+	    }
 	}
 }
 
@@ -289,14 +287,14 @@ void MultiField<spacedim, Value>::setup_components() {
     	}
 
     	sub_fields_[i_comp].flags_ = this->flags_;
-    	sub_fields_[i_comp].set_input_list(this->full_input_list_);
+    	sub_fields_[i_comp].set_input_list(this->full_input_list_, *tg_);
     }
 }
 
 
 
 template<int spacedim, class Value>
-void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
+void MultiField<spacedim,Value>::set_input_list(const Input::Array &list, const TimeGovernor &tg) {
     if (! flags().match(FieldFlag::declare_input)) return;
 
     // Check sizes of Arrays defined MultiField in field descriptors
@@ -313,6 +311,7 @@ void MultiField<spacedim,Value>::set_input_list(const Input::Array &list) {
     }
     
     this->full_input_list_ = list;
+    this->tg_ = &tg;
     
     // Save the full array for future use in FieldCommon::mark_input_times().
     list.copy_to(shared_->input_list_);
@@ -356,7 +355,7 @@ typename Field<spacedim,Value>::FieldBasePtr MultiField<spacedim, Value>::MultiF
 				++it; ++position;
 			}
 
-		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits());
+		FieldAlgoBaseInitData init_data(field.input_name(), field.n_comp(), field.units(), field.limits(), field.get_flags());
 		typename Field<spacedim,Value>::FieldBasePtr field_algo_base = Field<spacedim,Value>::FieldBaseType::function_factory( (*it), init_data );
 		field_algo_base->set_component_idx(index_);
 		return field_algo_base;

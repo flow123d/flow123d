@@ -15,7 +15,12 @@
  * @brief   
  */
 
+#include <iomanip>                  // for operator<<, setw, setfill, left
 #include "fields/field_common.hh"
+#include "input/accessors_impl.hh"  // for Record::val
+#include "input/attribute_lib.hh"   // for Attribute
+#include "input/storage.hh"         // for ExcStorageTypeMismatch
+#include "tools/time_marks.hh"      // for TimeMark, TimeMark::Type, TimeMarks
 
 
 /****************************************************************************
@@ -59,7 +64,7 @@ IT::Record FieldCommon::field_descriptor_record(const string& record_name) {
                              { {IT::Attribute::obsolete(),
                                      "\"Specification of the region by its ID is obsolete, will be removed in release 3.0.\\n"
                                      "Use region label declared in the Mesh record or default label 'region_<ID>'.\""} })
-                     .declare_key("time", IT::Double(0.0), IT::Default("0.0"),
+                     .declare_key("time", TimeGovernor::get_input_time_type(0.0), IT::Default("0.0"),
                              "Apply field setting in this record after this time.\n"
                              "These times have to form an increasing sequence.")
 					 .close();
@@ -81,7 +86,7 @@ void FieldCommon::mark_input_times(const TimeGovernor &tg) {
     TimeMark::Type mark_type = tg.equation_fixed_mark_type();
     double time;
     for( auto &item : shared_->input_list_) {
-        time = item.val<double>("time"); // default time=0
+        time = tg.read_time( item.find<Input::Tuple>("time") ); // default time=0
         TimeGovernor::marks().add( TimeMark(time, mark_type | TimeGovernor::marks().type_input() ));
     }
 }

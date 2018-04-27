@@ -19,10 +19,10 @@
 #define READER_INTERNAL_CSV_HH_
 
 
-#include "input/input_type_forward.hh"
+//#include "input/input_type_forward.hh"
 
-#include "input/storage.hh"
-#include "input/path_base.hh"
+//#include "input/storage.hh"
+//#include "input/path_base.hh"
 #include "input/reader_internal_base.hh"
 
 
@@ -85,6 +85,9 @@ protected:
 
     /// Set storage of simple input type with value given from CSV file.
     void set_storage_from_csv(unsigned int column_index, StorageBase * item_storage, StorageBase * new_storage);
+
+    /// Checks if value on head represents column position in CSV (starts with '#'). If yes, stores position into \p pos.
+    bool check_and_read_position_index(PathBase &p, int &pos);
 
     /// Depth of CSV included subtree
     unsigned int csv_subtree_depth_;

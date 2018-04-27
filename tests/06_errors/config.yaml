@@ -4,7 +4,7 @@ common_config:
   memory_limit: 500
 
 test_cases:
-- files: 01_input_invalid_format.yaml
+- files: 01_input_invalid_format._yaml
   death_test: true
   check_rules:
     - regex:
@@ -79,3 +79,12 @@ test_cases:
     - regex:
         files: [job_output.log]  # same file can be checked several times
         regex: "Program [Ee]rror: Violated assert!"
+            
+- files: 11_size_of_solubility_vec.yaml
+  death_test: true
+  check_rules:
+    - regex:
+        files: [job_output.log]
+        substr: "User Error: The size of the input array 'solubility' does not match the number of substances"
+            
+            

@@ -19,16 +19,24 @@
 #define FIELD_FORMULA_HH_
 
 
-#include "system/system.hh"
-#include "fields/field_algo_base.hh"
-#include "mesh/point.hh"
-#include "input/factory.hh"
-#include "fields/field_values.hh"
-
-#include <string>
-using namespace std;
+#include <stdio.h>                      // for sprintf
+#include <boost/exception/info.hpp>     // for operator<<, error_info::error...
+#include <string>                       // for operator==, string
+#include <vector>                       // for vector
+#include <armadillo>
+#include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
+#include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
+#include "input/accessors.hh"           // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"      // for Record::val
+#include "input/storage.hh"             // for ExcStorageTypeMismatch
+#include "input/type_record.hh"         // for Record::ExcRecordKeyNotFound
+#include "system/exceptions.hh"         // for ExcAssertMsg::~ExcAssertMsg
+#include "tools/time_governor.hh"       // for TimeStep
 
 class FunctionParser;
+template <int spacedim> class ElementAccessor;
+
+using namespace std;
 
 /**
  * Class representing fields given by runtime parsed formulas.

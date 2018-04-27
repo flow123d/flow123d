@@ -18,12 +18,27 @@
 #ifndef PARTITIONING_HH_
 #define PARTITIONING_HH_
 
-#include "input/input_type_forward.hh"
-#include "input/accessors.hh"
+#include <boost/exception/info.hpp>  // for error_info::~error_info<Tag, T>
+#include <memory>                    // for shared_ptr
+#include <string>                    // for string
+#include <vector>                    // for vector
+#include "input/accessors.hh"        // for Record
+#include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
+#include "system/exceptions.hh"      // for operator<<, ExcStream, EI, TYPED...
 
+class Distribution;
 class Mesh;
 class SparseGraph;
-class Distribution;
+namespace Input {
+	namespace Type {
+		class Record;
+		class Selection;
+	}
+}
+
+/// Re-declaration of typedef defined in mesh.h
+typedef int IdxInt;
+
 
 /**
  * @brief Class for the mesh partitioning.
@@ -63,7 +78,7 @@ public:
     /**
      * Get local part of mesh partition.
      */
-    const int *get_loc_part() const;
+    const IdxInt *get_loc_part() const;
 
     /**
      * Creates and returns vector with element partitioning for output.
@@ -73,13 +88,13 @@ public:
     /**
      * Obsolete see source file for doc.
      */
-    void id_maps(int n_ids, int *id_4_old,
-                    Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+    void id_maps(int n_ids, IdxInt *id_4_old,
+                    Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id);
 
 
-    static void id_maps(int n_ids, int *id_4_old,
-            const Distribution &old_ds, int *loc_part,
-            Distribution * &new_ds, int * &id_4_loc, int * &new_4_id);
+    static void id_maps(int n_ids, IdxInt *id_4_old,
+            const Distribution &old_ds, IdxInt *loc_part,
+            Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id);
 
     /// Destructor.
     ~Partitioning();
@@ -110,7 +125,7 @@ private:
     /// Graph used to partitioning the mesh.
     SparseGraph *graph_;
     /// Partition numbers for local elements in original distribution of elements given be @p init_el_ds_.
-    int *       loc_part_;
+    IdxInt *    loc_part_;
     /// Original distribution of elements. Depends on type of partitioner
     Distribution *init_el_ds_;
     /// Sequential partitioning for output.

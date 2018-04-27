@@ -15,21 +15,19 @@
  * @brief   This file should contain only creation of Application object.
  */
 
-#include <petsc.h>
-
 
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 #include "system/python_loader.hh"
 #include "coupling/hc_explicit_sequential.hh"
-#include "input/input_type.hh"
+#include "coupling/balance.hh"
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "input/reader_internal_base.hh"
 
 #include <iostream>
 #include <fstream>
-#include <boost/regex.hpp>
+#include <regex>
 #include <boost/program_options/parsers.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/options_description.hpp>
@@ -198,6 +196,9 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     passed_argc_ = arg_i;
     */
 
+    // possibly turn off profilling
+    if (vm.count("no_profiler")) use_profiler=false;
+
     // if there is "help" option
     if (vm.count("help")) {
         display_version();
@@ -256,11 +257,8 @@ void Application::parse_cmd_line(const int argc, char ** argv) {
     if (input_filename == "")
         THROW(ExcMessage() << EI_Message("Main input file not specified (option -s)."));
 
-    // possibly turn off profilling
-    if (vm.count("no_profiler")) use_profiler=false;
-
     // preserves output of balance in YAML format
-    if (vm.count("yaml_balance")) yaml_balance_output_=true;
+    if (vm.count("yaml_balance")) Balance::set_yaml_output();
 
     string input_dir;
     string output_dir;
@@ -308,11 +306,11 @@ void Application::run() {
     {
         using namespace Input;
         // check input file version against the version of executable
-        boost::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
-        boost::smatch match;
+        std::regex version_re("([^.]*)[.]([^.]*)[.]([^.]*)");
+        std::smatch match;
         std::string version(FLOW123D_VERSION_NAME_);
         vector<string> ver_fields(3);
-        if ( boost::regex_match(version, match, version_re) ) {
+        if ( std::regex_match(version, match, version_re) ) {
             ver_fields[0]=match[1];
             ver_fields[1]=match[2];
             ver_fields[2]=match[3];
@@ -322,7 +320,7 @@ void Application::run() {
 
         std::string input_version = i_rec.val<string>("flow123d_version");
         vector<string> iver_fields(3);
-        if ( boost::regex_match(input_version, match, version_re) ) {
+        if ( std::regex_match(input_version, match, version_re) ) {
             iver_fields[0]=match[1];
             iver_fields[1]=match[2];
             iver_fields[2]=match[3];
@@ -368,23 +366,6 @@ void Application::after_run() {
 
 Application::~Application() {
 	if (problem_) delete problem_;
-
-	// remove balance output files in YAML format if "yaml_balance" option is not set
-	if ( (sys_info.my_proc==0) && !yaml_balance_output_ ) {
-		boost::filesystem::path mass_file( string(FilePath("mass_balance.yaml", FilePath::output_file)) );
-		boost::filesystem::path water_file( string(FilePath("water_balance.yaml", FilePath::output_file)) );
-		boost::filesystem::path energy_file( string(FilePath("energy_balance.yaml", FilePath::output_file)) );
-
-		if (boost::filesystem::exists(mass_file)) {
-		    boost::filesystem::remove(mass_file);
-		}
-		if (boost::filesystem::exists(water_file)) {
-		    boost::filesystem::remove(water_file);
-		}
-		if (boost::filesystem::exists(energy_file)) {
-		    boost::filesystem::remove(energy_file);
-		}
-	}
 
     if (use_profiler) {
         if (petsc_initialized) {

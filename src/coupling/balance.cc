@@ -26,10 +26,13 @@
 #include "mesh/mesh.h"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "tools/time_governor.hh"
+#include "la/distribution.hh"
 
 using namespace Input::Type;
+
+bool Balance::do_yaml_output_ = true;
 
 const Selection & Balance::get_format_selection_input_type() {
 	return Selection("Balance_output_format", "Format of output file for balance.")
@@ -50,6 +53,10 @@ const Record & Balance::get_input_type() {
 				"If true, then balance is calculated at each computational time step, which can slow down the program.")
 		.declare_key("file", FileName::output(), Default::read_time("File name generated from the balanced quantity: <quantity_name>_balance.*"), "File name for output of balance.")
 		.close();
+}
+
+void Balance::set_yaml_output() {
+	Balance::do_yaml_output_ = true;
 }
 
 /*
@@ -92,7 +99,7 @@ Balance::~Balance()
 {
 	if (rank_ == 0) {
 		output_.close();
-		output_yaml_.close();
+		if (do_yaml_output_) output_yaml_.close();
 	}
 	if (! allocation_done_) return;
 
@@ -104,6 +111,7 @@ Balance::~Balance()
 		chkerr(MatDestroy(&(region_source_rhs_[c])));
 		chkerr(VecDestroy(&(be_flux_vec_[c])));
 		chkerr(VecDestroy(&(region_source_vec_[c])));
+        chkerr(VecDestroy(&(region_mass_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
@@ -111,6 +119,7 @@ Balance::~Balance()
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
 	delete[] region_source_vec_;
+    delete[] region_mass_vec_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
 	chkerr(VecDestroy(&ones_));
@@ -291,11 +300,11 @@ void Balance::lazy_initialize()
                &(region_source_rhs_[c])));
 
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-               be_regions_.size(),
-               n_loc_dofs_,
-               PETSC_DECIDE,
-               PETSC_DECIDE,
-               max_dofs_per_boundary_,
+               be_regions_.size(),  // n local rows, number of local boundary edges
+               n_loc_dofs_,         // n local cols (local rows of multiplying vector)
+               PETSC_DECIDE,        // n global rows
+               PETSC_DECIDE,        // n global cols
+               max_dofs_per_boundary_,  // allocation, local poriton
                0,
                0,
                0,
@@ -381,8 +390,10 @@ void Balance::lazy_initialize()
 
 
         // set file name of YAML output
-        string yaml_file_name = file_prefix_ + "_balance.yaml";
-        FilePath(yaml_file_name, FilePath::output_file).open_stream(output_yaml_);
+        if (do_yaml_output_) {
+        	string yaml_file_name = file_prefix_ + "_balance.yaml";
+        	FilePath(yaml_file_name, FilePath::output_file).open_stream(output_yaml_);
+        }
     }
 
     allocation_done_ = true;
@@ -468,7 +479,7 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 
 void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -488,7 +499,7 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		unsigned int boundary_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -507,7 +518,7 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -552,7 +563,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 
 void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<int> &dof_indices,
+		const vector<IdxInt> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -916,7 +927,7 @@ void Balance::output_legacy(double time)
 	output_ << "# " << setw((w*c+wl-14)/2) << setfill('-') << "--"
 			<< " MASS BALANCE "
 	     	<< setw((w*c+wl-14)/2) << setfill('-') << "" << endl
-			<< "# Time: " << time << "\n\n\n";
+			<< "# Time: " << (time / time_->get_coef()) << "[" << time_->get_unit_string() << "]\n\n\n";
 
 	// header for table of boundary fluxes
 	output_ << "# Mass flux through boundary [M/T]:\n# "
@@ -1070,7 +1081,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			output_ << format_csv_val(time, delimiter, true)
+			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< csv_zero_vals(3, delimiter)
@@ -1091,7 +1102,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			// print data header (repeat header after every "repeat" lines)
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
-			output_ << format_csv_val(time, delimiter, true)
+			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
@@ -1110,7 +1121,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			if (repeat && (output_line_counter_%repeat == 0)) format_csv_output_header(delimiter, comment_string);
 
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
-			output_ << format_csv_val(time, delimiter, true)
+			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val("ALL", delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< format_csv_val(sum_fluxes_[qi], delimiter)
@@ -1136,9 +1147,9 @@ void Balance::format_csv_output_header(char delimiter, const std::string& commen
 {
 	std::stringstream ss;
 	if (delimiter == ' ') {
-		ss << setw(output_column_width-comment_string.size()) << "\"time\"";
+		ss << setw(output_column_width-comment_string.size()) << "\"time [" << time_->get_unit_string() << "]\"";
 	} else {
-		ss << "\"time\"";
+		ss << "\"time [" << time_->get_unit_string() << "]\"";
 	}
 
 	output_ << comment_string << ss.str()
@@ -1191,8 +1202,9 @@ std::string Balance::format_csv_val(double val, char delimiter, bool initial)
 
 void Balance::output_yaml(double time)
 {
+
 	// write output only on process #0
-	if (rank_ != 0) return;
+	if (!do_yaml_output_  || rank_ != 0) return;
 
 	const unsigned int n_quant = quantities_.size();
 
@@ -1212,7 +1224,7 @@ void Balance::output_yaml(double time)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
-			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ 0, 0, 0, " << masses_[qi][reg->bulk_idx()] << ", "
@@ -1226,7 +1238,7 @@ void Balance::output_yaml(double time)
 	for( RegionSet::const_iterator reg = b_set.begin(); reg != b_set.end(); ++reg)
 	{
 		for (unsigned int qi=0; qi<n_quant; qi++) {
-			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ " << fluxes_[qi][reg->boundary_idx()] << ", "
@@ -1240,7 +1252,7 @@ void Balance::output_yaml(double time)
 		for (unsigned int qi=0; qi<n_quant; qi++)
 		{
 			double error = sum_masses_[qi] - (initial_mass_[qi] + integrated_sources_[qi] + integrated_fluxes_[qi]);
-			output_yaml_ << "  - time: " << time << endl;
+			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: ALL" << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ " << sum_fluxes_[qi] << ", "

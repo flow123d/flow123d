@@ -19,21 +19,49 @@
 #ifndef TRANSPORT_DG_HH_
 #define TRANSPORT_DG_HH_
 
-#include "transport_operator_splitting.hh"
-#include "fields/bc_field.hh"
+#include <math.h>                              // for fabs
+#include <string.h>                            // for memcpy
+#include <algorithm>                           // for max
+#include <boost/exception/info.hpp>            // for operator<<, error_info...
+#include <string>                              // for operator<<
+#include <vector>                              // for vector
+#include <armadillo>
+#include "fem/update_flags.hh"                 // for operator|
+#include "fem/mapping_p1.hh"
+#include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-#include "la/linsys.hh"
-#include "flow/mh_dofhandler.hh"
+#include "fields/vec_seq_double.hh"
 #include "fields/equation_output.hh"
+#include "la/linsys.hh"
+#include "input/accessors.hh"                  // for ExcAccessorForNullStorage
+#include "input/accessors_impl.hh"             // for Record::val
+#include "input/storage.hh"                    // for ExcStorageTypeMismatch
+#include "input/type_base.hh"                  // for Array
+#include "input/type_generic.hh"               // for Instance
+#include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
+#include "mesh/accessors.hh"                   // for ElementAccessor
+#include "mesh/element_impls.hh"               // for Element::dim, Element:...
+#include "mesh/mesh_types.hh"                  // for ElementFullIter
+#include "mesh/neighbours_impl.hh"             // for Neighbour::element
+#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
+#include "mesh/sides.h"                        // for SideIter
+#include "mpi.h"                               // for MPI_Comm_rank
+#include "petscmat.h"                          // for Mat, MatDestroy
+#include "petscvec.h"                          // for Vec, VecDestroy, VecSc...
+#include "transport/concentration_model.hh"    // for ConcentrationTransport...
+#include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
 
+class Edge;
+class LinSys;
+class Mesh;
 class Distribution;
-class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
-template<unsigned int dim, unsigned int spacedim> class FiniteElement;
+template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
 template<unsigned int dim> class Quadrature;
+namespace Input { namespace Type { class Selection; } }
 
 
 
@@ -49,30 +77,30 @@ public:
 	~FEObjects();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim,3> *fe();
+	inline FiniteElement<dim> *fe();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim,3> *fe_rt();
+	inline FiniteElement<dim> *fe_rt();
 
 	template<unsigned int dim>
 	inline Quadrature<dim> *q();
 
 	template<unsigned int dim>
-	inline Mapping<dim,3> *mapping();
+	inline MappingP1<dim,3> *mapping();
 
-	inline DOFHandlerMultiDim *dh();
+	inline std::shared_ptr<DOFHandlerMultiDim> dh();
 
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
-	FiniteElement<1,3> *fe1_;
-	FiniteElement<2,3> *fe2_;
-	FiniteElement<3,3> *fe3_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
 
 	/// Finite elements for the water velocity field.
-	FiniteElement<1,3> *fe_rt1_;
-	FiniteElement<2,3> *fe_rt2_;
-	FiniteElement<3,3> *fe_rt3_;
+	FiniteElement<1> *fe_rt1_;
+	FiniteElement<2> *fe_rt2_;
+	FiniteElement<3> *fe_rt3_;
 
 	/// Quadratures used in assembling methods.
 	Quadrature<0> *q0_;
@@ -81,13 +109,12 @@ private:
 	Quadrature<3> *q3_;
 
 	/// Auxiliary mappings of reference elements.
-	Mapping<0,3> *map0_;
-	Mapping<1,3> *map1_;
-	Mapping<2,3> *map2_;
-	Mapping<3,3> *map3_;
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
 
 	/// Object for distribution of dofs.
-	DOFHandlerMultiDim *dh_;
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 
@@ -212,9 +239,9 @@ public:
 
 	void update_after_reactions(bool solution_changed);
 
-    void get_par_info(int * &el_4_loc, Distribution * &el_ds);
+    void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds);
 
-    int *get_row_4_el();
+    IdxInt *get_row_4_el();
 
 
 
@@ -429,19 +456,19 @@ private:
 	// @{
 
 	/// Vector of right hand side.
-	Vec *rhs;
+	std::vector<Vec> rhs;
 
 	/// The stiffness matrix.
-	Mat *stiffness_matrix;
+	std::vector<Mat> stiffness_matrix;
 
 	/// The mass matrix.
-	Mat *mass_matrix;
+	std::vector<Mat> mass_matrix;
 	
 	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
-	Vec *mass_vec;
+	std::vector<Vec> mass_vec;
     
     /// Auxiliary vectors for calculation of sources in balance due to retardation (e.g. sorption).
-    Vec *ret_vec;
+	std::vector<Vec> ret_vec;
 
 	/// Linear algebra system for the transport equation.
 	LinSys **ls;
@@ -462,7 +489,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<Vec> output_vec;
+	vector<VectorSeqDouble> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

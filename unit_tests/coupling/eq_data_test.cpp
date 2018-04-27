@@ -36,7 +36,7 @@
 
 #include "fields/field_set.hh"
 #include "fields/field_add_potential.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 #include "fields/multi_field.hh"
 #include "coupling/equation.hh"
@@ -190,7 +190,7 @@ protected:
         inputs.push_back( in_rec.val<Input::Array>("data") );
 
         data.set_mesh(*mesh);
-        data.set_input_list( inputs[input_last] );
+        data.set_input_list( inputs[input_last], tg );
         data.set_time(tg.step(), LimitSide::right);
     }
 

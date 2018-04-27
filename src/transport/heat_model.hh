@@ -19,15 +19,30 @@
 #ifndef HEAT_MODEL_HH_
 #define HEAT_MODEL_HH_
 
-#include "coupling/equation.hh"
+#include <boost/exception/info.hpp>             // for operator<<, error_inf...
+#include <memory>                               // for shared_ptr
+#include <string>                               // for string
+#include <vector>                               // for vector
+#include <armadillo>
 #include "advection_diffusion_model.hh"
+#include "transport/advection_process_base.hh"
+#include "transport/substance.hh"
+#include "fields/field_values.hh"               // for FieldValue<>::Scalar
 #include "fields/bc_field.hh"
 #include "fields/bc_multi_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
 #include "fields/field_set.hh"
-#include "transport/advection_process_base.hh"
-#include "transport/substance.hh"
+#include "input/type_base.hh"                   // for Array
+#include "input/type_generic.hh"                // for Instance
+#include "input/type_record.hh"                 // for Record
+#include "input/type_selection.hh"              // for Selection
+
+class MH_DofHandler;
+class Mesh;
+class OutputTime;
+namespace Input { class Record; }
+template <int spacedim> class ElementAccessor;
 
 /*
 class HeatProcessBase : public EquationBase

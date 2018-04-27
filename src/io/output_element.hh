@@ -54,8 +54,10 @@ public:
     
     /// Returns global index of the node.
     unsigned int node_index(unsigned int loc_idx) const;
+    /// Returns global indices of the nodes.
+    std::vector<unsigned int> node_list() const;
     Point vertex(unsigned int loc_idx) const;  ///< Returns coordinates of node @p loc_idx.
-    std::vector<Point> vertex_list() const;    ///< Returns vector of nodes coordinates.    
+    std::vector<Point> vertex_list() const;    ///< Returns vector of nodes coordinates.
     
     Point centre() const;                      ///< Computes the barycenter.
     //@}
@@ -71,6 +73,7 @@ public:
     //@}
     
     void inc();
+
     bool operator==(const OutputElement& other);
 private:
     
@@ -166,6 +169,18 @@ inline std::vector< OutputElement::Point > OutputElement::vertex_list() const
         off += spacedim;
     }
     return vertices;
+}
+
+
+inline std::vector< unsigned int > OutputElement::node_list() const
+{
+    unsigned int n = n_nodes();
+    unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
+    std::vector<unsigned int> indices(n);
+    for(unsigned int i=0; i<n; i++) {
+        indices[i] = (* output_mesh_->connectivity_)[con_off - n + i];
+    }
+    return indices;
 }
 
 

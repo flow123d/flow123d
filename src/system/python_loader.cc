@@ -19,14 +19,15 @@
 
 #ifdef FLOW123D_HAVE_PYTHON
 
+#include "Python.h"
 #include "system/python_loader.hh"
 
-#include "system/system.hh"
+//#include "system/system.hh"
 #include "system/file_path.hh"
 #include <string>
-#include <iostream>
+//#include <iostream>
 #include <fstream>
-#include <sstream>
+//#include <sstream>
 
 using namespace std;
 

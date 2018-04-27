@@ -18,10 +18,22 @@
 #ifndef FIELD_CONSTANT_HH_
 #define FIELD_CONSTANT_HH_
 
-#include "system/system.hh"
-#include "fields/field_algo_base.hh"
-#include "input/factory.hh"
-#include "mesh/point.hh"
+#include <stdio.h>                            // for sprintf
+#include <string.h>                           // for memcpy
+#include <boost/exception/info.hpp>           // for operator<<, error_info:...
+#include <new>                                // for operator new[]
+#include <string>                             // for operator<<
+#include <vector>                             // for vector
+#include <armadillo>
+#include "fields/field_algo_base.hh"          // for FieldAlgorithmBase
+#include "fields/field_values.hh"             // for FieldValue<>::TensorFixed
+#include "tools/unit_converter.hh"           // for ExcInvalidUnit, ExcNonc...
+#include "input/accessors.hh"                 // for ExcTypeMismatch, ExcAcc...
+#include "input/accessors_impl.hh"            // for Record::val, Iterator::...
+#include "input/storage.hh"                   // for ExcStorageTypeMismatch
+#include "input/type_record.hh"               // for Record::ExcRecordKeyNot...
+#include "system/exceptions.hh"               // for ExcAssertMsg::~ExcAsser...
+template <int spacedim> class ElementAccessor;
 
 
 /**

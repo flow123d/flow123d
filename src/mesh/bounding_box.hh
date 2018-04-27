@@ -18,12 +18,21 @@
 #ifndef BOX_ELEMENT_HH_
 #define BOX_ELEMENT_HH_
 
-#include "system/system.hh"
-#include "system/global_defs.h"
-#include "mesh/point.hh"
-
-#include <vector>
+#include <string.h>                                    // for memcpy
+#include <algorithm>                                   // for max, min
+#include <boost/exception/detail/error_info_impl.hpp>  // for error_info
+#include <boost/exception/info.hpp>                    // for operator<<
+#include <new>                                         // for operator new[]
+#include <ostream>                                     // for operator<<
+#include <string>                                      // for basic_string
+#include <vector>                                      // for vector
 #include <armadillo>
+#include "mesh/point.hh"                               // for Space, Space<>...
+#include "system/exc_common.hh"                        // for ExcAssertMsg
+#include "system/exceptions.hh"                        // for ExcStream, ope...
+#include "system/global_defs.h"                        // for msg, rank, ss
+
+using namespace std;
 
 /**
  * @brief Bounding box in 3d ambient space.

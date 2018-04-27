@@ -20,11 +20,20 @@
 #ifndef TIME_MARKS_HH_
 #define TIME_MARKS_HH_
 
+#include <boost/exception/detail/error_info_impl.hpp>
+#include <boost/exception/info.hpp>
 #include <ostream>
+#include <string>
 #include <vector>
 
-#include "system/system.hh"
+#include "system/asserts.hh"
+#include "system/exc_common.hh"
+#include "system/exceptions.hh"
 #include "system/global_defs.h"
+
+class TimeGovernor;
+class TimeMarksIterator;
+class TimeStep;
 
 
 /**

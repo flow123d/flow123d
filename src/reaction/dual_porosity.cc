@@ -204,7 +204,7 @@ void DualPorosity::initialize_fields()
   data_.set_components(substances_.names());
   //setting fields that are set from input file
   input_data_set_+=data_;
-  input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
+  input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"), *time_);
 
   //setting fields in data
   data_.set_mesh(*mesh_);
@@ -222,7 +222,7 @@ void DualPorosity::initialize_fields()
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
-  data_.output_fields.initialize(output_stream_, input_record_.val<Input::Record>("output"),time());
+  data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
 }
 
 

@@ -11,7 +11,7 @@
 #include <mesh_constructor.hh>
 
 #include "fields/field_set.hh"
-#include "fields/unit_si.hh"
+#include "tools/unit_si.hh"
 #include "fields/bc_field.hh"
 
 #include "system/sys_profiler.hh"
@@ -238,9 +238,9 @@ TEST_F(SomeEquation, collective_interface) {
     EXPECT_EQ( matrix, data["reaction_type"].flags() );
 
     data.output_type(OutputTime::CORNER_DATA);
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["init_pressure"].output_type() );
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["velocity"].output_type() );
-    EXPECT_EQ( OutputTime::CORNER_DATA, data["reaction_type"].output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["init_pressure"].get_output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["velocity"].get_output_type() );
+    EXPECT_EQ( OutputTime::CORNER_DATA, data["reaction_type"].get_output_type() );
 }
 
 TEST_F(SomeEquation, input_related) {
@@ -251,9 +251,9 @@ TEST_F(SomeEquation, input_related) {
     Input::Type::Array list_type = Input::Type::Array(data.make_field_descriptor_type("SomeEquation"));
     Input::ReaderToStorage reader( eq_data_input, list_type, Input::FileFormat::format_JSON);
     Input::Array in=reader.get_root_interface<Input::Array>();
-    data.set_input_list(in);
-    data.set_mesh(*mesh_);
     TimeGovernor tg(0.0, 0.5);
+    data.set_input_list(in, tg);
+    data.set_mesh(*mesh_);
 
     data.mark_input_times(tg);
     Region front_3d = mesh_->region_db().find_id(40);

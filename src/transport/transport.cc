@@ -44,6 +44,7 @@
 #include "fields/generic_field.hh"
 
 #include "reaction/isotherm.hh" // SorptionType enum
+#include "flow/mh_dofhandler.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
@@ -117,7 +118,7 @@ void ConvectionTransport::initialize()
     cfl_max_step = time_->end_time();
 
     data_.set_components(substances_.names());
-    data_.set_input_list( input_rec.val<Input::Array>("input_fields") );
+    data_.set_input_list( input_rec.val<Input::Array>("input_fields"), *time_ );
     data_.set_mesh(*mesh_);
 
     make_transport_partitioning();
@@ -140,7 +141,7 @@ void ConvectionTransport::initialize()
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
 
-	data_.output_fields.initialize(output_stream_, input_rec.val<Input::Record>("output"), time() );
+	data_.output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), time() );
 	//cout << "Transport." << endl;
 	//cout << time().marks();
 
@@ -235,7 +236,7 @@ void ConvectionTransport::set_initial_condition()
     {
     	if (!el_ds->is_local(row_4_el[elem.index()])) continue;
 
-    	unsigned int index = row_4_el[elem.index()] - el_ds->begin();
+    	IdxInt index = row_4_el[elem.index()] - el_ds->begin();
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
@@ -350,7 +351,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element(el_4_loc[loc_el]);
         if (elm->boundary_idx_ != NULL) {
-            unsigned int new_i = row_4_el[elm.index()];
+        	IdxInt new_i = row_4_el[elm.index()];
 
             FOR_ELEMENT_SIDES(elm,si) {
                 Boundary *b = elm->side(si)->cond();
@@ -718,7 +719,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementFullIter elm = ELEMENT_FULL_ITER_NULL(mesh_);
     struct Edge *edg;
     unsigned int n;
-    int s, j, np, rank, new_j, new_i;
+    int s, j, np, rank;
+    IdxInt new_j, new_i;
     double aij, aii;
         
     MatZeroEntries(tm);
@@ -825,7 +827,7 @@ double **ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 
-void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_distribution_out){
+void ConvectionTransport::get_par_info(IdxInt * &el_4_loc_out, Distribution * &el_distribution_out){
 	el_4_loc_out = this->el_4_loc;
 	el_distribution_out = this->el_ds;
 	return;
@@ -835,7 +837,7 @@ void ConvectionTransport::get_par_info(int * &el_4_loc_out, Distribution * &el_d
 //	return el_4_loc;
 //}
 
-int *ConvectionTransport::get_row_4_el(){
+IdxInt *ConvectionTransport::get_row_4_el(){
 	return row_4_el;
 }
 

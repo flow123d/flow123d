@@ -9,8 +9,8 @@
 #include "input/input_type.hh"
 #include "input/accessors.hh"
 #include "fields/equation_output.hh"
+#include "fields/field.hh"
 #include "io/output_time_set.hh"
-#include "io/output_mesh.hh"
 #include "input/flow_attribute_lib.hh"
 #include <memory>
 
@@ -21,6 +21,14 @@ namespace IT = Input::Type;
 
 IT::Record &EquationOutput::get_input_type() {
 
+    static const IT::Selection &interpolation_sel =
+        IT::Selection("Discrete_output", "Discrete type of output. Determines type of output data (element, node, native etc).")
+            .add_value(OutputTime::NODE_DATA,   "P1_average", "Node data / point data.")
+			.add_value(OutputTime::CORNER_DATA, "D1_value",   "Corner data.")
+			.add_value(OutputTime::ELEM_DATA,   "P0_value",   "Element data / cell data.")
+			.add_value(OutputTime::NATIVE_DATA, "Native",     "Native data (Flow123D data).")
+			.close();
+
     static const IT::Record &field_output_setting =
         IT::Record("FieldOutputSetting", "Setting of the field output. The field name, output times, output interpolation (future).")
             .allow_auto_conversion("field")
@@ -28,7 +36,8 @@ IT::Record &EquationOutput::get_input_type() {
                     "The field name (from selection).")
             .declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
                     "Output times specific to particular field.")
-            //.declare_key("interpolation", ...)
+            .declare_key("interpolation", interpolation_sel, IT::Default::read_time("Interpolation type of output data."),
+					"Optional value. Implicit value is given by field and can be changed.")
             .close();
 
     return IT::Record("EquationOutput",
@@ -85,9 +94,10 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
 }
 
 
-void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg)
+void EquationOutput::initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, Input::Record in_rec, const TimeGovernor & tg)
 {
     stream_ = stream;
+    mesh_ = mesh;
     equation_type_ = tg.equation_mark_type();
     equation_fixed_type_ = tg.equation_fixed_mark_type();
     read_from_input(in_rec, tg);
@@ -125,6 +135,9 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     auto fields_array = in_rec.val<Input::Array>("fields");
     for(auto it = fields_array.begin<Input::Record>(); it != fields_array.end(); ++it) {
         string field_name = it -> val< Input::FullEnum >("field");
+        FieldCommon *found_field = field(field_name);
+        OutputTime::DiscreteSpace interpolation = it->val<OutputTime::DiscreteSpace>("interpolation", OutputTime::UNDEFINED);
+        found_field->output_type(interpolation);
         Input::Array field_times_array;
         if (it->opt_val("times", field_times_array)) {
             OutputTimeSet field_times;
@@ -140,6 +153,11 @@ void EquationOutput::read_from_input(Input::Record in_rec, const TimeGovernor & 
     for(auto it = observe_fields_array.begin<Input::FullEnum>(); it != observe_fields_array.end(); ++it) {
         observe_fields_.insert(string(*it));
     }
+
+    // register interpolation type of fields to OutputStream
+    for(FieldCommon * field : this->field_list) {
+    	used_interpolations_.insert( field->get_output_type() );
+    }
 }
 
 bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep step) const
@@ -153,11 +171,20 @@ bool EquationOutput::is_field_output_time(const FieldCommon &field, TimeStep ste
     return (field_times_it->second.contains(*current_mark_it) );
 }
 
+
 void EquationOutput::output(TimeStep step)
 {
-    // TODO: remove const_cast after resolving problems with const Mesh.
-    //Mesh *field_mesh = const_cast<Mesh *>(field_list[0]->mesh());
-	this->make_output_mesh();
+    ASSERT_PTR(mesh_).error();
+
+    // make observe points if not already done
+	auto observe_ptr = stream_->observe(mesh_);
+
+    int rank; bool parallel;
+    stream_->get_output_params(parallel, rank);
+
+    if ( (rank == 0) || parallel ) {
+        this->make_output_mesh(parallel);
+    }
 
     for(FieldCommon * field : this->field_list) {
 
@@ -167,10 +194,13 @@ void EquationOutput::output(TimeStep step)
             }
             // observe output
             if (observe_fields_.find(field->name()) != observe_fields_.end()) {
-                field->observe_output( stream_->observe() );
+                field->observe_output( observe_ptr );
             }
         }
     }
+
+    // complete information about dummy fields
+    stream_->add_dummy_fields();
 }
 
 
@@ -180,46 +210,57 @@ void EquationOutput::add_output_times(double begin, double step, double end)
 }
 
 
-void EquationOutput::make_output_mesh()
+void EquationOutput::make_output_mesh(bool parallel)
 {
-    // make observe points if not already done
-	stream_->observe();
-
     // already computed
-    if (stream_->is_output_mesh_init()) return;
+    if (stream_->is_output_data_caches_init()) return;
 
     // Read optional error control field name
-    auto it = stream_->get_output_mesh_record();
+    bool discont = stream_->get_output_mesh_record();
 
     if(stream_->enable_refinement()) {
-        if(it) {
-        	auto output_mesh = stream_->create_output_mesh_ptr(true);
-        	auto output_mesh_discont = stream_->create_output_mesh_ptr(true, true);
-        	//TODO solve setting of error_control_field
-        	this->select_error_control_field( output_mesh->error_control_field_name() );
-        	this->select_error_control_field( output_mesh_discont->error_control_field_name() );
+        if(discont) {
+            // create output meshes from input record
+        	output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_, *stream_->get_output_mesh_record());
 
-            output_mesh->create_refined_mesh();
+            // possibly set error control field for refinement
+            auto ecf = select_error_control_field();
+            output_mesh_->set_error_control_field(ecf);
+
+            // actually compute refined mesh
+            output_mesh_->create_refined_mesh();
+            stream_->set_output_data_caches(output_mesh_);
             return;
         }
     }
     else
     {
         // skip creation of output mesh (use computational one)
-        if(it)
+        if(discont)
         	WarningOut() << "Ignoring output mesh record.\n Output in GMSH format available only on computational mesh!";
     }
 
-
-	std::shared_ptr<OutputMesh> output_mesh = std::dynamic_pointer_cast<OutputMesh>( stream_->create_output_mesh_ptr(false) );
-	stream_->create_output_mesh_ptr(false, true);
-
-	output_mesh->create_identical_mesh();
+    // create output mesh identical with the computational one
+	discont |= (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
+	discont |= parallel;
+	if (discont) {
+		output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
+	} else {
+		output_mesh_ = std::make_shared<OutputMesh>(*mesh_);
+	}
+	if (parallel) output_mesh_->create_sub_mesh();
+	else output_mesh_->create_mesh();
+	stream_->set_output_data_caches(output_mesh_);
 }
 
 
-void EquationOutput::select_error_control_field(std::string error_control_field_name)
+typename OutputMeshBase::ErrorControlFieldFunc EquationOutput::select_error_control_field()
 {
+    std::string error_control_field_name = "";
+    // Read optional error control field name
+    auto it = stream_->get_output_mesh_record()->find<std::string>("error_control_field");
+    if(it) error_control_field_name = *it;
+    
     if(error_control_field_name!="")
     {
         FieldCommon* field =  this->field(error_control_field_name);
@@ -227,24 +268,25 @@ void EquationOutput::select_error_control_field(std::string error_control_field_
         if(field == nullptr){
             THROW(FieldSet::ExcUnknownField()
                     << FieldCommon::EI_Field(error_control_field_name));
-                    //<< input_record_.ei_address());
-            return;
         }
 
         // throw input exception if the field is not scalar
         if( typeid(*field) == typeid(Field<3,FieldValue<3>::Scalar>) ) {
 
-            error_control_field_ = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
-            DebugOut() << "Output mesh will be refined according to field " << error_control_field_name << ".";
+        	Field<3,FieldValue<3>::Scalar>* error_control_field = static_cast<Field<3,FieldValue<3>::Scalar>*>(field);
+            DebugOut() << "Error control field for output mesh set: " << error_control_field_name << ".";
+            auto lambda_function =
+                [error_control_field](const std::vector< Space<OutputMeshBase::spacedim>::Point > &point_list, const ElementAccessor<OutputMeshBase::spacedim> &elm, std::vector<double> &value_list)->void
+                { error_control_field->value_list(point_list, elm, value_list); };
+
+            OutputMeshBase::ErrorControlFieldFunc func = lambda_function;
+            return func;
+
         }
         else{
             THROW(ExcFieldNotScalar()
                     << FieldCommon::EI_Field(error_control_field_name));
-                    //<< input_record_.ei_address());
         }
     }
-    else
-    {
-        error_control_field_ = nullptr;
-    }
+    return OutputMeshBase::ErrorControlFieldFunc();
 }

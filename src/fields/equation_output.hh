@@ -8,16 +8,28 @@
 #ifndef SRC_FIELDS_EQUATION_OUTPUT_HH_
 #define SRC_FIELDS_EQUATION_OUTPUT_HH_
 
-#include <memory>
-#include <unordered_map>
-#include <unordered_set>
+#include <memory>                  // for shared_ptr
+#include <string>                  // for string
+#include <unordered_map>           // for unordered_map
+#include <unordered_set>           // for unordered_set
+#include "fields/field_common.hh"  // for FieldCommon, FieldCommon::EI_Field
+#include "fields/field_set.hh"     // for FieldSet
+#include "fields/field_values.hh"  // for FieldValue, FieldValue<>::Scalar
+#include "io/output_time_set.hh"   // for OutputTimeSet
+#include "io/output_mesh.hh"
+#include "system/exceptions.hh"    // for ExcStream, operator<<, DECLARE_EXC...
+#include "tools/time_marks.hh"     // for TimeMark, TimeMark::Type
 
-#include "tools/time_marks.hh"
-#include "fields/field_set.hh"
-#include "input/input_type_forward.hh"
-#include "input/accessors_forward.hh"
-#include "io/output_time_set.hh"
+class OutputTime;
+class TimeGovernor;
 class TimeStep;
+namespace Input {
+	class Record;
+	namespace Type {
+		class Instance;
+		class Record;
+	}
+}
 
 
 /**
@@ -40,7 +52,7 @@ public:
      * Setup the object. Set output stream for field and observe output, input record for configuration of the object and
      * TimeGovernor. The time governor is used to get the equation time mark type, the initial and the end time of the equation.
      */
-    void initialize(std::shared_ptr<OutputTime> stream, Input::Record in_rec, const TimeGovernor & tg);
+    void initialize(std::shared_ptr<OutputTime> stream, Mesh *mesh, Input::Record in_rec, const TimeGovernor & tg);
 
     /**
      * Returns true if @param field is marked for output in the given time @param step.
@@ -53,9 +65,8 @@ public:
     void output(TimeStep step);
 
     /// Selects the error control field out of output field set according to input record.
-    void select_error_control_field(std::string error_control_field_name);
-
-
+    typename OutputMeshBase::ErrorControlFieldFunc select_error_control_field();
+    
 private:
     /**
      * Input type of the configuration record.
@@ -78,8 +89,7 @@ private:
      * Create the output mesh of \p stream_ OutputTime object. The field set passed in is used
      * to select the field used for adaptivity of the output mesh.
      */
-    void make_output_mesh();
-
+    void make_output_mesh(bool parallel);
 
     /// output stream (may be shared by more equation)
     std::shared_ptr<OutputTime> stream_;
@@ -96,8 +106,21 @@ private:
     /// Set of observed fields. The observe points are given within the observe stream.
     std::unordered_set<string> observe_fields_;
 
-    /// Refinement error control field.
-    Field<3, FieldValue<3>::Scalar> *error_control_field_;
+    /**
+     * Set of interpolations which are used in performed fields.
+     *
+     * Allow determine type of output mesh.
+     */
+    std::set<OutputTime::DiscreteSpace> used_interpolations_;
+
+    /**
+     * Cached pointer at computational mesh.
+     */
+    Mesh *mesh_;
+
+    /// Output mesh.
+    std::shared_ptr<OutputMeshBase> output_mesh_;
+
 };
 
 

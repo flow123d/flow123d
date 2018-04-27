@@ -16,9 +16,9 @@
  */
 
 #include "mesh/partitioning.hh"
-#include "mesh/mesh.h"
 #include "la/sparse_graph.hh"
 #include "la/distribution.hh"
+#include "mesh/mesh.h"
 
 #include "petscao.h"
 
@@ -78,7 +78,7 @@ const Distribution * Partitioning::get_init_distr() const {
 
 
 
-const int * Partitioning::get_loc_part() const {
+const IdxInt * Partitioning::get_loc_part() const {
 	OLD_ASSERT(loc_part_, "NULL local partitioning.");
     return loc_part_;
 }
@@ -159,7 +159,7 @@ void Partitioning::make_partition() {
     make_element_connection_graph();
 
     // compute partitioning
-    loc_part_ = new int[init_el_ds_->lsize()];
+    loc_part_ = new IdxInt[init_el_ds_->lsize()];
     graph_->partition(loc_part_);
     delete graph_; graph_ = NULL;
 }
@@ -178,9 +178,9 @@ void Partitioning::make_partition() {
  * new_4_id - for given ID, the new index, -1 for unknown IDs
  *
  */
-void Partitioning::id_maps(int n_ids, int *id_4_old,
-        const Distribution &old_ds, int *loc_part,
-        Distribution * &new_ds, int * &id_4_loc, int * &new_4_id) {
+void Partitioning::id_maps(int n_ids, IdxInt *id_4_old,
+        const Distribution &old_ds, IdxInt *loc_part,
+        Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id) {
 
     IS part, new_numbering;
     unsigned int size = old_ds.size(); // whole size of distr. array
@@ -197,8 +197,8 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
     ISPartitioningToNumbering(part, &new_numbering); // new numbering
 
     old_4_new = new int [size];
-    id_4_loc = new int [ new_ds->lsize() ];
-    new_4_id = new int [ n_ids + 1 ];
+    id_4_loc = new IdxInt [ new_ds->lsize() ];
+    new_4_id = new IdxInt [ n_ids + 1 ];
 
     // create whole new->old mapping on each proc
     AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
@@ -223,7 +223,7 @@ void Partitioning::id_maps(int n_ids, int *id_4_old,
 }
 
 
-void Partitioning::id_maps(int n_ids, int *id_4_old,  Distribution * &new_ds, int * &id_4_loc, int * &new_4_id) {
+void Partitioning::id_maps(int n_ids, IdxInt *id_4_old,  Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id) {
     Partitioning::id_maps(n_ids, id_4_old, *init_el_ds_, loc_part_, new_ds, id_4_loc, new_4_id);
 }
 

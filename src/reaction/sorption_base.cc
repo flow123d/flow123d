@@ -324,7 +324,7 @@ void SorptionBase::initialize_fields()
   data_->set_components(substances_sorption);
   
   // read fields from input file
-  data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"));
+  data_->input_data_set_.set_input_list(input_record_.val<Input::Array>("input_fields"), *time_);
   
   data_->set_mesh(*mesh_);
 
@@ -341,7 +341,7 @@ void SorptionBase::initialize_fields()
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
-  data_->output_fields.initialize(output_stream_, input_record_.val<Input::Record>("output"), time());
+  data_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), time());
 }
 
 
