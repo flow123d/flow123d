@@ -318,13 +318,8 @@ public:
      */
     void check_and_finish();
     
-    /// Precompute element bounding boxes if it is not done yet.
-    void compute_element_boxes();
-
-    /// Return the mesh bounding box. Is set after call compute_element_boxes().
-    const BoundingBox &get_mesh_boungin_box() {
-        return mesh_box_;
-    }
+    /// Compute bounding boxes of elements contained in mesh.
+    std::vector<BoundingBox> get_element_boxes();
 
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\
@@ -355,7 +350,7 @@ public:
     IntersectionSearch get_intersection_search();
 
     /// Maximal distance of observe point from Mesh relative to its size
-    double global_observe_radius() const;
+    double global_snap_radius() const;
 
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
@@ -432,12 +427,6 @@ protected:
      * Mesh partitioning. Created in setup_topology.
      */
     std::shared_ptr<Partitioning> part_;
-
-    /// Auxiliary vector of mesh elements bounding boxes.
-    std::vector<BoundingBox> element_box_;
-
-    /// Bounding box of whole mesh.
-    BoundingBox mesh_box_;
 
     /**
      * BIH Tree for intersection and observe points lookup.

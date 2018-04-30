@@ -80,11 +80,12 @@ const IT::Record & Mesh::get_input_type() {
 	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
-		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
-					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
-					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
-                .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
-                        "Output file with neighboring data from mesh.")
+        .declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
+                     "Maximal snapping distance from Mesh in various search operations. In particular is used "
+                     "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+                     "element in plan view (Z projection).")
+        .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
+                     "Output file with neighboring data from mesh.")
 		.close();
 }
 
@@ -742,35 +743,32 @@ void Mesh::check_and_finish()
 }
 
 
-void Mesh::compute_element_boxes() {
+std::vector<BoundingBox> Mesh::get_element_boxes() {
     START_TIMER("Mesh::compute_element_boxes");
-    if (element_box_.size() > 0) return;
+    std::vector<BoundingBox> boxes;
 
     // make element boxes
-    element_box_.resize(this->element.size());
     unsigned int i=0;
+    boxes.resize(this->element.size());
     FOR_ELEMENTS(this, element) {
-         element_box_[i] = element->bounding_box();
-         i++;
+        boxes[i] = element->bounding_box();
+    	i++;
     }
 
-    // make mesh box
-    Node* node = this->node_vector.begin();
-    mesh_box_ = BoundingBox(node->point(), node->point());
-    FOR_NODES(this, node ) {
-        mesh_box_.expand( node->point() );
-    }
-
+    return boxes;
 }
 
 const BIHTree &Mesh::get_bih_tree() {
-    if (! this->bih_tree_)
-        bih_tree_ = std::make_shared<BIHTree>(this);
+    if (! this->bih_tree_) {
+        bih_tree_ = std::make_shared<BIHTree>();
+        bih_tree_->add_boxes( this->get_element_boxes() );
+        bih_tree_->construct();
+	}
     return *bih_tree_;
 }
 
-double Mesh::global_observe_radius() const {
-	return in_record_.val<double>("global_observe_search_radius");
+double Mesh::global_snap_radius() const {
+	return in_record_.val<double>("global_snap_radius");
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
