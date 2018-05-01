@@ -618,6 +618,8 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
         node_list.clear();
         last_offset = offsets_vec[i];
     }
+
+    mesh->create_boundary_elements();
 }
 
 

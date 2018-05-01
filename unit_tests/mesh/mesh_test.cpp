@@ -73,10 +73,10 @@ TEST(MeshTopology, make_neighbours_and_edges) {
     EXPECT_EQ(18, mesh->n_elements(true));
 
     // check boundary elements
-    EXPECT_EQ(101 , mesh->element_accessor(12).region().id() );
-    EXPECT_EQ(101 , mesh->element_accessor(11).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(10).region().id() );
-    EXPECT_EQ(102 , mesh->element_accessor(9).region().id() );
+    EXPECT_EQ(101 , mesh->element_accessor(9).region().id() );
+    EXPECT_EQ(101 , mesh->element_accessor(10).region().id() );
+    EXPECT_EQ(102 , mesh->element_accessor(11).region().id() );
+    EXPECT_EQ(102 , mesh->element_accessor(12).region().id() );
     EXPECT_EQ( -3 , int( mesh->element_accessor(13).region().id() ) );
     EXPECT_EQ( -3 , int( mesh->element_accessor(26).region().id() ) );
 
