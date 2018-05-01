@@ -3,7 +3,7 @@ problem: !Coupling_Sequential
   description: Test of time unit conversion
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
-  global_observe_search_radius: 0.1
+  global_snap_radius: 0.1
   flow_equation: !Flow_Darcy_MH
     output_specific:
     nonlinear_solver:

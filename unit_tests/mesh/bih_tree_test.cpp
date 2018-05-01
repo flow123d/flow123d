@@ -32,8 +32,8 @@
 
 class BIHTree_test : public BIHTree {
 public:
-	BIHTree_test(Mesh* mesh, unsigned int soft_leaf_size_limit)
-	: BIHTree(mesh, soft_leaf_size_limit) {}
+	BIHTree_test(unsigned int soft_leaf_size_limit)
+	: BIHTree(soft_leaf_size_limit) {}
 
 	/// Tests basic tree parameters (depths, counts of elements)
 	void test_tree_params() {
@@ -123,7 +123,9 @@ public:
 
 	    int leaf_size_limit = 10;
 	    START_TIMER("create bih tree");
-	    bt = new BIHTree_test(mesh, leaf_size_limit);
+	    bt = new BIHTree_test(leaf_size_limit);
+	    bt->add_boxes( mesh->get_element_boxes() );
+	    bt->construct();
 	    END_TIMER("create bih tree");
 
 	    EXPECT_EQ(mesh->n_elements(), bt->get_element_count());
@@ -294,12 +296,61 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 	reader->read_raw_mesh(mesh);
 
 	unsigned int element_limit=20;
-	BIHTree bt(mesh, element_limit);
+	BIHTree bt(element_limit);
+    bt.add_boxes( mesh->get_element_boxes() );
+    bt.construct();
 	std::vector<unsigned int> insec_list;
 
 	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
 	for(auto i_ele : insec_list) {
 		cout << "idx: " << i_ele << "id: " << mesh->element_accessor(i_ele).idx() << endl;
+	}
+
+	delete mesh;
+}
+
+
+TEST(BIH_Tree_Test, bih_tree_above_region) {
+    Profiler::initialize();
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	std::string mesh_in_string = "{mesh_file=\"mesh/mesh_read_regions.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
+	reader->read_physical_names(mesh);
+	reader->read_raw_mesh(mesh);
+
+	std::vector<BoundingBox> boxes;
+	std::vector<unsigned int> elm_idx; // indexes in Mesh::element_vec_
+    std::string region_name = "3D back";
+    {
+        RegionSet region_set = mesh->region_db().get_region_set(region_name);
+        if (region_set.size() == 0)
+            THROW( RegionDB::ExcUnknownSet() << RegionDB::EI_Label(region_name) );
+
+        // make element boxes
+        unsigned int i=0;
+        for (auto element : mesh->bulk_elements_range()) {
+        	if (element.region().is_in_region_set(region_set)) {
+                boxes.push_back(element->bounding_box());
+                elm_idx.push_back(i);
+        	}
+        	i++;
+        }
+    }
+
+	unsigned int element_limit=20;
+	BIHTree bt(element_limit);
+	bt.add_boxes( boxes );
+	bt.construct();
+	std::vector<unsigned int> insec_list;
+
+	bt.find_bounding_box(BoundingBox(arma::vec3("-1 -1 -1"), arma::vec3("1 1 1")), insec_list);
+	EXPECT_EQ(insec_list.size(), 3);
+	for(unsigned int i=0; i<insec_list.size(); ++i) {
+		EXPECT_EQ(insec_list[i], i);
+		EXPECT_EQ(elm_idx[i], i+3);
+		EXPECT_EQ(mesh->find_elem_id( elm_idx[i] ), i+4);
 	}
 
 	delete mesh;

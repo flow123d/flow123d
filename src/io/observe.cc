@@ -132,7 +132,7 @@ const Input::Type::Record & ObservePoint::get_input_type() {
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
         .declare_key("search_radius", IT::Double(0.0),
         		IT::Default::read_time("Maximal distance of observe point from Mesh relative to its size (bounding box). "),
-                "Global value is define in Mesh by the key global_observe_search_radius.")
+                "Global value is define in Mesh by the key global_snap_radius.")
         .close();
 }
 
@@ -157,7 +157,7 @@ ObservePoint::ObservePoint(Input::Record in_rec, Mesh &mesh, unsigned int point_
 
     const BoundingBox &main_box = mesh.get_bih_tree().tree_box();
     double max_mesh_size = arma::max(main_box.max() - main_box.min());
-    max_search_radius_ = in_rec_.val<double>("search_radius", mesh.global_observe_radius()) * max_mesh_size;
+    max_search_radius_ = in_rec_.val<double>("search_radius", mesh.global_snap_radius()) * max_mesh_size;
 }
 
 

@@ -186,11 +186,11 @@ void Element::get_bounding_box(BoundingBox &bounding_box) const
 		bounding_box.expand( this->node[i]->point() );
 }
 
-/*BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
-{
-    ASSERT_GT(mesh_->element_box_.size(), 0);
-    return mesh_->element_box_[mesh_->element.index(this)];
-}*/
+//BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
+//{
+//    ASSERT_GT(mesh_->element_box_.size(), 0);
+//    return mesh_->element_box_[mesh_->element.index(this)];
+//}
 
 
 /*unsigned int Element::get_proc() const
