@@ -23,6 +23,7 @@
 #include <boost/exception/info.hpp>     // for operator<<, error_info::error...
 #include <string>                       // for operator==, string
 #include <vector>                       // for vector
+#include <memory>
 #include <armadillo>
 #include "fields/field_algo_base.hh"    // for FieldAlgorithmBase
 #include "fields/field_values.hh"       // for FieldValue<>::Enum, FieldValu...
@@ -35,6 +36,7 @@
 
 class FunctionParser;
 template <int spacedim> class ElementAccessor;
+class SurfaceDepth;
 
 using namespace std;
 
@@ -68,6 +70,13 @@ public:
     bool set_time(const TimeStep &time) override;
 
     /**
+     * Create SurfaceDepth object if surface region is set.
+     *
+     * See also description of the FieldBase<...>::set_mesh.
+     */
+    void set_mesh(const Mesh *mesh, bool boundary_domain) override;
+
+    /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
     virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
@@ -84,15 +93,30 @@ public:
 private:
     typedef StringTensorInput<Value::NRows_,Value::NCols_> STI;
 
+    /**
+     * Evaluate depth variable if it is contained in formula.
+     *
+     * Return arma vec of point coordinates extended by depth value (or zero if depth is not contained.
+     */
+    inline arma::vec eval_depth_var(const Point &p);
+
     // StringValue::return_type == StringTensor, which behaves like arma::mat<string>
     StringTensor formula_matrix_;
 
     // Matrix of parsers corresponding to the formula matrix returned by formula_matrix_helper_
     std::vector< std::vector<FunctionParser> > parser_matrix_;
 
-    // Full address of the FiledFormula 'value' key.
-    // Necessary in the case of an error during parsing.
-    std::string value_input_address_;
+    /// Accessor to Input::Record
+    Input::Record in_rec_;
+
+    /// Surface depth object calculate distance from surface.
+    std::shared_ptr<SurfaceDepth> surface_depth_;
+
+    /// Flag indicates if depth variable 'd' is used in formula
+    bool has_depth_var_;
+
+    /// Flag indicates first call of set_time method, when FunctionParsers in parser_matrix_ must be initialized
+    bool first_time_set_;
 
     /// Registrar of class to factory
     static const int registrar;

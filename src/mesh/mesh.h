@@ -288,13 +288,8 @@ public:
      */
     void check_and_finish();
     
-    /// Precompute element bounding boxes if it is not done yet.
-    void compute_element_boxes();
-
-    /// Return the mesh bounding box. Is set after call compute_element_boxes().
-    const BoundingBox &get_mesh_boungin_box() {
-        return mesh_box_;
-    }
+    /// Compute bounding boxes of elements contained in mesh.
+    std::vector<BoundingBox> get_element_boxes();
 
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\
@@ -325,7 +320,7 @@ public:
     IntersectionSearch get_intersection_search();
 
     /// Maximal distance of observe point from Mesh relative to its size
-    double global_observe_radius() const;
+    double global_snap_radius() const;
 
     /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
     void init_element_vector(unsigned int size);
@@ -344,7 +339,7 @@ public:
 
     /// Returns count of boundary or bulk elements
     inline unsigned int n_elements(bool boundary=false) const {
-    	if (boundary) return boundary_size_;
+    	if (boundary) return element_ids_.size()-bulk_size_;
     	else return bulk_size_;
     }
 
@@ -378,7 +373,27 @@ public:
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const;
 
+    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
+    void create_boundary_elements();
+
 protected:
+
+    /**
+     * Allow store boundary element data to temporary structure.
+     *
+     * We need this structure to preserve correct order of boundary elements.
+     */
+    struct ElementTmpData {
+    	/// Constructor
+    	ElementTmpData(unsigned int e_id, unsigned int dm, RegionIdx reg_idx, unsigned int part_id, std::vector<unsigned int> nodes)
+    	: elm_id(e_id), dim(dm), region_idx(reg_idx), partition_id(part_id), node_ids(nodes) {}
+
+        unsigned int elm_id;
+        unsigned int dim;
+        RegionIdx region_idx;
+        unsigned int partition_id;
+        std::vector<unsigned int> node_ids;
+    };
 
     /**
      *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
@@ -433,6 +448,10 @@ protected:
     /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
     Element * add_element_to_vector(int id, bool boundary=false);
 
+    /// Initialize element
+    void init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,
+    		std::vector<unsigned int> node_ids);
+
     unsigned int n_bb_neigh, n_vb_neigh;
 
     /// Maximal number of sides per one edge in the actual mesh (set in make_neighbours_and_edges()).
@@ -450,12 +469,6 @@ protected:
      * Mesh partitioning. Created in setup_topology.
      */
     std::shared_ptr<Partitioning> part_;
-
-    /// Auxiliary vector of mesh elements bounding boxes.
-    std::vector<BoundingBox> element_box_;
-
-    /// Bounding box of whole mesh.
-    BoundingBox mesh_box_;
 
     /**
      * BIH Tree for intersection and observe points lookup.
@@ -480,11 +493,11 @@ protected:
      */
     vector<Element> element_vec_;
 
+    /// Hold data of boundary elements during reading mesh (allow to preserve correct order during reading of mix bulk-boundary element)
+    vector<ElementTmpData> bc_element_tmp_;
+
     /// Count of bulk elements
     unsigned int bulk_size_;
-
-    /// Count of boundary elements
-    unsigned int boundary_size_;
 
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;

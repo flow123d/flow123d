@@ -86,7 +86,9 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
        source_mesh_ = ReaderCache::get_mesh(reader_file_ );
 	   // no call to mesh->setup_topology, we need only elements, no connectivity
     }
-	bih_tree_ = new BIHTree( source_mesh_.get() );
+	bih_tree_ = new BIHTree();
+	bih_tree_->add_boxes( source_mesh_->get_element_boxes() );
+	bih_tree_->construct();
 
     // allocate data_
 	unsigned int data_size = source_mesh_->n_elements() * (this->value_.n_rows() * this->value_.n_cols());

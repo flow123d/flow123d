@@ -85,11 +85,12 @@ const IT::Record & Mesh::get_input_type() {
 	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
-		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
-					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
-					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
-                .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
-                        "Output file with neighboring data from mesh.")
+        .declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
+                     "Maximal snapping distance from Mesh in various search operations. In particular is used "
+                     "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+                     "element in plan view (Z projection).")
+        .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
+                     "Output file with neighboring data from mesh.")
 		.close();
 }
 
@@ -197,7 +198,7 @@ Mesh::~Mesh() {
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
-    for(unsigned int idx=element_vec_.size()-boundary_size_; idx < element_vec_.size(); idx++) {
+    for(unsigned int idx=bulk_size_; idx < element_vec_.size(); idx++) {
         Element *ele=&(element_vec_[idx]);
         if (ele->node) delete[] ele->node;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
@@ -270,7 +271,6 @@ void Mesh::modify_element_ids(const RegionDB::MapElementIDToRegionID &map) {
 
 void Mesh::setup_topology() {
     START_TIMER("MESH - setup topology");
-    //std::reverse(element_vec_.end()-boundary_size_, element_vec_.end()); //TODO change in bidirectional map
     
     count_element_types();
 
@@ -393,6 +393,9 @@ bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
 
 void Mesh::make_neighbours_and_edges()
 {
+	ASSERT(bc_element_tmp_.size()==0)
+			.error("Temporary structure of boundary element data is not empty. Did you call create_boundary_elements?");
+
     Neighbour neighbour;
     Edge *edg;
     unsigned int ngh_element_idx, last_edge_idx;
@@ -408,7 +411,7 @@ void Mesh::make_neighbours_and_edges()
 	vector<unsigned int> side_nodes;
 	vector<unsigned int> intersection_list; // list of elements in intersection of node element lists
 
-	for( unsigned int i=element_vec_.size()-boundary_size_; i<element_vec_.size(); ++i) {
+	for( unsigned int i=bulk_size_; i<element_vec_.size(); ++i) {
 		ElementAccessor<3> bc_ele = this->element_accessor(i);
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
@@ -722,7 +725,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         boundary_elements_id.resize(n_elements(true));
         map_it = boundary_elements_id.begin();
         last_id = -1;
-        for(unsigned int idx=element_vec_.size()-1; idx>=element_vec_.size()-boundary_size_; idx--, ++map_it) {
+        for(unsigned int idx=bulk_size_; idx<element_vec_.size(); idx++, ++map_it) {
         	IdxInt id = this->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
@@ -761,35 +764,32 @@ void Mesh::check_and_finish()
 }
 
 
-void Mesh::compute_element_boxes() {
+std::vector<BoundingBox> Mesh::get_element_boxes() {
     START_TIMER("Mesh::compute_element_boxes");
-    if (element_box_.size() > 0) return;
+    std::vector<BoundingBox> boxes;
 
     // make element boxes
-    element_box_.resize(this->n_elements());
     unsigned int i=0;
+    boxes.resize(this->n_elements());
     for (auto element : this->bulk_elements_range()) {
-         element_box_[i] = element->bounding_box();
-         i++;
+        boxes[i] = element->bounding_box();
+    	i++;
     }
 
-    // make mesh box
-    auto point = this->node_accessor(0)->point();
-    mesh_box_ = BoundingBox(point, point);
-	for (auto node : this->node_range()) {
-		mesh_box_.expand( node->point() );
-	}
-
+    return boxes;
 }
 
 const BIHTree &Mesh::get_bih_tree() {
-    if (! this->bih_tree_)
-        bih_tree_ = std::make_shared<BIHTree>(this);
+    if (! this->bih_tree_) {
+        bih_tree_ = std::make_shared<BIHTree>();
+        bih_tree_->add_boxes( this->get_element_boxes() );
+        bih_tree_->construct();
+	}
     return *bih_tree_;
 }
 
-double Mesh::global_observe_radius() const {
-	return in_record_.val<double>("global_observe_search_radius");
+double Mesh::global_snap_radius() const {
+	return in_record_.val<double>("global_snap_radius");
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
@@ -810,7 +810,6 @@ void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
 
 void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int region_id, unsigned int partition_id,
 		std::vector<unsigned int> node_ids) {
-	Element *ele=nullptr;
 	RegionIdx region_idx = region_db_.get_region( region_id, dim );
 	if ( !region_idx.is_valid() ) {
 		region_idx = region_db_.add_region( region_id, region_db_.create_label_from_id(region_id), dim, "$Element" );
@@ -818,16 +817,21 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
 	region_db_.mark_used_region(region_idx.idx());
 
 	if (region_idx.is_boundary()) {
-		ele = add_element_to_vector(elm_id, true);
+		bc_element_tmp_.push_back( ElementTmpData(elm_id, dim, region_idx, partition_id, node_ids) );
 	} else {
 		if(dim == 0 ) {
 			WarningOut().fmt("Bulk elements of zero size(dim=0) are not supported. Element ID: {}.\n", elm_id);
-			return;
 		}
 		else {
-			ele = add_element_to_vector(elm_id);
+			Element *ele = add_element_to_vector(elm_id);
+			this->init_element(ele, elm_id, dim, region_idx, partition_id, node_ids);
 		}
 	}
+}
+
+
+void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,
+		std::vector<unsigned int> node_ids) {
 	ele->init(dim, region_idx);
 	ele->pid_ = partition_id;
 
@@ -861,8 +865,9 @@ void Mesh::init_element_vector(unsigned int size) {
 	element_vec_.clear();
 	element_vec_.resize(size);
 	element_ids_.reinit(size);
+	bc_element_tmp_.clear();
+	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
-	boundary_size_ = 0;
 }
 
 
@@ -876,16 +881,10 @@ void Mesh::init_node_vector(unsigned int size) {
 Element * Mesh::add_element_to_vector(int id, bool boundary) {
 	Element * elem=nullptr;
 	if (boundary) {
-		if (id>=0) {
-			unsigned int boundary_pos = element_vec_.size() - boundary_size_ - 1;
-			elem = &element_vec_[boundary_pos];
-			element_ids_.set_item(id, boundary_pos);
-		} else {
-            element_vec_.push_back( Element() );
-            elem = &element_vec_[element_vec_.size()-1];
-            element_ids_.add_item(id);
-		}
-		boundary_size_++;
+        ASSERT_DBG(id<0)(id).error("Add boundary element from mesh file trough temporary structure!");
+		element_vec_.push_back( Element() );
+        elem = &element_vec_[element_vec_.size()-1];
+        element_ids_.add_item(id);
 	} else {
 		elem = &element_vec_[bulk_size_];
 		element_ids_.set_item(id, bulk_size_);
@@ -900,7 +899,7 @@ Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
 }
 
 Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
-    return Range<ElementAccessor<3>>(this, element_vec_.size()-boundary_size_, element_vec_.size());
+    return Range<ElementAccessor<3>>(this, bulk_size_, element_vec_.size());
 }
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
@@ -994,6 +993,22 @@ void Mesh::output_internal_ngh_data()
         cit ++;
     }
     raw_ngh_output_file << "$EndFlowField\n" << endl;
+}
+
+
+void Mesh::create_boundary_elements() {
+	unsigned int i, pos;
+	for (i=0, pos=bulk_size_; i<bc_element_tmp_.size(); ++i, ++pos) {
+		Element *ele = &element_vec_[pos];
+		element_ids_.set_item(bc_element_tmp_[i].elm_id, pos);
+		this->init_element(ele, bc_element_tmp_[i].elm_id, bc_element_tmp_[i].dim, bc_element_tmp_[i].region_idx,
+				bc_element_tmp_[i].partition_id, bc_element_tmp_[i].node_ids);
+
+	}
+
+	element_vec_.resize(pos); // remove empty element (count is equal with zero-dimensional bulk elements)
+	bc_element_tmp_.clear();
+	bc_element_tmp_.reserve(0);
 }
 
 

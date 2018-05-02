@@ -160,10 +160,10 @@ TEST_F(FieldElementwiseTest, bc_scalar) {
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-        for(unsigned int i=0; i < 4; i++) {
-            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        for(unsigned int i=9; i < 13; i++) {
+            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i)) );
         }
-        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5)) );
+        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(14)) );
     }
 
 }
@@ -189,10 +189,10 @@ TEST_F(FieldElementwiseTest, bc_scalar_unit_conv) {
     for (unsigned int j=0; j<3; j++) {
     	field.set_time(test_time[j]);
 
-        for(unsigned int i=0; i < 4; i++) {
-            EXPECT_DOUBLE_EQ( 100.0+j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i)) );
+        for(unsigned int i=9; i < 13; i++) {
+            EXPECT_DOUBLE_EQ( 110.0+j*10.0+(i-9)*10.0 , field.value(point,mesh->element_accessor(i)) );
         }
-        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(5)) );
+        EXPECT_DOUBLE_EQ( 0.0, field.value(point,mesh->element_accessor(13)) );
     }
 
 }
@@ -236,10 +236,10 @@ TEST_F(FieldElementwiseTest, bc_vector_fixed) {
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-    	for(unsigned int i=0; i < 4; i++) {
+    	for(unsigned int i=9; i < 13; i++) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
         }
-        EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(5))) );
+        EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(13))) );
     }
 }
 
@@ -271,11 +271,11 @@ TEST_F(FieldElementwiseTest, bc_tensor_fixed) {
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-        for(unsigned int i=14; i < 18; i++) {
+        for(unsigned int i=9; i < 13; i++) {
             arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
             EXPECT_TRUE( match.min() );
         }
-        arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(20)) );
+        arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(13)) );
         EXPECT_TRUE( match.min() );
     }
 }
@@ -350,7 +350,7 @@ TEST_F(FieldElementwiseTest, bc_scalar_enum) {
 		//	unsigned int val = i + j + ( i<4 ? 1 : 10 );
 		//	field.set_data_row(i, val );
 		//}
-		for(unsigned int i=0; i < 6; i++) {
+		for(unsigned int i=9; i < 15; i++) {
 			EXPECT_EQ( (unsigned int)0, field.value(point,mesh->element_accessor(i)) );
 		}
 		//EXPECT_EQ( 14+j, field.value(point,mesh->element_accessor(4)) );
@@ -370,7 +370,7 @@ TEST_F(FieldElementwiseTest, default_values) {
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
 
-    	for(unsigned int i=0; i < 4; i++) {
+    	for(unsigned int i=9; i < 13; i++) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
         }
     }
