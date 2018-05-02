@@ -46,7 +46,7 @@ inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnu
     inline const Node * Side::node(unsigned int i) const {
         int i_n = mesh_->side_nodes[dim()][side_idx_][i];
 
-        return element()->node[ i_n ];
+        return element().node( i_n );
     }
 
     inline ElementAccessor<3> Side::element() const {

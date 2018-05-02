@@ -772,7 +772,7 @@ std::vector<BoundingBox> Mesh::get_element_boxes() {
     unsigned int i=0;
     boxes.resize(this->n_elements());
     for (auto element : this->bulk_elements_range()) {
-        boxes[i] = element->bounding_box();
+        boxes[i] = element.bounding_box();
     	i++;
     }
 
@@ -841,6 +841,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 		INPUT_CHECK( node != node_vector.end(),
 				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
 		ele->node[ni] = node;
+		ele->nodes_[ni]  = this->node_index(node_id);
 	}
 
     // check that tetrahedron element is numbered correctly and is not degenerated

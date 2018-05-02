@@ -25,16 +25,13 @@
 #include <string>                              // for operator<<
 #include <vector>                              // for vector
 #include <armadillo>
-#include "side_impl.hh"
-#include "mesh/bounding_box.hh"                // for BoundingBox
 #include "mesh/nodes.hh"                       // for Node
 #include "mesh/ref_element.hh"                 // for RefElement
 #include "mesh/region.hh"                      // for RegionIdx, Region
 #include "system/asserts.hh"                   // for Assert, ASSERT
 #include "sides.h"
-#include "mesh/mesh.h"
 
-//class Mesh;
+class Mesh;
 class Neighbour;
 //class SideIter;
 template <int spacedim> class ElementAccessor;
@@ -82,31 +79,6 @@ public:
     inline RegionIdx region_idx() const
         { return region_idx_; }
     
-    /**
-     * Computes bounding box of element (OBSOLETE) ??
-     */
-    void get_bounding_box(BoundingBox &bounding_box) const;
-
-    /// Return precomputed bounding box.
-    //BoundingBox &get_bounding_box_fast(BoundingBox &bounding_box) const;
-
-    /**
-    * Return bounding box of the element.
-    * Simpler code, but need to check performance penelty.
-    */
-    inline BoundingBox bounding_box() const {
-     return BoundingBox(this->vertex_list());
-    }
-
-    /**
-     * Return list of element vertices.
-     */
-    inline vector<arma::vec3> vertex_list() const {
-    	vector<arma::vec3> vertices(this->n_nodes());
-    	for(unsigned int i=0; i<n_nodes(); i++) vertices[i]=node[i]->point();
-    	return vertices;
-    }
-    
     /// Return edge_idx of given index
     inline unsigned int edge_idx(unsigned int edg_idx) const;
 
@@ -123,6 +95,12 @@ public:
     	return n_neighs_vb_;
     }
 
+    /// Return index (in Mesh::node_vec) of ni-th node.
+    inline unsigned int node_idx(unsigned int ni) const {
+    	ASSERT(ni < n_nodes()).error("Node index is out of bound!");
+    	return nodes_.at(ni);
+    }
+
     //unsigned int get_proc() const;
 
 
@@ -131,6 +109,7 @@ public:
     // Type specific data
     Node** node; // Element's nodes
         // TODO remove direct access in many places in fem, fields, flow, intersection, io, mesh, transport and unit tests
+        // prepare to remove
 
 
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
@@ -162,6 +141,9 @@ protected:
     // Data readed from mesh file
     RegionIdx  region_idx_;
     unsigned int dim_;
+
+    /// indices to element's nodes
+    std::array<unsigned int, 4> nodes_;
 
     friend class Mesh;
 

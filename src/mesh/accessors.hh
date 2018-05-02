@@ -22,7 +22,10 @@
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include "mesh/nodes.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/sides.h"
+#include <vector>
 #include <armadillo>
 
 /**
@@ -133,6 +136,31 @@ public:
         return SideIter( Side(mesh_, element_idx_, loc_index) );
     }
 
+    inline const Node * node(unsigned int ni) const {
+    	return &(mesh_->node_vec_[element()->node_idx(ni)]);
+    }
+
+    inline NodeAccessor<3> node_accessor(unsigned int ni) const {
+    	return mesh_->node_accessor( element()->node_idx(ni) );
+    }
+
+    /**
+    * Return bounding box of the element.
+    * Simpler code, but need to check performance penelty.
+    */
+    inline BoundingBox bounding_box() const {
+        return BoundingBox(this->vertex_list());
+    }
+
+    /**
+     * Return list of element vertices.
+     */
+    inline vector<arma::vec3> vertex_list() const {
+        vector<arma::vec3> vertices(element()->n_nodes());
+        for(unsigned int i=0; i<element()->n_nodes(); i++) vertices[i]=node(i)->point();
+        return vertices;
+    }
+
     bool operator==(const ElementAccessor<spacedim>& other) {
     	return (element_idx_ == other.element_idx_);
     }
@@ -181,11 +209,5 @@ private:
  *
  *
  */
-/*
-template<int spacedim>
-const BoundingBox &ElementAccessor<spacedim>::bounding_box() {
-    return box_;
-}
-*/
 
 #endif /* ACCESSORS_HH_ */

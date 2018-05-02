@@ -178,21 +178,6 @@ double Element::quality_measure_smooth(SideIter side) const {
 }
 
 
-void Element::get_bounding_box(BoundingBox &bounding_box) const
-{
-	bounding_box = BoundingBox( this->node[0]->point() );
-
-	for (unsigned int i=1; i<n_nodes(); i++)
-		bounding_box.expand( this->node[i]->point() );
-}
-
-//BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
-//{
-//    ASSERT_GT(mesh_->element_box_.size(), 0);
-//    return mesh_->element_box_[mesh_->element.index(this)];
-//}
-
-
 /*unsigned int Element::get_proc() const
 {
   return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);

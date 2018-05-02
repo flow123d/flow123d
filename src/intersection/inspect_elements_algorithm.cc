@@ -74,7 +74,7 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
         bool first_3d_element = true;
         for (auto elm : mesh->bulk_elements_range()) {
 
-            elements_bb[elm.idx()] = elm->bounding_box();
+            elements_bb[elm.idx()] = elm.bounding_box();
 
                 if (elm->dim() == 3){
                     if(first_3d_element){
