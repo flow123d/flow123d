@@ -193,7 +193,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                     }
                     case 1: {
                         IntersectionAux<1,3> is;
-                        ComputeIntersection<1,3> CI(elm.element(), ele.element(), source_mesh_.get());
+                        ComputeIntersection<1,3> CI(elm, ele, source_mesh_.get());
                         CI.init();
                         CI.compute(is);
 
@@ -203,7 +203,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                     }
                     case 2: {
                         IntersectionAux<2,3> is;
-                        ComputeIntersection<2,3> CI(elm.element(), ele.element(), source_mesh_.get());
+                        ComputeIntersection<2,3> CI(elm, ele, source_mesh_.get());
                         CI.init();
                         CI.compute(is);
 

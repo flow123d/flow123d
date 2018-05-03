@@ -201,8 +201,8 @@ void compute_intersection(Mesh* mesh);
 template<>
 void compute_intersection<1,2>(Mesh* mesh)
 {
-    ElementFullIter eleA = mesh->element(0);
-    ElementFullIter eleB = mesh->element(1);
+	ElementAccessor<3> eleA = mesh->element_accessor(0);
+	ElementAccessor<3> eleB = mesh->element_accessor(1);
     ASSERT_EQ(1, eleA->dim());
     ASSERT_EQ(2, eleB->dim());
     
@@ -236,8 +236,8 @@ void compute_intersection<1,2>(Mesh* mesh)
 template<unsigned int dimA, unsigned int dimB>
 void compute_intersection(Mesh* mesh)
 {
-    ElementFullIter eleA = mesh->element(0);
-    ElementFullIter eleB = mesh->element(1);
+	ElementAccessor<3> eleA = mesh->element_accessor(0);
+	ElementAccessor<3> eleB = mesh->element_accessor(1);
     ASSERT_EQ(dimA, eleA->dim());
     ASSERT_EQ(dimB, eleB->dim());
     // compute intersection

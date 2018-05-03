@@ -105,7 +105,7 @@ std::vector<IntersectionPoint<1,2>> permute_coords(TestCaseIPs ips,
 void compute_intersection_12d(Mesh *mesh, const TestCaseIPs &ips, bool degenerate)
 {
     IntersectionAux<1,2> is(1, 0);
-    ComputeIntersection<1,2> CI(mesh->element_accessor(1).element(), mesh->element_accessor(0).element(), mesh);
+    ComputeIntersection<1,2> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
     if(degenerate)
         CI.compute_final_in_plane(is.points());
     else

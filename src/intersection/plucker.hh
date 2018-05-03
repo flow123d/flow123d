@@ -47,7 +47,7 @@ private:
 	arma::vec6 coordinates_; ///< Plucker coordinates.
 	double scale_;
 	bool computed_;          ///< True, if Plucker coordinates are computed; false otherwise.
-	Node* points_[2];
+	const Node* points_[2];
 
 public:
     /** Default constructor.
@@ -60,11 +60,11 @@ public:
 	 * @param a - A point from AB line
 	 * @param b - B point from AB line
 	 */
-    Plucker(Node* a, Node* b);
+    Plucker(const Node* a, const Node* b);
     /** @brief The same as above constructor,
      * but can compute Pl. coordinates immediately if @p compute_pc.
      */
-    Plucker(Node* a, Node* b, bool compute_pc);
+    Plucker(const Node* a, const Node* b, bool compute_pc);
     
     /// Destructor.
 	~Plucker(){};
