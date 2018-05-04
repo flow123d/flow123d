@@ -41,8 +41,8 @@ INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
 // currently we need only fields on 3D ambient space (and 2D for some tests)
 // so this is to save compilation time and avoid memory problems on the test server
 #define INSTANCE_ALL(field) \
-INSTANCE_TO_ALL( field, 3) \
-INSTANCE_TO_ALL( field, 2)
+INSTANCE_TO_ALL( field, 3)
+//INSTANCE_TO_ALL( field, 2)
 // currently we use only 3D ambient space
 
 
