@@ -1451,8 +1451,8 @@ double elem_anisotropy(ElementAccessor<3> e)
     for (unsigned int i=0; i<e->n_nodes(); i++)
         for (unsigned int j=i+1; j<e->n_nodes(); j++)
         {
-            h_max = max(h_max, e->node[i]->distance(*e->node[j]));
-            h_min = min(h_min, e->node[i]->distance(*e->node[j]));
+            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
+            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
         }
     return h_max/h_min;
 }

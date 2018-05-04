@@ -153,7 +153,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 		// gets suspect elements
 		if (elm.dim() == 0) {
 			searched_elements_.clear();
-			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
+			((BIHTree *)bih_tree_)->find_point(elm.node(0)->point(), searched_elements_);
 		} else {
 			BoundingBox bb = elm.bounding_box();
 			searched_elements_.clear();
@@ -182,7 +182,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                 // get intersection (set measure = 0 if intersection doesn't exist)
                 switch (elm.dim()) {
                     case 0: {
-                        arma::vec::fixed<3> real_point = elm->node[0]->point();
+                        arma::vec::fixed<3> real_point = elm.node(0)->point();
                         arma::mat::fixed<3, 4> elm_map = mapping.element_map(ele);
                         arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
 

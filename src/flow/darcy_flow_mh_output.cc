@@ -45,6 +45,7 @@
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"
 
 // #include "coupling/balance.hh"
@@ -280,7 +281,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 		dh_->get_dof_indices(ele, indices);
 		for (i_node=0; i_node<ele->n_nodes(); i_node++)
 		{
-			corner_pressure[indices[i_node]] = node_scalar[mesh_->node_vector.index(ele->node[i_node])];
+			corner_pressure[indices[i_node]] = node_scalar[ ele.node_accessor(i_node).idx() ];
 		}
 	}
 }
@@ -307,10 +308,10 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
 
-    /** Iterators */
-    const Node * node;
+    /** Accessors */
+    NodeAccessor<3> node;
 
-    int n_nodes = mesh_->node_vector.size(); //!< number of nodes in the mesh */
+    int n_nodes = mesh_->n_nodes(); //!< number of nodes in the mesh */
     int node_index = 0; //!< index of each node */
 
     int* sum_elements = new int [n_nodes]; //!< sum elements joined to node */
@@ -339,8 +340,8 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     if (count_elements){
     	for (auto ele : mesh_->bulk_elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
-                node = ele->node[li]; //!< get Node pointer from element */
-                node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+                node = ele.node_accessor(li); //!< get NodeAccessor from element */
+                node_index = node.idx(); //!< get nod index from mesh */
 
                 dist = sqrt(
                         ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
@@ -355,8 +356,8 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     	for (auto ele : mesh_->bulk_elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                    node = side->node(li).node();//!< get Node pointer from element */
-                    node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+                    node = side->node(li);//!< get NodeAccessor from element */
+                    node_index = node.idx(); //!< get nod index from mesh */
                     dist = sqrt(
                             ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
                             ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
@@ -373,8 +374,8 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     if (count_elements){
     	for (auto ele : mesh_->bulk_elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
-                node = ele->node[li];//!< get Node pointer from element */
-                node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+                node = ele.node_accessor(li);//!< get NodeAccessor from element */
+                node_index = ele.node_accessor(li).idx(); //!< get nod index from mesh */
 
                 /**TODO - calculate it again or store it in prior pass*/
                 dist = sqrt(
@@ -391,8 +392,8 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     	for (auto ele : mesh_->bulk_elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                    node = side->node(li).node();//!< get Node pointer from element */
-                    node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+                    node = side->node(li);//!< get NodeAccessor from element */
+                    node_index = node.idx(); //!< get nod index from mesh */
 
                     /**TODO - calculate it again or store it in prior pass*/
                     dist = sqrt(
@@ -525,7 +526,7 @@ void l2_diff_local(ElementAccessor<3> &ele,
         for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
         {
             mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
-                    * arma::dot( ele->node[i_node]->point(), ele->node[j_node]->point());
+                    * arma::dot( ele.node(i_node)->point(), ele.node(j_node)->point());
         }
 
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
@@ -543,8 +544,8 @@ void l2_diff_local(ElementAccessor<3> &ele,
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
                                 - mean_x_squared / 2
-                                - arma::dot( q_point, ele->node[oposite_node]->point() )
-                                + arma::dot( ele->centre(), ele->node[oposite_node]->point() )
+                                - arma::dot( q_point, ele.node(oposite_node)->point() )
+                                + arma::dot( ele->centre(), ele.node(oposite_node)->point() )
                                );
         }
 
