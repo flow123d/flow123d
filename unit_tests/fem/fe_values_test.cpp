@@ -72,7 +72,7 @@ TEST(FeValues, test_all) {
         
         // projection methods
         MappingP1<1,3> mapping;
-        arma::mat::fixed<3, 2> map = mapping.element_map(*elm_acc.element());
+        arma::mat::fixed<3, 2> map = mapping.element_map(elm_acc);
         EXPECT_ARMA_EQ( arma::mat("1 3; 0 0; 0 0"), map);
         EXPECT_ARMA_EQ( arma::vec("0.5 0.5"), mapping.project_real_to_unit( arma::vec("2.0 0.0 0.0"), map ) );
     }
@@ -92,7 +92,7 @@ TEST(FeValues, test_all) {
 
         // projection methods
         MappingP1<2,3> mapping;
-        arma::mat::fixed<3, 3> map = mapping.element_map(*elm_acc.element());
+        arma::mat::fixed<3, 3> map = mapping.element_map(elm_acc);
         EXPECT_ARMA_EQ( arma::mat("0 2 3; 1 0 4; 0 0 0"), map);
         EXPECT_ARMA_EQ( arma::vec("0.6 0.2 0.2"), mapping.project_real_to_unit( arma::vec("1.0 1.4 0.0"), map ) );
     }
@@ -100,18 +100,24 @@ TEST(FeValues, test_all) {
 }
 
 
-class TestElementMapping : public Element {
+class TestElementMapping {
 public:
     TestElementMapping(std::vector<string> nodes_str)
-    : Element()
     {
-        std::vector<arma::vec3> nodes;
-        for(auto str : nodes_str) nodes.push_back( arma::vec3(str));
-        init(nodes.size()-1, RegionIdx());
         unsigned int i=0;
-        for(auto node : nodes)
-            this->node[i++] = new Node(node[0], node[1], node[2]);
+    	mesh_.init_node_vector(4);
+    	mesh_.init_element_vector(1);
+    	for(auto str : nodes_str) mesh_.add_node(i++, arma::vec3(str));
+    	std::vector<unsigned int> node_ids = {0, 1, 2, 3};
+    	mesh_.add_element(1, 3, 1, 0, node_ids);
     }
+
+    ElementAccessor<3> elem_accessor()
+	{
+    	return mesh_.element_accessor(0);
+	}
+
+    Mesh mesh_;
 };
 
 
@@ -121,8 +127,8 @@ TEST(ElementMapping, element_map) {
     MappingP1<3,3> mapping;
 
     {
-        TestElementMapping ele({ "0 0 0", "1 0 0", "0 1 0", "0 0 1"});
-        arma::mat::fixed<3, 4> map = mapping.element_map(ele);
+        TestElementMapping ele_mapping({ "0 0 0", "1 0 0", "0 1 0", "0 0 1"});
+        arma::mat::fixed<3, 4> map = mapping.element_map(ele_mapping.elem_accessor());
         EXPECT_ARMA_EQ( arma::mat("0 1 0 0; 0 0 1 0; 0 0 0 1"), map);
         EXPECT_ARMA_EQ( arma::vec("0.4 0.1 0.2 0.3"), mapping.project_real_to_unit( arma::vec3("0.1 0.2 0.3"), map ) );
         EXPECT_ARMA_EQ( arma::vec("-0.5 0.5 0.5 0.5"), mapping.project_real_to_unit( arma::vec3("0.5 0.5 0.5"), map ) );
@@ -130,8 +136,8 @@ TEST(ElementMapping, element_map) {
 
     {
         // trnaslated
-        TestElementMapping ele({ "1 2 3", "2 2 3", "1 3 3", "1 2 4"});
-        arma::mat::fixed<3, 4> map = mapping.element_map(ele);
+        TestElementMapping ele_mapping({ "1 2 3", "2 2 3", "1 3 3", "1 2 4"});
+        arma::mat::fixed<3, 4> map = mapping.element_map(ele_mapping.elem_accessor());
         EXPECT_ARMA_EQ( arma::mat("1 2 1 1; 2 2 3 2; 3 3 3 4"), map);
         EXPECT_ARMA_EQ( arma::vec("0.4 0.1 0.2 0.3"), mapping.project_real_to_unit( arma::vec3("1.1 2.2 3.3"), map ) );
         EXPECT_ARMA_EQ( arma::vec("-0.5 0.5 0.5 0.5"), mapping.project_real_to_unit( arma::vec3("1.5 2.5 3.5"), map ) );
@@ -139,8 +145,8 @@ TEST(ElementMapping, element_map) {
 
     {
         // simplest cube element 7
-        TestElementMapping ele({ "-1 -1 1", "1 1 -1", "-1 -1 -1", "1 -1 -1"});
-        arma::mat::fixed<3, 4> map = mapping.element_map(ele);
+        TestElementMapping ele_mapping({ "-1 -1 1", "1 1 -1", "-1 -1 -1", "1 -1 -1"});
+        arma::mat::fixed<3, 4> map = mapping.element_map(ele_mapping.elem_accessor());
         EXPECT_ARMA_EQ( arma::mat("-1 1 -1 1; -1 1 -1 -1; 1 -1 -1 -1"), map);
         EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25 0.25"), mapping.project_real_to_unit( arma::vec3("0 -0.5 -0.5"), map ) );
         //EXPECT_ARMA_EQ( arma::vec("0.1 0.2 0.3 0.4"), mapping.project_real_to_unit( arma::vec3("0.1 0.2 0.3"), map ) );

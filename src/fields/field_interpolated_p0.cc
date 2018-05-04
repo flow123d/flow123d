@@ -183,7 +183,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                 switch (elm.dim()) {
                     case 0: {
                         arma::vec::fixed<3> real_point = elm->node[0]->point();
-                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(*ele.element());
+                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(ele);
                         arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
 
                         measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
