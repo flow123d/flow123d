@@ -243,7 +243,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // add candidates to queue
 		for (unsigned int n=0; n < elm->n_nodes(); n++)
-			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm->node[n])]) {
+			for(unsigned int i_node_ele : mesh.node_elements()[elm.node_accessor(n).idx()]) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					ElementAccessor<3> neighbor_elm = mesh.element_accessor(i_node_ele);
 					auto observe_data = point_projection( i_node_ele, neighbor_elm );
