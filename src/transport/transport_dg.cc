@@ -1490,7 +1490,7 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
     {
         for (unsigned int i=0; i<s->n_nodes(); i++)
             for (unsigned int j=i+1; j<s->n_nodes(); j++)
-                h = max(h, s->node(i)->distance(*s->node(j)));
+                h = max(h, s->node(i)->distance(*s->node(j).node()));
     }
     
     double aniso1 = elem_anisotropy(edg.side(s1)->element());
@@ -1586,7 +1586,7 @@ void TransportDG<Model>::set_DG_parameters_boundary(const SideIter side,
     {
         for (unsigned int i=0; i<side->n_nodes(); i++)
             for (unsigned int j=i+1; j<side->n_nodes(); j++)
-                h = max(h, side->node(i)->distance( *side->node(j) ));
+                h = max(h, side->node(i)->distance( *side->node(j).node() ));
     }
 
     // delta is set to the average value of Kn.n on the side

@@ -28,7 +28,7 @@
 class Boundary;
 class Edge;
 class Element;
-class Node;
+template <int spacedim> class NodeAccessor;
 template <int spacedim> class ElementAccessor;
 
 //=============================================================================
@@ -64,7 +64,7 @@ public:
     /**
      * Returns node for given local index @p i on the side.
      */
-    inline const Node * node(unsigned int i) const;
+    inline NodeAccessor<3> node(unsigned int i) const;
 
     /**
      * Returns iterator to the element of the side.

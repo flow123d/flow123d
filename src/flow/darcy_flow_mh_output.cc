@@ -355,7 +355,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     	for (auto ele : mesh_->bulk_elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                    node = side->node(li);//!< get Node pointer from element */
+                    node = side->node(li).node();//!< get Node pointer from element */
                     node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
                     dist = sqrt(
                             ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
@@ -391,7 +391,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
     	for (auto ele : mesh_->bulk_elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                    node = side->node(li);//!< get Node pointer from element */
+                    node = side->node(li).node();//!< get Node pointer from element */
                     node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
 
                     /**TODO - calculate it again or store it in prior pass*/

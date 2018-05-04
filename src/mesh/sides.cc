@@ -73,7 +73,7 @@ arma::vec3 Side::normal_point() const {
     normal -= ele.node(0) ->point();
 
     normal /=arma::norm(normal,2);
-    if ( node( 0 ) == ele.node( 0 ) )
+    if ( node( 0 ) == ele.node_accessor( 0 ) )
         return -normal;
     else
         return normal;

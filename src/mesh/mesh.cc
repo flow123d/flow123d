@@ -319,7 +319,7 @@ void Mesh::create_node_element_lists() {
 
     for (auto ele : this->bulk_elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
-            node_elements_[node_vector.index(ele->node[n])].push_back(ele.idx());
+            node_elements_[ele.node_accessor(n).idx()].push_back(ele.idx());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -378,7 +378,7 @@ bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
     unsigned int ni=0;
     while ( ni < si->n_nodes()
-        && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
+        && find(side_nodes.begin(), side_nodes.end(), si->node(ni).idx() ) != side_nodes.end() ) ni++;
     return ( ni == si->n_nodes() );
 }
 
@@ -415,7 +415,7 @@ void Mesh::make_neighbours_and_edges()
 		ElementAccessor<3> bc_ele = this->element_accessor(i);
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
-        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele->node[n]);
+        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = bc_ele->node_idx(n); //node_vector.index(bc_ele->node[n]);
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
@@ -487,7 +487,7 @@ void Mesh::make_neighbours_and_edges()
 
 			// Find all elements that share this side.
 			side_nodes.resize(e.side(s)->n_nodes());
-			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e.side(s)->node(n));
+			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = e.side(s)->node(n).idx(); //node_vector.index(e.side(s)->node(n));
 			intersect_element_lists(side_nodes, intersection_list);
 
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
@@ -525,7 +525,7 @@ void Mesh::make_neighbours_and_edges()
                     Element * bc_ele = add_element_to_vector(-bdr_idx, true);
                     bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
                     region_db_.mark_used_region( bc_ele->region_idx_.idx() );
-                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
@@ -583,16 +583,18 @@ void Mesh::make_edge_permutations()
 
 		if (edg->n_sides > 1)
 		{
-			map<const Node*,unsigned int> node_numbers;
+			map<unsigned int,unsigned int> node_numbers;
 			unsigned int permutation[edg->side(0)->n_nodes()];
 
 			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
-				node_numbers[edg->side(0)->node(i)] = i;
+				node_numbers[edg->side(0)->node(i).idx()] = i;
+				//node_numbers[edg->side(0)->node(i).node()] = i;
 
 			for (int sid=1; sid<edg->n_sides; sid++)
 			{
 				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
-					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
+					permutation[node_numbers[edg->side(sid)->node(i).idx()]] = i;
+					//permutation[node_numbers[edg->side(sid)->node(i).node()]] = i;
 
 				switch (edg->side(0)->dim())
 				{
@@ -618,10 +620,10 @@ void Mesh::make_edge_permutations()
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
 		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
-			node_numbers[nb->element()->node[i]] = i;
+			node_numbers[nb->element().node(i)] = i;
 
 		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
-			permutation[node_numbers[nb->side()->node(i)]] = i;
+			permutation[node_numbers[nb->side()->node(i).node()]] = i;
 
 		switch (nb->side()->dim())
 		{
