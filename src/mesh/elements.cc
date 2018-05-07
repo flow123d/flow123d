@@ -34,8 +34,7 @@
 
 
 Element::Element()
-: node(NULL),
-  boundary_idx_(NULL),
+: boundary_idx_(NULL),
   neigh_vb(NULL),
   pid_(0),
   n_neighs_vb_(0),
@@ -58,7 +57,6 @@ void Element::init(unsigned int dim, RegionIdx reg) {
     dim_=dim;
     region_idx_=reg;
 
-    node = new Node * [ n_nodes()];
     edge_idx_.resize( n_sides() );
     permutation_idx_.resize( n_sides() );
     boundary_idx_ = NULL;

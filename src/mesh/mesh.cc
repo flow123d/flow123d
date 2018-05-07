@@ -193,14 +193,12 @@ Mesh::~Mesh() {
         if (edg.side_) delete[] edg.side_;
 
     for (auto ele : this->bulk_elements_range()) {
-        if (ele->node) delete[] ele->node;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
     for(unsigned int idx=bulk_size_; idx < element_vec_.size(); idx++) {
         Element *ele=&(element_vec_[idx]);
-        if (ele->node) delete[] ele->node;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
 

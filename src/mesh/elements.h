@@ -82,12 +82,6 @@ public:
 
     // TODO move data members to protected part, add access trough getters or use direct access of friend class Mesh
 
-    // Type specific data
-    Node** node; // Element's nodes
-        // TODO remove direct access in many places in fem, fields, flow, intersection, io, mesh, transport and unit tests
-        // prepare to remove
-
-
     unsigned int *boundary_idx_; // Possible boundaries on sides (REMOVE) all bcd assembly should be done through iterating over boundaries
                            // ?? deal.ii has this not only boundary iterators
                            // TODO remove direct access in balance, side and transport
