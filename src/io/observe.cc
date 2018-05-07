@@ -259,7 +259,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     }
     snap( mesh );
     ElementAccessor<3> elm = mesh.element_accessor(observe_data_.element_idx_);
-    double dist = arma::norm(elm->centre() - input_point_, 2);
+    double dist = arma::norm(elm.centre() - input_point_, 2);
     double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
     if (dist > 2*elm_norm)
     	WarningOut().fmt("Observe point ({}) is too distant from the mesh.\n", name_);

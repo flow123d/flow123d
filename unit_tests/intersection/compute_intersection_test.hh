@@ -91,7 +91,7 @@ void permute_tetrahedron(ElementAccessor<3> ele, unsigned int p)
         ele->node[i] = tmp[i];
 //      ele->node[i]->point().print(cout);
     }
-//  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
+//  cout << p << ": jac = "  << ele.tetrahedron_jacobian() << endl;
 }
 
 void permute_triangle(ElementAccessor<3> ele, unsigned int p)
@@ -108,7 +108,7 @@ void permute_triangle(ElementAccessor<3> ele, unsigned int p)
         ele->node[i] = tmp[i];
 //      ele->node[i]->point().print(cout);
     }
-//  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
+//  cout << p << ": jac = "  << ele.tetrahedron_jacobian() << endl;
 }
 
 

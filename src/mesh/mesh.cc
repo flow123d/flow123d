@@ -276,7 +276,7 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     for (auto ele : this->bulk_elements_range())
-        if (ele->quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+        if (ele.quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -415,7 +415,7 @@ void Mesh::make_neighbours_and_edges()
 		ElementAccessor<3> bc_ele = this->element_accessor(i);
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
-        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = bc_ele->node_idx(n); //node_vector.index(bc_ele->node[n]);
+        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = bc_ele->node_idx(n);
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
@@ -487,7 +487,7 @@ void Mesh::make_neighbours_and_edges()
 
 			// Find all elements that share this side.
 			side_nodes.resize(e.side(s)->n_nodes());
-			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = e.side(s)->node(n).idx(); //node_vector.index(e.side(s)->node(n));
+			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = e.side(s)->node(n).idx();
 			intersect_element_lists(side_nodes, intersection_list);
 
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
@@ -849,7 +849,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
     // check that tetrahedron element is numbered correctly and is not degenerated
     if(ele->dim() == 3)
     {
-        double jac = ele->tetrahedron_jacobian();
+        double jac = this->element_accessor( this->elem_index(elm_id) ).tetrahedron_jacobian();
         if( ! (jac > 0) )
             WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id,jac);
     }

@@ -37,7 +37,7 @@ IntersectionAlgorithmBase<dimA,dimB>::IntersectionAlgorithmBase(Mesh* mesh)
 //     ASSERT(simplex_dim == element.dim());
 //     arma::vec3 *field_of_points[simplex_dim+1];
 //     for(unsigned int i=0; i < simplex_dim+1; i++)
-//         field_of_points[i]= &(element->node[i]->point());
+//         field_of_points[i]= &(element.node(i)->point());
 //     simplex.set_simplices(field_of_points);
 // }
 
@@ -178,7 +178,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
@@ -298,7 +298,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                 if (ele_3D.dim() == 3
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.idx(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.idx(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
@@ -359,7 +359,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection

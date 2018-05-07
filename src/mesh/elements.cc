@@ -77,60 +77,6 @@ Element::~Element() {
 
 
 /**
- * SET THE "METRICS" FIELD IN STRUCT ELEMENT
- */
-double Element::measure() const {
-    switch (dim()) {
-        case 0:
-            return 1.0;
-            break;
-        case 1:
-            return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
-            break;
-        case 2:
-            return
-                arma::norm(
-                    arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
-                    2
-                ) / 2.0 ;
-            break;
-        case 3:
-            return fabs(
-                arma::dot(
-                    arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
-                    *node[3] - *node[0] )
-                ) / 6.0;
-            break;
-    }
-    return 1.0;
-}
-
-double Element::tetrahedron_jacobian() const
-{
-    OLD_ASSERT(dim_ == 3, "Cannot provide Jacobian for dimension other than 3.");
-    return arma::dot( arma::cross(*node[1] - *node[0], 
-                                  *node[2] - *node[0]),
-                    *node[3] - *node[0]
-                    );
-}
-
-
-/**
- * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
- */
-
-arma::vec3 Element::centre() const {
-    arma::vec3 centre;
-    centre.zeros();
-
-    for (unsigned int li=0; li<this->n_nodes(); li++) {
-        centre += node[ li ]->point();
-    }
-    centre /= (double) n_nodes();
-    return centre;
-}
-
-/**
  * Count element sides of the space dimension @p side_dim.
  */
 
@@ -144,38 +90,6 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
         if (side(i)->dim() == side_dim) n++;
     return n;
 }*/
-
-
-double Element::quality_measure_smooth(SideIter side) const {
-    if (dim_==3) {
-        double sum_faces=0;
-        double face[4];
-        for(unsigned int i=0; i<4; i++, ++side) sum_faces+=( face[i]=side->measure());
-
-        double sum_pairs=0;
-        for(unsigned int i=0;i<3;i++)
-            for(unsigned int j=i+1;j<4;j++) {
-                unsigned int i_line = RefElement<3>::line_between_faces(i,j);
-                arma::vec line = *node[RefElement<3>::interact(Interaction<0,1>(i_line))[1]] - *node[RefElement<3>::interact(Interaction<0,1>(i_line))[0]];
-                sum_pairs += face[i]*face[j]*arma::dot(line, line);
-            }
-        double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
-        return fabs( measure()
-                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
-
-    }
-    if (dim_==2) {
-        return fabs(
-                measure()/
-                pow(
-                         arma::norm(*node[1] - *node[0], 2)
-                        *arma::norm(*node[2] - *node[1], 2)
-                        *arma::norm(*node[0] - *node[2], 2)
-                        , 2.0/3.0)
-               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
-    }
-    return 1.0;
-}
 
 
 /*unsigned int Element::get_proc() const

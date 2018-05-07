@@ -47,7 +47,7 @@ double MixedMeshIntersections::measure_13()
 
     for(unsigned int i = 0; i < intersection_storage13_.size(); i++){
     	ElementAccessor<3> ele = mesh->element_accessor( intersection_storage13_[i].component_ele_idx() );
-        double t1d_length = ele->measure();
+        double t1d_length = ele.measure();
         double local_length = intersection_storage13_[i].compute_measure();
         
         if(intersection_storage13_[i].size() == 2)
@@ -70,7 +70,7 @@ double MixedMeshIntersections::measure_23()
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_storage23_.size(); i++){
-            double t2dArea = mesh->element_accessor( intersection_storage23_[i].component_ele_idx() )->measure();
+            double t2dArea = mesh->element_accessor( intersection_storage23_[i].component_ele_idx() ).measure();
             double localArea = intersection_storage23_[i].compute_measure();
             subtotal += 2*localArea*t2dArea;
         }
@@ -438,13 +438,13 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
                 arma::vec3 global = IP13.coords(el1D);
                 
 //                 if(i == 0){
-//                     _global = (IP13.local_bcoords_A())[0] * el1D->node[0]->point()
-//                                                        +(IP13.local_bcoords_A())[1] * el1D->node[1]->point();
+//                     _global = (IP13.local_bcoords_A())[0] * el1D.node(0)->point()
+//                                                        +(IP13.local_bcoords_A())[1] * el1D.node(1)->point();
 //                 }else{
-//                     _global = (IP13.local_bcoords_B())[0] * el3D->node[0]->point()
-//                                                        +(IP13.local_bcoords_B())[1] * el3D->node[1]->point()
-//                                                        +(IP13.local_bcoords_B())[2] * el3D->node[2]->point()
-//                                                        +(IP13.local_bcoords_B())[3] * el3D->node[3]->point();
+//                     _global = (IP13.local_bcoords_B())[0] * el3D.node(0)->point()
+//                                                        +(IP13.local_bcoords_B())[1] * el3D.node(1)->point()
+//                                                        +(IP13.local_bcoords_B())[2] * el3D.node(2)->point()
+//                                                        +(IP13.local_bcoords_B())[3] * el3D.node(3)->point();
 //                 }
 
                 fprintf(file,"%d %.16f %.16f %.16f\n", number_of_nodes, global[0], global[1], global[2]);
@@ -457,21 +457,21 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
 
         for (auto elee : mesh->bulk_elements_range()) {
             if(elee->dim() == 3){
-                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                int id4 = mesh->node_vector.index(elee->node[3]) + 1;
+                int id1 = elee.node_accessor(0).idx() + 1;
+                int id2 = elee.node_accessor(1).idx() + 1;
+                int id3 = elee.node_accessor(2).idx() + 1;
+                int id4 = elee.node_accessor(3).idx() + 1;
 
                 fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3, id4);
             }else if(elee->dim() == 2){
-                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+                int id1 = elee.node_accessor(0).idx() + 1;
+                int id2 = elee.node_accessor(1).idx() + 1;
+                int id3 = elee.node_accessor(2).idx() + 1;
                 fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3);
 
             }else if(elee->dim() == 1){
-                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                int id1 = elee.node_accessor(0).idx() + 1;
+                int id2 = elee.node_accessor(1).idx() + 1;
                 fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid(), id1, id2);
             }
         }
@@ -535,14 +535,14 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
                     IntersectionPoint<2,3> IP23 = il[k];
                     arma::vec3 global = IP23.coords(el2D);
 //                     if(i == 0){
-//                         _global = (IP23.local_bcoords_A())[0] * el2D->node[0]->point()
-//                                                            +(IP23.local_bcoords_A())[1] * el2D->node[1]->point()
-//                                                            +(IP23.local_bcoords_A())[2] * el2D->node[2]->point();
+//                         _global = (IP23.local_bcoords_A())[0] * el2D.node(0)->point()
+//                                                            +(IP23.local_bcoords_A())[1] * el2D.node(1)->point()
+//                                                            +(IP23.local_bcoords_A())[2] * el2D.node(2)->point();
 //                     }else{
-//                         _global = (IP23.local_bcoords_B())[0] * el3D->node[0]->point()
-//                                                            +(IP23.local_bcoords_B())[1] * el3D->node[1]->point()
-//                                                            +(IP23.local_bcoords_B())[2] * el3D->node[2]->point()
-//                                                            +(IP23.local_bcoords_B())[3] * el3D->node[3]->point();
+//                         _global = (IP23.local_bcoords_B())[0] * el3D.node(0)->point()
+//                                                            +(IP23.local_bcoords_B())[1] * el3D.node(1)->point()
+//                                                            +(IP23.local_bcoords_B())[2] * el3D.node(2)->point()
+//                                                            +(IP23.local_bcoords_B())[3] * el3D.node(3)->point();
 //                     }
                     fprintf(file,"%d %.16f %.16f %.16f\n", number_of_nodes, global[0], global[1], global[2]);
             }
@@ -554,21 +554,21 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
 
         for (auto elee : mesh->bulk_elements_range()) {
             if(elee->dim() == 3){
-                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                int id4 = mesh->node_vector.index(elee->node[3]) + 1;
+                int id1 = elee.node_accessor(0).idx() + 1;
+                int id2 = elee.node_accessor(1).idx() + 1;
+                int id3 = elee.node_accessor(2).idx() + 1;
+                int id4 = elee.node_accessor(3).idx() + 1;
 
                 fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3, id4);
             }else if(elee->dim() == 2){
-                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+                int id1 = elee.node_accessor(0).idx() + 1;
+                int id2 = elee.node_accessor(1).idx() + 1;
+                int id3 = elee.node_accessor(2).idx() + 1;
                 fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3);
 
             }else{
-                int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-                int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+                int id1 = elee.node_accessor(0).idx() + 1;
+                int id2 = elee.node_accessor(1).idx() + 1;
                 fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid(), id1, id2);
             }
         }

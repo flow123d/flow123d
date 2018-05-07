@@ -289,7 +289,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 
 	for (auto ele : dh_->mesh()->bulk_elements_range()) {
 		searched_elements.clear();
-		source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements);
+		source_mesh->get_bih_tree().find_point(ele.centre(), searched_elements);
 		std::fill(sum_val.begin(), sum_val.end(), 0.0);
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
@@ -297,13 +297,13 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 			bool contains=false;
 			switch (elm->dim()) {
 			case 1:
-				contains = value_handler1_.contains_point(ele->centre(), elm);
+				contains = value_handler1_.contains_point(ele.centre(), elm);
 				break;
 			case 2:
-				contains = value_handler2_.contains_point(ele->centre(), elm);
+				contains = value_handler2_.contains_point(ele.centre(), elm);
 				break;
 			case 3:
-				contains = value_handler3_.contains_point(ele->centre(), elm);
+				contains = value_handler3_.contains_point(ele.centre(), elm);
 				break;
 			default:
 				ASSERT(false).error("Invalid element dimension!");

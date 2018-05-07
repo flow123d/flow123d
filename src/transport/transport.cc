@@ -243,7 +243,7 @@ void ConvectionTransport::set_initial_condition()
     	ElementAccessor<3> ele_acc = mesh_->element_accessor( elem.idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			conc[sbi][index] = data_.init_conc[sbi].value(elem->centre(), ele_acc);
+			conc[sbi][index] = data_.init_conc[sbi].value(elem.centre(), ele_acc);
     }
 
 }
@@ -361,11 +361,11 @@ void ConvectionTransport::set_boundary_conditions()
                 if (b != NULL) {
                     double flux = mh_dh->side_flux( *(elm.side(si)) );
                     if (flux < 0.0) {
-                        double aij = -(flux / elm->measure() );
+                        double aij = -(flux / elm.measure() );
 
                         for (sbi=0; sbi<n_substances(); sbi++)
                         {
-                            double value = data_.bc_conc[sbi].value( b->element()->centre(), b->element_accessor() );
+                            double value = data_.bc_conc[sbi].value( b->element_accessor().centre(), b->element_accessor() );
                             
                             VecSetValue(bcvcorr[sbi], new_i, value * aij, ADD_VALUES);
 
@@ -448,9 +448,9 @@ void ConvectionTransport::compute_concentration_sources() {
                 max_cfl = std::max(max_cfl, fabs(diag));
                 
                 balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                    {- src_sigma * ele_acc->measure() * csection});
+                                                    {- src_sigma * ele_acc.measure() * csection});
                 balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                {source * ele_acc->measure()});
+                                                {source * ele_acc.measure()});
             }
             
             cfl_source_[loc_el] = max_cfl;
@@ -690,12 +690,12 @@ void ConvectionTransport::create_mass_matrix()
     for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element_accessor( el_4_loc[loc_el] );
 
-        double csection = data_.cross_section.value(elm->centre(), elm);
-        //double por_m = data_.porosity.value(elm->centre(), elm->element_accessor());
-        double por_m = data_.water_content.value(elm->centre(), elm);
+        double csection = data_.cross_section.value(elm.centre(), elm);
+        //double por_m = data_.porosity.value(elm.centre(), elm->element_accessor());
+        double por_m = data_.water_content.value(elm.centre(), elm);
 
         for (unsigned int sbi=0; sbi<n_substances(); ++sbi)
-            balance_->add_mass_matrix_values(subst_idx[sbi], elm.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm->measure()} );
+            balance_->add_mass_matrix_values(subst_idx[sbi], elm.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, {csection*por_m*elm.measure()} );
         
         VecSetValue(mass_diag, row_4_el[ elm.idx() ], csection*por_m, INSERT_VALUES);
     }
@@ -755,13 +755,13 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
                         flux2 = mh_dh->side_flux( *(edg->side(s)));
                         if ( flux2 > 0.0 && flux <0.0)
-                            aij = -(flux * flux2 / ( edg_flux * elm->measure() ) );
+                            aij = -(flux * flux2 / ( edg_flux * elm.measure() ) );
                         else aij =0;
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
             }
             if (flux > 0.0)
-              aii -= (flux / elm->measure() );
+              aii -= (flux / elm.measure() );
         }  // end same dim     //ELEMENT_SIDES
 
         for (unsigned int n=0; n<elm->n_neighs_vb(); n++) // comp model
@@ -772,15 +772,15 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                 flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
 
                 // volume source - out-flow from higher dimension
-                if (flux > 0.0)  aij = flux / elm->measure();
+                if (flux > 0.0)  aij = flux / elm.measure();
                 else aij=0;
                 MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                 // out flow from higher dim. already accounted
 
                 // volume drain - in-flow to higher dimension
                 if (flux < 0.0) {
-                  aii -= (-flux) / elm->measure();                           // diagonal drain
-                  aij = (-flux) / el2->measure();
+                  aii -= (-flux) / elm.measure();                           // diagonal drain
+                  aij = (-flux) / el2.measure();
                 } else aij=0;
                 MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
             }

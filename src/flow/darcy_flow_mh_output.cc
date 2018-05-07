@@ -243,7 +243,7 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
         ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
         ele_pressure[i_ele] = sol[ soi + i_ele];
         ele_piezo_head[i_ele] = sol[soi + i_ele ]
-          - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));
+          - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele.centre()));
     }
 }
 
@@ -344,9 +344,9 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
                 node_index = node.idx(); //!< get nod index from mesh */
 
                 dist = sqrt(
-                        ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
-                        ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
-                        ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
+                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
+                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
+                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
                 sum_ele_dist[node_index] += dist;
                 sum_elements[node_index]++;
@@ -379,9 +379,9 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
                 /**TODO - calculate it again or store it in prior pass*/
                 dist = sqrt(
-                        ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
-                        ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
-                        ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
+                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
+                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
+                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
                 scalars[node_index] += ele_pressure[ ele.idx() ] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
@@ -499,8 +499,8 @@ void l2_diff_local(ElementAccessor<3> &ele,
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.data_->conductivity.value(ele->centre(), ele );
-    double cross = result.data_->cross_section.value(ele->centre(), ele );
+    double conductivity = result.data_->conductivity.value(ele.centre(), ele );
+    double cross = result.data_->cross_section.value(ele.centre(), ele );
 
 
     // get coefficients on the current element
@@ -545,11 +545,11 @@ void l2_diff_local(ElementAccessor<3> &ele,
                                (  arma::dot( q_point, q_point )/ 2
                                 - mean_x_squared / 2
                                 - arma::dot( q_point, ele.node(oposite_node)->point() )
-                                + arma::dot( ele->centre(), ele.node(oposite_node)->point() )
+                                + arma::dot( ele.centre(), ele.node(oposite_node)->point() )
                                );
         }
 
-        diff = - (1.0 / conductivity) * diff / dim / ele->measure() / cross + pressure_mean ;
+        diff = - (1.0 / conductivity) * diff / dim / ele.measure() / cross + pressure_mean ;
         diff = ( diff - analytical[0]);
         pressure_diff += diff * diff * fe_values.JxW(i_point);
 
@@ -568,7 +568,7 @@ void l2_diff_local(ElementAccessor<3> &ele,
         // divergence diff
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
-        diff = ( diff / ele->measure() / cross - analytical[4]);
+        diff = ( diff / ele.measure() / cross - analytical[4]);
         divergence_diff += diff * diff * fe_values.JxW(i_point);
 
     }

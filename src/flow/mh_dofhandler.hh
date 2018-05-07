@@ -134,11 +134,11 @@ public:
     }
 
     const arma::vec3 centre() const {
-        return ele->centre();
+        return ele.centre();
     }
 
     double measure() const {
-        return ele->measure();
+        return ele.measure();
     }
 
     Region region() const {

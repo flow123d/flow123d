@@ -33,8 +33,6 @@
 
 class Mesh;
 class Neighbour;
-//class SideIter;
-template <int spacedim> class ElementAccessor;
 
 
 
@@ -51,31 +49,9 @@ public:
 
 
     inline unsigned int dim() const;
-    unsigned int n_sides() const; // Number of sides
-    unsigned int n_nodes() const; // Number of nodes
+    inline unsigned int n_sides() const; // Number of sides
+    inline unsigned int n_nodes() const; // Number of nodes
     
-    /// Computes the measure of the element.
-    double measure() const;
-    
-    /** Computes the Jacobian of the element.
-     * J = det ( 1  1  1  1 )
-     *           x1 x2 x3 x4
-     *           y1 y2 y3 y4
-     *           z1 z2 z3 z4
-     */
-    double tetrahedron_jacobian() const;
-    
-    /// Computes the barycenter.
-    arma::vec3 centre() const;
-    /**
-* Quality of the element based on the smooth and scale-invariant quality measures proposed in:
-* J. R. Schewchuk: What is a Good Linear Element?
-*
-* We scale the measure so that is gives value 1 for regular elements. Line 1d elements
-* have always quality 1.
-*/
-    double quality_measure_smooth(SideIter side) const;
-
     inline RegionIdx region_idx() const
         { return region_idx_; }
     

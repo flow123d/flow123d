@@ -940,7 +940,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
             Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], cell, ad_coef_edg[sid], dif_coef_edg[sid]);
             dg_penalty[sid].resize(Model::n_substances());
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-                dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell->centre(), cell);
+                dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell.centre(), cell);
         }
 
         // fluxes and penalty
@@ -1087,7 +1087,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
             if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(cell->centre(), cell), gamma_l);
+                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(cell.centre(), cell), gamma_l);
                 gamma[sbi][side->cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }

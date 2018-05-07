@@ -33,7 +33,7 @@ TEST(GenericField, all) {
     region_id.set_time(TimeGovernor().step(), LimitSide::right);
     for (auto ele : mesh->bulk_elements_range())
     	EXPECT_EQ( ele.region().id(),
-    			   region_id.value(ele->centre(), ele)
+    			   region_id.value(ele.centre(), ele)
     			   );
 
     delete mesh;

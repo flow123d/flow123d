@@ -148,7 +148,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
 		}
 
-		double epsilon = 4* numeric_limits<double>::epsilon() * elm.element()->measure();
+		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
@@ -198,7 +198,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                         CI.compute(is);
 
                         IntersectionLocal<1,3> ilc(is);
-                        measure = ilc.compute_measure() * elm->measure();
+                        measure = ilc.compute_measure() * elm.measure();
                         break;
                     }
                     case 2: {
@@ -208,7 +208,7 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                         CI.compute(is);
 
                         IntersectionLocal<2,3> ilc(is);
-                        measure = 2 * ilc.compute_measure() * elm->measure();
+                        measure = 2 * ilc.compute_measure() * elm.measure();
                         break;
                     }
                 }

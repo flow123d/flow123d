@@ -1004,9 +1004,9 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     double he2 = d_max, he3 = d_max;
     for (auto ele : mesh_->bulk_elements_range()) {
         switch(ele->dim()){
-            case 1: h1 = std::min(h1,ele->measure()); break;
-            case 2: h2 = std::min(h2,ele->measure()); break;
-            case 3: h3 = std::min(h3,ele->measure()); break;
+            case 1: h1 = std::min(h1,ele.measure()); break;
+            case 2: h2 = std::min(h2,ele.measure()); break;
+            case 3: h3 = std::min(h3,ele.measure()); break;
         }
         
         for (unsigned int j=0; j<ele->n_sides(); j++) {

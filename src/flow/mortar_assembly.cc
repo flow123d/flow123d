@@ -111,7 +111,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
     //slave_ac_.setup(master_ac);
 
     ElementAccessor<3> ele = master_ac.element_accessor();
-    arma::vec3 ele_centre = ele->centre();
+    arma::vec3 ele_centre = ele.centre();
     double m_sigma = data_->sigma.value( ele_centre, ele);
     double m_conductivity = data_->conductivity.value( ele_centre, ele);
     double m_crossection = data_->cross_section.value( ele_centre, ele );
@@ -142,7 +142,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         if (slave_ac_.dim() == master_ac.dim()) break;
         if (! non_zero) continue; // skip quadratures close to zero
 
-        double cs = data_->cross_section.value(slave_ac_.element_accessor()->centre(), slave_ac_.element_accessor());
+        double cs = data_->cross_section.value(slave_ac_.element_accessor().centre(), slave_ac_.element_accessor());
         double isec_measure = quadrature_.measure();
         //DebugOut() << print_var(cs) << print_var(isec_measure);
         cs_sqr_avg += cs*cs*isec_measure;
@@ -151,14 +151,14 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         pressure_diff(slave_ac_, isec_measure);
     }
     if ( ! (slave_ac_.dim() == 2 && master_ac.dim() ==2 ) ) {
-        if( fabs(isec_sum - ele->measure()) > 1E-5) {
+        if( fabs(isec_sum - ele.measure()) > 1E-5) {
             string out;
             for(auto & isec : isec_list) {
                 slave_ac_.reinit(isec.second->bulk_ele_idx());
                 out += fmt::format(" {}", slave_ac_.element_accessor().idx());
             }
 
-            double diff = (isec_sum - ele->measure())/ele->measure();
+            double diff = (isec_sum - ele.measure())/ele.measure();
             WarningOut() << print_var(diff)
                     << print_var(ele.idx())
                     << endl
