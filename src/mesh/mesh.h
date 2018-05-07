@@ -30,7 +30,6 @@
 #include "input/type_record.hh"              // for Record (ptr only), Recor...
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
-#include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/nodes.hh"
 #include "mesh/bounding_box.hh"              // for BoundingBox
@@ -149,11 +148,11 @@ public:
         return region_db_;
     }
 
-    /// Reserve size of node vector
-    inline void reserve_node_size(unsigned int n_nodes) { // TODO remove this obsolete method
-    	node_vector.reserve(n_nodes);
-    }
-
+//    /// Reserve size of node vector
+//    inline void reserve_node_size(unsigned int n_nodes) {
+//    	node_vector.reserve(n_nodes);
+//    }
+//
 //    /// Reserve size of element vector
 //    inline void reserve_element_size(unsigned int n_elements) {
 //    	element.reserve(n_elements);
@@ -233,8 +232,8 @@ public:
      */
     vector<vector<unsigned int> > const & node_elements();
 
-    /// Vector of nodes of the mesh.
-    NodeVector node_vector;
+//    /// Vector of nodes of the mesh.
+//    NodeVector node_vector;
 //    /// Vector of elements of the mesh.
 //    ElementVector element;
 

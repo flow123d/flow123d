@@ -800,9 +800,6 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
-	NodeFullIter node_it = node_vector.add_item(node_id);
-	node_it->point() = coords;
-
     node_vec_.push_back( Node() );
     Node &node = node_vec_[node_vec_.size()-1];
     node.point() = coords;
@@ -838,12 +835,7 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 	ele->pid_ = partition_id;
 
 	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
-		unsigned int node_id = node_ids[ni];
-		auto node = node_vector.find_id( node_id );
-		INPUT_CHECK( node != node_vector.end(),
-				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
-		ele->node[ni] = node;
-		ele->nodes_[ni]  = this->node_index(node_id);
+		ele->nodes_[ni] = this->node_index(node_ids[ni]);
 	}
 
     // check that tetrahedron element is numbered correctly and is not degenerated

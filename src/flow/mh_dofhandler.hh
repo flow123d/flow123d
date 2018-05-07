@@ -31,7 +31,6 @@
 #include "mesh/region.hh"                    // for Region
 #include "mesh/side_impl.hh"                 // for Side::edge_idx
 #include "mesh/sides.h"                      // for SideIter, Side
-#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 
 class LocalToGlobalMap;
 template <int spacedim> class LocalElementAccessorBase;

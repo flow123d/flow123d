@@ -23,7 +23,6 @@
 #include <stddef.h>                          // for NULL
 //#include "mesh/mesh.h"
 //#include "mesh/accessors.hh"
-#include "system/sys_vector.hh"              // for FullIterator
 
 class Boundary;
 class Edge;
