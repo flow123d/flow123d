@@ -26,6 +26,7 @@
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
+#include "mesh/long_idx.hh"
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
 #include "fem/dofhandler.hh"
@@ -136,7 +137,7 @@ private:
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    std::vector<IdxInt> dof_indices_;
+    std::vector<LongIdx> dof_indices_;
 
     /// Value handler that allows get value of 1D elements.
     FEValueHandler<1, spacedim, Value> value_handler1_;
