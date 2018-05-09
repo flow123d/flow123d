@@ -124,7 +124,7 @@ arma::vec::fixed<dim> FiniteElement<dim>::shape_grad(const unsigned int i,
     ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
     
-    arma::vec grad(dim);
+    arma::vec grad((arma::uword)dim);
     grad.zeros();
     for (unsigned int j=0; j<function_space_->dim(); j++)
         grad += function_space_->basis_grad(j, p, comp) * node_matrix(i,j);

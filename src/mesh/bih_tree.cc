@@ -273,10 +273,10 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 
 void BIHTree::find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list, bool full_list) const
 {
-	find_bounding_box(BoundingBox(BoundingBox::Point(point)), result_list);
+	find_bounding_box(BoundingBox(BoundingBox::Point(point)), result_list, full_list);
 }
 
-void BIHTree::find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list) const
+void BIHTree::find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list, bool full_list) const
 {
 	find_bounding_box(BoundingBox(point), result_list, full_list);
 }

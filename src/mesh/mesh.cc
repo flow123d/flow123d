@@ -758,7 +758,7 @@ void Mesh::compute_element_boxes() {
     Node* node = this->node_vector.begin();
     mesh_box_ = BoundingBox(node->point(), node->point());
     FOR_NODES(this, node ) {
-        mesh_box_.expand( node->point() );
+        mesh_box_.expand( node->point_armor() );
     }
 
 }

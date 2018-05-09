@@ -43,7 +43,6 @@
 #include <boost/exception/info.hpp>                          // for operator<<
 #include <boost/functional/hash/hash.hpp>                    // for hash_com...
 #include <boost/static_assert.hpp>                           // for BOOST_ST...
-#include <boost/type_traits/is_base_of.hpp>                  // for is_base_of
 #include <memory>                                            // for shared_ptr
 #include <ostream>                                           // for operator<<
 #include <typeinfo>                                          // for type_info
@@ -372,7 +371,7 @@ Array::Array(const ValueType &type, unsigned int min_size, unsigned int max_size
 : Array(std::static_pointer_cast<TypeBase>( std::make_shared<ValueType>(type) ), min_size, max_size)
 {
     // ASSERT MESSAGE: The type of declared keys has to be a class derived from TypeBase.
-    BOOST_STATIC_ASSERT( (boost::is_base_of<TypeBase, ValueType >::value) );
+    BOOST_STATIC_ASSERT( (std::is_base_of<TypeBase, ValueType >::value) );
 }
 
 // explicit instantiation
