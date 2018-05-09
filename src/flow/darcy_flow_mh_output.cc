@@ -42,6 +42,7 @@
 #include "fields/field_fe.hh"
 #include "fields/generic_field.hh"
 
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 
@@ -272,7 +273,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 {
     START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
 	unsigned int ndofs = dh_->max_elem_dofs();
-	std::vector<IdxInt> indices(ndofs);
+	std::vector<LongIdx> indices(ndofs);
 	unsigned int i_node;
 	FOR_ELEMENTS(mesh_, ele)
 	{

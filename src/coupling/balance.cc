@@ -24,6 +24,7 @@
 
 #include <petscmat.h>
 #include "mesh/mesh.h"
+#include "mesh/long_idx.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
@@ -479,7 +480,7 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 
 void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -499,7 +500,7 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		unsigned int boundary_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -518,7 +519,7 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -563,7 +564,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 
 void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);

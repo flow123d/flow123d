@@ -23,6 +23,7 @@
 #include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
 #include "mesh/point.hh"
+#include "mesh/long_idx.hh"
 #include <armadillo>
 
 
@@ -73,7 +74,7 @@ private:
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    std::vector<IdxInt> dof_indices;
+    std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
