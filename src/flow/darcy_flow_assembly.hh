@@ -132,8 +132,6 @@ public:
         sp.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
         sp.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
         
-        sp.print();
-        
         loc_system_.set_sparsity(sp);
         
         // local system 2x2 for vb neighbourings is full matrix
