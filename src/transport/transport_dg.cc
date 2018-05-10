@@ -355,9 +355,9 @@ TransportDG<Model>::~TransportDG()
             delete ls_dt[i];
 
             if (stiffness_matrix[i])
-                MatDestroy(&stiffness_matrix[i]);
+                chkerr(MatDestroy(&stiffness_matrix[i]));
             if (mass_matrix[i])
-                MatDestroy(&mass_matrix[i]);
+                chkerr(MatDestroy(&mass_matrix[i]));
             if (rhs[i])
                 VecDestroy(&rhs[i]);
             if (mass_vec[i])
@@ -577,7 +577,7 @@ void TransportDG<Model>::update_solution()
         ls[i]->set_rhs(w);
 
         VecDestroy(&w);
-        MatDestroy(&m);
+        chkerr(MatDestroy(&m));
 
         ls[i]->solve();
 

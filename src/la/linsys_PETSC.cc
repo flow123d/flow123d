@@ -152,7 +152,7 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
     switch (status_) {
         case INSERT:
         case ADD:
-            ierr = MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_); CHKERRV( ierr ); 
+            chkerr(MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_));
             break;
         case ALLOCATE:
             this->preallocate_values(nrow,rows,ncol,cols); 
@@ -232,7 +232,7 @@ void LinSys_PETSC::preallocate_matrix()
     // create PETSC matrix with preallocation
     if (matrix_ != NULL)
     {
-    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    	chkerr(MatDestroy(&matrix_));
     }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
@@ -435,7 +435,7 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
+    if (matrix_ != NULL) { chkerr(MatDestroy(&matrix_)); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
     if (residual_ != NULL) VecDestroy(&residual_);

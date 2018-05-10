@@ -186,7 +186,7 @@ ConvectionTransport::~ConvectionTransport()
 
     if (sources_corr) {
         //Destroy mpi vectors at first
-        MatDestroy(&tm);
+        chkerr(MatDestroy(&tm));
         VecDestroy(&mass_diag);
         VecDestroy(&vpmass_diag);
         VecDestroy(&vcfl_flow_);

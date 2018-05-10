@@ -352,7 +352,7 @@ SparseGraphPETSC::~SparseGraphPETSC()
 {
     ISDestroy(&part_IS);
     MatPartitioningDestroy(&petsc_part);
-    MatDestroy(&petsc_adj_mat);
+    chkerr(MatDestroy(&petsc_adj_mat));
 
     if (adj) PetscFree(adj);
     if (rows) PetscFree(rows);
