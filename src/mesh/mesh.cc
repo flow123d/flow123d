@@ -28,6 +28,7 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/region_set.hh"
@@ -80,11 +81,12 @@ const IT::Record & Mesh::get_input_type() {
 	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
-		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
-					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
-					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
-                .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
-                        "Output file with neighboring data from mesh.")
+        .declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
+                     "Maximal snapping distance from Mesh in various search operations. In particular is used "
+                     "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+                     "element in plan view (Z projection).")
+        .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
+                     "Output file with neighboring data from mesh.")
 		.close();
 }
 
@@ -280,7 +282,7 @@ void Mesh::setup_topology() {
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
-    IdxInt *id_4_old = new IdxInt[element.size()];
+    LongIdx *id_4_old = new LongIdx[element.size()];
     int i = 0;
     FOR_ELEMENTS(this, ele)
         id_4_old[i++] = ele.index();
@@ -685,17 +687,17 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const
+void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const
 {
     if (bulk_elements_id.size() ==0) {
-        std::vector<IdxInt>::iterator map_it;
-        IdxInt last_id;
+        std::vector<LongIdx>::iterator map_it;
+        LongIdx last_id;
 
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
-        	IdxInt id = element.get_id(idx);
+        	LongIdx id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
@@ -704,7 +706,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
-        	IdxInt id = bc_elements.get_id(idx);
+        	LongIdx id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
@@ -742,35 +744,32 @@ void Mesh::check_and_finish()
 }
 
 
-void Mesh::compute_element_boxes() {
+std::vector<BoundingBox> Mesh::get_element_boxes() {
     START_TIMER("Mesh::compute_element_boxes");
-    if (element_box_.size() > 0) return;
+    std::vector<BoundingBox> boxes;
 
     // make element boxes
-    element_box_.resize(this->element.size());
     unsigned int i=0;
+    boxes.resize(this->element.size());
     FOR_ELEMENTS(this, element) {
-         element_box_[i] = element->bounding_box();
-         i++;
+        boxes[i] = element->bounding_box();
+    	i++;
     }
 
-    // make mesh box
-    Node* node = this->node_vector.begin();
-    mesh_box_ = BoundingBox(node->point(), node->point());
-    FOR_NODES(this, node ) {
-        mesh_box_.expand( node->point() );
-    }
-
+    return boxes;
 }
 
 const BIHTree &Mesh::get_bih_tree() {
-    if (! this->bih_tree_)
-        bih_tree_ = std::make_shared<BIHTree>(this);
+    if (! this->bih_tree_) {
+        bih_tree_ = std::make_shared<BIHTree>();
+        bih_tree_->add_boxes( this->get_element_boxes() );
+        bih_tree_->construct();
+	}
     return *bih_tree_;
 }
 
-double Mesh::global_observe_radius() const {
-	return in_record_.val<double>("global_observe_search_radius");
+double Mesh::global_snap_radius() const {
+	return in_record_.val<double>("global_snap_radius");
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {

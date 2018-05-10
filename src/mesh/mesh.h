@@ -27,6 +27,7 @@
 #include "input/accessors_impl.hh"           // for Record::val
 #include "input/storage.hh"                  // for ExcStorageTypeMismatch
 #include "input/type_record.hh"              // for Record (ptr only), Recor...
+#include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
 #include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
@@ -84,10 +85,6 @@ template <int spacedim> class ElementAccessor;
 
 #define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
 #define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
-
-
-/// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
-typedef int IdxInt;
 
 
 class BoundarySegment {
@@ -194,10 +191,10 @@ public:
     Distribution *get_el_ds() const
     { return el_ds; }
 
-    IdxInt *get_row_4_el() const
+    LongIdx *get_row_4_el() const
     { return row_4_el; }
 
-    IdxInt *get_el_4_loc() const
+    LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
     /**
@@ -241,7 +238,7 @@ public:
     /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    void elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const;
+    void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
@@ -318,13 +315,8 @@ public:
      */
     void check_and_finish();
     
-    /// Precompute element bounding boxes if it is not done yet.
-    void compute_element_boxes();
-
-    /// Return the mesh bounding box. Is set after call compute_element_boxes().
-    const BoundingBox &get_mesh_boungin_box() {
-        return mesh_box_;
-    }
+    /// Compute bounding boxes of elements contained in mesh.
+    std::vector<BoundingBox> get_element_boxes();
 
     /// Getter for BIH. Creates and compute BIH at first call.
     const BIHTree &get_bih_tree();\
@@ -355,7 +347,7 @@ public:
     IntersectionSearch get_intersection_search();
 
     /// Maximal distance of observe point from Mesh relative to its size
-    double global_observe_radius() const;
+    double global_snap_radius() const;
 
     /// Number of elements read from input.
     unsigned int n_all_input_elements_;
@@ -433,12 +425,6 @@ protected:
      */
     std::shared_ptr<Partitioning> part_;
 
-    /// Auxiliary vector of mesh elements bounding boxes.
-    std::vector<BoundingBox> element_box_;
-
-    /// Bounding box of whole mesh.
-    BoundingBox mesh_box_;
-
     /**
      * BIH Tree for intersection and observe points lookup.
      */
@@ -468,9 +454,9 @@ protected:
 private:
 
     /// Index set assigning to global element index the local index used in parallel vectors.
-    IdxInt *row_4_el;
+    LongIdx *row_4_el;
 	/// Index set assigning to local element index its global index.
-    IdxInt *el_4_loc;
+    LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
         

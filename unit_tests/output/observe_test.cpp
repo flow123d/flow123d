@@ -243,7 +243,7 @@ TEST(Observe, all) {
         .get_root_interface<Input::Record>();
 
     FilePath mesh_file( string(UNIT_TESTS_SRC_DIR) + "/mesh/simplest_cube.msh", FilePath::input_file);
-    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\", global_observe_search_radius=1.0 }");
+    Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\", global_snap_radius=1.0 }");
 
     {
     std::shared_ptr<TestObserve> obs = std::make_shared<TestObserve>(*mesh, in_rec.val<Input::Array>("observe_points"));

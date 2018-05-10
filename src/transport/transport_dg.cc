@@ -37,6 +37,7 @@
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
 #include "fields/equation_output.hh"
+#include "mesh/long_idx.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(concentrationTransportModel);
 FLOW123D_FORCE_LINK_IN_CHILD(heatModel);
@@ -614,7 +615,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
             break;
         }
 
-        std::vector<IdxInt> dof_indices(n_dofs);
+        std::vector<LongIdx> dof_indices(n_dofs);
         feo->dh()->get_dof_indices(elem, dof_indices);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
@@ -695,7 +696,7 @@ void TransportDG<Model>::assemble_mass_matrix()
 {
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(), update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    vector<IdxInt> dof_indices(ndofs);
+    vector<LongIdx> dof_indices(ndofs);
     PetscScalar local_mass_matrix[ndofs*ndofs], local_retardation_balance_vector[ndofs];
     vector<PetscScalar> local_mass_balance_vector(ndofs);
 
@@ -787,7 +788,7 @@ void TransportDG<Model>::assemble_volume_integrals()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
             update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    std::vector<IdxInt> dof_indices(ndofs);
+    std::vector<LongIdx> dof_indices(ndofs);
     vector<arma::vec3> velocity(qsize);
     vector<vector<double> > sources_sigma(Model::n_substances(), std::vector<double>(qsize));
     PetscScalar local_matrix[ndofs*ndofs];
@@ -855,7 +856,7 @@ void TransportDG<Model>::set_sources()
     vector<std::vector<double> > sources_conc(Model::n_substances(), std::vector<double>(qsize)),
             sources_density(Model::n_substances(), std::vector<double>(qsize)),
             sources_sigma(Model::n_substances(), std::vector<double>(qsize));
-    vector<IdxInt> dof_indices(ndofs);
+    vector<LongIdx> dof_indices(ndofs);
     PetscScalar local_rhs[ndofs];
     vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
     double source;
@@ -912,7 +913,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
             update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size(),
             n_max_sides = ad_coef_edg.size();
-    vector< vector<IdxInt> > side_dof_indices;
+    vector< vector<LongIdx> > side_dof_indices;
     PetscScalar local_matrix[ndofs*ndofs];
     vector<vector<arma::vec3> > side_velocity(n_max_sides);
     vector<vector<double> > dg_penalty(n_max_sides);
@@ -920,7 +921,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
     for (unsigned int sid=0; sid<n_max_sides; sid++) // Optimize: SWAP LOOPS
     {
-    	side_dof_indices.push_back( vector<IdxInt>(ndofs) );
+    	side_dof_indices.push_back( vector<LongIdx>(ndofs) );
         fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
     }
@@ -1044,7 +1045,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
             update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
-    std::vector<IdxInt> side_dof_indices(ndofs);
+    std::vector<LongIdx> side_dof_indices(ndofs);
     PetscScalar local_matrix[ndofs*ndofs];
     vector<arma::vec3> side_velocity;
     vector<double> robin_sigma(qsize);
@@ -1155,7 +1156,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     int side_dof_indices[2*ndofs];
-    vector<IdxInt> indices(ndofs);
+    vector<LongIdx> indices(ndofs);
     unsigned int n_dofs[2], n_indices;
     vector<arma::vec3> velocity_higher, velocity_lower;
     vector<double> frac_sigma(qsize);
@@ -1278,7 +1279,7 @@ void TransportDG<Model>::set_boundary_conditions()
     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
                 update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
-    vector<IdxInt> side_dof_indices(ndofs);
+    vector<LongIdx> side_dof_indices(ndofs);
     unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
@@ -1635,7 +1636,7 @@ void TransportDG<Model>::prepare_initial_condition()
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
             update_values | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
-    std::vector<IdxInt> dof_indices(ndofs);
+    std::vector<LongIdx> dof_indices(ndofs);
     double matrix[ndofs*ndofs], rhs[ndofs];
     std::vector<std::vector<double> > init_values(Model::n_substances());
 
@@ -1681,7 +1682,7 @@ void TransportDG<Model>::prepare_initial_condition()
 
 
 template<class Model>
-void TransportDG<Model>::get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds)
+void TransportDG<Model>::get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds)
 {
     el_4_loc = Model::mesh_->get_el_4_loc();
     el_ds = Model::mesh_->get_el_ds();
@@ -1711,7 +1712,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
                 break;
             }
 
-			std::vector<IdxInt> dof_indices(n_dofs);
+			std::vector<LongIdx> dof_indices(n_dofs);
             feo->dh()->get_dof_indices(elem, dof_indices);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
@@ -1732,7 +1733,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 }
 
 template<class Model>
-IdxInt *TransportDG<Model>::get_row_4_el()
+LongIdx *TransportDG<Model>::get_row_4_el()
 {
     return Model::mesh_->get_row_4_el();
 }
