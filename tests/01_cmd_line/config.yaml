@@ -37,3 +37,12 @@ test_cases:
     - regex:
         files: [log03.0.log]
         substr: "----------- Table of all regions: -----------"
+
+#- files: 04_input_placeholder.yaml
+#  args: 
+#    - -i
+#    - 00_mesh
+#  check_rules:
+#    - regex:
+#        files: [large_cube.msh]
+#        substr: "$MeshFormat"
