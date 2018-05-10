@@ -685,7 +685,6 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
         auto ele_ac = accessor(i_loc);
         ElementFullIter ele = ele_ac.full_iter();
         if(ele_ac.dim() == 1) {
-            DBGCOUT("singularity: ele 1d: " << ele->index() << "\n");
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
             if(isec_list.size() == 0) continue;
             
@@ -702,7 +701,7 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
                     center = (*il)[0].coords(ele);
                 }
                 
-                DBGCOUT("singularity: ele 0d: " << ele->index() << "  bulk_ele: " << bulk_ele->index() << "\n");
+                DBGCOUT("singularity: ele " << dim << "d: " << ele->index() << "  bulk_ele: " << bulk_ele->index() << "\n");
                 double cs = cross_section.value(center, ele->element_accessor()); // pi*r^2
                 double sgm = sigma.value(center, ele->element_accessor());
                 
