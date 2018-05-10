@@ -130,7 +130,7 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 	output_dir = std::make_shared<boost::filesystem::path>( full_output_path );
 
 	// the relative input is relative to the directory of the main input file
-    add_placeholder("${INPUT}", input);
+    add_placeholder("$INPUT_DIR$", input);
 }
 
 
