@@ -56,8 +56,8 @@ FilePath::FilePath(string file_path, const  FileType ft)
         return;
     }
 
-    bool is_abs_path = boost::filesystem::path( convert_for_check_absolute(file_path) ).is_absolute();
     substitute_value(file_path);
+    bool is_abs_path = boost::filesystem::path( convert_for_check_absolute(file_path) ).is_absolute();
 	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
     if (ft == input_file) {
     	if ( is_abs_path ) {
