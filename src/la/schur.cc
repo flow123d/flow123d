@@ -69,6 +69,7 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         IA      = NULL;
         B       = NULL;
         Bt      = NULL;
+        C       = NULL;
         xA      = NULL;
         IAB     = NULL;
         IsB     = NULL;
@@ -103,6 +104,7 @@ SchurComplement::SchurComplement(SchurComplement &other)
 	B   = NULL;
 	Bt  = NULL;
 	xA  = NULL;
+	C   = NULL;
 }
 
 
@@ -397,19 +399,19 @@ double SchurComplement::compute_residual()
  */
 SchurComplement :: ~SchurComplement() {
 
-    if ( B  != NULL )             MatDestroy(&B);
-    if ( Bt != NULL )             MatDestroy(&Bt);
-    if ( C != NULL )             MatDestroy(&C);
-    if ( xA != NULL )             MatDestroy(&xA);
-    if ( IA != NULL )             MatDestroy(&IA);
-    if ( IAB != NULL )            MatDestroy(&IAB);
+    if ( B  != NULL )             chkerr(MatDestroy(&B));
+    if ( Bt != NULL )             chkerr(MatDestroy(&Bt));
+    if ( C != NULL )              chkerr(MatDestroy(&C));
+    if ( xA != NULL )             chkerr(MatDestroy(&xA));
+    if ( IA != NULL )             chkerr(MatDestroy(&IA));
+    if ( IAB != NULL )            chkerr(MatDestroy(&IAB));
     if ( IsA != NULL )            ISDestroy(&IsA);
     if ( IsB != NULL )            ISDestroy(&IsB);
     if ( RHS1 != NULL )           VecDestroy(&RHS1);
     if ( RHS2 != NULL )           VecDestroy(&RHS2);
     if ( Sol1 != NULL )           VecDestroy(&Sol1);
     if ( Sol2 != NULL )           VecDestroy(&Sol2);
-    if ( IA != NULL )             MatDestroy(&IA);
+    if ( IA != NULL )             chkerr(MatDestroy(&IA));
 
     if (Compl != NULL)            delete Compl;
 
