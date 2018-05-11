@@ -41,20 +41,25 @@ public:
     static const unsigned int dimension = 3;
     /// max count of elements to estimate median - value must be even
     static const unsigned int max_median_sample_size = 5;
+    /// Default leaf size limit
+    static const unsigned int default_leaf_size_limit;
 
     /**
 	 * Constructor
 	 *
 	 * Set class members and call functions which create tree
-	 * @param mesh  - Mesh used for creation the tree
 	 * @param soft_leaf_size_limit - Maximal number of elements stored in a leaf node of BIH tree.
 	 */
-	BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit = 20);
+	BIHTree(unsigned int soft_leaf_size_limit = BIHTree::default_leaf_size_limit);
 
 	/**
 	 * Destructor
 	 */
 	~BIHTree();
+
+	void add_boxes(const std::vector<BoundingBox> &boxes);
+
+	void construct();
 
 	/**
 	 * Get count of elements stored in tree
@@ -106,8 +111,11 @@ protected:
     /// split tree node given by node_idx, distribute elements to child nodes
     void split_node(const BoundingBox &node_box, unsigned int node_idx);
 
-    /// create child nodes of node given by node_idx
-    void make_node(const BoundingBox &box, unsigned int node_idx);
+    /**
+     * create child nodes of node given by node_idx.
+     * Return heigh of the created tree.
+     */
+    uint make_node(const BoundingBox &box, unsigned int node_idx);
 
     /**
      * For given node takes projection of centers of bounding boxes of its elements to axis given by
@@ -119,11 +127,13 @@ protected:
     double estimate_median(unsigned char axis, const BIHNode &node);
 
     /// mesh
-    Mesh* mesh_;
+    //Mesh* mesh_;
 	/// vector of mesh elements bounding boxes (from mesh)
-    std::vector<BoundingBox> &elements_;
+    std::vector<BoundingBox> elements_;
     /// Main bounding box. (from mesh)
-    BoundingBox &main_box_;
+    BoundingBox main_box_;
+    /// Stack for search algorithms.
+    mutable std::vector<unsigned int>  node_stack_;
 
     /// vector of tree nodes
     std::vector<BIHNode> nodes_;
@@ -138,7 +148,7 @@ protected:
     std::vector<double> coors_;
 
     // random generator
-    std::mt19937	r_gen;
+    //std::mt19937	r_gen;
 
 
 };

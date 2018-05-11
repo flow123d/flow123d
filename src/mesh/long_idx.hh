@@ -11,24 +11,14 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    bounding_box.cc
+ * @file    long_idx.hh
  * @brief   
  */
 
-#include "system/system.hh"
-#include "mesh/bounding_box.hh"
+#ifndef LONG_IDX_HH
+#define LONG_IDX_HH
 
+/// Define type that represents indices of large arrays (elements, nodes, dofs etc.)
+typedef int LongIdx;
 
-const double BoundingBox::epsilon = 64*numeric_limits<double>::epsilon();
-
-
-BoundingBox::BoundingBox(const vector<Point> &points)
-{
-	ASSERT_LT( 0, points.size() );
-
-	auto it = points.begin();
-	max_vertex_ = min_vertex_ = *it;
-	++it;
-	for(; it != points.end(); ++it) expand( *it );
-}
-
+#endif // LONG_IDX_HH

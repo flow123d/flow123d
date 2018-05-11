@@ -102,8 +102,8 @@ public:
     /// Return index of child node.
     unsigned int child(unsigned int i_child)  const
     {
-    	OLD_ASSERT(!is_leaf(), "Not in branch node.\n");
-    	OLD_ASSERT_LESS( i_child, child_count );
+    	ASSERT(!is_leaf()).error("Not in branch node.\n");
+    	ASSERT_LT( i_child, child_count );
     	return child_[i_child];
 
     }

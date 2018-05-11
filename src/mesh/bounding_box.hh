@@ -104,8 +104,8 @@ public:
 	 * Set maximum in given axis.
 	 */
 	void set_max(unsigned int axis, double max) {
-		OLD_ASSERT_LESS(axis , dimension);
-		OLD_ASSERT_LE( min(axis) , max);
+		ASSERT_LT( axis , dimension);
+		ASSERT_LE( min(axis) , max);
 		max_vertex_[axis] = max;
 	}
 
@@ -113,8 +113,8 @@ public:
 	 * Set minimum on given axis.
 	 */
 	void set_min(unsigned int axis, double min) {
-		OLD_ASSERT_LESS(axis, dimension);
-		OLD_ASSERT_LE(min , max(axis));
+		ASSERT_LT(axis, dimension);
+		ASSERT_LE(min , max(axis));
 		min_vertex_[axis] = min;
 	}
 
@@ -167,7 +167,7 @@ public:
      * Axis coding is: 0 - axis x, 1 - axis y, 2 - axis z.
      */
     double projection_center(unsigned int axis) const {
-    	OLD_ASSERT_LESS(axis, dimension);
+    	ASSERT_LT(axis, dimension);
     	return (max_vertex_[axis] + min_vertex_[axis])/2;
     }
 
@@ -229,7 +229,7 @@ public:
     void split(unsigned int axis, double splitting_point,
     		BoundingBox &left, BoundingBox &right ) const
     {
-    	OLD_ASSERT_LESS(axis , dimension);
+    	ASSERT_LT(axis , dimension);
     	if (min_vertex_[axis] <= splitting_point && splitting_point <= max_vertex_[axis] ) {
     	   	left = *this;
     	   	right = *this;
@@ -246,10 +246,20 @@ public:
      * Expand bounding box to contain also given @p point.
      */
     void expand(const Point &point) {
-		for(unsigned int j=0; j<dimension; j++) {
-			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
-			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
-		}
+   		for(unsigned int j=0; j<dimension; j++) {
+   			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
+   			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
+   		}
+    }
+
+    /**
+     * Expand bounding box to contain also given @p box.
+     */
+    void expand(const BoundingBox &box) {
+        for(unsigned int j=0; j<dimension; j++) {
+            min_vertex_[j] = std::min( min_vertex_[j], box.min_vertex_[j] );
+            max_vertex_[j] = std::max( max_vertex_[j], box.max_vertex_[j] );
+        }
     }
 
     /**

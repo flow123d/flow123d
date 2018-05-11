@@ -36,6 +36,7 @@
 #include "input/type_base.hh"                         // for Array
 #include "input/type_generic.hh"                      // for Instance
 #include "input/accessors.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/region.hh"                             // for RegionSet
 #include "petscvec.h"                                 // for Vec, _p_Vec
 #include "tools/time_marks.hh"                        // for TimeMark, TimeM...
@@ -192,9 +193,9 @@ public:
 	const Vec &get_solution(unsigned int sbi) override
 	{ return vconc[sbi]; }
 
-	void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds) override;
+	void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) override;
 
-	IdxInt *get_row_4_el() override;
+	LongIdx *get_row_4_el() override;
 
     /// Returns number of transported substances.
     inline unsigned int n_substances() override
@@ -310,8 +311,8 @@ private:
 	std::shared_ptr<OutputTime> output_stream_;
 
 
-	IdxInt *row_4_el;
-	IdxInt *el_4_loc;
+	LongIdx *row_4_el;
+	LongIdx *el_4_loc;
 	Distribution *el_ds;
 
     /// Transported substances.

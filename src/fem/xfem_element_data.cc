@@ -79,7 +79,7 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
     
     MappingP1<dim,3> map;
     arma::mat proj = map.element_map(*ele);
-    BoundingBox& bb = ele->get_bounding_box_fast();
+    BoundingBox bb = ele->bounding_box();
     
     std::map<unsigned int, arma::vec> unit_points_inside;
     

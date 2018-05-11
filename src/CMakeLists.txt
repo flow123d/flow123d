@@ -304,6 +304,7 @@ add_library(coupling_lib
     fields/field_time_function.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
+    fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc

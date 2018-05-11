@@ -114,7 +114,7 @@ public:
     void get_bounding_box(BoundingBox &bounding_box) const;
 
     /// Return precomputed bounding box.
-    BoundingBox &get_bounding_box_fast() const;
+    //BoundingBox &get_bounding_box_fast(BoundingBox &bounding_box) const;
 
     /**
     * Return bounding box of the element.
