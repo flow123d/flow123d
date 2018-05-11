@@ -388,7 +388,109 @@ LocalElementAccessorBase<3> MH_DofHandler::accessor(uint local_ele_idx) {
 
 
 
+/*************************************************************************************************************
+ * ***********************************************************************************************************
+ * **********************************************************************************************************/
+template <int spacedim>
+int LocalElementAccessorBase<spacedim>::get_dofs_vel(int dofs[])
+{
+    uint i;
+    for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
+    
+    if(is_enriched() && dh->enrich_velocity){
+        XFEMElementDataBase* xd = xfem_data_pointer();
+        for(uint w=0; w< xd->n_enrichments(); w++){
+            if(dh->single_enr){
+                dofs[i] = dh->row_4_vel_sing[xd->global_enrichment_index(w)];
+                i++;
+            }
+            else{
+                for(uint j=0; j< xd->n_enriched_dofs(Quantity::velocity,w); j++, i++)
+                    dofs[i] = xd->global_enriched_dofs(Quantity::velocity, w)[j];
+            }
+        }
+    }
+    return i;
+}
 
+template <int spacedim>
+int LocalElementAccessorBase<spacedim>::get_dofs_press(int dofs[])
+{
+    dofs[0] = ele_row();
+    uint i = 1;
+    
+    if(is_enriched() && dh->enrich_pressure){
+        XFEMElementDataBase* xd = xfem_data_pointer();
+        for(uint w=0; w< xd->n_enrichments(); w++){
+            if(dh->single_enr){
+                dofs[i] = dh->row_4_press_sing[xd->global_enrichment_index(w)];
+                i++;
+            }
+            else{
+                for(uint j=0; j< xd->n_enriched_dofs(Quantity::pressure,w); j++, i++)
+                    dofs[i] = xd->global_enriched_dofs(Quantity::pressure, w)[j];
+            }
+        }
+    }
+    return i;
+}
+
+template <int spacedim>
+int LocalElementAccessorBase<spacedim>::get_dofs(int dofs[])
+{
+    int d = get_dofs_vel(dofs);
+    d += get_dofs_press(dofs+d);
+    for(uint i=0; i< n_sides(); i++, d++) dofs[d] = edge_row(i);
+    
+    // singularity lagrange multipliers
+    if(is_enriched()){
+        XFEMElementDataBase* xd = xfem_data_pointer();
+        for(uint w=0; w< xd->n_enrichments(); w++){
+            if(xd->enrichment_intersects(w)){
+                dofs[d] = dh->row_4_sing[xd->global_enrichment_index(w)];
+                d++;
+            }
+        }
+    }
+    return d;
+}
+
+template <int spacedim>
+unsigned int LocalElementAccessorBase<spacedim>::n_dofs_vel()
+{
+    unsigned int n = n_sides();
+    if(is_enriched())
+        n += xfem_data_pointer()->n_enriched_dofs(Quantity::velocity);
+    return n;
+}
+
+template <int spacedim>
+unsigned int LocalElementAccessorBase<spacedim>::n_dofs_press()
+{
+    unsigned int n = 1;
+    if(is_enriched())
+        n += xfem_data_pointer()->n_enriched_dofs(Quantity::pressure);
+    return n;
+}
+
+template <int spacedim>
+unsigned int LocalElementAccessorBase<spacedim>::n_sing_dofs()
+{
+    unsigned int n = 0;
+    if(is_enriched())
+        n += xfem_data_pointer()->n_enrichments_intersect();
+    return n;
+}
+
+template <int spacedim>
+unsigned int LocalElementAccessorBase<spacedim>::n_dofs()
+{
+    // velocity, pressure, edge pressure(lagrange)
+    // exclude xfem pressure(lagrange)
+    return n_dofs_vel() + n_dofs_press() + n_sides() + n_sing_dofs(); // + xfem_data()->n_enrichments();
+}
+
+template class LocalElementAccessorBase<3>;
 
 /*************************************************************************************************************
  * ***********************************************************************************************************
