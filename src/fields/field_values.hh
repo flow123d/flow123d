@@ -382,7 +382,7 @@ public:
         value_=1;
     }
     bool equal_to(const  return_type &other) {
-        return std::abs(value_ - other) < 4*std::numeric_limits<ET>::epsilon();
+        return std::abs((double)value_ - other) < 4*std::numeric_limits<ET>::epsilon();
     }
     // Multiplied value_ by double coefficient
     void scale(double scale_coef) {
