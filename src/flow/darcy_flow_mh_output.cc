@@ -57,8 +57,12 @@ const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	OutputFields output_fields;
 	DarcyMH::EqData eq_data;
 	output_fields += eq_data;
-	output_fields += output_fields.error_fields_for_output;
 	return output_fields.make_output_type("Flow_Darcy_MH", "");
+}
+
+const it::Instance & DarcyFlowMHOutput::get_input_type_specific_fields() {
+	OutputSpecificFields output_fields;
+	return output_fields.make_output_type("Flow_Darcy_MH_specific", "");
 }
 
 const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
@@ -67,6 +71,8 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
+        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), IT::Default("{ \"fields\": [] }"),
+                "Specific output fields.")
         .close();
 }
 
@@ -85,13 +91,16 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
-
-	error_fields_for_output += pressure_diff.name("pressure_diff").units(UnitSI().m());
-	error_fields_for_output += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
-	error_fields_for_output += div_diff.name("div_diff").units(UnitSI().s(-1));
-
 }
 
+
+DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
+: EquationOutput()
+{
+    *this += pressure_diff.name("pressure_diff").units(UnitSI().m());
+    *this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
+    *this += div_diff.name("div_diff").units(UnitSI().s(-1));
+}
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
@@ -158,6 +167,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
         }
+        // possibly read the names of specific output fields
+        output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific->find<Input::Record>("output"), darcy_flow->time() );
     }
 }
 
@@ -207,13 +218,17 @@ void DarcyFlowMHOutput::output()
         {
                   output_internal_flow_data();
         }
-
-        if (compute_errors_) compute_l2_difference();
     }
 
     {
         START_TIMER("evaluate output fields");
         output_fields.output(darcy_flow->time().step());
+    }
+    
+    if (compute_errors_)
+    {
+        START_TIMER("compute specific output fields");
+        compute_l2_difference();
     }
 
     {
@@ -652,18 +667,17 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //result.ele_flux = &( ele_flux );
 
-    output_fields.error_fields_for_output.set_mesh(*mesh_);
+    output_specific_fields.set_mesh(*mesh_);
 
     auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
+    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
     auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
+    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
     auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
-
-    output_fields.error_fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);
-    output_fields += output_fields.error_fields_for_output;
-
+    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+    
+    output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+    
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
@@ -690,6 +704,8 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "masked velocity error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
+    
+    output_specific_fields.output(darcy_flow->time().step());
 }
 
 

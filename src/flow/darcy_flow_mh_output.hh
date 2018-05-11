@@ -69,6 +69,7 @@ namespace Input {
 class DarcyFlowMHOutput {
 public:
 
+    /// Standard quantities for output in DarcyFlowMH.
 	class OutputFields : public EquationOutput {
 	public:
 
@@ -80,18 +81,23 @@ public:
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
 	    Field<3, FieldValue<3>::Integer> subdomain;
 	    Field<3, FieldValue<3>::Integer> region_id;
-
-	    Field<3, FieldValue<3>::Scalar> velocity_diff;
-	    Field<3, FieldValue<3>::Scalar> pressure_diff;
-	    Field<3, FieldValue<3>::Scalar> div_diff;
-
-	    FieldSet error_fields_for_output;
 	};
+
+    /// Specific quantities for output in DarcyFlowMH - error estimates etc.
+    class OutputSpecificFields : public EquationOutput {
+        public:
+            OutputSpecificFields();
+            
+            Field<3, FieldValue<3>::Scalar> velocity_diff;
+            Field<3, FieldValue<3>::Scalar> pressure_diff;
+            Field<3, FieldValue<3>::Scalar> div_diff;
+    };
 
     DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
     ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type();
+    static const Input::Type::Instance & get_input_type_specific_fields();
     static const Input::Type::Record & get_input_type_specific();
 
     /** \brief Calculate values for output.  **/
@@ -176,6 +182,7 @@ private:
     FE_P_disc<3> fe3;
 
     OutputFields output_fields;
+    OutputSpecificFields output_specific_fields;
 
     std::shared_ptr<OutputTime> output_stream;
 
