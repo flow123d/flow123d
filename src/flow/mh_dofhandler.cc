@@ -96,7 +96,7 @@ void MH_DofHandler::reinit(Mesh *mesh) {
     offset_edges = offset_enr_pressure;
     offset_enr_lagrange = offset_edges + mesh_->n_edges();
     
-    print_dofs_dbg();
+//     print_dofs_dbg();
 }
 
 
@@ -104,6 +104,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
                            Field<3, FieldValue<3>::Scalar>& cross_section,
                            Field<3, FieldValue<3>::Scalar>& sigma) {
     ASSERT(enrich_pressure || enrich_velocity);
+    ASSERT(mesh->get_el_ds()->np() == 1);
     
     mesh_ = mesh;
     elem_side_to_global.resize(mesh->n_elements() );

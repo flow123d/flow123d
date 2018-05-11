@@ -363,7 +363,6 @@ void DarcyMH::initialize() {
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
        
     if(use_xfem){
-        
         Input::Record xfem_rec = input_record_.val<Input::Record>("use_xfem");
         mh_dh.enrich_velocity = xfem_rec.val<bool>("enrich_velocity");
         mh_dh.enrich_pressure = xfem_rec.val<bool>("enrich_pressure");
