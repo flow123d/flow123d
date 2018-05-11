@@ -108,8 +108,6 @@ void LocalSystem::set_solution_cols(DofVec & loc_cols, const arma::vec &solution
 
 void LocalSystem::eliminate_solution()
 {
-  std::cout << "=======================" << '\n';
-  row_dofs.print();
     //if there is solution set, eliminate:
     if (n_elim_rows ||  n_elim_cols )
     {
