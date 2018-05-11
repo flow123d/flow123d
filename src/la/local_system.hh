@@ -27,10 +27,8 @@ class LinSys;
 class LocalSystem
 {
 public:
-    // typedef arma::Col<LongIdx> DofVec;
-    typedef arma::Col<arma::uword> DofVec;
-    // typedef arma::uvec DofVec;
-    
+    typedef arma::Col<LongIdx> DofVec;
+
     /**
      * Global row and col indices.  Are public and can be freely set.
      * Nevertheless one can also provide reference to already existing arrays through
