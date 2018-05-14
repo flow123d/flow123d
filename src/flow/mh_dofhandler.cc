@@ -64,22 +64,27 @@ MH_DofHandler::~MH_DofHandler()
     delete [] side_row_4_id;
     delete [] edge_4_loc;
     delete []  row_4_edge;
-    delete [] row_4_sing;
+    if(row_4_sing) delete [] row_4_sing;
     if(row_4_vel_sing) delete []  row_4_vel_sing;
     if(row_4_press_sing) delete []  row_4_press_sing;
+}
+
+void MH_DofHandler::fill_elem_side_to_global()
+{
+    elem_side_to_global.resize(mesh_->n_elements() );
+    FOR_ELEMENTS(mesh_, ele) elem_side_to_global[ele.index()].resize(ele->n_sides());
+
+    unsigned int i_side_global=0;
+    FOR_ELEMENTS(mesh_, ele) {
+        for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
+            elem_side_to_global[ele.index()][i_lside] = i_side_global++;
+    }
 }
 
 
 void MH_DofHandler::reinit(Mesh *mesh) {
     mesh_ = mesh;
-    elem_side_to_global.resize(mesh->n_elements() );
-    FOR_ELEMENTS(mesh, ele) elem_side_to_global[ele.index()].resize(ele->n_sides());
-
-    unsigned int i_side_global=0;
-    FOR_ELEMENTS(mesh, ele) {
-        for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
-            elem_side_to_global[ele.index()][i_lside] = i_side_global++;
-    }
+    fill_elem_side_to_global();
 
     prepare_parallel();
     
@@ -102,14 +107,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
     ASSERT(mesh->get_el_ds()->np() == 1);
     
     mesh_ = mesh;
-    elem_side_to_global.resize(mesh->n_elements() );
-    FOR_ELEMENTS(mesh, ele) elem_side_to_global[ele.index()].resize(ele->n_sides());
-
-    unsigned int i_side_global=0;
-    FOR_ELEMENTS(mesh, ele) {
-        for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
-            elem_side_to_global[ele.index()][i_lside] = i_side_global++;
-    }
+    fill_elem_side_to_global();
 
     prepare_single_proc();
     

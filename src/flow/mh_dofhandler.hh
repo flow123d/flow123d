@@ -60,6 +60,7 @@ public:
     void reinit(Mesh *mesh);
 
     void prepare_parallel();
+    void fill_elem_side_to_global();
     void make_row_numberings();
     void prepare_parallel_bddc();
 
