@@ -43,7 +43,8 @@ INSTANCE_DIM_DEP_VALUES( field, dim_from, dim_from) \
 #define INSTANCE_ALL(field) \
 INSTANCE_TO_ALL( field, 3)
 //INSTANCE_TO_ALL( field, 2)
-// currently we use only 3D ambient space
+// currently we use only 3D ambient space, we can't use 2D fields now, because we are in conflict
+// with methods in ComputeIntersection and Mapping that used element accessor
 
 
 #endif /* FIELD_INSTANCES_HH_ */
