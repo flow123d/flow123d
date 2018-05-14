@@ -1215,6 +1215,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
 //         ofstream os( output_file );
 //         auto bddc = static_cast<LinSys_BDDC*>(schur0);
 //         bddc->print_matrix(os);
+        return;
     }
     else {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
         output_file = FilePath(matlab_file + ".m", FilePath::output_file);
