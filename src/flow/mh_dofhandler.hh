@@ -182,6 +182,9 @@ protected:
     
     void print_dofs_dbg();
     
+    /// prepare_parallel for single processor in XFEM
+    void prepare_single_proc();
+    
     /// Distribute continuous enriched FE DoFs.
     void distribute_enriched_dofs();
         

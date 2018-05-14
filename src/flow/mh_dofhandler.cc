@@ -83,9 +83,6 @@ void MH_DofHandler::reinit(Mesh *mesh) {
 
     prepare_parallel();
     
-    // convert row_4_id arrays from separate numberings to global numbering of rows
-    make_row_numberings();
-    
     // set dof offsets:
     offset_velocity = 0;
     offset_enr_velocity = mesh_->n_sides_;
@@ -95,8 +92,6 @@ void MH_DofHandler::reinit(Mesh *mesh) {
     
     offset_edges = offset_enr_pressure;
     offset_enr_lagrange = offset_edges + mesh_->n_edges();
-    
-//     print_dofs_dbg();
 }
 
 
@@ -116,7 +111,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
             elem_side_to_global[ele.index()][i_lside] = i_side_global++;
     }
 
-    prepare_parallel();
+    prepare_single_proc();
     
 //     // convert row_4_id arrays from separate numberings to global numbering of rows
 //     make_row_numberings();
@@ -132,7 +127,7 @@ void MH_DofHandler::reinit(Mesh *mesh,
         update_standard_dofs();
     }
     
-    //HACK for a single processor
+    // create simple Distribution object for rows
     unsigned int rows_starts = total_size();
     rows_ds = std::make_shared<Distribution>(&rows_starts, PETSC_COMM_WORLD);
     rows_ds->view(cout);
@@ -169,7 +164,6 @@ void MH_DofHandler::print_dofs_dbg()
         cout << "\n";
     }
 }
-
 
 
 // ====================================================================================
@@ -257,6 +251,9 @@ void MH_DofHandler::prepare_parallel() {
             side_id_4_loc, side_row_4_id);
     delete [] loc_part;
     delete [] id_4_old;
+    
+    // convert row_4_id arrays from separate numberings to global numbering of rows
+    make_row_numberings();
 }
 
 // ========================================================================
@@ -496,6 +493,65 @@ template class LocalElementAccessorBase<3>;
 /*************************************************************************************************************
  * ***********************************************************************************************************
  * **********************************************************************************************************/
+
+void MH_DofHandler::prepare_single_proc()
+{
+    START_TIMER("prepare single proc");
+
+//     prepare_parallel();
+    LongIdx *loc_part; // optimal (edge,el) partitioning (local chunk)
+    LongIdx *id_4_old; // map from old idx to ids (edge,el)
+    int loc_i;
+
+    int e_idx;
+
+    // row_4_el will be modified so we make a copy of the array from mesh
+    row_4_el = new LongIdx[mesh_->n_elements()];
+    std::copy(mesh_->get_row_4_el(), mesh_->get_row_4_el()+mesh_->n_elements(), row_4_el);
+    el_4_loc = mesh_->get_el_4_loc();
+    el_ds = mesh_->get_el_ds();
+    
+//     unsigned int rows_starts = total_size();
+//     rows_ds = std::make_shared<Distribution>(&rows_starts, PETSC_COMM_WORLD);
+//     rows_ds->view(cout);
+    
+    edge_ds = new Distribution(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
+    edge_ds->view(cout);
+    //edge_4_loc, row_4_edge
+    row_4_edge = new LongIdx [ mesh_->n_edges() + 1 ];
+    edge_4_loc = new LongIdx [ mesh_->n_edges() ];
+    for(unsigned int i = 0; i<mesh_->n_edges(); i++){
+        edge_4_loc[i] = i;
+        row_4_edge[i] = i;
+    }
+    
+    
+    side_ds = new Distribution(DistributionBlock(), mesh_->n_sides(), PETSC_COMM_WORLD);
+    side_ds->view(cout);
+    //side_id_4_loc, side_row_4_id
+    side_row_4_id = new LongIdx[mesh_->n_sides() + 1 ];
+    side_id_4_loc = new LongIdx[mesh_->n_sides()];
+    for(unsigned int i = 0; i<mesh_->n_sides(); i++){
+        side_id_4_loc[i] = i;
+        side_row_4_id[i] = i;
+    }
+    
+    // set dof offsets:
+    offset_velocity = 0;
+    offset_enr_velocity = mesh_->n_sides_;
+    
+    offset_pressure = offset_enr_velocity;
+    offset_enr_pressure = offset_pressure + mesh_->n_elements();
+    
+    offset_edges = offset_enr_pressure;
+    offset_enr_lagrange = offset_edges + mesh_->n_edges();
+    
+//     print_array(edge_4_loc, mesh_->n_edges(), "edge_4_loc");
+//     print_array(row_4_edge, mesh_->n_edges(), "row_4_edge");
+//     
+//     print_array(side_id_4_loc, mesh_->n_sides(), "side_id_4_loc");
+//     print_array(side_row_4_id, mesh_->n_sides(), "side_row_4_id");
+}
 
 void MH_DofHandler::clear_mesh_flags()
 {
