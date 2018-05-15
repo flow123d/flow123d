@@ -56,7 +56,7 @@ public:
         update_quad(ele_ac.full_iter(), p);
         Value flux; flux.zeros();
         
-        if(enr_ && elm.element()->xfem_data != nullptr){
+        if(enr_ && ele_ac.is_enriched()){
             flux =  value_vector_xfem(ele_ac);
         }
         else if(reg_){

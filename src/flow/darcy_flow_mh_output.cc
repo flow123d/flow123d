@@ -877,7 +877,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 //                 l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
 //                 break;
             case 2:
-                if(ele->xfem_data != nullptr){
+                if(ele_ac.is_enriched()){
                     fe_data_2d.prepare_xfem(ele_ac);
                     l2_diff_local_xfem<2>(ele_ac, *fe_data_2d.fv_p0_xfem, *fe_data_2d.fv_rt_xfem,
                                           anal_sol_2d, result);
@@ -887,7 +887,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
                                      anal_sol_2d, result);
                 break;
             case 3:
-                if(ele->xfem_data != nullptr){
+                if(ele_ac.is_enriched()){
                     fe_data_3d.prepare_xfem(ele_ac);
                     l2_diff_local_xfem<3>(ele_ac, *fe_data_3d.fv_p0_xfem, *fe_data_3d.fv_rt_xfem,
                                           anal_sol_3d, result);

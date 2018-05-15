@@ -34,7 +34,6 @@
 class Mesh;
 class Neighbour;
 class SideIter;
-class XFEMElementDataBase;
 template <int spacedim> class ElementAccessor;
 
 
@@ -143,9 +142,6 @@ public:
 
     Mesh    *mesh_; // should be removed as soon as the element is also an Accessor
 
-    /// Pointer to enrichment data for the current element.
-    XFEMElementDataBase* xfem_data;
-    
 protected:
     // Data readed from mesh file
     RegionIdx  region_idx_;

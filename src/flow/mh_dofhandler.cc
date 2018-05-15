@@ -111,8 +111,9 @@ void MH_DofHandler::reinit(Mesh *mesh,
 
     prepare_single_proc();
     
-//     // convert row_4_id arrays from separate numberings to global numbering of rows
-//     make_row_numberings();
+    // initialize mapping vector between element and xfem_element_data
+    xdata_4_el.resize(mesh->n_elements(), empty_node_idx);
+    
     if(enrich_velocity || enrich_pressure){
         if(xfem_dim == 2)
             create_enrichment(singularities_12d_, xfem_data_2d, cross_section, sigma);
@@ -249,9 +250,10 @@ void MH_DofHandler::prepare_parallel() {
             side_id_4_loc, side_row_4_id);
     delete [] loc_part;
     delete [] id_4_old;
-    
+
     // convert row_4_id arrays from separate numberings to global numbering of rows
     make_row_numberings();
+
 }
 
 // ========================================================================
@@ -388,6 +390,22 @@ LocalElementAccessorBase<3> MH_DofHandler::accessor(uint local_ele_idx) {
  * ***********************************************************************************************************
  * **********************************************************************************************************/
 template <int spacedim>
+XFEMElementDataBase* LocalElementAccessorBase<spacedim>::xfem_data_pointer()
+{
+    switch(ele->dim()){
+        case 2: dh->get_xfem_sing_data<2>(ele->index()); break;
+        case 3: dh->get_xfem_sing_data<3>(ele->index()); break;
+        default: return nullptr;
+    }
+}
+
+template <int spacedim>
+bool LocalElementAccessorBase<spacedim>::is_enriched()
+{
+    return dh->xdata_4_el[ele->index()] != MH_DofHandler::empty_node_idx;
+}
+
+template <int spacedim>
 int LocalElementAccessorBase<spacedim>::get_dofs_vel(int dofs[])
 {
     uint i;
@@ -497,11 +515,6 @@ void MH_DofHandler::prepare_single_proc()
     START_TIMER("prepare single proc");
 
 //     prepare_parallel();
-    LongIdx *loc_part; // optimal (edge,el) partitioning (local chunk)
-    LongIdx *id_4_old; // map from old idx to ids (edge,el)
-    int loc_i;
-
-    int e_idx;
 
     // row_4_el will be modified so we make a copy of the array from mesh
     row_4_el = new LongIdx[mesh_->n_elements()];
@@ -950,7 +963,6 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
         xdata.create_sing_quads(ele);
 //         DBGVAR(xdata.n_enrichments_intersect());
 //         xdata.print(cout);
-        ele->xfem_data = &xdata;
     }
     
 //     singularities.shrink_to_fit();
@@ -1073,6 +1085,33 @@ void MH_DofHandler::distribute_enriched_dofs()
 //     
 // }
 
+template<>
+XFEMElementSingularData<1> * MH_DofHandler::get_xfem_sing_data(int ele_idx)
+{
+    return nullptr;
+}
+
+template<>
+XFEMElementSingularData<2> * MH_DofHandler::get_xfem_sing_data(int ele_idx)
+{
+    if(xdata_4_el[ele_idx] >= 0){
+        ASSERT_LT_DBG(xdata_4_el[ele_idx], xfem_data_2d.size());
+        return & xfem_data_2d[xdata_4_el[ele_idx]];
+    }
+    else
+        return nullptr;
+}
+template<>
+XFEMElementSingularData<3> * MH_DofHandler::get_xfem_sing_data(int ele_idx)
+{
+    if(xdata_4_el[ele_idx] >= 0){
+        ASSERT_LT_DBG(xdata_4_el[ele_idx], xfem_data_3d.size());
+        return & xfem_data_3d[xdata_4_el[ele_idx]];
+    }
+    else
+        return nullptr;
+}
+
 template<int dim, class Enr>
 void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
                                unsigned int sing_idx,
@@ -1081,15 +1120,16 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
                                ElementFullIter ele,
                                int& new_enrich_node_idx)
 {
-    DBGVAR(ele->index());
+    int ele_idx = ele->index();
+    DBGVAR(ele_idx);
     
     XFEMElementSingularData<dim> * xdata;
     
-    if(ele->xfem_data == nullptr){   //possibly create new one
+    if(xdata_4_el[ele_idx] == empty_node_idx){ //possibly create new one
         xfem_data.push_back(XFEMElementSingularData<dim>());
+        xdata_4_el[ele_idx] = xfem_data.size()-1;
+    
         xdata = & xfem_data.back();
-//             xdata->set_node_values(&node_values, &node_vec_values);
-        //TODO: set number of quantities
         xdata->global_enriched_dofs().resize(2);
         
         //HACK for xfem without enriching:
@@ -1097,14 +1137,11 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
             xdata->global_enriched_dofs()[0].resize(1);
             xdata->global_enriched_dofs()[1].resize(1);
         }
-        xdata->set_element(ele->index());
-        ele->xfem_data = xdata;
+        xdata->set_element(ele_idx);
     }
     else{
 //         DBGCOUT(<< "existing XData\n");
-        xdata = static_cast<XFEMElementSingularData<dim>*>(ele->xfem_data);
-//         xdata->print(cout);
-        ASSERT_DBG(xdata != nullptr).error("XFEM data object is not of XFEMElementSingularData<dim> Type!");
+        xdata = get_xfem_sing_data<dim>(ele_idx);
     }
     
     xdata->add_data(sing, sing_idx, ele1d_global_idx);
@@ -1283,7 +1320,6 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
             }
         }
 //         xdata.print(cout);
-        ele->xfem_data = &xdata;
         
 //         DBGCOUT(<< "xd[0]: " <<  xdata.global_enriched_dofs()[0].size() << "\n");
     }
@@ -1306,7 +1342,6 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
 //             }
 //         }
 // //         xdata.print(cout);
-//         ele->xfem_data = &xdata;
 //         
 // //         DBGCOUT(<< "xd[0]: " <<  xdata.global_enriched_dofs()[0].size() << "\n");
 //     }
@@ -1328,7 +1363,6 @@ void MH_DofHandler::distribute_enriched_dofs(int& offset,
             offset++;
         }
 //         xdata.print(cout);
-        ele->xfem_data = &xdata;
         
 //         DBGCOUT(<< "xd[0]: " <<  xdata.global_enriched_dofs()[0].size() << "\n");
     }

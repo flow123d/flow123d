@@ -204,6 +204,10 @@ protected:
     std::vector<XFEMElementSingularData<2>> xfem_data_2d;
     std::vector<XFEMElementSingularData<3>> xfem_data_3d;
     
+    template<int dim>
+    XFEMElementSingularData<dim> * get_xfem_sing_data(int ele_idx);
+    std::vector<int> xdata_4_el;
+    
 //     std::vector<std::map<int, double> > node_values;
 //     std::vector<std::map<int, Space<3>::Point> > node_vec_values;
     
@@ -322,19 +326,14 @@ public:
     }
 
     
-    XFEMElementDataBase* xfem_data_pointer(){
-        return ele->xfem_data;
-    }
+    XFEMElementDataBase* xfem_data_pointer();
     
     template<int dim>
     XFEMElementSingularData<dim>* xfem_data_sing(){
-        ASSERT_DBG(is_enriched()).error("Element not enriched with any XFEM data!");
-        return static_cast<XFEMElementSingularData<dim>*>(ele->xfem_data);
+        return dh->get_xfem_sing_data<dim>(ele->index());
     }
     
-    bool is_enriched(){
-        return ele->xfem_data != nullptr;
-    }
+    bool is_enriched();
     
     int sing_row(uint local_enrichment_index){
         return dh->row_4_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];

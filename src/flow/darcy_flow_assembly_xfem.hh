@@ -195,10 +195,10 @@ public:
         flux_in_center.zeros();
 
         //TODO: use LocalElementAccessor
+        // HACK: suppose single proc. so we can create accessor with local ele index
+        auto ele_ac = LocalElementAccessorBase<3>(ad_->mh_dh, ele->index());
         
-        if(ele->xfem_data != nullptr){
-            // suppose single proc. so we can create accessor with local ele index
-            auto ele_ac = LocalElementAccessorBase<3>(ad_->mh_dh, ele->index());
+        if(ele_ac.is_enriched()){
             flux_in_center = make_element_vector_xfem(ele_ac);
         }
         else{
