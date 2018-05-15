@@ -64,9 +64,6 @@
 #include "intersection/intersection_local.hh"
 
 
-//XFEM:
-#include "fem/xfem_element_data.hh"
-
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
 
@@ -383,17 +380,15 @@ void DarcyMH::initialize() {
         // init dofhandler including enrichments
         mh_dh.reinit(mesh_, data_->cross_section, data_->sigma);
         
-        size = mh_dh.total_size();
 //         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
 //         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");
 //         mh_dh.print_array(mh_dh.row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
     }
     else{
         mh_dh.reinit(mesh_);
-        //TODO: use mh_dh.total_size()
-        size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     }
     
+    size = mh_dh.total_size();
     output_object = new DarcyFlowMHOutput(this, input_record_);
     
     create_linear_system(rec);
@@ -659,9 +654,10 @@ void DarcyMH::postprocess()
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
     //time_->view("DARCY"); //time governor information output
-	this->output_object->output();
+    this->output_object->output();
 
-    mh_dh.print_array(mh_dh.mh_solution, mh_dh.total_size(), "MH solution");
+    if(use_xfem)
+        mh_dh.print_array(mh_dh.mh_solution, mh_dh.total_size(), "MH solution");
 
     START_TIMER("Darcy balance output");
     balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
@@ -726,28 +722,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
         unsigned int dim = ele_ac.dim();
         DBGVAR(ele_ac.ele_global_idx());
         assembler[dim-1]->assemble(ele_ac);
-        //temporary
-//         if(ele_ac.is_enriched()){
-//             XFEMElementSingularData* xdata = ele_ac.xfem_data();
-//             ASSERT_PTR(xdata);
-//             
-//             for(unsigned int w=0; w<xdata->n_enrichments(); w++){
-//                 auto enr_dofs = xdata->global_enriched_dofs(Quantity::velocity, w);
-//                 for(unsigned int i=0; i<enr_dofs.size(); i++)
-//                     schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
-//                 
-//                 enr_dofs = xdata->global_enriched_dofs(Quantity::pressure, w);
-//                 for(unsigned int i=0; i<enr_dofs.size(); i++)
-//                     schur0->mat_set_value(enr_dofs[i], enr_dofs[i], 1.0);
-//             }
-//         }
     }
-    //temporary
-//     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
-//         int w_idx = mh_dh.row_4_sing[w];
-//         schur0->mat_set_value(w_idx, w_idx, 1.0);
-//     }
-    
 
     balance_->finish_flux_assembly(data_->water_balance_idx);
 
@@ -785,122 +760,13 @@ void DarcyMH::allocate_mh_matrix()
         nsides = ele_ac.n_sides();
         int ele_row = ele_ac.ele_row();
         edge_rows = ele_ac.edge_rows();
-//         uint ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
-//         uint ndofs_press = ele_ac.get_dofs_press(dofs_press);
-//         ASSERT_DBG(ndofs_vel < max_dofs);
-//         ASSERT_DBG(ndofs_press < max_dofs);
-        
-        //allocate at once matrix
-//         unsigned int loc_size = 1 + 2*nsides;
-//         unsigned int i = 0;
-        
-//         for (; i < nsides; i++) {
-//             local_dofs[i] = ele_ac.side_row(i);
-//             local_dofs[i+nsides] = ele_ac.edge_row(i);
-//         }
-//         local_dofs[i+nsides] = ele_ac.ele_row();
-//         int * edge_rows = local_dofs + nsides;
-        //int ele_row = local_dofs[0];
         
         // whole local MH matrix
         ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
-//         if(ele_ac.is_enriched()){
-//             if(ele_ac.xfem_data_pointer()->is_complement()){
-//                 auto xd = static_cast<XFEMComplementData*>(ele_ac.xfem_data_pointer());
-//                 const int nw = xd->n_enrichments();
-//                 int w_rows[nw];
-//                 for(int w=0; w < nw; w++){
-//                     w_rows[w] = ele_ac.sing_row(w);
-//                 }
-//                     
-//                 // singularity edge integrals pressure - sing lagrange multiplier
-//                 ls->mat_set_values(nw, w_rows, 1, &ele_row, zeros);
-//                 ls->mat_set_values(1, &ele_row, nw, w_rows, zeros);
-//             }
-//             else{
-//                 const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
-//                 const int nw = xd.n_singularities_inside();
-//                 
-//                 if(nw > 0){
-//     //                 DBGVAR(nw);
-//                     int w_rows[nw];
-//                     for(int w=0; w < xd.n_enrichments(); w++){
-//                         if(xd.is_singularity_inside(w)){
-//                             w_rows[w] = ele_ac.sing_row(w);
-//                         }
-//                     }
-//                     
-//                     // singularity edge integrals for velocity
-//                     ls->mat_set_values(nw, w_rows, ndofs_vel, dofs_vel, zeros);
-//                     ls->mat_set_values(ndofs_vel, dofs_vel, nw, w_rows, zeros);
-//                 }
-//             }
-//         }
-
-//         if(ele_ac.is_enriched() && ele_ac.dim() == 2){
-//             const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
-//             for(int w=0; w < xd.n_enrichments(); w++){
-//                 if(xd.is_singularity_inside(w)){
-//                     int ele1d_row = mh_dh.row_4_el[ele_ac.xfem_data_pointer()->intersection_ele_global_idx()];
-//                     ls->mat_set_values(ndofs_vel, dofs_vel, 1, &ele1d_row, zeros);
-//                     ls->mat_set_values(1, &ele1d_row, ndofs_vel, dofs_vel, zeros);
-//                 }
-//             }
-//         }
-
-//         if(ele_ac.is_enriched()){
-//                 const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
-//                 {
-//                     const int nw = xd.n_enrichments();
-//                     
-//                     int w_rows[nw];
-//                     for(int w=0; w < nw; w++){
-//                         w_rows[w] = ele_ac.sing_row(w);
-//                     }
-//                         
-//                     // singularity edge integrals pressure - sing lagrange multiplier
-//                     ls->mat_set_values(nw, w_rows, 1, &ele_row, zeros);
-//                     ls->mat_set_values(1, &ele_row, nw, w_rows, zeros);
-//                 }
-//                 
-//                 {
-//                 const int nw_in = xd.n_singularities_inside();
-//                 
-//                 if(nw_in > 0){
-//     //                 DBGVAR(nw);
-// //                     int w_rows[nw_in];
-// //                     int ww=0;
-// //                     for(int w=0; w < xd.n_enrichments(); w++){
-// //                         if(xd.is_singularity_inside(w)){
-// //                             w_rows[ww] = ele_ac.sing_row(w);
-// //                             w++;
-// //                         }
-// //                     }
-//                     //FIXME: enable more wells inside 2d ele
-//                     int w_row;
-//                     for(int w=0; w < xd.n_enrichments(); w++){
-//                         if(xd.is_singularity_inside(w)){
-//                             w_row = ele_ac.sing_row(w);
-//                         }
-//                     }
-//                     
-//                     // singularity edge integrals for velocity
-//                     ls->mat_set_values(1, &w_row, ndofs_vel, dofs_vel, zeros);
-//                     ls->mat_set_values(ndofs_vel, dofs_vel, nw_in, &w_row, zeros);
-//                     
-//                     // singularity edge integrals for p1d
-//                     int ele1d_row = mh_dh.row_4_el[xd.intersection_ele_global_idx()];
-//                     ls->mat_set_value(w_row, ele1d_row, 0.0);
-//                     ls->mat_set_value(ele1d_row, w_row, 0.0);
-//                 }
-//             }
-//         }
         
         if(ele_ac.is_enriched()){
-//             const XFEMElementSingularData& xd = *ele_ac.xfem_data_sing();
             XFEMElementDataBase* xd = ele_ac.xfem_data_pointer();
             {
-                //FIXME: enable more wells inside 2d ele
                 int w_row, ele1d_row;
                 for(int w=0; w < xd->n_enrichments(); w++){
                     if(xd->enrichment_intersects(w)){
@@ -924,11 +790,6 @@ void DarcyMH::allocate_mh_matrix()
             Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
             tmp_rows.push_back(neigh_edge_row);
-//             if(ele_ac.dim() == 1)
-//             {
-//                 DebugOut() << "ele_id:  " << ele_ac.ele_row() << "  neigh:  " << neigh_edge_row << "\n";
-// //                 DBGVAR(neigh_edge_row);
-//             }
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
 
@@ -966,25 +827,6 @@ void DarcyMH::allocate_mh_matrix()
 
     }
 /*
-//     // singularity lagrange multiplier (diagonal)
-//     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
-//         int w_row = mh_dh.row_4_sing[w];
-// //         DBGVAR(w_row);
-//         ls->mat_set_value(w_row, w_row, 0.0);
-//     }
-    
-//     // singularity
-//     const int n=mh_dh.total_size();
-//     int temp[n];
-//     for(int i=0; i<n; i++) temp[i] = i;
-//     for(unsigned int w=0; w < mh_dh.n_enrichments(); w++){
-//         int w_row = mh_dh.row_4_vel_sing[w];
-//         DBGVAR(w_row);
-//         ls->mat_set_values(1, &w_row, n-1, temp, zeros);
-//         ls->mat_set_values(n, temp, 1, &w_row, zeros);
-// //         ls->mat_set_value(w_row, w_row, 0.0);
-//     }
-    
     // alloc edge diagonal entries
     if(rank == 0)
     FOR_EDGES(mesh_, edg){
@@ -1163,13 +1005,7 @@ void DarcyMH::assembly_linear_system() {
         else
             multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
         
-//         if(use_xfem)
-//             multidim_assembler = new AssemblerMHXFEM(data_);
-//         else 
-//             multidim_assembler = new AssemblerMH(data_);
-        
         assembly_mh_matrix( multidim_assembler );
-//         delete multidim_assembler;
 
 	    schur0->finish_assembly();
         print_matlab_matrix("matrix");
@@ -1455,7 +1291,7 @@ DarcyMH::~DarcyMH() {
 
 void DarcyMH::make_serial_scatter() {
     START_TIMER("prepare scatter");
-    DBGCOUT("SCATTER\n");
+    DBGCOUT("SCATTER start\n");
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_loc;
@@ -1551,7 +1387,7 @@ void DarcyMH::make_serial_scatter() {
     }
     solution_changed_for_scatter=true;
 
-    DBGCOUT("SCATTER\n");
+    DBGCOUT("SCATTER end\n");
     END_TIMER("prepare scatter");
 
 }
