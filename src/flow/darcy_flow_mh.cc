@@ -335,6 +335,12 @@ void DarcyMH::initialize() {
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
+    // run e.g. test 11 on 2 proc.
+    // the next line works - ends with actual assert
+//     ASSERT(mesh_->get_el_ds()->np() == 1);
+    // the next line does not - ends with petsc seg fault
+    ASSERT(mesh_->get_el_ds()->np() == 1).error("Message.\n");
+    
     mh_dh.reinit(mesh_);
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
