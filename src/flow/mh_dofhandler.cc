@@ -402,7 +402,7 @@ XFEMElementDataBase* LocalElementAccessorBase<spacedim>::xfem_data_pointer()
 template <int spacedim>
 bool LocalElementAccessorBase<spacedim>::is_enriched()
 {
-    return dh->xdata_4_el[ele->index()] != MH_DofHandler::empty_node_idx;
+    return (dh->xdata_4_el.size() > 0) && (dh->xdata_4_el[ele->index()] != MH_DofHandler::empty_node_idx);
 }
 
 template <int spacedim>
