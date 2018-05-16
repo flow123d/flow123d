@@ -100,11 +100,11 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
 : EquationOutput()
 {
+    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1));
+    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1));
     *this += pressure_diff.name("pressure_diff").units(UnitSI().m());
     *this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
     *this += div_diff.name("div_diff").units(UnitSI().s(-1));
-    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1));
-    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1));
     *this += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1));
 }
 
@@ -145,6 +145,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
+        ele_flux.resize(3*mesh_->n_elements());
         if(darcy_flow->mh_dh.enrich_velocity)
         {
             field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, 
@@ -152,8 +153,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);            
         }
         else{
-            // this is due to raw output and observed points only
-            ele_flux.resize(3*mesh_->n_elements());
             auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
         }
@@ -933,7 +932,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "masked vel error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]) << endl
-    	<< "div error 3d: " << sqrt(result.div_error[2]) << endl;
+    	<< "div error 3d: " << sqrt(result.div_error[2]);
     
     if(darcy_flow->use_xfem){
         os << endl

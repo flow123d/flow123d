@@ -13,6 +13,13 @@ problem: !Coupling_Sequential
     output_specific:
       compute_errors: true
       python_solution: analytical_module_1w_source.py
+      output:
+        fields:
+          - velocity_enr
+          - velocity_reg
+          - velocity_diff
+          - velocity_exact
+          - pressure_diff
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -54,11 +61,6 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-        - velocity_enr
-        - velocity_reg
-        - velocity_diff
-        - velocity_exact
-        - pressure_diff
     output_stream: 
       file: ./test15.pvd
       format: !vtk

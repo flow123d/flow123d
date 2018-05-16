@@ -108,6 +108,16 @@ problem: !Coupling_Sequential
       single: true
       enr_radius: 0.8
       dim: 2
+    output_specific:
+      #compute_errors: true
+      #python_solution: analytical_module_2w.py
+      output:
+        fields:
+          - velocity_enr
+          - velocity_reg
+          #- velocity_diff
+          #- velocity_exact
+          #- pressure_diff
     input_fields:
       - region: aquifer
         anisotropy: 0.001
@@ -163,8 +173,6 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-        - velocity_enr
-        - velocity_reg
     output_stream: 
       file: ./test15.pvd
       format: !vtk
