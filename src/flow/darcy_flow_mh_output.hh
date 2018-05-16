@@ -186,6 +186,22 @@ private:
 
     /// Output specific field stuff
     bool is_output_specific_fields;
+    struct DiffData {
+        double pressure_error[2], velocity_error[2], div_error[2];
+        double mask_vel_error;
+        VectorSeqDouble pressure_diff;
+        VectorSeqDouble velocity_diff;
+        VectorSeqDouble div_diff;
+
+        double * solution;
+        const MH_DofHandler * dh;
+
+        //std::vector< std::vector<double>  > *ele_flux;
+        std::vector<int> velocity_mask;
+        DarcyMH *darcy;
+        DarcyMH::EqData *data_;
+    } diff_data;
+    void prepare_specific_output();
     
     std::shared_ptr<OutputTime> output_stream;
 

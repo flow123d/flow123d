@@ -167,6 +167,9 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
         }
+        
+        prepare_specific_output();
+        
         // possibly read the names of specific output fields
         auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
         if(in_rec_specific_output){
@@ -178,7 +181,34 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
     }
 }
 
+void DarcyFlowMHOutput::prepare_specific_output()
+{
+    diff_data.darcy = darcy_flow;
+    diff_data.data_ = darcy_flow->data_.get();
 
+    // mask 2d elements crossing 1d
+    if (diff_data.data_->mortar_method_ != DarcyMH::NoMortar) {
+        diff_data.velocity_mask.resize(mesh_->n_elements(),0);
+        for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
+            diff_data.velocity_mask[ isec.bulk_ele_idx() ]++;
+        }
+    }
+
+    diff_data.pressure_diff.resize( mesh_->n_elements() );
+    diff_data.velocity_diff.resize( mesh_->n_elements() );
+    diff_data.div_diff.resize( mesh_->n_elements() );
+    
+    output_specific_fields.set_mesh(*mesh_);
+
+    auto vel_diff_ptr =	diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
+    auto pressure_diff_ptr = diff_data.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
+    auto div_diff_ptr =	diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+
+    output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+}
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {};
@@ -231,17 +261,17 @@ void DarcyFlowMHOutput::output()
         output_fields.output(darcy_flow->time().step());
     }
     
-//     if(is_output_specific_fields)
-//     {
-//         START_TIMER("evaluate output fields");
-//         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
-//         output_specific_fields.output(darcy_flow->time().step());
-//     }
-    
     if (compute_errors_)
     {
         START_TIMER("compute specific output fields");
         compute_l2_difference();
+    }
+    
+    if(is_output_specific_fields)
+    {
+        START_TIMER("evaluate output fields");
+        output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+        output_specific_fields.output(darcy_flow->time().step());
     }
 
     {
@@ -500,27 +530,10 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * 3) difference of divergence
  * */
 
-struct DiffData {
-    double pressure_error[2], velocity_error[2], div_error[2];
-    double mask_vel_error;
-    VectorSeqDouble pressure_diff;
-    VectorSeqDouble velocity_diff;
-    VectorSeqDouble div_diff;
-
-
-    double * solution;
-    const MH_DofHandler * dh;
-
-    //std::vector< std::vector<double>  > *ele_flux;
-    std::vector<int> velocity_mask;
-    DarcyMH *darcy;
-    DarcyMH::EqData *data_;
-};
-
 template <int dim>
 void l2_diff_local(ElementFullIter &ele, 
                    FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
-                   ExactSolution &anal_sol,  DiffData &result) {
+                   ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
@@ -653,46 +666,19 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
 
 
-    DiffData result;
-    result.dh = &( darcy_flow->get_mh_dofhandler());
-    result.darcy = darcy_flow;
-    result.data_ = darcy_flow->data_.get();
+    diff_data.dh = &( darcy_flow->get_mh_dofhandler());
+    diff_data.pressure_error[0] = 0;
+    diff_data.velocity_error[0] = 0;
+    diff_data.div_error[0] = 0;
+    diff_data.pressure_error[1] = 0;
+    diff_data.velocity_error[1] = 0;
+    diff_data.div_error[1] = 0;
+    diff_data.mask_vel_error=0;
 
-    // mask 2d elements crossing 1d
-    if (result.data_->mortar_method_ != DarcyMH::NoMortar) {
-        result.velocity_mask.resize(mesh_->n_elements(),0);
-        for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
-            result.velocity_mask[ isec.bulk_ele_idx() ]++;
-        }
-    }
-
-    result.pressure_diff.resize( mesh_->n_elements() );
-    result.velocity_diff.resize( mesh_->n_elements() );
-    result.div_diff.resize( mesh_->n_elements() );
-
-    result.pressure_error[0] = 0;
-    result.velocity_error[0] = 0;
-    result.div_error[0] = 0;
-    result.pressure_error[1] = 0;
-    result.velocity_error[1] = 0;
-    result.div_error[1] = 0;
-    result.mask_vel_error=0;
-
-    //result.ele_flux = &( ele_flux );
-
-    output_specific_fields.set_mesh(*mesh_);
-
-    auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
-    auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
-    auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
-
-    output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+    //diff_data.ele_flux = &( ele_flux );
     
     unsigned int solution_size;
-    darcy_flow->get_solution_vector(result.solution, solution_size);
+    darcy_flow->get_solution_vector(diff_data.solution, solution_size);
 
 
     FOR_ELEMENTS( mesh_, ele) {
@@ -700,24 +686,22 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	switch (ele->dim()) {
         case 1:
 
-            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, result);
+            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, result);
+            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, diff_data);
             break;
         }
     }
 
     os 	<< "l2 norm output\n\n"
-    	<< "pressure error 1d: " << sqrt(result.pressure_error[0]) << endl
-    	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
-    	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
-    	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
-    	<< "masked velocity error 2d: " << sqrt(result.mask_vel_error) <<endl
-    	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
-    	<< "div error 2d: " << sqrt(result.div_error[1]);
-
-    output_specific_fields.output(darcy_flow->time().step());
+    	<< "pressure error 1d: " << sqrt(diff_data.pressure_error[0]) << endl
+    	<< "pressure error 2d: " << sqrt(diff_data.pressure_error[1]) << endl
+    	<< "velocity error 1d: " << sqrt(diff_data.velocity_error[0]) << endl
+    	<< "velocity error 2d: " << sqrt(diff_data.velocity_error[1]) << endl
+    	<< "masked velocity error 2d: " << sqrt(diff_data.mask_vel_error) <<endl
+    	<< "div error 1d: " << sqrt(diff_data.div_error[0]) << endl
+    	<< "div error 2d: " << sqrt(diff_data.div_error[1]);
 }
 
 
