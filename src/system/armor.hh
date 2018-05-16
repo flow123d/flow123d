@@ -188,17 +188,17 @@ inline typename arma::Mat<Type>::template fixed<nRows,nCols> operator/(const Mat
 
 template <class Type, uint nRows, uint nCols>
 inline bool approx_equal(const Mat<Type, nRows, nCols> & a, const Mat<Type, nRows, nCols> & b, const char * method, Type tol) {
-    return arma::approx_equal(a.arma(), b.arma(), method, tol);
+//    return arma::approx_equal(a.arma(), b.arma(), method, tol);
 }
 
 template <class Type, uint nRows, uint nCols>
 inline bool approx_equal(const Mat<Type, nRows, nCols> & a, const typename arma::Mat<Type>::template fixed<nRows,nCols> & b, const char * method, Type tol) {
-    return arma::approx_equal(a.arma(), b, method, tol);
+//    return arma::approx_equal(a.arma(), b, method, tol);
 }
 
 template <class Type, uint nRows, uint nCols>
 inline bool approx_equal(const typename arma::Mat<Type>::template fixed<nRows,nCols> & a, const Mat<Type, nRows, nCols> & b, const char * method, Type tol) {
-    return arma::approx_equal(a, b.arma(), method, tol);
+//    return arma::approx_equal(a, b.arma(), method, tol);
 }
 
 template <class Type, uint nRows, uint nCols>

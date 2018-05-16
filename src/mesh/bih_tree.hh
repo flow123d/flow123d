@@ -86,7 +86,7 @@ public:
 	 */
     void find_point(const Space<3>::Point &point, std::vector<unsigned int> &result_list, bool full_list = false) const;
     
-    void find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list) const;
+    void find_point(const Space<3>::APoint &point, std::vector<unsigned int> &result_list, bool full_list = false) const;
 
     /**
      * Get vector of mesh elements bounding boxes

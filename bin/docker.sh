@@ -6,11 +6,10 @@ set -x
 SCRIPT_DIR=${0%/*}
 
 # directory containing whole build process
-WORKDIR=/home/kingis/Dokumenty/PK_Flow
+WORKDIR=/home/jb
 
 # name of the development image
-#WORK_IMAGE=flow123d/f123d_docker
-WORK_IMAGE=flow123d/f123d_docker_anew
+WORK_IMAGE=flow123d/f123d_docker
 
 get_dev_dir() 
 {
@@ -57,8 +56,8 @@ make_work_image ()
         docker exec ${running_cont} chown $U_ID:$G_ID $D_HOME
         
         # add git user
-        docker exec ${running_cont} git config --global user.email "petr.kral@tul.cz"
-        docker exec ${running_cont} git config --global user.name "Petr Kral"
+        docker exec ${running_cont} git config --global user.email "jbrezmorf@gmail.com"
+        docker exec ${running_cont} git config --global user.name "Jan Brezina"
         
         # add git-completion
         curl https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash -o .git-completion.bash
@@ -68,17 +67,15 @@ make_work_image ()
         cp_to_docker $WORKDIR/_bashrc_docker .bashrc
                 
         # add pmake script
-        #docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/bin"
-        #cp_to_docker $HOME/bin/pmake bin
+        docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/bin"
+        cp_to_docker $HOME/bin/pmake bin
         
         # add ssh keys
         docker exec -u $U_ID:$G_ID ${running_cont} mkdir "$D_HOME/.ssh"
         #docker exec ${running_cont} chown jb:jb $HOME/.ssh
         cp_to_docker $HOME/.ssh/id_rsa  .ssh
         cp_to_docker $HOME/.ssh/id_rsa.pub  .ssh
-        
-        docker exec ${running_cont} make -C /home/kingis/Dokumenty/PK_Flow/armadillo/armadillo-7.800.2/ install
-        
+                
         docker stop ${running_cont}
         docker commit ${running_cont}  $WORK_IMAGE        
     fi    
@@ -108,7 +105,7 @@ elif [ "$1" == "make" ]
 then
     shift
     make_work_image
-    docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash "make" $@ 
+    docker run  --rm -v "${WORKDIR}":"${WORKDIR}" -w "${WORKDIR}/${project_dir}" -u $U_ID:$G_ID $WORK_IMAGE bash "$D_HOME/bin/pmake" "$@" 
 elif [ "$1" == "flow123d" ]
 then
     shift
