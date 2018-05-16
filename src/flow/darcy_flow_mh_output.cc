@@ -59,8 +59,12 @@ const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	OutputFields output_fields;
 	DarcyMH::EqData eq_data;
 	output_fields += eq_data;
-	output_fields += output_fields.error_fields_for_output;
 	return output_fields.make_output_type("Flow_Darcy_MH", "");
+}
+
+const it::Instance & DarcyFlowMHOutput::get_input_type_specific_fields() {
+	OutputSpecificFields output_fields;
+	return output_fields.make_output_type("Flow_Darcy_MH_specific", "");
 }
 
 const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
@@ -71,6 +75,8 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
                         "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
+        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), IT::Default("{ \"fields\": [] }"),
+                "Specific output fields.")
         .close();
 }
 
@@ -83,21 +89,24 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
     *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
 	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
-    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1));
-    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1));
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
 					  .flags(FieldFlag::equation_external_output);
 	*this += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
 	        .flags(FieldFlag::equation_external_output);
-
-	error_fields_for_output += pressure_diff.name("pressure_diff").units(UnitSI().m());
-	error_fields_for_output += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
-	error_fields_for_output += div_diff.name("div_diff").units(UnitSI().s(-1));
-    error_fields_for_output += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1));
 }
 
+DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
+: EquationOutput()
+{
+    *this += pressure_diff.name("pressure_diff").units(UnitSI().m());
+    *this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
+    *this += div_diff.name("div_diff").units(UnitSI().s(-1));
+    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1));
+    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1));
+    *this += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1));
+}
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
@@ -136,26 +145,18 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
-//         if(darcy_flow->mh_dh.enrich_velocity)
-// {
+        if(darcy_flow->mh_dh.enrich_velocity)
+        {
             field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, 
                                                             darcy_flow->mh_dh.enrich_velocity, true);
             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);            
-            
-            field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,
-                                                                    darcy_flow->mh_dh.enrich_velocity, false);
-            output_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
-            
-            field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
-            output_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
-//         }
-//         else{
-        
-        // this is due to raw output and observed points only
-        ele_flux.resize(3*mesh_->n_elements());
-//             auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
-//             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
-//         }
+        }
+        else{
+            // this is due to raw output and observed points only
+            ele_flux.resize(3*mesh_->n_elements());
+            auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+            output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+        }
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
@@ -186,6 +187,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
         }
+        // possibly read the names of specific output fields
+        output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific->find<Input::Record>("output"), darcy_flow->time() );
     }
 }
 
@@ -222,16 +225,15 @@ void DarcyFlowMHOutput::output()
         else
                 make_element_scalar(observed_elements);
 
-        if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) ){
+        if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
                 make_element_vector(all_element_idx_);
-        }
         else
                 make_element_vector(observed_elements);
 
         if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
                 make_node_scalar_param(all_element_idx_);
-//         else
-//                make_node_scalar_param(observed_elements);
+        //else
+        //        make_node_scalar_param(observed_elements);
 
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
@@ -239,13 +241,17 @@ void DarcyFlowMHOutput::output()
         {
                   output_internal_flow_data();
         }
-
-        if (compute_errors_) compute_l2_difference();
     }
 
     {
         START_TIMER("evaluate output fields");
         output_fields.output(darcy_flow->time().step());
+    }
+    
+    if (compute_errors_)
+    {
+        START_TIMER("compute specific output fields");
+        compute_l2_difference();
     }
 
     {
@@ -301,8 +307,6 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
     }
-    
-//     delete multidim_assembler;
 }
 
 
@@ -844,22 +848,27 @@ void DarcyFlowMHOutput::compute_l2_difference() {
 
     //result.ele_flux = &( ele_flux );
 
-    output_fields.error_fields_for_output.set_mesh(*mesh_);
-    
+    output_specific_fields.set_mesh(*mesh_);
+
     auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
+    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
     auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
+    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
     auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
-    
+    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+
+    field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,
+                                                                darcy_flow->mh_dh.enrich_velocity, false);
+    output_specific_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
+
+    field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
+    output_specific_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
+
     std::shared_ptr<ExactVelocity> exact_vel_2d_ptr = std::make_shared<ExactVelocity>(3);
     exact_vel_2d_ptr->set_python_field_from_file( python_solution_filename_, "velocity_2d");
-    output_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
+    output_specific_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
 
-    output_fields.error_fields_for_output.set_time(darcy_flow->time().step(), LimitSide::right);
-    output_fields += output_fields.error_fields_for_output;
-
+    output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
 
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
@@ -924,13 +933,15 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "masked vel error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]) << endl
-    	<< "div error 3d: " << sqrt(result.div_error[2]);
-        
+    	<< "div error 3d: " << sqrt(result.div_error[2]) << endl;
+    
     if(darcy_flow->use_xfem){
         os << endl
         << "enr vel dof: " << result.dh->mh_solution[mesh_->n_sides_] << endl
         << "sing LP: " << result.dh->mh_solution[result.dh->row_4_sing[0]];
     }
+    
+    output_specific_fields.output(darcy_flow->time().step());
 }
 
 

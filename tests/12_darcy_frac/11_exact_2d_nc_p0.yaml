@@ -7,6 +7,11 @@ problem: !Coupling_Sequential
     output_specific:
       compute_errors: true
       python_solution: analytical_module.py
+      output:
+        fields:
+          - velocity_diff
+          - pressure_diff
+          - div_diff
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -30,9 +35,6 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - velocity_p0
-        - velocity_diff
-        - pressure_diff
-        - div_diff
     balance: {}
     output_stream:
       file: ./square.pvd
