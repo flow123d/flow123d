@@ -54,6 +54,9 @@
 
 namespace it = Input::Type;
 
+typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
+typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
+
 
 const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	OutputFields output_fields;
@@ -75,7 +78,7 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
                         "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
-        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), IT::Default("{ \"fields\": [] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), it::Default::optional(),
                 "Specific output fields.")
         .close();
 }
@@ -118,7 +121,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
-
 	// we need to add data from the flow equation at this point, not in constructor of OutputFields
 	output_fields += darcy_flow->data();
 	output_fields.set_mesh(*mesh_);
@@ -175,7 +177,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             in_rec_specific->opt_val("python_solution", python_solution_filename_);
             ASSERT(python_solution_filename_.exists());
         }
-        
+
         if (rank == 0) {
             // optionally open raw output file
             FilePath raw_output_file_path;
@@ -186,12 +188,59 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
         }
+
         // possibly read the names of specific output fields
-        output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific->find<Input::Record>("output"), darcy_flow->time() );
+        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
+        if(in_rec_specific_output){
+            is_output_specific_fields = true;
+            prepare_specific_output();
+            output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific_output, darcy_flow->time() );
+        }
+        else
+            is_output_specific_fields = false;
     }
 }
 
+void DarcyFlowMHOutput::prepare_specific_output()
+{
+    diff_data.darcy = darcy_flow;
+    diff_data.data_ = darcy_flow->data_.get();
 
+    // mask 2d elements crossing 1d
+    if (diff_data.data_->mortar_method_ != DarcyMH::NoMortar) {
+        diff_data.velocity_mask.resize(mesh_->n_elements(),0);
+        for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
+            diff_data.velocity_mask[ isec.bulk_ele_idx() ]++;
+        }
+    }
+
+    diff_data.pressure_diff.resize( mesh_->n_elements() );
+    diff_data.velocity_diff.resize( mesh_->n_elements() );
+    diff_data.div_diff.resize( mesh_->n_elements() );
+    
+    output_specific_fields.set_mesh(*mesh_);
+
+    auto vel_diff_ptr =	diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
+    auto pressure_diff_ptr = diff_data.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
+    auto div_diff_ptr =	diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+
+    field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,
+                                                                darcy_flow->mh_dh.enrich_velocity, false);
+    output_specific_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
+
+    field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
+    output_specific_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
+
+    std::shared_ptr<ExactVelocity> exact_vel_2d_ptr = std::make_shared<ExactVelocity>(3);
+    if(python_solution_filename_.exists())
+        exact_vel_2d_ptr->set_python_field_from_file( python_solution_filename_, "velocity_2d");
+    output_specific_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
+    
+    output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+}
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
 {};
@@ -251,6 +300,13 @@ void DarcyFlowMHOutput::output()
     {
         START_TIMER("compute specific output fields");
         compute_l2_difference();
+    }
+    
+    if(is_output_specific_fields)
+    {
+        START_TIMER("evaluate output fields");
+        output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+        output_specific_fields.output(darcy_flow->time().step());
     }
 
     {
@@ -503,9 +559,6 @@ void DarcyFlowMHOutput::output_internal_flow_data()
 #include "fields/field_python.hh"
 #include "fields/field_values.hh"
 
-typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
-typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
-
 /*
 * Calculate approximation of L2 norm for:
  * 1) difference between regularized pressure and analytical solution (using FunctionPython)
@@ -513,29 +566,10 @@ typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
  * 3) difference of divergence
  * */
 
-struct DiffData {
-    double pressure_error[3], velocity_error[3], div_error[3];
-    double mask_vel_error;
-    VectorSeqDouble pressure_diff;
-    VectorSeqDouble velocity_diff;
-    VectorSeqDouble div_diff;
-
-    std::shared_ptr<ExactSolution> velocity_exact;
-    std::shared_ptr<FieldPython<3, FieldValue<3>::Scalar >> pressure_exact;
-
-    double * solution;
-    const MH_DofHandler * dh;
-
-    //std::vector< std::vector<double>  > *ele_flux;
-    std::vector<int> velocity_mask;
-    DarcyMH *darcy;
-    DarcyMH::EqData *data_;
-};
-
 template <int dim>
 void l2_diff_local(ElementFullIter &ele, 
                    FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
-                   ExactSolution &anal_sol,  DiffData &result) {
+                   ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
@@ -633,7 +667,7 @@ void l2_diff_local(ElementFullIter &ele,
 template <int dim>
 void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
                    XFEValues<dim,3> &fe_values, XFEValues<dim,3> &fv_rt,
-                   ExactSolution &anal_sol,  DiffData &result) {
+                   ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 //     DBGCOUT(<< "local diff\n");
     
     ElementFullIter ele = ele_ac.full_iter();
@@ -821,88 +855,49 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     ExactSolution anal_sol_3d(5);
     anal_sol_3d.set_python_field_from_file( python_solution_filename_, "all_values_3d");
 
-    DiffData result;
-    result.dh = &( darcy_flow->get_mh_dofhandler());
-    result.darcy = darcy_flow;
-    result.data_ = darcy_flow->data_.get();
-
-    // mask 2d elements crossing 1d
-    if (result.data_->mortar_method_ != DarcyMH::NoMortar) {
-        result.velocity_mask.resize(mesh_->n_elements(),0);
-        for(IntersectionLocal<1,2> & isec : mesh_->mixed_intersections().intersection_storage12_) {
-            result.velocity_mask[ isec.bulk_ele_idx() ]++;
-        }
-    }
-
-    result.pressure_diff.resize( mesh_->n_elements() );
-    result.velocity_diff.resize( mesh_->n_elements() );
-    result.div_diff.resize( mesh_->n_elements() );
-
+    diff_data.dh = &( darcy_flow->get_mh_dofhandler());
+    diff_data.mask_vel_error=0;
     for(unsigned int j=0; j<3; j++){
-        result.pressure_error[j] = 0;
-        result.velocity_error[j] = 0;
-        result.div_error[j] = 0;
+        diff_data.pressure_error[j] = 0;
+        diff_data.velocity_error[j] = 0;
+        diff_data.div_error[j] = 0;
     }
-    result.mask_vel_error=0;
-
-    //result.ele_flux = &( ele_flux );
-
-    output_specific_fields.set_mesh(*mesh_);
-
-    auto vel_diff_ptr =	result.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
-    auto pressure_diff_ptr = result.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
-    auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
-
-    field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,
-                                                                darcy_flow->mh_dh.enrich_velocity, false);
-    output_specific_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_enr_part);
-
-    field_velocity_reg_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, false, true);
-    output_specific_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity_reg_part);
-
-    std::shared_ptr<ExactVelocity> exact_vel_2d_ptr = std::make_shared<ExactVelocity>(3);
-    exact_vel_2d_ptr->set_python_field_from_file( python_solution_filename_, "velocity_2d");
-    output_specific_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
-
-    output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
-
+    //diff_data.ele_flux = &( ele_flux );
+    
     unsigned int solution_size;
-    darcy_flow->get_solution_vector(result.solution, solution_size);
+    darcy_flow->get_solution_vector(diff_data.solution, solution_size);
 
 
-    if(result.darcy->use_xfem){
-        for (unsigned int i_loc = 0; i_loc < result.dh->el_ds->lsize(); i_loc++) {
+    if(diff_data.darcy->use_xfem){
+        for (unsigned int i_loc = 0; i_loc < diff_data.dh->el_ds->lsize(); i_loc++) {
             DBGVAR(i_loc);
-            auto ele_ac = const_cast<MH_DofHandler*>(result.dh)->accessor(i_loc);
+            auto ele_ac = const_cast<MH_DofHandler*>(diff_data.dh)->accessor(i_loc);
             ElementFullIter ele = ele_ac.full_iter();
             unsigned int dim = ele_ac.dim();
             
             switch (dim) {
 //             case 1:
-//                 l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
+//                 l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, diff_data);
 //                 break;
             case 2:
                 if(ele_ac.is_enriched()){
                     fe_data_2d.prepare_xfem(ele_ac);
                     l2_diff_local_xfem<2>(ele_ac, *fe_data_2d.fv_p0_xfem, *fe_data_2d.fv_rt_xfem,
-                                          anal_sol_2d, result);
+                                          anal_sol_2d, diff_data);
                 }
                 else
                     l2_diff_local<2>(ele, fe_data_2d.fe_values, fe_data_2d.fv_rt,
-                                     anal_sol_2d, result);
+                                     anal_sol_2d, diff_data);
                 break;
             case 3:
                 if(ele_ac.is_enriched()){
                     fe_data_3d.prepare_xfem(ele_ac);
                     l2_diff_local_xfem<3>(ele_ac, *fe_data_3d.fv_p0_xfem, *fe_data_3d.fv_rt_xfem,
-                                          anal_sol_3d, result);
+                                          anal_sol_3d, diff_data);
                 }
                 else
                     l2_diff_local<3>(ele, fe_data_3d.fe_values, fe_data_3d.fv_rt,
-                                     anal_sol_3d, result);
+                                     anal_sol_3d, diff_data);
                 break;
             }
         }
@@ -911,10 +906,10 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     FOR_ELEMENTS( mesh_, ele) {
     	switch (ele->dim()) {
         case 1:
-            l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, result);
+            l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_data_2d.fe_values, fe_data_2d.fv_rt, anal_sol_2d, result);
+            l2_diff_local<2>( ele, fe_data_2d.fe_values, fe_data_2d.fv_rt, anal_sol_2d, diff_data);
             break;
         }
     }
@@ -923,24 +918,22 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     DebugOut() << "l2 norm output end\n";
     
     os 	<< "l2 norm output\n\n"
-    	<< "pressure error 1d: " << sqrt(result.pressure_error[0]) << endl
-    	<< "pressure error 2d: " << sqrt(result.pressure_error[1]) << endl
-    	<< "pressure error 3d: " << sqrt(result.pressure_error[2]) << endl
-    	<< "velocity error 1d: " << sqrt(result.velocity_error[0]) << endl
-    	<< "velocity error 2d: " << sqrt(result.velocity_error[1]) << endl
-    	<< "velocity error 3d: " << sqrt(result.velocity_error[2]) << endl
-    	<< "masked vel error 2d: " << sqrt(result.mask_vel_error) <<endl
-    	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
-    	<< "div error 2d: " << sqrt(result.div_error[1]) << endl
-    	<< "div error 3d: " << sqrt(result.div_error[2]);
+    	<< "pressure error 1d: " << sqrt(diff_data.pressure_error[0]) << endl
+    	<< "pressure error 2d: " << sqrt(diff_data.pressure_error[1]) << endl
+    	<< "pressure error 3d: " << sqrt(diff_data.pressure_error[2]) << endl
+    	<< "velocity error 1d: " << sqrt(diff_data.velocity_error[0]) << endl
+    	<< "velocity error 2d: " << sqrt(diff_data.velocity_error[1]) << endl
+    	<< "velocity error 3d: " << sqrt(diff_data.velocity_error[2]) << endl
+    	<< "masked vel error 2d: " << sqrt(diff_data.mask_vel_error) <<endl
+    	<< "div error 1d: " << sqrt(diff_data.div_error[0]) << endl
+    	<< "div error 2d: " << sqrt(diff_data.div_error[1]) << endl
+    	<< "div error 3d: " << sqrt(diff_data.div_error[2]);
     
     if(darcy_flow->use_xfem){
         os << endl
-        << "enr vel dof: " << result.dh->mh_solution[mesh_->n_sides_] << endl
-        << "sing LP: " << result.dh->mh_solution[result.dh->row_4_sing[0]];
+        << "enr vel dof: " << diff_data.dh->mh_solution[mesh_->n_sides_] << endl
+        << "sing LP: " << diff_data.dh->mh_solution[diff_data.dh->row_4_sing[0]];
     }
-    
-    output_specific_fields.output(darcy_flow->time().step());
 }
 
 
