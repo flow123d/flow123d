@@ -71,7 +71,7 @@ const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
-        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), IT::Default("{ \"fields\": [] }"),
+        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), it::Default::optional(),
                 "Specific output fields.")
         .close();
 }
