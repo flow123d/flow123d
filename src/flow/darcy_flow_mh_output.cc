@@ -168,7 +168,13 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             }
         }
         // possibly read the names of specific output fields
-        output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific->find<Input::Record>("output"), darcy_flow->time() );
+        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
+        if(in_rec_specific_output){
+            is_output_specific_fields = true;
+            output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific_output, darcy_flow->time() );
+        }
+        else
+            is_output_specific_fields = false;
     }
 }
 
@@ -224,6 +230,13 @@ void DarcyFlowMHOutput::output()
         START_TIMER("evaluate output fields");
         output_fields.output(darcy_flow->time().step());
     }
+    
+//     if(is_output_specific_fields)
+//     {
+//         START_TIMER("evaluate output fields");
+//         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+//         output_specific_fields.output(darcy_flow->time().step());
+//     }
     
     if (compute_errors_)
     {
@@ -675,10 +688,9 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
     auto div_diff_ptr =	result.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
-    
+
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     
-
     unsigned int solution_size;
     darcy_flow->get_solution_vector(result.solution, solution_size);
 
@@ -704,7 +716,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	<< "masked velocity error 2d: " << sqrt(result.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(result.div_error[0]) << endl
     	<< "div error 2d: " << sqrt(result.div_error[1]);
-    
+
     output_specific_fields.output(darcy_flow->time().step());
 }
 

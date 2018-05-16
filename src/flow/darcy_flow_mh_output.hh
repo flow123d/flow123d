@@ -184,6 +184,9 @@ private:
     OutputFields output_fields;
     OutputSpecificFields output_specific_fields;
 
+    /// Output specific field stuff
+    bool is_output_specific_fields;
+    
     std::shared_ptr<OutputTime> output_stream;
 
     /// Raw data output file.
