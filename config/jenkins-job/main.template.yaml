@@ -66,7 +66,6 @@
     test-dir:
       - $PLACEHOLDER_test_list$
     jobs:
-      - "Flow123d-{platform}-{build-type}-install-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
@@ -75,32 +74,6 @@
       - "Flow123d-{platform}-{build-type}-stop-image"
       - "Flow123d-{platform}-debug-start-image"
       - "Flow123d-{platform}-debug-multijob"
-
-# ---------------------------------------------------------------------------- #
-# ---------- INSTALL IMAGE --------------------------------------------------- #
-# ---------------------------------------------------------------------------- #
-- job-template:
-    name: "Flow123d-{platform}-{build-type}-install-image"
-    display-name: "{build-type} / Flow123d install image"
-    defaults: flow123d-build
-    builders:
-      - inject:
-          properties-file: prop.file
-      - shell: |
-          whoami
-          ls -la
-          pwd
-          cd flow123d
-          make initialize-submodules
-          git submodule update bin/docker
-          cd bin/docker
-          git pull origin master
-          cd bin
-          ./dockerrun update
-          YES_TO_ALL=1 ./dockerrun remove-old
-          docker images
-          docker ps -a
-          echo ${{_GIT_BRANCH}}
 
 
 # ---------------------------------------------------------------------------- #
@@ -115,7 +88,7 @@
          properties-file: prop.file
      - shell: |
          docker rm -f cont{build-type} || echo "container not running"
-         docker run --privileged -di --name cont{build-type} flow123d/flow-libs-dev-dbg:user
+         docker run --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git flow123d/flow-libs-dev-dbg:user
          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
 
 # ---------------------------------------------------------------------------- #
@@ -130,7 +103,7 @@
           properties-file: prop.file
       - shell: |
           docker rm -f cont{build-type} || echo "container not running"
-          docker run --privileged -di --name cont{build-type} flow123d/flow-libs-dev-rel:user
+          docker run --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git flow123d/flow-libs-dev-rel:user
           echo "FLOW=/opt/flow123d/flow123d"                >> prop.file
           echo "PACK_NAME=Flow123d-2.0.0-Linux.tar.gz"      >> prop.file
           echo "PACK_PATH=./Flow123d-2.0.0-Linux.tar.gz"    >> prop.file
@@ -148,7 +121,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec cont{build-type} git clone -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+          docker exec cont{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
           docker exec cont{build-type} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
           docker exec cont{build-type} make -C ${{FLOW}} cmake
 
@@ -280,11 +253,6 @@
 
     builders:
       - multijob:
-          name: "Install image"
-          condition: SUCCESSFUL
-          projects:
-            - name: "Flow123d-{platform}-debug-install-image"
-      - multijob:
           name: "Start image"
           condition: SUCCESSFUL
           projects:
@@ -342,7 +310,6 @@
     test-dir:
       - $PLACEHOLDER_test_list$
     jobs:
-      - "Flow123d-{platform}-{build-type}-install-image"
       - "Flow123d-{platform}-{build-type}-configure"
       - "Flow123d-{platform}-{build-type}-build"
       - "Flow123d-{platform}-{build-type}-unit-test-{unit-dir}"
@@ -475,11 +442,6 @@
       - github
 
     builders:
-      - multijob:
-          name: "Install image"
-          condition: SUCCESSFUL
-          projects:
-            - name: "Flow123d-{platform}-release-install-image"
       - multijob:
           name: "Start image"
           condition: SUCCESSFUL
