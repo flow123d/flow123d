@@ -10,7 +10,7 @@ services:
 
 before_install:
 - docker pull flow123d/flow-libs-dev-dbg
-- docker run -di --name contdebug -v /home/travis/build/janhybs/flow123d:/home/travis/build/janhybs/flow123d -w /home/travis/build/janhybs/flow123d flow123d/flow-libs-dev-dbg bash --login
+- docker run -di --name contdebug -v /home/travis/build/flow123d/flow123d:/home/travis/build/flow123d/flow123d -w /home/travis/build/flow123d/flow123d flow123d/flow-libs-dev-dbg bash --login
 - docker exec contdebug cp config/config-jenkins-docker-debug.cmake config.cmake
 - docker ps -a
 
