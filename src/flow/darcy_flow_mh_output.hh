@@ -107,9 +107,12 @@ public:
 
 
 
-private:
+protected:
     typedef const vector<unsigned int> & ElementSetRef;
 
+    virtual void prepare_output(Input::Record in_rec);
+    virtual void prepare_specific_output(Input::Record in_rec);
+    
     void make_side_flux();
     void make_element_scalar(ElementSetRef element_indices);
     
@@ -201,7 +204,6 @@ private:
         DarcyMH *darcy;
         DarcyMH::EqData *data_;
     } diff_data;
-    void prepare_specific_output();
     
     std::shared_ptr<OutputTime> output_stream;
 

@@ -112,12 +112,47 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
+    output_stream = OutputTime::create_output_stream("flow",
+                                                     main_mh_in_rec.val<Input::Record>("output_stream"),
+                                                     darcy_flow->time().get_unit_string());
+    prepare_output(in_rec_output);
 
-	// we need to add data from the flow equation at this point, not in constructor of OutputFields
+    auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
+    if (in_rec_specific) {
+        in_rec_specific->opt_val("compute_errors", compute_errors_);
+        
+        // raw output
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0) {
+            // optionally open raw output file
+            FilePath raw_output_file_path;
+            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
+            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
+            	try {
+            		raw_output_file_path.open_stream(raw_output_file);
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
+            }
+        }
+
+        // possibly read the names of specific output fields
+        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
+        if(in_rec_specific_output){
+            is_output_specific_fields = true;
+            prepare_specific_output(*in_rec_specific_output);
+        }
+        else
+            is_output_specific_fields = false;
+    }
+}
+
+void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
+{
+  	// we need to add data from the flow equation at this point, not in constructor of OutputFields
 	output_fields += darcy_flow->data();
 	output_fields.set_mesh(*mesh_);
-
-	all_element_idx_.resize(mesh_->n_elements());
+        
+        all_element_idx_.resize(mesh_->n_elements());
 	for(unsigned int i=0; i<all_element_idx_.size(); i++) all_element_idx_[i] = i;
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -146,42 +181,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"), darcy_flow->time().get_unit_string());
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
-    if (in_rec_specific) {
-        in_rec_specific->opt_val("compute_errors", compute_errors_);
-        if (rank == 0) {
-            // optionally open raw output file
-            FilePath raw_output_file_path;
-            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
-            	try {
-            		raw_output_file_path.open_stream(raw_output_file);
-            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
-            }
-        }
-        
-        prepare_specific_output();
-        
-        // possibly read the names of specific output fields
-        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
-        if(in_rec_specific_output){
-            is_output_specific_fields = true;
-            output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific_output, darcy_flow->time() );
-        }
-        else
-            is_output_specific_fields = false;
-    }
+    output_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
-void DarcyFlowMHOutput::prepare_specific_output()
+void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
     diff_data.darcy = darcy_flow;
     diff_data.data_ = darcy_flow->data_.get();
@@ -208,6 +213,7 @@ void DarcyFlowMHOutput::prepare_specific_output()
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+    output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
