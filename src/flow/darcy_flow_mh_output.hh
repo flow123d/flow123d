@@ -33,6 +33,7 @@
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
 #include "fields/field_values.hh"        // for FieldValue<>::Scalar, FieldV...
+#include "fields/field_python.hh"
 #include "fields/vec_seq_double.hh"      // for VectorSeqDouble
 #include "input/type_base.hh"            // for Array
 #include "input/type_generic.hh"         // for Instance
@@ -49,6 +50,8 @@ namespace Input {
 		class Record;
 	}
 }
+
+template<unsigned int dim, unsigned int spacedim> class FEValues;
 
 
 /**
@@ -204,6 +207,11 @@ protected:
         DarcyMH *darcy;
         DarcyMH::EqData *data_;
     } diff_data;
+    
+    template <int dim>
+    void l2_diff_local(ElementFullIter &ele,
+                      FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
+                      FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
     
     std::shared_ptr<OutputTime> output_stream;
 

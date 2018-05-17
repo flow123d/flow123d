@@ -537,8 +537,8 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * */
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, 
-                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
+                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
     fv_rt.reinit(ele);
@@ -632,10 +632,6 @@ void l2_diff_local(ElementFullIter &ele,
     result.div_error[dim-1] += divergence_diff;
 
 }
-
-
-
-
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
