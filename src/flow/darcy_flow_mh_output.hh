@@ -43,7 +43,6 @@ class DOFHandlerMultiDim;
 class DarcyMH;
 class Mesh;
 class OutputTime;
-class FieldVelocity;
 namespace Input {
 	class Record;
 	namespace Type {
@@ -111,7 +110,7 @@ public:
 
 
 
-private:
+protected:
     typedef const vector<unsigned int> & ElementSetRef;
 
     void make_side_flux();
@@ -123,7 +122,7 @@ private:
      *  but we still use MHDofHandler. Once we are able to make output routines
      *  parallel, we can use simply FieldFE for velocity here.
      */
-    void make_element_vector(ElementSetRef element_indices);
+    virtual void make_element_vector(ElementSetRef element_indices);
 
     //void make_sides_scalar();
     /**
@@ -149,7 +148,7 @@ private:
      * 3) implement pressure postprocessing (result is DG_P2 field)
      * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
      */
-    void compute_l2_difference();
+    virtual void compute_l2_difference();
 
 
     DarcyMH *darcy_flow;
@@ -172,11 +171,6 @@ private:
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
 
-    std::shared_ptr<FieldVelocity> field_velocity;
-    
-    std::shared_ptr<FieldVelocity> field_velocity_enr_part;
-    std::shared_ptr<FieldVelocity> field_velocity_reg_part;
-    
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;
 
@@ -197,7 +191,7 @@ private:
     /// Output specific field stuff
     bool is_output_specific_fields;
     struct DiffData {
-        double pressure_error[3], velocity_error[3], div_error[3];
+        double pressure_error[2], velocity_error[2], div_error[2];
         double mask_vel_error;
         VectorSeqDouble pressure_diff;
         VectorSeqDouble velocity_diff;
@@ -211,7 +205,7 @@ private:
         DarcyMH *darcy;
         DarcyMH::EqData *data_;
     } diff_data;
-    void prepare_specific_output();
+    virtual void prepare_specific_output();
     
     std::shared_ptr<OutputTime> output_stream;
 

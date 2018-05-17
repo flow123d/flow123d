@@ -381,6 +381,7 @@ protected:
     bool use_xfem;  ///< Flag determines using XFEM
 
     friend class DarcyFlowMHOutput;
+    friend class DarcyFlowMHOutputXFEM;
     //friend class P0_CouplingAssembler;
     //friend class P1_CouplingAssembler;
 
