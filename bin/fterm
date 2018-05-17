@@ -14,6 +14,8 @@
 #     
 #     update         - will update all flow123d images (will download new images
 #                      from the hub.docker.com/u/flow123d if necessary)
+#     
+#     build          - will create customized images (ending with user)
 # 
 #     run            - (default action) will start a personalized image
 #                      directory specified in config/docker.cfg file
@@ -173,14 +175,16 @@ function usage() {
   echo "  options:"
   echo "    -v|--verbose"
   echo "    |-d|--debug    - turn on debug mode (set -x)"
-  echo "    "
+  echo ""
   echo "  actions:"
   echo "    clean          - will remove all personalized images, the other images"
   echo "                     will be left untouched"
   echo ""
   echo "    remove-old     - will prompt to remove old docker images and containers"
   echo "                     (those with no name)"
-  echo "    "
+  echo ""
+  echo "    build          - will create customized images (ending with user)"
+  echo ""
   echo "    update         - will update all flow123d images (will download new images"
   echo "                     from the hub.docker.com/u/flow123d if necessary)"
   echo ""
