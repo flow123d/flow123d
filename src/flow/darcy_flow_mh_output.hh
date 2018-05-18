@@ -198,7 +198,7 @@ protected:
     /// Output specific field stuff
     bool is_output_specific_fields;
     struct DiffData {
-        double pressure_error[2], velocity_error[2], div_error[2];
+        double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
         VectorSeqDouble pressure_diff;
         VectorSeqDouble velocity_diff;

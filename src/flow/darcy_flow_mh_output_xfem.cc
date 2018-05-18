@@ -291,9 +291,9 @@ void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_
 //     DBGVAR(velocity_diff);
     result.velocity_diff[ele.index()] = std::sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
-    if (dim == 2 && result.velocity_mask.size() != 0 ) {
-        result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
-    }
+//     if (dim == 2 && result.velocity_mask.size() != 0 ) {
+//         result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+//     }
 
     result.pressure_diff[ele.index()] = std::sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;

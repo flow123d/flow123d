@@ -111,6 +111,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
+  is_output_specific_fields(false),
   fe1(1),
   fe2(1),
   fe3(1)
