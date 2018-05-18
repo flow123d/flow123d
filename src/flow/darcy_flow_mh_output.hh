@@ -33,6 +33,7 @@
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
 #include "fields/field_values.hh"        // for FieldValue<>::Scalar, FieldV...
+#include "fields/field_python.hh"
 #include "fields/vec_seq_double.hh"      // for VectorSeqDouble
 #include "input/type_base.hh"            // for Array
 #include "input/type_generic.hh"         // for Instance
@@ -49,6 +50,8 @@ namespace Input {
 		class Record;
 	}
 }
+
+template<unsigned int dim, unsigned int spacedim> class FEValues;
 
 
 /**
@@ -96,7 +99,8 @@ public:
             Field<3, FieldValue<3>::VectorFixed> velocity_exact;
     };
 
-    DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
+    DarcyFlowMHOutput(DarcyMH *flow);
+    void initialize(Input::Record in_rec);
     ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type();
@@ -113,6 +117,9 @@ public:
 protected:
     typedef const vector<unsigned int> & ElementSetRef;
 
+    virtual void prepare_output(Input::Record in_rec);
+    virtual void prepare_specific_output(Input::Record in_rec);
+    
     void make_side_flux();
     void make_element_scalar(ElementSetRef element_indices);
     
@@ -205,7 +212,11 @@ protected:
         DarcyMH *darcy;
         DarcyMH::EqData *data_;
     } diff_data;
-    virtual void prepare_specific_output();
+    
+    template <int dim>
+    void l2_diff_local(ElementFullIter &ele,
+                      FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
+                      FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
     
     std::shared_ptr<OutputTime> output_stream;
 

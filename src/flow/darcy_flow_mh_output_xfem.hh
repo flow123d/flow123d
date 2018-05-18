@@ -41,10 +41,7 @@
 
 #include "flow/darcy_flow_mh_output.hh"
 
-class DOFHandlerMultiDim;
-class DarcyMH;
 class Mesh;
-class OutputTime;
 class FieldVelocity;
 namespace Input {
 	class Record;
@@ -53,6 +50,8 @@ namespace Input {
 	}
 }
 
+template<unsigned int dim, unsigned int spacedim> class FEValues;
+template<int spacedim> class LocalElementAccessorBase;
 
 /**
  * Actually this class only collect former code from postprocess.*
@@ -71,26 +70,13 @@ namespace Input {
  */
 class DarcyFlowMHOutputXFEM : public DarcyFlowMHOutput {
 public:
-    DarcyFlowMHOutputXFEM(DarcyMH *flow, Input::Record in_rec) ;
+    DarcyFlowMHOutputXFEM(DarcyMH *flow);
     ~DarcyFlowMHOutputXFEM();
 
 
 private:
     void make_element_vector(ElementSetRef element_indices) override;
   
-    /**
-     * Temporary hack.
-     * Calculate approximation of L2 norm for:
-     * 1) difference between regularized pressure and analytical solution (using FunctionPython)
-     * 2) difference between RT velocities and analytical solution
-     * 3) difference of divergence
-     *
-     * TODO:
-     * 1) implement field objects
-     * 2) implement DG_P2 finite elements
-     * 3) implement pressure postprocessing (result is DG_P2 field)
-     * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
-     */
     void compute_l2_difference() override;
 
     std::shared_ptr<FieldVelocity> field_velocity;
@@ -98,7 +84,13 @@ private:
     std::shared_ptr<FieldVelocity> field_velocity_enr_part;
     std::shared_ptr<FieldVelocity> field_velocity_reg_part;
 
-    void prepare_specific_output() override;
+    void prepare_output(Input::Record in_rec) override;
+    void prepare_specific_output(Input::Record in_rec) override;
+    
+    template <int dim>
+    void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
+                   XFEValues<dim,3> &fe_values, XFEValues<dim,3> &fv_rt,
+                   FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
 };
 
 

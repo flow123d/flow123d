@@ -46,33 +46,27 @@
 
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
-#include "mesh/partitioning.hh"
+// #include "mesh/partitioning.hh"
 
 // #include "coupling/balance.hh"
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
 
-namespace it = Input::Type;
-
 typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
 typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
 
 
-DarcyFlowMHOutputXFEM::DarcyFlowMHOutputXFEM(DarcyMH *flow, Input::Record main_mh_in_rec)
-: darcy_flow(flow),
-  mesh_(&darcy_flow->mesh()),
-  compute_errors_(false),
-  fe1(1),
-  fe2(1),
-  fe3(1)
+DarcyFlowMHOutputXFEM::DarcyFlowMHOutputXFEM(DarcyMH *flow)
+: DarcyFlowMHOutput(flow)
+{}
+
+void DarcyFlowMHOutputXFEM::prepare_output(Input::Record in_rec)
 {
-    Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
-    
-	// we need to add data from the flow equation at this point, not in constructor of OutputFields
+  	// we need to add data from the flow equation at this point, not in constructor of OutputFields
 	output_fields += darcy_flow->data();
 	output_fields.set_mesh(*mesh_);
-
-	all_element_idx_.resize(mesh_->n_elements());
+        
+        all_element_idx_.resize(mesh_->n_elements());
 	for(unsigned int i=0; i<all_element_idx_.size(); i++) all_element_idx_[i] = i;
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -94,7 +88,7 @@ DarcyFlowMHOutputXFEM::DarcyFlowMHOutputXFEM(DarcyMH *flow, Input::Record main_m
 	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
-        ele_flux.resize(3*mesh_->n_elements());
+	ele_flux.resize(3*mesh_->n_elements());
         if(darcy_flow->mh_dh.enrich_velocity)
         {
             field_velocity = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section, 
@@ -109,46 +103,12 @@ DarcyFlowMHOutputXFEM::DarcyFlowMHOutputXFEM(DarcyMH *flow, Input::Record main_m
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"), darcy_flow->time().get_unit_string());
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
-    if (in_rec_specific) {
-        in_rec_specific->opt_val("compute_errors", compute_errors_);
-        if(compute_errors_){
-            in_rec_specific->opt_val("python_solution", python_solution_filename_);
-            ASSERT(python_solution_filename_.exists());
-        }
-
-        if (rank == 0) {
-            // optionally open raw output file
-            FilePath raw_output_file_path;
-            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
-            	try {
-            		raw_output_file_path.open_stream(raw_output_file);
-            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
-            }
-        }
-
-        // possibly read the names of specific output fields
-        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
-        if(in_rec_specific_output){
-            is_output_specific_fields = true;
-            prepare_specific_output();
-            output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific_output, darcy_flow->time() );
-        }
-        else
-            is_output_specific_fields = false;
-    }
+    output_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
-void DarcyFlowMHOutputXFEM::prepare_specific_output()
+void DarcyFlowMHOutputXFEM::prepare_specific_output(Input::Record in_rec)
 {
     diff_data.darcy = darcy_flow;
     diff_data.data_ = darcy_flow->data_.get();
@@ -187,6 +147,7 @@ void DarcyFlowMHOutputXFEM::prepare_specific_output()
     output_specific_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), exact_vel_2d_ptr, 0);
     
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+    output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
 DarcyFlowMHOutputXFEM::~DarcyFlowMHOutputXFEM()
@@ -194,86 +155,14 @@ DarcyFlowMHOutputXFEM::~DarcyFlowMHOutputXFEM()
 
 
 
-
-
-//=============================================================================
-// CONVERT SOLUTION, CALCULATE BALANCES, ETC...
-//=============================================================================
-
-
-// void DarcyFlowMHOutput::output()
-// {
-//     START_TIMER("Darcy fields output");
-// 
-//     ElementSetRef observed_elements = output_stream->observe(mesh_)->observed_elements();
-//     // need to call this to create mh solution vector
-//     darcy_flow->get_mh_dofhandler();
-//     
-//     {
-//         START_TIMER("post-process output fields");
-// 
-//         output_fields.set_time(darcy_flow->time().step(), LimitSide::right);
-// 
-//         if (output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) ||
-//             output_fields.is_field_output_time(output_fields.field_ele_piezo_head,darcy_flow->time().step()) )
-//                 make_element_scalar(all_element_idx_);
-//         else
-//                 make_element_scalar(observed_elements);
-// 
-//         if ( output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) )
-//                 make_element_vector(all_element_idx_);
-//         else
-//                 make_element_vector(observed_elements);
-// 
-//         if ( output_fields.is_field_output_time(output_fields.field_node_pressure,darcy_flow->time().step()) )
-//                 make_node_scalar_param(all_element_idx_);
-//         //else
-//         //        make_node_scalar_param(observed_elements);
-// 
-//         // Internal output only if both ele_pressure and ele_flux are output.
-//         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
-//             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
-//         {
-//                   output_internal_flow_data();
-//         }
-//     }
-// 
-//     {
-//         START_TIMER("evaluate output fields");
-//         output_fields.output(darcy_flow->time().step());
-//     }
-//     
-//     if (compute_errors_)
-//     {
-//         START_TIMER("compute specific output fields");
-//         compute_l2_difference();
-//     }
-//     
-//     if(is_output_specific_fields)
-//     {
-//         START_TIMER("evaluate output fields");
-//         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
-//         output_specific_fields.output(darcy_flow->time().step());
-//     }
-// 
-//     {
-//         START_TIMER("write time frame");
-//         output_stream->write_time_frame();
-//     }
-// 
-//     
-// }
-
 /****
  * compute Darcian velocity in centre of elements
  *
  */
-void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
+void DarcyFlowMHOutputXFEM::make_element_vector(ElementSetRef element_indices) {
     START_TIMER("DarcyFlowMHOutput::make_element_vector");
     // need to call this to create mh solution vector
     darcy_flow->get_mh_dofhandler();
-    
-    DBGCOUT("DarcyFlowMHOutput::make_element_vector\n");
     
     // create proper assembler
     AssemblyBase::MultidimAssembly multidim_assembler;
@@ -304,7 +193,7 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 
 
 template <int dim>
-void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
+void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
                    XFEValues<dim,3> &fe_values, XFEValues<dim,3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 //     DBGCOUT(<< "local diff\n");

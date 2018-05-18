@@ -46,6 +46,7 @@
 
 #include "flow/darcy_flow_mh.hh"
 #include "flow/darcy_flow_mh_output.hh"
+#include "flow/darcy_flow_mh_output_xfem.hh"
 #include "darcy_flow_assembly.hh"
 #include "darcy_flow_assembly_xfem.hh"
 
@@ -383,13 +384,15 @@ void DarcyMH::initialize() {
 //         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
 //         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");
 //         mh_dh.print_array(mh_dh.row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
+        output_object = new DarcyFlowMHOutputXFEM(this);
     }
     else{
         mh_dh.reinit(mesh_);
+        output_object = new DarcyFlowMHOutput(this);
     }
     
+    output_object->initialize(input_record_);
     size = mh_dh.total_size();
-    output_object = new DarcyFlowMHOutput(this, input_record_);
     
     create_linear_system(rec);
 

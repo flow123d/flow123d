@@ -107,22 +107,64 @@ DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
     *this += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1));
 }
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
   fe1(1),
   fe2(1),
   fe3(1)
+{}
+
+void DarcyFlowMHOutput::initialize(Input::Record main_mh_in_rec)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
+    output_stream = OutputTime::create_output_stream("flow",
+                                                     main_mh_in_rec.val<Input::Record>("output_stream"),
+                                                     darcy_flow->time().get_unit_string());
+    prepare_output(in_rec_output);
 
-	// we need to add data from the flow equation at this point, not in constructor of OutputFields
+    auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
+    if (in_rec_specific) {
+        in_rec_specific->opt_val("compute_errors", compute_errors_);
+        if(compute_errors_){
+            in_rec_specific->opt_val("python_solution", python_solution_filename_);
+            ASSERT(python_solution_filename_.exists());
+        }
+        
+        // raw output
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0) {
+            // optionally open raw output file
+            FilePath raw_output_file_path;
+            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
+            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
+            	try {
+            		raw_output_file_path.open_stream(raw_output_file);
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
+            }
+        }
+
+        // possibly read the names of specific output fields
+        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
+        if(in_rec_specific_output){
+            is_output_specific_fields = true;
+            prepare_specific_output(*in_rec_specific_output);
+        }
+        else
+            is_output_specific_fields = false;
+    }
+}
+
+void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
+{
+  	// we need to add data from the flow equation at this point, not in constructor of OutputFields
 	output_fields += darcy_flow->data();
 	output_fields.set_mesh(*mesh_);
-
-	all_element_idx_.resize(mesh_->n_elements());
+        
+        all_element_idx_.resize(mesh_->n_elements());
 	for(unsigned int i=0; i<all_element_idx_.size(); i++) all_element_idx_[i] = i;
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
@@ -151,47 +193,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
 	output_fields.region_id = GenericField<3>::region_id(*mesh_);
 
-	output_stream = OutputTime::create_output_stream("flow", main_mh_in_rec.val<Input::Record>("output_stream"), darcy_flow->time().get_unit_string());
 	//output_stream->add_admissible_field_names(in_rec_output.val<Input::Array>("fields"));
 	//output_stream->mark_output_times(darcy_flow->time());
-    output_fields.initialize(output_stream, mesh_, in_rec_output, darcy_flow->time() );
-
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-    auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
-    if (in_rec_specific) {
-        in_rec_specific->opt_val("compute_errors", compute_errors_);
-        if(compute_errors_){
-            in_rec_specific->opt_val("python_solution", python_solution_filename_);
-            ASSERT(python_solution_filename_.exists());
-        }
-
-        if (rank == 0) {
-            // optionally open raw output file
-            FilePath raw_output_file_path;
-            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
-            	try {
-            		raw_output_file_path.open_stream(raw_output_file);
-            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
-            }
-        }
-        
-        prepare_specific_output();
-        
-        // possibly read the names of specific output fields
-        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
-        if(in_rec_specific_output){
-            is_output_specific_fields = true;
-            output_specific_fields.initialize(output_stream, mesh_, *in_rec_specific_output, darcy_flow->time() );
-        }
-        else
-            is_output_specific_fields = false;
-    }
+    output_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
-void DarcyFlowMHOutput::prepare_specific_output()
+void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
 {
     diff_data.darcy = darcy_flow;
     diff_data.data_ = darcy_flow->data_.get();
@@ -207,7 +214,7 @@ void DarcyFlowMHOutput::prepare_specific_output()
     diff_data.pressure_diff.resize( mesh_->n_elements() );
     diff_data.velocity_diff.resize( mesh_->n_elements() );
     diff_data.div_diff.resize( mesh_->n_elements() );
-    
+
     output_specific_fields.set_mesh(*mesh_);
 
     auto vel_diff_ptr =	diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
@@ -216,8 +223,15 @@ void DarcyFlowMHOutput::prepare_specific_output()
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
     auto div_diff_ptr =	diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
-
+    
+    /// Create empty fields
+    std::shared_ptr<FieldElementwise<3, FieldValue<3>::VectorFixed> > field_ptr(new FieldElementwise<3, FieldValue<3>::VectorFixed>(3));
+    output_specific_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_ptr);
+    output_specific_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_ptr);
+    output_specific_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), field_ptr);
+    
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+    output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
 
 DarcyFlowMHOutput::~DarcyFlowMHOutput()
@@ -300,15 +314,13 @@ void DarcyFlowMHOutput::output()
 void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
 {
     START_TIMER("DarcyFlowMHOutput::make_element_scalar");
-    unsigned int sol_size;
-    double *sol;
-
-    darcy_flow->get_solution_vector(sol, sol_size);
-    unsigned int soi = mesh_->n_sides();
+    // need to call this to create mh solution vector
+    darcy_flow->get_mh_dofhandler();
+    
     for(unsigned int i_ele : element_indices) {
         ElementFullIter ele = mesh_->element(i_ele);
-        ele_pressure[i_ele] = sol[ soi + i_ele];
-        ele_piezo_head[i_ele] = sol[soi + i_ele ]
+        ele_pressure[i_ele] = darcy_flow->mh_dh.element_scalar(ele);
+        ele_piezo_head[i_ele] = ele_pressure[i_ele] +
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));
     }
 }
@@ -541,8 +553,8 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * */
 
 template <int dim>
-void l2_diff_local(ElementFullIter &ele, 
-                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt, 
+void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
+                   FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
     fv_rt.reinit(ele);
@@ -637,9 +649,10 @@ void l2_diff_local(ElementFullIter &ele,
 
 }
 
-
-
-
+template
+void DarcyFlowMHOutput::l2_diff_local<3>(ElementFullIter &ele,
+                   FEValues<3,3> &fe_values, FEValues<3,3> &fv_rt,
+                   ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result);
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
@@ -673,7 +686,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     anal_sol_1d.set_python_field_from_file( python_solution_filename_, "all_values_1d");
 
     ExactSolution anal_sol_2d(5);
-    anal_sol_1d.set_python_field_from_file( python_solution_filename_, "all_values_1d");
+    anal_sol_2d.set_python_field_from_file( python_solution_filename_, "all_values_2d");
 
 
     diff_data.dh = &( darcy_flow->get_mh_dofhandler());
