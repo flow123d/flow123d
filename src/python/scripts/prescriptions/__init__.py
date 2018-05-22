@@ -47,8 +47,7 @@ class AbstractRun(object):
         return [
             Paths.flow123d(),
             '-s', self.case.file,
-            '-i', self.case.fs.input,
-            '-o', self.case.fs.output
+            '-o', self.case.fs.output,
         ]
 
     def _get_command(self):
