@@ -137,3 +137,9 @@ class ConfigCaseFiles(object):
         :rtype: str
         """
         return Paths.join(self.output, *names)
+
+    def __repr__(self):
+        vars = ('root', 'output', 'ndiff_log', 'pbs_script', 'pbs_output',
+                'job_output', 'json_output', 'dump_output', 'status_file',
+                'valgrind_out', 'ref_output')
+        return ' - ' + '\n - '.join(['{:>15s}: {:s}'.format(x, getattr(self, x)) for x in vars])

@@ -21,8 +21,6 @@ class ConfigCase(object):
     :type config   : ConfigBase
     """
 
-    sanitise_regex = re.compile(r'[^a-zA-Z0-9_-]+]')
-
     def __init__(self, o, config):
         o = ConfigBase.merge(yamlc.DEFAULTS, deepcopy(o))
 
