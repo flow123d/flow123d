@@ -215,8 +215,9 @@ function usage() {
 
 # get CWD as realtive path to current directory, which enables to build image on Windows
 OLD_PWD="$(pwd)"
-ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
-ROOT=$(realpath --relative-to=$(pwd) $ROOT)
+ABS_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+ABS_BIN="$ABS_ROOT/bin"
+ROOT=$(realpath --relative-to=$(pwd) $ABS_ROOT)
 REL_BIN=$(realpath --relative-to=$(pwd) $ROOT/bin)
 cd $ROOT
 REl_ROOL='.'
@@ -283,20 +284,26 @@ fi
 
 work_image=flow123d/flow-libs-dev-$version:user
 flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel install"
-# flow123d_images="flow-libs-dev-dbg"
+flow123d_images="flow-libs-dev-dbg"
 
 
 # perform action based on variable action
 case $action in
   flow123d)
-    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -c "$(pwd)/bin/flow123d $*"
+    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "$(pwd)/bin/flow123d $*"
   ;;
   runtest)
-    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -c "$(pwd)/bin/runtest $*"
+    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "$(pwd)/bin/runtest $*"
   ;;
   run)
     if [[ "$#" -eq 0 ]]; then
-      docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image
+      docker run --rm -it \
+          -w "$OLD_PWD" \
+          -v "$work":"$work" \
+          -e TESTS_DIR="$ABS_ROOT/tests" \
+          $work_image \
+          bash -lc \
+          "export PATH=\$PATH:$ABS_BIN; bash -l"
     else
       docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "$*"
     fi
