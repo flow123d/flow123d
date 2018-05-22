@@ -57,6 +57,27 @@ alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 alias fgrep='fgrep --color=auto'
 alias egrep='egrep --color=auto'
+
+function _flow123d() {
+  local cur=\${COMP_WORDS[COMP_CWORD]}
+  COMPREPLY=(\$(compgen -df -W "-s -i -o -l \
+        --solve --input_dir --output_dir --log --version \
+        --no_log --no_signal_handler --no_profiler --help \
+        --input_format --petsc_redirect --yaml_balance" -- \$cur))
+  return 0
+}
+
+function _runtest() {
+  local cur=\${COMP_WORDS[COMP_CWORD]}
+  COMPREPLY=(\$(compgen -df -W "--keep-going \
+        --batch --cpu --limit-time --limit-memory \
+        --no-clean --no-compare --death-test --help \
+        --list" -- \$cur))
+  return 0
+}
+complete -o nospace -F _flow123d flow123d
+complete -o nospace -F _runtest runtest
+
 EOL
 
 
