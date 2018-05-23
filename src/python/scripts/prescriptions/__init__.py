@@ -42,7 +42,7 @@ class AbstractRun(object):
             FLOW123D_DIR=Paths.flow123d_root(),
             CURRENT_TEST_DIR=self.case.fs.root,
             CURRENT_OUTPUT_DIR=self.case.fs.output,
-            CURRENT_REF_OUTPUT_DIR=self.case.fs.output,
+            CURRENT_REF_OUTPUT_DIR=self.case.fs.ref_output,
             TESTS_DIR=Paths.dirname(self.case.fs.root),
         )
 
