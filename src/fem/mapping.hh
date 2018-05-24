@@ -85,7 +85,7 @@ template<> inline double determinant(const arma::mat::fixed<3,2> &M)
                -(M(0,0)*M(0,1)+M(1,0)*M(1,1)+M(2,0)*M(2,1))*(M(0,0)*M(0,1)+M(1,0)*M(1,1)+M(2,0)*M(2,1)));
 }
 
-template<unsigned int n> inline double determinant(const arma::mat::fixed<n,n> &M)
+template<arma::uword n> inline double determinant(const arma::mat::fixed<n,n> &M)
 {
     return det(M);
 }

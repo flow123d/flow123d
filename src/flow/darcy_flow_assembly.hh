@@ -8,6 +8,7 @@
 #ifndef SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 #define SRC_FLOW_DARCY_FLOW_ASSEMBLY_HH_
 
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_p.hh"
@@ -123,8 +124,14 @@ public:
         sp.zeros();
         sp.submat(0, 0, nsides, nsides).ones();
         sp.diag().ones();
-        sp.diag(nsides+1).ones();
-        sp.diag(-nsides-1).ones();
+        // armadillo 8.4.3 bug with negative sub diagonal index
+        // sp.diag(nsides+1).ones();
+        // sp.diag(-nsides-1).ones();
+        // sp.print();
+        
+        sp.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
+        sp.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
+        
         loc_system_.set_sparsity(sp);
         
         // local system 2x2 for vb neighbourings is full matrix
@@ -492,7 +499,7 @@ protected:
                             ele_ac.side_row(i));
                  */
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
-                                                     {(IdxInt)(ele_ac.side_row(i))}, {1});
+                                                     {(LongIdx)(ele_ac.side_row(i))}, {1});
                 ++(ad_->local_boundary_index);
             }
         }

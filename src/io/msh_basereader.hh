@@ -30,6 +30,7 @@
 #include "io/element_data_cache.hh"  // for ElementDataCache
 #include "io/output_time.hh"
 #include "mesh/partitioning.hh"
+#include "mesh/long_idx.hh"
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 #include "system/file_path.hh"       // for FilePath
 #include "system/tokenizer.hh"       // for Tokenizer, Tokenizer::Position
@@ -253,7 +254,7 @@ protected:
 
     /// Vector of both bulk and boundary IDs. Bulk elements come first, then boundary elements, but only the portion that appears
     /// in input mesh file and has ID assigned.
-    vector<IdxInt> bulk_elements_id_, boundary_elements_id_;
+    vector<LongIdx> bulk_elements_id_, boundary_elements_id_;
 
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;

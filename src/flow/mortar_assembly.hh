@@ -51,12 +51,12 @@ protected:
 
 
 struct IsecData {
-    arma::uvec vel_dofs;
-    arma::uvec dofs;
+    LocalSystem::DofVec vel_dofs;
+    LocalSystem::DofVec dofs;
     unsigned int dim;
     double delta;
     double ele_z_coord_;
-    arma::uvec dirichlet_dofs;
+    LocalSystem::DofVec dirichlet_dofs;
     arma::vec dirichlet_sol;
     unsigned int n_dirichlet;
 };

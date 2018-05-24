@@ -26,6 +26,7 @@
 #ifdef FLOW123D_HAVE_PETSC
 //#include <petsc.h>
 #include <petscsys.h>
+#include <petsc/private/petscimpl.h> /* to gain access to the private PetscVFPrintf */
 #endif
 
 #include <string.h>                                    // for strsignal
@@ -203,4 +204,3 @@ ApplicationBase::~ApplicationBase() {
 	//if (sys_info.log) xfclose(sys_info.log);
 	petcs_finalize();
 }
-
