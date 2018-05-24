@@ -18,6 +18,7 @@
 #include "mesh/side_impl.hh"
 #include "flow/mh_dofhandler.hh"
 #include "la/local_to_global_map.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/side_impl.hh"
@@ -81,8 +82,8 @@ void MH_DofHandler::prepare_parallel() {
 
     START_TIMER("prepare parallel");
 
-    IdxInt *loc_part; // optimal (edge,el) partitioning (local chunk)
-    IdxInt *id_4_old; // map from old idx to ids (edge,el)
+    LongIdx *loc_part; // optimal (edge,el) partitioning (local chunk)
+    LongIdx *id_4_old; // map from old idx to ids (edge,el)
     int loc_i;
 
     int e_idx;
@@ -92,7 +93,7 @@ void MH_DofHandler::prepare_parallel() {
     //OLD_ASSERT(ierr == 0, "Error in MPI_Barrier.");
 
     // row_4_el will be modified so we make a copy of the array from mesh
-    row_4_el = new IdxInt[mesh_->n_elements()];
+    row_4_el = new LongIdx[mesh_->n_elements()];
     std::copy(mesh_->get_row_4_el(), mesh_->get_row_4_el()+mesh_->n_elements(), row_4_el);
     el_4_loc = mesh_->get_el_4_loc();
     el_ds = mesh_->get_el_ds();
@@ -101,8 +102,8 @@ void MH_DofHandler::prepare_parallel() {
     Distribution init_edge_ds(DistributionLocalized(), mesh_->n_edges(), PETSC_COMM_WORLD);
     // partitioning of edges, edge belongs to the proc of his first element
     // this is not optimal but simple
-    loc_part = new IdxInt[init_edge_ds.lsize()];
-    id_4_old = new IdxInt[mesh_->n_edges()];
+    loc_part = new LongIdx[init_edge_ds.lsize()];
+    id_4_old = new LongIdx[mesh_->n_edges()];
     {
         loc_i = 0;
         for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
@@ -136,8 +137,8 @@ void MH_DofHandler::prepare_parallel() {
     //optimal side part; loc. sides; id-> new side numbering
     Distribution init_side_ds(DistributionBlock(), mesh_->n_sides(), PETSC_COMM_WORLD);
     // partitioning of sides follows elements
-    loc_part = new IdxInt[init_side_ds.lsize()];
-    id_4_old = new IdxInt[mesh_->n_sides()];
+    loc_part = new LongIdx[init_side_ds.lsize()];
+    id_4_old = new LongIdx[mesh_->n_sides()];
     {
         int is = 0;
         loc_i = 0;
@@ -194,18 +195,18 @@ void MH_DofHandler::make_row_numberings() {
     }
     // apply shifts
     for (i = 0; i < side_n_id; i++) {
-    	IdxInt &what = side_row_4_id[i];
+    	LongIdx &what = side_row_4_id[i];
         if (what >= 0)
             what += side_shift[side_ds->get_proc(what)];
     }
     for (i = 0; i < el_n_id; i++) {
-    	IdxInt &what = row_4_el[i];
+    	LongIdx &what = row_4_el[i];
         if (what >= 0)
             what += el_shift[el_ds->get_proc(what)];
 
     }
     for (i = 0; i < edge_n_id; i++) {
-    	IdxInt &what = row_4_edge[i];
+    	LongIdx &what = row_4_edge[i];
         if (what >= 0)
             what += edge_shift[edge_ds->get_proc(what)];
     }
@@ -221,7 +222,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
 #ifdef FLOW123D_HAVE_BDDCML
     // auxiliary
     ElementAccessor<3> el;
-    IdxInt side_row, edge_row;
+    LongIdx side_row, edge_row;
 
     global_row_4_sub_row = std::make_shared<LocalToGlobalMap>(rows_ds);
 
@@ -231,7 +232,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
     // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         el = mesh_->element_accessor( el_4_loc[i_loc] );
-        IdxInt el_row = row_4_el[el_4_loc[i_loc]];
+        LongIdx el_row = row_4_el[el_4_loc[i_loc]];
 
         global_row_4_sub_row->insert( el_row );
 

@@ -24,7 +24,7 @@
 #include <memory>                    // for shared_ptr
 #include <string>                    // for string
 #include "coupling/equation.hh"      // for EquationBase
-#include "mesh/partitioning.hh"      // for IdxInt
+#include "mesh/long_idx.hh"          // for LongInt
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 #include "transport/substance.hh"    // for SubstanceList
@@ -84,7 +84,7 @@ public:
    * all substances and on all elements (given by transport).
    */
   ReactionTerm &concentration_matrix(double **concentration, Distribution *conc_distr, 
-                                     IdxInt *el_4_loc, IdxInt *row_4_el)
+                                     LongIdx *el_4_loc, LongIdx *row_4_el)
   {
     concentration_matrix_ = concentration;
     distribution_ = conc_distr;
@@ -124,9 +124,9 @@ protected:
   double **concentration_matrix_;
   
   /// Indices of elements belonging to local dofs.
-  IdxInt *el_4_loc_;
+  LongIdx *el_4_loc_;
   /// Indices of rows belonging to elements.
-  IdxInt *row_4_el_;
+  LongIdx *row_4_el_;
   
   /// Pointer to reference to distribution of elements between processors.
   Distribution *distribution_;

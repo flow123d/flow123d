@@ -33,6 +33,7 @@
 #include "petscvec.h"                           // for Vec
 #include "tools/time_governor.hh"               // for TimeGovernor, TimeGov...
 #include "tools/time_marks.hh"                  // for TimeMarks
+#include "mesh/long_idx.hh"
 
 /// external types:
 class Mesh;
@@ -119,10 +120,10 @@ public:
 	virtual const Vec &get_solution(unsigned int sbi) = 0;
 
 	/// Return array of indices of local elements and parallel distribution of elements.
-	virtual void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds) = 0;
+	virtual void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds) = 0;
 
 	/// Return global array of order of elements within parallel vector.
-	virtual IdxInt *get_row_4_el() = 0;
+	virtual LongIdx *get_row_4_el() = 0;
 
 	/// Pass velocity from flow to transport.
     virtual void set_velocity_field(const MH_DofHandler &dh) = 0;

@@ -20,6 +20,7 @@
 #include "output_element.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
@@ -552,7 +553,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	DebugOut() << "Create output submesh containing only local elements.";
 
 	ElementAccessor<3> ele;
-	IdxInt *el_4_loc = orig_mesh_->get_el_4_loc();
+	LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
 	Distribution *el_ds = orig_mesh_->get_el_ds();
     const unsigned int n_local_elements = el_ds->lsize();
 

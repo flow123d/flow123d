@@ -31,6 +31,7 @@
 #include "coupling/balance.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
+#include "mesh/long_idx.hh"
 
 #include "reaction/reaction_term.hh"
 #include "reaction/first_order_reaction.hh"
@@ -150,7 +151,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
-	IdxInt *el_4_loc;
+	LongIdx *el_4_loc;
 
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);

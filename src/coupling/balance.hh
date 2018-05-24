@@ -28,6 +28,7 @@
 #include "petscvec.h"           // for Vec, _p_Vec
 #include "system/file_path.hh"  // for FilePath
 #include "tools/time_marks.hh"  // for TimeMark, TimeMark::Type
+#include "mesh/long_idx.hh"     // for LongIdx
 
 class Mesh;
 class TimeGovernor;
@@ -258,7 +259,7 @@ public:
 	 */
 	void add_mass_matrix_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<IdxInt> &dof_indices,
+			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
 
 	/**
@@ -277,7 +278,7 @@ public:
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
 			unsigned int boundary_idx,
-			const std::vector<IdxInt> &dof_indices,
+			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
 
 	/**
@@ -289,7 +290,7 @@ public:
 	 */
 	void add_source_matrix_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<IdxInt> &dof_indices,
+			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
     
     /**
@@ -323,7 +324,7 @@ public:
 	 */
 	void add_source_vec_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<IdxInt> &dof_values,
+			const std::vector<LongIdx> &dof_values,
 			const std::vector<double> &values);
 
 	/// This method must be called after assembling the matrix for computing mass.

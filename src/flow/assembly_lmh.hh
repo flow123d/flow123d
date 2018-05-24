@@ -8,6 +8,7 @@
 #ifndef SRC_FLOW_ASSEMBLY_LMH_HH_
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
+#include "mesh/long_idx.hh"
 #include "flow/darcy_flow_assembly.hh"
 #include "soil_models.hh"
 #include "coupling/balance.hh"
@@ -173,7 +174,7 @@ public:
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(IdxInt)edge_row}, {source_diagonal});
+                ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)edge_row}, {source_diagonal});
             }
         }
 

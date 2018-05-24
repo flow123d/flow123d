@@ -60,7 +60,10 @@
           cd bin/docker
           git pull origin master
           cd bin
-          ./configure --yes-to-all --do-not-override --remove-all
+          ./dockerrun update
+          YES_TO_ALL=1 ./dockerrun remove-old
+          docker images
+          docker ps -a
           echo ${{_GIT_BRANCH}}
 
 
@@ -75,10 +78,8 @@
      - inject:
          properties-file: prop.file
      - shell: |
-         rm -f /tmp/docker_test_debug.cid
-         docker run --privileged -di --cidfile /tmp/docker_test_debug.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-dbg:user bash
-         docker_pid=`cat /tmp/docker_test_debug.cid`
-         echo "DOCKER_PID=${{docker_pid}}"  >> prop.file
+         docker rm -f cont{build-type} || echo "container not running"
+         docker run --privileged -di --name cont{build-type} flow123d/flow-libs-dev-dbg:user
          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
 
 # ---------------------------------------------------------------------------- #
@@ -92,10 +93,8 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          rm -f /tmp/docker_test_{build-type}.cid
-          docker run --privileged -di --cidfile /tmp/docker_test_{build-type}.cid -u $(id -u):$(id -g) flow123d/flow-libs-dev-rel:user bash
-          docker_pid=`cat /tmp/docker_test_{build-type}.cid`
-          echo "DOCKER_PID=${{docker_pid}}"                 >> prop.file
+          docker rm -f cont{build-type} || echo "container not running"
+          docker run --privileged -di --name cont{build-type} flow123d/flow-libs-dev-rel:user
           echo "FLOW=/opt/flow123d/flow123d"                >> prop.file
           echo "PACK_NAME=Flow123d-2.0.0-Linux.tar.gz"      >> prop.file
           echo "PACK_PATH=./Flow123d-2.0.0-Linux.tar.gz"    >> prop.file
@@ -113,9 +112,9 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} git clone -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
-          docker exec ${{DOCKER_PID}} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} cmake
+          docker exec cont{build-type} git clone -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
+          docker exec cont{build-type} cp ${{FLOW}}/config/config-jenkins-docker-{build-type}.cmake ${{FLOW}}/config.cmake
+          docker exec cont{build-type} make -C ${{FLOW}} cmake
 
 
 # ---------------------------------------------------------------------------- #
@@ -129,8 +128,8 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} -j4 all
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj 
+          docker exec cont{build-type} make -C ${{FLOW}} -j4 all
+          docker exec cont{build-type} make -C ${{FLOW}}/build_tree/unit_tests -j4 gtest_mpi_obj 
 
 
 # ---------------------------------------------------------------------------- #
@@ -146,7 +145,7 @@
           properties-file: prop.file
       - shell: |
           echo  ${{RUN_UNIT_TESTS}}
-          $(exit ${{RUN_UNIT_TESTS}}) || docker exec ${{DOCKER_PID}} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
+          $(exit ${{RUN_UNIT_TESTS}}) || docker exec cont{build-type} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
 
 
 # ---------------------------------------------------------------------------- #
@@ -165,9 +164,9 @@
           echo  ${{RUN_INTEGRATION_TESTS}}
           if -f ${{FLOW}}/tests/run_serial_only
           then
-                $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
+                $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
           else      
-                $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec ${{DOCKER_PID}} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+                $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
           fi      
             
                 
@@ -183,8 +182,7 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker stop ${{DOCKER_PID}}
-          docker rm   ${{DOCKER_PID}}
+          docker rm -f cont{build-type}
 
 
 # ---------------------------------------------------------------------------- #
@@ -333,9 +331,9 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} html-doc
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} doxy-doc
+          docker exec cont{build-type} make -C ${{FLOW}} FORCE_DOC_UPDATE=1 ref-doc
+          docker exec cont{build-type} make -C ${{FLOW}} html-doc
+          docker exec cont{build-type} make -C ${{FLOW}} doxy-doc
           
 
 
@@ -352,22 +350,22 @@
       - shell: |
           rm -rf publish
           mkdir -p publish
-          docker exec ${{DOCKER_PID}} make -C ${{FLOW}} clean-tests
+          docker exec cont{build-type} make -C ${{FLOW}} clean-tests
           
           make -C flow123d/bin/docker/package \
-                CID=${{DOCKER_PID}} \
+                CID=cont{build-type} \
                 DESTINATION=$(pwd)/publish \
                 DOCKER_TOOLBOX_PATH=/home/builder/jenkins/static/DockerToolbox-1.12.2.exe \
                 FLOW_GIT_HASH=${{GIT_COMMIT:0:6}} \
                 create-packages
           make -C flow123d/bin/docker/package \
-                CID=${{DOCKER_PID}} \
+                CID=cont{build-type} \
                 DESTINATION=$(pwd)/publish \
                 remove-unwanted
           # copy out docs, now done in makefile script in docker-config repo
-          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
-          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
-          # docker cp ${{DOCKER_PID}}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          # docker cp cont{build-type}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
+          # docker cp cont{build-type}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
+          # docker cp cont{build-type}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
     publishers:
       - cifs: 
           site: 'flow123d@intec'

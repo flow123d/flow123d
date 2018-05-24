@@ -28,6 +28,7 @@
 #include "input/accessors_impl.hh"           // for Record::val
 #include "input/storage.hh"                  // for ExcStorageTypeMismatch
 #include "input/type_record.hh"              // for Record (ptr only), Recor...
+#include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
 #include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
@@ -71,10 +72,7 @@ template <int spacedim> class ElementAccessor;
         ++i)
 
 
-/// Define integers that are indices into large arrays (elements, nodes, dofs etc.)
-typedef int IdxInt;
 typedef Iter<ElementAccessor<3>> ElementIter;
-
 
 class BoundarySegment {
 public:
@@ -176,10 +174,10 @@ public:
     Distribution *get_el_ds() const
     { return el_ds; }
 
-    IdxInt *get_row_4_el() const
+    LongIdx *get_row_4_el() const
     { return row_4_el; }
 
-    IdxInt *get_el_4_loc() const
+    LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
     /**
@@ -221,7 +219,7 @@ public:
     /**
      * Returns vector of ID numbers of elements, either bulk or bc elemnts.
      */
-    void elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const;
+    void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
 
     ElementAccessor<3> element_accessor(unsigned int idx) const;
@@ -504,9 +502,9 @@ protected:
 private:
 
     /// Index set assigning to global element index the local index used in parallel vectors.
-    IdxInt *row_4_el;
+    LongIdx *row_4_el;
 	/// Index set assigning to local element index its global index.
-    IdxInt *el_4_loc;
+    LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
         

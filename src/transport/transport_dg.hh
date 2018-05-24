@@ -40,6 +40,7 @@
 #include "input/type_base.hh"                  // for Array
 #include "input/type_generic.hh"               // for Instance
 #include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
+#include "mesh/long_idx.hh"                    // for LongIdx
 #include "mesh/accessors.hh"                   // for ElementAccessor
 #include "mesh/elements.h"                     // for Element::dim, Element:...
 #include "mesh/neighbours.h"                   // for Neighbour::element
@@ -238,9 +239,9 @@ public:
 
 	void update_after_reactions(bool solution_changed);
 
-    void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds);
+    void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds);
 
-    IdxInt *get_row_4_el();
+    LongIdx *get_row_4_el();
 
 
 

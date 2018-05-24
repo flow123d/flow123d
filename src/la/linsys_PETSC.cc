@@ -152,7 +152,7 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
     switch (status_) {
         case INSERT:
         case ADD:
-            ierr = MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_); CHKERRV( ierr ); 
+            chkerr(MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_));
             break;
         case ALLOCATE:
             this->preallocate_values(nrow,rows,ncol,cols); 
@@ -232,7 +232,7 @@ void LinSys_PETSC::preallocate_matrix()
     // create PETSC matrix with preallocation
     if (matrix_ != NULL)
     {
-    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    	chkerr(MatDestroy(&matrix_));
     }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
@@ -354,7 +354,10 @@ LinSys::SolveInfo LinSys_PETSC::solve()
 
     if (params_ == "") params_ = petsc_dflt_opt;
     LogOut().fmt("inserting petsc options: {}\n",params_.c_str());
-    PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
+    
+    // now takes an optional PetscOptions object as the first argument
+    // value NULL will preserve previous behaviour previous behavior.
+    PetscOptionsInsertString(NULL, params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
@@ -432,7 +435,7 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
+    if (matrix_ != NULL) { chkerr(MatDestroy(&matrix_)); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
     if (residual_ != NULL) VecDestroy(&residual_);

@@ -29,6 +29,7 @@
 #include "la/distribution.hh"
 
 #include "mesh/side_impl.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/region_set.hh"
@@ -285,7 +286,7 @@ void Mesh::setup_topology() {
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
-    IdxInt *id_4_old = new IdxInt[n_elements()];
+    LongIdx *id_4_old = new LongIdx[n_elements()];
     int i = 0;
     for (auto ele : this->bulk_elements_range())
         id_4_old[i++] = ele.idx();
@@ -700,17 +701,17 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
 
 
 
-void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const
+void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const
 {
     if (bulk_elements_id.size() ==0) {
-        std::vector<IdxInt>::iterator map_it;
-        IdxInt last_id;
+        std::vector<LongIdx>::iterator map_it;
+        LongIdx last_id;
 
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < n_elements(); idx++, ++map_it) {
-        	IdxInt id = this->find_elem_id(idx);
+        	LongIdx id = this->find_elem_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
@@ -719,7 +720,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=bulk_size_; idx<element_vec_.size(); idx++, ++map_it) {
-        	IdxInt id = this->find_elem_id(idx);
+        	LongIdx id = this->find_elem_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines

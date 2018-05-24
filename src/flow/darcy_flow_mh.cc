@@ -34,6 +34,7 @@
 #include "input/factory.hh"
 
 #include "mesh/side_impl.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -805,7 +806,7 @@ void DarcyMH::assembly_source_term()
                 data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
-        balance_->add_source_vec_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(IdxInt) ele_ac.ele_row()}, {source});
+        balance_->add_source_vec_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_row()}, {source});
     }
 
     balance_->finish_source_assembly(data_->water_balance_idx);
@@ -1342,7 +1343,7 @@ void DarcyMH::setup_time_term() {
 
         //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
        	balance_->add_mass_matrix_values(data_->water_balance_idx,
-       	        ele_ac.region().bulk_idx(), { IdxInt(ele_ac.ele_row()) }, {diagonal_coeff});
+       	        ele_ac.region().bulk_idx(), { LongIdx(ele_ac.ele_row()) }, {diagonal_coeff});
     }
     VecRestoreArray(new_diagonal,& local_diagonal);
     MatDiagonalSet(*( schur0->get_matrix() ), new_diagonal, ADD_VALUES);
