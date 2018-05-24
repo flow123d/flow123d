@@ -22,6 +22,7 @@
 #include "system/sys_profiler.hh"
 
 #include "mesh/side_impl.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/accessors.hh"
@@ -190,7 +191,7 @@ ConvectionTransport::~ConvectionTransport()
 
     if (sources_corr) {
         //Destroy mpi vectors at first
-        MatDestroy(&tm);
+        chkerr(MatDestroy(&tm));
         VecDestroy(&mass_diag);
         VecDestroy(&vpmass_diag);
         VecDestroy(&vcfl_flow_);
@@ -239,7 +240,7 @@ void ConvectionTransport::set_initial_condition()
 	for (auto elem : mesh_->bulk_elements_range()) {
     	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
 
-    	IdxInt index = row_4_el[ elem.idx() ] - el_ds->begin();
+    	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
     	ElementAccessor<3> ele_acc = mesh_->element_accessor( elem.idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
@@ -354,7 +355,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element_accessor( el_4_loc[loc_el] );
         if (elm->boundary_idx_ != NULL) {
-        	IdxInt new_i = row_4_el[ elm.idx() ];
+        	LongIdx new_i = row_4_el[ elm.idx() ];
 
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
                 Boundary *b = elm.side(si)->cond();
@@ -720,7 +721,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementAccessor<3> elm;
     const Edge *edg;
     int j, np, rank;
-    IdxInt new_j, new_i;
+    LongIdx new_j, new_i;
     double aij, aii;
         
     MatZeroEntries(tm);
@@ -827,7 +828,7 @@ double **ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 
-void ConvectionTransport::get_par_info(IdxInt * &el_4_loc_out, Distribution * &el_distribution_out){
+void ConvectionTransport::get_par_info(LongIdx * &el_4_loc_out, Distribution * &el_distribution_out){
 	el_4_loc_out = this->el_4_loc;
 	el_distribution_out = this->el_ds;
 	return;
@@ -837,7 +838,7 @@ void ConvectionTransport::get_par_info(IdxInt * &el_4_loc_out, Distribution * &e
 //	return el_4_loc;
 //}
 
-IdxInt *ConvectionTransport::get_row_4_el(){
+LongIdx *ConvectionTransport::get_row_4_el(){
 	return row_4_el;
 }
 
