@@ -331,7 +331,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     for (auto ele : orig_mesh_->bulk_elements_range()) {
         const unsigned int
             dim = ele->dim(),
-            ele_idx = ele.index();
+            ele_idx = ele.idx();
 //         DebugOut() << "ele index " << ele_idx << "\n";
         
         AuxElement aux_ele;
