@@ -169,7 +169,7 @@ TEST(intersections_12d, all) {
             // permute nodes:
             for (auto ele : mesh->bulk_elements_range()) {
                 if(ele->dim() == 2)
-                    permute_triangle(ele,p);
+                	mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
             }
             mesh->setup_topology();
             

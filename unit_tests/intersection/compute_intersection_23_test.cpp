@@ -308,9 +308,9 @@ TEST(area_intersections, all) {
                 // permute nodes:
                 for (auto ele : mesh->bulk_elements_range()) {
                     if(ele->dim() == 2)
-                        permute_triangle(ele,p);
+                        mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
                     if(ele->dim() == 3)
-                        permute_tetrahedron(ele,pt);
+                    	mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[pt]);
                 }
                 mesh->setup_topology();
                 

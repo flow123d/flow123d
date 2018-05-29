@@ -147,7 +147,7 @@ TEST(intersections_22d, all) {
             reader->read_raw_mesh(mesh);
         
             // permute nodes of one triangle:
-            permute_triangle(mesh->element_accessor(0),p);
+            mesh->permute_triangle(0, permutations_triangle[p]);
             
             mesh->setup_topology();
             

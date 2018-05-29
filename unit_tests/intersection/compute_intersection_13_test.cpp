@@ -144,7 +144,7 @@ TEST(intersections_13d, all) {
             // permute nodes:
             for (auto ele : mesh->bulk_elements_range()) {
                 if(ele->dim() == 3)
-                    permute_tetrahedron(ele,p);
+                    mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[p]);
             }
             
             mesh->setup_topology();
