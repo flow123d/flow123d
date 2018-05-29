@@ -193,7 +193,8 @@ Mesh::~Mesh() {
     for(Edge &edg : this->edges)
         if (edg.side_) delete[] edg.side_;
 
-    for (auto ele : this->bulk_elements_range()) {
+    for (unsigned int idx=0; idx < bulk_size_; idx++) {
+    	Element *ele=&(element_vec_[idx]);
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
@@ -1003,6 +1004,40 @@ void Mesh::create_boundary_elements() {
 	element_vec_.resize(pos); // remove empty element (count is equal with zero-dimensional bulk elements)
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(0);
+}
+
+
+void Mesh::permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec)
+{
+	ASSERT_LT_DBG(elm_idx, element_vec_.size());
+    ASSERT_EQ_DBG(permutation_vec.size(), 4);
+
+    std::array<unsigned int, 4> tmp_nodes;
+    Element &elem = element_vec_[elm_idx];
+    ASSERT_EQ_DBG(elem.dim(), 3);
+
+    for(unsigned int i=0; i<elem.n_nodes(); i++)
+    {
+       	tmp_nodes[i] = elem.nodes_[permutation_vec[i]];
+    }
+    elem.nodes_ = tmp_nodes;
+}
+
+
+void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec)
+{
+	ASSERT_LT_DBG(elm_idx, element_vec_.size());
+	ASSERT_EQ_DBG(permutation_vec.size(), 3);
+
+    std::array<unsigned int, 4> tmp_nodes;
+    Element &elem = element_vec_[elm_idx];
+    ASSERT_EQ_DBG(elem.dim(), 2);
+
+    for(unsigned int i=0; i<elem.n_nodes(); i++)
+    {
+       	tmp_nodes[i] = elem.nodes_[permutation_vec[i]];
+    }
+    elem.nodes_ = tmp_nodes;
 }
 
 

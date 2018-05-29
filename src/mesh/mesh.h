@@ -373,6 +373,12 @@ public:
     /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
     void create_boundary_elements();
 
+    /// Permute nodes of 3D elements of given elm_idx
+    void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
+
+    /// Permute nodes of 2D elements of given elm_idx
+    void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
+
 protected:
 
     /**
