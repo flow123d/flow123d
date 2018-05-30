@@ -405,12 +405,12 @@ SchurComplement :: ~SchurComplement() {
     if ( xA != NULL )             chkerr(MatDestroy(&xA));
     if ( IA != NULL )             chkerr(MatDestroy(&IA));
     if ( IAB != NULL )            chkerr(MatDestroy(&IAB));
-    if ( IsA != NULL )            ISDestroy(&IsA);
-    if ( IsB != NULL )            ISDestroy(&IsB);
-    if ( RHS1 != NULL )           VecDestroy(&RHS1);
-    if ( RHS2 != NULL )           VecDestroy(&RHS2);
-    if ( Sol1 != NULL )           VecDestroy(&Sol1);
-    if ( Sol2 != NULL )           VecDestroy(&Sol2);
+    if ( IsA != NULL )            chkerr(ISDestroy(&IsA));
+    if ( IsB != NULL )            chkerr(ISDestroy(&IsB));
+    if ( RHS1 != NULL )           chkerr(VecDestroy(&RHS1));
+    if ( RHS2 != NULL )           chkerr(VecDestroy(&RHS2));
+    if ( Sol1 != NULL )           chkerr(VecDestroy(&Sol1));
+    if ( Sol2 != NULL )           chkerr(VecDestroy(&Sol2));
     if ( IA != NULL )             chkerr(MatDestroy(&IA));
 
     if (Compl != NULL)            delete Compl;

@@ -557,7 +557,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
-    VecDestroy(&save_solution);
+    chkerr(VecDestroy(&save_solution));
     this -> postprocess();
 
     // adapt timestep
@@ -1195,16 +1195,15 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-    
-    VecDestroy(&previous_solution);
-    VecDestroy(&steady_diagonal);
-    VecDestroy(&new_diagonal);
-    VecDestroy(&steady_rhs);
+	chkerr(VecDestroy(&previous_solution));
+	chkerr(VecDestroy(&steady_diagonal));
+	chkerr(VecDestroy(&new_diagonal));
+	chkerr(VecDestroy(&steady_rhs));
     
     
     if (schur0 != NULL) {
         delete schur0;
-        VecScatterDestroy(&par_to_all);
+        chkerr(VecScatterDestroy(&par_to_all));
     }
 
 	if (solution != NULL) {
@@ -1258,7 +1257,7 @@ void DarcyMH::make_serial_scatter() {
             delete [] loc_idx;
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
-            ISDestroy(&(is_loc));
+            chkerr(ISDestroy(&(is_loc)));
     }
     solution_changed_for_scatter=true;
 
