@@ -6,7 +6,7 @@ points:
     init_point: [ 0 , -0.5 , -0.5 ]
     snap_dim: 4
     snap_region: ALL
-    observe_point: [ 0 , -0.5 , -0.5 ]
+    observe_point: [ 2.77556e-17 , -0.5 , -0.5 ]
   - name: s_el7
     init_point: [ 0 , -0.6 , -0.6 ]
     snap_dim: 3

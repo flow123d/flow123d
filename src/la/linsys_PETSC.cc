@@ -152,7 +152,7 @@ void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, dou
     switch (status_) {
         case INSERT:
         case ADD:
-            ierr = MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_); CHKERRV( ierr ); 
+            chkerr(MatSetValues(matrix_,nrow,rows,ncol,cols,vals,(InsertMode)status_));
             break;
         case ALLOCATE:
             this->preallocate_values(nrow,rows,ncol,cols); 
@@ -232,7 +232,7 @@ void LinSys_PETSC::preallocate_matrix()
     // create PETSC matrix with preallocation
     if (matrix_ != NULL)
     {
-    	ierr = MatDestroy(&matrix_); CHKERRV( ierr );
+    	chkerr(MatDestroy(&matrix_));
     }
     ierr = MatCreateAIJ(PETSC_COMM_WORLD, rows_ds_->lsize(), rows_ds_->lsize(), PETSC_DETERMINE, PETSC_DETERMINE,
                            0, on_nz, 0, off_nz, &matrix_); CHKERRV( ierr );
@@ -337,8 +337,8 @@ LinSys::SolveInfo LinSys_PETSC::solve()
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
-           //petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
-           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           //petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
        else
            petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
@@ -346,15 +346,18 @@ LinSys::SolveInfo LinSys_PETSC::solve()
     else {
         // serial setting
        if (this->is_positive_definite())
-           //petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
-    	   petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+    	   //petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
        else
            petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
     LogOut().fmt("inserting petsc options: {}\n",params_.c_str());
-    PetscOptionsInsertString(params_.c_str()); // overwrites previous options values
+    
+    // now takes an optional PetscOptions object as the first argument
+    // value NULL will preserve previous behaviour previous behavior.
+    PetscOptionsInsertString(NULL, params_.c_str()); // overwrites previous options values
     
     MatSetOption( matrix_, MAT_USE_INODES, PETSC_FALSE );
     
@@ -432,7 +435,7 @@ LinSys_PETSC::~LinSys_PETSC( )
 {
     PetscErrorCode ierr;
 
-    if (matrix_ != NULL) { ierr = MatDestroy(&matrix_); CHKERRV( ierr ); }
+    if (matrix_ != NULL) { chkerr(MatDestroy(&matrix_)); }
     ierr = VecDestroy(&rhs_); CHKERRV( ierr );
 
     if (residual_ != NULL) VecDestroy(&residual_);
