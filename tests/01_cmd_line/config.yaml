@@ -38,11 +38,23 @@ test_cases:
         files: [log03.0.log]
         substr: "----------- Table of all regions: -----------"
 
-#- files: 04_input_placeholder.yaml
-#  args: 
-#    - -i
-#    - 00_mesh
-#  check_rules:
-#    - regex:
-#        files: [large_cube.msh]
-#        substr: "$MeshFormat"
+- files: 04_input_placeholder_relative.yaml
+  args: 
+    - -i
+    - 00_mesh
+  check_rules:
+    - regex:
+        files: [output_data.msh]
+        substr: "$MeshFormat"
+
+- files: 05_input_placeholder_absolute.yaml
+  args: 
+    - -i
+    - <CURRENT_TEST_DIR>
+  check_rules:
+    - regex:
+        files: [output_data.msh]
+        substr: "$MeshFormat"
+    - regex:
+        files: [output_data.msh]
+        substr: "16 1.5"

@@ -1,8 +1,8 @@
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Interpolated boundary condition - big cube
+  description: Test of input placeholder in absolute path
   mesh:
-    mesh_file: ../${INPUT}/prism_11el.msh
+    mesh_file: ../00_mesh/prism_11el.msh
   flow_equation: !Flow_Darcy_MH
     output_specific:
     nonlinear_solver:
@@ -14,14 +14,19 @@ problem: !Coupling_Sequential
         bc_pressure: 0.5
       - region: BULK
         anisotropy: 1
+        sigma: !FieldElementwise
+          # placeholder in absolute path
+          mesh_data_file: $INPUT_DIR$/04_data.msh
+          field_name: sigma
     output:
       fields:
         - piezo_head_p0
         - pressure_p0
         - pressure_p1
         - velocity_p0
+        - sigma
     balance: {}
     output_stream:
-      file: ./large_cube.msh
+      file: ./output_data.msh
       format: !gmsh
         variant: ascii
