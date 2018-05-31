@@ -18,7 +18,8 @@ problem: !Coupling_Sequential
     output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
-        a_tol: 1.0e-07
+        a_tol: 1.0e-09    # 1.0e-07
+        r_tol: 1.0e-10    # default
     input_fields:
       - region: rock
         conductivity: 0.001
