@@ -17,7 +17,7 @@ test_cases:
   args: 
     - --no_profiler
     - --input_format
-    - /opt/flow123d/flow123d/tests/01_cmd_line/test_results/02_input_format.1/in.yaml
+    - <CURRENT_TEST_DIR>/test_results/02_input_format.1/in.yaml
   check_rules:
     - regex:
         files: [in.yaml]
