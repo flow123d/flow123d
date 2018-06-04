@@ -253,7 +253,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		// TODO: use default and check NaN values in data_vec
 
 		unsigned int n_entities;
-		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) || (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
+		if (is_native) {
 			n_entities = dh_->mesh()->n_elements();
 		} else {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
@@ -267,7 +268,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
-		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+		if (is_native) {
 			this->calculate_native_values(data_vec);
 		} else {
 			this->interpolate(data_vec);
