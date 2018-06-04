@@ -325,7 +325,7 @@ BaseMeshReader::MeshDataHeader & GmshMeshReader::find_header(BaseMeshReader::Hea
 {
 	// check discretization, only type element_data or undefined is supported
 	if (header_query.discretization != OutputTime::DiscreteSpace::ELEM_DATA) {
-		if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
+		if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED && header_query.discretization != OutputTime::DiscreteSpace::NATIVE_DATA) {
 			WarningOut().fmt(
 					"Unsupported discretization for field '{}', time: {} and GMSH format.\nType 'ELEM_DATA' of discretization will be used.\n",
 					header_query.field_name, header_query.time);
