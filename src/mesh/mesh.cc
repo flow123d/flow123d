@@ -863,6 +863,7 @@ void Mesh::init_element_vector(unsigned int size) {
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
+	boundary_loaded_size_ = 0;
 }
 
 
@@ -895,6 +896,10 @@ Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
 
 Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
     return Range<ElementAccessor<3>>(this, bulk_size_, element_vec_.size());
+}
+
+Range<ElementAccessor<3>> Mesh::boundary_loaded_elements_range() const {
+    return Range<ElementAccessor<3>>(this, bulk_size_, bulk_size_+boundary_loaded_size_);
 }
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
@@ -993,6 +998,7 @@ void Mesh::output_internal_ngh_data()
 
 void Mesh::create_boundary_elements() {
 	unsigned int i, pos;
+	boundary_loaded_size_ = bc_element_tmp_.size();
 	for (i=0, pos=bulk_size_; i<bc_element_tmp_.size(); ++i, ++pos) {
 		Element *ele = &element_vec_[pos];
 		element_ids_.set_item(bc_element_tmp_[i].elm_id, pos);
