@@ -331,9 +331,12 @@ public:
     /// Returns range of boundary elements
     Range<ElementAccessor<3>> boundary_elements_range() const;
 
+    /// Returns range of boundary elements loaded from mesh file
+    Range<ElementAccessor<3>> boundary_loaded_elements_range() const;
+
     /// Returns range of bulk / boundary elements
     inline Range<ElementAccessor<3>> elements_range(bool boundary) const {
-    	if (boundary) return this->boundary_elements_range();
+    	if (boundary) return this->boundary_loaded_elements_range();
     	else return this->bulk_elements_range();
     }
 
@@ -513,6 +516,9 @@ protected:
 
     /// Count of bulk elements
     unsigned int bulk_size_;
+
+    /// Count of boundary elements loaded from mesh file
+    unsigned int boundary_loaded_size_;
 
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
