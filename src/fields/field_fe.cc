@@ -245,7 +245,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		if ( reader_file_ == FilePath() ) return false;
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
-		bool boundary_domain = false;
 		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
@@ -256,14 +255,15 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_entities;
 		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) || (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
 		if (is_native) {
-			n_entities = dh_->mesh()->n_elements();
+			n_entities = dh_->mesh()->n_elements(this->boundary_domain_);
 		} else {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				boundary_domain, this->component_idx_);
+				this->boundary_domain_, this->component_idx_);
 		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
+
 
 	    if (checked_data == CheckResult::not_a_number) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
@@ -337,7 +337,6 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
-	ASSERT(!this->boundary_domain_)(field_name_).error("Native calculation of boundary FieldFE is not supported yet.\n");
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
@@ -347,7 +346,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto ele : dh_->mesh()->elements_range(boundary_domain_)) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-		data_vec_i = ele.idx() * dof_indices_.size();
+		data_vec_i = (ele.idx() - dh_->mesh()->elements_shift(boundary_domain_)) * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];
