@@ -196,6 +196,7 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	// Mesh can be set only for field initialized from input.
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
 		ReaderCache::get_reader(reader_file_)->check_compatible_mesh( *(dh_->mesh()) );
 	}
@@ -210,7 +211,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	fe2_ = new FE_P_disc<2>(0);
 	fe3_ = new FE_P_disc<3>(0);
 
-	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
+	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh), this->boundary_domain_ );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
@@ -283,6 +284,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
+	ASSERT(!this->boundary_domain_)(field_name_).error("Interpolation of boundary FieldFE is not supported yet.\n");
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);
@@ -335,6 +337,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache)
 {
+	ASSERT(!this->boundary_domain_)(field_name_).error("Native calculation of boundary FieldFE is not supported yet.\n");
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
@@ -342,7 +345,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
-	for (auto ele : dh_->mesh()->bulk_elements_range()) {
+	for (auto ele : dh_->mesh()->elements_range(boundary_domain_)) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
 		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {

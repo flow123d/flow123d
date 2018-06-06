@@ -331,6 +331,12 @@ public:
     /// Returns range of boundary elements
     Range<ElementAccessor<3>> boundary_elements_range() const;
 
+    /// Returns range of bulk / boundary elements
+    inline Range<ElementAccessor<3>> elements_range(bool boundary) const {
+    	if (boundary) return this->boundary_elements_range();
+    	else return this->bulk_elements_range();
+    }
+
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
 
@@ -340,7 +346,13 @@ public:
     	else return bulk_size_;
     }
 
-    // For each node the vector contains a list of elements that use this node
+    /// Returns shift of boundary / bulk elements (index of first element) in element vector.
+    inline unsigned int elements_shift(bool boundary) const {
+    	if (boundary) return bulk_size_;
+    	else return 0;
+    }
+
+    /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.

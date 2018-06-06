@@ -175,6 +175,9 @@ private:
     /// Accessor to Input::Record
     Input::Record in_rec_;
 
+    /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
+    bool boundary_domain_;
+
     /// Registrar of class to factory
     static const int registrar;
 };
