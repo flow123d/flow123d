@@ -45,7 +45,7 @@ public:
      * @brief Constructor.
      * @param _mesh The mesh.
      */
-    DOFHandlerBase(Mesh &_mesh) : global_dof_offset(0), n_dofs(0), lsize_(0), mesh_(&_mesh) {};
+    DOFHandlerBase(Mesh &_mesh, bool boundary=false) : global_dof_offset(0), n_dofs(0), lsize_(0), mesh_(&_mesh), boundary_(boundary) {};
 
     /**
      * @brief Alias for iterator over cells.
@@ -166,6 +166,11 @@ protected:
      */
     Distribution *ds_;
 
+    /**
+     * @brief Boundary / bulk domain of mesh..
+     */
+    bool boundary_;
+
 };
 
 
@@ -273,7 +278,7 @@ public:
      * @brief Constructor.
      * @param _mesh The mesh.
      */
-    DOFHandlerMultiDim(Mesh &_mesh);
+    DOFHandlerMultiDim(Mesh &_mesh, bool boundary = false);
 
     /**
      * @brief Alias for iterator over cells.
