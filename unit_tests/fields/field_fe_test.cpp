@@ -192,4 +192,164 @@ TEST_F(FieldFETest, native_data) {
 }
 
 
+/**********************************************************
+ *                                                        *
+ *     New tests of Elementwise replaced with FieldFE     *
+ *                                                        *
+ **********************************************************/
+
+string elem_input = R"YAML(
+scalar: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: scalar
+  default_value: 0.0
+  input_discretization: native_data
+scalar_unit_conversion: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: scalar
+  unit: "const; const=100*m^0"
+  default_value: 0.0
+  input_discretization: native_data
+scalar_time_shift: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: scalar
+  default_value: 0.0
+  read_time_shift: 1.0
+  input_discretization: native_data
+vector_fixed: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: vector_fixed
+  default_value: 0.0
+  input_discretization: native_data
+tensor_fixed: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: vector_fixed
+  default_value: 0.0
+  input_discretization: native_data
+vtk_scalar: !FieldFE
+  mesh_data_file: fields/vtk_ascii_data.vtu
+  field_name: scalar_field
+  input_discretization: native_data
+vtk_vector: !FieldFE
+  mesh_data_file: fields/vtk_binary_data.vtu
+  field_name: vector_field
+  input_discretization: native_data
+vtk_tensor: !FieldFE
+  mesh_data_file: fields/vtk_compressed_data.vtu
+  field_name: scalar_field
+  input_discretization: native_data
+default_values: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: porosity
+  default_value: 0.1
+  input_discretization: native_data
+)YAML";
+
+
+class FieldFENativeTest : public testing::Test {
+public:
+    typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
+    typedef FieldFE<3, FieldValue<3>::Enum > EnumField;
+    typedef FieldFE<3, FieldValue<3>::VectorFixed > VecFixField;
+    typedef FieldFE<3, FieldValue<3>::TensorFixed > TensorField;
+
+    virtual void SetUp() {
+        // setup FilePath directories
+        FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+        Profiler::initialize();
+
+        mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+
+        Input::Type::Record rec_type = Input::Type::Record("Test","")
+            .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_time_shift", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vtk_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vtk_vector", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vtk_tensor", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("default_values", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .close();
+
+        Input::ReaderToStorage reader( elem_input, rec_type, Input::FileFormat::format_YAML );
+        rec=reader.get_root_interface<Input::Record>();
+
+        test_time[0] = 0.0;
+        test_time[1] = 1.0;
+        test_time[2] = 2.0;
+
+    }
+    virtual void TearDown() {
+    	delete mesh;
+    }
+
+    const FieldAlgoBaseInitData& init_data(std::string field_name) {
+    	static const FieldAlgoBaseInitData init_data(field_name, 0, UnitSI::dimensionless());
+    	return init_data;
+    }
+
+    Mesh * mesh;
+    Input::Record rec;
+    Space<3>::Point point;
+    double test_time[3];
+
+};
+
+
+TEST_F(FieldFENativeTest, scalar) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+        field.set_time(test_time[j]);
+        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_DOUBLE_EQ( j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+}
+
+
+TEST_F(FieldFENativeTest, scalar_unit_conv) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+        field.set_time(test_time[j]);
+        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_DOUBLE_EQ( j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+}
+
+
+TEST_F(FieldFENativeTest, scalar_time_shift) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_time_shift"), init_data("scalar_time_shift"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+        field.set_time(test_time[j]);
+        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_DOUBLE_EQ( j*0.1+(i+2)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+}
+
+
+TEST_F(FieldFENativeTest, vtk_scalar) {
+	ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("vtk_scalar"), init_data("vtk_scalar"));
+    field.set_mesh(mesh, false);
+	field.set_time(0.0);
+
+	for(unsigned int i=0; i<mesh->n_elements(); i++) {
+		EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+	}
+}
+
+
 
