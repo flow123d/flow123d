@@ -223,6 +223,16 @@ unsigned int Mesh::n_vb_neighbours() const {
     return vb_neighbours_.size();
 }
 
+Edge *Mesh::edge(unsigned int i) {
+    ASSERT_LT_DBG(i, edges.size());
+    return &(edges[i]);
+}
+
+Neighbour *Mesh::vb_neighbour(unsigned int i) {
+    ASSERT_LT_DBG(i, vb_neighbours_.size());
+    return &(vb_neighbours_[i]);
+}
+
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;
     for (auto ele : this->bulk_elements_range()) {
@@ -900,6 +910,11 @@ Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
 
 Range<ElementAccessor<3>> Mesh::boundary_loaded_elements_range() const {
     return Range<ElementAccessor<3>>(this, bulk_size_, bulk_size_+boundary_loaded_size_);
+}
+
+Range<ElementAccessor<3>> Mesh::elements_range(bool boundary) const {
+	if (boundary) return this->boundary_loaded_elements_range();
+	else return this->bulk_elements_range();
 }
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
