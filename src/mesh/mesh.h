@@ -47,6 +47,7 @@ class Partitioning;
 class MixedMeshIntersections;
 class Neighbour;
 class SideIter;
+class BCMesh;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
@@ -126,7 +127,7 @@ public:
     void reinit(Input::Record in_record);
 
     /// Destructor.
-    ~Mesh();
+    virtual ~Mesh();
 
     inline unsigned int n_nodes() const {
         return node_vec_.size();
@@ -136,9 +137,15 @@ public:
         return boundary_.size();
     }
 
-    inline unsigned int n_edges() const {
+    virtual unsigned int n_edges() const {
         return edges.size();
     }
+
+    /// Return i-th Edge in edges vector
+    virtual Edge *edge(unsigned int i);
+
+    /// Return i-th Neighbour in vb_neighbours_ vector
+    virtual Neighbour *vb_neighbour(unsigned int i);
 
     unsigned int n_corners();
 
@@ -159,15 +166,15 @@ public:
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */
-    Partitioning *get_part();
+    virtual Partitioning *get_part();
 
-    Distribution *get_el_ds() const
+    virtual Distribution *get_el_ds() const
     { return el_ds; }
 
-    LongIdx *get_row_4_el() const
+    virtual LongIdx *get_row_4_el() const
     { return row_4_el; }
 
-    LongIdx *get_el_4_loc() const
+    virtual LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
     /**
@@ -180,7 +187,7 @@ public:
 
     unsigned int n_sides() const;
 
-    unsigned int n_vb_neighbours() const;
+    virtual unsigned int n_vb_neighbours() const;
 
     /**
      * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
@@ -335,22 +342,19 @@ public:
     Range<ElementAccessor<3>> boundary_loaded_elements_range() const;
 
     /// Returns range of bulk / boundary elements
-    inline Range<ElementAccessor<3>> elements_range(bool boundary) const {
-    	if (boundary) return this->boundary_loaded_elements_range();
-    	else return this->bulk_elements_range();
-    }
+    virtual Range<ElementAccessor<3>> elements_range(bool boundary) const;
 
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
 
     /// Returns count of boundary or bulk elements
-    inline unsigned int n_elements(bool boundary=false) const {
+    virtual unsigned int n_elements(bool boundary=false) const {
     	if (boundary) return element_ids_.size()-bulk_size_;
     	else return bulk_size_;
     }
 
     /// Returns shift of boundary / bulk elements (index of first element) in element vector.
-    inline unsigned int elements_shift(bool boundary) const {
+    virtual unsigned int elements_shift(bool boundary) const {
     	if (boundary) return bulk_size_;
     	else return 0;
     }
@@ -538,6 +542,7 @@ protected:
     friend class Element;
     friend class BIHTree;
     friend class Boundary;
+    friend class BCMesh;
     template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
 
