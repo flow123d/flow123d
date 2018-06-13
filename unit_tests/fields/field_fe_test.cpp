@@ -192,13 +192,14 @@ TEST_F(FieldFETest, native_data) {
 }
 
 
-/**********************************************************
- *                                                        *
- *     New tests of Elementwise replaced with FieldFE     *
- *                                                        *
- **********************************************************/
+/*******************************************************************************
+ *                                                                             *
+ *     New tests of Elementwise and Interpolation P0 replaced with FieldFE     *
+ *                                                                             *
+ *******************************************************************************/
 
 string elem_input = R"YAML(
+##### tests of elementwise
 scalar: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: scalar
@@ -215,6 +216,11 @@ scalar_time_shift: !FieldFE
   field_name: scalar
   default_value: 0.0
   read_time_shift: 1.0
+  input_discretization: native_data
+enum: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: enum
+  default_value: 0
   input_discretization: native_data
 vector_fixed: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
@@ -243,10 +249,27 @@ default_values: !FieldFE
   field_name: porosity
   default_value: 0.1
   input_discretization: native_data
+##### tests of interpolation P0
+interp_scalar: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: scalar
+interp_scalar_unit_conversion: !FieldFE
+  mesh_data_file: fields/simplest_cube_3d.msh
+  field_name: scalar
+  unit: km
+interp_scalar_large: !FieldFE
+  mesh_data_file: fields/bigger_3d_cube_0.5.msh
+  field_name: scalar
+interp_vector_fixed: !FieldFE
+  mesh_data_file: fields/simplest_cube_3d.msh
+  field_name: vector_fixed
+interp_tensor_fixed: !FieldFE
+  mesh_data_file: fields/simplest_cube_3d.msh
+  field_name: tensor_fixed
 )YAML";
 
 
-class FieldFENativeTest : public testing::Test {
+class FieldFENewTest : public testing::Test {
 public:
     typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
     typedef FieldFE<3, FieldValue<3>::Enum > EnumField;
@@ -265,12 +288,18 @@ public:
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_time_shift", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("enum", EnumField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_vector", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_tensor", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("default_values", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
         Input::ReaderToStorage reader( elem_input, rec_type, Input::FileFormat::format_YAML );
@@ -298,7 +327,7 @@ public:
 };
 
 
-TEST_F(FieldFENativeTest, scalar) {
+TEST_F(FieldFENewTest, scalar) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
     field.set_mesh(mesh,false);
@@ -312,7 +341,23 @@ TEST_F(FieldFENativeTest, scalar) {
 }
 
 
-TEST_F(FieldFENativeTest, scalar_unit_conv) {
+/*TEST_F(FieldFENewTest, bc_scalar) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
+    field.set_mesh(mesh,true);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+        for(unsigned int i=9; i < 13; i++) {
+            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+
+}*/
+
+
+TEST_F(FieldFENewTest, scalar_unit_conv) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
     field.set_mesh(mesh,false);
@@ -323,10 +368,27 @@ TEST_F(FieldFENativeTest, scalar_unit_conv) {
             EXPECT_DOUBLE_EQ( j*10.0+(i+1)*10.0 , field.value(point,mesh->element_accessor(i)) );
         }
     }
+    field.set_time(test_time[2]); //temporary solution, remove this line after fix 'bc_scalar_unit_conv' test
 }
 
 
-TEST_F(FieldFENativeTest, scalar_time_shift) {
+/*TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
+    field.set_mesh(mesh,true);
+
+    for (unsigned int j=0; j<3; j++) {
+    	field.set_time(test_time[j]);
+
+        for(unsigned int i=9; i < 13; i++) {
+            EXPECT_DOUBLE_EQ( 110.0+j*10.0+(i-9)*10.0 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+
+}*/
+
+
+TEST_F(FieldFENewTest, scalar_time_shift) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar_time_shift"), init_data("scalar_time_shift"));
     field.set_mesh(mesh,false);
@@ -340,7 +402,79 @@ TEST_F(FieldFENativeTest, scalar_time_shift) {
 }
 
 
-TEST_F(FieldFENativeTest, vtk_scalar) {
+/*TEST_F(FieldFENewTest, vector_fixed) {
+	string expected_vals[2] = {"1 2 3", "2 3 4"};
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
+        }
+    }
+}*/
+
+
+
+/*TEST_F(FieldFENewTest, bc_vector_fixed) {
+	string expected_vals[2] = {"4 5 6", "5 6 7"};
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
+    field.set_mesh(mesh,true);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+    	for(unsigned int i=9; i < 13; i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
+        }
+        EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(13))) );
+    }
+}*/
+
+/*TEST_F(FieldFENewTest, tensor_fixed) {
+	string expected_vals[2] = {"1 4 7; 2 5 8; 3 6 9", "2 5 8; 3 6 9; 4 7 10"};
+    TensorField field;
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+    	for(unsigned int i=0; i < mesh->n_elements(); i++) {
+    		arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
+            EXPECT_TRUE( match.min() );
+        }
+    }
+}*/
+
+
+
+
+/*TEST_F(FieldFENewTest, bc_tensor_fixed) {
+	string expected_vals[2] = {"4 7 10; 5 8 11; 6 9 12", "5 8 11; 6 9 12; 7 10 13"};
+    TensorField field;
+    field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
+    field.set_mesh(mesh, true);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+        for(unsigned int i=9; i < 13; i++) {
+            arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
+            EXPECT_TRUE( match.min() );
+        }
+        arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(13)) );
+        EXPECT_TRUE( match.min() );
+    }
+}*/
+
+
+
+TEST_F(FieldFENewTest, vtk_scalar) {
 	ScalarField field;
     field.init_from_input(rec.val<Input::Record>("vtk_scalar"), init_data("vtk_scalar"));
     field.set_mesh(mesh, false);
@@ -353,3 +487,95 @@ TEST_F(FieldFENativeTest, vtk_scalar) {
 
 
 
+/*TEST_F(FieldFENewTest, vtk_vector) {
+	string expected_vals = "0.5 1 1.5";
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("vtk_vector"), init_data("vtk_vector"));
+    field.set_mesh(mesh, false);
+   	field.set_time(0.0);
+
+    for(unsigned int i=0; i < mesh->n_elements(); i++) {
+    	EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
+    }
+}*/
+
+
+
+/*TEST_F(FieldFENewTest, vtk_tensor) {
+	string expected_vals = "1 4 7; 2 5 8; 3 6 9";
+    TensorField field;
+    field.init_from_input(rec.val<Input::Record>("vtk_tensor"), init_data("vtk_tensor"));
+    field.set_mesh(mesh,false);
+   	field.set_time(0.0);
+
+    for(unsigned int i=0; i < mesh->n_elements(); i++) {
+    	arma::umat match = ( arma::mat33(expected_vals) == field.value(point,mesh->element_accessor(i)) );
+        EXPECT_TRUE( match.min() );
+    }
+}*/
+
+
+TEST_F(FieldFENewTest, scalar_enum) {
+    EnumField field;
+    field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+    	for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_EQ( j, field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+}
+
+
+/*TEST_F(FieldFENewTest, bc_scalar_enum) {
+    EnumField field;
+    field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
+    field.set_mesh(mesh, true);
+
+    for (unsigned int j=0; j<2; j++) {
+		field.set_time(test_time[j]);
+
+		for(unsigned int i=9; i < 13; i++) {
+			EXPECT_EQ( j+1, field.value(point,mesh->element_accessor(i)) );
+		}
+    }
+}*/
+
+
+/*TEST_F(FieldFENewTest, default_values) {
+	string expected_vals = "0.1 0.1 0.1";
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
+    field.set_mesh(mesh,true);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+    	for(unsigned int i=9; i < 13; i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
+        }
+    }
+}*/
+
+
+/*TEST_F(FieldFENewTest, 1d_2d_elements_small) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("interp_scalar"), init_data("interp_scalar"));
+    field.set_mesh(mesh, true);
+
+    for (unsigned int j=1; j<3; j++) {
+    	field.set_time(test_time[j-1]);
+
+    	EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(1)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(2)) );
+        EXPECT_DOUBLE_EQ( j*0.700, field.value(point, mesh->element_accessor(3)) );
+        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(4)) );
+        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(5)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(11)) );
+    }
+
+}*/
