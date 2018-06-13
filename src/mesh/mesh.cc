@@ -31,6 +31,7 @@
 #include "mesh/side_impl.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"
 #include "mesh/region_set.hh"
 #include "mesh/range_wrapper.hh"
@@ -100,7 +101,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh()
 : row_4_el(nullptr),
   el_4_loc(nullptr),
-  el_ds(nullptr)
+  el_ds(nullptr),
+  bc_mesh_(nullptr)
 {}
 
 
@@ -110,7 +112,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   comm_(com),
   row_4_el(nullptr),
   el_4_loc(nullptr),
-  el_ds(nullptr)
+  el_ds(nullptr),
+  bc_mesh_(nullptr)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -207,6 +210,7 @@ Mesh::~Mesh() {
     if (row_4_el != nullptr) delete[] row_4_el;
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
+    if (bc_mesh_ != nullptr) delete bc_mesh_;
 }
 
 
@@ -1061,6 +1065,11 @@ void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> perm
     elem.nodes_ = tmp_nodes;
 }
 
+
+BCMesh *Mesh::get_bc_mesh() {
+	if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
+	return bc_mesh_;
+}
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

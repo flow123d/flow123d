@@ -158,7 +158,7 @@ TEST(BCMesh, element_ranges) {
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
 
-    BCMesh *bc_mesh = new BCMesh(mesh);
+    BCMesh *bc_mesh = mesh->get_bc_mesh();
     unsigned int expected_val = 0;
 
     for (auto elm : mesh->elements_range(false)) {
@@ -170,6 +170,6 @@ TEST(BCMesh, element_ranges) {
     	expected_val++;
     }
 
-    delete bc_mesh;
+    //delete bc_mesh;
     delete mesh;
 }
