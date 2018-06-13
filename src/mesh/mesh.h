@@ -398,6 +398,9 @@ public:
     /// Permute nodes of 2D elements of given elm_idx
     void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
+    /// Create boundary mesh if doesn't exist and return it.
+    BCMesh *get_bc_mesh();
+
 protected:
 
     /**
@@ -556,6 +559,8 @@ private:
     LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+	/// Boundary mesh, object is created only if it's necessary
+	BCMesh *bc_mesh_;
         
     ofstream raw_ngh_output_file;
 };
