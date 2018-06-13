@@ -1,0 +1,37 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Test of elementwise fields input
+  mesh:
+    mesh_file: ../00_mesh/prism_11el.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: volume
+        time: 0.0
+        conductivity: !FieldElementwise
+          mesh_data_file: ./ref_out/22_elementwise_fields/test22/test22-000000.vtu
+          field_name: conductivity
+        sigma: !FieldElementwise
+          mesh_data_file: ./11_mesh_with_data_11el.msh
+          field_name: sigma
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0
+    n_schurs: 2
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - sigma
+        - conductivity
+    balance: {}
+    output_stream:
+      file: ./test22.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
