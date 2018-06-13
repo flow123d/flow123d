@@ -25,3 +25,7 @@ test_cases:
    - 09_include_file.yaml
   proc: [1, 2]
   memory_limit: 600
+  
+# switched off tests:
+# - 21_fields_FE_native.yaml
+# - 22_elementwise_fields.yaml
