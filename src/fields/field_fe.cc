@@ -211,7 +211,10 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	fe2_ = new FE_P_disc<2>(0);
 	fe3_ = new FE_P_disc<3>(0);
 
-	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh), this->boundary_domain_ );
+	if (this->boundary_domain_)
+		dh_ = std::make_shared<DOFHandlerMultiDim>( *(Mesh *)( const_cast<Mesh *>(mesh)->get_bc_mesh() ) );
+	else
+		dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
