@@ -97,7 +97,7 @@
 //    	if (proc == myp)
 //    		loffset_ = next_free_dof;
 //
-//    	for (auto cell : mesh->bulk_elements_range()) {
+//    	for (auto cell : mesh->elements_range()) {
 //    		if (cell->dim() != dim) continue;
 //
 //    		if (loc_part[cell.index()] != proc) continue;
@@ -123,7 +123,7 @@
 //    if (mesh->get_part()->get_init_distr()->myp() != 0)
 //    	delete[] loc_part;
 //
-////    for (auto cell : mesh->bulk_elements_range()) {
+////    for (auto cell : mesh->elements_range()) {
 ////        // skip cells of different dimension
 ////        if (cell->dim() != dim) continue;
 ////
@@ -137,7 +137,7 @@
 ////    }
 //
 //
-////    for (auto cell : mesh->bulk_elements_range()) {
+////    for (auto cell : mesh->elements_range()) {
 ////        // skip cells of different dimension
 ////        if (cell->dim != dim) continue;
 ////
@@ -235,8 +235,8 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	  fe2d_(0),
 	  fe3d_(0)
 {
-	object_dofs = new LongIdx**[mesh_->n_elements(false)];
-	for (unsigned int i=0; i<mesh_->n_elements(false); i++)
+	object_dofs = new LongIdx**[mesh_->n_elements()];
+	for (unsigned int i=0; i<mesh_->n_elements(); i++)
 		object_dofs[i] = NULL;
 
 	make_elem_partitioning();
@@ -291,11 +291,11 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
     	if (proc == myp)
     		loffset_ = next_free_dof;
 
-    	for (auto cell : mesh_->elements_range(false)) {
+    	for (auto cell : mesh_->elements_range()) {
     		if (loc_part[ cell.idx() ] != (int)proc) continue;
 
     		unsigned int dim = cell->dim();
-    		unsigned int dof_index = cell.idx()-mesh_->elements_shift(false);
+    		unsigned int dof_index = cell.idx()-mesh_->elements_shift();
 
     		// distribute dofs
 			// TODO: For the moment we distribute only dofs associated to the cell
@@ -344,7 +344,7 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::
 	ASSERT_LE(n_objects_dofs, indices.size()).error();
 
 	for (unsigned int k = 0; k < n_objects_dofs; k++)
-        indices[k] = object_dofs[cell.idx()-mesh_->elements_shift(false)][dim][k];
+        indices[k] = object_dofs[cell.idx()-mesh_->elements_shift()][dim][k];
 
 	return n_objects_dofs;
 }
@@ -374,7 +374,7 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, s
     ASSERT_LE(n_objects_dofs, indices.size()).error();
 
     for (unsigned int k = 0; k < n_objects_dofs; k++)
-        indices[k] = object_dofs[cell.idx()-mesh_->elements_shift(false)][dim][k] - loffset_;
+        indices[k] = object_dofs[cell.idx()-mesh_->elements_shift()][dim][k] - loffset_;
 
     return n_objects_dofs;
 }
@@ -404,8 +404,8 @@ void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &val
 
 DOFHandlerMultiDim::~DOFHandlerMultiDim()
 {
-	for ( auto ele : mesh_->elements_range(false) ) {
-		unsigned int dof_index = ele.idx()-mesh_->elements_shift(false);
+	for ( auto ele : mesh_->elements_range() ) {
+		unsigned int dof_index = ele.idx()-mesh_->elements_shift();
 		if (object_dofs[dof_index] != NULL)
 		{
 			for (unsigned int j=0; j<=ele->dim(); j++)

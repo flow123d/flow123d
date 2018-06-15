@@ -43,13 +43,13 @@ public:
 	~BCMesh();
 
     /// Returns range of boundary elements of parent mesh
-    Range<ElementAccessor<3>> elements_range(bool boundary) const override;
+    Range<ElementAccessor<3>> elements_range() const override;
 
     /// Returns count of boundary elements of parent mesh
     unsigned int n_elements(bool boundary=false) const;
 
     /// Returns shift of elements (index of first element) in element vector of parent mesh.
-    unsigned int elements_shift(bool boundary) const override;
+    unsigned int elements_shift() const override;
 
     /// Overwrite Mesh::n_edges()
     unsigned int n_edges() const override;

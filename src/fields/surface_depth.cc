@@ -22,6 +22,7 @@
 #include "fields/surface_depth.hh"
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "mesh/ref_element.hh"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
@@ -72,7 +73,7 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     unsigned int i=0;
     unsigned int i_node;
     arma::vec3 project_node("0 0 0");
-    for( auto ele : mesh->boundary_elements_range() ) {
+    for( auto ele : mesh->get_bc_mesh()->elements_range() ) {
         if (ele.region().is_in_region_set(region_set)) {
         	ASSERT_EQ(ele->n_nodes(), 3);
 

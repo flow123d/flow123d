@@ -162,7 +162,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
 //    int * id_4_old = new int[mesh_->n_elements()];
 //    int i = 0;
-//    for (auto ele : mesh_->bulk_elements_range()) id_4_old[i++] = ele.index();
+//    for (auto ele : mesh_->elements_range()) id_4_old[i++] = ele.index();
 //    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 //    delete[] id_4_old;
 	el_ds = mesh_->get_el_ds();
@@ -177,7 +177,7 @@ void ConvectionTransport::make_transport_partitioning() {
     // - possibility to have different ref_output for different num of proc.
     // - or do not test such kind of output
     //
-    //for (auto ele : mesh_->bulk_elements_range()) {
+    //for (auto ele : mesh_->elements_range()) {
     //    ele->pid()=el_ds->get_proc(row_4_el[ele.index()]);
     //}
 
@@ -237,7 +237,7 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-	for (auto elem : mesh_->bulk_elements_range()) {
+	for (auto elem : mesh_->elements_range()) {
     	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
 
     	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
