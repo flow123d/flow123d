@@ -173,7 +173,7 @@ TEST(FieldFormula, read_from_input) {
 
         arma::vec3 result;
         Space<3>::Point point;
-        for( auto elem : mesh->bulk_elements_range() ) {
+        for( auto elem : mesh->elements_range() ) {
         	point = elem.centre();
         	result = depth->value(point, elem);
         	EXPECT_DOUBLE_EQ(result(0), 1-point(2));

@@ -138,7 +138,7 @@ public:
 
 		START_TIMER("single_value");
 		for (int i=0; i<list_size*loop_call_count; i++)
-			for (auto elm : this->mesh_->bulk_elements_range()) {
+			for (auto elm : this->mesh_->elements_range()) {
 				test_result_sum_ += field_.value( this->point_, elm);
 			}
 		END_TIMER("single_value");
@@ -146,14 +146,14 @@ public:
 		START_TIMER("all_values");
 		for (int i=0; i<loop_call_count; i++)
 			for (int j=0; j<list_size; j++)
-				for (auto elm : this->mesh_->bulk_elements_range()) {
+				for (auto elm : this->mesh_->elements_range()) {
 					test_result_sum_ += field_.value( this->point_list_[j], elm);
 				}
 		END_TIMER("all_values");
 
 		START_TIMER("value_list");
 		for (int i=0; i<loop_call_count; i++)
-			for (auto elm : this->mesh_->bulk_elements_range()) {
+			for (auto elm : this->mesh_->elements_range()) {
 				field_.value_list( this->point_list_, elm, value_list);
 				test_result_sum_ += value_list[0];
 			}
@@ -291,7 +291,7 @@ TYPED_TEST(FieldSpeed, array) {
     START_TIMER("array");
 	START_TIMER("single_value");
 	for (int i=0; i<list_size*loop_call_count; i++)
-		for (auto elm : this->mesh_->bulk_elements_range()) {
+		for (auto elm : this->mesh_->elements_range()) {
 			this->test_result_sum_ += this->data_[elm.region_idx().idx()];
 		}
 	END_TIMER("single_value");
@@ -307,7 +307,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	START_TIMER("virtual_function");
 	START_TIMER("single_value");
 	for (int i=0; i<list_size*loop_call_count; i++)
-		for (auto elm : this->mesh_->bulk_elements_range()) {
+		for (auto elm : this->mesh_->elements_range()) {
 			this->test_result_sum_ += this->value( this->point_, elm);
 		}
 	END_TIMER("single_value");
@@ -315,7 +315,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	START_TIMER("all_values");
 	for (int i=0; i<loop_call_count; i++)
 		for (int j=0; j<list_size; j++)
-			for (auto elm : this->mesh_->bulk_elements_range()) {
+			for (auto elm : this->mesh_->elements_range()) {
 				this->test_result_sum_ += this->value( this->point_list_[j], elm);
 			}
 	END_TIMER("all_values");

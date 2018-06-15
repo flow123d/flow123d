@@ -298,7 +298,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 	std::vector<unsigned int> elem_count(4);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 
-	for (auto ele : dh_->mesh()->bulk_elements_range()) {
+	for (auto ele : dh_->mesh()->elements_range()) {
 		searched_elements.clear();
 		source_mesh->get_bih_tree().find_point(ele.centre(), searched_elements);
 		std::fill(sum_val.begin(), sum_val.end(), 0.0);
@@ -376,7 +376,7 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 	unsigned int i, dof_filled_size;
 
 	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
-	for (auto ele : dh_->mesh()->bulk_elements_range()) {
+	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
 		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();

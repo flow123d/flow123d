@@ -338,7 +338,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 	unsigned int ndofs = dh_->max_elem_dofs();
 	std::vector<LongIdx> indices(ndofs);
 	unsigned int i_node;
-	for (auto ele : mesh_->bulk_elements_range()) {
+	for (auto ele : mesh_->elements_range()) {
 		dh_->get_dof_indices(ele, indices);
 		for (i_node=0; i_node<ele->n_nodes(); i_node++)
 		{
@@ -399,7 +399,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**first pass - calculate sums (weights)*/
     if (count_elements){
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele.node_accessor(li); //!< get NodeAccessor from element */
                 node_index = node.idx(); //!< get nod index from mesh */
@@ -414,7 +414,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
             }
     }
     if (count_sides){
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
                     node = side->node(li);//!< get NodeAccessor from element */
@@ -433,7 +433,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**second pass - calculate scalar  */
     if (count_elements){
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele.node_accessor(li);//!< get NodeAccessor from element */
                 node_index = ele.node_accessor(li).idx(); //!< get nod index from mesh */
@@ -450,7 +450,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
             }
     }
     if (count_sides) {
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
                     node = side->node(li);//!< get NodeAccessor from element */
@@ -498,7 +498,7 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
         raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
@@ -667,7 +667,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     darcy_flow->get_solution_vector(diff_data.solution, solution_size);
 
 
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
 
     	switch (ele->dim()) {
         case 1:

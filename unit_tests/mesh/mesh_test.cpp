@@ -161,11 +161,11 @@ TEST(BCMesh, element_ranges) {
     BCMesh *bc_mesh = mesh->get_bc_mesh();
     unsigned int expected_val = 0;
 
-    for (auto elm : mesh->elements_range(false)) {
+    for (auto elm : mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val);
     	expected_val++;
     }
-    for (auto elm : bc_mesh->elements_range(true)) {
+    for (auto elm : bc_mesh->elements_range()) {
     	EXPECT_EQ(elm.idx(), expected_val);
     	expected_val++;
     }

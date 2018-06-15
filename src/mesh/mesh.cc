@@ -218,7 +218,7 @@ unsigned int Mesh::n_sides() const
 {
     if (n_sides_ == NDEF) {
         n_sides_=0;
-        for (auto ele : this->bulk_elements_range()) n_sides_ += ele->n_sides();
+        for (auto ele : this->elements_range()) n_sides_ += ele->n_sides();
     }
     return n_sides_;
 }
@@ -239,7 +239,7 @@ Neighbour *Mesh::vb_neighbour(unsigned int i) {
 
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;
-    for (auto ele : this->bulk_elements_range()) {
+    for (auto ele : this->elements_range()) {
     	for (li=0; li<ele->n_nodes(); li++) {
             count++;
         }
@@ -257,7 +257,7 @@ Partitioning *Mesh::get_part() {
 //=============================================================================
 
 void Mesh::count_element_types() {
-	for (auto elm : this->bulk_elements_range())
+	for (auto elm : this->elements_range())
     switch (elm->dim()) {
         case 1:
             n_lines++;
@@ -289,7 +289,7 @@ void Mesh::setup_topology() {
     count_element_types();
 
     // check mesh quality
-    for (auto ele : this->bulk_elements_range())
+    for (auto ele : this->elements_range())
         if (ele.quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
 
     make_neighbours_and_edges();
@@ -302,7 +302,7 @@ void Mesh::setup_topology() {
     // create parallel distribution and numbering of elements
     LongIdx *id_4_old = new LongIdx[n_elements()];
     int i = 0;
-    for (auto ele : this->bulk_elements_range())
+    for (auto ele : this->elements_range())
         id_4_old[i++] = ele.idx();
     part_->id_maps(n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 
@@ -318,7 +318,7 @@ void Mesh::count_side_types()
 
     n_insides = 0;
     n_exsides = 0;
-	for (auto ele : this->bulk_elements_range())
+	for (auto ele : this->elements_range())
         for(SideIter sde = ele.side(0); sde->side_idx() < ele->n_sides(); ++sde) {
             if (sde->is_external()) n_exsides++;
             else n_insides++;
@@ -331,7 +331,7 @@ void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
     node_elements_.resize( this->n_nodes() );
 
-    for (auto ele : this->bulk_elements_range())
+    for (auto ele : this->elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
             node_elements_[ele.node_accessor(n).idx()].push_back(ele.idx());
 
@@ -492,7 +492,7 @@ void Mesh::make_neighbours_and_edges()
 
 	}
 	// Now we go through all element sides and create edges and neighbours
-	for (auto e : this->bulk_elements_range()) {
+	for (auto e : this->elements_range()) {
 		for (unsigned int s=0; s<e->n_sides(); s++)
 		{
 			// skip sides that were already found
@@ -787,7 +787,7 @@ std::vector<BoundingBox> Mesh::get_element_boxes() {
     // make element boxes
     unsigned int i=0;
     boxes.resize(this->n_elements());
-    for (auto element : this->bulk_elements_range()) {
+    for (auto element : this->elements_range()) {
         boxes[i] = element.bounding_box();
     	i++;
     }
@@ -904,21 +904,8 @@ Element * Mesh::add_element_to_vector(int id, bool boundary) {
 	return elem;
 }
 
-Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
-    return Range<ElementAccessor<3>>(this, 0, bulk_size_);
-}
-
-Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
-    return Range<ElementAccessor<3>>(this, bulk_size_, element_vec_.size());
-}
-
-Range<ElementAccessor<3>> Mesh::boundary_loaded_elements_range() const {
-    return Range<ElementAccessor<3>>(this, bulk_size_, bulk_size_+boundary_loaded_size_);
-}
-
-Range<ElementAccessor<3>> Mesh::elements_range(bool boundary) const {
-	if (boundary) return this->boundary_loaded_elements_range();
-	else return this->bulk_elements_range();
+Range<ElementAccessor<3>> Mesh::elements_range() const {
+	return Range<ElementAccessor<3>>(this, 0, bulk_size_);;
 }
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
@@ -948,7 +935,7 @@ void Mesh::output_internal_ngh_data()
     // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
     unsigned int undefined_ele_id = -1;
     std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
-    for (auto ele : this->bulk_elements_range()) {
+    for (auto ele : this->elements_range()) {
         if(ele->n_neighs_vb() > 0){
             for (unsigned int i = 0; i < ele->n_neighs_vb(); i++){
                 ElementAccessor<3> higher_ele = ele->neigh_vb[i]->side()->element();
@@ -968,7 +955,7 @@ void Mesh::output_internal_ngh_data()
         }
     }
     
-    for (auto ele : this->bulk_elements_range()) {
+    for (auto ele : this->elements_range()) {
         raw_ngh_output_file << ele.idx() << " ";
         raw_ngh_output_file << ele->n_sides() << " ";
         

@@ -333,16 +333,7 @@ public:
     void init_node_vector(unsigned int size);
 
     /// Returns range of bulk elements
-    Range<ElementAccessor<3>> bulk_elements_range() const;
-
-    /// Returns range of boundary elements
-    Range<ElementAccessor<3>> boundary_elements_range() const;
-
-    /// Returns range of boundary elements loaded from mesh file
-    Range<ElementAccessor<3>> boundary_loaded_elements_range() const;
-
-    /// Returns range of bulk / boundary elements
-    virtual Range<ElementAccessor<3>> elements_range(bool boundary) const;
+    virtual Range<ElementAccessor<3>> elements_range() const;
 
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
@@ -354,9 +345,8 @@ public:
     }
 
     /// Returns shift of boundary / bulk elements (index of first element) in element vector.
-    virtual unsigned int elements_shift(bool boundary) const {
-    	if (boundary) return bulk_size_;
-    	else return 0;
+    virtual unsigned int elements_shift() const {
+    	return 0;
     }
 
     /// For each node the vector contains a list of elements that use this node

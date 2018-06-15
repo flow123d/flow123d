@@ -40,7 +40,7 @@ BCMesh::~BCMesh()
 {}
 
 
-Range<ElementAccessor<3>> BCMesh::elements_range(bool boundary) const
+Range<ElementAccessor<3>> BCMesh::elements_range() const
 {
     return Range<ElementAccessor<3>>(parent_mesh_, parent_mesh_->bulk_size_, parent_mesh_->element_vec_.size());
 }
@@ -51,7 +51,7 @@ unsigned int BCMesh::n_elements(bool boundary) const {
 }
 
 
-unsigned int BCMesh::elements_shift(bool boundary) const {
+unsigned int BCMesh::elements_shift() const {
 	return parent_mesh_->bulk_size_;
 }
 
