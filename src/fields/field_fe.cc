@@ -22,6 +22,7 @@
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_system.hh"
 #include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/accessors.hh"
@@ -207,9 +208,13 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	fe1_ = new FE_P_disc<1>(0);
-	fe2_ = new FE_P_disc<2>(0);
-	fe3_ = new FE_P_disc<3>(0);
+	unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
+	std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+	std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+	std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+	fe1_ = new FESystem<1>(fe1_ptr, n_components);
+	fe2_ = new FESystem<2>(fe2_ptr, n_components);
+	fe3_ = new FESystem<3>(fe3_ptr, n_components);
 
 	if (this->boundary_domain_)
 		dh_ = std::make_shared<DOFHandlerMultiDim>( *(Mesh *)( const_cast<Mesh *>(mesh)->get_bc_mesh() ) );
@@ -258,7 +263,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_entities;
 		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) || (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
 		if (is_native) {
-			n_entities = dh_->mesh()->n_elements(this->boundary_domain_);
+			n_entities = dh_->mesh()->n_elements();
 		} else {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
@@ -347,9 +352,9 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
-	for (auto ele : dh_->mesh()->elements_range(boundary_domain_)) {
+	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-		data_vec_i = (ele.idx() - dh_->mesh()->elements_shift(boundary_domain_)) * dof_indices_.size();
+		data_vec_i = (ele.idx() - dh_->mesh()->elements_shift()) * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];
