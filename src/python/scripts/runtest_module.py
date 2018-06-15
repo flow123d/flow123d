@@ -130,7 +130,7 @@ class ModuleRuntest(ScriptModule):
             script=pkgutil.get_loader('runtest').path,
             yaml=case.file,
             random_output_dir='' if not self.arg_options.random_output_dir else '--random-output-dir ' + str(self.arg_options.random_output_dir),
-            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit} --input {case.input}".format(case=case),
+            limits="-n {case.proc} -m {case.memory_limit} -t {case.time_limit}".format(case=case),
             args="" if not self.arg_options.rest else Command.to_string(self.arg_options.rest),
             dump_output=case.fs.dump_output,
             save_to_db='' if not self.arg_options.save_to_db else '--save-to-db',
@@ -274,7 +274,6 @@ class ModuleRuntest(ScriptModule):
             proc=self.arg_options.cpu,
             time_limit=self.arg_options.time_limit,
             memory_limit=self.arg_options.memory_limit,
-            input=self.arg_options.input,
         )
 
         # filter tags for includes and excludes
