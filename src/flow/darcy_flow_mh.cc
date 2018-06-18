@@ -251,10 +251,14 @@ DarcyMH::EqData::EqData()
 //=============================================================================
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
+    output_object(nullptr),
     solution(nullptr),
-    schur0(nullptr),
     data_changed_(false),
-    output_object(nullptr)
+    schur0(nullptr),
+	steady_diagonal(nullptr),
+	steady_rhs(nullptr),
+	new_diagonal(nullptr),
+	previous_solution(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -1191,10 +1195,10 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-	chkerr(VecDestroy(&previous_solution));
-	chkerr(VecDestroy(&steady_diagonal));
-	chkerr(VecDestroy(&new_diagonal));
-	chkerr(VecDestroy(&steady_rhs));
+	if (previous_solution != nullptr) chkerr(VecDestroy(&previous_solution));
+	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
+	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
+	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));
     
     
     if (schur0 != NULL) {
