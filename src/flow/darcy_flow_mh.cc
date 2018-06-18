@@ -339,8 +339,6 @@ void DarcyMH::initialize() {
     init_eq_data();
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
-    ASSERT(mesh_->get_el_ds()->np() == 1).error("XFEM supported only on single processor.\n");
-    
     mh_dh.reinit(mesh_);
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
