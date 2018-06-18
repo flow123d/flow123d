@@ -208,13 +208,26 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
-	std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-	std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-	std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-	fe1_ = new FESystem<1>(fe1_ptr, n_components);
-	fe2_ = new FESystem<2>(fe2_ptr, n_components);
-	fe3_ = new FESystem<3>(fe3_ptr, n_components);
+	switch (this->value_.n_rows() * this->value_.n_cols()) { // by number of components
+		case 1: { // scalar
+			fe1_ = new FE_P_disc<1>(0);
+			fe2_ = new FE_P_disc<2>(0);
+			fe3_ = new FE_P_disc<3>(0);
+			break;
+		}
+		case 3: { // vector
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe1_ = new FESystem<1>(fe1_ptr, FEType::FEVectorContravariant);
+			fe2_ = new FESystem<2>(fe2_ptr, FEType::FEVectorContravariant);
+			fe3_ = new FESystem<3>(fe3_ptr, FEType::FEVectorContravariant);
+			break;
+		}
+		case 9: // tensor - not implemented yet
+		default:
+			ASSERT(false).error("Should not happen!\n");
+	}
 
 	if (this->boundary_domain_)
 		dh_ = std::make_shared<DOFHandlerMultiDim>( *(Mesh *)( const_cast<Mesh *>(mesh)->get_bc_mesh() ) );
