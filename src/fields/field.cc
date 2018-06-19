@@ -22,6 +22,7 @@
 
 #include "field.hh"
 #include "fields/field.impl.hh"
+#include "fields/fe_value_handler.hh"
 
 
 

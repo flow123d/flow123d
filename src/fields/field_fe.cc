@@ -19,7 +19,9 @@
 #include <limits>
 
 #include "fields/field_fe.hh"
+#include "fields/vec_seq_double.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
+#include "fields/fe_value_handler.hh"
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
@@ -421,6 +423,13 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 	}
 
 	output_data_cache.set_dof_handler_hash( dh_->hash() );
+}
+
+
+
+template <int spacedim, class Value>
+inline unsigned int FieldFE<spacedim, Value>::data_size() const {
+	return data_vec_->size();
 }
 
 
