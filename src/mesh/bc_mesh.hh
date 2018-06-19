@@ -51,29 +51,8 @@ public:
     /// Returns shift of elements (index of first element) in element vector of parent mesh.
     unsigned int elements_shift() const override;
 
-    /// Overwrite Mesh::n_edges()
-    unsigned int n_edges() const override;
-
-    /// Overwrite Mesh::n_vb_neighbours()
-    unsigned int n_vb_neighbours() const override;
-
-    /// Overwrite Mesh::edge()
-    Edge *edge(unsigned int i) override;
-
-    /// Overwrite Mesh::vb_neighbour()
-    Neighbour *vb_neighbour(unsigned int i) override;
-
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
-
-    /// Overwrite Mesh::get_el_ds()
-    Distribution *get_el_ds() const override;
-
-    /// Overwrite Mesh::get_row_4_el()
-    LongIdx *get_row_4_el() const override;
-
-    /// Overwrite Mesh::get_el_4_loc()
-    LongIdx *get_el_4_loc() const override;
 
 private:
     /// Pointer to parent (bulk) mesh

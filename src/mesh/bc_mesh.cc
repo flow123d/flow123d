@@ -56,36 +56,6 @@ unsigned int BCMesh::elements_shift() const {
 }
 
 
-unsigned int BCMesh::n_edges() const
-{ return parent_mesh_->edges.size(); }
-
-
-unsigned int BCMesh::n_vb_neighbours() const
-{ return parent_mesh_->vb_neighbours_.size(); }
-
-
-Edge *BCMesh::edge(unsigned int i) {
-    return parent_mesh_->edge(i);
-}
-
-
-Neighbour *BCMesh::vb_neighbour(unsigned int i) {
-    return parent_mesh_->vb_neighbour(i);
-}
-
-
 Partitioning *BCMesh::get_part()
 { return parent_mesh_->get_part(); }
-
-
-Distribution *BCMesh::get_el_ds() const
-{ return parent_mesh_->el_ds; }
-
-
-LongIdx *BCMesh::get_row_4_el() const
-{ return parent_mesh_->row_4_el; }
-
-
-LongIdx *BCMesh::get_el_4_loc() const
-{ return parent_mesh_->el_4_loc; }
 

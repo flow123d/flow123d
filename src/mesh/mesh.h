@@ -137,15 +137,9 @@ public:
         return boundary_.size();
     }
 
-    virtual unsigned int n_edges() const {
+    inline unsigned int n_edges() const {
         return edges.size();
     }
-
-    /// Return i-th Edge in edges vector
-    virtual Edge *edge(unsigned int i);
-
-    /// Return i-th Neighbour in vb_neighbours_ vector
-    virtual Neighbour *vb_neighbour(unsigned int i);
 
     unsigned int n_corners();
 
@@ -168,13 +162,13 @@ public:
      */
     virtual Partitioning *get_part();
 
-    virtual Distribution *get_el_ds() const
+    Distribution *get_el_ds() const
     { return el_ds; }
 
-    virtual LongIdx *get_row_4_el() const
+    LongIdx *get_row_4_el() const
     { return row_4_el; }
 
-    virtual LongIdx *get_el_4_loc() const
+    LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
     /**
@@ -187,7 +181,7 @@ public:
 
     unsigned int n_sides() const;
 
-    virtual unsigned int n_vb_neighbours() const;
+    unsigned int n_vb_neighbours() const;
 
     /**
      * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.

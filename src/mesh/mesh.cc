@@ -224,18 +224,9 @@ unsigned int Mesh::n_sides() const
 }
 
 unsigned int Mesh::n_vb_neighbours() const {
-    return vb_neighbours_.size();
-}
+     return vb_neighbours_.size();
+ }
 
-Edge *Mesh::edge(unsigned int i) {
-    ASSERT_LT_DBG(i, edges.size());
-    return &(edges[i]);
-}
-
-Neighbour *Mesh::vb_neighbour(unsigned int i) {
-    ASSERT_LT_DBG(i, vb_neighbours_.size());
-    return &(vb_neighbours_[i]);
-}
 
 unsigned int Mesh::n_corners() {
     unsigned int li, count = 0;

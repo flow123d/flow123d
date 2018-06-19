@@ -230,7 +230,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	}
 
 	if (this->boundary_domain_)
-		dh_ = std::make_shared<DOFHandlerMultiDim>( *(Mesh *)( const_cast<Mesh *>(mesh)->get_bc_mesh() ) );
+		dh_ = std::make_shared<DOFHandlerMultiDim>( *(Mesh *)( const_cast<Mesh *>(mesh)->get_bc_mesh() ), false );
 	else
 		dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
 	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
