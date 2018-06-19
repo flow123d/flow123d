@@ -146,8 +146,6 @@ void LinSys_PETSC::start_insert_assembly()
 
 void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
-    PetscErrorCode ierr;
-
     // here vals would need to be converted from double to PetscScalar if it was ever something else than double :-)
     switch (status_) {
         case INSERT:
@@ -406,7 +404,7 @@ LinSys::SolveInfo LinSys_PETSC::solve()
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
-    KSPDestroy(&system);
+    chkerr(KSPDestroy(&system));
 
     return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 
@@ -440,12 +438,10 @@ void LinSys_PETSC::view( )
 
 LinSys_PETSC::~LinSys_PETSC( )
 {
-    PetscErrorCode ierr;
-
     if (matrix_ != NULL) { chkerr(MatDestroy(&matrix_)); }
-    ierr = VecDestroy(&rhs_); CHKERRV( ierr );
+    chkerr(VecDestroy(&rhs_));
 
-    if (residual_ != NULL) VecDestroy(&residual_);
+    if (residual_ != NULL) chkerr(VecDestroy(&residual_));
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 
