@@ -333,7 +333,14 @@ LinSys::SolveInfo LinSys_PETSC::solve()
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
-    //  vector problems e.g. MH without Schur complement reduction	
+    //  vector problems e.g. MH without Schur complement reduction
+    
+    /* Comment to PETSc options:
+     * 
+     * -ksp_diagonal_scale scales the matrix before solution, while -ksp_diagonal_scale_fix just fixes the scaling after solution
+     * -pc_asm_type basic enforces classical Schwartz method, which seems more stable for positive definite systems.
+     *                    The default 'restricted' probably violates s.p.d. structure, many tests fail.
+     */
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
