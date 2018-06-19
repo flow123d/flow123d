@@ -21,8 +21,6 @@
 #include "petscmat.h"
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
-#include "fields/vec_seq_double.hh"
-#include "fields/fe_value_handler.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
@@ -34,6 +32,9 @@
 
 #include <memory>
 
+class VectorSeqDouble;
+template<unsigned int dim, unsigned int spacedim> class MappingP1;
+template <int elemdim, int spacedim, class Value> class FEValueHandler;
 
 
 /**
@@ -114,9 +115,7 @@ public:
     /**
      * Return size of vector of data stored in Field
      */
-    inline unsigned int data_size() const {
-    	return data_vec_->size();
-    }
+    unsigned int data_size() const;
 
 
     /// Destructor.

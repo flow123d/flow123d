@@ -40,6 +40,7 @@
 #include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
 #include "mesh/long_idx.hh"

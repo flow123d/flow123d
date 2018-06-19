@@ -29,6 +29,7 @@
 #include "mesh/elements.h"
 #include "mesh/region.hh"
 #include "fields/field_elementwise.hh" 
+#include "fields/fe_value_handler.hh"
 
 #include "reaction/sorption.hh"
 #include "reaction/first_order_reaction.hh"
