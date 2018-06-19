@@ -229,7 +229,7 @@
 
 
 
-DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
+DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 	: DOFHandlerBase(_mesh),
 	  fe1d_(0),
 	  fe2d_(0),
@@ -239,7 +239,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	for (unsigned int i=0; i<mesh_->n_elements(); i++)
 		object_dofs[i] = NULL;
 
-	make_elem_partitioning();
+	if (make_elem_part) make_elem_partitioning();
 }
 
 void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
