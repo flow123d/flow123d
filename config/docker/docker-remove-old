@@ -1,0 +1,5 @@
+#!/bin/bash
+# Removes old (status exited) containers
+
+echo "docker rm $(docker ps -q -f status=exited)"
+docker rm $(docker ps -q -f status=exited)

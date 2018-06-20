@@ -1,0 +1,31 @@
+sudo: required
+
+language: cpp
+
+compiler:
+  - g++
+
+services:
+  - docker
+
+before_install:
+- docker pull flow123d/flow-libs-dev-dbg
+- docker run -di --name contdebug -v /home/travis/build/flow123d/flow123d:/home/travis/build/flow123d/flow123d -w /home/travis/build/flow123d/flow123d flow123d/flow-libs-dev-dbg bash --login
+- docker exec contdebug cp config/config-jenkins-docker-debug.cmake config.cmake
+- docker ps -a
+
+jobs:
+  include:
+    - stage: compile
+      script: docker exec contdebug make -j8
+    - stage: test
+      script: docker exec contdebug tests/runtest tests/00*
+    - script: docker exec contdebug tests/runtest tests/01*
+    - script: docker exec contdebug tests/runtest tests/10*
+
+# script:
+# - pwd
+# - whoami
+# - docker exec contdebug bin/flow123d
+# - docker exec contdebug make -C unit_tests all
+# - docker exec contdebug tests/runtest --keep-going tests/

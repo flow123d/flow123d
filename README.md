@@ -10,6 +10,10 @@ For more information see the project pages:
 Release [![Build Status](http://ciflow.nti.tul.cz:8080/buildStatus/icon?job=Flow123d-ci2runner-release-multijob)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) |
  Debug [![Build Status](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/badge/icon)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/)
  
+## Docker
+
+Link to docker images: https://hub.docker.com/u/flow123d/
+
 ## License ##
 
 The source code of Flow123d is licensed under GPL3 license. For details look

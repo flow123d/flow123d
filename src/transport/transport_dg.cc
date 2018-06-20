@@ -361,11 +361,11 @@ TransportDG<Model>::~TransportDG()
             if (mass_matrix[i])
                 chkerr(MatDestroy(&mass_matrix[i]));
             if (rhs[i])
-                VecDestroy(&rhs[i]);
+            	chkerr(VecDestroy(&rhs[i]));
             if (mass_vec[i])
-                VecDestroy(&mass_vec[i]);
+            	chkerr(VecDestroy(&mass_vec[i]));
             if (ret_vec[i])
-                VecDestroy(&ret_vec[i]);
+            	chkerr(VecDestroy(&ret_vec[i]));
         }
         delete[] ls;
         delete[] solution_elem_;
@@ -393,7 +393,7 @@ void TransportDG<Model>::output_vector_gather()
     	VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     	VecScatterEnd(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
-    VecScatterDestroy(&(output_scatter));
+    chkerr(VecScatterDestroy(&(output_scatter)));
 
 }
 

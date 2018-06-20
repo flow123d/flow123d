@@ -254,10 +254,14 @@ DarcyMH::EqData::EqData()
 //=============================================================================
 DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
+    output_object(nullptr),
     solution(nullptr),
-    schur0(nullptr),
     data_changed_(false),
-    output_object(nullptr)
+    schur0(nullptr),
+	steady_diagonal(nullptr),
+	steady_rhs(nullptr),
+	new_diagonal(nullptr),
+	previous_solution(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -554,7 +558,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
-    VecDestroy(&save_solution);
+    chkerr(VecDestroy(&save_solution));
     this -> postprocess();
 
     // adapt timestep
@@ -1192,16 +1196,15 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-    
-    VecDestroy(&previous_solution);
-    VecDestroy(&steady_diagonal);
-    VecDestroy(&new_diagonal);
-    VecDestroy(&steady_rhs);
+	if (previous_solution != nullptr) chkerr(VecDestroy(&previous_solution));
+	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
+	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
+	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));
     
     
     if (schur0 != NULL) {
         delete schur0;
-        VecScatterDestroy(&par_to_all);
+        chkerr(VecScatterDestroy(&par_to_all));
     }
 
 	if (solution != NULL) {
@@ -1255,7 +1258,7 @@ void DarcyMH::make_serial_scatter() {
             delete [] loc_idx;
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
-            ISDestroy(&(is_loc));
+            chkerr(ISDestroy(&(is_loc)));
     }
     solution_changed_for_scatter=true;
 

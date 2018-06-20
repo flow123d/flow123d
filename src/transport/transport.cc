@@ -192,21 +192,21 @@ ConvectionTransport::~ConvectionTransport()
     if (sources_corr) {
         //Destroy mpi vectors at first
         chkerr(MatDestroy(&tm));
-        VecDestroy(&mass_diag);
-        VecDestroy(&vpmass_diag);
-        VecDestroy(&vcfl_flow_);
-        VecDestroy(&vcfl_source_);
+        chkerr(VecDestroy(&mass_diag));
+        chkerr(VecDestroy(&vpmass_diag));
+        chkerr(VecDestroy(&vcfl_flow_));
+        chkerr(VecDestroy(&vcfl_source_));
         delete cfl_flow_;
         delete cfl_source_;
 
         for (sbi = 0; sbi < n_substances(); sbi++) {
             // mpi vectors
-            VecDestroy(&(vconc[sbi]));
-            VecDestroy(&(vpconc[sbi]));
-            VecDestroy(&(bcvcorr[sbi]));
-            VecDestroy(&(vcumulative_corr[sbi]));
-            VecDestroy(&(v_tm_diag[sbi]));
-            VecDestroy(&(v_sources_corr[sbi]));
+        	chkerr(VecDestroy(&vconc[sbi]));
+        	chkerr(VecDestroy(&vpconc[sbi]));
+        	chkerr(VecDestroy(&bcvcorr[sbi]));
+        	chkerr(VecDestroy(&vcumulative_corr[sbi]));
+        	chkerr(VecDestroy(&v_tm_diag[sbi]));
+        	chkerr(VecDestroy(&v_sources_corr[sbi]));
 
             // arrays of arrays
             delete conc[sbi];
@@ -819,8 +819,8 @@ void ConvectionTransport::output_vector_gather() {
         VecScatterBegin(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
-    VecScatterDestroy(&(vconc_out_scatter));
-    ISDestroy(&(is));
+    chkerr(VecScatterDestroy(&(vconc_out_scatter)));
+    chkerr(ISDestroy(&(is)));
 }
 
 
