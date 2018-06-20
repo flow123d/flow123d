@@ -81,6 +81,7 @@
 #include "la/distribution.hh"                          // for Distribution
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
+#include "system/system.hh"                            // for chkerr
 #include "system/global_defs.h"                        // for OLD_ASSERT, msg
 
 namespace Input { namespace Type { class Abstract; } }
@@ -611,8 +612,7 @@ public:
 
     virtual ~LinSys()
     { 
-       PetscErrorCode ierr;
-       if ( solution_ ) { ierr = VecDestroy(&solution_); CHKERRV( ierr ); }
+       if ( solution_ ) { chkerr(VecDestroy(&solution_)); }
        if ( own_solution_ ) delete[] v_solution_;
     }
 

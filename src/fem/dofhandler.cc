@@ -337,7 +337,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     }
     
     // Distribute element dofs for local process.
-    cell_starts = std::vector<IdxInt>(mesh_->n_elements()+1, 0);
+    cell_starts = std::vector<LongIdx>(mesh_->n_elements()+1, 0);
     dof_indices.reserve(n_dof_indices);
     for (unsigned int loc_el=0; loc_el < el_ds_->lsize(); loc_el++)
     {
@@ -448,7 +448,7 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::
 
 
 
-unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<IdxInt> &indices) const
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const
 {
   unsigned int ndofs = 0;
   if ( cell_starts_seq.size() > 0 && dof_indices_seq.size() > 0)

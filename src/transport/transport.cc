@@ -21,6 +21,7 @@
 #include "system/system.hh"
 #include "system/sys_profiler.hh"
 
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "transport/transport.h"
@@ -186,22 +187,22 @@ ConvectionTransport::~ConvectionTransport()
 
     if (sources_corr) {
         //Destroy mpi vectors at first
-        MatDestroy(&tm);
-        VecDestroy(&mass_diag);
-        VecDestroy(&vpmass_diag);
-        VecDestroy(&vcfl_flow_);
-        VecDestroy(&vcfl_source_);
+        chkerr(MatDestroy(&tm));
+        chkerr(VecDestroy(&mass_diag));
+        chkerr(VecDestroy(&vpmass_diag));
+        chkerr(VecDestroy(&vcfl_flow_));
+        chkerr(VecDestroy(&vcfl_source_));
         delete cfl_flow_;
         delete cfl_source_;
 
         for (sbi = 0; sbi < n_substances(); sbi++) {
             // mpi vectors
-            VecDestroy(&(vconc[sbi]));
-            VecDestroy(&(vpconc[sbi]));
-            VecDestroy(&(bcvcorr[sbi]));
-            VecDestroy(&(vcumulative_corr[sbi]));
-            VecDestroy(&(v_tm_diag[sbi]));
-            VecDestroy(&(v_sources_corr[sbi]));
+        	chkerr(VecDestroy(&vconc[sbi]));
+        	chkerr(VecDestroy(&vpconc[sbi]));
+        	chkerr(VecDestroy(&bcvcorr[sbi]));
+        	chkerr(VecDestroy(&vcumulative_corr[sbi]));
+        	chkerr(VecDestroy(&v_tm_diag[sbi]));
+        	chkerr(VecDestroy(&v_sources_corr[sbi]));
 
             // arrays of arrays
             delete conc[sbi];
@@ -236,7 +237,7 @@ void ConvectionTransport::set_initial_condition()
     {
     	if (!el_ds->is_local(row_4_el[elem.index()])) continue;
 
-    	IdxInt index = row_4_el[elem.index()] - el_ds->begin();
+    	LongIdx index = row_4_el[elem.index()] - el_ds->begin();
     	ElementAccessor<3> ele_acc = mesh_->element_accessor(elem.index());
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
@@ -351,7 +352,7 @@ void ConvectionTransport::set_boundary_conditions()
     for (loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
         elm = mesh_->element(el_4_loc[loc_el]);
         if (elm->boundary_idx_ != NULL) {
-        	IdxInt new_i = row_4_el[elm.index()];
+        	LongIdx new_i = row_4_el[elm.index()];
 
             FOR_ELEMENT_SIDES(elm,si) {
                 Boundary *b = elm->side(si)->cond();
@@ -720,7 +721,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     struct Edge *edg;
     unsigned int n;
     int s, j, np, rank;
-    IdxInt new_j, new_i;
+    LongIdx new_j, new_i;
     double aij, aii;
         
     MatZeroEntries(tm);
@@ -818,8 +819,8 @@ void ConvectionTransport::output_vector_gather() {
         VecScatterBegin(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
         VecScatterEnd(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
     }
-    VecScatterDestroy(&(vconc_out_scatter));
-    ISDestroy(&(is));
+    chkerr(VecScatterDestroy(&(vconc_out_scatter)));
+    chkerr(ISDestroy(&(is)));
 }
 
 
@@ -827,7 +828,7 @@ double **ConvectionTransport::get_concentration_matrix() {
 	return conc;
 }
 
-void ConvectionTransport::get_par_info(IdxInt * &el_4_loc_out, Distribution * &el_distribution_out){
+void ConvectionTransport::get_par_info(LongIdx * &el_4_loc_out, Distribution * &el_distribution_out){
 	el_4_loc_out = this->el_4_loc;
 	el_distribution_out = this->el_ds;
 	return;
@@ -837,7 +838,7 @@ void ConvectionTransport::get_par_info(IdxInt * &el_4_loc_out, Distribution * &e
 //	return el_4_loc;
 //}
 
-IdxInt *ConvectionTransport::get_row_4_el(){
+LongIdx *ConvectionTransport::get_row_4_el(){
 	return row_4_el;
 }
 

@@ -24,6 +24,7 @@
 
 #include <petscmat.h>
 #include "mesh/mesh.h"
+#include "mesh/long_idx.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
@@ -31,6 +32,8 @@
 #include "la/distribution.hh"
 
 using namespace Input::Type;
+
+bool Balance::do_yaml_output_ = true;
 
 const Selection & Balance::get_format_selection_input_type() {
 	return Selection("Balance_output_format", "Format of output file for balance.")
@@ -51,6 +54,10 @@ const Record & Balance::get_input_type() {
 				"If true, then balance is calculated at each computational time step, which can slow down the program.")
 		.declare_key("file", FileName::output(), Default::read_time("File name generated from the balanced quantity: <quantity_name>_balance.*"), "File name for output of balance.")
 		.close();
+}
+
+void Balance::set_yaml_output() {
+	Balance::do_yaml_output_ = true;
 }
 
 /*
@@ -93,7 +100,7 @@ Balance::~Balance()
 {
 	if (rank_ == 0) {
 		output_.close();
-		output_yaml_.close();
+		if (do_yaml_output_) output_yaml_.close();
 	}
 	if (! allocation_done_) return;
 
@@ -384,8 +391,10 @@ void Balance::lazy_initialize()
 
 
         // set file name of YAML output
-        string yaml_file_name = file_prefix_ + "_balance.yaml";
-        FilePath(yaml_file_name, FilePath::output_file).open_stream(output_yaml_);
+        if (do_yaml_output_) {
+        	string yaml_file_name = file_prefix_ + "_balance.yaml";
+        	FilePath(yaml_file_name, FilePath::output_file).open_stream(output_yaml_);
+        }
     }
 
     allocation_done_ = true;
@@ -471,7 +480,7 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 
 void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -491,7 +500,7 @@ void Balance::add_mass_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 		unsigned int boundary_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -510,7 +519,7 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 
 void Balance::add_source_matrix_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -555,7 +564,7 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 
 void Balance::add_source_vec_values(unsigned int quantity_idx,
 		unsigned int region_idx,
-		const vector<IdxInt> &dof_indices,
+		const vector<LongIdx> &dof_indices,
 		const vector<double> &values)
 {
     ASSERT_DBG(allocation_done_);
@@ -607,7 +616,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
 	double sum_sources;
 	chkerr(VecSum(bulk_vec, &sum_sources));
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&bulk_vec));
 
 	if (rank_ == 0)
 		// sum sources in one step
@@ -667,7 +676,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
                                solution, 
                                region_mass_vec_[quantity_idx], 
                                bulk_vec));
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&bulk_vec));
 }
 
 void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
@@ -722,9 +731,9 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 		VecRestoreArrayRead(rhs_r, &rhs_array);
 	}
 	chkerr(VecRestoreArrayRead(solution, &sol_array));
-	VecDestroy(&rhs_r);
-	VecDestroy(&mat_r);
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&rhs_r));
+	chkerr(VecDestroy(&mat_r));
+	chkerr(VecDestroy(&bulk_vec));
 
     
     // calculate flux
@@ -759,8 +768,8 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 			fluxes_in_[quantity_idx][be_regions_[e]] += flux_array[e];
 	}
 	chkerr(VecRestoreArrayRead(temp, &flux_array));
-	VecDestroy(&temp);
-	VecDestroy(&boundary_vec);
+	chkerr(VecDestroy(&temp));
+	chkerr(VecDestroy(&boundary_vec));
 }
 
 
@@ -1194,8 +1203,9 @@ std::string Balance::format_csv_val(double val, char delimiter, bool initial)
 
 void Balance::output_yaml(double time)
 {
+
 	// write output only on process #0
-	if (rank_ != 0) return;
+	if (!do_yaml_output_  || rank_ != 0) return;
 
 	const unsigned int n_quant = quantities_.size();
 

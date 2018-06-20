@@ -50,7 +50,7 @@ void LocalSystem::reset()
 }
 
 
-void LocalSystem::reset(unsigned int nrows, unsigned int ncols)
+void LocalSystem::reset(arma::uword nrows, arma::uword ncols)
 {
     matrix.set_size(nrows, ncols);
     rhs.set_size(nrows);
@@ -170,8 +170,6 @@ void LocalSystem::eliminate_solution()
     
     //DebugOut() << matrix;
     //DebugOut() << rhs;
-
-
 }
 
 

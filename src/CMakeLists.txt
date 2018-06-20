@@ -199,22 +199,21 @@ add_library(mesh_lib
     mesh/bounding_box.cc
     mesh/bih_tree.cc
     
-    mesh/ngh/src/abscissa.cpp
-    mesh/ngh/src/bisector.cpp
-    mesh/ngh/src/intersection.cpp
-    mesh/ngh/src/intersectionLocal.cpp
-    mesh/ngh/src/mathfce.cpp
-    mesh/ngh/src/matrix.cpp
-    mesh/ngh/src/plain.cpp
-    mesh/ngh/src/point.cpp
-    mesh/ngh/src/polygon.cpp
-    mesh/ngh/src/tetrahedron.cpp
-    mesh/ngh/src/triangle.cpp
-    mesh/ngh/src/vector.cpp
-    mesh/ngh/src/vertex.cpp
+#     mesh/ngh/src/abscissa.cpp
+#     mesh/ngh/src/bisector.cpp
+#     mesh/ngh/src/intersection.cpp
+#     mesh/ngh/src/intersectionLocal.cpp
+#     mesh/ngh/src/mathfce.cpp
+#     mesh/ngh/src/matrix.cpp
+#     mesh/ngh/src/plain.cpp
+#     mesh/ngh/src/point.cpp
+#     mesh/ngh/src/polygon.cpp
+#     mesh/ngh/src/tetrahedron.cpp
+#     mesh/ngh/src/triangle.cpp
+#     mesh/ngh/src/vector.cpp
+#     mesh/ngh/src/vertex.cpp
 
     intersection/plucker.cc
-    intersection/simplex.cc
     intersection/intersection_point_aux.cc
     intersection/intersection_aux.cc
     intersection/intersection_local.cc
@@ -303,6 +302,7 @@ add_library(coupling_lib
     fields/field_time_function.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
+    fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc

@@ -28,6 +28,7 @@
 #include "system/sys_profiler.hh"
 #include "la/distribution.hh"
 
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/region_set.hh"
@@ -40,10 +41,6 @@
 
 #include "mesh/bih_tree.hh"
 #include "mesh/duplicate_nodes.h"
-
-#include "mesh/ngh/include/triangle.h"
-#include "mesh/ngh/include/abscissa.h"
-#include "mesh/ngh/include/intersection.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
 
@@ -85,9 +82,12 @@ const IT::Record & Mesh::get_input_type() {
 	    .declare_key("print_regions", IT::Bool(), IT::Default("true"), "If true, print table of all used regions.")
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
-		.declare_key("global_observe_search_radius", IT::Double(0.0), IT::Default("1E-3"),
-					 "Maximal distance of observe point from Mesh relative to its size (bounding box). "
-					 "Value is global and it can be rewrite at arbitrary ObservePoint by setting the key search_radius.")
+        .declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
+                     "Maximal snapping distance from Mesh in various search operations. In particular is used "
+                     "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+                     "element in plan view (Z projection).")
+        .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
+                     "Output file with neighboring data from mesh.")
 		.close();
 }
 
@@ -119,6 +119,19 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
 	    in_record_ = reader.get_root_interface<Input::Record>();
 	}
 
+        int rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+        if (rank == 0) {
+            // optionally open raw output file
+            FilePath raw_output_file_path;
+            if (in_record_.opt_val("raw_ngh_output", raw_output_file_path)) {
+            	MessageOut() << "Opening raw ngh output: " << raw_output_file_path << "\n";
+            	try {
+            		raw_output_file_path.open_stream(raw_ngh_output_file);
+            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (in_record_))
+            }
+
+        }
 	reinit(in_record_);
 }
 
@@ -274,13 +287,15 @@ void Mesh::setup_topology() {
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
-    IdxInt *id_4_old = new IdxInt[element.size()];
+    LongIdx *id_4_old = new LongIdx[element.size()];
     int i = 0;
     FOR_ELEMENTS(this, ele)
         id_4_old[i++] = ele.index();
     part_->id_maps(element.size(), id_4_old, el_ds, el_4_loc, row_4_el);
 
     delete[] id_4_old;
+    
+    output_internal_ngh_data();
 }
 
 
@@ -677,17 +692,17 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx, bool boundary) {
 
 
 
-void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> & boundary_elements_id) const
+void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const
 {
     if (bulk_elements_id.size() ==0) {
-        std::vector<IdxInt>::iterator map_it;
-        IdxInt last_id;
+        std::vector<LongIdx>::iterator map_it;
+        LongIdx last_id;
 
         bulk_elements_id.resize(n_elements());
         map_it = bulk_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < element.size(); idx++, ++map_it) {
-        	IdxInt id = element.get_id(idx);
+        	LongIdx id = element.get_id(idx);
             if (last_id >= id) xprintf(UsrErr, "Element IDs in non-increasing order, ID: %d\n", id);
             last_id=*map_it = id;
         }
@@ -696,7 +711,7 @@ void Mesh::elements_id_maps( vector<IdxInt> & bulk_elements_id, vector<IdxInt> &
         map_it = boundary_elements_id.begin();
         last_id = -1;
         for(unsigned int idx=0; idx < bc_elements.size(); idx++, ++map_it) {
-        	IdxInt id = bc_elements.get_id(idx);
+        	LongIdx id = bc_elements.get_id(idx);
             // We set ID for boundary elements created by the mesh itself to "-1"
             // this force gmsh reader to skip all remaining entries in boundary_elements_id
             // and thus report error for any remaining data lines
@@ -734,35 +749,32 @@ void Mesh::check_and_finish()
 }
 
 
-void Mesh::compute_element_boxes() {
+std::vector<BoundingBox> Mesh::get_element_boxes() {
     START_TIMER("Mesh::compute_element_boxes");
-    if (element_box_.size() > 0) return;
+    std::vector<BoundingBox> boxes;
 
     // make element boxes
-    element_box_.resize(this->element.size());
     unsigned int i=0;
+    boxes.resize(this->element.size());
     FOR_ELEMENTS(this, element) {
-         element_box_[i] = element->bounding_box();
-         i++;
+        boxes[i] = element->bounding_box();
+    	i++;
     }
 
-    // make mesh box
-    Node* node = this->node_vector.begin();
-    mesh_box_ = BoundingBox(node->point(), node->point());
-    FOR_NODES(this, node ) {
-        mesh_box_.expand( node->point() );
-    }
-
+    return boxes;
 }
 
 const BIHTree &Mesh::get_bih_tree() {
-    if (! this->bih_tree_)
-        bih_tree_ = std::make_shared<BIHTree>(this);
+    if (! this->bih_tree_) {
+        bih_tree_ = std::make_shared<BIHTree>();
+        bih_tree_->add_boxes( this->get_element_boxes() );
+        bih_tree_->construct();
+	}
     return *bih_tree_;
 }
 
-double Mesh::global_observe_radius() const {
-	return in_record_.val<double>("global_observe_search_radius");
+double Mesh::global_snap_radius() const {
+	return in_record_.val<double>("global_snap_radius");
 }
 
 void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name) {
@@ -812,7 +824,7 @@ void Mesh::add_element(unsigned int elm_id, unsigned int dim, unsigned int regio
     {
         double jac = ele->tetrahedron_jacobian();
         if( ! (jac > 0) )
-            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->index(),jac);
+            WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",ele->id(),jac);
     }
 }
 
@@ -823,6 +835,92 @@ vector<vector<unsigned int> > const & Mesh::node_elements() {
 	}
 	return node_elements_;
 }
+
+
+/*
+ * Output of internal flow data.
+ */
+void Mesh::output_internal_ngh_data()
+{
+    START_TIMER("Mesh::output_internal_ngh_data");
+
+    if (! raw_ngh_output_file.is_open()) return;
+    
+    // header
+    raw_ngh_output_file <<  "// fields:\n//ele_id    n_sides    ns_side_neighbors[n]    neighbors[n*ns]    n_vb_neighbors    vb_neighbors[n_vb]\n";
+    raw_ngh_output_file <<  fmt::format("{}\n" , n_elements());
+
+    int cit = 0;
+    
+    // map from higher dim elements to its lower dim neighbors, using gmsh IDs: ele->id()
+    unsigned int undefined_ele_id = -1;
+    std::map<unsigned int, std::vector<unsigned int>> neigh_vb_map;
+    FOR_ELEMENTS( this,  ele ) {
+        if(ele->n_neighs_vb > 0){
+            for (unsigned int i = 0; i < ele->n_neighs_vb; i++){
+                ElementFullIter higher_ele = ele->neigh_vb[i]->side()->element();
+                
+                auto search = neigh_vb_map.find(higher_ele->id());
+                if(search != neigh_vb_map.end()){
+                    // if found, add id to correct local side idx
+                    search->second[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
+                }
+                else{
+                    // if not found, create new vector, each side can have one vb neighbour
+                    std::vector<unsigned int> higher_ele_side_ngh(higher_ele->n_sides(), undefined_ele_id);
+                    higher_ele_side_ngh[ele->neigh_vb[i]->side()->el_idx()] = ele->id();
+                    neigh_vb_map[higher_ele->id()] = higher_ele_side_ngh;
+                }
+            }
+        }
+    }
+    
+    FOR_ELEMENTS( this,  ele ) {
+        raw_ngh_output_file << ele.id() << " ";
+        raw_ngh_output_file << ele->n_sides() << " ";
+        
+        auto search_neigh = neigh_vb_map.end();
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            unsigned int n_side_neighs = ele->side(i)->edge()->n_sides-1;  //n_sides - the current one
+            // check vb neighbors (lower dimension)
+            if(n_side_neighs == 0){
+                //update search
+                if(search_neigh == neigh_vb_map.end())
+                    search_neigh = neigh_vb_map.find(ele->id());
+                
+                if(search_neigh != neigh_vb_map.end())
+                    if(search_neigh->second[i] != undefined_ele_id)
+                        n_side_neighs = 1;
+            }
+            raw_ngh_output_file << n_side_neighs << " ";
+        }
+        
+        for (unsigned int i = 0; i < ele->n_sides(); i++) {
+            Edge* edge = ele->side(i)->edge();
+            if(ele->side(i)->edge()->n_sides > 1){
+                for (int j = 0; j < edge->n_sides; j++) {
+                    if(edge->side(j) != ele->side(i))
+                        raw_ngh_output_file << edge->side(j)->element()->id() << " ";
+                }
+            }
+            //check vb neighbour
+            else if(search_neigh != neigh_vb_map.end()
+                    && search_neigh->second[i] != undefined_ele_id){
+                raw_ngh_output_file << search_neigh->second[i] << " ";
+            }
+        }
+        
+        // list higher dim neighbours
+        raw_ngh_output_file << ele->n_neighs_vb << " ";
+        for (unsigned int i = 0; i < ele->n_neighs_vb; i++)
+            raw_ngh_output_file << ele->neigh_vb[i]->side()->element()->id() << " ";
+        
+        raw_ngh_output_file << endl;
+        cit ++;
+    }
+    raw_ngh_output_file << "$EndFlowField\n" << endl;
+}
+
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

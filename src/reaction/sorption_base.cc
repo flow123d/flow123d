@@ -119,14 +119,14 @@ SorptionBase::~SorptionBase(void)
 {
   if (data_ != nullptr) delete data_;
 
-  VecScatterDestroy(&(vconc_out_scatter));
+  chkerr(VecScatterDestroy(&(vconc_out_scatter)));
   if (vconc_solid != NULL) {
 
 
 	  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
 	  {
 		//no mpi vectors
-	    VecDestroy( &(vconc_solid[sbi]) );
+		chkerr(VecDestroy( &(vconc_solid[sbi]) ));
 		delete [] conc_solid[sbi];
 	  }
 	  delete [] vconc_solid;
