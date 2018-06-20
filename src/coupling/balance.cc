@@ -618,7 +618,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
 	double sum_sources;
 	chkerr(VecSum(bulk_vec, &sum_sources));
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&bulk_vec));
 
 	if (rank_ == 0)
 		// sum sources in one step
@@ -678,7 +678,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
                                solution, 
                                region_mass_vec_[quantity_idx], 
                                bulk_vec));
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&bulk_vec));
 }
 
 void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
@@ -733,9 +733,9 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 		VecRestoreArrayRead(rhs_r, &rhs_array);
 	}
 	chkerr(VecRestoreArrayRead(solution, &sol_array));
-	VecDestroy(&rhs_r);
-	VecDestroy(&mat_r);
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&rhs_r));
+	chkerr(VecDestroy(&mat_r));
+	chkerr(VecDestroy(&bulk_vec));
 
     
     // calculate flux
@@ -770,8 +770,8 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 			fluxes_in_[quantity_idx][be_regions_[e]] += flux_array[e];
 	}
 	chkerr(VecRestoreArrayRead(temp, &flux_array));
-	VecDestroy(&temp);
-	VecDestroy(&boundary_vec);
+	chkerr(VecDestroy(&temp));
+	chkerr(VecDestroy(&boundary_vec));
 }
 
 

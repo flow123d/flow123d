@@ -118,14 +118,14 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 
 DualPorosity::~DualPorosity(void)
 {
-  VecScatterDestroy(&(vconc_out_scatter));
+	chkerr(VecScatterDestroy(&(vconc_out_scatter)));
 
 
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
 
       //no mpi vectors
-      VecDestroy(&(vconc_immobile[sbi]));
+	  chkerr(VecDestroy( &vconc_immobile[sbi] ));
       delete [] conc_immobile[sbi];
   }
 
