@@ -152,7 +152,7 @@ void RichardsLMH::initialize_specific() {
 
     VecScatterCreate(schur0->get_solution(), is_loc,
             data_->phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
-    ISDestroy(&is_loc);
+    chkerr(ISDestroy(&is_loc));
 
 }
 

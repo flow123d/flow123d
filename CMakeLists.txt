@@ -894,8 +894,12 @@ message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "PugiXml:    ${PugiXml_LIBRARY}")
 message(STATUS "ZLib:       ${Zlib_LIBRARY}")
 message(STATUS "===========================================")
-
-
+message(STATUS "INCLUDE_DIRECTORIES:")
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS " - ${dir}")
+endforeach()
+message(STATUS "===========================================")
 
 ####################################################################################
 # Install and Packaging
