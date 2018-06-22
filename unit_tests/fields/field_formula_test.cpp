@@ -18,6 +18,8 @@
 #include "input/accessors.hh"
 #include "input/reader_to_storage.hh"
 #include "system/sys_profiler.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 
@@ -171,8 +173,7 @@ TEST(FieldFormula, read_from_input) {
 
         arma::vec3 result;
         Space<3>::Point point;
-        for(unsigned int i=0; i < mesh->element.size(); i++) {
-        	auto elem = mesh->element_accessor(i);
+        for( auto elem : mesh->bulk_elements_range() ) {
         	point = elem.centre();
         	result = depth->value(point, elem);
         	EXPECT_DOUBLE_EQ(result(0), 1-point(2));

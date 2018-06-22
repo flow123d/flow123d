@@ -22,9 +22,12 @@
 
 #include "system/sys_profiler.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh/bih_tree.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 class BIHTree_test : public BIHTree {
@@ -163,9 +166,9 @@ public:
 			//cout << "box: " << box <<endl;
 
 			vector<unsigned int> bf_result;
-			FOR_ELEMENTS(mesh, ele) {
-				EXPECT_EQ( box.intersect(ele->bounding_box()) , ele->bounding_box().intersect(box) );
-				if (box.intersect(ele->bounding_box()) ) bf_result.push_back(ele.index());
+			for (auto ele : mesh->bulk_elements_range()) {
+				EXPECT_EQ( box.intersect(ele.bounding_box()) , ele.bounding_box().intersect(box) );
+				if (box.intersect(ele.bounding_box()) ) bf_result.push_back( ele.idx() );
 			}
 
 			vector<unsigned int> result_vec;
@@ -176,9 +179,9 @@ public:
 			std::sort(result_vec.begin(), result_vec.end());
 
 			//cout << endl << "full search: " << endl;
-			//for(unsigned int i_el : bf_result) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : bf_result) cout << " " << this->mesh->element_accessor(i_el).idx();
 			//cout << endl << "bih search: " << endl;
-			//for(unsigned int i_el : result_vec) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : result_vec) cout << " " << this->mesh->element_accessor(i_el).idx();
 
 			ASSERT_EQ(bf_result.size(), result_vec.size());
 			for(unsigned int j=0; j< bf_result.size(); j++) {
@@ -196,8 +199,8 @@ public:
 			//cout << "point: " << point << endl;
 
 			vector<unsigned int> bf_point_result;
-			FOR_ELEMENTS(mesh, ele) {
-				if (ele->bounding_box().contains_point(point) ) bf_point_result.push_back(ele.index());
+			for (auto ele : mesh->bulk_elements_range()) {
+				if (ele.bounding_box().contains_point(point) ) bf_point_result.push_back( ele.idx() );
 			}
 
 			vector<unsigned int> result_point_vec;
@@ -208,9 +211,9 @@ public:
 			std::sort(result_point_vec.begin(), result_point_vec.end());
 
 			//cout << endl << "full search: " << endl;
-			//for(unsigned int i_el : bf_point_result) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : bf_point_result) cout << " " << this->mesh->element_accessor(i_el).idx();
 			//cout << endl << "bih search: " << endl;
-			//for(unsigned int i_el : result_point_vec) cout << " " << this->mesh->element(i_el).id();
+			//for(unsigned int i_el : result_point_vec) cout << " " << this->mesh->element_accessor(i_el).idx();
 
 			ASSERT_EQ(bf_point_result.size(), result_point_vec.size());
 			for(unsigned int j=0; j< bf_point_result.size(); j++) {
@@ -300,7 +303,7 @@ TEST(BIH_Tree_Test, 2d_mesh) {
 
 	bt.find_bounding_box(BoundingBox(arma::vec3("-1.1 0 0"), arma::vec3("-0.7 0 0")), insec_list);
 	for(auto i_ele : insec_list) {
-		cout << "idx: " << i_ele << "id: " << mesh->element.get_id( &(mesh->element[i_ele]) ) << endl;
+		cout << "idx: " << i_ele << "id: " << mesh->element_accessor(i_ele).idx() << endl;
 	}
 
 	delete mesh;
@@ -318,7 +321,7 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 	reader->read_raw_mesh(mesh);
 
 	std::vector<BoundingBox> boxes;
-	std::vector<unsigned int> elm_idx; // indexes in Mesh::element vector
+	std::vector<unsigned int> elm_idx; // indexes in Mesh::element_vec_
     std::string region_name = "3D back";
     {
         RegionSet region_set = mesh->region_db().get_region_set(region_name);
@@ -327,9 +330,9 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 
         // make element boxes
         unsigned int i=0;
-        FOR_ELEMENTS(mesh, element) {
-        	if (element->region().is_in_region_set(region_set)) {
-                boxes.push_back(element->bounding_box());
+        for (auto element : mesh->bulk_elements_range()) {
+        	if (element.region().is_in_region_set(region_set)) {
+                boxes.push_back(element.bounding_box());
                 elm_idx.push_back(i);
         	}
         	i++;
@@ -347,7 +350,7 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 	for(unsigned int i=0; i<insec_list.size(); ++i) {
 		EXPECT_EQ(insec_list[i], i);
 		EXPECT_EQ(elm_idx[i], i+3);
-		EXPECT_EQ(mesh->element.get_id( &(mesh->element[ elm_idx[i] ]) ), i+4);
+		EXPECT_EQ(mesh->find_elem_id( elm_idx[i] ), i+4);
 	}
 
 	delete mesh;

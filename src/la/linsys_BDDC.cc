@@ -159,8 +159,8 @@ void LinSys_BDDC::load_mesh( const int nDim, const int numNodes, const int numDo
 
     // create scatter from parallel PETSc vector to local indices of subdomain
     ierr = VecScatterCreate( solution_, from, locSolVec_, subdomainIndexSet, &VSpetscToSubScatter_ ); CHKERRV( ierr );
-    ierr = ISDestroy( &subdomainIndexSet ); CHKERRV( ierr );
-    ierr = ISDestroy( &from ); CHKERRV( ierr );
+    chkerr(ISDestroy( &subdomainIndexSet ));
+    chkerr(ISDestroy( &from ));
 
     //double * locSolVecArray;
     //ierr = VecGetArray( locSolVec_, &locSolVecArray ); CHKERRV( ierr );
@@ -315,9 +315,9 @@ LinSys_BDDC::~LinSys_BDDC()
     locSolution_.clear(); 
 
     PetscErrorCode ierr;
-    ierr = VecDestroy( &locSolVec_ ); CHKERRV( ierr );
+    chkerr(VecDestroy( &locSolVec_ ));
 
-    ierr = VecScatterDestroy( &VSpetscToSubScatter_ ); CHKERRV( ierr );
+    chkerr(VecScatterDestroy( &VSpetscToSubScatter_ ));
 
     delete bddcml_;
 #endif // FLOW123D_HAVE_BDDCML

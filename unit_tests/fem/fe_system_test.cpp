@@ -14,18 +14,20 @@
 #include "system/armadillo_tools.hh"
 #include "system/sys_profiler.hh"
 #include "quadrature/quadrature_lib.hh"
+#include "mesh/side_impl.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values.hh"
 #include "fem/mapping_p1.hh"
 #include "mesh/mesh.h"
-#include "mesh/element_impls.hh"
+#include "mesh/elements.h"
 #include "mesh/region.hh"
+#include "mesh/accessors.hh"
 #include "fem/fe_system.hh"
 
 
 
-NodeVector make_nodes(const std::vector<string> &nodes_str)
+/*NodeVector make_nodes(const std::vector<string> &nodes_str)
 {
   std::vector<arma::vec3> nodes;
   for(auto str : nodes_str) nodes.push_back( arma::vec3(str));
@@ -42,16 +44,14 @@ NodeVector make_nodes(const std::vector<string> &nodes_str)
 }
 
 
-ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vector<unsigned int> > &node_idx)
+vector<Element> make_elements(NodeVector &node_vector, const std::vector<std::vector<unsigned int> > &node_idx)
 {
-  ElementVector el_vec(node_idx.size());
+  vector<Element> el_vec(node_idx.size());
   
   unsigned int iel = 0;
   for (auto nodes : node_idx)
   {
-    Element e;
-    el_vec.add_item(iel);
-    el_vec[iel].init(nodes.size()-1, nullptr, RegionIdx());
+    el_vec[iel].init(nodes.size()-1, iel, nullptr, RegionIdx());
     unsigned int i=0;
     for(auto node : nodes)
       el_vec[iel].node[i++] = &node_vector[node];
@@ -60,7 +60,7 @@ ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vect
   }
   
   return el_vec;
-}
+}*/
 
 
 
@@ -68,19 +68,24 @@ ElementVector make_elements(NodeVector &node_vector, const std::vector<std::vect
 class FESystemTest : public testing::Test {
 public:
   FESystemTest()
-    : nodes(make_nodes({"1 0 0", "0 1 0", "0 0 1", "0 0 0"})),
-      el_vec(make_elements(nodes, { { 3, 0, 1, 2 } })),
-      ele( el_vec(0) ),
-      q(nodes.size())
+    : q(4)
   {
-    for (unsigned int i=0; i<nodes.size(); i++)
-      q.set_point(i, nodes[i].point());
+  	mesh.add_node(0, arma::vec3("1 0 0"));
+  	mesh.add_node(1, arma::vec3("0 1 0"));
+  	mesh.add_node(2, arma::vec3("0 0 1"));
+  	mesh.add_node(3, arma::vec3("0 0 0"));
+  	std::vector<unsigned int> node_ids = {3, 0, 1, 2};
+	mesh.init_element_vector(1);
+  	mesh.add_element(0, 3, 1, 0, node_ids);
+  	ele = mesh.element_accessor(0);
+
+  	for (unsigned int i=0; i<mesh.n_nodes(); i++)
+      q.set_point(i, mesh.node_accessor(i)->point());
   }
   
 protected:
-  NodeVector nodes;
-  ElementVector el_vec;
-  ElementFullIter ele;
+  Mesh mesh;
+  ElementAccessor<3> ele;
   MappingP1<3,3> map;
   Quadrature<3> q;
 

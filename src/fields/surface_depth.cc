@@ -20,9 +20,12 @@
 #include <limits>
 
 #include "fields/surface_depth.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "system/sys_profiler.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction)
@@ -71,27 +74,28 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     unsigned int i=0;
     unsigned int i_node;
     arma::vec3 project_node("0 0 0");
-    for( ElementFullIter it = mesh->bc_elements.begin(); it != mesh->bc_elements.end(); ++it) {
-        if (it->region().is_in_region_set(region_set)) {
-        	ASSERT_EQ(it->n_nodes(), 3);
+    for( auto ele : mesh->boundary_elements_range() ) {
+        if (ele.region().is_in_region_set(region_set)) {
+        	ASSERT_EQ(ele->n_nodes(), 3);
 
-        	arma::vec projection = m_ * it->node[0]->point();
+        	coords.col(0) = ele.node(0)->point();
+        	arma::vec projection = m_ * ele.node(0)->point();
         	project_node(0) = projection(0); project_node(1) = projection(1);
             BoundingBox bb(project_node);
-            for(i_node=1; i_node<it->n_nodes(); i_node++) {
-                arma::vec project_coords = m_ * it->node[i_node]->point();
+            for(i_node=1; i_node<ele->n_nodes(); i_node++) {
+                arma::vec project_coords = m_ * ele.node(i_node)->point();
                 project_node(0) = project_coords(0); project_node(1) = project_coords(1);
                 bb.expand(project_node);
             }
             boxes.push_back(bb);
 
             arma::mat a_mat(3,3);
-        	a_mat.col(0) = it->node[1]->point() - it->node[0]->point();
-        	a_mat.col(1) = it->node[2]->point() - it->node[0]->point();
+        	a_mat.col(0) = ele.node(1)->point() - ele.node(0)->point();
+        	a_mat.col(1) = ele.node(2)->point() - ele.node(0)->point();
         	a_mat.col(2) = surface_norm_vec_;
 
             inv_projection_.push_back( a_mat.i() );
-            b_vecs_.push_back( it->node[0]->point() );
+            b_vecs_.push_back( ele.node(0)->point() );
         }
         i++;
     }

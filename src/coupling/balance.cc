@@ -23,8 +23,10 @@
 #include "system/sys_profiler.hh"
 
 #include <petscmat.h>
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/long_idx.hh"
+#include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
@@ -215,12 +217,12 @@ void Balance::lazy_initialize()
 	// construct vector of regions of boundary edges
     for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        Element *elm = mesh_->element(mesh_->get_el_4_loc()[loc_el]);
+        ElementAccessor<3> elm = mesh_->element_accessor( mesh_->get_el_4_loc()[loc_el] );
         if (elm->boundary_idx_ != nullptr)
         {
-            FOR_ELEMENT_SIDES(elm,si)
+        	for(unsigned int si=0; si<elm->n_sides(); si++)
             {
-                Boundary *b = elm->side(si)->cond();
+                Boundary *b = elm.side(si)->cond();
                 if (b != nullptr)
                 	be_regions_.push_back(b->region().boundary_idx());
             }
@@ -616,7 +618,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
 	double sum_sources;
 	chkerr(VecSum(bulk_vec, &sum_sources));
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&bulk_vec));
 
 	if (rank_ == 0)
 		// sum sources in one step
@@ -676,7 +678,7 @@ void Balance::calculate_mass(unsigned int quantity_idx,
                                solution, 
                                region_mass_vec_[quantity_idx], 
                                bulk_vec));
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&bulk_vec));
 }
 
 void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
@@ -731,9 +733,9 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 		VecRestoreArrayRead(rhs_r, &rhs_array);
 	}
 	chkerr(VecRestoreArrayRead(solution, &sol_array));
-	VecDestroy(&rhs_r);
-	VecDestroy(&mat_r);
-	VecDestroy(&bulk_vec);
+	chkerr(VecDestroy(&rhs_r));
+	chkerr(VecDestroy(&mat_r));
+	chkerr(VecDestroy(&bulk_vec));
 
     
     // calculate flux
@@ -768,8 +770,8 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 			fluxes_in_[quantity_idx][be_regions_[e]] += flux_array[e];
 	}
 	chkerr(VecRestoreArrayRead(temp, &flux_array));
-	VecDestroy(&temp);
-	VecDestroy(&boundary_vec);
+	chkerr(VecDestroy(&temp));
+	chkerr(VecDestroy(&boundary_vec));
 }
 
 

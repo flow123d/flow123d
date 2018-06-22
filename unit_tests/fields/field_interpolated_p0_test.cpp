@@ -182,7 +182,7 @@ TEST_F(FieldInterpolatedP0Test, 1d_2d_elements_small) {
         EXPECT_DOUBLE_EQ( j*0.700, field.value(point, mesh->element_accessor(3)) );
         EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(4)) );
         EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(5)) );
-        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0, true)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(11)) );
     }
 
 }

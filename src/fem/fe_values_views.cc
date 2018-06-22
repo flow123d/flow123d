@@ -16,6 +16,7 @@
  * @author  Jan Stebel
  */
 
+#include "mesh/side_impl.hh"
 #include "fem/fe_values_views.hh"
 #include "fem/fe_values.hh"
 #include "fem/finite_element.hh"
