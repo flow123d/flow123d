@@ -37,8 +37,7 @@ public:
 };
 
 
-// TODO After removing NodeVector fix this test
-/*TEST_F(MeshTest, intersect_nodes_lists) {
+TEST_F(MeshTest, intersect_nodes_lists) {
 	node_elements_.resize(3);
 	node_elements_[0]={ 0, 1, 2, 3, 4};
 	node_elements_[1]={ 0, 2, 3, 4};
@@ -57,7 +56,7 @@ public:
     intersect_element_lists(node_list, result);
     EXPECT_EQ( vector<unsigned int>( {0,1,2,3,4} ), result );
 
-}*/
+}
 
 
 

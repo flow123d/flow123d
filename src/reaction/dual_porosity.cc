@@ -311,11 +311,11 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
    
   // get data from fields
   ElementAccessor<3> ele = mesh_->element_accessor( el_4_loc_[loc_el] );
-  por_mob = data_.porosity.value(ele->centre(),ele);
-  por_immob = data_.porosity_immobile.value(ele->centre(),ele);
+  por_mob = data_.porosity.value(ele.centre(),ele);
+  por_immob = data_.porosity_immobile.value(ele.centre(),ele);
   arma::Col<double> diff_vec(substances_.size());
   for (sbi=0; sbi<substances_.size(); sbi++) // Optimize: SWAP LOOPS
-    diff_vec[sbi] = data_.diffusion_rate_immobile[sbi].value(ele->centre(), ele);
+    diff_vec[sbi] = data_.diffusion_rate_immobile[sbi].value(ele.centre(), ele);
  
     // if porosity_immobile == 0 then mobile concentration stays the same 
     // and immobile concentration cannot change

@@ -16,6 +16,9 @@
 #include "system/sys_profiler.hh"
 #include "system/file_path.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 
 #include "intersection/compute_intersection.hh"
@@ -88,9 +91,9 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
     fprintf(file, "$Nodes\n");
     fprintf(file, "%d\n", number_of_nodes);
 
-    FOR_NODES(mesh, nod){
+    for (auto nod : mesh->node_range()) {
         arma::vec3 _nod = nod->point();
-        fprintf(file,"%d %f %f %f\n", nod.id()+1, _nod[0], _nod[1], _nod[2]);
+        fprintf(file,"%d %f %f %f\n", nod.idx()+1, _nod[0], _nod[1], _nod[2]);
     }
 
     fprintf(file,"$EndNodes\n");
@@ -99,21 +102,21 @@ void print_mesh(Mesh *mesh, string t_name = "random_mesh")
 
     for (auto elee : mesh->bulk_elements_range()) {
         if(elee->dim() == 3){
-            int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-            int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-            int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-            int id4 = mesh->node_vector.index(elee->node[3]) + 1;
+            int id1 = mesh->node_accessor(0).idx() + 1;
+            int id2 = mesh->node_accessor(1).idx() + 1;
+            int id3 = mesh->node_accessor(2).idx() + 1;
+            int id4 = mesh->node_accessor(3).idx() + 1;
 
             fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx()+1, 3, elee->pid(), id1, id2, id3, id4);
         }else if(elee->dim() == 2){
-            int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-            int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-            int id3 = mesh->node_vector.index(elee->node[2]) + 1;
+            int id1 = mesh->node_accessor(0).idx() + 1;
+            int id2 = mesh->node_accessor(1).idx() + 1;
+            int id3 = mesh->node_accessor(2).idx() + 1;
             fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx()+1, 2, elee->pid(), id1, id2, id3);
 
         }else{
-            int id1 = mesh->node_vector.index(elee->node[0]) + 1;
-            int id2 = mesh->node_vector.index(elee->node[1]) + 1;
+            int id1 = mesh->node_accessor(0).idx() + 1;
+            int id2 = mesh->node_accessor(1).idx() + 1;
             fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx()+1, 1, elee->pid(), id1, id2);
         }
     }
@@ -139,14 +142,14 @@ void generate_meshes(unsigned int N,
 
     for (unsigned int i = 0; i < N; ++i) {
         Mesh* mesh = new Mesh();
-        mesh->node_vector = NodeVector(n_nodes);
-        NodeVector& nodes = mesh->node_vector;
+        mesh->init_node_vector(n_nodes);
+    	arma::vec3 point;
         for (unsigned int i = 0; i < n_nodes; ++i) {
-            nodes.add_item(i);
             //generate random node
-            nodes[i].point()[0] = unif();
-            nodes[i].point()[1] = unif();
-            nodes[i].point()[2] = unif();
+            point[0] = unif();
+            point[1] = unif();
+            point[2] = unif();
+            mesh->add_node(i, point);
         }
 
         ElementFullIter eleAit = mesh->element.add_item(0);
@@ -201,8 +204,8 @@ void compute_intersection(Mesh* mesh);
 template<>
 void compute_intersection<1,2>(Mesh* mesh)
 {
-    ElementFullIter eleA = mesh->element(0);
-    ElementFullIter eleB = mesh->element(1);
+	ElementAccessor<3> eleA = mesh->element_accessor(0);
+	ElementAccessor<3> eleB = mesh->element_accessor(1);
     ASSERT_EQ(1, eleA->dim());
     ASSERT_EQ(2, eleB->dim());
     
@@ -236,8 +239,8 @@ void compute_intersection<1,2>(Mesh* mesh)
 template<unsigned int dimA, unsigned int dimB>
 void compute_intersection(Mesh* mesh)
 {
-    ElementFullIter eleA = mesh->element(0);
-    ElementFullIter eleB = mesh->element(1);
+	ElementAccessor<3> eleA = mesh->element_accessor(0);
+	ElementAccessor<3> eleB = mesh->element_accessor(1);
     ASSERT_EQ(dimA, eleA->dim());
     ASSERT_EQ(dimB, eleB->dim());
     // compute intersection

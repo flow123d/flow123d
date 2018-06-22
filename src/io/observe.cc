@@ -45,7 +45,7 @@ public:
 	ProjectionHandler() {};
 
 	ObservePointData projection(arma::vec3 input_point, unsigned int i_elm, ElementAccessor<3> elm) {
-		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(*elm.element());
+		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
 		arma::vec::fixed<dim+1> projection = mapping_.project_real_to_unit(input_point, elm_map);
 		projection = mapping_.clip_to_element(projection);
 
@@ -77,7 +77,7 @@ public:
 			observe_data.local_coords_ = min_center;
 		}
 
-		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(*elm.element());
+		arma::mat::fixed<3, dim+1> elm_map = mapping_.element_map(elm);
         observe_data.global_coords_ =  elm_map * RefElement<dim>::local_to_bary(observe_data.local_coords_);
 	}
 
@@ -243,7 +243,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 
         // add candidates to queue
 		for (unsigned int n=0; n < elm->n_nodes(); n++)
-			for(unsigned int i_node_ele : mesh.node_elements()[mesh.node_vector.index(elm->node[n])]) {
+			for(unsigned int i_node_ele : mesh.node_elements()[elm.node_accessor(n).idx()]) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					ElementAccessor<3> neighbor_elm = mesh.element_accessor(i_node_ele);
 					auto observe_data = point_projection( i_node_ele, neighbor_elm );
@@ -259,8 +259,8 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     }
     snap( mesh );
     ElementAccessor<3> elm = mesh.element_accessor(observe_data_.element_idx_);
-    double dist = arma::norm(elm->centre() - input_point_, 2);
-    double elm_norm = arma::norm(elm->bounding_box().max() - elm->bounding_box().min(), 2);
+    double dist = arma::norm(elm.centre() - input_point_, 2);
+    double elm_norm = arma::norm(elm.bounding_box().max() - elm.bounding_box().min(), 2);
     if (dist > 2*elm_norm)
     	WarningOut().fmt("Observe point ({}) is too distant from the mesh.\n", name_);
 }

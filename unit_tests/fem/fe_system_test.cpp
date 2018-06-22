@@ -80,7 +80,7 @@ public:
   	ele = mesh.element_accessor(0);
 
   	for (unsigned int i=0; i<mesh.n_nodes(); i++)
-      q.set_point(i, mesh.node_vector[i].point());
+      q.set_point(i, mesh.node_accessor(i)->point());
   }
   
 protected:

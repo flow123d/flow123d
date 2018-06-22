@@ -491,8 +491,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
                 ElementAccessor<3> ele = mesh.element_accessor( *it );
                 for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
-                    if ( compare_points(ele->node[i_node]->point(), point) ) {
-                    	i_elm_node = mesh.node_vector.index(ele->node[i_node]);
+                    if ( compare_points(ele.node(i_node)->point(), point) ) {
+                    	i_elm_node = ele.node_accessor(i_node).idx();
                         if (found_i_node == -1) found_i_node = i_elm_node;
                         else if (found_i_node != i_elm_node) {
                         	THROW( ExcIncompatibleMesh() << EI_ErrMessage("duplicate nodes found in GMSH file")
@@ -557,7 +557,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
 }
 
 
-bool VtkMeshReader::compare_points(arma::vec3 &p1, arma::vec3 &p2) {
+bool VtkMeshReader::compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 	return fabs(p1[0]-p2[0]) < point_tolerance
 		&& fabs(p1[1]-p2[1]) < point_tolerance
 		&& fabs(p1[2]-p2[2]) < point_tolerance;
@@ -578,7 +578,7 @@ void VtkMeshReader::read_nodes(Mesh * mesh) {
 	// create nodes of mesh
 	std::vector<double> &vect = *( dynamic_cast<ElementDataCache<double> &>(*(it->second)).get_component_data(0).get() );
 	unsigned int n_nodes = vect.size()/3;
-    mesh->reserve_node_size(n_nodes);
+    mesh->init_node_vector( n_nodes );
 	arma::vec3 point;
 	for (unsigned int i=0, ivec=0; i<n_nodes; ++i) {
         point(0)=vect[ivec]; ++ivec;

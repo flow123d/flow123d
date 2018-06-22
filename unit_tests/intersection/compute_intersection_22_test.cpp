@@ -96,7 +96,7 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
     IntersectionAux<2,2> is;
-    ComputeIntersection<2,2> CI(mesh->element_accessor(0).element(), mesh->element_accessor(1).element(), mesh);
+    ComputeIntersection<2,2> CI(mesh->element_accessor(0), mesh->element_accessor(1), mesh);
     CI.init();
     CI.compute(is);
     
@@ -147,7 +147,7 @@ TEST(intersections_22d, all) {
             reader->read_raw_mesh(mesh);
         
             // permute nodes of one triangle:
-            permute_triangle(mesh->element_accessor(0),p);
+            mesh->permute_triangle(0, permutations_triangle[p]);
             
             mesh->setup_topology();
             

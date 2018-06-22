@@ -26,7 +26,6 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-#include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "coupling/balance.hh"
 #include "transport/transport.h"

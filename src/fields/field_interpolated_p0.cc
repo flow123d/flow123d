@@ -148,15 +148,14 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
 		}
 
-		double epsilon = 4* numeric_limits<double>::epsilon() * elm.element()->measure();
+		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
 
 		// gets suspect elements
 		if (elm.dim() == 0) {
 			searched_elements_.clear();
-			((BIHTree *)bih_tree_)->find_point(elm.element()->node[0]->point(), searched_elements_);
+			((BIHTree *)bih_tree_)->find_point(elm.node(0)->point(), searched_elements_);
 		} else {
-			BoundingBox bb;
-			elm.element()->get_bounding_box(bb);
+			BoundingBox bb = elm.bounding_box();
 			searched_elements_.clear();
 			((BIHTree *)bih_tree_)->find_bounding_box(bb, searched_elements_);
 		}
@@ -183,8 +182,8 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                 // get intersection (set measure = 0 if intersection doesn't exist)
                 switch (elm.dim()) {
                     case 0: {
-                        arma::vec::fixed<3> real_point = elm->node[0]->point();
-                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(*ele.element());
+                        arma::vec::fixed<3> real_point = elm.node(0)->point();
+                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(ele);
                         arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
 
                         measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
@@ -194,22 +193,22 @@ typename Value::return_type const &FieldInterpolatedP0<spacedim, Value>::value(c
                     }
                     case 1: {
                         IntersectionAux<1,3> is;
-                        ComputeIntersection<1,3> CI(elm.element(), ele.element(), source_mesh_.get());
+                        ComputeIntersection<1,3> CI(elm, ele, source_mesh_.get());
                         CI.init();
                         CI.compute(is);
 
                         IntersectionLocal<1,3> ilc(is);
-                        measure = ilc.compute_measure() * elm->measure();
+                        measure = ilc.compute_measure() * elm.measure();
                         break;
                     }
                     case 2: {
                         IntersectionAux<2,3> is;
-                        ComputeIntersection<2,3> CI(elm.element(), ele.element(), source_mesh_.get());
+                        ComputeIntersection<2,3> CI(elm, ele, source_mesh_.get());
                         CI.init();
                         CI.compute(is);
 
                         IntersectionLocal<2,3> ilc(is);
-                        measure = 2 * ilc.compute_measure() * elm->measure();
+                        measure = 2 * ilc.compute_measure() * elm.measure();
                         break;
                     }
                 }

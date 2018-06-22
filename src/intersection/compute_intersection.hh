@@ -43,6 +43,7 @@
 
 // forward declare
 class Mesh;
+template <int spacedim> class ElementAccessor;
 template<unsigned int, unsigned int> class ComputeIntersection;
 class Plucker;
 template<unsigned int, unsigned int> class IntersectionAux;
@@ -73,7 +74,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(const Element * abscissa, const Element * triangle, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> abscissa, ElementAccessor<3> triangle, Mesh *mesh);
 	~ComputeIntersection();
     
     /** @brief Computes intersection points of line and triangle.
@@ -249,7 +250,7 @@ public:
     /** @brief Constructor, sets both triangle objects.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(const Element * triaA, const Element * triaB, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> triaA, ElementAccessor<3> triaB, Mesh *mesh);
     ~ComputeIntersection();
     
     /** @brief Initializes lower dimensional objects.
@@ -352,7 +353,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(const Element * abscissa, const Element * tetrahedron, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> abscissa, ElementAccessor<3> tetrahedron, Mesh *mesh);
 	~ComputeIntersection();
 	
     /** @brief Initializes lower dimensional objects.
@@ -475,7 +476,7 @@ public:
      * @param triangle intersecting triangle object
      * @param tetrahedron intersecting tetrahedron object
      */
-    ComputeIntersection(const Element * triangle, const Element * tetrahedron, Mesh *mesh);
+    ComputeIntersection(ElementAccessor<3> triangle, ElementAccessor<3> tetrahedron, Mesh *mesh);
     ~ComputeIntersection();
 
     /** @brief Initializes lower dimensional objects.

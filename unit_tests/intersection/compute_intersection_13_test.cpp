@@ -93,7 +93,7 @@ void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
     IntersectionAux<1,3> is;
-    ComputeIntersection<1,3> CI(mesh->element_accessor(1).element(), mesh->element_accessor(0).element(), mesh);
+    ComputeIntersection<1,3> CI(mesh->element_accessor(1), mesh->element_accessor(0), mesh);
     CI.init();
     CI.compute(is);
     
@@ -144,7 +144,7 @@ TEST(intersections_13d, all) {
             // permute nodes:
             for (auto ele : mesh->bulk_elements_range()) {
                 if(ele->dim() == 3)
-                    permute_tetrahedron(ele,p);
+                    mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[p]);
             }
             
             mesh->setup_topology();

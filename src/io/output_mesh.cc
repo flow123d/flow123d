@@ -22,6 +22,7 @@
 #include "mesh/ref_element.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
 
@@ -125,7 +126,7 @@ void OutputMeshBase::create_id_caches()
 
 		std::vector< unsigned int > node_list = it->node_list();
 		for (unsigned int j = 0; j < it->n_nodes(); ++j) {
-			if (mesh_type_ == MeshType::orig) node_idx[0] = orig_mesh_->node_vector(node_list[j]).id();
+			if (mesh_type_ == MeshType::orig) node_idx[0] = orig_mesh_->find_node_id(node_list[j]);
 			else node_idx[0] = node_list[j];
 			node_ids_->store_value( node_list[j], node_idx );
 		}
@@ -171,7 +172,7 @@ void OutputMesh::create_mesh()
     unsigned int coord_id = 0,  // coordinate id in vector
                  node_id = 0;   // node id
     auto &node_vec = *( nodes_->get_component_data(0).get() );
-    FOR_NODES(orig_mesh_, node) {
+    for (auto node : orig_mesh_->node_range()) {
         node->aux = node_id;   // store node index in the auxiliary variable
 
         // use store value
@@ -184,7 +185,6 @@ void OutputMesh::create_mesh()
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
 
     offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
-    Node* node;
     unsigned int ele_id = 0,
                  connect_id = 0,
                  offset = 0,    // offset of node indices of element in node vector
@@ -204,8 +204,7 @@ void OutputMesh::create_mesh()
     auto &connect_vec = *( connectivity_->get_component_data(0).get() );
     for (auto ele : orig_mesh_->bulk_elements_range()) {
     	for (li=0; li<ele->n_nodes(); li++) {
-            node = ele->node[li];
-            connect_vec[connect_id] = node->aux;
+            connect_vec[connect_id] = ele.node_accessor(li)->aux;
             connect_id++;
         }
         
@@ -289,11 +288,11 @@ void OutputMeshDiscontinuous::create_mesh()
 
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
-    Node* node;
+    NodeAccessor<3> node;
     for (auto ele : orig_mesh_->bulk_elements_range()) {
     	for (li=0; li<ele->n_nodes(); li++)
         {
-            node = ele->node[li];
+            node = ele.node_accessor(li);
             node_vec[coord_id] = node->getX();  ++coord_id;
             node_vec[coord_id] = node->getY();  ++coord_id;
             node_vec[coord_id] = node->getZ();  ++coord_id;
@@ -338,10 +337,9 @@ void OutputMeshDiscontinuous::create_refined_mesh()
         aux_ele.nodes.resize(ele->n_nodes());
         aux_ele.level = 0;
         
-        Node* node; unsigned int li;
+        unsigned int li;
         for (li=0; li<ele->n_nodes(); li++) {
-            node = ele->node[li];
-            aux_ele.nodes[li] = node->point();
+            aux_ele.nodes[li] = ele.node_accessor(li)->point();
         }
         
         std::vector<AuxElement> refinement;
@@ -584,12 +582,12 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
-	Node* node;
+	NodeAccessor<3> node;
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
 		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
 		for (li=0; li<ele->n_nodes(); li++)
         {
-            node = ele->node[li];
+            node = ele.node_accessor(li);
             node_vec[coord_id] = node->getX();  ++coord_id;
             node_vec[coord_id] = node->getY();  ++coord_id;
             node_vec[coord_id] = node->getZ();  ++coord_id;

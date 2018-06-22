@@ -37,7 +37,7 @@ IntersectionAlgorithmBase<dimA,dimB>::IntersectionAlgorithmBase(Mesh* mesh)
 //     ASSERT(simplex_dim == element.dim());
 //     arma::vec3 *field_of_points[simplex_dim+1];
 //     for(unsigned int i=0; i < simplex_dim+1; i++)
-//         field_of_points[i]= &(element->node[i]->point());
+//         field_of_points[i]= &(element.node(i)->point());
 //     simplex.set_simplices(field_of_points);
 // }
 
@@ -74,7 +74,7 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
         bool first_3d_element = true;
         for (auto elm : mesh->bulk_elements_range()) {
 
-            elements_bb[elm.idx()] = elm->bounding_box();
+            elements_bb[elm.idx()] = elm.bounding_box();
 
                 if (elm->dim() == 3){
                     if(first_3d_element){
@@ -99,7 +99,7 @@ bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementAccessor<3> 
     
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
-    ComputeIntersection<dim,3> CI(comp_ele.element(), bulk_ele.element(), mesh);
+    ComputeIntersection<dim,3> CI(comp_ele, bulk_ele, mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -178,7 +178,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
@@ -298,12 +298,12 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
                 if (ele_3D.dim() == 3
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.idx(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.idx(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<dim,3> CI(elm.element(), ele_3D.element(), mesh);
+                    ComputeIntersection<dim,3> CI(elm, ele_3D, mesh);
                     CI.init();
                     CI.compute(is);
                     END_TIMER("Compute intersection");
@@ -359,7 +359,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
+                    ASSERT_DBG(ele_3D.tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
@@ -670,7 +670,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     
     START_TIMER("Compute intersection");
-    ComputeIntersection<dim,3> CI(elm.element(), ele_3D.element(), mesh);
+    ComputeIntersection<dim,3> CI(elm, ele_3D, mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -815,7 +815,7 @@ void InspectElementsAlgorithm22::compute_single_intersection(const ElementAccess
     
     IntersectionAux<2,2> is(eleA.idx(), eleB.idx());
     
-    ComputeIntersection<2,2> CI(eleA.element(), eleB.element(), mesh);
+    ComputeIntersection<2,2> CI(eleA, eleB, mesh);
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
@@ -931,7 +931,7 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
                 
                 IntersectionAux<1,2> is(eleA_idx, eleB_idx);
                 
-                ComputeIntersection<1,2> CI(eleA.element(), eleB.element(), mesh);
+                ComputeIntersection<1,2> CI(eleA, eleB, mesh);
                 unsigned int n_local_intersection = CI.compute_final(is.points());
     
                 if(n_local_intersection > 0)
@@ -1020,7 +1020,7 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<1,2> CI(elm.element(), ele_2D.element(), mesh);
+                    ComputeIntersection<1,2> CI(elm, ele_2D, mesh);
                     CI.compute_final(is.points());
                     END_TIMER("Compute intersection");
                     
@@ -1061,7 +1061,7 @@ void InspectElementsAlgorithm12::compute_intersections_1(const BIHTree& bih)
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<1,2> CI(elm.element(), ele_2D.element(), mesh);
+                    ComputeIntersection<1,2> CI(elm, ele_2D, mesh);
                     CI.compute_final_in_plane(is.points());
                     END_TIMER("Compute intersection");
                     

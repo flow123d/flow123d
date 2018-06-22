@@ -77,13 +77,13 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
         	ASSERT_EQ(ele->n_nodes(), 3);
 
         	arma::mat coords(3,3);
-        	coords.col(0) = ele->node[0]->point();
-        	arma::vec projection = m_ * ele->node[0]->point();
+        	coords.col(0) = ele.node(0)->point();
+        	arma::vec projection = m_ * ele.node(0)->point();
         	project_node(0) = projection(0); project_node(1) = projection(1);
             BoundingBox bb(project_node);
             for(i_node=1; i_node<ele->n_nodes(); i_node++) {
-            	coords.col(i_node) = ele->node[i_node]->point();
-                arma::vec project_coords = m_ * ele->node[i_node]->point();
+            	coords.col(i_node) = ele.node(i_node)->point();
+                arma::vec project_coords = m_ * ele.node(i_node)->point();
                 project_node(0) = project_coords(0); project_node(1) = project_coords(1);
                 bb.expand(project_node);
             }

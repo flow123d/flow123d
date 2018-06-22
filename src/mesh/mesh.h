@@ -31,7 +31,6 @@
 #include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
-#include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
 #include "mesh/nodes.hh"
 #include "mesh/bounding_box.hh"              // for BoundingBox
@@ -50,6 +49,7 @@ class Neighbour;
 class SideIter;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
+template <int spacedim> class NodeAccessor;
 
 
 #define ELM  0
@@ -61,18 +61,8 @@ template <int spacedim> class ElementAccessor;
  */
 #define MESH_CRITICAL_VOLUME 1.0E-12
 
-/**
- * Provides for statement to iterate over the Nodes of the Mesh.
- * The parameter is FullIter local variable of the cycle, so it need not be declared before.
- * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
- */
-#define FOR_NODES(_mesh_, i) \
-    for( NodeFullIter i( (_mesh_)->node_vector.begin() ); \
-        i != (_mesh_)->node_vector.end(); \
-        ++i)
-
-
 typedef Iter<ElementAccessor<3>> ElementIter;
+typedef Iter<NodeAccessor<3>> NodeIter;
 
 class BoundarySegment {
 public:
@@ -139,7 +129,7 @@ public:
     ~Mesh();
 
     inline unsigned int n_nodes() const {
-        return node_vector.size();
+        return node_vec_.size();
     }
 
     inline unsigned int n_boundaries() const {
@@ -156,11 +146,11 @@ public:
         return region_db_;
     }
 
-    /// Reserve size of node vector
-    inline void reserve_node_size(unsigned int n_nodes) {
-    	node_vector.reserve(n_nodes);
-    }
-
+//    /// Reserve size of node vector
+//    inline void reserve_node_size(unsigned int n_nodes) {
+//    	node_vector.reserve(n_nodes);
+//    }
+//
 //    /// Reserve size of element vector
 //    inline void reserve_element_size(unsigned int n_elements) {
 //    	element.reserve(n_elements);
@@ -221,8 +211,11 @@ public:
      */
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
-
+    /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const;
+
+    /// Create and return NodeAccessor to node of given idx
+    NodeAccessor<3> node_accessor(unsigned int idx) const;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
@@ -237,8 +230,8 @@ public:
      */
     vector<vector<unsigned int> > const & node_elements();
 
-    /// Vector of nodes of the mesh.
-    NodeVector node_vector;
+//    /// Vector of nodes of the mesh.
+//    NodeVector node_vector;
 //    /// Vector of elements of the mesh.
 //    ElementVector element;
 
@@ -329,11 +322,17 @@ public:
     /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
     void init_element_vector(unsigned int size);
 
+    /// Initialize node_vec_, set size
+    void init_node_vector(unsigned int size);
+
     /// Returns range of bulk elements
     Range<ElementAccessor<3>> bulk_elements_range() const;
 
     /// Returns range of boundary elements
     Range<ElementAccessor<3>> boundary_elements_range() const;
+
+    /// Returns range of nodes
+    Range<NodeAccessor<3>> node_range() const;
 
     /// Returns count of boundary or bulk elements
     inline unsigned int n_elements(bool boundary=false) const {
@@ -356,11 +355,29 @@ public:
         return element_ids_[pos];
     }
 
+    /// For node of given node_id returns index in element_vec_ or (-1) if node doesn't exist.
+    inline int node_index(int node_id) const
+    {
+        return node_ids_.get_position(node_id);
+    }
+
+    /// Return node id (in GMSH file) of node of given position in node vector.
+    inline int find_node_id(unsigned int pos) const
+    {
+        return node_ids_[pos];
+    }
+
     /// Check if given index is in element_vec_
     void check_element_size(unsigned int elem_idx) const;
 
     /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
     void create_boundary_elements();
+
+    /// Permute nodes of 3D elements of given elm_idx
+    void permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
+
+    /// Permute nodes of 2D elements of given elm_idx
+    void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
 
 protected:
 
@@ -488,6 +505,14 @@ protected:
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
 
+    /**
+     * Vector of nodes of the mesh.
+     */
+    vector<Node> node_vec_;
+
+    /// Maps node ids to indexes into vector node_vec_
+    BidirectionalMap<int> node_ids_;
+
 
 
 
@@ -496,6 +521,7 @@ protected:
     friend class BIHTree;
     friend class Boundary;
     template <int spacedim> friend class ElementAccessor;
+    template <int spacedim> friend class NodeAccessor;
 
 
 

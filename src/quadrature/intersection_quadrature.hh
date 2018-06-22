@@ -178,7 +178,7 @@ public:
             // multiply by jacobian of transform to real element.
             double rel_measure = isec->compute_measure();
             if (rel_measure < 1e-10) return false;
-            measure_=  rel_measure * ele->measure() * ele->dim();
+            measure_=  rel_measure * ele.measure() * ele->dim();
         }
         return true;
     }

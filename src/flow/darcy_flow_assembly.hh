@@ -195,12 +195,12 @@ public:
         ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
-        double value = ad_->sigma.value( ele->centre(), ele) *
-                        2*ad_->conductivity.value( ele->centre(), ele) *
-                        arma::dot(ad_->anisotropy.value( ele->centre(), ele)*nv, nv) *
+        double value = ad_->sigma.value( ele.centre(), ele) *
+                        2*ad_->conductivity.value( ele.centre(), ele) *
+                        arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
-                        ad_->cross_section.value( ele->centre(), ele ) *      // crossection of lower dim.
+                        ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
         loc_system_vb_.add_value(0,0, -value);
@@ -222,7 +222,7 @@ public:
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
 
-        flux_in_center /= ad_->cross_section.value(ele->centre(), ele );
+        flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;
     }
 
@@ -278,8 +278,8 @@ protected:
                     
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
-                                            -bcd->element()->measure() * bc_sigma * cross_section,
-                                            (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                                            -b_ele.measure() * bc_sigma * cross_section,
+                                            (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
                 }
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
@@ -288,7 +288,7 @@ protected:
                     char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
-                    double side_flux = bc_flux * bcd->element()->measure() * cross_section;
+                    double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
                     if (switch_dirichlet) {
@@ -352,14 +352,14 @@ protected:
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         loc_system_.add_value(edge_row, edge_row,
-                                                -bcd->element()->measure() * bc_sigma * cross_section,
-                                                bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
+                                                -b_ele.measure() * bc_sigma * cross_section,
+												b_ele.measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                     } else {
                         // Neumann BC
                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         
-                        loc_system_.add_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
+                        loc_system_.add_value(edge_row, bc_total_flux * b_ele.measure() * cross_section);
                     }
                 } 
                 else {

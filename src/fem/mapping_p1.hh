@@ -126,7 +126,7 @@ public:
      * Matrix(3, dim+1) M: x_real = M * x_bary;
      * M columns are real coordinates of nodes.
      */
-    ElementMap element_map(const Element &elm) const;
+    ElementMap element_map(ElementAccessor<3> elm) const;
 
     /**
      * Project given point in real coordinates to reference element (barycentic coordinates).

@@ -77,39 +77,5 @@ void read_files_from_dir(const string &dir_name,
         std::sort(filenames.begin(), filenames.end(), less<string>());
 }
 
-void permute_tetrahedron(ElementAccessor<3> ele, unsigned int p)
-{
-    ASSERT_DBG(ele->dim() == 3);
-    ASSERT_DBG(p < permutations_tetrahedron.size());
-    Node* tmp[4];
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        tmp[i] = ele->node[permutations_tetrahedron[p][i]];
-    }
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        ele->node[i] = tmp[i];
-//      ele->node[i]->point().print(cout);
-    }
-//  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-}
-
-void permute_triangle(ElementAccessor<3> ele, unsigned int p)
-{
-    ASSERT_DBG(ele->dim() == 2);
-    ASSERT_DBG(p < permutations_triangle.size());
-    Node* tmp[3];
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        tmp[i] = ele->node[permutations_triangle[p][i]];
-    }
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        ele->node[i] = tmp[i];
-//      ele->node[i]->point().print(cout);
-    }
-//  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-}
-
 
 #endif // COMPUTE_INTERSECTION_TEST_H_

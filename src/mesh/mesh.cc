@@ -38,6 +38,7 @@
 // think about following dependencies
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/partitioning.hh"
 #include "mesh/neighbours.h"
 #include "mesh/sides.h"
@@ -192,15 +193,14 @@ Mesh::~Mesh() {
     for(Edge &edg : this->edges)
         if (edg.side_) delete[] edg.side_;
 
-    for (auto ele : this->bulk_elements_range()) {
-        if (ele->node) delete[] ele->node;
+    for (unsigned int idx=0; idx < bulk_size_; idx++) {
+    	Element *ele=&(element_vec_[idx]);
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
         if (ele->neigh_vb) delete[] ele->neigh_vb;
     }
 
     for(unsigned int idx=bulk_size_; idx < element_vec_.size(); idx++) {
         Element *ele=&(element_vec_[idx]);
-        if (ele->node) delete[] ele->node;
         if (ele->boundary_idx_) delete[] ele->boundary_idx_;
     }
 
@@ -276,7 +276,7 @@ void Mesh::setup_topology() {
 
     // check mesh quality
     for (auto ele : this->bulk_elements_range())
-        if (ele->quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
+        if (ele.quality_measure_smooth(ele.side(0)) < 0.001) WarningOut().fmt("Bad quality (<0.001) of the element {}.\n", ele.idx());
 
     make_neighbours_and_edges();
     element_to_neigh_vb();
@@ -315,11 +315,11 @@ void Mesh::count_side_types()
 
 void Mesh::create_node_element_lists() {
     // for each node we make a list of elements that use this node
-    node_elements_.resize(node_vector.size());
+    node_elements_.resize( this->n_nodes() );
 
     for (auto ele : this->bulk_elements_range())
         for (unsigned int n=0; n<ele->n_nodes(); n++)
-            node_elements_[node_vector.index(ele->node[n])].push_back(ele.idx());
+            node_elements_[ele.node_accessor(n).idx()].push_back(ele.idx());
 
     for (vector<vector<unsigned int> >::iterator n=node_elements_.begin(); n!=node_elements_.end(); n++)
         stable_sort(n->begin(), n->end());
@@ -378,7 +378,7 @@ bool Mesh::same_sides(const SideIter &si, vector<unsigned int> &side_nodes) {
     // check if nodes lists match (this is slow and will be faster only when we convert whole mesh into hierarchical design like in deal.ii)
     unsigned int ni=0;
     while ( ni < si->n_nodes()
-        && find(side_nodes.begin(), side_nodes.end(), node_vector.index( si->node(ni) ) ) != side_nodes.end() ) ni++;
+        && find(side_nodes.begin(), side_nodes.end(), si->node(ni).idx() ) != side_nodes.end() ) ni++;
     return ( ni == si->n_nodes() );
 }
 
@@ -415,7 +415,7 @@ void Mesh::make_neighbours_and_edges()
 		ElementAccessor<3> bc_ele = this->element_accessor(i);
         // Find all elements that share this side.
         side_nodes.resize(bc_ele->n_nodes());
-        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = node_vector.index(bc_ele->node[n]);
+        for (unsigned n=0; n<bc_ele->n_nodes(); n++) side_nodes[n] = bc_ele->node_idx(n);
         intersect_element_lists(side_nodes, intersection_list);
         bool is_neighbour = find_lower_dim_element(intersection_list, bc_ele->dim() +1, ngh_element_idx);
         if (is_neighbour) {
@@ -487,7 +487,7 @@ void Mesh::make_neighbours_and_edges()
 
 			// Find all elements that share this side.
 			side_nodes.resize(e.side(s)->n_nodes());
-			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = node_vector.index(e.side(s)->node(n));
+			for (unsigned n=0; n<e.side(s)->n_nodes(); n++) side_nodes[n] = e.side(s)->node(n).idx();
 			intersect_element_lists(side_nodes, intersection_list);
 
 			bool is_neighbour = find_lower_dim_element(intersection_list, e->dim(), ngh_element_idx);
@@ -525,7 +525,7 @@ void Mesh::make_neighbours_and_edges()
                     Element * bc_ele = add_element_to_vector(-bdr_idx, true);
                     bc_ele->init(e->dim()-1, region_db_.implicit_boundary_region() );
                     region_db_.mark_used_region( bc_ele->region_idx_.idx() );
-                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->node[ni] = &( node_vector[side_nodes[ni]] );
+                    for(unsigned int ni = 0; ni< side_nodes.size(); ni++) bc_ele->nodes_[ni] = side_nodes[ni];
 
                     // fill Boundary object
                     bdr.edge_idx_ = last_edge_idx;
@@ -583,16 +583,18 @@ void Mesh::make_edge_permutations()
 
 		if (edg->n_sides > 1)
 		{
-			map<const Node*,unsigned int> node_numbers;
+			map<unsigned int,unsigned int> node_numbers;
 			unsigned int permutation[edg->side(0)->n_nodes()];
 
 			for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
-				node_numbers[edg->side(0)->node(i)] = i;
+				node_numbers[edg->side(0)->node(i).idx()] = i;
+				//node_numbers[edg->side(0)->node(i).node()] = i;
 
 			for (int sid=1; sid<edg->n_sides; sid++)
 			{
 				for (unsigned int i=0; i<edg->side(0)->n_nodes(); i++)
-					permutation[node_numbers[edg->side(sid)->node(i)]] = i;
+					permutation[node_numbers[edg->side(sid)->node(i).idx()]] = i;
+					//permutation[node_numbers[edg->side(sid)->node(i).node()]] = i;
 
 				switch (edg->side(0)->dim())
 				{
@@ -618,10 +620,10 @@ void Mesh::make_edge_permutations()
 		// element of lower dimension is reference, so
 		// we calculate permutation for the adjacent side
 		for (unsigned int i=0; i<nb->element()->n_nodes(); i++)
-			node_numbers[nb->element()->node[i]] = i;
+			node_numbers[nb->element().node(i)] = i;
 
 		for (unsigned int i=0; i<nb->side()->n_nodes(); i++)
-			permutation[node_numbers[nb->side()->node(i)]] = i;
+			permutation[node_numbers[nb->side()->node(i).node()]] = i;
 
 		switch (nb->side()->dim())
 		{
@@ -701,6 +703,12 @@ ElementAccessor<3> Mesh::element_accessor(unsigned int idx) const {
 
 
 
+NodeAccessor<3> Mesh::node_accessor(unsigned int idx) const {
+    return NodeAccessor<3>(this, idx);
+}
+
+
+
 void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const
 {
     if (bulk_elements_id.size() ==0) {
@@ -766,7 +774,7 @@ std::vector<BoundingBox> Mesh::get_element_boxes() {
     unsigned int i=0;
     boxes.resize(this->n_elements());
     for (auto element : this->bulk_elements_range()) {
-        boxes[i] = element->bounding_box();
+        boxes[i] = element.bounding_box();
     	i++;
     }
 
@@ -792,8 +800,10 @@ void Mesh::add_physical_name(unsigned int dim, unsigned int id, std::string name
 
 
 void Mesh::add_node(unsigned int node_id, arma::vec3 coords) {
-	NodeFullIter node = node_vector.add_item(node_id);
-	node->point() = coords;
+    node_vec_.push_back( Node() );
+    Node &node = node_vec_[node_vec_.size()-1];
+    node.point() = coords;
+    node_ids_.add_item(node_id);
 }
 
 
@@ -825,17 +835,13 @@ void Mesh::init_element(Element *ele, unsigned int elm_id, unsigned int dim, Reg
 	ele->pid_ = partition_id;
 
 	for (unsigned int ni=0; ni<ele->n_nodes(); ni++) {
-		unsigned int node_id = node_ids[ni];
-		NodeIter node = node_vector.find_id( node_id );
-		INPUT_CHECK( node != node_vector.end(),
-				"Unknown node id %d in specification of element with id=%d.\n", node_id, elm_id);
-		ele->node[ni] = node;
+		ele->nodes_[ni] = this->node_index(node_ids[ni]);
 	}
 
     // check that tetrahedron element is numbered correctly and is not degenerated
     if(ele->dim() == 3)
     {
-        double jac = ele->tetrahedron_jacobian();
+        double jac = this->element_accessor( this->elem_index(elm_id) ).tetrahedron_jacobian();
         if( ! (jac > 0) )
             WarningOut().fmt("Tetrahedron element with id {} has wrong numbering or is degenerated (Jacobian = {}).",elm_id,jac);
     }
@@ -857,6 +863,13 @@ void Mesh::init_element_vector(unsigned int size) {
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(size);
 	bulk_size_ = 0;
+}
+
+
+void Mesh::init_node_vector(unsigned int size) {
+	node_vec_.clear();
+	node_vec_.reserve(size);
+	node_ids_.reinit(0);
 }
 
 
@@ -882,6 +895,10 @@ Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
 
 Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
     return Range<ElementAccessor<3>>(this, bulk_size_, element_vec_.size());
+}
+
+Range<NodeAccessor<3>> Mesh::node_range() const {
+    return Range<NodeAccessor<3>>(this, 0, node_vec_.size());
 }
 
 inline void Mesh::check_element_size(unsigned int elem_idx) const
@@ -987,6 +1004,40 @@ void Mesh::create_boundary_elements() {
 	element_vec_.resize(pos); // remove empty element (count is equal with zero-dimensional bulk elements)
 	bc_element_tmp_.clear();
 	bc_element_tmp_.reserve(0);
+}
+
+
+void Mesh::permute_tetrahedron(unsigned int elm_idx, std::vector<unsigned int> permutation_vec)
+{
+	ASSERT_LT_DBG(elm_idx, element_vec_.size());
+    ASSERT_EQ_DBG(permutation_vec.size(), 4);
+
+    std::array<unsigned int, 4> tmp_nodes;
+    Element &elem = element_vec_[elm_idx];
+    ASSERT_EQ_DBG(elem.dim(), 3);
+
+    for(unsigned int i=0; i<elem.n_nodes(); i++)
+    {
+       	tmp_nodes[i] = elem.nodes_[permutation_vec[i]];
+    }
+    elem.nodes_ = tmp_nodes;
+}
+
+
+void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec)
+{
+	ASSERT_LT_DBG(elm_idx, element_vec_.size());
+	ASSERT_EQ_DBG(permutation_vec.size(), 3);
+
+    std::array<unsigned int, 4> tmp_nodes;
+    Element &elem = element_vec_[elm_idx];
+    ASSERT_EQ_DBG(elem.dim(), 2);
+
+    for(unsigned int i=0; i<elem.n_nodes(); i++)
+    {
+       	tmp_nodes[i] = elem.nodes_[permutation_vec[i]];
+    }
+    elem.nodes_ = tmp_nodes;
 }
 
 

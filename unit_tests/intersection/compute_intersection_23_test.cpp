@@ -236,8 +236,8 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
                  tetra_ele_idx = 1;
     
     IntersectionAux<2,3> is;
-    ComputeIntersection<2,3> CI(mesh->element_accessor(triangle_ele_idx).element(),
-                                mesh->element_accessor(tetra_ele_idx).element(),
+    ComputeIntersection<2,3> CI(mesh->element_accessor(triangle_ele_idx),
+                                mesh->element_accessor(tetra_ele_idx),
                                 mesh);
     CI.init();
     CI.compute(is);
@@ -308,9 +308,9 @@ TEST(area_intersections, all) {
                 // permute nodes:
                 for (auto ele : mesh->bulk_elements_range()) {
                     if(ele->dim() == 2)
-                        permute_triangle(ele,p);
+                        mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
                     if(ele->dim() == 3)
-                        permute_tetrahedron(ele,pt);
+                    	mesh->permute_tetrahedron(ele.idx(), permutations_tetrahedron[pt]);
                 }
                 mesh->setup_topology();
                 

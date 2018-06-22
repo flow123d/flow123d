@@ -19,6 +19,7 @@
 #define SIDE_IMPL_HH_
 
 #include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
 #include "mesh/mesh.h"
 #include "mesh/edges.h"
 
@@ -43,10 +44,10 @@ inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnu
         return edge()->n_sides == 1;
     }
 
-    inline const Node * Side::node(unsigned int i) const {
+    inline NodeAccessor<3> Side::node(unsigned int i) const {
         int i_n = mesh_->side_nodes[dim()][side_idx_][i];
 
-        return element()->node[ i_n ];
+        return element().node_accessor( i_n );
     }
 
     inline ElementAccessor<3> Side::element() const {

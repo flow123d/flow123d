@@ -32,7 +32,6 @@
 #include "mesh/region.hh"                    // for Region
 #include "mesh/side_impl.hh"                 // for Side::edge_idx
 #include "mesh/sides.h"                      // for SideIter, Side
-#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 
 class LocalToGlobalMap;
 template <int spacedim> class LocalElementAccessorBase;
@@ -135,11 +134,11 @@ public:
     }
 
     const arma::vec3 centre() const {
-        return ele->centre();
+        return ele.centre();
     }
 
     double measure() const {
-        return ele->measure();
+        return ele.measure();
     }
 
     Region region() const {

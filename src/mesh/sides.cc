@@ -69,11 +69,11 @@ arma::vec3 Side::normal() const {
 arma::vec3 Side::normal_point() const {
     ElementAccessor<3> ele = element();
 
-    arma::vec3 normal(ele->node[1]->point());
-    normal -= ele->node[0] ->point();
+    arma::vec3 normal(ele.node(1)->point());
+    normal -= ele.node(0) ->point();
 
     normal /=arma::norm(normal,2);
-    if ( node( 0 ) == ele->node[ 0 ] )
+    if ( node( 0 ) == ele.node_accessor( 0 ) )
         return -normal;
     else
         return normal;
@@ -86,15 +86,15 @@ arma::vec3 Side::normal_line() const {
 	ElementAccessor<3> ele = element();
 
     // At first, we need vector of the normal of the element
-    arma::vec3 elem_normal=arma::cross( ele->node[1]->point() - ele->node[0]->point(),
-                                        ele->node[2]->point() - ele->node[0]->point() );
+    arma::vec3 elem_normal=arma::cross( ele.node(1)->point() - ele.node(0)->point(),
+                                        ele.node(2)->point() - ele.node(0)->point() );
     elem_normal /= norm( elem_normal, 2);
 
     // Now we can calculate the "normal" of our side
     arma::vec3 side_normal = arma::cross( node(1)->point() - node(0)->point() , elem_normal );
     side_normal /= norm( side_normal, 2);
 
-    if ( dot( side_normal, ele->centre() - node(0)->point() ) > 0.0)
+    if ( dot( side_normal, ele.centre() - node(0)->point() ) > 0.0)
         return -side_normal;
     else
         return side_normal;
@@ -108,7 +108,7 @@ arma::vec3 Side::normal_triangle() const {
                                         node(2)->point() - node(0)->point() );
     side_normal /= norm( side_normal, 2);
 
-    if ( dot(side_normal, element()->centre() - node(0)->point() ) > 0.0)
+    if ( dot(side_normal, element().centre() - node(0)->point() ) > 0.0)
         return -side_normal;
     else
         return side_normal;
