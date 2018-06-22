@@ -149,6 +149,46 @@ TEST(Mesh, decompose_problem) {
 }
 
 
+TEST(Mesh, check_compatible_mesh) {
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	vector<LongIdx> bulk_elms_id, boundary_elms_id;
+
+    std::string mesh_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
+    Mesh * target_mesh = mesh_constructor(mesh_string);
+    auto target_reader = reader_constructor(mesh_string);
+    target_reader->read_physical_names(target_mesh);
+    target_reader->read_raw_mesh(target_mesh);
+    target_mesh->setup_topology();
+
+    {
+        std::string mesh_in_string = "{mesh_file=\"mesh/pvd-test/pvd-test-000000.vtu\"}";
+        Mesh * mesh = mesh_constructor(mesh_in_string);
+        auto reader = reader_constructor(mesh_in_string);
+        reader->read_physical_names(mesh);
+        reader->read_raw_mesh(mesh);
+
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+
+        delete mesh;
+    }
+
+    {
+        std::string mesh_in_string = "{mesh_file=\"mesh/test_108_elem.msh\"}";
+        Mesh * mesh = mesh_constructor(mesh_in_string);
+        auto reader = reader_constructor(mesh_in_string);
+        reader->read_physical_names(mesh);
+        reader->read_raw_mesh(mesh);
+
+        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+
+        delete mesh;
+    }
+
+    delete target_mesh;
+}
+
+
 TEST(BCMesh, element_ranges) {
 	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
 
