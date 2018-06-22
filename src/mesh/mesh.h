@@ -212,6 +212,11 @@ public:
      */
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
+    /*
+     * Check if nodes and elements are compatible with \p mesh.
+     */
+    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
+
     /// Create and return ElementAccessor to element of given idx
     ElementAccessor<3> element_accessor(unsigned int idx) const;
 

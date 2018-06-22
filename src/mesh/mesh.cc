@@ -746,6 +746,94 @@ void Mesh::elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx>
     }
 }
 
+
+bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
+	static const double point_tolerance = 1E-10;
+	return fabs(p1[0]-p2[0]) < point_tolerance
+		&& fabs(p1[1]-p2[1]) < point_tolerance
+		&& fabs(p1[2]-p2[2]) < point_tolerance;
+}
+
+
+bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id )
+{
+	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
+	unsigned int i; // counter over vectors
+
+    {
+        // iterates over node vector of \p this object
+        // to each node must be found just only one node in target \p mesh
+        // store orders (mapping between source and target meshes) into node_ids vector
+        std::vector<unsigned int> searched_elements; // for BIH tree
+        unsigned int i_node, i_elm_node;
+        const BIHTree &bih_tree=mesh.get_bih_tree();
+
+    	// create nodes of mesh
+        node_ids.resize( this->n_nodes() );
+        i=0;
+        for (auto nod : this->node_range()) {
+            arma::vec3 point = nod->point();
+            int found_i_node = -1;
+            bih_tree.find_point(point, searched_elements);
+
+            for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
+                ElementAccessor<3> ele = mesh.element_accessor( *it );
+                for (i_node=0; i_node<ele->n_nodes(); i_node++)
+                {
+                    if ( compare_points(ele.node(i_node)->point(), point) ) {
+                    	i_elm_node = ele.node_accessor(i_node).idx();
+                        if (found_i_node == -1) found_i_node = i_elm_node;
+                        else if (found_i_node != i_elm_node) {
+                            // duplicate nodes in target mesh
+                            return false;
+                        }
+                    }
+                }
+            }
+            if (found_i_node == -1) {
+                // no node found in target mesh
+            	return false;
+            }
+            node_ids[i] = (unsigned int)found_i_node;
+            searched_elements.clear();
+            i++;
+        }
+    }
+
+    {
+        // iterates over bulk elements of \p this object
+        // elements in both ameshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into bulk_elements_id_ vector
+        vector<unsigned int> node_list;
+        vector<unsigned int> candidate_list; // returned by intersect_element_lists
+        vector<unsigned int> result_list; // list of elements with same dimension as vtk element
+        bulk_elements_id.clear();
+        bulk_elements_id.resize(this->n_elements());
+        // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
+        // fill bulk_elements_id_ vector
+        i=0;
+        for (auto elm : this->elements_range()) {
+            for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
+                node_list.push_back( node_ids[ elm->node_idx(j) ] );
+            }
+            mesh.intersect_element_lists(node_list, candidate_list);
+            for (auto i_elm : candidate_list) {
+            	if ( mesh.element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            }
+            if (result_list.size() != 1) {
+            	// intersect_element_lists must produce one element
+            	return false;
+            }
+            bulk_elements_id[i] = (LongIdx)result_list[0];
+            node_list.clear();
+            result_list.clear();
+        	i++;
+        }
+    }
+
+    return true;
+}
+
 void Mesh::read_regions_from_input(Input::Array region_list)
 {
 	for (Input::Iterator<Input::AbstractRecord> it = region_list.begin<Input::AbstractRecord>();
