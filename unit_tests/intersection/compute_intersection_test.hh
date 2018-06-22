@@ -5,9 +5,9 @@
 
 #include "system/file_path.hh"
 #include "system/system.hh"
-#include "mesh/mesh_types.hh"
 #include "mesh/nodes.hh"
 #include "mesh/elements.h"
+#include "mesh/accessors.hh"
 
 
 static const std::vector<std::vector<unsigned int>> permutations_triangle = {
@@ -77,7 +77,7 @@ void read_files_from_dir(const string &dir_name,
         std::sort(filenames.begin(), filenames.end(), less<string>());
 }
 
-void permute_tetrahedron(ElementFullIter ele, unsigned int p)
+void permute_tetrahedron(ElementAccessor<3> ele, unsigned int p)
 {
     ASSERT_DBG(ele->dim() == 3);
     ASSERT_DBG(p < permutations_tetrahedron.size());
@@ -94,7 +94,7 @@ void permute_tetrahedron(ElementFullIter ele, unsigned int p)
 //  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
 }
 
-void permute_triangle(ElementFullIter ele, unsigned int p)
+void permute_triangle(ElementAccessor<3> ele, unsigned int p)
 {
     ASSERT_DBG(ele->dim() == 2);
     ASSERT_DBG(p < permutations_triangle.size());

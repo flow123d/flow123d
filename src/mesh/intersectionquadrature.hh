@@ -48,7 +48,6 @@
  */
 
 
-#include "mesh/mesh_types.hh"
 #include <armadillo>
 
 #include "mesh/ngh/include/intersectionLocal.h"
@@ -142,10 +141,11 @@
  */
 
 #include <iostream>
+template <int spacedim> class ElementAccessor;
 
 class Intersection {
 public:
-    Intersection(const ElementFullIter ele_master, const ElementFullIter ele_slave,
+    Intersection(ElementAccessor<3> ele_master, ElementAccessor<3> ele_slave,
     			 const IntersectionLocal *isec);
 
     /// dimension of the master element
@@ -163,7 +163,7 @@ public:
     arma::vec map_to_slave(const arma::vec &point) const;
     double intersection_true_size() const;
 
-    ElementFullIter master, slave; // master lower dimension
+    ElementAccessor<3> master, slave; // master lower dimension
 
 private:
     /// dimenze pruniku

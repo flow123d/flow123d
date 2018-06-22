@@ -19,10 +19,10 @@
 #define ACCESSORS_HH_
 
 #include "mesh/bounding_box.hh"
-#include "mesh/mesh_types.hh"
 #include "mesh/region.hh"
 #include "mesh/elements.h"
 #include "mesh/mesh.h"
+#include "mesh/sides.h"
 #include <armadillo>
 
 /**
@@ -62,8 +62,8 @@ public:
     /**
      * Element accessor.
      */
-    ElementAccessor(const Mesh *mesh, unsigned int idx, bool boundary)
-    : mesh_(mesh), boundary_(boundary), element_idx_(idx), r_idx_(element()->region_idx())
+    ElementAccessor(const Mesh *mesh, unsigned int idx)
+    : mesh_(mesh), boundary_(idx>=mesh->n_elements()), element_idx_(idx), r_idx_(element()->region_idx())
     {
        dim_=element()->dim();
     }
@@ -84,17 +84,11 @@ public:
         { return dim_; }
 
     inline const Element * element() const {
-        if (boundary_) return (Element *)(mesh_->bc_elements(element_idx_)) ;
-        else return  (Element *)(mesh_->element(element_idx_)) ;
+        return &(mesh_->element_vec_[element_idx_]);
     }
     
-    inline ElementFullIter full_iter() const {
-        if (boundary_) return element()->mesh_->bc_elements(element_idx_);
-        else return element()->mesh_->element(element_idx_);
-    }
-
     inline arma::vec::fixed<spacedim> centre() const {
-    	OLD_ASSERT(is_valid(), "Invalid element accessor.");
+    	ASSERT(is_valid()).error("Invalid element accessor.");
         if (is_regional() ) return arma::vec::fixed<spacedim>();
         else return element()->centre();
     }
@@ -118,6 +112,46 @@ public:
     inline unsigned int idx() const {
         return element_idx_;
     }
+
+    inline unsigned int index() const {
+    	return (unsigned int)mesh_->find_elem_id(element_idx_);
+    }
+
+    inline void inc() {
+        ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
+        element_idx_++;
+        r_idx_ = element()->region_idx();
+        dim_=element()->dim();
+        boundary_ = (element_idx_>=mesh_->n_elements());
+    }
+
+    inline SideIter side(const unsigned int loc_index) {
+        return SideIter( Side(mesh_, element_idx_, loc_index) );
+    }
+
+    inline const SideIter side(const unsigned int loc_index) const {
+        return SideIter( Side(mesh_, element_idx_, loc_index) );
+    }
+
+    bool operator==(const ElementAccessor<spacedim>& other) {
+    	return (element_idx_ == other.element_idx_);
+    }
+
+    /**
+     * -> dereference operator
+     *
+     * Allow simplify calling of element() method. Example:
+ @code
+     ElementAccessor<3> elm_ac(mesh, index);
+     arma::vec centre;
+     centre = elm_ac.element()->centre();  // full format of access to element
+     centre = elm_ac->centre();            // short format with dereference operator
+ @endcode
+     */
+    inline const Element * operator ->() const {
+    	return &(mesh_->element_vec_[element_idx_]);
+    }
+
 private:
     /**
      * When dim_ == undefined_dim_ ; the value of element_idx_ is invalid.
@@ -130,10 +164,10 @@ private:
 
     /// Pointer to the mesh owning the element.
     const Mesh *mesh_;
-    /// True if the element is boundary, i.e. stored in Mesh::bc_elements, bulk elements are stored in Mesh::element
+    /// True if the element is boundary
     bool boundary_;
 
-    /// Index into Mesh::bc_elements or Mesh::element array.
+    /// Index into Mesh::element_vec_ array.
     unsigned int element_idx_;
 
     /// Region index.

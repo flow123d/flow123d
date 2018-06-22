@@ -20,9 +20,10 @@
 #include <string>
 
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
+#include "elements.h"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "element_impls.hh"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
@@ -33,45 +34,36 @@
 
 
 Element::Element()
-:  pid(0),
-
-  node(NULL),
-
-//  material(NULL),
-  edge_idx_(NULL),
+: node(NULL),
   boundary_idx_(NULL),
-  permutation_idx_(NULL),
-
-  n_neighs_vb(0),
   neigh_vb(NULL),
-
+  pid_(0),
+  n_neighs_vb_(0),
   dim_(0)
-
 {
 }
 
 
-Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
+Element::Element(unsigned int dim, RegionIdx reg)
 {
-    init(dim, mesh_in, reg);
+    init(dim, reg);
 }
 
 
 
-void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
-    pid=0;
-    n_neighs_vb=0;
+void Element::init(unsigned int dim, RegionIdx reg) {
+    pid_=0;
+    n_neighs_vb_=0;
     neigh_vb=NULL;
     dim_=dim;
-    mesh_=mesh_in;
     region_idx_=reg;
 
     node = new Node * [ n_nodes()];
-    edge_idx_ = new unsigned int [ n_sides()];
+    edge_idx_.resize( n_sides() );
+    permutation_idx_.resize( n_sides() );
     boundary_idx_ = NULL;
-    permutation_idx_ = new unsigned int[n_sides()];
 
-    FOR_ELEMENT_SIDES(this, si) {
+    for (unsigned int si=0; si<this->n_sides(); si++) {
         edge_idx_[ si ]=Mesh::undef_idx;
         permutation_idx_[si] = Mesh::undef_idx;
     }
@@ -128,12 +120,10 @@ double Element::tetrahedron_jacobian() const
  */
 
 arma::vec3 Element::centre() const {
-    unsigned int li;
-
     arma::vec3 centre;
     centre.zeros();
 
-    FOR_ELEMENT_NODES(this, li) {
+    for (unsigned int li=0; li<this->n_nodes(); li++) {
         centre += node[ li ]->point();
     }
     centre /= (double) n_nodes();
@@ -144,6 +134,7 @@ arma::vec3 Element::centre() const {
  * Count element sides of the space dimension @p side_dim.
  */
 
+/* If we use this method, it will be moved to mesh accessor class.
 unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 {
     if (side_dim == dim()) return 1;
@@ -152,30 +143,14 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
     for (unsigned int i=0; i<n_sides(); i++)
         if (side(i)->dim() == side_dim) n++;
     return n;
-}
+}*/
 
 
-ElementAccessor< 3 > Element::element_accessor() const
-{
-  return mesh_->element_accessor( mesh_->element.index(this) );
-}
-
-
-
-Region Element::region() const {
-    return Region( region_idx_, mesh_->region_db());
-}
-
-
-unsigned int Element::id() const {
-	return mesh_->element.get_id(this);
-}
-
-double Element::quality_measure_smooth() {
+double Element::quality_measure_smooth(SideIter side) const {
     if (dim_==3) {
         double sum_faces=0;
         double face[4];
-        for(unsigned int i=0;i<4;i++) sum_faces+=( face[i]=side(i)->measure());
+        for(unsigned int i=0; i<4; i++, ++side) sum_faces+=( face[i]=side->measure());
 
         double sum_pairs=0;
         for(unsigned int i=0;i<3;i++)
@@ -218,10 +193,10 @@ void Element::get_bounding_box(BoundingBox &bounding_box) const
 //}
 
 
-unsigned int Element::get_proc() const
+/*unsigned int Element::get_proc() const
 {
   return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
-}
+}*/
     
 
 //-----------------------------------------------------------------------------

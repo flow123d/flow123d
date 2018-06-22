@@ -62,9 +62,9 @@ void compute_intersection(Mesh *mesh)
 //     }
 //     cout << "----------------------------------------------------------------" << endl;
     
-//     FOR_ELEMENTS(mesh, ele){
+//     for (auto ele : mesh->bulk_elements_range()) {
 //         if(ele->dim() == 2){
-//             int ele_idx = ele->index();
+//             int ele_idx = ele.index();
 //             auto vec = ie.intersection_map_[ele_idx];
 //             std::sort(vec.begin(), vec.end(), compare_il_idx);
 //             for(unsigned int i = 0; i < vec.size(); i++)

@@ -20,7 +20,9 @@
 #define DOFHANDLER_HH_
 
 #include <vector>              // for vector
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "mesh/mesh_types.hh"  // for ElementFullIter
 #include "mesh/long_idx.hh"    // for LongIdx
 #include "petscvec.h"          // for Vec
@@ -52,7 +54,7 @@ public:
      * TODO: Iterator goes through cells of all dimensions, but
      * should go only through dim-dimensional ones.
      */
-    typedef ElementFullIter CellIterator;
+    typedef ElementAccessor<3> CellIterator;
 
     /**
      * @brief Getter for the number of all mesh dofs required by the given
@@ -200,7 +202,7 @@ protected:
 //     * TODO: Iterator goes through cells of all dimensions, but
 //     * should go only through dim-dimensional ones.
 //     */
-//    typedef ElementFullIter CellIterator;
+//    typedef ElementAccessor<3> CellIterator;
 //
 //    /**
 //     * @brief Distributes degrees of freedom on the mesh needed
@@ -278,7 +280,7 @@ public:
      *
      * TODO: Notation to be fixed: element or cell
      */
-    typedef ElementFullIter CellIterator;
+    typedef ElementAccessor<3> CellIterator;
 
     /**
      * @brief Distributes degrees of freedom on the mesh needed

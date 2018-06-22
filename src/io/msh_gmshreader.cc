@@ -99,7 +99,7 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
         std::vector<unsigned int> node_ids; //node_ids of elements
         node_ids.resize(4); // maximal count of nodes
 
-        mesh->reserve_element_size(n_elements);
+        mesh->init_element_vector(n_elements);
 
         for (unsigned int i = 0; i < n_elements; ++i) {
         	tok_.next_line();
@@ -156,8 +156,8 @@ void GmshMeshReader::read_elements(Mesh * mesh) {
     	THROW(ExcWrongFormat() << EI_Type("number") << EI_TokenizerMsg(tok_.position_msg()) << EI_MeshFile(tok_.f_name()) );
     }
 
-    mesh->n_all_input_elements_=mesh->element.size() + mesh->bc_elements.size();
-    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->element.size(), mesh->bc_elements.size());
+    mesh->create_boundary_elements();
+    MessageOut().fmt("... {} bulk elements, {} boundary elements. \n", mesh->n_elements(), mesh->n_elements(true));
 }
 
 

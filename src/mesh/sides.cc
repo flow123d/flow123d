@@ -17,9 +17,10 @@
  */
 
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "sides.h"
-#include "mesh/mesh_types.hh"
+#include "mesh/accessors.hh"
 
 
 //=============================================================================
@@ -66,7 +67,7 @@ arma::vec3 Side::normal() const {
 //=============================================================================
 
 arma::vec3 Side::normal_point() const {
-    const Element * ele = element_;
+    ElementAccessor<3> ele = element();
 
     arma::vec3 normal(ele->node[1]->point());
     normal -= ele->node[0] ->point();
@@ -82,7 +83,7 @@ arma::vec3 Side::normal_point() const {
 //=============================================================================
 
 arma::vec3 Side::normal_line() const {
-    const Element * ele=element_;
+	ElementAccessor<3> ele = element();
 
     // At first, we need vector of the normal of the element
     arma::vec3 elem_normal=arma::cross( ele->node[1]->point() - ele->node[0]->point(),
@@ -103,13 +104,11 @@ arma::vec3 Side::normal_line() const {
 //=============================================================================
 
 arma::vec3 Side::normal_triangle() const {
-    const Element * ele=element_;
-
     arma::vec3 side_normal=arma::cross( node(1)->point() - node(0)->point(),
                                         node(2)->point() - node(0)->point() );
     side_normal /= norm( side_normal, 2);
 
-    if ( dot(side_normal, ele->centre() - node(0)->point() ) > 0.0)
+    if ( dot(side_normal, element()->centre() - node(0)->point() ) > 0.0)
         return -side_normal;
     else
         return side_normal;

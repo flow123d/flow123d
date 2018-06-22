@@ -12,7 +12,9 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
@@ -91,7 +93,7 @@ void compute_intersection_13d(Mesh *mesh, const IntersectionLocal<1,3> &il)
 {
     // compute intersection
     IntersectionAux<1,3> is;
-    ComputeIntersection<1,3> CI(mesh->element(1), mesh->element(0), mesh);
+    ComputeIntersection<1,3> CI(mesh->element_accessor(1).element(), mesh->element_accessor(0).element(), mesh);
     CI.init();
     CI.compute(is);
     
@@ -140,8 +142,7 @@ TEST(intersections_13d, all) {
             reader->read_raw_mesh(mesh);
         
             // permute nodes:
-            FOR_ELEMENTS(mesh,ele)
-            {
+            for (auto ele : mesh->bulk_elements_range()) {
                 if(ele->dim() == 3)
                     permute_tetrahedron(ele,p);
             }

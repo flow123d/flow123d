@@ -23,8 +23,10 @@
 #include "system/sys_profiler.hh"
 
 #include <petscmat.h>
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/long_idx.hh"
+#include "mesh/accessors.hh"
 #include "io/output_time_set.hh"
 #include "coupling/balance.hh"
 #include "tools/unit_si.hh"
@@ -215,12 +217,12 @@ void Balance::lazy_initialize()
 	// construct vector of regions of boundary edges
     for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
     {
-        Element *elm = mesh_->element(mesh_->get_el_4_loc()[loc_el]);
+        ElementAccessor<3> elm = mesh_->element_accessor( mesh_->get_el_4_loc()[loc_el] );
         if (elm->boundary_idx_ != nullptr)
         {
-            FOR_ELEMENT_SIDES(elm,si)
+        	for(unsigned int si=0; si<elm->n_sides(); si++)
             {
-                Boundary *b = elm->side(si)->cond();
+                Boundary *b = elm.side(si)->cond();
                 if (b != nullptr)
                 	be_regions_.push_back(b->region().boundary_idx());
             }

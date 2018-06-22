@@ -18,15 +18,15 @@
 #ifndef SIDE_IMPL_HH_
 #define SIDE_IMPL_HH_
 
-#include "mesh/elements.h"
+#include "mesh/accessors.hh"
 #include "mesh/mesh.h"
 #include "mesh/edges.h"
 
 
-inline Side::Side(const Element * ele, unsigned int set_lnum)
-: element_(ele), el_idx_(set_lnum)
+inline Side::Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum)
+: mesh_(mesh), elem_idx_(elem_idx), side_idx_(set_lnum)
 {
-	OLD_ASSERT(mesh()->element.full_iter( const_cast<Element *>(element_) ), "Wrong initialization of the Side.\n");
+	mesh_->check_element_size(elem_idx);
 }
 
 
@@ -35,7 +35,7 @@ inline Side::Side(const Element * ele, unsigned int set_lnum)
     }
 
     inline unsigned int Side::dim() const {
-        return element_->dim()-1;
+        return element()->dim()-1;
     }
 
     // returns true for all sides either on boundary or connected to vb neigboring
@@ -44,56 +44,61 @@ inline Side::Side(const Element * ele, unsigned int set_lnum)
     }
 
     inline const Node * Side::node(unsigned int i) const {
-        int i_n = mesh()->side_nodes[dim()][el_idx_][i];
+        int i_n = mesh_->side_nodes[dim()][side_idx_][i];
 
-        return element_->node[ i_n ];
+        return element()->node[ i_n ];
     }
 
-    inline ElementFullIter Side::element() const {
-    	OLD_ASSERT( valid(), "Wrong use of uninitialized accessor.\n");
-        return mesh()->element.full_iter( const_cast<Element *>(element_) );
+    inline ElementAccessor<3> Side::element() const {
+    	ASSERT( valid() ).error("Wrong use of uninitialized accessor.\n");
+        return mesh_->element_accessor( elem_idx_ );
     }
 
-    inline Mesh * Side::mesh() const {
-        return element_->mesh_;
+    inline const Mesh * Side::mesh() const {
+        return this->mesh_;
     }
 
     inline unsigned int Side::edge_idx() const {
-        return element_->edge_idx_[el_idx()];
+        return element()->edge_idx(side_idx_);
     }
 
-    inline Edge * Side::edge() const {
+    inline const Edge * Side::edge() const {
         if (edge_idx() == Mesh::undef_idx) return NULL;
-        else return &( mesh()->edges[ edge_idx() ] );
+        else return &( mesh_->edges[ edge_idx() ] );
     }
 
     inline Boundary * Side::cond() const {
             if (cond_idx() == Mesh::undef_idx) return NULL;
-            else return &( mesh()->boundary_[ cond_idx() ] );
+            else return &( mesh_->boundary_[ cond_idx() ] );
     }
 
     inline unsigned int Side::cond_idx() const {
-         if (element_->boundary_idx_ == NULL) return Mesh::undef_idx;
-         else return element_->boundary_idx_[el_idx()];
+         if (element()->boundary_idx_ == NULL) return Mesh::undef_idx;
+         else return element()->boundary_idx_[side_idx_];
     }
 
 
-    inline unsigned int Side::el_idx() const {
-        return el_idx_;
+    inline unsigned int Side::side_idx() const {
+        return side_idx_;
+    }
+
+
+    inline unsigned int Side::elem_idx() const {
+        return elem_idx_;
     }
 
 
     inline bool Side::valid() const {
-        return element_!= NULL;
+        return mesh_!= NULL;
     }
 
 
     inline void Side::inc() {
-        el_idx_++;
+    	side_idx_++;
     }
 
 
-    inline void *Side::make_ptr() const {
-        return (void *)((long int) element_ << (2 + el_idx_) );
-    }
+    //inline void *Side::make_ptr() const {
+    //    return (void *)((long int) element() << (2 + side_idx_) );
+    //}
 #endif /* SIDE_IMPL_HH_ */

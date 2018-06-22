@@ -20,6 +20,7 @@
 
 #include <mpi.h>                             // for MPI_Comm, MPI_COMM_WORLD
 #include <boost/exception/info.hpp>          // for error_info::~error_info<...
+//#include <boost/range.hpp>
 #include <memory>                            // for shared_ptr
 #include <string>                            // for string
 #include <vector>                            // for vector, vector<>::iterator
@@ -31,10 +32,12 @@
 #include "mesh/boundaries.h"                 // for Boundary
 #include "mesh/edges.h"                      // for Edge
 #include "mesh/mesh_types.hh"                // for ElementVector, ElementFu...
-#include "mesh/neighbours.h"                 // for Neighbour
 #include "mesh/region.hh"                    // for RegionDB, RegionDB::MapE...
-#include "mesh/sides.h"                      // for SideIter
+#include "mesh/nodes.hh"
 #include "mesh/bounding_box.hh"              // for BoundingBox
+#include "mesh/range_wrapper.hh"
+#include "tools/bidirectional_map.hh"
+#include "tools/general_iterator.hh"
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
 #include "system/file_path.hh"               // for FilePath
 #include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
@@ -42,6 +45,10 @@
 class BIHTree;
 class Distribution;
 class Partitioning;
+class MixedMeshIntersections;
+class Neighbour;
+class SideIter;
+template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 
 
@@ -64,28 +71,8 @@ template <int spacedim> class ElementAccessor;
         i != (_mesh_)->node_vector.end(); \
         ++i)
 
-/**
- * Macro for conversion form Iter to FullIter for nodes.
- */
-#define NODE_FULL_ITER(_mesh_,i) \
-    (_mesh_)->node_vector.full_iter(i)
 
-/**
- * Macro to get "NULL" ElementFullIter.
- */
-#define NODE_FULL_ITER_NULL(_mesh_) \
-    NodeFullIter((_mesh_)->node_vector)
-
-/**
- * Macro for conversion form Iter to FullIter for elements.
- */
-#define ELEM_FULL_ITER(_mesh_,i) \
-    (_mesh_)->element.full_iter(i)
-
-
-#define FOR_NODE_ELEMENTS(i,j)   for((j)=0;(j)<(i)->n_elements();(j)++)
-#define FOR_NODE_SIDES(i,j)      for((j)=0;(j)<(i)->n_sides;(j)++)
-
+typedef Iter<ElementAccessor<3>> ElementIter;
 
 class BoundarySegment {
 public:
@@ -155,10 +142,6 @@ public:
         return node_vector.size();
     }
 
-    inline unsigned int n_elements() const {
-        return element.size();
-    }
-
     inline unsigned int n_boundaries() const {
         return boundary_.size();
     }
@@ -178,10 +161,10 @@ public:
     	node_vector.reserve(n_nodes);
     }
 
-    /// Reserve size of element vector
-    inline void reserve_element_size(unsigned int n_elements) {
-    	element.reserve(n_elements);
-    }
+//    /// Reserve size of element vector
+//    inline void reserve_element_size(unsigned int n_elements) {
+//    	element.reserve(n_elements);
+//    }
 
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
@@ -205,11 +188,9 @@ public:
 
     MixedMeshIntersections &mixed_intersections();
 
-    unsigned int n_sides();
+    unsigned int n_sides() const;
 
-    inline unsigned int n_vb_neighbours() const {
-        return vb_neighbours_.size();
-    }
+    unsigned int n_vb_neighbours() const;
 
     /**
      * Returns maximal number of sides of one edge, which connects elements of dimension @p dim.
@@ -241,7 +222,7 @@ public:
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
 
-    ElementAccessor<3> element_accessor(unsigned int idx, bool boundary=false);
+    ElementAccessor<3> element_accessor(unsigned int idx) const;
 
     /**
      * Reads elements and their affiliation to regions and region sets defined by user in input file
@@ -258,16 +239,12 @@ public:
 
     /// Vector of nodes of the mesh.
     NodeVector node_vector;
-    /// Vector of elements of the mesh.
-    ElementVector element;
+//    /// Vector of elements of the mesh.
+//    ElementVector element;
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
-    vector<Boundary> boundary_;
-    /// vector of boundary elements - should replace 'boundary'
-    /// TODO: put both bulk and bc elements (on zero level) to the same vector or make better map id->element for field inputs that use element IDs
-    /// the avoid usage of ElementVector etc.
-    ElementVector bc_elements;
+    mutable vector<Boundary> boundary_;
 
     /// Vector of MH edges, this should not be part of the geometrical mesh
     std::vector<Edge> edges;
@@ -293,7 +270,7 @@ public:
 
     int n_insides; // # of internal sides
     int n_exsides; // # of external sides
-    int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
+    mutable int n_sides_; // total number of sides (should be easy to count when we have separated dimensions
 
     int n_lines; // Number of line elements
     int n_triangles; // Number of triangle elements
@@ -349,19 +326,66 @@ public:
     /// Maximal distance of observe point from Mesh relative to its size
     double global_snap_radius() const;
 
-    /// Number of elements read from input.
-    unsigned int n_all_input_elements_;
+    /// Initialize element_vec_, set size and reset counters of boundary and bulk elements.
+    void init_element_vector(unsigned int size);
 
+    /// Returns range of bulk elements
+    Range<ElementAccessor<3>> bulk_elements_range() const;
+
+    /// Returns range of boundary elements
+    Range<ElementAccessor<3>> boundary_elements_range() const;
+
+    /// Returns count of boundary or bulk elements
+    inline unsigned int n_elements(bool boundary=false) const {
+    	if (boundary) return element_ids_.size()-bulk_size_;
+    	else return bulk_size_;
+    }
+
+    // For each node the vector contains a list of elements that use this node
+    vector<vector<unsigned int> > node_elements_;
+
+    /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
+    inline int elem_index(int elem_id) const
+    {
+        return element_ids_.get_position(elem_id);
+    }
+
+    /// Return element id (in GMSH file) of element of given position in element vector.
+    inline int find_elem_id(unsigned int pos) const
+    {
+        return element_ids_[pos];
+    }
+
+    /// Check if given index is in element_vec_
+    void check_element_size(unsigned int elem_idx) const;
+
+    /// Create boundary elements from data of temporary structure, this method MUST be call after read mesh from
+    void create_boundary_elements();
 
 protected:
+
+    /**
+     * Allow store boundary element data to temporary structure.
+     *
+     * We need this structure to preserve correct order of boundary elements.
+     */
+    struct ElementTmpData {
+    	/// Constructor
+    	ElementTmpData(unsigned int e_id, unsigned int dm, RegionIdx reg_idx, unsigned int part_id, std::vector<unsigned int> nodes)
+    	: elm_id(e_id), dim(dm), region_idx(reg_idx), partition_id(part_id), node_ids(nodes) {}
+
+        unsigned int elm_id;
+        unsigned int dim;
+        RegionIdx region_idx;
+        unsigned int partition_id;
+        std::vector<unsigned int> node_ids;
+    };
 
     /**
      *  This replaces read_neighbours() in order to avoid using NGH preprocessor.
      *
      *  TODO:
      *  - Avoid maps:
-     *
-     *    4) replace EdgeVector by std::vector<Edge> (need not to know the size)
      *
      *    5) need not to have temporary array for Edges, only postpone setting pointers in elements and set them
      *       after edges are found; we can temporary save Edge index instead of pointer in Neigbours and elements
@@ -385,7 +409,7 @@ protected:
      * is returned in @p element_idx. If no such element is found the method returns false, if one such element is found the method returns true,
      * if more elements are found we report an user input error.
      */
-    bool find_lower_dim_element(ElementVector&elements, vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
+    bool find_lower_dim_element(vector<unsigned int> &element_list, unsigned int dim, unsigned int &element_idx);
 
     /**
      * Returns true if side @p si has same nodes as in the list @p side_nodes.
@@ -406,6 +430,13 @@ protected:
      * during the further development.
      */
     void modify_element_ids(const RegionDB::MapElementIDToRegionID &map);
+
+    /// Adds element to mesh data structures (element_vec_, element_ids_), returns pointer to this element.
+    Element * add_element_to_vector(int id, bool boundary=false);
+
+    /// Initialize element
+    void init_element(Element *ele, unsigned int elm_id, unsigned int dim, RegionIdx region_idx, unsigned int partition_id,
+    		std::vector<unsigned int> node_ids);
 
     unsigned int n_bb_neigh, n_vb_neigh;
 
@@ -441,13 +472,30 @@ protected:
      */
     MPI_Comm comm_;
 
-    // For each node the vector contains a list of elements that use this node
-    vector<vector<unsigned int> > node_elements_;
+    /**
+     * Vector of elements of the mesh.
+     *
+     * Store all elements of the mesh in order bulk elements - boundary elements
+     */
+    vector<Element> element_vec_;
+
+    /// Hold data of boundary elements during reading mesh (allow to preserve correct order during reading of mix bulk-boundary element)
+    vector<ElementTmpData> bc_element_tmp_;
+
+    /// Count of bulk elements
+    unsigned int bulk_size_;
+
+    /// Maps element ids to indexes into vector element_vec_
+    BidirectionalMap<int> element_ids_;
+
+
 
 
     friend class RegionSetBase;
     friend class Element;
     friend class BIHTree;
+    friend class Boundary;
+    template <int spacedim> friend class ElementAccessor;
 
 
 
@@ -462,75 +510,6 @@ private:
         
     ofstream raw_ngh_output_file;
 };
-
-
-#include "mesh/side_impl.hh"
-#include "mesh/element_impls.hh"
-#include "mesh/neighbours_impl.hh"
-
-/**
- * Provides for statement to iterate over the Elements of the Mesh.
- * The parameter is FullIter local variable of the cycle, so it need not be declared before.
- * Macro assume that variable Mesh *mesh; is declared and points to a valid Mesh structure.
- */
-#define FOR_ELEMENTS(_mesh_,__i) \
-    for( ElementFullIter __i( (_mesh_)->element.begin() ); \
-        __i != (_mesh_)->element.end(); \
-        ++__i)
-
-/**
- * Macro for conversion form Iter to FullIter for elements.
- */
-#define ELEMENT_FULL_ITER(_mesh_,i) \
-    (_mesh_)->element.full_iter(i)
-
-/**
- * Macro to get "NULL" ElementFullIter.
- */
-#define ELEMENT_FULL_ITER_NULL(_mesh_) \
-    ElementFullIter((_mesh_)->element)
-
-
-#define FOR_BOUNDARIES(_mesh_,i) \
-for( std::vector<Boundary>::iterator i= (_mesh_)->boundary_.begin(); \
-    i != (_mesh_)->boundary_.end(); \
-    ++i)
-
-/**
- * Macro for conversion form Iter to FullIter for boundaries.
- */
-#define BOUNDARY_FULL_ITER(_mesh_,i) \
-    (_mesh_)->boundary.full_iter(i)
-
-/**
- * Macro to get "NULL" BoundaryFullIter.
- */
-#define BOUNDARY_NULL(_mesh_) \
-    BoundaryFullIter((_mesh_)->boundary)
-
-
-/**
- * Provides for statement to iterate over the Edges of the Mesh. see FOR_ELEMENTS
- */
-#define FOR_EDGES(_mesh_,__i) \
-    for( vector<Edge>::iterator __i = (_mesh_)->edges.begin(); \
-        __i !=(_mesh_)->edges.end(); \
-        ++__i)
-
-#define FOR_SIDES(_mesh_, it) \
-    FOR_ELEMENTS((_mesh_), ele)  \
-        for(SideIter it = ele->side(0); it->el_idx() < ele->n_sides(); ++it)
-
-#define FOR_SIDE_NODES(i,j) for((j)=0;(j)<(i)->n_nodes;(j)++)
-
-
-#define FOR_NEIGHBOURS(_mesh_, it) \
-    for( std::vector<Neighbour>::iterator it = (_mesh_)->vb_neighbours_.begin(); \
-         (it)!= (_mesh_)->vb_neighbours_.end(); ++it)
-
-#define FOR_NEIGH_ELEMENTS(i,j) for((j)=0;(j)<(i)->n_elements;(j)++)
-#define FOR_NEIGH_SIDES(i,j)    for((j)=0;(j)<(i)->n_sides;(j)++)
-
 
 #endif
 //-----------------------------------------------------------------------------

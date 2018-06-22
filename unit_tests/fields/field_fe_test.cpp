@@ -168,7 +168,7 @@ TEST_F(FieldFETest, scalar_from_input) {
     field.set_time(0.0);
 
     Space<3>::Point point;
-    for(unsigned int i=0; i < mesh->element.size(); i++) {
+    for(unsigned int i=0; i < mesh->n_elements(); i++) {
         EXPECT_DOUBLE_EQ( (i+1)*0.1 , field.value(point, mesh->element_accessor(i)) );
     }
 }
@@ -186,7 +186,7 @@ TEST_F(FieldFETest, native_data) {
     field.set_time(0.0);
 
     Space<3>::Point point;
-    for(unsigned int i=0; i < mesh->element.size(); i++) {
+    for(unsigned int i=0; i < mesh->n_elements(); i++) {
         EXPECT_DOUBLE_EQ( i*0.2 , field.value(point, mesh->element_accessor(i)) );
     }
 }

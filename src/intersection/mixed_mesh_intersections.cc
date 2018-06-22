@@ -13,10 +13,13 @@
 #include "system/global_defs.h"
 #include "system/sys_profiler.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mixed_mesh_intersections.hh"
 #include "mesh/bih_tree.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 MixedMeshIntersections::MixedMeshIntersections(Mesh* mesh)
@@ -42,7 +45,7 @@ double MixedMeshIntersections::measure_13()
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_storage13_.size(); i++){
-        ElementFullIter ele = mesh->element(intersection_storage13_[i].component_ele_idx());            
+    	ElementAccessor<3> ele = mesh->element_accessor( intersection_storage13_[i].component_ele_idx() );
         double t1d_length = ele->measure();
         double local_length = intersection_storage13_[i].compute_measure();
         
@@ -66,7 +69,7 @@ double MixedMeshIntersections::measure_23()
     double subtotal = 0.0;
 
     for(unsigned int i = 0; i < intersection_storage23_.size(); i++){
-            double t2dArea = mesh->element(intersection_storage23_[i].component_ele_idx())->measure();
+            double t2dArea = mesh->element_accessor( intersection_storage23_[i].component_ele_idx() )->measure();
             double localArea = intersection_storage23_[i].compute_measure();
             subtotal += 2*localArea*t2dArea;
         }
@@ -82,15 +85,15 @@ double MixedMeshIntersections::measure_22()
     for(unsigned int i = 0; i < intersection_storage22_.size(); i++){
         if(intersection_storage22_[i].size() > 1)
         {
-            ElementFullIter eleA = mesh->element(intersection_storage22_[i].component_ele_idx());
-//             ElementFullIter eleB = mesh->element(intersection_storage22_[i].bulk_ele_idx());
+        	ElementAccessor<3> eleA = mesh->element_accessor( intersection_storage22_[i].component_ele_idx() );
+//             ElementAccessor<3> eleB = mesh->element_accessor( intersection_storage22_[i].bulk_ele_idx() );
             
             arma::vec3 from = intersection_storage22_[i][0].coords(eleA);
             arma::vec3 to = intersection_storage22_[i][1].coords(eleA);
             val = arma::norm(from - to, 2);
 
 //             DebugOut().fmt("{}--{}:sublength from [{} {} {}] to [{} {} {}] = {}\n",
-//                eleA->id(), eleB->id(),
+//                eleA.idx(), eleB.idx(),
 //                from[0], from[1], from[2],
 //                to[0], to[1], to[2],
 //                val);
@@ -132,8 +135,8 @@ void MixedMeshIntersections::append_to_index( std::vector<IntersectionLocal<dim_
 
         unsigned int ele_a_idx = isec.component_ele_idx();
         unsigned int ele_b_idx = isec.bulk_ele_idx();
-        ASSERT_EQ_DBG(mesh->element(ele_a_idx)->dim(), dim_A)(ele_a_idx);
-        ASSERT_EQ_DBG(mesh->element(ele_b_idx)->dim(), dim_B)(ele_b_idx);
+        ASSERT_EQ_DBG(mesh->element_accessor(ele_a_idx)->dim(), dim_A)(ele_a_idx);
+        ASSERT_EQ_DBG(mesh->element_accessor(ele_b_idx)->dim(), dim_B)(ele_b_idx);
         element_intersections_[ele_a_idx].push_back(
                     std::make_pair(ele_b_idx, &(isec)) );
 
@@ -170,8 +173,8 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
     START_TIMER("Intersection into storage");
     storage.reserve(iea.n_intersections_);
     
-    FOR_ELEMENTS(mesh, elm) {
-        unsigned int idx = elm->index(); 
+    for (auto elm : mesh->bulk_elements_range()) {
+        unsigned int idx = elm.idx();
         
         if(elm->dim() == dim)
         {
@@ -224,8 +227,8 @@ void MixedMeshIntersections::compute_intersections_22(vector< IntersectionLocal<
 //                                                     ));
 //         
 // //             DebugOut().fmt("2D-2D intersection [{} - {}]:\n",
-// //                            mesh->element(is.component_ele_idx())->id(),
-// //                            mesh->element(is.bulk_ele_idx())->id());
+// //                            mesh->element_accessor(is.component_ele_idx()).idx(),
+// //                            mesh->element_accessor(is.bulk_ele_idx()).idx());
 // //             for(const IntersectionPointAux<2,2>& ip : is.points()) {
 // //                 DebugOut() << ip;
 // //                 auto p = ip.coords(mesh->element(is.component_ele_idx()));
@@ -385,8 +388,8 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     append_to_index(intersection_storage12_);
 
     // release temporary links from 3d elements
-    FOR_ELEMENTS(mesh, elm) {
-        if(elm->dim() == 3) element_intersections_[elm->index()].clear();
+    for (auto elm : mesh->bulk_elements_range()) {
+        if(elm->dim() == 3) element_intersections_[elm.idx()].clear();
     }
 
 
@@ -425,8 +428,8 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
 
         for(unsigned int j = 0; j < intersection_storage13_.size();j++){
             IntersectionLocal<1,3> il = intersection_storage13_[j];
-            ElementFullIter el1D = mesh->element(il.component_ele_idx());
-//             ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
+            ElementAccessor<3> el1D = mesh->element_accessor( il.component_ele_idx() );
+//             ElementAccessor<3> el3D = mesh->element_accessor( il.bulk_ele_idx() );
             
             for(unsigned int k = 0; k < il.size();k++){
                 number_of_nodes++;
@@ -451,24 +454,24 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
         fprintf(file,"$Elements\n");
         fprintf(file,"%d\n", ((unsigned int)intersection_storage13_.size() + mesh->n_elements()) );
 
-        FOR_ELEMENTS(mesh, elee){
+        for (auto elee : mesh->bulk_elements_range()) {
             if(elee->dim() == 3){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
                 int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3, id4);
+                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3, id4);
             }else if(elee->dim() == 2){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3);
+                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3);
 
             }else if(elee->dim() == 1){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.id(), elee->region().id(), elee->pid, id1, id2);
+                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid(), id1, id2);
             }
         }
 
@@ -522,8 +525,8 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
         for(unsigned int j = 0; j < intersection_storage23_.size();j++){
             
             IntersectionLocal<2,3> il = intersection_storage23_[j];
-            ElementFullIter el2D = mesh->element(il.component_ele_idx());
-//             ElementFullIter el3D = mesh->element(il.bulk_ele_idx());
+            ElementAccessor<3> el2D = mesh->element_accessor( il.component_ele_idx() );
+//             ElementAccessor<3> el3D = mesh->element_accessor( il.bulk_ele_idx() );
             
             for(unsigned int k = 0; k < intersection_storage23_[j].size();k++){
 
@@ -548,24 +551,24 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
         fprintf(file,"$Elements\n");
         fprintf(file,"%d\n", (number_of_intersection_points + mesh->n_elements()) );
 
-        FOR_ELEMENTS(mesh, elee){
+        for (auto elee : mesh->bulk_elements_range()) {
             if(elee->dim() == 3){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
                 int id4 = mesh->node_vector.index(elee->node[3]) + 1;
 
-                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3, id4);
+                fprintf(file,"%d 4 2 %d %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3, id4);
             }else if(elee->dim() == 2){
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
                 int id3 = mesh->node_vector.index(elee->node[2]) + 1;
-                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.id(), elee->region().id(), elee->pid, id1, id2, id3);
+                fprintf(file,"%d 2 2 %d %d %d %d %d\n", elee.idx(), elee.region().id(), elee->pid(), id1, id2, id3);
 
             }else{
                 int id1 = mesh->node_vector.index(elee->node[0]) + 1;
                 int id2 = mesh->node_vector.index(elee->node[1]) + 1;
-                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.id(), elee->region().id(), elee->pid, id1, id2);
+                fprintf(file,"%d 1 2 %d %d %d %d\n",elee.idx(), elee.region().id(), elee->pid(), id1, id2);
             }
         }
 

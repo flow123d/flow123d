@@ -4,7 +4,9 @@
 
 #include "compute_intersection.hh"
 #include "mesh/ref_element.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "system/system.hh"
 
 #include "plucker.hh"
@@ -25,8 +27,8 @@ ComputeIntersection<1,2>::ComputeIntersection()
 };
 
 
-ComputeIntersection<1,2>::ComputeIntersection(ElementFullIter abscissa,
-                                              ElementFullIter triangle, Mesh *mesh)
+ComputeIntersection<1,2>::ComputeIntersection(const Element * abscissa,
+                                              const Element * triangle, Mesh *mesh)
 : computed_(false)
 {
     ASSERT_DBG(abscissa->dim() == 1);
@@ -538,8 +540,8 @@ ComputeIntersection<2,2>::ComputeIntersection()
     plucker_products_.resize(3*RefElement<2>::n_sides, nullptr);
 };
 
-ComputeIntersection<2,2>::ComputeIntersection(ElementFullIter triaA,
-                                              ElementFullIter triaB,
+ComputeIntersection<2,2>::ComputeIntersection(const Element * triaA,
+                                              const Element * triaB,
                                               Mesh *mesh)
 {
     ASSERT_DBG(triaA->dim() == 2);
@@ -759,8 +761,8 @@ ComputeIntersection<1,3>::ComputeIntersection()
     plucker_products_.resize(6, nullptr);
 };
 
-ComputeIntersection<1,3>::ComputeIntersection(ElementFullIter abscissa,
-                                              ElementFullIter tetrahedron,
+ComputeIntersection<1,3>::ComputeIntersection(const Element * abscissa,
+                                              const Element * tetrahedron,
                                               Mesh *mesh)
 {
     ASSERT_DBG(abscissa->dim() == 1);
@@ -994,8 +996,8 @@ on_faces(_on_faces())
 };
 
 
-ComputeIntersection<2,3>::ComputeIntersection(ElementFullIter triangle,
-                                              ElementFullIter tetrahedron,
+ComputeIntersection<2,3>::ComputeIntersection(const Element * triangle,
+                                              const Element * tetrahedron,
                                               Mesh *mesh)
 : ComputeIntersection()
 {
@@ -1099,9 +1101,9 @@ void ComputeIntersection<2,3>::set_links(uint obj_before_ip, uint ip_idx, uint o
     }
     //DebugOut().fmt("before: {} ip: {} after: {}\n", obj_before_ip, ip_idx, obj_after_ip );
     ASSERT_DBG( ! have_backlink(obj_after_ip) )
-    (mesh_->element.get_id(intersection_->component_ele_idx()))
-    (mesh_->element.get_id(intersection_->bulk_ele_idx()))
-    (obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
+        (mesh_->element_accessor(intersection_->component_ele_idx()).idx())
+        (mesh_->element_accessor(intersection_->bulk_ele_idx()).idx())
+        (obj_before_ip)(ip_idx)(obj_after_ip); // at least one could be target object
     object_next[obj_before_ip] = ip_idx;
     IP_next.push_back( obj_after_ip);
     if (object_next[obj_after_ip] == no_idx) {

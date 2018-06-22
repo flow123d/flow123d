@@ -22,7 +22,6 @@
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
 #include "reaction/dual_porosity.hh"
-#include "semchem/semchem_interface.hh"
 #include "reaction/isotherm.hh"
 
 #include "system/system.hh"
@@ -31,6 +30,7 @@
 #include "la/distribution.hh"
 #include "mesh/mesh.h"
 #include "mesh/elements.h"
+#include "mesh/accessors.hh"
 #include "input/type_selection.hh"
 
 #include "fields/field_set.hh"
@@ -438,8 +438,8 @@ void SorptionBase::make_tables(void)
 
 double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 {
-    ElementFullIter elem = mesh_->element(el_4_loc_[loc_el]);
-    int reg_idx = elem->region().bulk_idx();
+    ElementAccessor<3> elem = mesh_->element_accessor( el_4_loc_[loc_el] );
+    int reg_idx = elem.region().bulk_idx();
     unsigned int i_subst, subst_id;
 
     std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
@@ -459,7 +459,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
         }
         else 
         {
-            isotherm_reinit(isotherms_vec, elem->element_accessor());
+            isotherm_reinit(isotherms_vec, elem);
         
             for(i_subst = 0; i_subst < n_substances_; i_subst++)
             {

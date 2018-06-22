@@ -29,6 +29,7 @@ define_test(functors)
 define_test(time_governor)
 define_test(time_marks)
 define_test(unit_si)
+define_test(bidirectional_map)
 
 
 

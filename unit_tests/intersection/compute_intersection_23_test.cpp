@@ -11,7 +11,9 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/range_wrapper.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
 
@@ -234,8 +236,8 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
                  tetra_ele_idx = 1;
     
     IntersectionAux<2,3> is;
-    ComputeIntersection<2,3> CI(mesh->element(triangle_ele_idx),
-                                mesh->element(tetra_ele_idx),
+    ComputeIntersection<2,3> CI(mesh->element_accessor(triangle_ele_idx).element(),
+                                mesh->element_accessor(tetra_ele_idx).element(),
                                 mesh);
     CI.init();
     CI.compute(is);
@@ -253,7 +255,7 @@ void compute_intersection_23d(Mesh *mesh, const std::vector<arma::vec3> &il){
     //     std::cout << temp_ilc;
     for(unsigned int i=0; i < is.size(); i++)
     {
-        coords[i] = temp_ilc[i].coords(mesh->element(triangle_ele_idx));
+        coords[i] = temp_ilc[i].coords( mesh->element_accessor(triangle_ele_idx) );
     }
     // sort computed coords according to real coordinates
     //std::sort(coords.begin(), coords.end(),compare_coords);
@@ -304,8 +306,7 @@ TEST(area_intersections, all) {
                 reader->read_raw_mesh(mesh);
                 
                 // permute nodes:
-                FOR_ELEMENTS(mesh,ele)
-                {
+                for (auto ele : mesh->bulk_elements_range()) {
                     if(ele->dim() == 2)
                         permute_triangle(ele,p);
                     if(ele->dim() == 3)

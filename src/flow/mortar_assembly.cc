@@ -8,7 +8,7 @@
 #include "flow/mortar_assembly.hh"
 #include "quadrature/intersection_quadrature.hh"
 #include "la/linsys.hh"
-//#include "mesh/intersection.hh"
+#include "mesh/accessors.hh"
 #include "intersection/mixed_mesh_intersections.hh"
 #include <armadillo>
 
@@ -53,7 +53,7 @@ void P0_CouplingAssembler::pressure_diff(LocalElementAccessorBase<3> ele_ac, dou
         i_data.vel_dofs[i_side] = ele_ac.side_row(i_side);
         //i_data.z_sides[i_side]=ele_ac.side(i_side)->centre()[2];
         //DebugOut().fmt("edge: {} {}", i_side, ele_ac.edge_row(i_side));
-        Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
+        Boundary * bcd = ele_ac.element_accessor().side(i_side)->cond();
         if (bcd) {
             ElementAccessor<3> b_ele = bcd->element_accessor();
             auto type = (DarcyMH::EqData::BC_Type)data_->bc_type.value(b_ele.centre(), b_ele);
@@ -110,11 +110,11 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
 
     //slave_ac_.setup(master_ac);
 
-    ElementFullIter ele = master_ac.full_iter();
+    ElementAccessor<3> ele = master_ac.element_accessor();
     arma::vec3 ele_centre = ele->centre();
-    double m_sigma = data_->sigma.value( ele_centre, ele->element_accessor());
-    double m_conductivity = data_->conductivity.value( ele_centre, ele->element_accessor());
-    double m_crossection = data_->cross_section.value( ele_centre, ele->element_accessor() );
+    double m_sigma = data_->sigma.value( ele_centre, ele);
+    double m_conductivity = data_->conductivity.value( ele_centre, ele);
+    double m_crossection = data_->cross_section.value( ele_centre, ele );
 
     double master_sigma = 2*m_sigma*m_conductivity *
                     2/ m_crossection;
@@ -142,12 +142,12 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         if (slave_ac_.dim() == master_ac.dim()) break;
         if (! non_zero) continue; // skip quadratures close to zero
 
-        double cs = data_->cross_section.value(slave_ac_.full_iter()->centre(), slave_ac_.full_iter()->element_accessor());
+        double cs = data_->cross_section.value(slave_ac_.element_accessor()->centre(), slave_ac_.element_accessor());
         double isec_measure = quadrature_.measure();
         //DebugOut() << print_var(cs) << print_var(isec_measure);
         cs_sqr_avg += cs*cs*isec_measure;
         isec_sum += isec_measure;
-        //DebugOut().fmt("Assembly23: {} {} {} ", ele->id(), slave_ac_.full_iter()->id(), isec_measure);
+        //DebugOut().fmt("Assembly23: {} {} {} ", ele.idx(), slave_ac_.element_accessor()->id(), isec_measure);
         pressure_diff(slave_ac_, isec_measure);
     }
     if ( ! (slave_ac_.dim() == 2 && master_ac.dim() ==2 ) ) {
@@ -155,12 +155,12 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
             string out;
             for(auto & isec : isec_list) {
                 slave_ac_.reinit(isec.second->bulk_ele_idx());
-                out += fmt::format(" {}", slave_ac_.full_iter()->id());
+                out += fmt::format(" {}", slave_ac_.element_accessor().idx());
             }
 
             double diff = (isec_sum - ele->measure())/ele->measure();
             WarningOut() << print_var(diff)
-                    << print_var(ele->id())
+                    << print_var(ele.idx())
                     << endl
                     << out;
 
@@ -186,7 +186,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
                 slave_ac_.reinit( quadrature_.slave_idx() );
                 double isec_measure = quadrature_.measure();
                 isec_sum += isec_measure;
-                //DebugOut().fmt("Assembly22: {} {} {}", ele->id(), slave_ac_.full_iter()->id(), isec_measure);
+                //DebugOut().fmt("Assembly22: {} {} {}", ele.idx(), slave_ac_.element_accessor().idx(), isec_measure);
                 pressure_diff(slave_ac_, isec_measure);
         }
         pressure_diff(master_ac, -isec_sum);
@@ -248,7 +248,7 @@ void P1_CouplingAssembler::add_sides(LocalElementAccessorBase<3> ele_ac, unsigne
 {
     for(unsigned int i_side=0; i_side < ele_ac.n_sides(); i_side++ ) {
         dofs[shift+i_side] =  ele_ac.edge_row(i_side);
-        Boundary * bcd = ele_ac.full_iter()->side(i_side)->cond();
+        Boundary * bcd = ele_ac.element_accessor().side(i_side)->cond();
 
         if (bcd) {
             ElementAccessor<3> b_ele = bcd->element_accessor();
@@ -275,7 +275,7 @@ void P1_CouplingAssembler::assembly(LocalElementAccessorBase<3> ele_ac) {
 /*
     const IsecList &master_list = master_list_[ele_ac.ele_global_idx()];
     if (master_list.size() == 0) return; // skip empty masters
-    double master_sigma=data_->sigma.value( ele_ac.full_iter()->centre(), ele_ac.element_accessor());
+    double master_sigma=data_->sigma.value( ele_ac.element_accessor()->centre(), ele_ac.element_accessor());
 
     // set mater sides
     add_sides(ele_ac, 3, dofs, dirichlet);

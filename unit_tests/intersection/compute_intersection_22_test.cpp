@@ -11,6 +11,7 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -95,7 +96,7 @@ IntersectionLocal<2,2> permute_coords(IntersectionLocal<2,2> il,
 void compute_intersection_22d(Mesh *mesh, const IntersectionLocal<2,2> &il)
 {
     IntersectionAux<2,2> is;
-    ComputeIntersection<2,2> CI(mesh->element(0), mesh->element(1), mesh);
+    ComputeIntersection<2,2> CI(mesh->element_accessor(0).element(), mesh->element_accessor(1).element(), mesh);
     CI.init();
     CI.compute(is);
     
@@ -146,7 +147,7 @@ TEST(intersections_22d, all) {
             reader->read_raw_mesh(mesh);
         
             // permute nodes of one triangle:
-            permute_triangle(mesh->element(0),p);
+            permute_triangle(mesh->element_accessor(0),p);
             
             mesh->setup_topology();
             

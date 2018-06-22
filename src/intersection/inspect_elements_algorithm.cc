@@ -16,9 +16,12 @@
 
 #include "system/sys_profiler.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
 #include "mesh/bih_tree.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 
@@ -29,9 +32,9 @@ IntersectionAlgorithmBase<dimA,dimB>::IntersectionAlgorithmBase(Mesh* mesh)
 
 // template<unsigned int dimA, unsigned int dimB>
 // template<unsigned int simplex_dim>
-// void IntersectionAlgorithmBase<dimA,dimB>::update_simplex(const ElementFullIter& element, Simplex< simplex_dim >& simplex)
+// void IntersectionAlgorithmBase<dimA,dimB>::update_simplex(const ElementAccessor<3>& element, Simplex< simplex_dim >& simplex)
 // {
-//     ASSERT(simplex_dim == element->dim());
+//     ASSERT(simplex_dim == element.dim());
 //     arma::vec3 *field_of_points[simplex_dim+1];
 //     for(unsigned int i=0; i < simplex_dim+1; i++)
 //         field_of_points[i]= &(element->node[i]->point());
@@ -69,17 +72,17 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
     if(elements_bb.size() == 0){
         elements_bb.resize(mesh->n_elements());
         bool first_3d_element = true;
-        FOR_ELEMENTS(mesh, elm) {
+        for (auto elm : mesh->bulk_elements_range()) {
 
-            elements_bb[elm->index()] = elm->bounding_box();
+            elements_bb[elm.idx()] = elm->bounding_box();
 
                 if (elm->dim() == 3){
                     if(first_3d_element){
                         first_3d_element = false;
-                        mesh_3D_bb = elements_bb[elm->index()];
+                        mesh_3D_bb = elements_bb[elm.idx()];
                     }else{
-                        mesh_3D_bb.expand(elements_bb[elm->index()].min());
-                        mesh_3D_bb.expand(elements_bb[elm->index()].max());
+                        mesh_3D_bb.expand(elements_bb[elm.idx()].min());
+                        mesh_3D_bb.expand(elements_bb[elm.idx()].max());
                     }
                 }
         }
@@ -88,15 +91,15 @@ void InspectElementsAlgorithm<dim>::compute_bounding_boxes()
 }
 
 template<unsigned int dim> 
-bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementFullIter &comp_ele,
-                                                       const ElementFullIter &bulk_ele)
+bool InspectElementsAlgorithm<dim>::compute_initial_CI(const ElementAccessor<3> &comp_ele,
+                                                       const ElementAccessor<3> &bulk_ele)
 {
-    unsigned int component_ele_idx = comp_ele->index(),
-                 bulk_ele_idx = bulk_ele->index();
+    unsigned int component_ele_idx = comp_ele.idx(),
+                 bulk_ele_idx = bulk_ele.idx();
     
     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
     START_TIMER("Compute intersection");
-    ComputeIntersection<dim,3> CI(comp_ele, bulk_ele, mesh);
+    ComputeIntersection<dim,3> CI(comp_ele.element(), bulk_ele.element(), mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -145,8 +148,8 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
     
     START_TIMER("Element iteration");
     
-    FOR_ELEMENTS(mesh, elm) {
-        unsigned int component_ele_idx = elm->index();
+    for (auto elm : mesh->bulk_elements_range()) {
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm->dim() == dim &&                                // is component element
             !closed_elements[component_ele_idx] &&                    // is not closed yet
@@ -164,7 +167,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
             for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
             {
                 unsigned int bulk_ele_idx = *it;
-                ElementFullIter ele_3D = mesh->element(bulk_ele_idx);
+                ElementAccessor<3> ele_3D = mesh->element_accessor( bulk_ele_idx );
 
                 // if:
                 // check 3D only
@@ -175,7 +178,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
+                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
@@ -258,7 +261,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections(const BIHTree& bih)
     
     MessageOut().fmt("{}D-3D: number of intersections = {}\n", dim, n_intersections_);
     // DBG write which elements are closed
-//     FOR_ELEMENTS(mesh, ele) {
+//     for (auto ele : mesh->bulk_elements_range()) {
 //         DebugOut().fmt("Element[{}] closed: {}\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
 //     }
 }
@@ -272,10 +275,10 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
     
     START_TIMER("Element iteration");
     
-    FOR_ELEMENTS(mesh, elm) {
-        unsigned int component_ele_idx = elm->index();
+    for (auto elm : mesh->bulk_elements_range()) {
+        unsigned int component_ele_idx = elm.idx();
         
-        if (elm->dim() == dim &&                                    // is component element
+        if (elm.dim() == dim &&                                    // is component element
             bih.ele_bounding_box(component_ele_idx).intersect(bih.tree_box()))   // its bounding box intersects 3D mesh bounding box
         {   
             std::vector<unsigned int> searchedElements;
@@ -290,17 +293,17 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BIHtree(const BIHTree&
             for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
             {
                 unsigned int bulk_ele_idx = *it;
-                ElementFullIter ele_3D = mesh->element(bulk_ele_idx);
+                ElementAccessor<3> ele_3D = mesh->element_accessor( bulk_ele_idx );
                 
-                if (ele_3D->dim() == 3
+                if (ele_3D.dim() == 3
                 ) {
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
+                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.idx(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                     IntersectionAux<dim,3> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<dim,3> CI(elm, ele_3D, mesh);
+                    ComputeIntersection<dim,3> CI(elm.element(), ele_3D.element(), mesh);
                     CI.init();
                     CI.compute(is);
                     END_TIMER("Compute intersection");
@@ -331,10 +334,10 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
     START_TIMER("Element iteration");
     
     
-    FOR_ELEMENTS(mesh, elm) {
-        unsigned int component_ele_idx = elm->index();
+    for (auto elm : mesh->bulk_elements_range()) {
+        unsigned int component_ele_idx = elm.idx();
         
-        if (elm->dim() == dim &&                                // is component element
+        if (elm.dim() == dim &&                                // is component element
             !closed_elements[component_ele_idx] &&                    // is not closed yet
             elements_bb[component_ele_idx].intersect(mesh_3D_bb))    // its bounding box intersects 3D mesh bounding box
         {    
@@ -342,22 +345,21 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
             START_TIMER("Bounding box element iteration");
             
             // Go through all element which bounding box intersects the component element bounding box
-            FOR_ELEMENTS(mesh, ele_3D)
-            {
-                unsigned int bulk_ele_idx = ele_3D.index();
+            for (auto ele_3D : mesh->bulk_elements_range()) {
+                unsigned int bulk_ele_idx = ele_3D.idx();
 
                 // if:
                 // check 3D only
                 // check with the last component element computed for the current 3D element
                 // check that the bounding boxes intersect
                 // intersection has not been computed already
-                if (ele_3D->dim() == 3 &&
+                if (ele_3D.dim() == 3 &&
                     (last_slave_for_3D_elements[bulk_ele_idx] != component_ele_idx &&
                      elements_bb[component_ele_idx].intersect(elements_bb[bulk_ele_idx]) &&
                      !intersection_exists(component_ele_idx,bulk_ele_idx) )
                 ){
                     // check that tetrahedron element is numbered correctly and is not degenerated
-                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D->index(),"element index").error(
+                    ASSERT_DBG(ele_3D->tetrahedron_jacobian() > 0).add_value(ele_3D.index(),"element index").error(
                            "Tetrahedron element (%d) has wrong numbering or is degenerated (negative Jacobian).");
                     
                         // - find first intersection
@@ -441,7 +443,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
     END_TIMER("Element iteration");
     
     // DBG write which elements are closed
-//     FOR_ELEMENTS(mesh, ele) {
+//     for (auto ele : mesh->bulk_elements_range()) {
 //         DebugOut().fmt("Element[{}] closed: {}\n",ele.index(),(closed_elements[ele.index()] ? 1 : 0));
 //     }
 }
@@ -450,7 +452,7 @@ void InspectElementsAlgorithm<dim>::compute_intersections_BB()
 
 template<unsigned int dim>
 template<unsigned int ele_dim>
-std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors(const ElementFullIter& ele,
+std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors(const ElementAccessor<3>& ele,
                                                                                  unsigned int ip_dim,
                                                                                  unsigned int ip_obj_idx)
 {
@@ -462,34 +464,34 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     {
         // IP is at a node of tetrahedron; possible edges are from all connected sides (3)
         case 0: if(ele_dim == 1) {
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[ip_obj_idx]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
                     break;
                 }
                 
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_node; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<ele_dim-1,0>(ip_obj_idx))[j];
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[local_edge]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(local_edge)]));
                 }
                 //DebugOut() << "prolong (node)\n";
                 break;
         
         // IP is on a line of tetrahedron; possible edges are from all connected sides (2)
         case 1: if(ele_dim == 2) {
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[ip_obj_idx]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
                     break;
                 }
             
                 ASSERT_DBG(ele_dim == 3);
                 for(unsigned int j=0; j < RefElement<ele_dim>::n_sides_per_line; j++){
                     unsigned int local_edge = RefElement<ele_dim>::interact(Interaction<2,1>(ip_obj_idx))[j];
-                    edges.push_back(&(mesh->edges[ele->edge_idx_[local_edge]]));
+                    edges.push_back(&(mesh->edges[ele->edge_idx(local_edge)]));
                 }
                 //DebugOut() << "prolong (edge)\n";
                 break;
                 
         // IP is on a side of tetrahedron; only possible edge is from the given side (1)
         case 2: ASSERT_DBG(ele_dim == 3);
-                edges.push_back(&(mesh->edges[ele->edge_idx_[ip_obj_idx]]));
+                edges.push_back(&(mesh->edges[ele->edge_idx(ip_obj_idx)]));
                 //DebugOut() << "prolong (side)\n";
                 break;
         default: ASSERT_DBG(0);
@@ -500,8 +502,8 @@ std::vector< unsigned int > InspectElementsAlgorithm<dim>::get_element_neighbors
     elements_idx.reserve(2*edges.size());    // twice the number of edges
     for(Edge* edg : edges)
     for(int j=0; j < edg->n_sides;j++) {
-        if (edg->side(j)->element() != ele)
-            elements_idx.push_back(edg->side(j)->element()->index());
+        if ( edg->side(j)->element().idx() != ele.idx() )
+            elements_idx.push_back(edg->side(j)->element().idx());
     }
     
     return elements_idx;
@@ -535,8 +537,8 @@ unsigned int InspectElementsAlgorithm<dim>::create_prolongation(unsigned int bul
 
 
 template<unsigned int dim>
-void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& comp_ele,
-                                                        const ElementFullIter& bulk_ele,
+void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementAccessor<3>& comp_ele,
+                                                        const ElementAccessor<3>& bulk_ele,
                                                         IntersectionAux<dim,3>& is)
 {
     //DebugOut() << "DECIDE\n";
@@ -549,17 +551,17 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
         if(sid < RefElement<3>::count<2>()){
             //NOTE: we are unable to combine cases A and B in 1d-2d
             // CASE A: compatible vb neighboring
-//             DBGVAR(comp_ele->id());
-//             DBGVAR(bulk_ele->id());
-            if(comp_ele->n_neighs_vb > 1){
+//             DBGVAR(comp_ele.idx());
+//             DBGVAR(bulk_ele.idx());
+            if(comp_ele->n_neighs_vb() > 1){
                 //set n_neighs_vb duplicities
-                is.set_duplicities(comp_ele->n_neighs_vb);
+                is.set_duplicities(comp_ele->n_neighs_vb());
 //                 DBGCOUT(<< "vb neigh: N = " << is.duplicities() << "\n");
                 //possibly copy intersection object
             }
             // CASE B: incompatible neighboring with lower dim element
             else {
-                Edge* edg = bulk_ele->side(sid)->edge();
+                const Edge* edg = bulk_ele.side(sid)->edge();
                 if(edg->n_sides > 1){
                     //set n_sides duplicities
                     is.set_duplicities(edg->n_sides);
@@ -583,12 +585,12 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             // search for indices of neighboring component elements (including the current one)
             std::vector<unsigned int> comp_neighbors = get_element_neighbors<dim>(comp_ele,IP.dim_A(), IP.idx_A());
             
-//             DBGCOUT( << comp_ele->id() << "--" << bulk_ele->id() << ":    ");
+//             DBGCOUT( << comp_ele.idx() << "--" << bulk_ele.idx() << ":    ");
 //             for(unsigned int& comp_neighbor_idx : comp_neighbors)
-//                 cout << mesh->element(comp_neighbor_idx)->id() << "  ";
+//                 cout << mesh->element_accessor(comp_neighbor_idx).idx() << "  ";
 //             cout << "\n";
             
-            unsigned int bulk_current = bulk_ele->index();
+            unsigned int bulk_current = bulk_ele.idx();
             
             // add all component neighbors with current bulk element into component queue
             for(unsigned int& comp_neighbor_idx : comp_neighbors) {
@@ -604,12 +606,12 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             // search for indices of neighboring bulk elements (including the current one)
             std::vector<unsigned int> bulk_neighbors = get_element_neighbors<3>(bulk_ele,IP.dim_B(),IP.idx_B());
             
-//             DBGCOUT( << comp_ele->id() << "--" << bulk_ele->id() << ":    ");
+//             DBGCOUT( << comp_ele.idx() << "--" << bulk_ele.idx() << ":    ");
 //             for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
-//                 cout << mesh->element(bulk_neighbor_idx)->id() << "  ";
+//                 cout << mesh->element_accessor(bulk_neighbor_idx).idx() << "  ";
 //             cout << "\n";
             
-            unsigned int comp_current = comp_ele->index();
+            unsigned int comp_current = comp_ele.idx();
             unsigned int n_prolongations = 0;
             // prolong over current comp element to other bulk elements (into bulk queue) (covering comp ele)
             for(unsigned int& bulk_neighbor_idx : bulk_neighbors)
@@ -626,14 +628,14 @@ void InspectElementsAlgorithm<dim>::prolongation_decide(const ElementFullIter& c
             // it means we are at the boundary and cannot prolongate further
             if(n_prolongations == 0)
             {
-                Prolongation pr = {comp_ele->index(), undefined_elm_idx_, undefined_elm_idx_};
+                Prolongation pr = {comp_ele.idx(), undefined_elm_idx_, undefined_elm_idx_};
                 bulk_queue_.push(pr);
             }
         }
     }
     
     // close component element if it has all vertices inside bulk element
-    if(n_ip_vertices == is.size()) closed_elements[comp_ele->index()] = true;
+    if(n_ip_vertices == is.size()) closed_elements[comp_ele.idx()] = true;
 }
 
 
@@ -655,10 +657,10 @@ void InspectElementsAlgorithm<2>::assert_same_intersection(unsigned int comp_ele
 template<unsigned int dim>
 void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< dim >::Prolongation& pr)
 {
-    ElementFullIter elm = mesh->element(pr.component_elm_idx);
-    ElementFullIter ele_3D = mesh->element(pr.elm_3D_idx);
+	ElementAccessor<3> elm = mesh->element_accessor( pr.component_elm_idx );
+	ElementAccessor<3> ele_3D = mesh->element_accessor( pr.elm_3D_idx );
     
-//     DebugOut().fmt("Prolongate: {} in {}.\n", elm->id(), ele_3D->id());
+//     DebugOut().fmt("Prolongate: {} in {}.\n", elm.idx(), ele_3D.idx());
 
     //TODO: optimization: this might be called before and not every time 
     //(component element is not changing when emptying bulk queue)
@@ -668,7 +670,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
     IntersectionAux<dim,3> &is = intersection_list_[pr.component_elm_idx][pr.dictionary_idx];
     
     START_TIMER("Compute intersection");
-    ComputeIntersection<dim,3> CI(elm, ele_3D, mesh);
+    ComputeIntersection<dim,3> CI(elm.element(), ele_3D.element(), mesh);
     CI.init();
     CI.compute(is);
     END_TIMER("Compute intersection");
@@ -679,8 +681,8 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
 //         for(unsigned int j=0; j < is.size(); j++) 
 //             DebugOut() << is[j];
 //         DebugOut().fmt("intersection of elements {} {} [{}--{}] size {}\n",
-//                        elm->id(), ele_3D->id(),
-//                        elm->region().label(), ele_3D->region().label(),
+//                        elm.idx(), ele_3D.idx(),
+//                        elm.region().label(), ele_3D.region().label(),
 //                        is.size()
 //                       );
         
@@ -693,7 +695,7 @@ void InspectElementsAlgorithm<dim>::prolongate(const InspectElementsAlgorithm< d
         // - it can happen, that the CI will be empty
         // - currently, we remove it when storing the final intersection objects
         // - or we can erase it at this point
-//         WarningOut() << "zero is: c " << elm->index() << " b " << ele_3D.index();
+//         WarningOut() << "zero is: c " << elm.index() << " b " << ele_3D.index();
 //         auto & v = intersection_list_[pr.component_elm_idx];
 //         v.erase( v.next(v.being(),pr.dictionary_idx) );
     }
@@ -721,10 +723,10 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
     typedef std::pair<unsigned int, unsigned int> ipair;
     std::unordered_set<ipair, boost::hash<ipair>> computed_pairs;
     
-    FOR_ELEMENTS(mesh, ele) {
+    for (auto ele : mesh->bulk_elements_range()) {
     if (ele->dim() == 3)
     {
-        ele_idx = ele->index();
+        ele_idx = ele.idx();
         // if there are not at least 2 2D elements intersecting 3D element; continue
         if(intersection_map[ele_idx].size() < 2) continue;
         
@@ -737,7 +739,7 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
             //TODO: 2] pass plucker coords from 2d-3d
             
             eleA_idx = local_map[i].first;
-            ElementFullIter eleA = mesh->element(eleA_idx);
+            ElementAccessor<3> eleA = mesh->element_accessor( eleA_idx );
             if(eleA->dim() !=2 ) continue;  //skip other dimension intersection
             componentA_idx = component_idx_[eleA_idx];
             
@@ -752,13 +754,13 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
                 if(componentA_idx == componentB_idx) continue;  //skip elements of the same component
                 // this also skips the compatible connections (it is still a single component in this case)
                 
-                ElementFullIter eleB = mesh->element(eleB_idx);
+                ElementAccessor<3> eleB = mesh->element_accessor( eleB_idx );
                 if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
                 
                 // set master -- slave order
                 // do not overwrite the original eleA
                 temp_eleA_idx = eleA_idx;
-                ElementFullIter temp_eleA = eleA;
+                ElementAccessor<3> temp_eleA = eleA;
                 if (componentA_idx < componentB_idx){
                     std::swap(temp_eleA_idx, eleB_idx);
                     std::swap(temp_eleA, eleB);
@@ -788,7 +790,7 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
 //                                eleA.index(), eleB.index(), componentA_idx, componentB_idx);
 //                 DebugOut().fmt("compute intersection 2d-2d: e_{} e_{} c_{} c_{}\n",
-//                                eleA.id(), eleB.id(), componentA_idx, componentB_idx);
+//                                eleA.idx(), eleB.idx(), componentA_idx, componentB_idx);
                 
 //                 IntersectionAux<2,2> is;
 //                 if (componentA_idx < componentB_idx)
@@ -803,17 +805,17 @@ void InspectElementsAlgorithm22::compute_intersections(std::vector< std::vector<
 }
 
 
-void InspectElementsAlgorithm22::compute_single_intersection(const ElementFullIter& eleA,
-                                                             const ElementFullIter& eleB,
+void InspectElementsAlgorithm22::compute_single_intersection(const ElementAccessor<3>& eleA,
+                                                             const ElementAccessor<3>& eleB,
                                                              std::vector<IntersectionLocal<2,2>> &storage)
 {
-    ASSERT_DBG(eleA->dim() == 2);
-    ASSERT_DBG(eleB->dim() == 2);
-    ASSERT_DBG(eleA->index() != eleB->index());
+    ASSERT_DBG(eleA.dim() == 2);
+    ASSERT_DBG(eleB.dim() == 2);
+    ASSERT_DBG(eleA.idx() != eleB.idx());
     
-    IntersectionAux<2,2> is(eleA->index(), eleB->index());
+    IntersectionAux<2,2> is(eleA.idx(), eleB.idx());
     
-    ComputeIntersection<2,2> CI(eleA, eleB, mesh);
+    ComputeIntersection<2,2> CI(eleA.element(), eleB.element(), mesh);
     CI.init();
     unsigned int n_local_intersection = CI.compute(is);
     
@@ -832,22 +834,22 @@ void InspectElementsAlgorithm22::create_component_numbering()
     // prolongation queue in the component mesh.
     std::queue<unsigned int> queue;
 
-    FOR_ELEMENTS(mesh, ele) {
+    for (auto ele : mesh->bulk_elements_range()) {
         if (ele->dim() == 2 &&
-            component_idx_[ele->index()] == (unsigned int)-1)
+            component_idx_[ele.idx()] == (unsigned int)-1)
         {
             // start component
-            queue.push(ele->index());
+            queue.push(ele.idx());
             
             while(!queue.empty()){
                 unsigned int ele_idx = queue.front();
                 queue.pop();
-                const ElementFullIter& ele = mesh->element(ele_idx);
-                for(unsigned int sid=0; sid < ele->n_sides(); sid++) {
-                    Edge* edg = ele->side(sid)->edge();
+                const ElementAccessor<3>& elm = mesh->element_accessor( ele_idx );
+                for(unsigned int sid=0; sid < elm->n_sides(); sid++) {
+                    const Edge* edg = elm.side(sid)->edge();
 
                     for(int j=0; j < edg->n_sides;j++) {
-                        uint neigh_idx = edg->side(j)->element()->index();
+                        uint neigh_idx = edg->side(j)->element().idx();
                         if (component_idx_[neigh_idx] == (unsigned int)-1) {
                             component_idx_[neigh_idx] = component_counter_;
                             queue.push(neigh_idx);
@@ -862,9 +864,9 @@ void InspectElementsAlgorithm22::create_component_numbering()
     MessageOut() << "2D-2D: number of components = " << component_counter_ << "\n";
     
 //     DBGCOUT(<< "Component numbering: \n");
-//     FOR_ELEMENTS(mesh, ele) {
+//     for (auto ele : mesh->bulk_elements_range()) {
 //         if (ele->dim() == 2){
-//             cout << "2d ele " << ele->index() << ":  " << component_idx_[ele->index()] << endl;
+//             cout << "2d ele " << ele.index() << ":  " << component_idx_[ele.index()] << endl;
 //         }
 //     }
 }
@@ -885,10 +887,10 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
     intersectionaux_storage12_.clear();
     ASSERT(storage.size() == 0);
     
-    FOR_ELEMENTS(mesh, ele) {
+    for (auto ele : mesh->bulk_elements_range()) {
     if (ele->dim() == 3)
     {
-        unsigned int ele_idx = ele->index();
+        unsigned int ele_idx = ele.idx();
         // if there are not at least 2 elements intersecting 3D element; continue
         if(intersection_map[ele_idx].size() < 2) continue;
         
@@ -901,15 +903,15 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
             //TODO: 2] pass plucker coords from 1d-3d
             
             unsigned int eleA_idx = local_map[i].first;
-            ElementFullIter eleA = mesh->element(eleA_idx);
+            ElementAccessor<3> eleA = mesh->element_accessor( eleA_idx );
             
-            if(eleA->dim() !=1 ) continue;  //skip other dimension intersection
+            if(eleA.dim() !=1 ) continue;  //skip other dimension intersection
             
             for(unsigned int j=0; j < local_map.size(); j++)
             {
                 unsigned int eleB_idx = local_map[j].first;
-                ElementFullIter eleB = mesh->element(local_map[j].first);
-                if(eleB->dim() !=2 ) continue;  //skip other dimension intersection
+                ElementAccessor<3> eleB = mesh->element_accessor( local_map[j].first );
+                if(eleB.dim() !=2 ) continue;  //skip other dimension intersection
                 
                 //skip candidates already computed
                 bool skip = false;
@@ -929,7 +931,7 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
                 
                 IntersectionAux<1,2> is(eleA_idx, eleB_idx);
                 
-                ComputeIntersection<1,2> CI(eleA, eleB, mesh);
+                ComputeIntersection<1,2> CI(eleA.element(), eleB.element(), mesh);
                 unsigned int n_local_intersection = CI.compute_final(is.points());
     
                 if(n_local_intersection > 0)
@@ -964,16 +966,16 @@ void InspectElementsAlgorithm12::compute_intersections_3(std::vector< std::vecto
 //     }
 }
 
-// void InspectElementsAlgorithm12::compute_single_intersection(const ElementFullIter& eleA,
-//                                                              const ElementFullIter& eleB)
+// void InspectElementsAlgorithm12::compute_single_intersection(const ElementAccessor<3>& eleA,
+//                                                              const ElementAccessor<3>& eleB)
 // {
-//     ASSERT_DBG(eleA->dim() == 1);
-//     ASSERT_DBG(eleB->dim() == 2);
+//     ASSERT_DBG(eleA.dim() == 1);
+//     ASSERT_DBG(eleB.dim() == 2);
 //     
 //     this->update_simplex(eleA, simplexA);
 //     this->update_simplex(eleB, simplexB);
 //     
-//     IntersectionAux<1,2> is(eleA->index(), eleB->index(), 0);
+//     IntersectionAux<1,2> is(eleA.index(), eleB.index(), 0);
 // //     std::vector<unsigned int> prolongation_table;
 //     
 //     ComputeIntersection< Simplex<1>, Simplex<2>> CI(simplexA, simplexB);
@@ -994,10 +996,10 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
     intersectionaux_storage12_.clear();
     START_TIMER("Element iteration");
     
-    FOR_ELEMENTS(mesh, elm) {
-        unsigned int component_ele_idx = elm->index();
+    for (auto elm : mesh->bulk_elements_range()) {
+        unsigned int component_ele_idx = elm.idx();
         
-        if (elm->dim() == 1)                                    // is component element
+        if (elm.dim() == 1)                                    // is component element
             //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
         {   
             std::vector<unsigned int> searchedElements;
@@ -1012,13 +1014,13 @@ void InspectElementsAlgorithm12::compute_intersections_2(const BIHTree& bih)
             for (std::vector<unsigned int>::iterator it = searchedElements.begin(); it!=searchedElements.end(); it++)
             {
                 unsigned int bulk_ele_idx = *it;
-                ElementFullIter ele_2D = mesh->element(bulk_ele_idx);
+                ElementAccessor<3> ele_2D = mesh->element_accessor( bulk_ele_idx );
                 
-                if (ele_2D->dim() == 2) { 
+                if (ele_2D.dim() == 2) {
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<1,2> CI(elm, ele_2D, mesh);
+                    ComputeIntersection<1,2> CI(elm.element(), ele_2D.element(), mesh);
                     CI.compute_final(is.points());
                     END_TIMER("Compute intersection");
                     
@@ -1040,8 +1042,8 @@ void InspectElementsAlgorithm12::compute_intersections_1(const BIHTree& bih)
     intersectionaux_storage12_.clear();
     START_TIMER("Element iteration");
     
-    FOR_ELEMENTS(mesh, elm) {
-        unsigned int component_ele_idx = elm->index();
+    for (auto elm : mesh->bulk_elements_range()) {
+        unsigned int component_ele_idx = elm.idx();
         
         if (elm->dim() == 1)                                    // is component element
             //&& elements_bb[component_ele_idx].intersect(mesh_3D_bb))   // its bounding box intersects 3D mesh bounding box
@@ -1053,13 +1055,13 @@ void InspectElementsAlgorithm12::compute_intersections_1(const BIHTree& bih)
             
             // Go through all element which bounding box intersects the component element bounding box
             for(unsigned int bulk_ele_idx : candidate_list) {
-                ElementFullIter ele_2D = mesh->element(bulk_ele_idx);
+            	ElementAccessor<3> ele_2D = mesh->element_accessor(bulk_ele_idx);
                 
                 if (ele_2D->dim() == 2) { 
                     
                     IntersectionAux<1,2> is(component_ele_idx, bulk_ele_idx);
                     START_TIMER("Compute intersection");
-                    ComputeIntersection<1,2> CI(elm, ele_2D, mesh);
+                    ComputeIntersection<1,2> CI(elm.element(), ele_2D.element(), mesh);
                     CI.compute_final_in_plane(is.points());
                     END_TIMER("Compute intersection");
                     

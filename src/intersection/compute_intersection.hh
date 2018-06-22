@@ -73,7 +73,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(ElementFullIter abscissa, ElementFullIter triangle, Mesh *mesh);
+    ComputeIntersection(const Element * abscissa, const Element * triangle, Mesh *mesh);
 	~ComputeIntersection();
     
     /** @brief Computes intersection points of line and triangle.
@@ -249,7 +249,7 @@ public:
     /** @brief Constructor, sets both triangle objects.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(ElementFullIter triaA, ElementFullIter triaB, Mesh *mesh);
+    ComputeIntersection(const Element * triaA, const Element * triaB, Mesh *mesh);
     ~ComputeIntersection();
     
     /** @brief Initializes lower dimensional objects.
@@ -352,7 +352,7 @@ public:
      * Use when this is final intersection object.
      * It allocates memory, computes plucker coordinates and products.
      */
-    ComputeIntersection(ElementFullIter abscissa, ElementFullIter tetrahedron, Mesh *mesh);
+    ComputeIntersection(const Element * abscissa, const Element * tetrahedron, Mesh *mesh);
 	~ComputeIntersection();
 	
     /** @brief Initializes lower dimensional objects.
@@ -475,7 +475,7 @@ public:
      * @param triangle intersecting triangle object
      * @param tetrahedron intersecting tetrahedron object
      */
-    ComputeIntersection(ElementFullIter triangle, ElementFullIter tetrahedron, Mesh *mesh);
+    ComputeIntersection(const Element * triangle, const Element * tetrahedron, Mesh *mesh);
     ~ComputeIntersection();
 
     /** @brief Initializes lower dimensional objects.

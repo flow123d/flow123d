@@ -24,10 +24,11 @@
 
 #include "msh_vtkreader.hh"
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
-#include "mesh/mesh_types.hh"
+#include "mesh/accessors.hh"
 
 #include "config.h"
 #include <zlib.h>
@@ -487,8 +488,8 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             bih_tree.find_point(point, searched_elements);
 
             for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-                ElementFullIter ele = mesh.element( *it );
-                FOR_ELEMENT_NODES(ele, i_node)
+                ElementAccessor<3> ele = mesh.element_accessor( *it );
+                for (i_node=0; i_node<ele->n_nodes(); i_node++)
                 {
                     if ( compare_points(ele->node[i_node]->point(), point) ) {
                     	i_elm_node = mesh.node_vector.index(ele->node[i_node]);
@@ -539,7 +540,7 @@ void VtkMeshReader::check_compatible_mesh(Mesh &mesh)
             }
             mesh.intersect_element_lists(node_list, candidate_list);
             for (auto i_elm : candidate_list) {
-            	if ( mesh.element( i_elm )->dim() == dim ) result_list.push_back(i_elm);
+            	if ( mesh.element_accessor(i_elm)->dim() == dim ) result_list.push_back(i_elm);
             }
             if (result_list.size() != 1) {
             	THROW( ExcIncompatibleMesh() << EI_ErrMessage("intersect_element_lists must produce one element")
@@ -605,6 +606,7 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
     // fill bulk_elements_id_ vector
     bulk_elements_id_.clear();
     bulk_elements_id_.resize(offsets_vec.size());
+    mesh->init_element_vector(offsets_vec.size());
     unsigned int i_con = 0, last_offset=0, dim;
     vector<unsigned int> node_list;
     for (unsigned int i=0; i<offsets_vec.size(); ++i) { // iterate trough offset - one value for every element
@@ -617,6 +619,8 @@ void VtkMeshReader::read_elements(Mesh * mesh) {
         node_list.clear();
         last_offset = offsets_vec[i];
     }
+
+    mesh->create_boundary_elements();
 }
 
 
