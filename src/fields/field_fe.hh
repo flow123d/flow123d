@@ -178,6 +178,9 @@ private:
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
 
+    /// Flag that determines if source mesh and target mesh are compatible
+    bool has_compatible_mesh_;
+
     /// Registrar of class to factory
     static const int registrar;
 };

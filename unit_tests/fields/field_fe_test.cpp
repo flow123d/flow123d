@@ -205,51 +205,41 @@ scalar: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: scalar
   default_value: 0.0
-  input_discretization: native_data
 scalar_unit_conversion: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: scalar
   unit: "const; const=100*m^0"
   default_value: 0.0
-  input_discretization: native_data
 scalar_time_shift: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: scalar
   default_value: 0.0
   read_time_shift: 1.0
-  input_discretization: native_data
 enum: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: enum
   default_value: 0
-  input_discretization: native_data
 vector_fixed: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
   default_value: 0.0
-  input_discretization: native_data
 tensor_fixed: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
   default_value: 0.0
-  input_discretization: native_data
 vtk_scalar: !FieldFE
   mesh_data_file: fields/vtk_ascii_data.vtu
   field_name: scalar_field
-  input_discretization: native_data
 vtk_vector: !FieldFE
   mesh_data_file: fields/vtk_binary_data.vtu
   field_name: vector_field
-  input_discretization: native_data
 vtk_tensor: !FieldFE
   mesh_data_file: fields/vtk_compressed_data.vtu
   field_name: scalar_field
-  input_discretization: native_data
 default_values: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: porosity
   default_value: 0.1
-  input_discretization: native_data
 ##### tests of interpolation P0
 interp_scalar: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
