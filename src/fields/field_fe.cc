@@ -200,7 +200,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
-		//ReaderCache::get_reader(reader_file_)->check_compatible_mesh( *(dh_->mesh()) );
 		this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, *(dh_->mesh()) );
 	}
 }
