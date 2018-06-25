@@ -189,6 +189,8 @@ public:
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.
+     *
+     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
      */
     virtual void check_compatible_mesh(Mesh &mesh)=0;
 
