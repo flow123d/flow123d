@@ -49,6 +49,7 @@ public:
     }
 
     virtual void TearDown() {
+    	dh.reset();
     	if (mesh != nullptr) delete mesh;
     }
 
@@ -92,7 +93,7 @@ public:
 
 
 // TODO Fix these tests after improving DOF handler
-/*TEST_F(FieldFETest, scalar) {
+TEST_F(FieldFETest, scalar) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(1, 2, 3);
 
@@ -115,10 +116,10 @@ public:
 
     // test value at barycenter
     EXPECT_DOUBLE_EQ( (dof_values[0]+dof_values[1]+dof_values[2])/3, field.value({ 7./3, 4./3, 5 }, mesh->element_accessor(0)) );
-}*/
+}
 
 
-/*TEST_F(FieldFETest, vector) {
+TEST_F(FieldFETest, vector) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(0, 0, 1);
 
@@ -137,7 +138,7 @@ public:
     arma::vec3 result = { 2./7, 1./14, 0 };
 
     EXPECT_NEAR( 0, arma::norm(result - field.value({ 3, 1.5, 5 }, mesh->element_accessor(0)), 2), 1e-15 );
-}*/
+}
 
 
 string input = R"INPUT(
