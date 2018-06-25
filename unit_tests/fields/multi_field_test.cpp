@@ -6,9 +6,9 @@
  */
 
 
+#define TEST_USE_MPI
 #define FEAL_OVERRIDE_ASSERTS
-
-#include <flow_gtest.hh>
+#include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
 #include <fields/multi_field.hh>
@@ -102,6 +102,7 @@ protected:
     virtual void SetUp() {
     	Profiler::initialize();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 

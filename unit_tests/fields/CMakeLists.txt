@@ -42,7 +42,7 @@ define_mpi_test(field_elementwise 1)
 define_mpi_test(field_interpolated_p0 1)
 define_mpi_test(field_fe 1)
 define_mpi_test(field_speed 1)
-define_test(multi_field)
+define_mpi_test(multi_field 1)
 define_test(field_time_function)
 
 define_mpi_test(generic_field 1)
