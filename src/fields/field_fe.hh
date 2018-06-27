@@ -77,6 +77,14 @@ public:
 			VectorSeqDouble *data);
 
     /**
+     * Postponed setter of Dof handler.
+     *
+     * Allow to set native Dof handler after set_mesh.
+     * @param dh   Dof handler.
+     */
+    void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh) override;
+
+    /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
     virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
@@ -131,6 +139,11 @@ private:
 
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
+
+	/// Ensure data setting of methods set_fe_data and set_native_dh.
+	void reinit_fe_data(MappingP1<1,3> *map1,
+			MappingP1<2,3> *map2,
+			MappingP1<3,3> *map3);
 
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;

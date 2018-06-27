@@ -45,6 +45,7 @@
 
 class Mesh;
 class UnitSI;
+class DOFHandlerMultiDim;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -232,6 +233,12 @@ public:
         */
        virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
+
+       /**
+        * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
+        */
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       {}
 
        /**
         * Virtual destructor.

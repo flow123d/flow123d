@@ -78,7 +78,8 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
-	ASSERT_EQ(dof_indices.size(), 0).error("Multiple initialization.");
+	if (dof_indices.size() > 0)
+		WarningOut() << "Multiple initialization of FEValueHandler!";
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
