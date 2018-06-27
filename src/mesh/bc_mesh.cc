@@ -51,11 +51,6 @@ unsigned int BCMesh::n_elements(bool boundary) const {
 }
 
 
-unsigned int BCMesh::elements_shift() const {
-	return parent_mesh_->bulk_size_;
-}
-
-
 Partitioning *BCMesh::get_part()
 { return parent_mesh_->get_part(); }
 

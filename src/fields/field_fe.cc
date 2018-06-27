@@ -368,7 +368,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	// iterate through elements, assembly global vector and count number of writes
 	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-		data_vec_i = (ele.idx() - dh_->mesh()->elements_shift()) * dof_indices_.size();
+		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];

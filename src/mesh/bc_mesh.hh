@@ -48,9 +48,6 @@ public:
     /// Returns count of boundary elements of parent mesh
     unsigned int n_elements(bool boundary=false) const;
 
-    /// Returns shift of elements (index of first element) in element vector of parent mesh.
-    unsigned int elements_shift() const override;
-
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
 
