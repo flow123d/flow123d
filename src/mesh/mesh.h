@@ -343,11 +343,6 @@ public:
     	else return bulk_size_;
     }
 
-    /// Returns shift of boundary / bulk elements (index of first element) in element vector.
-    virtual unsigned int elements_shift() const {
-    	return 0;
-    }
-
     /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
