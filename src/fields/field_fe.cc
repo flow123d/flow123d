@@ -122,7 +122,7 @@ void FieldFE<spacedim, Value>::reinit_fe_data(MappingP1<1,3> *map1,
 		MappingP1<2,3> *map2,
 		MappingP1<3,3> *map3)
 {
-	ASSERT_EQ(dh_->n_global_dofs(), data_vec_->size());
+	//ASSERT_EQ(dh_->n_global_dofs(), data_vec_->size());
 
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
