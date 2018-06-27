@@ -129,11 +129,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
-	//ele_piezo_head.resize(mesh_->n_elements());
-	//auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
-	ele_piezo_head.resize(dh_->n_global_dofs());
-	auto ele_piezo_head_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	ele_piezo_head_ptr->set_fe_data(dh_, &map1, &map2, &map3, &ele_piezo_head);
+	ele_piezo_head.resize(mesh_->n_elements());
+	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
