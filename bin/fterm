@@ -326,7 +326,6 @@ fi
 
 work_image=flow123d/flow-libs-dev-$version:user
 flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel install"
-flow123d_images="meta-dbg-sin"
 
 
 # perform action based on variable action
