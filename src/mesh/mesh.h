@@ -129,7 +129,7 @@ public:
     /// Destructor.
     virtual ~Mesh();
 
-    inline unsigned int n_nodes() const {
+    virtual inline unsigned int n_nodes() const {
         return node_vec_.size();
     }
 
@@ -161,6 +161,8 @@ public:
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */
     virtual Partitioning *get_part();
+
+    virtual const LongIdx *get_local_part();
 
     Distribution *get_el_ds() const
     { return el_ds; }
@@ -215,10 +217,10 @@ public:
     /*
      * Check if nodes and elements are compatible with \p mesh.
      */
-    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
+    virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
 
     /// Create and return ElementAccessor to element of given idx
-    ElementAccessor<3> element_accessor(unsigned int idx) const;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
 
     /// Create and return NodeAccessor to node of given idx
     NodeAccessor<3> node_accessor(unsigned int idx) const;
