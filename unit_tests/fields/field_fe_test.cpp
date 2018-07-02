@@ -333,7 +333,7 @@ TEST_F(FieldFENewTest, scalar) {
 }
 
 
-/*TEST_F(FieldFENewTest, bc_scalar) {
+TEST_F(FieldFENewTest, bc_scalar) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
     field.set_mesh(mesh,true);
@@ -346,7 +346,7 @@ TEST_F(FieldFENewTest, scalar) {
         }
     }
 
-}*/
+}
 
 
 TEST_F(FieldFENewTest, scalar_unit_conv) {
@@ -364,7 +364,7 @@ TEST_F(FieldFENewTest, scalar_unit_conv) {
 }
 
 
-/*TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
+TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
     field.set_mesh(mesh,true);
@@ -377,7 +377,7 @@ TEST_F(FieldFENewTest, scalar_unit_conv) {
         }
     }
 
-}*/
+}
 
 
 TEST_F(FieldFENewTest, scalar_time_shift) {
@@ -522,7 +522,7 @@ TEST_F(FieldFENewTest, scalar_enum) {
 }
 
 
-/*TEST_F(FieldFENewTest, bc_scalar_enum) {
+TEST_F(FieldFENewTest, bc_scalar_enum) {
     EnumField field;
     field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
     field.set_mesh(mesh, true);
@@ -534,7 +534,7 @@ TEST_F(FieldFENewTest, scalar_enum) {
 			EXPECT_EQ( j+1, field.value(point,mesh->element_accessor(i)) );
 		}
     }
-}*/
+}
 
 
 /*TEST_F(FieldFENewTest, default_values) {
