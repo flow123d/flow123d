@@ -242,6 +242,10 @@ Partitioning *Mesh::get_part() {
     return part_.get();
 }
 
+const LongIdx *Mesh::get_local_part() {
+    return (LongIdx*)this->get_part()->get_loc_part();
+}
+
 
 //=============================================================================
 // COUNT ELEMENT TYPES
@@ -333,7 +337,11 @@ void Mesh::create_node_element_lists() {
 
 void Mesh::intersect_element_lists(vector<unsigned int> const &nodes_list, vector<unsigned int> &intersection_element_list)
 {
-    if (nodes_list.size() == 0) {
+	if (node_elements_.size() == 0) {
+		this->create_node_element_lists();
+	}
+
+	if (nodes_list.size() == 0) {
         intersection_element_list.clear();
     } else if (nodes_list.size() == 1) {
         intersection_element_list = node_elements_[ nodes_list[0] ];
@@ -758,6 +766,9 @@ bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2) {
 bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id )
 {
 	std::vector<unsigned int> node_ids; // allow mapping ids of nodes from source mesh to target mesh
+	std::vector<unsigned int> node_list;
+	std::vector<unsigned int> candidate_list; // returned by intersect_element_lists
+	std::vector<unsigned int> result_list; // list of elements with same dimension as vtk element
 	unsigned int i; // counter over vectors
 
     {
@@ -804,15 +815,12 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
 
     {
         // iterates over bulk elements of \p this object
-        // elements in both ameshes must be in ratio 1:1
-        // store orders (mapping between both mesh files) into bulk_elements_id_ vector
-        vector<unsigned int> node_list;
-        vector<unsigned int> candidate_list; // returned by intersect_element_lists
-        vector<unsigned int> result_list; // list of elements with same dimension as vtk element
+        // elements in both meshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into bulk_elements_id vector
         bulk_elements_id.clear();
         bulk_elements_id.resize(this->n_elements());
         // iterate trough bulk part of element vector, to each element in source mesh must exist only one element in target mesh
-        // fill bulk_elements_id_ vector
+        // fill bulk_elements_id vector
         i=0;
         for (auto elm : this->elements_range()) {
             for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
@@ -828,6 +836,36 @@ bool Mesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_i
             	return false;
             }
             bulk_elements_id[i] = (LongIdx)result_list[0];
+            node_list.clear();
+            result_list.clear();
+        	i++;
+        }
+    }
+
+    {
+        // iterates over boundary elements of \p this object
+        // elements in both meshes must be in ratio 1:1
+        // store orders (mapping between both mesh files) into boundary_elements_id vector
+    	auto bc_mesh = this->get_bc_mesh();
+        boundary_elements_id.clear();
+        boundary_elements_id.resize(bc_mesh->n_elements());
+        // iterate trough boundary part of element vector, to each element in source mesh must exist only one element in target mesh
+        // fill boundary_elements_id vector
+        i=0;
+        for (auto elm : bc_mesh->elements_range()) {
+            for (unsigned int j=0; j<elm->n_nodes(); j++) { // iterate trough all nodes of any element
+                node_list.push_back( node_ids[ elm->node_idx(j) ] );
+            }
+            mesh.get_bc_mesh()->intersect_element_lists(node_list, candidate_list);
+            for (auto i_elm : candidate_list) {
+            	if ( mesh.get_bc_mesh()->element_accessor(i_elm)->dim() == elm.dim() ) result_list.push_back( elm.index() );
+            }
+            if (result_list.size() != 1) {
+            	// intersect_element_lists must produce one element
+            	this->elements_id_maps(bulk_elements_id, boundary_elements_id);
+            	return false;
+            }
+            boundary_elements_id[i] = (LongIdx)result_list[0];
             node_list.clear();
             result_list.clear();
         	i++;

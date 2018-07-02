@@ -51,9 +51,25 @@ public:
     /// Overwrite Mesh::get_part()
     Partitioning *get_part() override;
 
+    /// Overwrite Mesh::get_local_part()
+    const LongIdx *get_local_part() override;
+
+    /// Overwrite Mesh::check_compatible_mesh()
+    bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) override;
+
+    /// Overwrite Mesh::n_nodes()
+    unsigned int n_nodes() const override;
+
+    /// Overwrite Mesh::element_accessor()
+    ElementAccessor<3> element_accessor(unsigned int idx) const override;
+
 private:
     /// Pointer to parent (bulk) mesh
 	Mesh *parent_mesh_;
+
+	/// Distribution of boundary elements to processors
+	LongIdx *local_part_;
+
 };
 
 

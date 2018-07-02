@@ -276,7 +276,7 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
     unsigned int myp = mesh_->get_part()->get_init_distr()->myp();
     if (myp == 0)
     {
-    	loc_part = (LongIdx*)mesh_->get_part()->get_loc_part();
+    	loc_part = (LongIdx*)mesh_->get_local_part();
     }
     else
     {

@@ -29,7 +29,8 @@
 
 
 BCMesh::BCMesh(Mesh* parent_mesh)
-: parent_mesh_(parent_mesh)
+: parent_mesh_(parent_mesh),
+  local_part_(nullptr)
 {
 	this->init_element_vector(0);
 	this->init_node_vector(0);
@@ -37,12 +38,14 @@ BCMesh::BCMesh(Mesh* parent_mesh)
 
 
 BCMesh::~BCMesh()
-{}
+{
+	if (local_part_!=nullptr) delete local_part_;
+}
 
 
 Range<ElementAccessor<3>> BCMesh::elements_range() const
 {
-    return Range<ElementAccessor<3>>(parent_mesh_, parent_mesh_->bulk_size_, parent_mesh_->element_vec_.size());
+    return Range<ElementAccessor<3>>(parent_mesh_, parent_mesh_->bulk_size_, parent_mesh_->bulk_size_+parent_mesh_->boundary_loaded_size_);
 }
 
 
@@ -51,6 +54,38 @@ unsigned int BCMesh::n_elements(bool boundary) const {
 }
 
 
-Partitioning *BCMesh::get_part()
-{ return parent_mesh_->get_part(); }
+Partitioning *BCMesh::get_part() {
+    return parent_mesh_->get_part();
+}
+
+const LongIdx *BCMesh::get_local_part() {
+	if (local_part_ == nullptr) {
+		local_part_ = new LongIdx[this->n_elements()];
+		unsigned int bc_ele_idx;
+		for (auto ele : parent_mesh_->elements_range())
+			if (ele->boundary_idx_ != NULL)
+				for (unsigned int i=0; i<ele->n_sides(); ++i)
+					if ((int)ele->boundary_idx_[i] != -1) {
+						bc_ele_idx = parent_mesh_->boundary_[ ele->boundary_idx_[i] ].bc_ele_idx_;
+						local_part_[bc_ele_idx - parent_mesh_->bulk_size_] = parent_mesh_->get_local_part()[ele.idx()];
+					}
+	}
+	return local_part_;
+}
+
+
+bool BCMesh::check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id ) {
+	return parent_mesh_->check_compatible_mesh(mesh, bulk_elements_id, boundary_elements_id);
+}
+
+
+unsigned int BCMesh::n_nodes() const {
+    return parent_mesh_->node_vec_.size();
+}
+
+
+ElementAccessor<3> BCMesh::element_accessor(unsigned int idx) const {
+    return ElementAccessor<3>(parent_mesh_, idx+parent_mesh_->bulk_size_);
+}
+
 
