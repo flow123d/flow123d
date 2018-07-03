@@ -33,9 +33,12 @@
 #include "system/sys_profiler.hh"
 #include "input/factory.hh"
 
+#include "mesh/side_impl.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 #include "la/distribution.hh"
 #include "la/linsys.hh"
 #include "la/linsys_PETSC.hh"
@@ -266,7 +269,11 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     output_object(nullptr),
     solution(nullptr),
     schur0(nullptr),
-    data_changed_(false)
+	steady_diagonal(nullptr),
+	steady_rhs(nullptr),
+	new_diagonal(nullptr),
+	previous_solution(nullptr),
+	data_changed_(false)
 {
 
     START_TIMER("Darcy constructor");
@@ -349,7 +356,7 @@ void DarcyMH::initialize() {
     init_eq_data();
     
     // Initialize bc_switch_dirichlet to size of global boundary.
-    data_->bc_switch_dirichlet.resize(mesh_->bc_elements.size(), 1);
+    data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
 
     nonlinear_iteration_=0;
@@ -598,7 +605,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
-    VecDestroy(&save_solution);
+    chkerr(VecDestroy(&save_solution));
     this -> postprocess();
 
     // adapt timestep
@@ -632,14 +639,14 @@ void DarcyMH::postprocess()
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
         }
     }
-    //ElementFullIter ele = ELEMENT_FULL_ITER(mesh_, NULL);
+    //ElementAccessor<3> ele;
 
     // modify side fluxes in parallel
     // for every local edge take time term on digonal and add it to the corresponding flux
     /*
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        ele = mesh_->element(el_4_loc[i_loc]);
-        FOR_ELEMENT_SIDES(ele,i) {
+        ele = mesh_->element_accessor(el_4_loc[i_loc]);
+        for (unsigned int i=0; i<ele->n_sides(); i++) {
             side_rows[i] = side_row_4_id[ mh_dh.side_dof( ele_ac.side(i) ) ];
             values[i] = -1.0 * ele_ac.measure() *
               data.cross_section.value(ele_ac.centre(), ele_ac.element_accessor()) *
@@ -786,11 +793,11 @@ void DarcyMH::allocate_mh_matrix()
         }
         
         // compatible neighborings rows
-        unsigned int n_neighs = ele_ac.full_iter()->n_neighs_vb;
+        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
         for (unsigned int i = 0; i < n_neighs; i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            Neighbour *ngh = ele_ac.full_iter()->neigh_vb[i];
+            Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
             int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
             tmp_rows.push_back(neigh_edge_row);
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
@@ -811,16 +818,16 @@ void DarcyMH::allocate_mh_matrix()
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
             for(auto &isec : isec_list ) {
                 IntersectionLocalBase *local = isec.second;
-                Element &slave_ele = mesh_->element[local->bulk_ele_idx()];
+                ElementAccessor<3> slave_ele = mesh_->element_accessor( local->bulk_ele_idx() );
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < slave_ele.n_sides(); i_side++) {
+                for(unsigned int i_side=0; i_side < slave_ele->n_sides(); i_side++) {
                     tmp_rows.push_back( mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ] );
                     //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
                 }
             }
         }
         /*
-        for(unsigned int i_side=0; i_side < ele_ac.full_iter()->n_sides(); i_side++) {
+        for(unsigned int i_side=0; i_side < ele_ac.element_accessor()->n_sides(); i_side++) {
             DebugOut() << "aedge:" << print_var(edge_rows[i_side]);
         }*/
 
@@ -832,10 +839,10 @@ void DarcyMH::allocate_mh_matrix()
 /*
     // alloc edge diagonal entries
     if(rank == 0)
-    FOR_EDGES(mesh_, edg){
+    for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
         int edg_idx = mh_dh.row_4_edge[edg->side(0)->edge_idx()];
         
-//        FOR_EDGES(mesh_, edg2){
+//        for( vector<Edge>::iterator edg2 = mesh_->edges.begin(); edg2 != mesh_->edges.end(); ++edg2){
 //            int edg_idx2 = mh_dh.row_4_edge[edg2->side(0)->edge_idx()];
 //            if(edg_idx == edg_idx2){
 //                 DBGCOUT(<< "P[ " << rank << " ] " << "edg alloc: " << edg_idx << "  " << edg_idx2 << "\n");
@@ -1073,17 +1080,17 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     double d_max = std::numeric_limits<double>::max();
     double h1 = d_max, h2 = d_max, h3 = d_max;
     double he2 = d_max, he3 = d_max;
-    FOR_ELEMENTS(mesh_, ele){
+    for (auto ele : mesh_->bulk_elements_range()) {
         switch(ele->dim()){
-            case 1: h1 = std::min(h1,ele->measure()); break;
-            case 2: h2 = std::min(h2,ele->measure()); break;
-            case 3: h3 = std::min(h3,ele->measure()); break;
+            case 1: h1 = std::min(h1,ele.measure()); break;
+            case 2: h2 = std::min(h2,ele.measure()); break;
+            case 3: h3 = std::min(h3,ele.measure()); break;
         }
         
-        FOR_ELEMENT_SIDES(ele,j){
+        for (unsigned int j=0; j<ele->n_sides(); j++) {
             switch(ele->dim()){
-                case 2: he2 = std::min(he2, ele->side(j)->measure()); break;
-                case 3: he3 = std::min(he3, ele->side(j)->measure()); break;
+                case 2: he2 = std::min(he2, ele.side(j)->measure()); break;
+                case 3: he3 = std::min(he3, ele.side(j)->measure()); break;
             }
         }
     }
@@ -1136,7 +1143,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         isegn.push_back( ele_ac.ele_global_idx() );
         int nne = 0;
 
-        FOR_ELEMENT_SIDES(ele_ac.full_iter(), si) {
+        for (unsigned int si=0; si<ele_ac.element_accessor()->n_sides(); si++) {
             // insert local side dof
             int side_row = ele_ac.side_row(si);
             arma::vec3 coord = ele_ac.side(si)->centre();
@@ -1153,7 +1160,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         inet.push_back( el_row );
         nne++;
 
-        FOR_ELEMENT_SIDES(ele_ac.full_iter(), si) {
+        for (unsigned int si=0; si<ele_ac.element_accessor()->n_sides(); si++) {
             // insert local edge dof
             int edge_row = ele_ac.edge_row(si);
             arma::vec3 coord = ele_ac.side(si)->centre();
@@ -1164,9 +1171,9 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
         }
 
         // insert dofs related to compatible connections
-        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.full_iter()->n_neighs_vb; i_neigh++) {
-            int edge_row = mh_dh.row_4_edge[ ele_ac.full_iter()->neigh_vb[i_neigh]->edge_idx()  ];
-            arma::vec3 coord = ele_ac.full_iter()->neigh_vb[i_neigh]->edge()->side(0)->centre();
+        for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
+            int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
+            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
 
             localDofMap.insert( std::make_pair( edge_row, coord ) );
             inet.push_back( edge_row );
@@ -1262,16 +1269,15 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-    
-    VecDestroy(&previous_solution);
-    VecDestroy(&steady_diagonal);
-    VecDestroy(&new_diagonal);
-    VecDestroy(&steady_rhs);
+	if (previous_solution != nullptr) chkerr(VecDestroy(&previous_solution));
+	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
+	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
+	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));
     
     
     if (schur0 != NULL) {
         delete schur0;
-        VecScatterDestroy(&par_to_all);
+        chkerr(VecScatterDestroy(&par_to_all));
     }
 
 	if (solution != NULL) {
@@ -1319,9 +1325,9 @@ void DarcyMH::make_serial_scatter() {
             else{
                 
             //velocity
-            FOR_ELEMENTS(mesh_, ele)
-                FOR_ELEMENT_SIDES(ele,si)
-                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele->side(si) ) ];
+            for (auto ele : mesh_->bulk_elements_range())
+            	for (unsigned int si=0; si<ele->n_sides(); si++)
+                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
             
 //             //enriched velocity
 //             if(use_xfem && mh_dh.enrich_velocity){
@@ -1343,8 +1349,8 @@ void DarcyMH::make_serial_scatter() {
 //             }
             
             //pressure
-            FOR_ELEMENTS(mesh_, ele)
-                loc_idx[i++] = mh_dh.row_4_el[ele.index()];
+            for (auto ele : mesh_->bulk_elements_range())
+                loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
                 
 //             //enriched pressure
 //             if(use_xfem && mh_dh.enrich_pressure){
@@ -1366,9 +1372,8 @@ void DarcyMH::make_serial_scatter() {
 //             }
             
             //pressure lagrange multiplier
-            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
+            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++)
                 loc_idx[i++] = mh_dh.row_4_edge[i_edg];
-            }
             
 //             //singualrity lagrange multiplier
 //             if(use_xfem){
@@ -1386,7 +1391,7 @@ void DarcyMH::make_serial_scatter() {
             delete [] loc_idx;
             VecScatterCreate(schur0->get_solution(), is_loc, sol_vec,
                     PETSC_NULL, &par_to_all);
-            ISDestroy(&(is_loc));
+            chkerr(ISDestroy(&(is_loc)));
     }
     solution_changed_for_scatter=true;
 

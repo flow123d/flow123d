@@ -74,11 +74,11 @@ n_enriched_dofs_(0)
 }
 
 template<unsigned int dim,unsigned int spacedim>
-void XFEValues<dim,spacedim>::reinit(ElementFullIter & ele,
+void XFEValues<dim,spacedim>::reinit(ElementAccessor<3> &ele,
                                      XFEMElementData<dim,spacedim> & xdata,
                                      Quadrature<dim> &_quadrature)
 {
-    ASSERT_EQ_DBG( dim, ele->dim() );
+    ASSERT_EQ_DBG( dim, ele.dim() );
     data.present_cell = &ele;
     quadrature = &_quadrature;
     
@@ -164,7 +164,7 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
 //     DebugOut() << "XFEValues::fill_vec_piola_xfem_single\n";
     ASSERT_DBG(fe->type_ == FEVectorPiola);
     
-    ElementFullIter ele = *data.present_cell;
+    ElementAccessor<3> ele = *data.present_cell;
     typedef typename Space<spacedim>::Point Point;
     unsigned int j;
     vector<vector<double>> enr_dof_val;
@@ -182,20 +182,20 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
 //             normals[j].print(cout, "internal normal");
         }
         
-        auto search = ele_cache.enr_dof_values.find(ele->index());
+        auto search = ele_cache.enr_dof_values.find(ele.idx());
         if(search != ele_cache.enr_dof_values.end()){ // cached
             enr_dof_val = search->second;
 //             DBGCOUT(<<"use cached enr dofs on ele " << search->first << "\n");
         }
         else{
-//             DBGCOUT(<<"create enr dofs on ele " << ele->index() << "\n");
+//             DBGCOUT(<<"create enr dofs on ele " << ele.idx() << "\n");
             enr_dof_val.resize(enr.size());
             for (unsigned int w=0; w<enr.size(); w++)
                 enr_dof_val[w].resize(RefElement<dim>::n_sides);
             
             // for SGFEM we need to compute fluxes of glob. enr. function over faces
             for (unsigned int j=0; j<RefElement<dim>::n_sides; j++){
-//                 DBGCOUT(<<"qxfem_side on ele " << ele->index() << " s" << j << "\n");
+//                 DBGCOUT(<<"qxfem_side on ele " << ele.idx() << " s" << j << "\n");
                 std::shared_ptr<QXFEM<dim,3>> q_side = qxfem_side(ele, j);
                 
                 for (unsigned int w=0; w<enr.size(); w++){
@@ -214,7 +214,7 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
                 }
             }
             //copy to cache
-            ele_cache.enr_dof_values[ele->index()] = enr_dof_val;
+            ele_cache.enr_dof_values[ele.idx()] = enr_dof_val;
         }
 //         // for SGFEM we need to compute fluxes of glob. enr. function over faces
 //         ASSERT(dim == 2);
@@ -353,13 +353,13 @@ void XFEValues<dim,spacedim>::fill_vec_piola_xfem_single()
 }
 
 template<>
-inline std::shared_ptr<QXFEM<1,3>> XFEValues<1,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
+inline std::shared_ptr<QXFEM<1,3>> XFEValues<1,3>::qxfem_side(ElementAccessor<3> &ele, unsigned int sid)
 {
     return std::make_shared<QXFEM<1,3>>();
 }
 
 template<>
-inline std::shared_ptr<QXFEM<2,3>> XFEValues<2,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
+inline std::shared_ptr<QXFEM<2,3>> XFEValues<2,3>::qxfem_side(ElementAccessor<3> &ele, unsigned int sid)
 {
     std::vector<std::shared_ptr<Singularity<0>>> vec(enr.size());
     for(unsigned int w=0; w<enr.size(); w++){
@@ -370,7 +370,7 @@ inline std::shared_ptr<QXFEM<2,3>> XFEValues<2,3>::qxfem_side(ElementFullIter el
 }
 
 template<>
-inline std::shared_ptr<QXFEM<3,3>> XFEValues<3,3>::qxfem_side(ElementFullIter ele, unsigned int sid)
+inline std::shared_ptr<QXFEM<3,3>> XFEValues<3,3>::qxfem_side(ElementAccessor<3> &ele, unsigned int sid)
 {
     std::vector<std::shared_ptr<Singularity<1>>> vec(enr.size());
     for(unsigned int w=0; w<enr.size(); w++){

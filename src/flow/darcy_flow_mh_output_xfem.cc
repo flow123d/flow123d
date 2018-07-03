@@ -173,9 +173,9 @@ void DarcyFlowMHOutputXFEM::make_element_vector(ElementSetRef element_indices) {
     
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
-        ElementFullIter ele = mesh_->element(i_ele);
+        ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
 
-        unsigned int dim = ele->dim();
+        unsigned int dim = ele.dim();
         flux_in_center = multidim_assembler[dim-1]->make_element_vector(ele);
 
         // place it in the sequential vector
@@ -198,10 +198,10 @@ void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 //     DBGCOUT(<< "local diff\n");
     
-    ElementFullIter ele = ele_ac.full_iter();
+    ElementAccessor<3> ele = ele_ac.element_accessor();
     
-//     double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
-    double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
+//     double conductivity = result.data_->conductivity.value(ele.centre(), ele );
+    double cross = result.data_->cross_section.value(ele.centre(), ele );
     
     int dofs_vel[100];
     unsigned int ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
@@ -237,7 +237,7 @@ void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
         arma::vec3 q_point = fe_values.point(i_point);
 
-        analytical = anal_sol.value(q_point, ele->element_accessor() );
+        analytical = anal_sol.value(q_point, ele );
         for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
 
         diff = pressure_mean;
@@ -289,16 +289,16 @@ void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_
 
 
 //     DBGVAR(velocity_diff);
-    result.velocity_diff[ele.index()] = std::sqrt(velocity_diff);
+    result.velocity_diff[ele.idx()] = std::sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
 //     if (dim == 2 && result.velocity_mask.size() != 0 ) {
-//         result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+//         result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
 //     }
 
-    result.pressure_diff[ele.index()] = std::sqrt(pressure_diff);
+    result.pressure_diff[ele.idx()] = std::sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
-//     result.div_diff[ele.index()] = std::sqrt(divergence_diff);
+//     result.div_diff[ele.idx()] = std::sqrt(divergence_diff);
 //     result.div_error[dim-1] += divergence_diff;
 
 }
@@ -355,7 +355,7 @@ struct FEDiffData{
     
     void prepare_xfem(LocalElementAccessorBase<3> ele_ac)
     {
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
         
         qxfem = qfactory.create_singular(xdata->sing_vec(), ele);
@@ -399,7 +399,7 @@ void DarcyFlowMHOutputXFEM::compute_l2_difference() {
     for (unsigned int i_loc = 0; i_loc < diff_data.dh->el_ds->lsize(); i_loc++) {
         DBGVAR(i_loc);
         auto ele_ac = const_cast<MH_DofHandler*>(diff_data.dh)->accessor(i_loc);
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         unsigned int dim = ele_ac.dim();
         
         switch (dim) {

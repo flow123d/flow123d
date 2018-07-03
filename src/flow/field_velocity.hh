@@ -52,22 +52,22 @@ public:
     
     Value value_vector(const ElementAccessor<spacedim> &elm, const Point &p){
         //HACK to get accessor; only for SINGLE processor
-        auto ele_ac = mh_dh_->accessor(elm.element()->index());
-        update_quad(ele_ac.full_iter(), p);
+        auto ele_ac = mh_dh_->accessor(elm.idx());
+        update_quad(elm, p);
         Value flux; flux.zeros();
         
         if(enr_ && ele_ac.is_enriched()){
             flux =  value_vector_xfem(ele_ac);
         }
         else if(reg_){
-            flux = value_vector_regular(ele_ac.full_iter());
+            flux = value_vector_regular(elm);
         }
         
         return flux;
     }
     
-    void update_quad(ElementFullIter ele, const Point &p){
-        arma::vec unit_p = map_.project_real_to_unit(p,map_.element_map(*ele));
+    void update_quad(const ElementAccessor<spacedim> &ele, const Point &p){
+        arma::vec unit_p = map_.project_real_to_unit(p,map_.element_map(ele));
         quad_.resize(1);
         quad_.set_point(0, RefElement<dim>::bary_to_local(unit_p));
         quad_.set_real_point(0,p);
@@ -76,18 +76,19 @@ public:
 //         if(dim == 2) DBGCOUT(<< "p: [" << unit_p(0) << " " << unit_p(1) << " " << unit_p(2) << "]\n");
     }
     
-    Value value_vector_regular(ElementFullIter ele){
+    Value value_vector_regular(const ElementAccessor<spacedim> &ele){
         Value flux;
         flux.zeros();
         
         fv_rt_ = std::make_shared<FEValues<dim,3>>(map_, quad_, fe_rt_, update_values);
-        fv_rt_->reinit(ele);
+        ElementAccessor<3> ele_nonconst = ele;
+        fv_rt_->reinit(ele_nonconst);
         auto velocity = fv_rt_->vector_view(0);
         
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
 //             DBGCOUT(<< "ele " << ele->index() << " flux " << mh_dh_->side_flux( *(ele->side( li ) ) ) 
 //                 << " [" << fv_rt_->shape_vector(li,0)(0) << " " << fv_rt_->shape_vector(li,0)(1) << " " << fv_rt_->shape_vector(li,0)(2) << "]\n");
-            flux += mh_dh_->side_flux( *(ele->side( li ) ) ) * velocity.value(li,0);
+            flux += mh_dh_->side_flux( *(ele.side( li ) ) ) * velocity.value(li,0);
         }
         
 //         DBGCOUT(<< "ele " << ele->index() << " flux [" << flux(0) << " " << flux(1) << " " << flux(2) << "]\n");
@@ -97,7 +98,7 @@ public:
     Value value_vector_xfem(LocalElementAccessorBase<3> ele_ac){
         Value flux;
         flux.zeros();
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
 

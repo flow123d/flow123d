@@ -15,12 +15,16 @@
  * @brief   
  */
 
+#include "mesh/side_impl.hh"
 #include "flow/mh_dofhandler.hh"
 #include "la/local_to_global_map.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
 #include "mesh/side_impl.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
+#include "mesh/neighbours.h"
 #include "system/sys_profiler.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
@@ -72,12 +76,12 @@ MH_DofHandler::~MH_DofHandler()
 void MH_DofHandler::fill_elem_side_to_global()
 {
     elem_side_to_global.resize(mesh_->n_elements() );
-    FOR_ELEMENTS(mesh_, ele) elem_side_to_global[ele.index()].resize(ele->n_sides());
+    for (auto ele : mesh_->bulk_elements_range()) elem_side_to_global[ ele.idx() ].resize(ele->n_sides());
 
     unsigned int i_side_global=0;
-    FOR_ELEMENTS(mesh_, ele) {
+    for (auto ele : mesh_->bulk_elements_range()) {
         for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
-            elem_side_to_global[ele.index()][i_lside] = i_side_global++;
+            elem_side_to_global[ ele.idx() ][i_lside] = i_side_global++;
     }
 }
 
@@ -198,10 +202,10 @@ void MH_DofHandler::prepare_parallel() {
     id_4_old = new LongIdx[mesh_->n_edges()];
     {
         loc_i = 0;
-        FOR_EDGES(mesh_, edg ) {
+        for( vector<Edge>::iterator edg = mesh_->edges.begin(); edg != mesh_->edges.end(); ++edg) {
             unsigned int i_edg = edg - mesh_->edges.begin();
             // partition
-            e_idx = mesh_->element.index(edg->side(0)->element());
+            e_idx = edg->side(0)->element().idx();
             if (init_edge_ds.is_local(i_edg)) {
                 // find (new) proc of the first element of the edge
                 loc_part[loc_i++] = el_ds->get_proc(row_4_el[e_idx]);
@@ -217,9 +221,9 @@ void MH_DofHandler::prepare_parallel() {
     // create map from mesh global edge id to new local edge id
     unsigned int loc_edge_idx=0;
     for (unsigned int i_el_loc = 0; i_el_loc < el_ds->lsize(); i_el_loc++) {
-        auto ele = mesh_->element(el_4_loc[i_el_loc]);
+        auto ele = mesh_->element_accessor( el_4_loc[i_el_loc] );
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            unsigned int mesh_edge_idx= ele->side(i)->edge_idx();
+            unsigned int mesh_edge_idx= ele.side(i)->edge_idx();
             if ( edge_new_local_4_mesh_idx_.count(mesh_edge_idx) == 0 )
                 // new local edge
                 edge_new_local_4_mesh_idx_[mesh_edge_idx] = loc_edge_idx++;
@@ -234,16 +238,17 @@ void MH_DofHandler::prepare_parallel() {
     {
         int is = 0;
         loc_i = 0;
-        FOR_SIDES(mesh_, side ) {
-            // partition
-            if (init_side_ds.is_local(is)) {
-                // find (new) proc of the element of the side
-                loc_part[loc_i++] = el_ds->get_proc(
-                        row_4_el[mesh_->element.index(side->element())]);
+    	for (auto ele : mesh_->bulk_elements_range())
+            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
+                // partition
+                if (init_side_ds.is_local(is)) {
+                    // find (new) proc of the element of the side
+                    loc_part[loc_i++] = el_ds->get_proc(
+                            row_4_el[ side->element().idx() ]);
+                }
+                // id array
+                id_4_old[is++] = side_dof( side );
             }
-            // id array
-            id_4_old[is++] = side_dof( side );
-        }
     }
 
     Partitioning::id_maps(mesh_->n_sides(), id_4_old, init_side_ds, loc_part, side_ds,
@@ -270,7 +275,7 @@ void MH_DofHandler::make_row_numberings() {
     unsigned int rows_starts[np];
 
     int edge_n_id = mesh_->n_edges(),
-            el_n_id = mesh_->element.size(),
+            el_n_id = mesh_->n_elements(),
             side_n_id = mesh_->n_sides();
 
     // compute shifts on every proc
@@ -312,7 +317,7 @@ void MH_DofHandler::make_row_numberings() {
 void MH_DofHandler::prepare_parallel_bddc() {
 #ifdef FLOW123D_HAVE_BDDCML
     // auxiliary
-    Element *el;
+    ElementAccessor<3> el;
     LongIdx side_row, edge_row;
 
     global_row_4_sub_row = std::make_shared<LocalToGlobalMap>(rows_ds);
@@ -322,21 +327,21 @@ void MH_DofHandler::prepare_parallel_bddc() {
     // for each subdomain:
     // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        el = mesh_->element(el_4_loc[i_loc]);
+        el = mesh_->element_accessor( el_4_loc[i_loc] );
         LongIdx el_row = row_4_el[el_4_loc[i_loc]];
 
         global_row_4_sub_row->insert( el_row );
 
         unsigned int nsides = el->n_sides();
         for (unsigned int i = 0; i < nsides; i++) {
-            side_row = side_row_4_id[ side_dof( el->side(i) ) ];
-            edge_row = row_4_edge[el->side(i)->edge_idx()];
+            side_row = side_row_4_id[ side_dof( el.side(i) ) ];
+            edge_row = row_4_edge[el.side(i)->edge_idx()];
 
             global_row_4_sub_row->insert( side_row );
             global_row_4_sub_row->insert( edge_row );
         }
 
-        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb; i_neigh++) {
+        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb(); i_neigh++) {
             // mark this edge
             edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
             global_row_4_sub_row->insert( edge_row );
@@ -349,7 +354,7 @@ void MH_DofHandler::prepare_parallel_bddc() {
 
 
 unsigned int MH_DofHandler::side_dof(const SideIter side) const {
-    return elem_side_to_global[ side->element().index() ][ side->el_idx() ];
+    return elem_side_to_global[ side->element().idx() ][ side->side_idx() ];
 }
 
 
@@ -363,7 +368,7 @@ void MH_DofHandler::set_solution( double time, double * solution, double precisi
 /// temporary replacement for DofHandler accessor, flux through given side
 double MH_DofHandler::side_flux(const Side &side) const {
 //     DBGVAR(elem_side_to_global[ side.element().index() ][ side.el_idx() ]);
-    return mh_solution[ offset_velocity + elem_side_to_global[ side.element().index() ][ side.el_idx() ] ];
+    return mh_solution[ offset_velocity + elem_side_to_global[ side.element().idx() ][ side.side_idx() ] ];
 }
 
 /// temporary replacement for DofHandler accessor, scalar (pressure) on edge of the side
@@ -374,9 +379,9 @@ double MH_DofHandler::side_scalar(const Side &side) const {
 }
 
 
-double MH_DofHandler::element_scalar( ElementFullIter &ele ) const {
-//     return mh_solution[ ele->mesh_->n_sides() + ele.index() ];
-    return mh_solution[ offset_pressure + ele.index() ];
+double MH_DofHandler::element_scalar( ElementAccessor<3> &ele ) const {
+//    return mh_solution[ mesh_->n_sides() + ele.idx() ];
+    return mh_solution[ offset_pressure + ele.idx() ];
 }
 
 
@@ -392,9 +397,9 @@ LocalElementAccessorBase<3> MH_DofHandler::accessor(uint local_ele_idx) {
 template <int spacedim>
 XFEMElementDataBase* LocalElementAccessorBase<spacedim>::xfem_data_pointer()
 {
-    switch(ele->dim()){
-        case 2: dh->get_xfem_sing_data<2>(ele->index()); break;
-        case 3: dh->get_xfem_sing_data<3>(ele->index()); break;
+    switch(ele.dim()){
+        case 2: dh->get_xfem_sing_data<2>(ele.idx()); break;
+        case 3: dh->get_xfem_sing_data<3>(ele.idx()); break;
         default: return nullptr;
     }
 }
@@ -402,7 +407,7 @@ XFEMElementDataBase* LocalElementAccessorBase<spacedim>::xfem_data_pointer()
 template <int spacedim>
 bool LocalElementAccessorBase<spacedim>::is_enriched()
 {
-    return (dh->xdata_4_el.size() > 0) && (dh->xdata_4_el[ele->index()] != MH_DofHandler::empty_node_idx);
+    return (dh->xdata_4_el.size() > 0) && (dh->xdata_4_el[ele.idx()] != MH_DofHandler::empty_node_idx);
 }
 
 template <int spacedim>
@@ -573,11 +578,10 @@ void MH_DofHandler::clear_mesh_flags()
 
 void MH_DofHandler::clear_node_aux()
 {
-    FOR_ELEMENTS(mesh_, ele){
-        for(unsigned int i=0; i < ele->n_nodes(); i++){
-            ele->node[i]->aux = empty_node_idx;
+    for (auto ele : mesh_->bulk_elements_range())
+        for(unsigned int i=0; i < ele.element()->n_nodes(); i++){
+            ele.node(i)->aux = empty_node_idx;
         }
-    }
 }
 
 unsigned int MH_DofHandler::n_enrichments()
@@ -640,23 +644,24 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
     unsigned int n_qpoints = 1000;
     
     bool found = false;
-    ElementFullIter ele2d(mesh_->element.begin());
-    for(; ele2d != mesh_->element.end(); ++ele2d){
-        if(ele2d->dim() == 2){
+    ElementAccessor<3> ele2d;
+    for (auto ele : mesh_->bulk_elements_range()){
+        if(ele.dim() == 2){
             MappingP1<2,3> map;
-            arma::vec p = map.project_real_to_unit(center,map.element_map(*ele2d));
+            arma::vec p = map.project_real_to_unit(center,map.element_map(ele));
             if(map.is_point_inside(p))
             {
-                n = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
-                                ele2d->node[2]->point() - ele2d->node[0]->point());
+                n = arma::cross(ele.node(1)->point() - ele.node(0)->point(),
+                                ele.node(2)->point() - ele.node(0)->point());
                 found = true;
+                ele2d = ele;
                 break;
             }
         }
     }
     if(! found) return;
                 
-    DBGCOUT("singularity: 2d: " << ele2d->index() << "\n");
+    DBGCOUT("singularity: 2d: " << ele2d.idx() << "\n");
                 
     auto sing = std::make_shared<Singularity<0>>(center, radius, direction_vector, n, n_qpoints);
     // set sigma of 1d element
@@ -665,7 +670,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
     singularities.push_back(sing);
 
     //TODO: suggest proper enrichment radius
-//     double enr_radius = 1.3*std::sqrt(ele2d->measure());
+//     double enr_radius = 1.3*std::sqrt(ele2d.measure());
 //     double enr_radius = 2.0;
     DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
     clear_mesh_flags();
@@ -674,12 +679,13 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
     enrich_ele(sing, singularities_12d_.size()-1, xfem_data_2d, 0, ele2d, new_enrich_node_idx);
     
     //flag the element
-    mesh_flags_[ele2d->index()] = true;
-    for(unsigned int n=0; n < ele2d->n_sides(); n++) {
-        Edge* edge = ele2d->side(n)->edge();
+    mesh_flags_[ele2d.idx()] = true;
+    for(unsigned int n=0; n < ele2d.element()->n_sides(); n++) {
+        const Edge* edge = ele2d.side(n)->edge();
         for(int j=0; j < edge->n_sides;j++) {
-            if (edge->side(j)->element() != ele2d && edge->side(j)->element()->dim() == 2){
-                find_ele_to_enrich(sing,0,edge->side(j)->element(),enr_radius, new_enrich_node_idx);
+            ElementAccessor<3> side_ele = edge->side(j)->element();
+            if (side_ele != ele2d && side_ele.dim() == 2){
+                find_ele_to_enrich(sing,0,side_ele,enr_radius, new_enrich_node_idx);
             }
         }
     }
@@ -734,20 +740,21 @@ void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Si
     
     Point center = a;
     bool found = false;
-    ElementFullIter ele3d(mesh_->element.begin());
-    for(; ele3d != mesh_->element.end(); ++ele3d){
-        if(ele3d->dim() == 3){
+    ElementAccessor<3> ele3d;
+    for (auto ele : mesh_->bulk_elements_range()){
+        if(ele.dim() == 3){
             MappingP1<3,3> map;
-            arma::vec p = map.project_real_to_unit(center,map.element_map(*ele3d));
+            arma::vec p = map.project_real_to_unit(center,map.element_map(ele));
             if(map.is_point_inside(p)){
                 found = true;
+                ele3d = ele;
                 break;
             }
         }
     }
     if(! found) return;
                 
-    DBGCOUT("singularity: 3d: " << ele3d->index() << "\n");
+    DBGCOUT("singularity: 3d: " << ele3d.idx() << "\n");
                 
     auto sing = std::make_shared<Singularity<1>>(a,b,radius,n,m);
     // set sigma of 1d element
@@ -763,12 +770,13 @@ void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Si
     enrich_ele(sing, singularities_13d_.size()-1, xfem_data_3d, 0, ele3d, new_enrich_node_idx);
     
     //flag the element
-    mesh_flags_[ele3d->index()] = true;
-    for(unsigned int n=0; n < ele3d->n_sides(); n++) {
-        Edge* edge = ele3d->side(n)->edge();
+    mesh_flags_[ele3d.idx()] = true;
+    for(unsigned int n=0; n < ele3d.element()->n_sides(); n++) {
+        const Edge* edge = ele3d.side(n)->edge();
         for(int j=0; j < edge->n_sides;j++) {
-            if (edge->side(j)->element() != ele3d && edge->side(j)->element()->dim() == 3){
-                find_ele_to_enrich(sing,0,edge->side(j)->element(),enr_radius, new_enrich_node_idx);
+            ElementAccessor<3> side_ele = edge->side(j)->element();
+            if (side_ele != ele3d && side_ele.dim() == 3){
+                find_ele_to_enrich(sing,0,side_ele,enr_radius, new_enrich_node_idx);
             }
         }
     }
@@ -781,8 +789,9 @@ std::shared_ptr<Singularity<0>> MH_DofHandler::create_sing<2>(IntersectionLocal<
                                     double sigma)
 {
     DebugOut().fmt("intersection:  c {} b {}\n", il->component_ele_idx(), il->bulk_ele_idx());
-    ElementFullIter ele = mesh_->element(il->component_ele_idx());
-    ElementFullIter bulk_ele = mesh_->element(il->bulk_ele_idx());
+    ElementAccessor<3> ele = mesh_->element_accessor(il->component_ele_idx());
+    ElementAccessor<3> bulk_ele = mesh_->element_accessor(il->bulk_ele_idx());
+
     //create singularity
     Space<3>::Point center = (*il)[0].coords(ele);
 //     center.print(DebugOut(),"center");
@@ -791,9 +800,9 @@ std::shared_ptr<Singularity<0>> MH_DofHandler::create_sing<2>(IntersectionLocal<
     DebugOut() << "radius " << radius << "\n";
     
     const unsigned int n_qpoints = 1000;
-    Space<3>::Point n = arma::cross(bulk_ele->node[1]->point() - bulk_ele->node[0]->point(),
-                                    bulk_ele->node[2]->point() - bulk_ele->node[0]->point());
-    Space<3>::Point direction_vector(ele->node[1]->point() - ele->node[0]->point());
+    Space<3>::Point n = arma::cross(bulk_ele.node(1)->point() - bulk_ele.node(0)->point(),
+                                    bulk_ele.node(2)->point() - bulk_ele.node(0)->point());
+    Space<3>::Point direction_vector(ele.node(1)->point() - ele.node(0)->point());
     
     auto sing = std::make_shared<Singularity<0>>(center, radius, direction_vector, n, n_qpoints);
     // set sigma of 1d element
@@ -807,14 +816,14 @@ std::shared_ptr<Singularity<1>> MH_DofHandler::create_sing<3>(IntersectionLocal<
                                     double sigma)
 {
     DebugOut().fmt("intersection:  c {} b {}\n", il->component_ele_idx(), il->bulk_ele_idx());
-    ElementFullIter ele = mesh_->element(il->component_ele_idx());
+    ElementAccessor<3> ele = mesh_->element_accessor(il->component_ele_idx());
     
     //create singularity
     double radius = std::sqrt(cross_section/M_PI);
     DebugOut() << "radius " << radius << "\n";
     
-    Space<3>::Point a = ele->node[0]->point();
-    Space<3>::Point b = ele->node[1]->point();
+    Space<3>::Point a = ele.node(0)->point();
+    Space<3>::Point b = ele.node(1)->point();
 //     a.print(DebugOut(),"pointA");
 //     b.print(DebugOut(),"pointB");
     
@@ -854,33 +863,33 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
 
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         auto ele_ac = accessor(i_loc);
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         if(ele_ac.dim() == 1) {
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
             if(isec_list.size() == 0) continue;
             
             for(auto &isec : isec_list ) {
                 ASSERT_PTR_DBG(isec.second);
-                ElementFullIter bulk_ele = mesh_->element(isec.second->bulk_ele_idx());
+                ElementAccessor<3> bulk_ele = mesh_->element_accessor(isec.second->bulk_ele_idx());
                 
-                Space<3>::Point center = ele->centre();
+                Space<3>::Point center = ele.centre();
                 IntersectionLocal<1,dim>* il = static_cast<IntersectionLocal<1,dim>*>(isec.second);
                 
-                if(bulk_ele->dim() == 2){
+                if(bulk_ele.dim() == 2){
                     if(il->size() != 1) continue;   //process only IL with one IP
                     
                     center = (*il)[0].coords(ele);
                 }
                 
-                DBGCOUT("singularity: ele " << dim << "d: " << ele->index() << "  bulk_ele: " << bulk_ele->index() << "\n");
-                double cs = cross_section.value(center, ele->element_accessor()); // pi*r^2
-                double sgm = sigma.value(center, ele->element_accessor());
+                DBGCOUT("singularity: ele " << dim << "d: " << ele.idx() << "  bulk_ele: " << bulk_ele.idx() << "\n");
+                double cs = cross_section.value(center, ele); // pi*r^2
+                double sgm = sigma.value(center, ele);
                 
                 singularities.push_back(create_sing<dim>(il, cs, sgm));
                 
                 DBGCOUT(<< "enr_radius: " << enr_radius << "\n");
                 clear_mesh_flags();
-                find_ele_to_enrich(singularities.back(), ele->index(), bulk_ele, enr_radius, new_enrich_node_idx);
+                find_ele_to_enrich(singularities.back(), ele.idx(), bulk_ele, enr_radius, new_enrich_node_idx);
                 
 //                 // in 3d, create only one singularity per 1d element
 //                 if(dim == 3) break;
@@ -959,7 +968,7 @@ void MH_DofHandler::create_enrichment(std::vector<std::shared_ptr<Singularity<di
     // Update invalid pointers.
 //     if(! (enrich_pressure || enrich_velocity))
     for(auto& xdata : xfem_data){
-        ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+        ElementAccessor<3> ele = mesh_->element_accessor(xdata.ele_global_idx());
         xdata.create_sing_quads(ele);
 //         DBGVAR(xdata.n_enrichments_intersect());
 //         xdata.print(cout);
@@ -1117,10 +1126,10 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
                                unsigned int sing_idx,
                                std::vector<XFEMElementSingularData<dim>>& xfem_data,
                                int ele1d_global_idx,
-                               ElementFullIter ele,
+                               ElementAccessor<3> &ele,
                                int& new_enrich_node_idx)
 {
-    int ele_idx = ele->index();
+    int ele_idx = ele.idx();
     DBGVAR(ele_idx);
     
     XFEMElementSingularData<dim> * xdata;
@@ -1150,10 +1159,10 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
     // shortcut when not enriching
 //         if(! (enrich_velocity || enrich_pressure)) return;
     
-    Node* node; //shortcut
+    const Node* node; //shortcut
     // number the enriched nodes and compute node values
-    for(unsigned int i=0; i < ele->n_nodes(); i++){
-        node = ele->node[i];
+    for(unsigned int i=0; i < ele.element()->n_nodes(); i++){
+        node = ele.node(i);
         // number enriched nodes
         if (node->aux == empty_node_idx){
 //                 DBGCOUT(<< "node number: " << new_enrich_node_idx << "\n");
@@ -1170,21 +1179,21 @@ void MH_DofHandler::enrich_ele(std::shared_ptr<Enr> sing,
 
 void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
                                        int ele1d_global_idx,
-                                   ElementFullIter ele,
+                                   ElementAccessor<3> &ele,
                                    double radius,
                                    int& new_enrich_node_idx
                                   )
 {   
-//     DBGVAR(ele->index());
+//     DBGVAR(ele.idx());
     // check flag at the element so element is checked only once
-    if(mesh_flags_[ele->index()]) return;
+    if(mesh_flags_[ele.idx()]) return;
     
     //flag the element
-    mesh_flags_[ele->index()] = true;
+    mesh_flags_[ele.idx()] = true;
 //     bool enrich = true;
     bool enrich = false;
-    for(unsigned int i=0; i < ele->n_nodes(); i++){
-        double d = sing->geometry().distance(ele->node[i]->point());
+    for(unsigned int i=0; i < ele.element()->n_nodes(); i++){
+        double d = sing->geometry().distance(ele.node(i)->point());
 //         DBGCOUT(<< d << "\n");
         if(d < radius){
             enrich = true;
@@ -1192,7 +1201,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
         else
         {
             MappingP1<2,3> map;
-            arma::vec up = map.project_real_to_unit(sing->geometry_ellipse().center(),map.element_map(*ele));
+            arma::vec up = map.project_real_to_unit(sing->geometry_ellipse().center(),map.element_map(ele));
             if(map.is_point_inside(up))
                 enrich = true;
         }
@@ -1203,12 +1212,13 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
         enrich_ele(sing, singularities_12d_.size()-1, xfem_data_2d, ele1d_global_idx, ele, new_enrich_node_idx);
         
 //         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";
-        for(unsigned int n=0; n < ele->n_sides(); n++) {
-            Edge* edge = ele->side(n)->edge();
+        for(unsigned int n=0; n < ele.element()->n_sides(); n++) {
+            const Edge* edge = ele.side(n)->edge();
             for(int j=0; j < edge->n_sides;j++) {
-                if (edge->side(j)->element() != ele && edge->side(j)->element()->dim() == 2){
-//                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-                    find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
+                ElementAccessor<3> side_ele = edge->side(j)->element();
+                if (side_ele != ele && side_ele.dim() == 2){
+//                     DebugOut() << "Go to ele " << side_ele.idx() << "\n";
+                    find_ele_to_enrich(sing,ele1d_global_idx,side_ele,radius, new_enrich_node_idx);
                 }
             }
         }
@@ -1217,17 +1227,17 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
 
 void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
                                        int ele1d_global_idx,
-                                       ElementFullIter ele,
+                                       ElementAccessor<3> &ele,
                                        double radius,
                                        int& new_enrich_node_idx)
 {   
     typedef Space<3>::Point Point;
-//     DBGVAR(ele->index());
+//     DBGVAR(ele.idx());
     // check flag at the element so element is checked only once
-    if(mesh_flags_[ele->index()]) return;
+    if(mesh_flags_[ele.idx()]) return;
     
     //flag the element
-    mesh_flags_[ele->index()] = true;
+    mesh_flags_[ele.idx()] = true;
 //     bool enrich = true;
     
     bool enrich = false;
@@ -1235,7 +1245,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
     auto& intersections = mesh_->mixed_intersections().element_intersections_[ele1d_global_idx];
     for(auto& il:intersections){
 //         DBGCOUT(<< il.first << "\n");
-        if(il.first == ele->index()){
+        if(il.first == ele.idx()){
             enrich = true;
             break;
         }
@@ -1243,31 +1253,31 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
     
     if(! enrich){
         const CylinderGeometry& geom = sing->geometry_cylinder();
-        for(unsigned int i=0; i < ele->n_nodes(); i++){
-            Point dp = geom.dist_vector(ele->node[i]->point());
+        for(unsigned int i=0; i < ele.element()->n_nodes(); i++){
+            Point dp = geom.dist_vector(ele.node(i)->point());
             double d = arma::norm(dp,2);
             
             // test distance to line
             if(d < radius){
                 
 //                 DebugOut().fmt("d: {} < enr_r: {}\n",d,radius);
-                Point p = ele->node[i]->point() - dp;
+                Point p = ele.node(i)->point() - dp;
                 MappingP1<1,3> map;
-                arma::vec up = map.project_real_to_unit(p,map.element_map(mesh_->element[ele1d_global_idx]));
+                arma::vec up = map.project_real_to_unit(p,map.element_map(mesh_->element_accessor(ele1d_global_idx)));
                 if(map.is_point_inside(up)){
                     enrich = true;
                     break;
                 }
                 
                 //test distance to A
-                double da = arma::norm(geom.a()-ele->node[i]->point(),2);
+                double da = arma::norm(geom.a()-ele.node(i)->point(),2);
                 if(da < radius){
                     enrich = true;
                     break;
                 }
                 
                 //test distance to B
-                double db = arma::norm(geom.b()-ele->node[i]->point(),2);
+                double db = arma::norm(geom.b()-ele.node(i)->point(),2);
                 if(db < radius){
                     enrich = true;
                     break;
@@ -1282,12 +1292,13 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
         enrich_ele(sing, singularities_13d_.size()-1, xfem_data_3d, ele1d_global_idx, ele, new_enrich_node_idx);
         
 //         DebugOut() << "n_neighs_vb " << ele->n_neighs_vb << "\n";
-        for(unsigned int n=0; n < ele->n_sides(); n++) {
-            Edge* edge = ele->side(n)->edge();
+        for(unsigned int n=0; n < ele.element()->n_sides(); n++) {
+            const Edge* edge = ele.side(n)->edge();
             for(int j=0; j < edge->n_sides;j++) {
-                if (edge->side(j)->element() != ele && edge->side(j)->element()->dim() == 3){
-//                     DebugOut() << "Go to ele " << edge->side(j)->element()->index() << "\n";
-                    find_ele_to_enrich(sing,ele1d_global_idx,edge->side(j)->element(),radius, new_enrich_node_idx);
+                ElementAccessor<3> side_ele = edge->side(j)->element();
+                if (side_ele != ele && side_ele.dim() == 3){
+//                     DebugOut() << "Go to ele " << side_ele.idx() << "\n";
+                    find_ele_to_enrich(sing,ele1d_global_idx,side_ele,radius, new_enrich_node_idx);
                 }
             }
         }
@@ -1301,13 +1312,13 @@ void MH_DofHandler::distribute_enriched_dofs(vector< std::vector< int > >& temp_
     unsigned int w,i,node_idx;
     
     for(XFEMElementDataBase& xdata : xfem_data_2d){
-        ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+        ElementAccessor<3> ele = mesh_->element_accessor(xdata.ele_global_idx());
         std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
         dofs.resize(xdata.n_enrichments(), std::vector<int>(ele->n_nodes(), -1));
 //         DBGCOUT(<<"dofs xdata\n");
         for(w=0; w < xdata.n_enrichments(); w++){
             for(i=0; i < ele->n_nodes(); i++){
-                node_idx = ele->node[i]->aux;
+                node_idx = ele.node(i)->aux;
                 if(temp_dofs[node_idx][w] == empty_node_idx){
 //                     DBGCOUT(<< node_idx << " new dof " << offset << "\n");
                     dofs[w][i] = temp_dofs[node_idx][w] = offset;
@@ -1354,7 +1365,7 @@ void MH_DofHandler::distribute_enriched_dofs(int& offset,
     unsigned int w;
     
     for(XFEMElementDataBase& xdata : xfem_data_2d){
-        ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+//         ElementAccessor<3> ele = mesh_->element_accessor(xdata.ele_global_idx());
         std::vector<std::vector<int>>& dofs = xdata.global_enriched_dofs()[quant];
         dofs.resize(xdata.n_enrichments(), std::vector<int>(1, -1));
 //         DBGCOUT(<<"dofs xdata\n");

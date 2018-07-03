@@ -53,16 +53,16 @@ double QXFEMFactory::AuxSimplex::compute_max_h() const
 
 std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
                                                 const std::vector<Singularity0DPtr> & sing,
-                                                ElementFullIter ele)
+                                                ElementAccessor<3> &ele)
 {
     clear();
     std::shared_ptr<QXFEM<2,3>> qxfem = make_shared<QXFEM<2,3>>();
-    qxfem->jacobian_det_ = ele->measure() * 2;
+    qxfem->jacobian_det_ = ele.measure() * 2;
     
     //create first auxsimplex:
     AuxSimplex s;
-    for(unsigned int i=0; i < ele->n_nodes(); i++)
-        s.nodes.push_back(ele->node[i]->point());
+    for(unsigned int i=0; i < ele.element()->n_nodes(); i++)
+        s.nodes.push_back(ele.node(i)->point());
     
     //we suppose counterclockwise node order
     Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
@@ -104,7 +104,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
         geom.project_to_ellipse_plane(simp.nodes);
     }
     
-    distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele->measure());
+    distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele.measure());
     map_real_to_unit_points<2>(qxfem->real_points_, qxfem->quadrature_points, ele);
 //     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
@@ -114,16 +114,16 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_singular(
 
 std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
                                                 const std::vector<Singularity1DPtr> & sing,
-                                                ElementFullIter ele)
+                                                ElementAccessor<3> &ele)
 {
     clear();
     std::shared_ptr<QXFEM<3,3>> qxfem = make_shared<QXFEM<3,3>>();
-    qxfem->jacobian_det_ = ele->measure() * 6;
+    qxfem->jacobian_det_ = ele.measure() * 6;
     
     //create first auxsimplex:
     AuxSimplex s;
-    for(unsigned int i=0; i < ele->n_nodes(); i++)
-        s.nodes.push_back(ele->node[i]->point());
+    for(unsigned int i=0; i < ele.element()->n_nodes(); i++)
+        s.nodes.push_back(ele.node(i)->point());
     
 //     //TODO: revise for tetrahedron
 //     //we suppose counterclockwise node order
@@ -150,7 +150,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
     }
     mark_refinement_3D(sing);
     
-    distribute_qpoints<3>(qxfem->real_points_, qxfem->weights, sing, ele->measure());
+    distribute_qpoints<3>(qxfem->real_points_, qxfem->weights, sing, ele.measure());
     map_real_to_unit_points<3>(qxfem->real_points_, qxfem->quadrature_points, ele);
 //     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
@@ -159,17 +159,17 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_singular(
 
 std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
                                                 const std::vector<Singularity1DPtr> & sing,
-                                                ElementFullIter ele,
+                                                ElementAccessor<3> &ele,
                                                 unsigned int side_idx)
 {
     clear();
     std::shared_ptr<QXFEM<3,3>> qxfem = make_shared<QXFEM<3,3>>();
-    qxfem->jacobian_det_ = ele->side(side_idx)->measure() * 2;
+    qxfem->jacobian_det_ = ele.side(side_idx)->measure() * 2;
     
     //create first auxsimplex:
     AuxSimplex s;
     for(unsigned int i=0; i < RefElement<3>::n_nodes_per_side; i++)
-        s.nodes.push_back(ele->side(side_idx)->node(i)->point());
+        s.nodes.push_back(ele.side(side_idx)->node(i)->point());
     
     //we suppose counterclockwise node order
     Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
@@ -195,7 +195,7 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
     }
     mark_refinement_12d(sing);
     
-    distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele->side(side_idx)->measure());    
+    distribute_qpoints<2>(qxfem->real_points_, qxfem->weights, sing, ele.side(side_idx)->measure());    
     map_real_to_unit_points<3>(qxfem->real_points_, qxfem->quadrature_points, ele);
 //     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
@@ -205,17 +205,17 @@ std::shared_ptr< QXFEM< 3,3 > > QXFEMFactory::create_side_singular(
 
 std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
                                                 const std::vector<Singularity0DPtr> & sing,
-                                                ElementFullIter ele,
+                                                ElementAccessor<3> &ele,
                                                 unsigned int side_idx)
 {
     clear();
     std::shared_ptr<QXFEM<2,3>> qxfem = make_shared<QXFEM<2,3>>();
-    qxfem->jacobian_det_ = ele->side(side_idx)->measure();
+    qxfem->jacobian_det_ = ele.side(side_idx)->measure();
     
     //create first auxsimplex:
     AuxSimplex s;
     for(unsigned int i=0; i < RefElement<2>::n_nodes_per_side; i++)
-        s.nodes.push_back(ele->side(side_idx)->node(i)->point());
+        s.nodes.push_back(ele.side(side_idx)->node(i)->point());
     
 //     //we suppose counterclockwise node order
 //     Point v0 = s.nodes[1] - s.nodes[0],   // 0. edge of triangle
@@ -250,7 +250,7 @@ std::shared_ptr< QXFEM< 2,3 > > QXFEMFactory::create_side_singular(
         geom.project_to_ellipse_plane(simp.nodes);
     }
     
-    distribute_qpoints<1>(qxfem->real_points_, qxfem->weights, sing, ele->side(side_idx)->measure());
+    distribute_qpoints<1>(qxfem->real_points_, qxfem->weights, sing, ele.side(side_idx)->measure());
     map_real_to_unit_points<2>(qxfem->real_points_, qxfem->quadrature_points, ele);
 //     DebugOut().fmt("n_real_qpoints {} {}\n",qxfem->real_points_.size(), qxfem->quadrature_points.size());
     
@@ -1083,13 +1083,13 @@ template<> double QXFEMFactory::AuxSimplex::measure<3>() const{
 template<int dim>
 void QXFEMFactory::map_real_to_unit_points(const std::vector<Point>& real_points,
                                            std::vector<typename Space<dim>::Point>& unit_points,
-                                           ElementFullIter ele)
+                                           ElementAccessor<3> &ele)
 {
-    ASSERT_DBG(ele->dim() == dim);
+    ASSERT_DBG(ele.dim() == dim);
     unit_points.resize(real_points.size());
     
     MappingP1<dim,3> map;
-    auto ele_map = map.element_map(*ele);
+    auto ele_map = map.element_map(ele);
     
     for(unsigned int i=0; i<real_points.size(); i++)
     {
@@ -1099,7 +1099,7 @@ void QXFEMFactory::map_real_to_unit_points(const std::vector<Point>& real_points
 
 
 template<int dim>
-void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
+void QXFEMFactory::gnuplot_refinement(ElementAccessor<3> &ele,
                                       const string& output_dir,
                                       const QXFEM<dim,3>& quad)
 {
@@ -1111,28 +1111,28 @@ void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
               script_file = "g_script_adapt_",
               felements = "elements";
   
-              fgnuplot_ref += std::to_string(ele->index()) + ".dat";
-              fgnuplot_qpoints += std::to_string(ele->index()) + ".dat";
-              script_file += std::to_string(ele->index()) + ".p";
+              fgnuplot_ref += std::to_string(ele.idx()) + ".dat";
+              fgnuplot_qpoints += std::to_string(ele.idx()) + ".dat";
+              script_file += std::to_string(ele.idx()) + ".p";
         
     std::ofstream felements_file;
     felements_file.open (output_dir + felements, std::ios_base::app);
     if (felements_file.is_open()) 
     {
-        for(unsigned int j=0; j<ele->n_nodes(); j++) {
-            Point p = ele->node[j]->point();
+        for(unsigned int j=0; j<ele.element()->n_nodes(); j++) {
+            Point p = ele.node(j)->point();
             felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
         }
-        if(ele->n_nodes() > 2){
-            Point p = ele->node[0]->point();
+        if(ele.element()->n_nodes() > 2){
+            Point p = ele.node(0)->point();
             felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
         }
-        if(ele->n_nodes() > 3){
-            Point p = ele->node[2]->point();
+        if(ele.element()->n_nodes() > 3){
+            Point p = ele.node(2)->point();
             felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
-            p = ele->node[1]->point();
+            p = ele.node(1)->point();
             felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
-            p = ele->node[3]->point();
+            p = ele.node(3)->point();
             felements_file << p[0] << " " << p[1] << " " << p[2] << "\n";
         }
         felements_file << "\n\n";
@@ -1254,10 +1254,10 @@ void QXFEMFactory::gnuplot_refinement(ElementFullIter ele,
 }
 
 // explicit instances:
-template void QXFEMFactory::gnuplot_refinement<2>(ElementFullIter ele,
+template void QXFEMFactory::gnuplot_refinement<2>(ElementAccessor<3> &ele,
                                                   const string& output_dir,
                                                   const QXFEM<2,3>& quad);
-template void QXFEMFactory::gnuplot_refinement<3>(ElementFullIter ele,
+template void QXFEMFactory::gnuplot_refinement<3>(ElementAccessor<3> &ele,
                                                   const string& output_dir,
                                                   const QXFEM<3,3>& quad);
 

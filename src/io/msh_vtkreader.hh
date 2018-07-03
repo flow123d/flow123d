@@ -177,7 +177,7 @@ protected:
      *  - used in \p check_compatible_mesh method
      *  - calculate with \p point_tolerance parameter
      */
-    bool compare_points(arma::vec3 &p1, arma::vec3 &p2);
+    bool compare_points(const arma::vec3 &p1, const arma::vec3 &p2);
 
     /// Tolerance during comparison point data with GMSH nodes.
     static const double point_tolerance;

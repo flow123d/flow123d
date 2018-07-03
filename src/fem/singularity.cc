@@ -143,7 +143,7 @@ bool CircleEllipseProjection::point_in_ellipse(const CircleEllipseProjection::Po
 }
 
 
-void CircleEllipseProjection::project_to_ellipse_plane(vector< CircleEllipseProjection::Point >& points) const
+void CircleEllipseProjection::project_to_ellipse_plane(std::vector< CircleEllipseProjection::Point >& points) const
 {
     //direction and normal vectors are parallel => perfect circle
     if(sin_a < std::numeric_limits<double>::epsilon()) return;
@@ -165,7 +165,7 @@ void CircleEllipseProjection::project_to_ellipse_plane(vector< CircleEllipseProj
 }
 
 
-void CircleEllipseProjection::project_to_circle_plane(vector< CircleEllipseProjection::Point >& points) const
+void CircleEllipseProjection::project_to_circle_plane(std::vector< CircleEllipseProjection::Point >& points) const
 {
     //direction and normal vectors are parallel => perfect circle
     if(sin_a < std::numeric_limits<double>::epsilon()) return;

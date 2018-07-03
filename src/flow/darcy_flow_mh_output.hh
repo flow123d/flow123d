@@ -214,7 +214,7 @@ protected:
     } diff_data;
     
     template <int dim>
-    void l2_diff_local(ElementFullIter &ele,
+    void l2_diff_local(ElementAccessor<3> &ele,
                       FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
                       FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
     

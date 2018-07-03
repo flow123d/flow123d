@@ -465,7 +465,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
+void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 {
 	OLD_ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
@@ -541,14 +541,14 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
+void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
 		unsigned int sid)
 {
     ASSERT_LT_DBG( sid, cell->n_sides());
     ASSERT_EQ_DBG(dim, cell->dim());
     this->data.present_cell = &cell;
 
-    unsigned int pid = cell->permutation_idx_[sid];
+    unsigned int pid = cell->permutation_idx(sid);
     ASSERT_LT_DBG(pid, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,

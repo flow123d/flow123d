@@ -61,15 +61,15 @@ public:
     
     
     std::shared_ptr<QXFEM<2,3>> create_singular(const std::vector<Singularity0DPtr> & sing,
-                                                         ElementFullIter ele);
+                                                         ElementAccessor<3> &ele);
     std::shared_ptr<QXFEM<2,3>> create_side_singular(const std::vector<Singularity0DPtr> & sing,
-                                                     ElementFullIter ele,
+                                                     ElementAccessor<3> &ele,
                                                      unsigned int side_idx);
     
     std::shared_ptr<QXFEM<3,3>> create_singular(const std::vector<Singularity1DPtr> & sing,
-                                                         ElementFullIter ele);
+                                                         ElementAccessor<3> &ele);
     std::shared_ptr<QXFEM<3,3>> create_side_singular(const std::vector<Singularity1DPtr> & sing,
-                                                     ElementFullIter ele,
+                                                     ElementAccessor<3> &ele,
                                                      unsigned int side_idx);
     
     /// Clears temporary refinement simplices, resets the factory to initial state.
@@ -83,7 +83,7 @@ public:
       * @param quad is the adaptive quadrature
       */
     template<int dim>
-    void gnuplot_refinement(ElementFullIter ele,
+    void gnuplot_refinement(ElementAccessor<3> &ele,
                             const string& output_dir,
                             const QXFEM<dim,3>& quad);
     
@@ -132,7 +132,7 @@ protected:
     template<int dim>
     void map_real_to_unit_points(const std::vector<Point>& real_points,
                                  std::vector< typename Space< dim >::Point >& unit_points,
-                                 ElementFullIter ele);
+                                 ElementAccessor<3> &ele);
     
     /** @brief Tests intersection of 2d simplex and singularity (2d circle) in spacedim-dimensional (2 or 3) space.
      * @return intersection type:

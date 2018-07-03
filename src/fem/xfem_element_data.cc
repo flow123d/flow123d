@@ -70,16 +70,16 @@ template<int dim> XFEMElementSingularData<dim>::~XFEMElementSingularData(){}
 
 
 template<int dim>
-void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
+void XFEMElementSingularData<dim>::create_sing_quads(ElementAccessor<3> &ele)
 {
-    ASSERT_DBG(dim == ele->dim());
-//     ElementFullIter ele = mesh_->element(xdata.ele_global_idx());
+    ASSERT_DBG(dim == ele.dim());
+
     sing_quads_.resize(this->n_enrichments());
     this->enrichment_intersects_.resize(this->n_enrichments());
     
     MappingP1<dim,3> map;
-    arma::mat proj = map.element_map(*ele);
-    BoundingBox bb = ele->bounding_box();
+    arma::mat proj = map.element_map(ele);
+    BoundingBox bb = ele.bounding_box();
     
     std::map<unsigned int, arma::vec> unit_points_inside;
     
@@ -120,7 +120,7 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementFullIter ele)
         
         //debug output
         if(qxfem.size() > 0){
-            DBGCOUT(<< "create_sing_quads on ele " << ele->index() << "\n");
+            DBGCOUT(<< "create_sing_quads on ele " << ele.idx() << "\n");
             DBGCOUT(<< "quad[" << this->global_enrichment_index(w) << "] size " << sing_quads_[w].size() << "\n");
             DBGVAR(this->n_enrichments_intersect());
 //             QXFEMFactory qfact;

@@ -227,7 +227,7 @@ class XFEMElementSingularData : public XFEMElementData<dim,3>
     
     const QXFEM<dim,3>& sing_quadrature(unsigned int local_enrichment_index) const;
     
-    void create_sing_quads(ElementFullIter ele);
+    void create_sing_quads(ElementAccessor<3> &ele);
     
     //TODO: get rid of this hack
     std::vector<std::shared_ptr<Singularity<dim-2>>> sing_vec(){

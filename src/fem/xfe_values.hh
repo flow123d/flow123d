@@ -79,7 +79,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(ElementFullIter &ele,
+    void reinit(ElementAccessor<3> &ele,
                 XFEMElementData<dim,spacedim> &xdata,
                 Quadrature<dim> &_quadrature);
     
@@ -132,7 +132,7 @@ private:
     void fill_vec_piola_xfem_single();
     
     /// Awful HACK function for getting quadrature based on Singularity0D or Singularity1D
-    std::shared_ptr<QXFEM<dim,spacedim>> qxfem_side(ElementFullIter ele, unsigned int sid);
+    std::shared_ptr<QXFEM<dim,spacedim>> qxfem_side(ElementAccessor<3> &ele, unsigned int sid);
     
     /// Element data cache for SGFEM interpolation.
     /** Keeps integrals of enrichment functions over sides.

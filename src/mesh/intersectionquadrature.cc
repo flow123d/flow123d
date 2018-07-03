@@ -17,6 +17,7 @@
 
 #include "mesh/intersection.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 
 #include <boost/tokenizer.hpp>
 #include "boost/lexical_cast.hpp"
@@ -24,7 +25,7 @@
 
 // inicializovat objekt, cist zbytek tokenu z tok a naplnit map a shift pro master a slave
 // viz dokumentace k Armadillu
-Intersection::Intersection(const  ElementFullIter ele_master, const ElementFullIter ele_slave,
+Intersection::Intersection(ElementAccessor<3> ele_master, ElementAccessor<3> ele_slave,
     			 const IntersectionLocal *isec)
 :	dim(isec->n_points() - 1),
 	master(ele_master), slave(ele_slave),
@@ -100,7 +101,7 @@ arma::vec Intersection::map_to_slave(const arma::vec &point) const
 double Intersection::intersection_true_size() const {
 
     static const double factorial[4] = {1.0, 1.0, 2.0, 6.0};
-	return (master->measure() * det(master_map) / factorial[dim]);
+	return (master.measure() * det(master_map) / factorial[dim]);
 }
 
 

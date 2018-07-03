@@ -18,13 +18,49 @@ class AbstractRun(object):
         self.valgrind = False
         self.massif = False
 
+    def configure_arguments(self, args):
+        """
+        Method will replace given arguments placeholders
+        available placeholders are:
+            - FLOW123D_DIR              - path to repository root  (such as /opt/flow123d)
+            - CURRENT_TEST_DIR          - path to current test dir (such as /opt/flow123d/tests/01_cmd_line)
+            - CURRENT_OUTPUT_DIR        - path to current test output dir
+                                            (such as /opt/flow123d/tests/01_cmd_line/test_results/02_input_format.1)
+            - CURRENT_REF_OUTPUT_DIR    - path to current test dir
+                                            (such as /opt/flow123d/tests/01_cmd_line/ref_out/02_input_format)
+            - TESTS_DIR                 - path to tests dir (such as /opt/flow123d/tests)
+                                            NOTE:
+                                                This value may not be precise and works
+                                                only when running tests in standard flow123d
+                                                structure.
+                                                This value is essentially CURRENT_TEST_DIR/..
+        :type args: list[str]
+        """
+
+        # build replacements map for the current case
+        replacements = dict(
+            FLOW123D_DIR=Paths.flow123d_root(),
+            CURRENT_TEST_DIR=self.case.fs.root,
+            CURRENT_OUTPUT_DIR=self.case.fs.output,
+            CURRENT_REF_OUTPUT_DIR=self.case.fs.ref_output,
+            TESTS_DIR=Paths.dirname(self.case.fs.root),
+        )
+
+        for i in range(len(args)):
+            for repl, val in replacements.items():
+                args[i] = args[i].replace('$%s$' % repl, val)  # works for $VALUE$
+                args[i] = args[i].replace('<%s>' % repl, val)  # works for <VALUE>
+                args[i] = args[i].replace('{%s}' % repl, val)  # works for {VALUE}
+        return args
+
     def get_command(self, args=None):
         result = self._get_command() if not args else self._get_command() + args
         # append all arguments specified in config.yaml
         if self.case is not None and self.case.args:
             result.extend(self.case.args)
 
-        return [str(x) for x in result]
+        result = [str(x) for x in result]
+        return self.configure_arguments(result)
 
     def _get_mpi(self):
         return [
@@ -47,8 +83,7 @@ class AbstractRun(object):
         return [
             Paths.flow123d(),
             '-s', self.case.file,
-            '-i', self.case.fs.input,
-            '-o', self.case.fs.output
+            '-o', self.case.fs.output,
         ]
 
     def _get_command(self):

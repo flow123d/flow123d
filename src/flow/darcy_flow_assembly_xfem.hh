@@ -65,8 +65,13 @@ public:
         sparsity_regular.zeros();
         sparsity_regular.submat(0, 0, nsides, nsides).ones();
         sparsity_regular.diag().ones();
-        sparsity_regular.diag(nsides+1).ones();
-        sparsity_regular.diag(-nsides-1).ones();
+        // armadillo 8.4.3 bug with negative sub diagonal index
+        // sp.diag(nsides+1).ones();
+        // sp.diag(-nsides-1).ones();
+        // sp.print();
+        
+        sp.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
+        sp.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
         
         arma::umat sp(2,2);
         // local system 2x2 for vb neighbourings is full matrix
@@ -130,23 +135,23 @@ public:
         ad_->lin_sys->set_local_system(loc_system_);
     }
 
-    void assembly_local_vb(ElementFullIter ele, Neighbour *ngh) override
+    void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) override
     {
-        ASSERT_LT_DBG(ele->dim(), 3);
+        ASSERT_LT_DBG(ele.dim(), 3);
         //DebugOut() << "alv " << print_var(this);
         //START_TIMER("Assembly<dim>::assembly_local_vb");
         // compute normal vector to side
         arma::vec3 nv;
-        ElementFullIter ele_higher = ad_->mesh->element.full_iter(ngh->side()->element());
-        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->el_idx());
+        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
+        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
         nv = ngh_values_.fe_side_values_.normal_vector(0);
 
-        double value = ad_->sigma.value( ele->centre(), ele->element_accessor()) *
-                        2*ad_->conductivity.value( ele->centre(), ele->element_accessor()) *
-                        arma::dot(ad_->anisotropy.value( ele->centre(), ele->element_accessor())*nv, nv) *
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) * // cross-section of higher dim. (2d)
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher->element_accessor() ) /
-                        ad_->cross_section.value( ele->centre(), ele->element_accessor() ) *      // crossection of lower dim.
+        double value = ad_->sigma.value( ele.centre(), ele) *
+                        2*ad_->conductivity.value( ele.centre(), ele) *
+                        arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
+                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
+                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
+                        ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
                         ngh->side()->measure();
 
         loc_system_vb_.add_value(0,0, -value);
@@ -161,7 +166,7 @@ public:
 //         return arma::vec({0,0,0});
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
         
@@ -187,16 +192,16 @@ public:
         ASSERT_DBG(0).error("Not implemented!");
     }
     
-    arma::vec3 make_element_vector(ElementFullIter ele) override
+    arma::vec3 make_element_vector(ElementAccessor<3> ele) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
-//         DBGVAR(ele->index());
+//         DBGVAR(ele.idx());
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
 
         //TODO: use LocalElementAccessor
         // HACK: suppose single proc. so we can create accessor with local ele index
-        auto ele_ac = LocalElementAccessorBase<3>(ad_->mh_dh, ele->index());
+        auto ele_ac = LocalElementAccessorBase<3>(ad_->mh_dh, ele.idx());
         
         if(ele_ac.is_enriched()){
             flux_in_center = make_element_vector_xfem(ele_ac);
@@ -205,12 +210,12 @@ public:
         
             velocity_interpolation_fv_.reinit(ele);
             for (unsigned int li = 0; li < ele->n_sides(); li++) {
-                flux_in_center += ad_->mh_dh->side_flux( *(ele->side( li ) ) )
+                flux_in_center += ad_->mh_dh->side_flux( *(ele.side( li ) ) )
                             * velocity_interpolation_fv_.vector_view(0).value(li,0);
             }
         }
         
-        flux_in_center /= ad_->cross_section.value(ele->centre(), ele->element_accessor() );
+        flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;
     }
 
@@ -223,7 +228,7 @@ protected:
     
     void prepare_xfem(LocalElementAccessorBase<3> ele_ac){
     
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
     
         QXFEMFactory qfact(max_ref_level_[dim]);
@@ -353,13 +358,13 @@ protected:
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
             
 //                     DBGCOUT(<< "[" << loc_system_.row_dofs[edge_row] << ", " << loc_system_.row_dofs[edge_row]
-//                             << "] mat: " << -bcd->element()->measure() * bc_sigma * cross_section
-//                             << " rhs: " << (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section
+//                             << "] mat: " << -b_ele.measure() * bc_sigma * cross_section
+//                             << " rhs: " << (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section
 //                             << "\n");
                     dirichlet_edge[i] = 2;  // to be skipped in LMH source assembly
                     loc_system_.add_value(edge_row, edge_row,
-                                            -bcd->element()->measure() * bc_sigma * cross_section,
-                                            (bc_flux - bc_sigma * bc_pressure) * bcd->element()->measure() * cross_section);
+                                            -b_ele.measure() * bc_sigma * cross_section,
+                                            (bc_flux - bc_sigma * bc_pressure) * b_ele.measure() * cross_section);
                 }
                 else if (type==DarcyMH::EqData::seepage) {
                     ad_->is_linear=false;
@@ -368,7 +373,7 @@ protected:
                     char & switch_dirichlet = ad_->bc_switch_dirichlet[loc_edge_idx];
                     double bc_pressure = ad_->bc_switch_pressure.value(b_ele.centre(), b_ele);
                     double bc_flux = -ad_->bc_flux.value(b_ele.centre(), b_ele);
-                    double side_flux = bc_flux * bcd->element()->measure() * cross_section;
+                    double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
                     if (switch_dirichlet) {
@@ -432,14 +437,14 @@ protected:
                         // Robin BC
                         //DebugOut().fmt("x: {}, robin, bcp: {}\n", b_ele.centre()[0], bc_pressure);
                         loc_system_.add_value(edge_row, edge_row,
-                                                -bcd->element()->measure() * bc_sigma * cross_section,
-                                                bcd->element()->measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
+                                                -b_ele.measure() * bc_sigma * cross_section,
+                                                b_ele.measure() * cross_section * (bc_flux - bc_sigma * bc_pressure)  );
                     } else {
                         // Neumann BC
                         //DebugOut().fmt("x: {}, neuman, q: {}  bcq: {}\n", b_ele.centre()[0], bc_switch_pressure, bc_pressure);
                         double bc_total_flux = bc_flux + bc_sigma*(bc_switch_pressure - bc_pressure);
                         
-                        loc_system_.add_value(edge_row, bc_total_flux * bcd->element()->measure() * cross_section);
+                        loc_system_.add_value(edge_row, bc_total_flux * b_ele.measure() * cross_section);
                     }
                 } 
                 else {
@@ -460,7 +465,7 @@ protected:
     
     void assemble_enriched_side_edge(LocalElementAccessorBase<3> ele_ac, unsigned int local_side){
         DBGVAR(local_side);
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
         XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
         
@@ -519,7 +524,7 @@ protected:
             assemble_sides_scale(ele_ac, scale, *fe_values_rt_xfem_);
         else
         {
-            ElementFullIter ele =ele_ac.full_iter();
+            ElementAccessor<3> ele =ele_ac.element_accessor();
             fe_values_rt_.reinit(ele);
             assemble_sides_scale(ele_ac, scale, fe_values_rt_);
         }
@@ -529,7 +534,6 @@ protected:
     {
         arma::vec3 &gravity_vec = ad_->gravity_vec_;
         
-        ElementFullIter ele =ele_ac.full_iter();
         unsigned int ndofs = loc_vel_dofs.size();
         unsigned int qsize = fe_values.get_quadrature()->size();
 
@@ -627,19 +631,19 @@ protected:
     
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
         // no Neighbours => nothing to asssemble here
-        if(ele->n_neighs_vb == 0) return;
+        if(ele->n_neighs_vb() == 0) return;
         
         int ele_row = ele_ac.ele_row();
         Neighbour *ngh;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
-        for (unsigned int i = 0; i < ele->n_neighs_vb; i++) {
+        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
-            ngh = ele_ac.full_iter()->neigh_vb[i];
+            ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
             loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ad_->mh_dh->row_4_edge[ ngh->edge_idx() ];
@@ -680,12 +684,12 @@ protected:
     
     void assemble_singular_velocity(LocalElementAccessorBase<3> ele_ac){
         XFEMElementSingularData<dim> * xd = ele_ac.xfem_data_sing<dim>();
-        ElementFullIter ele = ele_ac.full_iter();
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
         //as long as pressure is not enriched and is P0
         ASSERT_DBG(! ad_->mh_dh->enrich_pressure);
 
-        double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+        double cs = ad_->cross_section.value(ele_ac.centre(), ele);
         double val;
         
         // dof index of singularity in local system (only for enrichments which intersects element)

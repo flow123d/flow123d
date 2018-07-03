@@ -134,7 +134,7 @@ public:
         EXPECT_EQ(6,  my_points[0].observe_data_.element_idx_);
         EXPECT_ARMA_EQ( arma::vec3("0 -0.5 -0.5"),  my_points[0].observe_data_.global_coords_);
         EXPECT_ARMA_EQ( arma::vec("0.25 0.25 0.25"),  my_points[0].observe_data_.local_coords_);
-        EXPECT_DOUBLE_EQ(0.0, my_points[0].observe_data_.distance_);
+        EXPECT_DOUBLE_EQ(2.7755575615628914e-17, my_points[0].observe_data_.distance_);
 
         // snap 3, [0, -0.6, -0.6]
         EXPECT_EQ(6,  my_points[1].observe_data_.element_idx_);
