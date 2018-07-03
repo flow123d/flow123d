@@ -32,6 +32,7 @@ problem: !Coupling_Sequential
           - pressure_diff
     nonlinear_solver:
       linear_solver: !Petsc
+        options: -ksp_type preonly  -pc_type cholesky
         r_tol: 1.0e-10
         a_tol: 1.0e-10
     n_schurs: 0
