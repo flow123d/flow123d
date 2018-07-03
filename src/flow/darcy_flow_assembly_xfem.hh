@@ -70,8 +70,8 @@ public:
         // sp.diag(-nsides-1).ones();
         // sp.print();
         
-        sp.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
-        sp.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
+        sparsity_regular.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
+        sparsity_regular.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
         
         arma::umat sp(2,2);
         // local system 2x2 for vb neighbourings is full matrix
