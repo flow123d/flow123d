@@ -1,3 +1,7 @@
+# Test goal: Boundary condition for interpolation
+# Author: Jan Stebel
+# Source for reference: analytical, qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Interpolated boundary condition - big cube

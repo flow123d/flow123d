@@ -1,6 +1,10 @@
+# Test goal: Input include of CSV files
+# Author: David Flanderka
+# Source for reference: analytical, qualitative
+
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: Test of includes of CSV file
+  description: Test of includes of CSV files
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
     regions: !include_csv:From_Label
