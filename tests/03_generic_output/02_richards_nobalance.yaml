@@ -1,10 +1,14 @@
+# Test goal: Unsteady darcy LMH flow
+# Author: Jan Stebel
+# Source for reference: analytical, qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   time: &anchor2
     end_time: 0.5
     max_dt: 0.01
     min_dt: 0.01
-  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  description: Unsteady flow in 2D, Lumped Mixed Hybrid, without balance output
   mesh:
     mesh_file: ../00_mesh/square_1x1_942el.msh
   flow_equation: !Flow_Richards_LMH

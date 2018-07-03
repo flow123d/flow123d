@@ -1,3 +1,7 @@
+# Test goal: Test of specific output interpolation
+# Author: David Flanderka
+# Source for reference: analytical, qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Parallel VTK output interpolated as node data.

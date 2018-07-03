@@ -1,7 +1,10 @@
-# problem
+# Test goal: Binary VTK output
+# Author: David Flanderka
+# Source for reference: text only, analytical, qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Transport 1D-2D, (convection, dual porosity, sorption)
+  description: Binary VTK output of flow
   mesh:
     mesh_file: ../00_mesh/square_1x1_frac_fork.msh
     regions:

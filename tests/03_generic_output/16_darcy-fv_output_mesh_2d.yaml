@@ -1,6 +1,10 @@
+# Test goal: Output mesh refinement
+# Author: Pavel Exner
+# Source for reference: analytical, qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test13 - Output mesh test 2d, Darcy flow- adaptive refinement, transport - uniform refinement.
+  description: Output mesh test 2d, Darcy flow- adaptive refinement, transport - uniform refinement.
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
