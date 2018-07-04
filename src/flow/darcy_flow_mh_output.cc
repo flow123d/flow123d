@@ -659,31 +659,38 @@ void DarcyFlowMHOutput::l2_diff_local<3>(ElementAccessor<3> &ele,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result);
 
 
+template<int dim>
+struct FEDiffData{
+    FEDiffData()
+    : fe_p0(0), order(4), quad(order),
+      fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
+      fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
+    {}
+    
+    // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
+    // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
+    FE_P_disc<dim> fe_p0;
+
+    const unsigned int order; // order of Gauss quadrature
+    QGauss<dim> quad;
+
+    MappingP1<dim,3> mapp;
+
+    FEValues<dim,3> fe_values;
+    
+    // FEValues for velocity.
+    FE_RT0<dim> fe_rt;
+    FEValues<dim, 3> fv_rt;
+};
+
+
 void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
-    const unsigned int order = 4; // order of Gauss quadrature
-
-    // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
-    // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<1> fe_1d(0);
-    FE_P_disc<2> fe_2d(0);
-
-    QGauss<1> quad_1d( order );
-    QGauss<2> quad_2d( order );
-
-    MappingP1<1,3> mapp_1d;
-    MappingP1<2,3> mapp_2d;
-
-    FEValues<1,3> fe_values_1d(mapp_1d, quad_1d,   fe_1d, update_JxW_values | update_quadrature_points);
-    FEValues<2,3> fe_values_2d(mapp_2d, quad_2d,   fe_2d, update_JxW_values | update_quadrature_points);
-    
-    // FEValues for velocity.
-    FE_RT0<1> fe_rt1d;
-    FE_RT0<2> fe_rt2d;
-    FEValues<1,3> fv_rt1d(mapp_1d,quad_1d, fe_rt1d, update_values | update_quadrature_points);
-    FEValues<2,3> fv_rt2d(mapp_2d,quad_2d, fe_rt2d, update_values | update_quadrature_points);
+    FEDiffData<1> fe_data_1d;
+    FEDiffData<2> fe_data_2d;
+    FEDiffData<3> fe_data_3d;
 
     ASSERT(python_solution_filename_.exists());
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
@@ -692,15 +699,16 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     ExactSolution anal_sol_2d(5);
     anal_sol_2d.set_python_field_from_file( python_solution_filename_, "all_values_2d");
 
+    ExactSolution anal_sol_3d(5);
+    anal_sol_3d.set_python_field_from_file( python_solution_filename_, "all_values_3d");
 
     diff_data.dh = &( darcy_flow->get_mh_dofhandler());
-    diff_data.pressure_error[0] = 0;
-    diff_data.velocity_error[0] = 0;
-    diff_data.div_error[0] = 0;
-    diff_data.pressure_error[1] = 0;
-    diff_data.velocity_error[1] = 0;
-    diff_data.div_error[1] = 0;
     diff_data.mask_vel_error=0;
+    for(unsigned int j=0; j<3; j++){
+        diff_data.pressure_error[j] = 0;
+        diff_data.velocity_error[j] = 0;
+        diff_data.div_error[j] = 0;
+}
 
     //diff_data.ele_flux = &( ele_flux );
     
@@ -713,10 +721,13 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     	switch (ele->dim()) {
         case 1:
 
-            l2_diff_local<1>( ele, fe_values_1d, fv_rt1d, anal_sol_1d, diff_data);
+            l2_diff_local<1>( ele, fe_data_1d.fe_values, fe_data_1d.fv_rt, anal_sol_1d, diff_data);
             break;
         case 2:
-            l2_diff_local<2>( ele, fe_values_2d, fv_rt2d, anal_sol_2d, diff_data);
+            l2_diff_local<2>( ele, fe_data_2d.fe_values, fe_data_2d.fv_rt, anal_sol_2d, diff_data);
+            break;
+        case 3:
+            l2_diff_local<3>( ele, fe_data_3d.fe_values, fe_data_3d.fv_rt, anal_sol_3d, diff_data);
             break;
         }
     }
@@ -724,11 +735,14 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     os 	<< "l2 norm output\n\n"
     	<< "pressure error 1d: " << sqrt(diff_data.pressure_error[0]) << endl
     	<< "pressure error 2d: " << sqrt(diff_data.pressure_error[1]) << endl
+    	<< "pressure error 3d: " << sqrt(diff_data.pressure_error[2]) << endl
     	<< "velocity error 1d: " << sqrt(diff_data.velocity_error[0]) << endl
     	<< "velocity error 2d: " << sqrt(diff_data.velocity_error[1]) << endl
+    	<< "velocity error 3d: " << sqrt(diff_data.velocity_error[2]) << endl
     	<< "masked velocity error 2d: " << sqrt(diff_data.mask_vel_error) <<endl
     	<< "div error 1d: " << sqrt(diff_data.div_error[0]) << endl
-    	<< "div error 2d: " << sqrt(diff_data.div_error[1]);
+    	<< "div error 2d: " << sqrt(diff_data.div_error[1]) << endl
+        << "div error 3d: " << sqrt(diff_data.div_error[2]);
 }
 
 
