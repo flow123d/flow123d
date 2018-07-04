@@ -57,7 +57,10 @@ typedef FieldPython<3, FieldValue<3>::VectorFixed > ExactVelocity;
 
 
 DarcyFlowMHOutputXFEM::DarcyFlowMHOutputXFEM(DarcyMH *flow)
-: DarcyFlowMHOutput(flow)
+: DarcyFlowMHOutput(flow),
+fe_data_1d_xfem(true),
+fe_data_2d_xfem(true),
+fe_data_3d_xfem(true)
 {}
 
 void DarcyFlowMHOutputXFEM::prepare_output(Input::Record in_rec)
@@ -75,11 +78,11 @@ void DarcyFlowMHOutputXFEM::prepare_output(Input::Record in_rec)
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	dh_->distribute_dofs(fe1, fe2, fe3);
+	dh_->distribute_dofs(fe_data_1d.fe_p1, fe_data_2d.fe_p1, fe_data_3d.fe_p1);
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh_, &map1, &map2, &map3, &corner_pressure);
+	corner_ptr->set_fe_data(dh_, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
@@ -304,74 +307,35 @@ void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_
 }
 
 template<int dim>
-struct FEDiffData{
-    FEDiffData(bool single_enr)
-    : fe_p0(0), order(4), quad(order),
-      fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
-      fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points),
-      single_enr(single_enr),
-      qfactory(13-2*dim)
-    {
-        if(single_enr)
-        {
-            fv_rt_xfem = std::make_shared<XFEValues<dim,3>> (mapp, fe_rt, fe_p0, update_values |
-                                                            update_JxW_values | update_jacobians |
-                                                            update_inverse_jacobians | update_quadrature_points
-                                                            | update_divergence);
-            fv_p0_xfem = std::make_shared<XFEValues<dim,3>> (mapp, fe_p0, fe_p0,
-                                                            update_JxW_values | update_jacobians |
-                                                            update_inverse_jacobians | update_quadrature_points);
-        }
-    };
-    // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
-    // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<dim> fe_p0;
+DarcyFlowMHOutputXFEM::FEDataXFEM<dim>::FEDataXFEM(bool single_enr)
+: DarcyFlowMHOutput::FEData<dim>(),
+    single_enr(single_enr),
+    qfactory(13-2*dim),
+    fv_rt_xfem(this->mapp, this->fe_rt, this->fe_p0, update_values |
+                  update_JxW_values | update_jacobians |
+                  update_inverse_jacobians | update_quadrature_points
+                  | update_divergence),
+    fv_p0_xfem(this->mapp, this->fe_p0, this->fe_p0,
+                  update_JxW_values | update_jacobians |
+                  update_inverse_jacobians | update_quadrature_points)
+{}
+    
+template<int dim>
+void DarcyFlowMHOutputXFEM::FEDataXFEM<dim>::prepare_xfem(LocalElementAccessorBase<3> ele_ac)
+{
+    ElementAccessor<3> ele = ele_ac.element_accessor();
+    XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
+    
+    qxfem = qfactory.create_singular(xdata->sing_vec(), ele);
+    
+    fv_rt_xfem.reinit(ele, *xdata, *qxfem);
+    fv_p0_xfem.reinit(ele, *xdata, *qxfem);
+}
 
-    const unsigned int order; // order of Gauss quadrature
-    QGauss<dim> quad;
-
-    MappingP1<dim,3> mapp;
-
-    FEValues<dim,3> fe_values;
-    
-    // FEValues for velocity.
-    FE_RT0<dim> fe_rt;
-    FEValues<dim, 3> fv_rt;
-
-    
-    // XFEM stuff ...
-    bool single_enr;
-    
-    QXFEMFactory qfactory;
-    shared_ptr<QXFEM<dim,3>> qxfem;
-    
-    shared_ptr<XFEValues<dim,3>> fv_rt_xfem;
-    shared_ptr<FESideValues<dim,3>> fv_side_xfem;
-    
-    shared_ptr<XFEValues<dim,3>> fv_p0_xfem;
-    
-    shared_ptr<FEValues<dim,3>> fv_rt_sing;
-    // end XFEM stuff ...
-    
-    void prepare_xfem(LocalElementAccessorBase<3> ele_ac)
-    {
-        ElementAccessor<3> ele = ele_ac.element_accessor();
-        XFEMElementSingularData<dim> * xdata = ele_ac.xfem_data_sing<dim>();
-        
-        qxfem = qfactory.create_singular(xdata->sing_vec(), ele);
-        
-        fv_rt_xfem->reinit(ele, *xdata, *qxfem);
-        fv_p0_xfem->reinit(ele, *xdata, *qxfem);
-    }
-};
     
 void DarcyFlowMHOutputXFEM::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
-
-    FEDiffData<1> fe_data_1d(darcy_flow->get_mh_dofhandler().single_enr);
-    FEDiffData<2> fe_data_2d(darcy_flow->get_mh_dofhandler().single_enr);
-    FEDiffData<3> fe_data_3d(darcy_flow->get_mh_dofhandler().single_enr);
     
     ASSERT(python_solution_filename_.exists());
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
@@ -384,6 +348,9 @@ void DarcyFlowMHOutputXFEM::compute_l2_difference() {
     anal_sol_3d.set_python_field_from_file( python_solution_filename_, "all_values_3d");
 
     diff_data.dh = &( darcy_flow->get_mh_dofhandler());
+    fe_data_1d_xfem.single_enr = diff_data.dh->single_enr;
+    fe_data_2d_xfem.single_enr = diff_data.dh->single_enr;
+    fe_data_3d_xfem.single_enr = diff_data.dh->single_enr;
     diff_data.mask_vel_error=0;
     for(unsigned int j=0; j<3; j++){
         diff_data.pressure_error[j] = 0;
@@ -408,8 +375,8 @@ void DarcyFlowMHOutputXFEM::compute_l2_difference() {
 //                 break;
         case 2:
             if(ele_ac.is_enriched()){
-                fe_data_2d.prepare_xfem(ele_ac);
-                l2_diff_local_xfem<2>(ele_ac, *fe_data_2d.fv_p0_xfem, *fe_data_2d.fv_rt_xfem,
+                fe_data_2d_xfem.prepare_xfem(ele_ac);
+                l2_diff_local_xfem<2>(ele_ac, fe_data_2d_xfem.fv_p0_xfem, fe_data_2d_xfem.fv_rt_xfem,
                                       anal_sol_2d, diff_data);
             }
             else
@@ -418,8 +385,8 @@ void DarcyFlowMHOutputXFEM::compute_l2_difference() {
             break;
         case 3:
             if(ele_ac.is_enriched()){
-                fe_data_3d.prepare_xfem(ele_ac);
-                l2_diff_local_xfem<3>(ele_ac, *fe_data_3d.fv_p0_xfem, *fe_data_3d.fv_rt_xfem,
+                fe_data_3d_xfem.prepare_xfem(ele_ac);
+                l2_diff_local_xfem<3>(ele_ac, fe_data_3d_xfem.fv_p0_xfem, fe_data_3d_xfem.fv_rt_xfem,
                                       anal_sol_3d, diff_data);
             }
             else

@@ -29,6 +29,8 @@
 #include <armadillo>
 #include "fem/fe_p.hh"                   // for FE_P_disc
 #include "fem/mapping_p1.hh"             // for MappingP1
+#include "fem/xfe_values.hh"             // for XFEValues
+#include "quadrature/qxfem_factory.hh"   // for QXFEMFactory
 #include "fields/equation_output.hh"     // for EquationOutput
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
@@ -86,6 +88,32 @@ private:
 
     void prepare_output(Input::Record in_rec) override;
     void prepare_specific_output(Input::Record in_rec) override;
+    
+    /// Struct containing all dim dependent FE classes needed for output
+    /// (and for computing solution error).
+    template<int dim> struct FEDataXFEM : DarcyFlowMHOutput::FEData<dim>{
+        FEDataXFEM(bool single_enr);
+        
+        // XFEM stuff ...
+        bool single_enr;
+        
+        QXFEMFactory qfactory;
+        shared_ptr<QXFEM<dim,3>> qxfem;
+        
+        XFEValues<dim,3> fv_rt_xfem;
+//         shared_ptr<FESideValues<dim,3>> fv_side_xfem;
+        
+        XFEValues<dim,3> fv_p0_xfem;
+        
+//         shared_ptr<FEValues<dim,3>> fv_rt_sing;
+        // end XFEM stuff ...
+        
+        void prepare_xfem(LocalElementAccessorBase<3> ele_ac);
+    };
+    
+    FEDataXFEM<1> fe_data_1d_xfem;
+    FEDataXFEM<2> fe_data_2d_xfem;
+    FEDataXFEM<3> fe_data_3d_xfem;
     
     template <int dim>
     void l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_ac,
