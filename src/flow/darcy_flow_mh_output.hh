@@ -159,7 +159,7 @@ protected:
 
     /// Specific experimental error computing.
     bool compute_errors_;
-
+    
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
     VectorSeqDouble corner_pressure;
@@ -193,7 +193,7 @@ protected:
     /// Output specific field stuff
     bool is_output_specific_fields;
     struct DiffData {
-        double pressure_error[2], velocity_error[2], div_error[2];
+        double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
         VectorSeqDouble pressure_diff;
         VectorSeqDouble velocity_diff;
@@ -202,7 +202,6 @@ protected:
         double * solution;
         const MH_DofHandler * dh;
 
-        //std::vector< std::vector<double>  > *ele_flux;
         std::vector<int> velocity_mask;
         DarcyMH *darcy;
         DarcyMH::EqData *data_;
