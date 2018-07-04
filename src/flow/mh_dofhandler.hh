@@ -27,13 +27,11 @@
 #include "la/distribution.hh"                // for Distribution
 #include "mesh/long_idx.hh"                  // for LongIdx
 #include "mesh/accessors.hh"                 // for ElementAccessor
-#include "mesh/element_impls.hh"             // for Element::side, Element::dim
+#include "mesh/elements.h"                   // for Element::side, Element::dim
 #include "mesh/mesh.h"                       // for Mesh
-#include "mesh/mesh_types.hh"                // for ElementFullIter
 #include "mesh/region.hh"                    // for Region
 #include "mesh/side_impl.hh"                 // for Side::edge_idx
 #include "mesh/sides.h"                      // for SideIter, Side
-#include "system/sys_vector.hh"              // for FullIterator, VectorId<>...
 
 class LocalToGlobalMap;
 template <int spacedim> class LocalElementAccessorBase;
@@ -66,7 +64,7 @@ public:
     double side_scalar(const Side &side) const;
 
     /// temporary replacement for DofHandler accessor, scalar (pressure) on element
-    double element_scalar( ElementFullIter &ele ) const;
+    double element_scalar( ElementAccessor<3> &ele ) const;
 
     inline double precision() const { return solution_precision; };
 
@@ -114,13 +112,13 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
-    : dh(dh), local_ele_idx_(loc_ele_idx), ele(dh->mesh_->element(ele_global_idx()))
+    : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) )
     {}
 
     void reinit( uint loc_ele_idx)
     {
         local_ele_idx_=loc_ele_idx;
-        ele=dh->mesh_->element(ele_global_idx());
+        ele=dh->mesh_->element_accessor(ele_global_idx());
     }
 
     uint dim() {
@@ -131,24 +129,20 @@ public:
         return ele->n_sides();
     }
 
-    ElementFullIter full_iter() {
+    ElementAccessor<3> element_accessor() {
         return ele;
     }
 
-    ElementAccessor<3> element_accessor() {
-        return ele->element_accessor();
-    }
-
     const arma::vec3 centre() const {
-        return ele->centre();
+        return ele.centre();
     }
 
     double measure() const {
-        return ele->measure();
+        return ele.measure();
     }
 
     Region region() const {
-        return ele->region();
+        return ele.region();
     }
 
     uint ele_global_idx() {
@@ -168,7 +162,7 @@ public:
     }
 
     uint edge_global_idx(uint i) {
-        return ele->side(i)->edge_idx();
+        return ele.side(i)->edge_idx();
     }
 
     uint edge_local_idx(uint i) {
@@ -189,11 +183,11 @@ public:
     }
 
     SideIter side(uint i) {
-        return ele->side(i);
+        return ele.side(i);
     }
 
     uint side_global_idx(uint i) {
-        return dh->elem_side_to_global[ ele->index() ][ i ];
+        return dh->elem_side_to_global[ ele.idx() ][ i ];
     }
 
     uint side_local_idx(uint i) {
@@ -218,7 +212,7 @@ private:
     int edge_rows_[4];
     MH_DofHandler *dh;
     uint local_ele_idx_;
-    ElementFullIter ele;
+    ElementAccessor<3> ele;
 };
 
 /**

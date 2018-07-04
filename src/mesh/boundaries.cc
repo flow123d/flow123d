@@ -17,6 +17,7 @@
  */
 
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/boundaries.h"
 #include "mesh/accessors.hh"
@@ -32,12 +33,12 @@ Boundary::Boundary()
 
 
 Region Boundary::region() {
-    return element()->region();
+    return element_accessor().region();
 }
 
 
 Element * Boundary::element() {
-    return &( mesh_->bc_elements[bc_ele_idx_] );
+    return &( mesh_->element_vec_[bc_ele_idx_] );
 }
 
 Edge * Boundary::edge() {
@@ -46,7 +47,7 @@ Edge * Boundary::edge() {
 
 ElementAccessor<3> Boundary::element_accessor()
 {
-	return mesh_->element_accessor(bc_ele_idx_, true);
+	return mesh_->element_accessor(bc_ele_idx_);
 }
 
 //-----------------------------------------------------------------------------

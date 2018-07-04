@@ -31,7 +31,7 @@
 #include "input/accessors_impl.hh"            // for Record::val
 #include "input/storage.hh"                   // for ExcStorageTypeMismatch
 #include "input/type_record.hh"               // for Record::ExcRecordKeyNot...
-#include "mesh/element_impls.hh"              // for Element::dim
+#include "mesh/elements.h"                    // for Element::dim
 #include "system/exceptions.hh"               // for ExcAssertMsg::~ExcAsser...
 #include "system/file_path.hh"                // for FilePath
 #include "tools/time_governor.hh"             // for TimeStep

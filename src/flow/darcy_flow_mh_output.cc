@@ -45,6 +45,9 @@
 #include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
 #include "mesh/partitioning.hh"
+#include "mesh/accessors.hh"
+#include "mesh/node_accessor.hh"
+#include "mesh/range_wrapper.hh"
 
 // #include "coupling/balance.hh"
 #include "intersection/mixed_mesh_intersections.hh"
@@ -302,10 +305,10 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
     for(unsigned int i_ele : element_indices) {
-        ElementFullIter ele = mesh_->element(i_ele);
+        ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
         ele_pressure[i_ele] = sol[ soi + i_ele];
         ele_piezo_head[i_ele] = sol[soi + i_ele ]
-          - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele->centre()));
+          - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele.centre()));
     }
 }
 
@@ -323,7 +326,7 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
-        ElementFullIter ele = mesh_->element(i_ele);
+    	ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
 
         flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
@@ -339,12 +342,11 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 	unsigned int ndofs = dh_->max_elem_dofs();
 	std::vector<LongIdx> indices(ndofs);
 	unsigned int i_node;
-	FOR_ELEMENTS(mesh_, ele)
-	{
+	for (auto ele : mesh_->bulk_elements_range()) {
 		dh_->get_dof_indices(ele, indices);
-		FOR_ELEMENT_NODES(ele, i_node)
+		for (i_node=0; i_node<ele->n_nodes(); i_node++)
 		{
-			corner_pressure[indices[i_node]] = node_scalar[mesh_->node_vector.index(ele->node[i_node])];
+			corner_pressure[indices[i_node]] = node_scalar[ ele.node_accessor(i_node).idx() ];
 		}
 	}
 }
@@ -371,10 +373,10 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
 
-    /** Iterators */
-    const Node * node;
+    /** Accessors */
+    NodeAccessor<3> node;
 
-    int n_nodes = mesh_->node_vector.size(); //!< number of nodes in the mesh */
+    int n_nodes = mesh_->n_nodes(); //!< number of nodes in the mesh */
     int node_index = 0; //!< index of each node */
 
     int* sum_elements = new int [n_nodes]; //!< sum elements joined to node */
@@ -401,74 +403,76 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**first pass - calculate sums (weights)*/
     if (count_elements){
-        FOR_ELEMENTS(mesh_, ele)
+    	for (auto ele : mesh_->bulk_elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
-                node = ele->node[li]; //!< get Node pointer from element */
-                node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+                node = ele.node_accessor(li); //!< get NodeAccessor from element */
+                node_index = node.idx(); //!< get nod index from mesh */
 
                 dist = sqrt(
-                        ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
-                        ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
-                        ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
+                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
+                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
+                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
                 sum_ele_dist[node_index] += dist;
                 sum_elements[node_index]++;
             }
     }
     if (count_sides){
-        FOR_SIDES(mesh_, side) {
-            for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                node = side->node(li);//!< get Node pointer from element */
-                node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
-                dist = sqrt(
-                        ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
-                        ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
-                        ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
-                );
+    	for (auto ele : mesh_->bulk_elements_range())
+            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
+                for (unsigned int li = 0; li < side->n_nodes(); li++) {
+                    node = side->node(li);//!< get NodeAccessor from element */
+                    node_index = node.idx(); //!< get nod index from mesh */
+                    dist = sqrt(
+                            ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
+                            ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
+                            ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
+                    );
 
-                sum_side_dist[node_index] += dist;
-                sum_sides[node_index]++;
+                    sum_side_dist[node_index] += dist;
+                    sum_sides[node_index]++;
+                }
             }
-        }
     }
 
     /**second pass - calculate scalar  */
     if (count_elements){
-        FOR_ELEMENTS(mesh_, ele)
+    	for (auto ele : mesh_->bulk_elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
-                node = ele->node[li];//!< get Node pointer from element */
-                node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+                node = ele.node_accessor(li);//!< get NodeAccessor from element */
+                node_index = ele.node_accessor(li).idx(); //!< get nod index from mesh */
 
                 /**TODO - calculate it again or store it in prior pass*/
                 dist = sqrt(
-                        ((node->getX() - ele->centre()[ 0 ])*(node->getX() - ele->centre()[ 0 ])) +
-                        ((node->getY() - ele->centre()[ 1 ])*(node->getY() - ele->centre()[ 1 ])) +
-                        ((node->getZ() - ele->centre()[ 2 ])*(node->getZ() - ele->centre()[ 2 ]))
+                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
+                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
+                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
-                scalars[node_index] += ele_pressure[ele.index()] *
+                scalars[node_index] += ele_pressure[ ele.idx() ] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
     }
     if (count_sides) {
-        FOR_SIDES(mesh_, side) {
-            for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                node = side->node(li);//!< get Node pointer from element */
-                node_index = mesh_->node_vector.index(node); //!< get nod index from mesh */
+    	for (auto ele : mesh_->bulk_elements_range())
+            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
+                for (unsigned int li = 0; li < side->n_nodes(); li++) {
+                    node = side->node(li);//!< get NodeAccessor from element */
+                    node_index = node.idx(); //!< get nod index from mesh */
 
-                /**TODO - calculate it again or store it in prior pass*/
-                dist = sqrt(
-                        ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
-                        ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
-                        ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
-                );
+                    /**TODO - calculate it again or store it in prior pass*/
+                    dist = sqrt(
+                            ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
+                            ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
+                            ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
+                    );
 
 
-                scalars[node_index] += dh.side_scalar( *side ) *
-                        (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
-                        (sum_sides[node_index] + sum_elements[node_index] - 1);
+                    scalars[node_index] += dh.side_scalar( *side ) *
+                            (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
+                            (sum_sides[node_index] + sum_elements[node_index] - 1);
+                }
             }
-        }
     }
 
     /** free memory */
@@ -498,19 +502,18 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
-    
-    FOR_ELEMENTS( mesh_,  ele ) {
-        raw_output_file << fmt::format("{} {} ", ele.id(), ele_pressure[cit]);
+    for (auto ele : mesh_->bulk_elements_range()) {
+        raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
             raw_output_file << ele_flux[3*cit+i] << " ";
 
         raw_output_file << ele->n_sides() << " ";
 
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_scalar( *(ele->side(i) ) ) << " ";
+            raw_output_file << dh.side_scalar( *(ele.side(i) ) ) << " ";
         }
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_flux( *(ele->side(i) ) ) << " ";
+            raw_output_file << dh.side_flux( *(ele.side(i) ) ) << " ";
         }
         
         raw_output_file << endl;
@@ -537,15 +540,15 @@ typedef FieldPython<3, FieldValue<3>::Vector > ExactSolution;
  * */
 
 template <int dim>
-void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
+void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
                    FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
                    ExactSolution &anal_sol,  DarcyFlowMHOutput::DiffData &result) {
 
     fv_rt.reinit(ele);
     fe_values.reinit(ele);
     
-    double conductivity = result.data_->conductivity.value(ele->centre(), ele->element_accessor() );
-    double cross = result.data_->cross_section.value(ele->centre(), ele->element_accessor() );
+    double conductivity = result.data_->conductivity.value(ele.centre(), ele );
+    double cross = result.data_->cross_section.value(ele.centre(), ele );
 
 
     // get coefficients on the current element
@@ -553,7 +556,7 @@ void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
 //     vector<double> pressure_traces(dim+1);
 
     for (unsigned int li = 0; li < ele->n_sides(); li++) {
-        fluxes[li] = result.dh->side_flux( *(ele->side( li ) ) );
+        fluxes[li] = result.dh->side_flux( *(ele.side( li ) ) );
 //         pressure_traces[li] = result.dh->side_scalar( *(ele->side( li ) ) );
     }
     double pressure_mean = result.dh->element_scalar(ele);
@@ -571,14 +574,14 @@ void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
         for(unsigned int j_node=0; j_node < ele->n_nodes(); j_node++ )
         {
             mean_x_squared += (i_node == j_node ? 2.0 : 1.0) / ( 6 * dim )   // multiply by 2 on diagonal
-                    * arma::dot( ele->node[i_node]->point(), ele->node[j_node]->point());
+                    * arma::dot( ele.node(i_node)->point(), ele.node(j_node)->point());
         }
 
     for(unsigned int i_point=0; i_point < fe_values.n_points(); i_point++) {
         arma::vec3 q_point = fe_values.point(i_point);
 
 
-        analytical = anal_sol.value(q_point, ele->element_accessor() );
+        analytical = anal_sol.value(q_point, ele );
         for(unsigned int i=0; i< 3; i++) anal_flux[i] = analytical[i+1];
 
         // compute postprocesed pressure
@@ -589,12 +592,12 @@ void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
             diff += fluxes[ i_shape ] *
                                (  arma::dot( q_point, q_point )/ 2
                                 - mean_x_squared / 2
-                                - arma::dot( q_point, ele->node[oposite_node]->point() )
-                                + arma::dot( ele->centre(), ele->node[oposite_node]->point() )
+                                - arma::dot( q_point, ele.node(oposite_node)->point() )
+                                + arma::dot( ele.centre(), ele.node(oposite_node)->point() )
                                );
         }
 
-        diff = - (1.0 / conductivity) * diff / dim / ele->measure() / cross + pressure_mean ;
+        diff = - (1.0 / conductivity) * diff / dim / ele.measure() / cross + pressure_mean ;
         diff = ( diff - analytical[0]);
         pressure_diff += diff * diff * fe_values.JxW(i_point);
 
@@ -613,22 +616,22 @@ void DarcyFlowMHOutput::l2_diff_local(ElementFullIter &ele,
         // divergence diff
         diff = 0;
         for(unsigned int i_shape=0; i_shape < ele->n_sides(); i_shape++) diff += fluxes[ i_shape ];
-        diff = ( diff / ele->measure() / cross - analytical[4]);
+        diff = ( diff / ele.measure() / cross - analytical[4]);
         divergence_diff += diff * diff * fe_values.JxW(i_point);
 
     }
 
 
-    result.velocity_diff[ele.index()] = velocity_diff;
+    result.velocity_diff[ ele.idx() ] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
-    	result.mask_vel_error += (result.velocity_mask[ ele.index() ])? 0 : velocity_diff;
+    	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
-    result.pressure_diff[ele.index()] = pressure_diff;
+    result.pressure_diff[ ele.idx() ] = pressure_diff;
     result.pressure_error[dim-1] += pressure_diff;
 
-    result.div_diff[ele.index()] = divergence_diff;
+    result.div_diff[ ele.idx() ] = divergence_diff;
     result.div_error[dim-1] += divergence_diff;
 
 }
@@ -683,7 +686,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     darcy_flow->get_solution_vector(diff_data.solution, solution_size);
 
 
-    FOR_ELEMENTS( mesh_, ele) {
+    for (auto ele : mesh_->bulk_elements_range()) {
 
     	switch (ele->dim()) {
         case 1:

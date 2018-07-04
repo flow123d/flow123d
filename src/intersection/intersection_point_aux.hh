@@ -21,7 +21,7 @@
 #define INTERSECTIONPOINT_H_
 
 #include <armadillo>
-#include "mesh/mesh_types.hh"
+template <int spacedim> class ElementAccessor;
 
 
 
@@ -161,7 +161,7 @@ public:
     //@}
     
     /// Computes real coordinates of IP, given the element @p ele in which IP lies.
-    arma::vec::fixed<3> coords(ElementFullIter ele) const;
+    arma::vec::fixed<3> coords(ElementAccessor<3> ele) const;
     
     /// Returns true, if @p other intersection point has the same topology.
     bool topology_equal(const IntersectionPointAux<N,M> &other) const;

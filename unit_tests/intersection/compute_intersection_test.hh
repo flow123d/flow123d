@@ -5,9 +5,9 @@
 
 #include "system/file_path.hh"
 #include "system/system.hh"
-#include "mesh/mesh_types.hh"
 #include "mesh/nodes.hh"
 #include "mesh/elements.h"
+#include "mesh/accessors.hh"
 
 
 static const std::vector<std::vector<unsigned int>> permutations_triangle = {
@@ -75,40 +75,6 @@ void read_files_from_dir(const string &dir_name,
     
     if(sort_filenames)
         std::sort(filenames.begin(), filenames.end(), less<string>());
-}
-
-void permute_tetrahedron(ElementFullIter ele, unsigned int p)
-{
-    ASSERT_DBG(ele->dim() == 3);
-    ASSERT_DBG(p < permutations_tetrahedron.size());
-    Node* tmp[4];
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        tmp[i] = ele->node[permutations_tetrahedron[p][i]];
-    }
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        ele->node[i] = tmp[i];
-//      ele->node[i]->point().print(cout);
-    }
-//  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
-}
-
-void permute_triangle(ElementFullIter ele, unsigned int p)
-{
-    ASSERT_DBG(ele->dim() == 2);
-    ASSERT_DBG(p < permutations_triangle.size());
-    Node* tmp[3];
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        tmp[i] = ele->node[permutations_triangle[p][i]];
-    }
-    for(unsigned int i=0; i<ele->n_nodes(); i++)
-    {
-        ele->node[i] = tmp[i];
-//      ele->node[i]->point().print(cout);
-    }
-//  cout << p << ": jac = "  << ele->tetrahedron_jacobian() << endl;
 }
 
 
