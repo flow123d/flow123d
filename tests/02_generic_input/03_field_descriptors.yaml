@@ -1,10 +1,11 @@
-# Test goal: Input field descriptors
+#################
+# Test goal: Test different types of field descriptors
 # Author: David Flanderka
-# Source for reference: analytical, qualitative
+# Source for reference: qualitative
 
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test of different types of input field descriptors
+  description: Test correct reading of input field descriptors
   mesh:
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1

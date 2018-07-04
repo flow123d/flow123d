@@ -1,6 +1,7 @@
-# Test goal: Boundary condition for interpolation
+#################
+# Test goal: Prepare boundary condition for interpolation
 # Author: Jan Stebel
-# Source for reference: analytical, qualitative
+# Source for reference: qualitative
 
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential

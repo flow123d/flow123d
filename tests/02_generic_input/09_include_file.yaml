@@ -1,10 +1,11 @@
-# Test goal: Input include of YAML files
+#################
+# Test goal: Test include of input YAML files
 # Author: David Flanderka
-# Source for reference: analytical, qualitative
+# Source for reference: Just run
 
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: Test of includes of other YAML files
+  description: Check correct includes of other YAML files to main input file.
   mesh:
     mesh_file: ../00_mesh/square_1x1_942el_4bc.msh
   flow_equation: !include:Flow_Darcy_MH

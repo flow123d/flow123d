@@ -1,10 +1,11 @@
-# Test goal: Surface depth input parameter
+#################
+# Test goal: Test surface depth input parameter.
 # Author: David Flanderka
-# Source for reference: analytical, qualitative
+# Source for reference: qualitative
 
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test of surface depth of FieldFormula 
+  description: Tests correct calculation of surface depth of FieldFormula. 
   mesh:
     mesh_file: ../00_mesh/big_cube_nc.msh
   # steady velocity field, with velocity v:0.1

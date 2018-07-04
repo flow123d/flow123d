@@ -1,10 +1,11 @@
-# Test goal: User defined units of multifield values
+#################
+# Test goal: Test of units of multifield values defined by user
 # Author: David Flanderka
-# Source for reference: analytical, qualitative
+# Source for reference: qualitative
 
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Set value of input multifields by user defined units.
+  description: Tests correct functionality of setting input multifields by user defined units.
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
