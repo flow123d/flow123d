@@ -1,6 +1,7 @@
-# Test goal: Binary VTK output
+#################
+# Test goal: Test binary VTK output.
 # Author: David Flanderka
-# Source for reference: text only, analytical, qualitative
+# Source for reference: text only, qualitative
 
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential

@@ -1,10 +1,11 @@
-# Test goal: Test of specific output interpolation
+#################
+# Test goal: Serial test of nodes output interpolation.
 # Author: David Flanderka
-# Source for reference: analytical, qualitative
+# Source for reference: qualitative
 
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Serial VTK output interpolated as node data.
+  description: Serial VTK output interpolated as P1_average (node data).
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac.msh
   flow_equation: !Flow_Darcy_MH
