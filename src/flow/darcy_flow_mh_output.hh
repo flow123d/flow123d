@@ -100,7 +100,7 @@ public:
     };
 
     DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
-    ~DarcyFlowMHOutput();
+    virtual ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type();
     static const Input::Type::Instance & get_input_type_specific_fields();
