@@ -109,10 +109,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
-  is_output_specific_fields(false),
-  fe1(1),
-  fe2(1),
-  fe3(1)
+  is_output_specific_fields(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -165,11 +162,11 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	dh_->distribute_dofs(fe1, fe2, fe3);
+	dh_->distribute_dofs(fe_data_1d.fe_p1, fe_data_2d.fe_p1, fe_data_3d.fe_p1);
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh_, &map1, &map2, &map3, &corner_pressure);
+	corner_ptr->set_fe_data(dh_, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
@@ -637,39 +634,16 @@ void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
 
 }
 
-
-template<int dim>
-struct FEDiffData{
-    FEDiffData()
-    : fe_p0(0), order(4), quad(order),
-      fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
-      fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
-    {}
-    
-    // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
-    // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-    FE_P_disc<dim> fe_p0;
-
-    const unsigned int order; // order of Gauss quadrature
-    QGauss<dim> quad;
-
-    MappingP1<dim,3> mapp;
-
-    FEValues<dim,3> fe_values;
-    
-    // FEValues for velocity.
-    FE_RT0<dim> fe_rt;
-    FEValues<dim, 3> fv_rt;
-};
+template<int dim> DarcyFlowMHOutput::FEData<dim>::FEData()
+: fe_p0(0), fe_p1(1), order(4), quad(order),
+  fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
+  fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
+{}
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
-
-    FEDiffData<1> fe_data_1d;
-    FEDiffData<2> fe_data_2d;
-    FEDiffData<3> fe_data_3d;
 
     FilePath source_file( "analytical_module.py", FilePath::input_file);
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence

@@ -28,7 +28,10 @@
 #include <vector>                        // for vector
 #include <armadillo>
 #include "fem/fe_p.hh"                   // for FE_P_disc
+#include "fem/fe_rt.hh"                  // for FE_RT0
 #include "fem/mapping_p1.hh"             // for MappingP1
+#include "fem/fe_values.hh"              // for FEValues
+#include "quadrature/quadrature_lib.hh"  // for QGauss
 #include "fields/equation_output.hh"     // for EquationOutput
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
@@ -180,15 +183,14 @@ protected:
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
-    MappingP1<1,3> map1;
-    MappingP1<2,3> map2;
-    MappingP1<3,3> map3;
-    FE_P_disc<1> fe1;
-    FE_P_disc<2> fe2;
-    FE_P_disc<3> fe3;
 
     OutputFields output_fields;
     OutputSpecificFields output_specific_fields;
+    
+    std::shared_ptr<OutputTime> output_stream;
+
+    /// Raw data output file.
+    ofstream raw_output_file;
 
     /// Output specific field stuff
     bool is_output_specific_fields;
@@ -207,15 +209,38 @@ protected:
         DarcyMH::EqData *data_;
     } diff_data;
     
+    
+    /// Struct containing all dim dependent FE classes needed for output
+    /// (and for computing solution error).
+    template<int dim> struct FEData{
+        FEData();
+        
+        // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
+        // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
+        FE_P_disc<dim> fe_p0;
+        FE_P_disc<dim> fe_p1;
+
+        const unsigned int order; // order of Gauss quadrature
+        QGauss<dim> quad;
+
+        MappingP1<dim,3> mapp;
+
+        FEValues<dim,3> fe_values;
+        
+        // FEValues for velocity.
+        FE_RT0<dim> fe_rt;
+        FEValues<dim, 3> fv_rt;
+    };
+    
+    FEData<1> fe_data_1d;
+    FEData<2> fe_data_2d;
+    FEData<3> fe_data_3d;
+    
+    /// Computes L2 error on an element.
     template <int dim>
     void l2_diff_local(ElementAccessor<3> &ele,
                       FEValues<dim,3> &fe_values, FEValues<dim,3> &fv_rt,
                       FieldPython<3, FieldValue<3>::Vector > &anal_sol,  DiffData &result);
-    
-    std::shared_ptr<OutputTime> output_stream;
-
-    /// Raw data output file.
-    ofstream raw_output_file;
 };
 
 
