@@ -1,6 +1,11 @@
+#################
+# Test goal: Test output of steady darcy MH flow.
+# Author: Jan Stebel
+# Source for reference: qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test1 - Steady flow with multidimensional connections 1D-2D-3D
+  description: Steady flow with multidimensional connections 1D-2D-3D without balance output
   # test auto conversion for the Mesh record
   mesh: ../00_mesh/cube_1x1x1_frac21.msh
   flow_equation: !Flow_Darcy_MH
