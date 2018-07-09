@@ -1,9 +1,11 @@
-# Set value of input_fields by user defined units.
-# 
-# 
+#################
+# Test goal: Test of units of field values defined by user
+# Author: David Flanderka
+# Source for reference: qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
+  description: Tests correct functionality of setting input fields by user defined units.
   mesh:
     mesh_file: ../00_mesh/line_z_0.25_250el.msh
   flow_equation: !Flow_Richards_LMH

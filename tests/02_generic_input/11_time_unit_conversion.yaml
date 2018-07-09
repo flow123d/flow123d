@@ -1,6 +1,11 @@
+#################
+# Test goal: Test conversion of time units defined by user in input YAML file.
+# Author: David Flanderka
+# Source for reference: qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test of time unit conversion
+  description: Check correct time unit conversion of different time declaration in input YAML file.
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
   global_snap_radius: 0.1

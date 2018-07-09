@@ -1,6 +1,11 @@
+#################
+# Test goal: Test different types of field descriptors
+# Author: David Flanderka
+# Source for reference: qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Test14 - 2D transport with time variable boundary
+  description: Test correct reading of input field descriptors
   mesh:
     mesh_file: ../00_mesh/square_0.2x0.2.msh
   # steady velocity field, with velocity v:0.1
