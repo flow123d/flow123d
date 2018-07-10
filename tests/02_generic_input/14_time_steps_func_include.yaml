@@ -1,3 +1,8 @@
+#################
+# Test goal: Test time steps function defined in included YAML file
+# Author: David Flanderka
+# Source for reference: qualitative
+
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Test of timesteps of transport TG as function and output of timesteps to YAML format.
@@ -56,7 +61,7 @@ problem: !Coupling_Sequential
     substances:
       - A
       - B
-      - C
+      - C                                           
     balance: {}
     time:
       start_time: 0
