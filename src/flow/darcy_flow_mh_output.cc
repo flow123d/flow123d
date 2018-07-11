@@ -63,20 +63,21 @@ const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	return output_fields.make_output_type("Flow_Darcy_MH", "");
 }
 
-const it::Instance & DarcyFlowMHOutput::get_input_type_specific_fields() {
-	OutputSpecificFields output_fields;
-	return output_fields.make_output_type("Flow_Darcy_MH_specific", "");
-}
 
-const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
-    return it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
+const it::Instance & DarcyFlowMHOutput::get_input_type_specific() {
+    
+    static it::Record& rec = it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
+        .copy_keys(OutputSpecificFields::get_input_type())
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
-        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), it::Default::optional(),
-                "Specific output fields.")
         .close();
+    
+    OutputSpecificFields output_fields;
+    return output_fields.make_output_type_from_record(rec,
+                                                        "Flow_Darcy_MH_specific",
+                                                        "");
 }
 
 
@@ -136,14 +137,8 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             }
         }
 
-        // possibly read the names of specific output fields
-        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
-        if(in_rec_specific_output){
-            is_output_specific_fields = true;
-            prepare_specific_output(*in_rec_specific_output);
-        }
-        else
-            is_output_specific_fields = false;
+        is_output_specific_fields = true;
+        prepare_specific_output(*in_rec_specific);
     }
 }
 
