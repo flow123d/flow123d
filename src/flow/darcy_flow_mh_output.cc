@@ -661,7 +661,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
         diff_data.pressure_error[j] = 0;
         diff_data.velocity_error[j] = 0;
         diff_data.div_error[j] = 0;
-}
+    }
 
     //diff_data.ele_flux = &( ele_flux );
     
@@ -684,18 +684,26 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             break;
         }
     }
+    
+    // square root for L2 norm
+    for(unsigned int j=0; j<3; j++){
+        diff_data.pressure_error[j] = sqrt(diff_data.pressure_error[j]);
+        diff_data.velocity_error[j] = sqrt(diff_data.velocity_error[j]);
+        diff_data.div_error[j] = sqrt(diff_data.div_error[j]);
+    }
+    diff_data.mask_vel_error = sqrt(diff_data.mask_vel_error);
 
     os 	<< "l2 norm output\n\n"
-    	<< "pressure error 1d: " << sqrt(diff_data.pressure_error[0]) << endl
-    	<< "pressure error 2d: " << sqrt(diff_data.pressure_error[1]) << endl
-    	<< "pressure error 3d: " << sqrt(diff_data.pressure_error[2]) << endl
-    	<< "velocity error 1d: " << sqrt(diff_data.velocity_error[0]) << endl
-    	<< "velocity error 2d: " << sqrt(diff_data.velocity_error[1]) << endl
-    	<< "velocity error 3d: " << sqrt(diff_data.velocity_error[2]) << endl
-    	<< "masked velocity error 2d: " << sqrt(diff_data.mask_vel_error) <<endl
-    	<< "div error 1d: " << sqrt(diff_data.div_error[0]) << endl
-    	<< "div error 2d: " << sqrt(diff_data.div_error[1]) << endl
-        << "div error 3d: " << sqrt(diff_data.div_error[2]);
+    	<< "pressure error 1d: " << diff_data.pressure_error[0] << endl
+    	<< "pressure error 2d: " << diff_data.pressure_error[1] << endl
+    	<< "pressure error 3d: " << diff_data.pressure_error[2] << endl
+    	<< "velocity error 1d: " << diff_data.velocity_error[0] << endl
+    	<< "velocity error 2d: " << diff_data.velocity_error[1] << endl
+    	<< "velocity error 3d: " << diff_data.velocity_error[2] << endl
+    	<< "masked velocity error 2d: " << diff_data.mask_vel_error <<endl
+    	<< "div error 1d: " << diff_data.div_error[0] << endl
+    	<< "div error 2d: " << diff_data.div_error[1] << endl
+        << "div error 3d: " << diff_data.div_error[2];
 }
 
 
