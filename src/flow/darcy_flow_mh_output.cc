@@ -136,9 +136,12 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
         }
-
-        is_output_specific_fields = true;
-        prepare_specific_output(*in_rec_specific);
+        
+        auto fields_array = in_rec_specific->val<Input::Array>("fields");
+        if(fields_array.size() > 0){
+            is_output_specific_fields = true;
+            prepare_specific_output(*in_rec_specific);
+        }
     }
 }
 
