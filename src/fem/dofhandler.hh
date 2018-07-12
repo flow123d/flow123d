@@ -273,7 +273,7 @@ public:
      * @brief Constructor.
      * @param _mesh The mesh.
      */
-    DOFHandlerMultiDim(Mesh &_mesh);
+    DOFHandlerMultiDim(Mesh &_mesh, bool make_elem_part = true);
 
     /**
      * @brief Alias for iterator over cells.

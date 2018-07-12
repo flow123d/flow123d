@@ -188,6 +188,7 @@ add_library(mesh_lib
     mesh/edges.cc
     mesh/elements.cc
     mesh/mesh.cc
+    mesh/bc_mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
 #    mesh/intersection.cc

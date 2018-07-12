@@ -12,6 +12,7 @@
 
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
+#include "mesh/bc_mesh.hh"
 #include "io/msh_gmshreader.h"
 #include <iostream>
 #include <vector>
@@ -144,5 +145,73 @@ TEST(Mesh, decompose_problem) {
     EXPECT_THROW_WHAT( { mesh->setup_topology(); }, Partitioning::ExcDecomposeMesh,
     		"greater then number of elements 1. Can not make partitioning of the mesh");
 
+    delete mesh;
+}
+
+
+TEST(Mesh, check_compatible_mesh) {
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	vector<LongIdx> bulk_elms_id, boundary_elms_id;
+
+    std::string mesh_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
+    Mesh * target_mesh = mesh_constructor(mesh_string);
+    auto target_reader = reader_constructor(mesh_string);
+    target_reader->read_physical_names(target_mesh);
+    target_reader->read_raw_mesh(target_mesh);
+    target_mesh->setup_topology();
+
+    {
+        std::string mesh_in_string = "{mesh_file=\"mesh/pvd-test/pvd-test-000000.vtu\"}";
+        Mesh * mesh = mesh_constructor(mesh_in_string);
+        auto reader = reader_constructor(mesh_in_string);
+        reader->read_physical_names(mesh);
+        reader->read_raw_mesh(mesh);
+
+        EXPECT_TRUE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+
+        delete mesh;
+    }
+
+    {
+        std::string mesh_in_string = "{mesh_file=\"mesh/test_108_elem.msh\"}";
+        Mesh * mesh = mesh_constructor(mesh_in_string);
+        auto reader = reader_constructor(mesh_in_string);
+        reader->read_physical_names(mesh);
+        reader->read_raw_mesh(mesh);
+
+        EXPECT_FALSE( mesh->check_compatible_mesh(*target_mesh, bulk_elms_id, boundary_elms_id) );
+
+        delete mesh;
+    }
+
+    delete target_mesh;
+}
+
+
+TEST(BCMesh, element_ranges) {
+	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+
+	std::string mesh_in_string = "{mesh_file=\"mesh/simplest_cube.msh\"}";
+	Mesh * mesh = mesh_constructor(mesh_in_string);
+    auto reader = reader_constructor(mesh_in_string);
+    reader->read_physical_names(mesh);
+    reader->read_raw_mesh(mesh);
+
+    BCMesh *bc_mesh = mesh->get_bc_mesh();
+    unsigned int expected_val = 0;
+
+    for (auto elm : mesh->elements_range()) {
+    	EXPECT_EQ(elm.idx(), expected_val);
+    	EXPECT_EQ(elm.mesh_idx(), expected_val);
+    	expected_val++;
+    }
+    for (auto elm : bc_mesh->elements_range()) {
+    	EXPECT_EQ(elm.idx(), expected_val-mesh->n_elements());
+    	EXPECT_EQ(elm.mesh_idx(), expected_val);
+    	expected_val++;
+    }
+
+    //delete bc_mesh;
     delete mesh;
 }
