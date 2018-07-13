@@ -100,6 +100,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
+  fe0(1),
   fe1(1),
   fe2(1),
   fe3(1)
@@ -120,7 +121,7 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	dh_->distribute_dofs(fe1, fe2, fe3);
+	dh_->distribute_dofs(fe0, fe1, fe2, fe3);
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();

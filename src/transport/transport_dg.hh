@@ -93,6 +93,7 @@ public:
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<0> *fe0_;
 	FiniteElement<1> *fe1_;
 	FiniteElement<2> *fe2_;
 	FiniteElement<3> *fe3_;

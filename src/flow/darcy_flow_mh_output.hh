@@ -171,6 +171,7 @@ private:
     MappingP1<1,3> map1;
     MappingP1<2,3> map2;
     MappingP1<3,3> map3;
+    FE_P_disc<0> fe0;
     FE_P_disc<1> fe1;
     FE_P_disc<2> fe2;
     FE_P_disc<3> fe3;
