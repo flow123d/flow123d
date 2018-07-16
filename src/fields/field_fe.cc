@@ -63,6 +63,11 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         .declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
                 "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
                 "time shift 'S' and if 't > T', we read time frame 't + S'.")
+        .declare_key("interpolation", FieldFE<spacedim, Value>::get_interp_selection_input_type(),
+        		IT::Default("equivalent_mesh"), "Allow set interpolation of input data.\n"
+        		"Check of compatibility of source and target mesh is provided for 'equivalent_mesh' and 'P0' and interpolation "
+        		"can be changed if it's necessary. Value 'identic_mesh' has no control, topology, element and node indexes "
+        		"must be identical.")
         .close();
 }
 
@@ -75,6 +80,18 @@ const Input::Type::Selection & FieldFE<spacedim, Value>::get_disc_selection_inpu
 		.add_value(OutputTime::DiscreteSpace::ELEM_DATA, "element_data", "cell_data (VTK) / element_data (GMSH)")
 		.add_value(OutputTime::DiscreteSpace::CORNER_DATA, "element_node_data", "element_node_data (only for GMSH)")
 		.add_value(OutputTime::DiscreteSpace::NATIVE_DATA, "native_data", "native_data (only for VTK)")
+		.close();
+}
+
+template <int spacedim, class Value>
+const Input::Type::Selection & FieldFE<spacedim, Value>::get_interp_selection_input_type()
+{
+	return it::Selection("interpolation", "Specify interpolation of input data.")
+		.add_value(DataInterpolation::identic_msh, "identic_mesh", "Topology and indexes of nodes and elements of source "
+				"and target mesh are identical. This interpolation is typically used for GMSH data defined in separate mesh "
+				"file without topology.")
+		.add_value(DataInterpolation::equivalent_msh, "equivalent_mesh", "Topologies of source and target mesh are identical.") // default value
+		.add_value(DataInterpolation::interp_p0, "P0", "Topologies of source and target mesh can be different.")
 		.close();
 }
 
@@ -364,7 +381,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 				++elem_count[elm->dim()];
 			}
 		}
-		unsigned int dim = ele->dim();
+		unsigned int dim = ele->dim(); // dim+1 for boundary
 		double elem_value = 0.0;
 		do {
 			if (elem_count[dim] > 0) {
