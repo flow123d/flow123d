@@ -64,7 +64,7 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
                 "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .declare_key("interpolation", FieldFE<spacedim, Value>::get_interp_selection_input_type(),
-        		IT::Default("equivalent_mesh"), "Allow set interpolation of input data.\n"
+        		IT::Default("\"equivalent_mesh\""), "Allow set interpolation of input data.\n"
         		"Check of compatibility of source and target mesh is provided for 'equivalent_mesh' and 'P0' and interpolation "
         		"can be changed if it's necessary. Value 'identic_mesh' has no control, topology, element and node indexes "
         		"must be identical.")
