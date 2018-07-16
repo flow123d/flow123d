@@ -48,6 +48,16 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
+	/**
+	 * Possible interpolations of input data.
+	 */
+	enum DataInterpolation
+	{
+		identic_msh,    //!< identical mesh
+		equivalent_msh, //!< equivalent mesh
+		interp_p0       //!< P0 interpolation
+	};
+
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */
@@ -62,6 +72,11 @@ public:
      * Return Input selection for discretization type (determines the section of VTK file).
      */
     static const Input::Type::Selection & get_disc_selection_input_type();
+
+    /**
+     * Return Input selection that allow to set interpolation of input data.
+     */
+    static const Input::Type::Selection & get_interp_selection_input_type();
 
     /**
      * Setter for the finite element data. The mappings are required for computation of local coordinates.
