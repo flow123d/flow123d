@@ -364,13 +364,13 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 			bool contains=false;
 			switch (elm->dim()) {
 			case 1:
-				contains = value_handler1_.contains_point(ele.centre(), elm);
+				contains = value_handler1_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
 			case 2:
-				contains = value_handler2_.contains_point(ele.centre(), elm);
+				contains = value_handler2_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
 			case 3:
-				contains = value_handler3_.contains_point(ele.centre(), elm);
+				contains = value_handler3_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
 			default:
 				ASSERT(false).error("Invalid element dimension!");
