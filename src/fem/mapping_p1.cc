@@ -298,6 +298,13 @@ auto MappingP1<dim,spacedim>::clip_to_element(BaryPoint &barycentric) -> BaryPoi
     return RefElement<dim>::clip(barycentric);
 }
 
+template <unsigned int dim, unsigned int spacedim>
+bool MappingP1<dim,spacedim>::contains_point(arma::vec point, ElementAccessor<3> elm)
+{
+	arma::vec projection = this->project_real_to_unit(point, this->element_map(elm));
+	return (projection.min() >= -BoundingBox::epsilon);
+}
+
 
 
 template class MappingP1<1,3>;
