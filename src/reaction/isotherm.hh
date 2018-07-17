@@ -366,6 +366,10 @@ inline void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_sol
 
 
 inline void Isotherm::compute( double &c_aqua, double &c_sorbed ) {
+    // if sorption is switched off, do not compute anything
+    if(adsorption_type_ == SorptionType::none)
+        return;
+        
 	ConcPair c_pair(c_aqua, c_sorbed);
 	ConcPair result(0,0);
 
@@ -465,10 +469,10 @@ Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair conc)
         switch(adsorption_type_)
         {
                 case 0: // none
-                {
-                        None obj_isotherm;
-                        return solve_conc( conc, obj_isotherm);
-                }
+//                 {
+//                         None obj_isotherm;
+//                         return solve_conc( conc, obj_isotherm);
+//                 }
                 break;
                 case 1: //  linear:
                 {
