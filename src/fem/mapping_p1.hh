@@ -148,6 +148,9 @@ public:
      */
     BaryPoint clip_to_element(BaryPoint &barycentric);
 
+    /// Test if element contains given point.
+    bool contains_point(arma::vec point, ElementAccessor<3> elm);
+
 private:
 
     /**

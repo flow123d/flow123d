@@ -147,16 +147,6 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 
 
 template <int elemdim, int spacedim, class Value>
-bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, ElementAccessor<3> elm)
-{
-	ASSERT_PTR(map_).error();
-
-	arma::vec projection = map_->project_real_to_unit(point, map_->element_map(elm));
-	return (projection.min() >= -BoundingBox::epsilon);
-}
-
-
-template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 {}
 
