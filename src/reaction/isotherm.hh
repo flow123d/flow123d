@@ -68,7 +68,7 @@
 #include "input/input_exception.hh"                           // for EI_Address
 #include "system/exceptions.hh"                               // for operator<<
 
-
+// #include "system/logger.hh"
 
 /**
  * Convergence criteria for interval based nonlinear solver. It is functor, that
@@ -268,6 +268,8 @@ protected:
      */
     inline ConcPair precipitate( ConcPair conc );
 
+    inline double get_total_mass( ConcPair conc );
+
     /****************************************
      * Data
      */
@@ -365,6 +367,11 @@ inline void Isotherm::reinit(enum SorptionType adsorption_type, bool limited_sol
 }
 
 
+double Isotherm::get_total_mass( ConcPair conc )
+{
+    return scale_aqua_* conc.fluid + scale_sorbed_ * conc.solid;
+}
+
 inline void Isotherm::compute( double &c_aqua, double &c_sorbed ) {
     // if sorption is switched off, do not compute anything
     if(adsorption_type_ == SorptionType::none)
@@ -373,11 +380,11 @@ inline void Isotherm::compute( double &c_aqua, double &c_sorbed ) {
 	ConcPair c_pair(c_aqua, c_sorbed);
 	ConcPair result(0,0);
 
-    if (limited_solubility_on_ && (c_pair.fluid > table_limit_)) {
-        result = precipitate( c_pair );
-    } else {
+//     if (limited_solubility_on_ && (c_pair.fluid > table_limit_)) {
+//         result = precipitate( c_pair );
+//     } else {
        	result = solve_conc( c_pair );
-    }
+//     }
     c_aqua=result.fluid;
     c_sorbed=result.solid;
 }
@@ -396,7 +403,8 @@ inline void Isotherm::interpolate( double &c_aqua, double &c_sorbed ) {
 
 
 inline Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pair ) {
-  double total_mass = (scale_aqua_* c_pair.fluid + scale_sorbed_ * c_pair.solid);
+  double total_mass = get_total_mass(c_pair);
+//   DebugOut().fmt("compute_projection: total mass = {}, c_aqua = {}\n", total_mass, c_pair.fluid);
   if(total_mass < 0.0)
       THROW( Isotherm::ExcNegativeTotalMass() 
                 << EI_TotalMass(total_mass)
@@ -421,7 +429,8 @@ inline Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pai
 
 
 inline Isotherm::ConcPair Isotherm::precipitate( Isotherm::ConcPair c_pair) {
-	double total_mass = (scale_aqua_*c_pair.fluid + scale_sorbed_ * c_pair.solid);
+	double total_mass = get_total_mass(c_pair);
+//         DebugOut().fmt("precipitate: total mass = {}, c_aqua = {}\n", total_mass, c_pair.fluid);
 	return ConcPair(	table_limit_,
 						(total_mass - scale_aqua_ * table_limit_)/scale_sorbed_  );
 }
@@ -431,22 +440,26 @@ inline Isotherm::ConcPair Isotherm::precipitate( Isotherm::ConcPair c_pair) {
 template<class Func>
 inline Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair c_pair, const Func &isotherm)
 {
-	boost::uintmax_t max_iter = 20;
-	tolerance<double> toler(30);
-	double total_mass = (scale_aqua_*c_pair.fluid + scale_sorbed_ * c_pair.solid);
-	double mass_limit = table_limit_*scale_aqua_ + const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)*scale_sorbed_;
-	double upper_solution_bound;
+        double total_mass = get_total_mass(c_pair);
+        double mass_limit = get_total_mass(Isotherm::ConcPair(table_limit_, const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)));
+        
+        // condition on limited solubility in the rotated coordinate system (total mass)
+        if (total_mass > mass_limit){
+            if(limited_solubility_on_)
+                return precipitate( c_pair );
+            else
+                // if solubility is not limited, increase mass limit
+                mass_limit = total_mass;
+        }
 
-	if(total_mass >= mass_limit)
-	{
-		mass_limit = total_mass;
-	}
-	upper_solution_bound = mass_limit / scale_aqua_;
+	double upper_solution_bound = mass_limit / scale_aqua_;
 	CrossFunction<Func> eq_func(isotherm, total_mass, scale_aqua_, scale_sorbed_, this->rho_aqua_);
 	std::pair<double,double> solution;
 	if (total_mass > 0) // here should be probably some kind of tolerance instead of "0"
     {
         try {
+            boost::uintmax_t max_iter = 20;
+            tolerance<double> toler(30);
             solution = boost::math::tools::toms748_solve(eq_func, 0.0, upper_solution_bound, toler, max_iter);
         }
         catch(boost::exception const & e)
@@ -500,8 +513,8 @@ Isotherm::ConcPair Isotherm::solve_conc(Isotherm::ConcPair conc)
 template<class Func>
 void Isotherm::make_table(const Func &isotherm, int n_steps)
 {
-    double mass_limit = scale_aqua_ * table_limit_ + scale_sorbed_ * const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_);
-    
+    double mass_limit = get_total_mass(Isotherm::ConcPair(table_limit_, const_cast<Func &>(isotherm)(table_limit_ / this->rho_aqua_)));
+//     DebugOut().fmt("make table: mass_limit = {}\n", mass_limit);
     if(mass_limit < 0.0)
       THROW( Isotherm::ExcNegativeTotalMass() 
                 << EI_TotalMass(mass_limit)

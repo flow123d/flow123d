@@ -449,6 +449,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
         // => interpolation_table is precomputed
         if (isotherms_vec[0].is_precomputed()) 
         {
+            DebugOut().fmt("interpolate\n");
             for(i_subst = 0; i_subst < n_substances_; i_subst++)
             {
                 subst_id = substance_global_idx_[i_subst];
@@ -460,7 +461,7 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
         else 
         {
             isotherm_reinit(isotherms_vec, elem);
-        
+            DebugOut().fmt("compute\n");
             for(i_subst = 0; i_subst < n_substances_; i_subst++)
             {
                 subst_id = substance_global_idx_[i_subst];

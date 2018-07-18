@@ -21,6 +21,7 @@
 
 void Isotherm::make_table(int nr_of_points)
 {
+//     DebugOut().fmt("make table: mass_limit\n");
 	if(table_limit_ > 0.0) switch(adsorption_type_)
 	{
 		case 0: // none
