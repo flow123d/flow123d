@@ -193,6 +193,8 @@ protected:
    */
   void make_tables(void);
   
+  /// Computes maximal aqueous concentration at the current step.
+  void update_max_conc();
 
   /// Pointer to equation data. The object is constructed in descendants.
   EqData *data_;
@@ -214,6 +216,11 @@ protected:
    * Concentration table limits of species dissolved in water.
    */
   std::vector<double> table_limit_;
+  /**
+   * Maximum concentration per region.
+   * It is used for optimization of interpolation table.
+   */
+  std::vector<std::vector<double>> max_conc;
   /**
    * Three dimensional array contains intersections between isotherms and mass balance lines. 
    * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
