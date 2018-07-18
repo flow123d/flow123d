@@ -62,7 +62,7 @@ const Record & SorptionBase::get_input_type() {
 					"Number of equidistant substeps, molar mass and isotherm intersections")
 		.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 								"Specifies solubility limits of all the sorbing species.")
-		.declare_key("table_limits", Array(Double(0.0)), Default::optional(), //("-1.0"), //
+		.declare_key("table_limits", Array(Double(-1.0)), Default::optional(), //("-1.0"), //
 								"Specifies highest aqueous concentration in interpolation table.")
 		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
 						"Containes region specific data necessary to construct isotherms.")//;
@@ -463,7 +463,7 @@ void SorptionBase::make_tables(void)
                 // clear interpolation tables, if not spacially constant OR switched off
                 if(! data_->is_constant(reg_iter) || table_limit_[i_subst] == 0.0){
                     isotherms[reg_idx][i_subst].clear_table();
-                    DebugOut().fmt("limit: 0.0 -> clear table\n");
+//                     DebugOut().fmt("limit: 0.0 -> clear table\n");
                 }
                 // if automatic, remake tables with doubled range when table maximum was reached
                 else if((table_limit_[i_subst] < 0.0) &&
@@ -471,7 +471,7 @@ void SorptionBase::make_tables(void)
                 {
                     call_make_table = true;
                     subst_table_limit = 2*max_conc[reg_idx][i_subst];
-                    DebugOut().fmt("limit: max conc\n");
+//                     DebugOut().fmt("limit: max conc\n");
                 }
                 // make tables if isotherm reinited
                 else if(call_reinit)
@@ -480,13 +480,13 @@ void SorptionBase::make_tables(void)
                     subst_table_limit = isotherms[reg_idx][i_subst].table_limit();
                     if(subst_table_limit < table_limit_[i_subst]){
                         subst_table_limit = table_limit_[i_subst];
-                        DebugOut().fmt("limit: isotherm reinit\n");
+//                         DebugOut().fmt("limit: isotherm reinit\n");
                     }
                 }
                 
                 if(call_make_table){
                     isotherms[reg_idx][i_subst].make_table(n_interpolation_steps_, subst_table_limit);
-                    DebugOut().fmt("reg: {} i_subst {}: table_limit = {}\n", reg_idx, i_subst, isotherms[reg_idx][i_subst].table_limit());
+//                     DebugOut().fmt("reg: {} i_subst {}: table_limit = {}\n", reg_idx, i_subst, isotherms[reg_idx][i_subst].table_limit());
                 }
             }
         }
@@ -511,12 +511,12 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
         {
             subst_id = substance_global_idx_[i_subst];
             if (isotherms_vec[i_subst].is_precomputed()){
-//                 DebugOut().fmt("isotherms precomputed - interpolate\n");
+//                 DebugOut().fmt("isotherms precomputed - interpolate, subst[{}]\n", i_subst);
                 isotherms_vec[i_subst].interpolate(concentration_matrix_[subst_id][loc_el], 
                                             conc_solid[subst_id][loc_el]);
             }
             else{
-//                 DebugOut().fmt("isotherms reinit - compute\n");
+//                 DebugOut().fmt("isotherms reinit - compute , subst[{}]\n", i_subst);
             isotherm_reinit(isotherms_vec, elem);
                 isotherms_vec[i_subst].compute(concentration_matrix_[subst_id][loc_el], 
                                             conc_solid[subst_id][loc_el]);

@@ -417,6 +417,10 @@ inline void Isotherm::interpolate( double &c_aqua, double &c_sorbed ) {
 
 
 inline Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pair ) {
+    // if sorption is switched off, do not compute anything
+    if(adsorption_type_ == SorptionType::none)
+        return c_pair;
+    
   double total_mass = get_total_mass(c_pair);
 //   DebugOut().fmt("compute_projection: total mass = {}, c_aqua = {}\n", total_mass, c_pair.fluid);
   if(total_mass < 0.0)
@@ -534,6 +538,8 @@ void Isotherm::make_table(const Func &isotherm, int n_steps)
             aqua_limit = solubility_limit_;
     
     double mass_limit = scale_aqua_ * aqua_limit + scale_sorbed_ * const_cast<Func &>(isotherm)(aqua_limit / this->rho_aqua_);
+//     DebugOut().fmt("make_table: mass_limit = {}, aqua_limit = {}\n", mass_limit, aqua_limit);
+    
     if(mass_limit < 0.0)
       THROW( Isotherm::ExcNegativeTotalMass()
                 << EI_TotalMass(mass_limit)
