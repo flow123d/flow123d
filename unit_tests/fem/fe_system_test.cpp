@@ -140,12 +140,63 @@ TEST_F(FESystemTest, test_vector) {
 }
 
 
+TEST_F(FESystemTest, test_tensor) {
+  // Test vector-valued FESystem using P1 element on tetrahedron.
+  FESystem<3> fe_tensor(std::make_shared<FE_P<3> >(1), FETensor, 9);
+  FEValues<3,3> fe_values(map, q, fe_tensor, update_values | update_gradients);
+  
+  fe_values.reinit(ele);
+  
+  auto view = fe_values.tensor_view(0);
+  
+  for (unsigned int k=0; k<q.size(); k++)
+    for (unsigned int i=0; i<fe_tensor.n_dofs(); i++)
+    {
+        unsigned int comp = i/4; // nonzero component (0-8)
+        unsigned int row  = comp/3; // row of nonzero component (0-2)
+        unsigned int col  = comp%3; // column of nonzero comp. (0-2)
+        unsigned int dof  = i%4; // shape function (1-x-y-z, x, y, z)
+        
+        // check values
+        for (unsigned int c=0; c<9; c++)
+            EXPECT_EQ( ((dof==(k+1)%4) && (comp==c))?1:0, view.value(i,k)(c/3,c%3) );
+
+        //check gradients
+        for (unsigned int d=0; d<3; d++)
+        {
+            arma::mat::fixed<3,3> gr = view.derivative(d,i,k);
+            
+            arma::mat::fixed<3,3> gr_expected;
+            gr_expected.zeros();
+            
+            if (dof == d+1)
+                gr_expected(row, col) = 1;
+            else if (dof == 0)
+                gr_expected(row, col) = -1;
+            
+            EXPECT_ARMA_EQ( gr_expected, gr );
+        }
+        
+        // check divergence
+        arma::vec::fixed<3> div = view.divergence(i,k);
+        arma::vec::fixed<3> div_expected;
+        div_expected.zeros();
+        
+        if (dof == 0)
+            div_expected(col) = -1;
+        else if (dof == 1+row)
+            div_expected(col) = 1;
+        EXPECT_ARMA_EQ( div_expected, div );
+    }
+}
+
+
 TEST_F(FESystemTest, test_mixed_system) {
   // Test mixed-system FE using P0, P1^3 and RT0 elements on tetrahedron.
   // The basis functions are ordered first nodal and then element-supported,
   // hence the scalar constant function from P0 comes after the linear
   // functions from P1^3 and the RT0 functions are at the end.
-  FESystem<3> fe_vec(std::make_shared<FE_P<3> >(1), FEVectorContravariant);
+  FESystem<3> fe_vec(std::make_shared<FE_P<3> >(1), FEVector, 3);
   FESystem<3> fe_sys({ std::make_shared<FE_P<3> >(0), std::make_shared<FESystem<3> >(fe_vec), std::make_shared<FE_RT0<3> >() });
   FEValues<3,3> fe_values(map, q, fe_sys, update_values | update_gradients);
   

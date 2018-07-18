@@ -229,6 +229,7 @@ private:
   struct ViewsCache {
     vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
     vector<FEValuesViews::Vector<dim,spacedim> > vectors;
+    vector<FEValuesViews::Tensor<dim,spacedim> > tensors;
     
     void initialize(FEValuesBase &fv);
   };
@@ -389,6 +390,16 @@ public:
       ASSERT_LT_DBG(i, views_cache_.vectors.size());
       return views_cache_.vectors[i];
     }
+    
+    /**
+     * @brief Accessor to tensor values of multicomponent FE.
+     * @param i Index of first tensor component.
+     */
+    const FEValuesViews::Tensor<dim,spacedim> &tensor_view(unsigned int i) const
+    {
+      ASSERT_LT_DBG(i, views_cache_.tensors.size());
+      return views_cache_.tensors[i];
+    }
 
     /**
      * @brief Returns the number of quadrature points.
@@ -448,10 +459,16 @@ protected:
     void fill_scalar_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
+    void fill_vec_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for vectorial FE.
     void fill_vec_contravariant_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
     void fill_vec_piola_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for tensorial FE.
+    void fill_tensor_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
     void fill_system_data(const FEInternalData &fe_data);

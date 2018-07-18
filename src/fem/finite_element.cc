@@ -149,6 +149,8 @@ UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
     switch (type_)
     {
         case FEScalar:   
+        case FEVector:
+        case FETensor:
             if (flags & update_gradients)
                 f |= update_inverse_jacobians;
             break;
