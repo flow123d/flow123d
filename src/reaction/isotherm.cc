@@ -83,6 +83,10 @@ void Isotherm::compute( double &c_aqua, double &c_sorbed )
 
 void Isotherm::interpolate( double &c_aqua, double &c_sorbed )
 {
+    // if sorption is switched off, do not compute anything
+    if(adsorption_type_ == SorptionType::none)
+        return;
+    
     ConcPair c_pair(c_aqua, c_sorbed);
     ConcPair result(0,0);
 
@@ -95,10 +99,6 @@ void Isotherm::interpolate( double &c_aqua, double &c_sorbed )
 
 Isotherm::ConcPair Isotherm::compute_projection( Isotherm::ConcPair c_pair )
 {
-    // if sorption is switched off, do not compute anything
-    if(adsorption_type_ == SorptionType::none)
-        return c_pair;
-    
     double total_mass = get_total_mass(c_pair);
 //     DebugOut().fmt("compute_projection: total mass = {}, c_aqua = {}\n", total_mass, c_pair.fluid);
     if(total_mass < 0.0)
