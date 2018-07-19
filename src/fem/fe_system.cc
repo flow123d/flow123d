@@ -101,28 +101,27 @@ const arma::vec FESystemFunctionSpace::basis_grad(const unsigned int i,
 template<unsigned int dim>
 FESystem<dim>::FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t)
 {
-  OLD_ASSERT(fe->is_primitive(), "FE vector or tensor can olny by created from primitive FE.");
-  OLD_ASSERT(t == FEType::FEVectorContravariant ||
-             t == FEType::FEVectorPiola ||
-             t == FEType::FETensor, "This constructor can be used only for vectors or tensors.");
+  OLD_ASSERT(fe->n_components() == 1, "FEVectorContravariant and FEVectorPiola can only be created from scalar FE.");
+  OLD_ASSERT(t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola,
+             "This constructor can be used only for FEVectorContravariant or FEVectorPiola.");
   
   FiniteElement<dim>::init(false, t);
-  
-  if (t == FEType::FEVectorContravariant || t == FEType::FEVectorPiola)
-    fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim, fe);
-  else
-    fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim*dim, fe);
-  
+  fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(dim, fe);
   initialize();
 }
 
 
 template<unsigned int dim>
-FESystem<dim>::FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, unsigned int n)
+FESystem<dim>::FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, FEType t, unsigned int n)
 {
-  FiniteElement<dim>::init(false, FEMixedSystem);
-  fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(n, fe);
-  initialize();
+    OLD_ASSERT(t == FEType::FEVector || t == FEType::FETensor || t == FEType::FEMixedSystem,
+               "This constructor can be used only for FEVector, FETensor or FEMixedSystem.");
+    OLD_ASSERT(fe->n_components() == 1 || t == FEType::FEMixedSystem,
+               "FEVector and FETensor can only be created from scalar FE.");
+    
+    FiniteElement<dim>::init(false, t);
+    fe_ = std::vector<std::shared_ptr<FiniteElement<dim> > >(n, fe);
+    initialize();
 }
 
 
@@ -152,9 +151,13 @@ void FESystem<dim>::initialize()
       case FEType::FEScalar:
         scalar_components_.push_back(comp_offset);
         break;
+      case FEType::FEVector:
       case FEType::FEVectorContravariant:
       case FEType::FEVectorPiola:
         vector_components_.push_back(comp_offset);
+        break;
+      case FEType::FETensor:
+        tensor_components_.push_back(comp_offset);
         break;
       default:
         OLD_ASSERT(false, "Not implemented.");

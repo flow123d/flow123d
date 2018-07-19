@@ -113,7 +113,7 @@ const arma::vec PolynomialSpace::basis_grad(unsigned int i,
 template<unsigned int dim>
 void FE_P<dim>::init_dofs()
 {
-    if (degree_ == 0)
+    if (degree_ == 0 || dim == 0)
     {
         // we define nodal dof:
         // coords = barycentric coordinates of the support point,
@@ -240,6 +240,7 @@ FE_P_disc<dim>::FE_P_disc(unsigned int degree)
 
 
 
+template class FE_P_disc<0>;
 template class FE_P_disc<1>;
 template class FE_P_disc<2>;
 template class FE_P_disc<3>;
