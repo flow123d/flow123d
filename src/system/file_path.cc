@@ -56,8 +56,8 @@ FilePath::FilePath(string file_path, const  FileType ft)
         return;
     }
 
-    bool is_abs_path = boost::filesystem::path( convert_for_check_absolute(file_path) ).is_absolute();
     substitute_value(file_path);
+    bool is_abs_path = boost::filesystem::path( convert_for_check_absolute(file_path) ).is_absolute();
 	abs_file_path_ = std::make_shared<boost::filesystem::path>(file_path);
     if (ft == input_file) {
     	if ( is_abs_path ) {
@@ -130,7 +130,7 @@ void FilePath::set_dirs(const string root, const string input, const string outp
 	output_dir = std::make_shared<boost::filesystem::path>( full_output_path );
 
 	// the relative input is relative to the directory of the main input file
-    add_placeholder("${INPUT}", input);
+    add_placeholder("$INPUT_DIR$", input);
 }
 
 

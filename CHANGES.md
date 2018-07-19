@@ -2,6 +2,10 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version 3.1.0
+* Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
+
+
 #Flow123d version 2.2.0
 (2017-11-17)
 
