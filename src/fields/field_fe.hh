@@ -34,6 +34,8 @@
 
 #include <memory>
 
+template <int spacedim, class Value> class GenericInterpolator;
+
 
 
 /**
@@ -213,7 +215,9 @@ private:
 
     /// Registrar of class to factory
     static const int registrar;
-};
 
+    friend GenericInterpolator<spacedim, Value>;
+
+};
 
 #endif /* FIELD_FE_HH_ */
