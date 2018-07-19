@@ -1,0 +1,27 @@
+$MeshFormat
+2.2 0 8
+$EndMeshFormat
+$PhysicalNames
+1
+3       39      "3D cube"
+$EndPhysicalNames
+$Nodes
+8
+1 1 1 1
+2 -1 1 1
+3 -1 -1 1
+4 1 -1 1
+5 1 -1 -1
+6 -1 -1 -1
+7 1 1 -1
+8 -1 1 -1
+$EndNodes
+$Elements
+6
+1 4 2 39 40 3 7 1 2
+2 4 2 39 40 3 7 2 8
+3 4 2 39 40 3 7 8 6
+4 4 2 39 40 3 7 6 5
+5 4 2 39 40 3 7 5 4
+6 4 2 39 40 3 7 4 1
+$EndElements
