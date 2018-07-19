@@ -199,6 +199,9 @@ protected:
   
   /// Computes maximal aqueous concentration at the current step.
   void update_max_conc();
+  
+  /// Sets max conc to zeros on all regins.
+  void clear_max_conc();
 
   /// Pointer to equation data. The object is constructed in descendants.
   EqData *data_;

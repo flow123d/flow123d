@@ -360,6 +360,8 @@ void SorptionBase::zero_time_step()
       WarningOut() << ss.str();
   }
   set_initial_condition();
+  
+  update_max_conc();
   make_tables();
     
   // write initial condition
@@ -397,7 +399,7 @@ void SorptionBase::update_solution(void)
   // if parameters changed during last time step, reinit isotherms and eventualy 
   // update interpolation tables in the case of constant rock matrix parameters
   make_tables();
-    
+  clear_max_conc();
 
   START_TIMER("Sorption");
   for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++)
@@ -448,7 +450,7 @@ void SorptionBase::isotherm_reinit_all(const ElementAccessor<3> &elem)
     }
 }
 
-void SorptionBase::update_max_conc()
+void SorptionBase::clear_max_conc()
 {
     unsigned int reg_idx, i_subst, subst_id;
     
@@ -457,6 +459,13 @@ void SorptionBase::update_max_conc()
     for(reg_idx = 0; reg_idx < nr_of_regions; reg_idx++)
         for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
             max_conc[reg_idx][i_subst] = 0.0;
+}
+
+void SorptionBase::update_max_conc()
+{
+    unsigned int reg_idx, i_subst, subst_id;
+    
+    clear_max_conc();
     
     for (unsigned int loc_el = 0; loc_el < distribution_->lsize(); loc_el++){
         ElementAccessor<3> ele = mesh_->element_accessor( el_4_loc_[loc_el] );
@@ -473,8 +482,6 @@ void SorptionBase::make_tables(void)
     START_TIMER("SorptionBase::make_tables");
     try
     {
-        // TODO: update max_conc efficiently during computation ?
-        update_max_conc();
         
         ElementAccessor<3> elm;
         BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
@@ -565,6 +572,11 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
                 isotherm.compute(concentration_matrix_[subst_id][loc_el],
                                  conc_solid[subst_id][loc_el]);
             }
+            
+            // update maximal concentration per region (optimization for interpolation)
+            if(table_limit_[i_subst] < 0)
+                max_conc[reg_idx][i_subst] = std::max(max_conc[reg_idx][i_subst],
+                                                      concentration_matrix_[subst_id][loc_el]);
         }
     }
     catch(ExceptionBase const &e)
