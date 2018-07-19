@@ -101,7 +101,7 @@ public:
 	// const value of HistoryPoint given by region index and position in circular buffer.
 	typename Value::element_type rh_value(int r_idx, int j) {
 		typename FieldType::FieldBasePtr fb = rh(r_idx)[j].second;
-		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 , this->is_bc() );
+		auto elm = ElementAccessor<FieldType::space_dim>( this->mesh(), 0 );
 		auto val = fb->value(elm.centre(), elm);
 		return (Value(val))(0,0);
 	}
@@ -835,7 +835,7 @@ TEST(Field, init_from_default) {
 
         enum_field.set_time(TimeGovernor().step(), LimitSide::right);
 
-        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(0, true)) );
+        EXPECT_EQ( 0 , enum_field.value(p, mesh->element_accessor(12)) );
 
     }
 

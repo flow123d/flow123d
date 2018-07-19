@@ -451,7 +451,7 @@ TEST_F( OutputTest, test_register_elem_fields_data ) {
     EXPECT_EQ(output_data->items_count, mesh.n_elements());
 
     /* All values has to be equal 10 */
-    for(int i = 0; i < mesh.element.size(); i++) {
+    for(int i = 0; i < mesh.n_elements(); i++) {
         EXPECT_EQ((*(OutputData<int>*)output_data)[i], 10);
     }
 
@@ -518,12 +518,11 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     ElementDataCacheBase *output_data = *output_data_iter;
 
     /* All values has to be equal 20.0 */
-    ElementFullIter ele = ELEMENT_FULL_ITER(&mesh, NULL);
     Node *node;
     int node_id;
     int corner_data_count, corner_id = 0;
-    FOR_ELEMENTS(&mesh, ele) {
-        FOR_ELEMENT_NODES(ele, node_id) {
+    for (auto ele : mesh->bulk_elements_range()) {
+    	for (node_id=0; node_id<ele->n_nodes(); node_id++) {
             EXPECT_EQ((*(OutputData<double>*)output_data)[corner_id], 20.0);
             corner_id++;
         }
@@ -542,8 +541,8 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
 
     /* All values has to be equal 100 */
     corner_id = 0;
-    FOR_ELEMENTS(&mesh, ele) {
-        FOR_ELEMENT_NODES(ele, node_id) {
+    for (auto ele : mesh->bulk_elements_range()) {
+    	for (node_id=0; node_id<ele->n_nodes(); node_id++) {
             EXPECT_EQ((*(OutputData<int>*)output_data)[corner_id], -1);
             corner_id++;
         }

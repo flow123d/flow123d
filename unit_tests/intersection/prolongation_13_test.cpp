@@ -13,6 +13,7 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -150,15 +151,15 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
 //     }
     
 //     //write the first intersection
-//     FOR_ELEMENTS(mesh, elm){
+//     for (auto elm : mesh->bulk_elements_range()) {
 //         
-//         if( (elm->dim() == 1) && (ie.intersection_map_[elm->index()].size() > 0) )
+//         if( (elm->dim() == 1) && (ie.intersection_map_[elm.index()].size() > 0) )
 //         {
 //             IntersectionLocal<1,3>* il13 = 
-//                 static_cast<IntersectionLocal<1,3>*> (ie.intersection_map_[elm->index()][0].second);
+//                 static_cast<IntersectionLocal<1,3>*> (ie.intersection_map_[elm.index()][0].second);
 //             if(il13 != nullptr)
 //             {
-// //                 DebugOut().fmt("comp idx {}, bulk idx {}, \n",elm->index(),ie.intersection_map_[elm->index()][0].first);
+// //                 DebugOut().fmt("comp idx {}, bulk idx {}, \n",elm.index(),ie.intersection_map_[elm.index()][0].first);
 //                 DebugOut() << *il13;
 //                 break;
 //             }
@@ -180,7 +181,7 @@ void compute_intersection_13d(Mesh *mesh, const std::vector<std::vector<arma::ve
         MessageOut().fmt("---------- check Intersection[{}] el_1d: {} el_3d: {} ----------\n",i,
                 ilc[i].component_ele_idx(), ilc[i].bulk_ele_idx());
 //         DebugOut()<< "bary: " << ilc[i][j].comp_coords();
-        arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
+        arma::vec3 ip = ilc[i][j].coords(mesh->element_accessor(ilc[i].component_ele_idx()));
         EXPECT_ARMA_EQ(il[i][j], ip);
         //EXPECT_NEAR(il[i][j][0], ip[0], 1e-14);
         //EXPECT_NEAR(il[i][j][1], ip[1], 1e-14);

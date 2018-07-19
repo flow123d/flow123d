@@ -19,7 +19,6 @@
 #define NODE_H
 
 #include "system/global_defs.h"
-#include "mesh/mesh_types.hh"
 #include <armadillo>
 
 
@@ -90,7 +89,8 @@ public:
 
 
     // Misc
-    int aux; // Auxiliary flag
+    mutable int aux; // Auxiliary flag
+    // TODO fix in OutputMesh::create_mesh() and remove this class member
 };
 
 #endif

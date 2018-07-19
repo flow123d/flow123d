@@ -146,8 +146,6 @@ void LinSys_PETSC::start_insert_assembly()
 
 void LinSys_PETSC::mat_set_values( int nrow, int *rows, int ncol, int *cols, double *vals )
 {
-    PetscErrorCode ierr;
-
     // here vals would need to be converted from double to PetscScalar if it was ever something else than double :-)
     switch (status_) {
         case INSERT:
@@ -333,23 +331,30 @@ LinSys::SolveInfo LinSys_PETSC::solve()
     int nits;
     
     // -mat_no_inode ... inodes are usefull only for
-    //  vector problems e.g. MH without Schur complement reduction	
+    //  vector problems e.g. MH without Schur complement reduction
+    
+    /* Comment to PETSc options:
+     * 
+     * -ksp_diagonal_scale scales the matrix before solution, while -ksp_diagonal_scale_fix just fixes the scaling after solution
+     * -pc_asm_type basic enforces classical Schwartz method, which seems more stable for positive definite systems.
+     *                    The default 'restricted' probably violates s.p.d. structure, many tests fail.
+     */
     if (rows_ds_->np() > 1) {
         // parallel setting
        if (this->is_positive_definite())
-           petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type cg -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_type asm -pc_asm_type basic -pc_asm_overlap 4 -sub_pc_type icc -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
            //petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3  -sub_pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_type asm -pc_asm_overlap 4 -sub_pc_type ilu -sub_pc_factor_levels 3 -sub_pc_factor_fill 6.0";
     
     } 
     else {
         // serial setting
        if (this->is_positive_definite())
-           petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type cg -pc_type icc  -pc_factor_levels 3 -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     	   //petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
        else
-           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
+           petsc_dflt_opt="-ksp_type bcgs -pc_type ilu -pc_factor_levels 5 -ksp_diagonal_scale -ksp_diagonal_scale_fix -pc_factor_fill 6.0";
     }
 
     if (params_ == "") params_ = petsc_dflt_opt;
@@ -399,7 +404,7 @@ LinSys::SolveInfo LinSys_PETSC::solve()
     // TODO: I do not understand this 
     //Profiler::instance()->set_timer_subframes("SOLVING MH SYSTEM", nits);
 
-    KSPDestroy(&system);
+    chkerr(KSPDestroy(&system));
 
     return LinSys::SolveInfo(static_cast<int>(reason), static_cast<int>(nits));
 
@@ -433,12 +438,10 @@ void LinSys_PETSC::view( )
 
 LinSys_PETSC::~LinSys_PETSC( )
 {
-    PetscErrorCode ierr;
-
     if (matrix_ != NULL) { chkerr(MatDestroy(&matrix_)); }
-    ierr = VecDestroy(&rhs_); CHKERRV( ierr );
+    chkerr(VecDestroy(&rhs_));
 
-    if (residual_ != NULL) VecDestroy(&residual_);
+    if (residual_ != NULL) chkerr(VecDestroy(&residual_));
     if (v_rhs_ != NULL) delete[] v_rhs_;
 }
 

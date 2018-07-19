@@ -40,6 +40,9 @@ problem: !Coupling_Sequential
       max_it: 20 # should stop after 5 iterations due to stagnation
       min_it: 1
       converge_on_stagnation: false
+      linear_solver:
+        a_tol: 1e-12
+        r_tol: 1e-12
     n_schurs: 2
     output:
       fields:

@@ -10,7 +10,7 @@ Plucker::Plucker()
 {}
 
 
-Plucker::Plucker(Node* a, Node* b)
+Plucker::Plucker(const Node* a, const Node* b)
 {
     ASSERT_DBG(a);
     ASSERT_DBG(b);
@@ -29,7 +29,7 @@ Plucker::Plucker(Node* a, Node* b)
     computed_ = false;
 }
 
-Plucker::Plucker(Node* a, Node* b, bool compute_pc)
+Plucker::Plucker(const Node* a, const Node* b, bool compute_pc)
 : Plucker(a,b)
 {
     if(compute_pc) compute();

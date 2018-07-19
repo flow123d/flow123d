@@ -28,7 +28,7 @@
 #include <vector>                             // for vector
 #include "fem/fe_values_views.hh"             // for FEValuesViews
 #include "mesh/ref_element.hh"                // for RefElement
-#include "mesh/mesh_types.hh"                 // for ElementFullIter
+#include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
 
 class DOFHandlerBase;
@@ -163,7 +163,7 @@ public:
     /**
      * @brief Iterator to the last reinit-ed cell.
      */
-    ElementFullIter *present_cell;
+    ElementAccessor<3> *present_cell;
 
 };
 
@@ -229,6 +229,7 @@ private:
   struct ViewsCache {
     vector<FEValuesViews::Scalar<dim,spacedim> > scalars;
     vector<FEValuesViews::Vector<dim,spacedim> > vectors;
+    vector<FEValuesViews::Tensor<dim,spacedim> > tensors;
     
     void initialize(FEValuesBase &fv);
   };
@@ -389,6 +390,16 @@ public:
       ASSERT_LT_DBG(i, views_cache_.vectors.size());
       return views_cache_.vectors[i];
     }
+    
+    /**
+     * @brief Accessor to tensor values of multicomponent FE.
+     * @param i Index of first tensor component.
+     */
+    const FEValuesViews::Tensor<dim,spacedim> &tensor_view(unsigned int i) const
+    {
+      ASSERT_LT_DBG(i, views_cache_.tensors.size());
+      return views_cache_.tensors[i];
+    }
 
     /**
      * @brief Returns the number of quadrature points.
@@ -448,10 +459,16 @@ protected:
     void fill_scalar_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for vectorial FE.
+    void fill_vec_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for vectorial FE.
     void fill_vec_contravariant_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for Raviart-Thomas FE.
     void fill_vec_piola_data(const FEInternalData &fe_data);
+    
+    /// Compute shape functions and gradients on the actual cell for tensorial FE.
+    void fill_tensor_data(const FEInternalData &fe_data);
     
     /// Compute shape functions and gradients on the actual cell for mixed system of FE.
     void fill_system_data(const FEInternalData &fe_data);
@@ -537,7 +554,7 @@ public:
      *
      * @param cell The actual cell.
      */
-    void reinit(ElementFullIter &cell);
+    void reinit(ElementAccessor<3> &cell);
 
 
 };
@@ -587,7 +604,7 @@ public:
 	 * @param cell The actual cell.
 	 * @param sid  Number of the side of the cell.
 	 */
-    void reinit(ElementFullIter &cell,
+    void reinit(ElementAccessor<3> &cell,
         		unsigned int sid);
 
 

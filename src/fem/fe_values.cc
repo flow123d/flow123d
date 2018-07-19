@@ -88,26 +88,31 @@ void FEValuesBase<dim,spacedim>::ViewsCache::initialize(FEValuesBase<dim,spacedi
 {
   scalars.clear();
   vectors.clear();
+  tensors.clear();
   switch (fv.get_fe()->type_) {
     case FEType::FEScalar:
       scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv, 0));
       break;
+    case FEType::FEVector:
     case FEType::FEVectorContravariant:
     case FEType::FEVectorPiola:
       vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv, 0));
       break;
     case FEType::FETensor:
-      OLD_ASSERT(false, "Not Implemented.");
+      tensors.push_back(FEValuesViews::Tensor<dim,spacedim>(fv, 0));
       break;
     case FEType::FEMixedSystem:
       FESystem<dim> *fe = dynamic_cast<FESystem<dim>*>(fv.get_fe());
       OLD_ASSERT(fe != nullptr, "Mixed system must be represented by FESystem.");
       std::vector<unsigned int> sc = fe->get_scalar_components();
       std::vector<unsigned int> vc = fe->get_vector_components();
+      std::vector<unsigned int> tc = fe->get_tensor_components();
       for (auto si : sc)
         scalars.push_back(FEValuesViews::Scalar<dim,spacedim>(fv,si));
       for (auto vi : vc)
         vectors.push_back(FEValuesViews::Vector<dim,spacedim>(fv,vi));
+      for (auto ti : tc)
+        tensors.push_back(FEValuesViews::Tensor<dim,spacedim>(fv,ti));
       break;
   }
 }
@@ -136,6 +141,13 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         FiniteElement<dim> & _fe,
         UpdateFlags _flags)
 {
+    // For FEVector and FETensor check number of components.
+    // This cannot be done in FiniteElement since it does not know spacedim.
+    if (_fe.type_ == FEVector)
+        ASSERT_DBG(_fe.n_components() == spacedim).error("FEVector must have spacedim components.");
+    else if (_fe.type_ == FETensor)
+        ASSERT_DBG(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
+    
     mapping = &_mapping;
     quadrature = &_quadrature;
     fe = &_fe;
@@ -144,6 +156,7 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         case FEScalar:
             n_components_ = 1;
             break;
+        case FEVector:
         case FEVectorContravariant:
         case FEVectorPiola:
             n_components_ = spacedim;
@@ -269,6 +282,37 @@ void FEValuesBase<dim,spacedim>::fill_scalar_data(const FEInternalData &fe_data)
 
 
 template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_vec_data(const FEInternalData &fe_data)
+{
+    ASSERT_DBG(fe->type_ == FEVector);
+    
+    // shape values
+    if (data.update_flags & update_values)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::vec fv_vec = fe_data.ref_shape_values[i][j];
+                for (unsigned int c=0; c<spacedim; c++)
+                    data.shape_values[i][j*spacedim+c] = fv_vec[c];
+            }
+    }
+
+    // shape gradients
+    if (data.update_flags & update_gradients)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::mat grads = trans(data.inverse_jacobians[i]) * fe_data.ref_shape_grads[i][j];
+                for (unsigned int c=0; c<spacedim; c++)
+                    data.shape_gradients[i][j*spacedim+c] = grads.col(c);
+            }
+    }
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::fill_vec_contravariant_data(const FEInternalData &fe_data)
 {
     ASSERT_DBG(fe->type_ == FEVectorContravariant);
@@ -327,6 +371,37 @@ void FEValuesBase<dim,spacedim>::fill_vec_piola_data(const FEInternalData &fe_da
                 for (unsigned int c=0; c<spacedim; c++)
                     data.shape_gradients[i][j*spacedim+c] = grads.col(c);
             }   
+    }
+}
+
+
+template<unsigned int dim, unsigned int spacedim>
+void FEValuesBase<dim,spacedim>::fill_tensor_data(const FEInternalData &fe_data)
+{
+    ASSERT_DBG(fe->type_ == FETensor);
+    
+    // shape values
+    if (data.update_flags & update_values)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::vec fv_vec = fe_data.ref_shape_values[i][j];
+                for (unsigned int c=0; c<spacedim*spacedim; c++)
+                    data.shape_values[i][j*spacedim*spacedim+c] = fv_vec[c];
+            }
+    }
+
+    // shape gradients
+    if (data.update_flags & update_gradients)
+    {
+        for (unsigned int i = 0; i < fe_data.n_points; i++)
+            for (unsigned int j = 0; j < fe_data.n_dofs; j++)
+            {
+                arma::mat grads = trans(data.inverse_jacobians[i]) * fe_data.ref_shape_grads[i][j];
+                for (unsigned int c=0; c<spacedim*spacedim; c++)
+                    data.shape_gradients[i][j*spacedim*spacedim+c] = grads.col(c);
+            }
     }
 }
 
@@ -396,11 +471,17 @@ void FEValuesBase<dim,spacedim>::fill_data(const FEInternalData &fe_data)
         case FEScalar:
             fill_scalar_data(fe_data);
             break;
+        case FEVector:
+            fill_vec_data(fe_data);
+            break;
         case FEVectorContravariant:
             fill_vec_contravariant_data(fe_data);
             break;
         case FEVectorPiola:
             fill_vec_piola_data(fe_data);
+            break;
+        case FETensor:
+            fill_tensor_data(fe_data);
             break;
         case FEMixedSystem:
             fill_system_data(fe_data);
@@ -444,7 +525,7 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FEValues<dim,spacedim>::reinit(ElementFullIter & cell)
+void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 {
 	OLD_ASSERT_EQUAL( dim, cell->dim() );
     this->data.present_cell = &cell;
@@ -520,14 +601,14 @@ FESideValues<dim,spacedim>::~FESideValues()
 
 
 template<unsigned int dim,unsigned int spacedim>
-void FESideValues<dim,spacedim>::reinit(ElementFullIter & cell,
+void FESideValues<dim,spacedim>::reinit(ElementAccessor<3> & cell,
 		unsigned int sid)
 {
     ASSERT_LT_DBG( sid, cell->n_sides());
     ASSERT_EQ_DBG(dim, cell->dim());
     this->data.present_cell = &cell;
 
-    unsigned int pid = cell->permutation_idx_[sid];
+    unsigned int pid = cell->permutation_idx(sid);
     ASSERT_LT_DBG(pid, RefElement<dim>::n_side_permutations);
     // calculate Jacobian of mapping, JxW, inverse Jacobian, normal vector(s)
     this->mapping->fill_fe_side_values(cell,

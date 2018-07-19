@@ -21,21 +21,21 @@
 #define INSPECT_ELEMENTS_ALGORITHM_H_
 
 #include "mesh/bounding_box.hh"
-#include "mesh/mesh_types.hh"
 
 // #include "simplex.hh"
 
 #include <queue>
 
 class Mesh; // forward declare
+class BIHTree;
 
 template<unsigned int N, unsigned int M> class IntersectionPointAux;
 template<unsigned int N, unsigned int M> class IntersectionAux;
 template<unsigned int N, unsigned int M> class IntersectionLocal;
 class IntersectionLocalBase;
-
-
 class InspectElementsAlgorithm22;
+template <int spacedim> class ElementAccessor;
+
 
 /// First = element index, Second = pointer to intersection object.
 typedef std::pair<unsigned int, IntersectionLocalBase*> ILpair;
@@ -46,9 +46,9 @@ public:
     IntersectionAlgorithmBase(Mesh* mesh);
 protected:
    
-    /// Auxiliary function that translates @p ElementFullIter to @p Simplex<simplex_dim>.
-//     template<unsigned int simplex_dim>
-//     void update_simplex(const ElementFullIter &element, Simplex<simplex_dim> & simplex);
+    /// Auxiliary function that translates @p ElementAccessor<3> to @p Simplex<simplex_dim>.
+//    template<unsigned int simplex_dim>
+//    void update_simplex(const ElementAccessor<3> &element, Simplex<simplex_dim> & simplex);
     
     /// Mesh pointer.
     Mesh *mesh;
@@ -163,18 +163,18 @@ private:
     bool intersection_exists(unsigned int component_ele_idx, unsigned int bulk_ele_idx);
     
     /// Computes the first intersection, from which we then prolongate.
-    bool compute_initial_CI(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
+    bool compute_initial_CI(const ElementAccessor<3> &comp_ele, const ElementAccessor<3> &bulk_ele);
     
     /// Finds neighbouring elements that are new candidates for intersection and pushes
     /// them into component queue or bulk queue.
-    void prolongation_decide(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele, 
+    void prolongation_decide(const ElementAccessor<3> &comp_ele, const ElementAccessor<3> &bulk_ele,
                              IntersectionAux<dim,3>& is);
     
     /// Computes the intersection for a candidate in a queue and calls @p prolongation_decide again.
     void prolongate(const Prolongation &pr);
 
     template<unsigned int ele_dim>
-    std::vector< unsigned int > get_element_neighbors(const ElementFullIter& ele,
+    std::vector< unsigned int > get_element_neighbors(const ElementAccessor<3>& ele,
                                                       unsigned int ip_dim,
                                                       unsigned int ip_obj_idx);
     
@@ -215,14 +215,14 @@ private:
     std::vector<unsigned int> component_idx_;
     
     /// Computes fundamental intersection of two 2D elements.
-    void compute_single_intersection(const ElementFullIter &eleA, const ElementFullIter &eleB,
+    void compute_single_intersection(const ElementAccessor<3> &eleA, const ElementAccessor<3> &eleB,
                                      std::vector<IntersectionLocal<2,2>> &storage);
     
     /// Creates numbering of the 2D components and fills component_idx_ vector.
     void create_component_numbering();
     
     /// Auxiliary function for front-advancing alg. for component numbering.
-    //void prolongate22(const ElementFullIter& ele, std::queue<unsigned int>& queue);
+    //void prolongate22(const ElementAccessor<3>& ele, std::queue<unsigned int>& queue);
     
     friend class MixedMeshIntersections;
 };
@@ -277,7 +277,7 @@ private:
     std::vector<IntersectionAux<1,2>> intersectionaux_storage12_;
     
     /// Computes fundamental 1D-2D intersection of candidate pair.
-//     void compute_single_intersection(const ElementFullIter &comp_ele, const ElementFullIter &bulk_ele);
+//     void compute_single_intersection(const ElementAccessor<3> &comp_ele, const ElementAccessor<3> &bulk_ele);
     
     friend class MixedMeshIntersections;
 };

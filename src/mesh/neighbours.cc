@@ -16,6 +16,7 @@
  * @brief   Initialize neighbouring
  */
 
+#include "mesh/side_impl.hh"
 #include "system/system.hh"
 #include "neighbours.h"
 #include "mesh/mesh.h"
@@ -32,10 +33,11 @@ Neighbour::Neighbour()
 : edge_idx_(-1)
 {}
 
-void Neighbour::reinit(ElementIter ele, unsigned int edg_idx)
+void Neighbour::reinit(Mesh *mesh, unsigned int elem_idx, unsigned int edge_idx)
 {
-    element_=ele;
-    edge_idx_=edg_idx;
+	mesh_=mesh;
+	elem_idx_=elem_idx;
+    edge_idx_=edge_idx;
 }
 
 
