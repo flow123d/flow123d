@@ -410,6 +410,43 @@ void SorptionBase::update_solution(void)
   if(reaction_solid) reaction_solid->update_solution();
 }
 
+void SorptionBase::isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elem)
+{
+    START_TIMER("SorptionBase::isotherm_reinit");
+    
+    double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
+    double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
+    
+    int reg_idx = elem.region().bulk_idx();
+    Isotherm & isotherm = isotherms[reg_idx][i_subst];
+    
+    bool limited_solubility_on = solubility_vec_[i_subst] > 0.0;
+    
+    // in case of no sorbing surface, set isotherm type None
+    if( common_ele_data.no_sorbing_surface_cond <= std::numeric_limits<double>::epsilon())
+    {
+        isotherm.reinit(Isotherm::none, false, solvent_density_,
+                        common_ele_data.scale_aqua, common_ele_data.scale_sorbed,
+                        0,0,0);
+        return;
+    }
+    
+    if ( common_ele_data.scale_sorbed <= 0.0)
+        xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
+    
+    isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)),
+                    limited_solubility_on, solvent_density_,
+                    common_ele_data.scale_aqua, common_ele_data.scale_sorbed,
+                    solubility_vec_[i_subst], mult_coef, second_coef);
+}
+
+void SorptionBase::isotherm_reinit_all(const ElementAccessor<3> &elem)
+{
+    for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
+    {
+        isotherm_reinit(i_subst, elem);
+    }
+}
 
 void SorptionBase::update_max_conc()
 {
@@ -450,7 +487,8 @@ void SorptionBase::make_tables(void)
             {
                 ElementAccessor<3> elm(this->mesh_, reg_iter);
 //                 DebugOut().fmt("isotherm reinit\n");
-                isotherm_reinit(isotherms[reg_idx],elm);
+                compute_common_ele_data(elm);
+                isotherm_reinit_all(elm);
             }
             
             // find table limit and create interpolation table for every substance
@@ -503,23 +541,29 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
     ElementAccessor<3> elem = mesh_->element_accessor( el_4_loc_[loc_el] );
     int reg_idx = elem.region().bulk_idx();
     unsigned int i_subst, subst_id;
-
-    std::vector<Isotherm> & isotherms_vec = isotherms[reg_idx];
+    // for checking, that the common element data are computed once at maximum
+    bool is_common_ele_data_valid = false;
     
     try{
         for(i_subst = 0; i_subst < n_substances_; i_subst++)
         {
             subst_id = substance_global_idx_[i_subst];
-            if (isotherms_vec[i_subst].is_precomputed()){
+            Isotherm & isotherm = isotherms[reg_idx][i_subst];
+            if (isotherm.is_precomputed()){
 //                 DebugOut().fmt("isotherms precomputed - interpolate, subst[{}]\n", i_subst);
-                isotherms_vec[i_subst].interpolate(concentration_matrix_[subst_id][loc_el], 
-                                            conc_solid[subst_id][loc_el]);
+                isotherm.interpolate(concentration_matrix_[subst_id][loc_el],
+                                     conc_solid[subst_id][loc_el]);
             }
             else{
 //                 DebugOut().fmt("isotherms reinit - compute , subst[{}]\n", i_subst);
-            isotherm_reinit(isotherms_vec, elem);
-                isotherms_vec[i_subst].compute(concentration_matrix_[subst_id][loc_el], 
-                                            conc_solid[subst_id][loc_el]);
+                if(! is_common_ele_data_valid){
+                    compute_common_ele_data(elem);
+                    is_common_ele_data_valid = true;
+                }
+                
+                isotherm_reinit(i_subst, elem);
+                isotherm.compute(concentration_matrix_[subst_id][loc_el],
+                                 conc_solid[subst_id][loc_el]);
             }
         }
     }

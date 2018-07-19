@@ -62,41 +62,14 @@ const int SorptionSimple::registrar =
 SorptionSimple::~SorptionSimple(void)
 {}
 
-void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
+void SorptionSimple::compute_common_ele_data(const ElementAccessor<3> &elem)
 {
-	START_TIMER("SorptionSimple::isotherm_reinit");
-
-	double rock_density = data_->rock_density.value(elem.centre(),elem);
-	double por_m = data_->porosity.value(elem.centre(),elem);
-
-	for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
-	{
-		double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
-		double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
-		Isotherm & isotherm = isotherms_vec[i_subst];
-
-		//scales are different for the case of sorption in mobile and immobile pores
-		double scale_aqua = por_m,
-               scale_sorbed = (1 - por_m) * rock_density;
-
-		bool limited_solubility_on = solubility_vec_[i_subst] > 0.0;
-		
-		if( (1-por_m) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
-        {
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed, 0,0,0);
-            continue;
-        }
-
-        if ( scale_sorbed <= 0.0)
-            xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
-//         DebugOut().fmt("limited_solubility_on {}, solvent_density_ {}, scale_aqua {}, scale_sorbed {}, table_limit {}, mult_coef {}, second_coef {}\n",
-//                     limited_solubility_on, solvent_density_, scale_aqua, scale_sorbed, solubility_vec_[i_subst], mult_coef, second_coef);
-		isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)), limited_solubility_on,
-					solvent_density_, scale_aqua, scale_sorbed, solubility_vec_[i_subst], mult_coef, second_coef);
-
-	}
-
-	END_TIMER("SorptionSimple::isotherm_reinit");
+    double rock_density = data_->rock_density.value(elem.centre(),elem);
+    double por_m = data_->porosity.value(elem.centre(),elem);
+    
+    this->common_ele_data.scale_aqua = por_m;
+    this->common_ele_data.scale_sorbed = (1 - por_m) * rock_density;
+    this->common_ele_data.no_sorbing_surface_cond = 1-por_m;
 }
 
 
@@ -152,51 +125,16 @@ SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
 SorptionMob::~SorptionMob(void)
 {}
 
-/*
-double SorptionMob::compute_sorbing_scale(double por_m, double por_imm)
+void SorptionMob::compute_common_ele_data(const ElementAccessor<3> &elem)
 {
-  double phi = por_m/(por_m + por_imm);
-  return phi;
-}
-*/
-
-void SorptionMob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
-{
-    START_TIMER("SorptionMob::isotherm_reinit");
-
     double rock_density = data_->rock_density.value(elem.centre(),elem);
-
     double por_m = data_->porosity.value(elem.centre(),elem);
     double por_imm = immob_porosity_.value(elem.centre(),elem);
     double phi = por_m/(por_m + por_imm);
-
-    for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
-    {
-        double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
-        double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
-        Isotherm & isotherm = isotherms_vec[i_subst];
-
-        //scales are different for the case of sorption in mobile and immobile pores
-        double scale_aqua = por_m,
-               scale_sorbed = phi * (1 - por_m - por_imm) * rock_density;
-
-        bool limited_solubility_on = solubility_vec_[i_subst] > 0.0;
-        
-        if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
-        {
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-        
-        if ( scale_sorbed <= 0.0)
-            xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
-        
-        isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)), limited_solubility_on,
-                        solvent_density_, scale_aqua, scale_sorbed, solubility_vec_[i_subst], mult_coef, second_coef);
-
-    }
-
-    END_TIMER("SorptionMob::isotherm_reinit");
+    
+    this->common_ele_data.scale_aqua = por_m;
+    this->common_ele_data.scale_sorbed = phi * (1 - por_m - por_imm) * rock_density;
+    this->common_ele_data.no_sorbing_surface_cond = 1-por_m-por_imm;
 }
 
 
@@ -228,49 +166,14 @@ SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
 SorptionImmob::~SorptionImmob(void)
 {}
 
-/*
-double SorptionImmob::compute_sorbing_scale(double por_m, double por_imm)
+void SorptionImmob::compute_common_ele_data(const ElementAccessor<3> &elem)
 {
-  double phi = por_imm / (por_m + por_imm);
-  return phi;
-}
-*/
-
-void SorptionImmob::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem)
-{
-    START_TIMER("SorptionImmob::isotherm_reinit");
-
     double rock_density = data_->rock_density.value(elem.centre(),elem);
-    
     double por_m = data_->porosity.value(elem.centre(),elem);
     double por_imm = immob_porosity_.value(elem.centre(),elem);
     double phi = por_m/(por_m + por_imm);
-        
-    for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
-    {
-        double mult_coef = data_->distribution_coefficient[i_subst].value(elem.centre(),elem);
-        double second_coef = data_->isotherm_other[i_subst].value(elem.centre(),elem);
-        Isotherm & isotherm = isotherms_vec[i_subst];
-
-        //scales are different for the case of sorption in mobile and immobile pores
-        double scale_aqua = por_imm,
-               scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density;
-
-        bool limited_solubility_on = solubility_vec_[i_subst] > 0.0;
-        
-        if( (1-por_m-por_imm) <= std::numeric_limits<double>::epsilon()) //means there is no sorbing surface
-        {
-            isotherm.reinit(Isotherm::none, false, solvent_density_, scale_aqua, scale_sorbed,0,0,0);
-            continue;
-        }
-        
-        if ( scale_sorbed <= 0.0)
-            xprintf(UsrErr, "Scaling parameter in sorption is not positive. Check the input for rock density and molar mass of %d. substance.",i_subst);
-        
-        isotherm.reinit(Isotherm::SorptionType(data_->sorption_type[i_subst].value(elem.centre(),elem)), limited_solubility_on,
-                    solvent_density_, scale_aqua, scale_sorbed, solubility_vec_[i_subst], mult_coef, second_coef);
-
-    }
-
-    END_TIMER("SorptionImmob::isotherm_reinit");
+    
+    this->common_ele_data.scale_aqua = por_m;
+    this->common_ele_data.scale_sorbed = (1 - phi) * (1 - por_m - por_imm) * rock_density;
+    this->common_ele_data.no_sorbing_surface_cond = 1-por_m-por_imm;
 }

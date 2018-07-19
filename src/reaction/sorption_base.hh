@@ -184,9 +184,13 @@ protected:
   /// Reinitializes the isotherm.
   /**
    * On data change the isotherm is recomputed, possibly new interpolation table is made.
-   * Pure virtual method.
+   * NOTE: Be sure to update common element data (porosity, rock density etc.)
+   *       by @p compute_common_ele_data(), before calling reinitialization!
    */
-  virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
+  
+  /// Calls @p isotherm_reinit for all isotherms.
+  void isotherm_reinit_all(const ElementAccessor<3> &elm);
   
     /**
    * Creates interpolation table for isotherms.
@@ -256,6 +260,21 @@ protected:
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
   std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
+  
+  /** Structure for data respectful to element, but indepedent of actual isotherm.
+   * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.
+   * Is kind of optimization, so that these data are computed only when necessary.
+   */
+  struct CommonElementData{
+    double scale_aqua;
+    double scale_sorbed;
+    double no_sorbing_surface_cond;
+  } common_ele_data;
+  
+  /** Computes @p CommonElementData.
+   * Is pure virtual, implemented differently for simple/mobile/immobile sorption class.
+   */
+  virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
 };
 
 #endif  //SORPTION_BASE_H
