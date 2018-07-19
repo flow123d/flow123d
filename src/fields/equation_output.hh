@@ -28,6 +28,7 @@ namespace Input {
 	namespace Type {
 		class Instance;
 		class Record;
+                class Selection;
 	}
 }
 
@@ -43,11 +44,23 @@ public:
                                          << "' is not scalar in spacedim 3.");
 
     /**
+     * Input type of the configuration record.
+     */
+    static Input::Type::Record &get_input_type();
+    
+    /**
      * Make Input::Type for the output record. Particular selection of output fields is created
-     * from the contents of *this FeildSet using provided equation name and additional description.
+     * from the contents of *this FieldSet using provided equation name and additional description.
      */
     const Input::Type::Instance &make_output_type(const string &equation_name, const string &aditional_description = "");
-
+    /**
+     * Make Input::Type for the output record.
+     * This function enables creating output record for a field set record with additional keys provided in @p in_rec.
+     */
+    const Input::Type::Instance &make_output_type_from_record(Input::Type::Record &in_rec,
+                                                              const string &equation_name,
+                                                              const string &aditional_description = "");
+    
     /**
      * Setup the object. Set output stream for field and observe output, input record for configuration of the object and
      * TimeGovernor. The time governor is used to get the equation time mark type, the initial and the end time of the equation.
@@ -69,10 +82,11 @@ public:
     
 private:
     /**
-     * Input type of the configuration record.
+     * Creates output selection from the field set.
      */
-    static Input::Type::Record &get_input_type();
-
+    const Input::Type::Selection& create_output_field_selection(const string &equation_name,
+                                                                const string &additional_description);
+    
     /**
      * Read from the input, set output times and time marks. Must be called after set_stream.
      * TODO: add output_stream times. Optional or always?
