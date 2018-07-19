@@ -33,7 +33,7 @@ public:
 	GenericInterpolator();
 
 	/// Interpolate data of \p field_in to \p field_out. Use meshes of both fields as source and target mesh.
-	void interpolate(FieldFE<spacedim, Value> & field_out, FieldFE<spacedim, Value> & field_in); // TODO maybe add optional parameters
+	void interpolate(FieldFE<spacedim, Value> & field_out, FieldFE<spacedim, Value> & field_in, unsigned int minimal_dim=0);
 };
 
 

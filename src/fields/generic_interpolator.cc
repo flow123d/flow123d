@@ -26,8 +26,9 @@ GenericInterpolator<spacedim, Value>::GenericInterpolator()
 {}
 
 template <int spacedim, class Value>
-void GenericInterpolator<spacedim, Value>::interpolate(FieldFE<spacedim, Value> & field_out, FieldFE<spacedim, Value> & field_in)
+void GenericInterpolator<spacedim, Value>::interpolate(FieldFE<spacedim, Value> & field_out, FieldFE<spacedim, Value> & field_in, unsigned int minimal_dim)
 {
+	ASSERT_LE(minimal_dim, 3).error("Parameter minimal_dim is greater than 3!\n");
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(field_in.reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);
@@ -60,7 +61,7 @@ void GenericInterpolator<spacedim, Value>::interpolate(FieldFE<spacedim, Value> 
 				++elem_count[elm->dim()];
 			}
 		}
-		unsigned int dim = ele->dim(); // dim+1 for boundary
+		unsigned int dim = std::max(ele->dim(), minimal_dim); // dim+1 for boundary
 		double elem_value = 0.0;
 		do {
 			if (elem_count[dim] > 0) {
@@ -70,11 +71,10 @@ void GenericInterpolator<spacedim, Value>::interpolate(FieldFE<spacedim, Value> 
 			++dim;
 		} while (dim<4);
 
-		std::cout << " - " << field_out.dh_->get_dof_indices( ele, field_out.dof_indices_);
+		field_out.dh_->get_dof_indices( ele, field_out.dof_indices_);
 		ASSERT_LT_DBG( field_out.dof_indices_[0], (int)field_out.data_vec_->size());
 		(*field_out.data_vec_)[field_out.dof_indices_[0]] = elem_value * field_in.unit_conversion_coefficient_;
 	}
-	std::cout << std::endl;
 }
 
 // Instantiations of GenericInterpolator
