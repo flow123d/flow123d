@@ -10,6 +10,7 @@
 #include "arma_expect.hh"
 
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
 #include "mesh_constructor.hh"
 
 #include "fem/singularity.hh"
@@ -32,9 +33,9 @@ TEST(qxfem, qxfem_factory) {
     // read mesh
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"triangle.msh\"}");
     
-    ElementFullIter ele = mesh->element(0);
-    Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
-                          ele->node[2]->point() - ele->node[0]->point());
+    ElementAccessor<3> ele = mesh->element_accessor(0);
+    Point n = arma::cross(ele.node(1)->point() - ele.node(0)->point(),
+                          ele.node(2)->point() - ele.node(0)->point());
     
     auto func = std::make_shared<Singularity<0>>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n, 100);
     shared_ptr<QXFEM<2,3>> qxfem = qfactory.create_singular({func},ele);
@@ -58,9 +59,9 @@ TEST(qxfem, qxfem_factory) {
     double sum=0;
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
 //     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
-//     MessageOut() << setprecision(15) << "Tmeasure: " << ele->measure() << "\n";
+//     MessageOut() << setprecision(15) << "Tmeasure: " << ele.measure() << "\n";
     
-    double exact_sum = (ele->measure()-func->geometry().volume()) / (2*ele->measure());
+    double exact_sum = (ele.measure()-func->geometry().volume()) / (2*ele.measure());
 //     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
     EXPECT_NEAR(sum,exact_sum,1e-7);
@@ -218,9 +219,9 @@ TEST(qxfem, qxfem_factory_two) {
     // read mesh
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"triangle.msh\"}");
     
-    ElementFullIter ele = mesh->element(0);
-    Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
-                          ele->node[2]->point() - ele->node[0]->point());
+    ElementAccessor<3> ele = mesh->element_accessor(0);
+    Point n = arma::cross(ele.node(1)->point() - ele.node(0)->point(),
+                          ele.node(2)->point() - ele.node(0)->point());
     unsigned int n_qpoints = 100;
     
     auto func1 = std::make_shared<Singularity<0>>(arma::vec({1,2,2}),0.1,arma::vec({0,0,1}),n,n_qpoints);
@@ -246,9 +247,9 @@ TEST(qxfem, qxfem_factory_two) {
     double sum=0;
     for(unsigned int q=0; q<qxfem-> size(); q++) sum += qxfem->weight(q);
 //     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
-//     MessageOut() << setprecision(15) << "Tmeasure: " << ele->measure() << "\n";
+//     MessageOut() << setprecision(15) << "Tmeasure: " << ele.measure() << "\n";
     
-    double exact_sum = (ele->measure()-func1->geometry().volume()-func2->geometry().volume()) / (2*ele->measure());
+    double exact_sum = (ele.measure()-func1->geometry().volume()-func2->geometry().volume()) / (2*ele.measure());
 //     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
     EXPECT_NEAR(sum,exact_sum,1e-7);
@@ -294,7 +295,7 @@ TEST(qxfem, qxfem_factory_3d) {
     // read mesh
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"tetrahedron.msh\"}");
     
-    ElementFullIter ele = mesh->element(0);
+    ElementAccessor<3> ele = mesh->element_accessor(0);
     
     unsigned int n = 50, m = 20;
     
@@ -324,10 +325,10 @@ TEST(qxfem, qxfem_factory_3d) {
         double sum=0;
         for(unsigned int q=0; q<qxfem->size(); q++) sum += qxfem->weight(q);
 //         MessageOut() << setprecision(15) << "sum: " << sum << "\n";
-//         MessageOut() << setprecision(15) << "Tmeasure: " << ele->measure() << "\n";
+//         MessageOut() << setprecision(15) << "Tmeasure: " << ele.measure() << "\n";
 //         MessageOut() << setprecision(15) << "Cylinder: " << func->geometry().volume() << "\n";
         
-        double exact_sum = (ele->measure()-func->geometry().volume()*0.5) / (6*ele->measure());
+        double exact_sum = (ele.measure()-func->geometry().volume()*0.5) / (6*ele.measure());
         MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
         MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
         EXPECT_NEAR(sum,exact_sum,1e-6);
@@ -356,7 +357,7 @@ TEST(qxfem, qxfem_factory_3d_side) {
     // read mesh
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"tetrahedron.msh\"}");
     
-    ElementFullIter ele = mesh->element(0);
+    ElementAccessor<3> ele = mesh->element_accessor(0);
     
     unsigned int n = 50, m = 20;
     
@@ -374,8 +375,8 @@ TEST(qxfem, qxfem_factory_3d_side) {
         
         //comparison with 2d - we need only the are of ellipse
         auto nodes = RefElement<3>::interact(Interaction<0,2>(sid));
-        Point n = arma::cross(ele->node[nodes[1]]->point() - ele->node[nodes[0]]->point(),
-                              ele->node[nodes[2]]->point() - ele->node[nodes[0]]->point());
+        Point n = arma::cross(ele.node(nodes[1])->point() - ele.node(nodes[0])->point(),
+                              ele.node(nodes[2])->point() - ele.node(nodes[0])->point());
         const CylinderGeometry& geom = func->geometry_cylinder();
         
         CircleEllipseProjection geom_ellipse(arma::vec({0,0,0}),geom.radius(),geom.direction_vector(),n);
@@ -400,7 +401,7 @@ TEST(qxfem, qxfem_factory_3d_side) {
 //         MessageOut() << setprecision(15) << "Tmeasure: " << ele->side(sid)->measure() << "\n";
 //         MessageOut() << setprecision(15) << "Cylinder: " << func->geometry().volume() << "\n";
         
-        double exact_sum = (ele->side(sid)->measure()-geom_ellipse.ellipse_area()) / (2*ele->side(sid)->measure());
+        double exact_sum = (ele.side(sid)->measure()-geom_ellipse.ellipse_area()) / (2*ele.side(sid)->measure());
         MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
         MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
         EXPECT_NEAR(sum,exact_sum,1e-8);
@@ -431,9 +432,9 @@ TEST(qxfem, qxfem_factory_2d_side) {
     // read mesh
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"triangle.msh\"}");
     
-    ElementFullIter ele = mesh->element(0);
-    Point n = arma::cross(ele->node[1]->point() - ele->node[0]->point(),
-                          ele->node[2]->point() - ele->node[0]->point());
+    ElementAccessor<3> ele = mesh->element_accessor(0);
+    Point n = arma::cross(ele.node(1)->point() - ele.node(0)->point(),
+                          ele.node(2)->point() - ele.node(0)->point());
     
     unsigned int n_qpoints = 100;
     auto func = std::make_shared<Singularity<0>>(arma::vec({1.4,2.9,3}),0.1,arma::vec({1.4,2.9,0}),n,n_qpoints);
@@ -463,7 +464,7 @@ TEST(qxfem, qxfem_factory_2d_side) {
     MessageOut() << setprecision(15) << "sum: " << sum << "\n";
 //     MessageOut() << setprecision(15) << "Tmeasure: " << ele->side(sid)->measure() << "\n";
     
-//     double exact_sum = (ele->measure()-func->geometry().ellipse_area()) / (2*ele->measure());
+//     double exact_sum = (ele.measure()-func->geometry().ellipse_area()) / (2*ele.measure());
 //     MessageOut() << setprecision(15) << "exact_sum: " << exact_sum << "\n";
 //     MessageOut() << setprecision(15) << "sum weigths diff: " << sum - exact_sum << "\n";
 //     EXPECT_NEAR(sum,exact_sum,1e-7);

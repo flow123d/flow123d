@@ -36,7 +36,7 @@ CircleEllipseProjection::CircleEllipseProjection(const CircleEllipseProjection::
     
     //cosine of the angle between n and u
     cos_a = arma::dot(n,u);
-    ASSERT(abs(cos_a) > std::numeric_limits<double>::epsilon());
+    ASSERT(std::abs(cos_a) > std::numeric_limits<double>::epsilon());
     
     sin_a = std::sqrt(1-cos_a*cos_a);
     tan_a = sin_a / cos_a;
