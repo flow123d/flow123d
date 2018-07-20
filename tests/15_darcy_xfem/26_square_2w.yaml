@@ -23,13 +23,12 @@ problem: !Coupling_Sequential
     output_specific:
       compute_errors: true
       python_solution: analytical_module_2w.py
-      output:
-        fields:
-          - velocity_enr
-          - velocity_reg
-          - velocity_diff
-          - velocity_exact
-          - pressure_diff
+      fields:
+        - velocity_enr
+        - velocity_reg
+        - velocity_diff
+        - velocity_exact
+        - pressure_diff
     nonlinear_solver:
       linear_solver: !Petsc
         options: -ksp_type preonly  -pc_type cholesky
