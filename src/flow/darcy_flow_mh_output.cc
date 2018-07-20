@@ -634,19 +634,16 @@ void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
     }
 
 
-//     result.velocity_diff[ ele.idx() ] = sqrt(velocity_diff);
-    result.velocity_diff[ ele.idx() ] = velocity_diff;
+    result.velocity_diff[ ele.idx() ] = sqrt(velocity_diff);
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
-//     result.pressure_diff[ ele.idx() ] = sqrt(pressure_diff);
-    result.pressure_diff[ ele.idx() ] = pressure_diff;
+    result.pressure_diff[ ele.idx() ] = sqrt(pressure_diff);
     result.pressure_error[dim-1] += pressure_diff;
 
-//     result.div_diff[ ele.idx() ] = sqrt(divergence_diff);
-    result.div_diff[ ele.idx() ] = divergence_diff;
+    result.div_diff[ ele.idx() ] = sqrt(divergence_diff);
     result.div_error[dim-1] += divergence_diff;
 
 }
