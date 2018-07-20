@@ -107,8 +107,7 @@ public:
     virtual ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type();
-    static const Input::Type::Instance & get_input_type_specific_fields();
-    static const Input::Type::Record & get_input_type_specific();
+    static const Input::Type::Instance & get_input_type_specific();
 
     /** \brief Calculate values for output.  **/
     void output();

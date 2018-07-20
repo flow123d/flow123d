@@ -1,24 +1,17 @@
-#################
-# Test goal: Prepare boundary condition for interpolation
-# Author: Jan Stebel
-# Source for reference: qualitative
-
 flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
-  description: Interpolated boundary condition - big cube
+  description: Test of input placeholder in relative path
   mesh:
-    mesh_file: ../00_mesh/cube_20x20x20.msh
+    mesh_file: ../$INPUT_DIR$/prism_11el.msh
   flow_equation: !Flow_Darcy_MH
     output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
-        a_tol: 1.0e-12     # 1.0e-7
-        r_tol: 1.0e-10     # default 
+        a_tol: 1.0e-07
     input_fields:
-      - region: .IMPLICIT_BOUNDARY
+      - region: .BOUNDARY
         bc_type: dirichlet
-        bc_pressure: !FieldFormula
-          value: x-z
+        bc_pressure: 0.5
       - region: BULK
         anisotropy: 1
     output:
@@ -29,6 +22,6 @@ problem: !Coupling_Sequential
         - velocity_p0
     balance: {}
     output_stream:
-      file: ./large_cube.msh
+      file: ./output_data.msh
       format: !gmsh
         variant: ascii

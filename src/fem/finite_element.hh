@@ -183,8 +183,8 @@ protected:
  * 
  *     TYPE              OBJECT  EXPRESSION
  * -----------------------------------------------------------
- * FEScalar              value   ref_value
- *                       grad    J^{-T} * ref_grad
+ * FEScalar, FEVector,   value   ref_value
+ * FETensor              grad    J^{-T} * ref_grad
  * -----------------------------------------------------------
  * FEVectorContravariant value   J * ref_value
  *                       grad    J^{-T} * ref_grad * J^T
@@ -192,20 +192,20 @@ protected:
  * FEVectorPiola         value   J * ref_value / |J|
  *                       grad    J^{-T} * ref_grad * J^T / |J|
  * -----------------------------------------------------------
- * FETensor              value   not implemented
- *                       grad    not implemented
- * -----------------------------------------------------------
  * FEMixedSystem         value   depends on sub-elements
  *                       grad    depends on sub-elements
+ * 
+ * The transformation itself is done in FEValuesBase::fill_..._data() methods.
  * 
  * Note that we use columnwise gradients, i.e. gradient of each component is a column vector.
  */
 enum FEType {
   FEScalar = 0,
-  FEVectorContravariant = 1,
-  FEVectorPiola = 2,
-  FETensor = 3,
-  FEMixedSystem = 4
+  FEVector = 1,
+  FEVectorContravariant = 2,
+  FEVectorPiola = 3,
+  FETensor = 4,
+  FEMixedSystem = 5
 };
 
 

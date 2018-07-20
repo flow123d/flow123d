@@ -1,6 +1,11 @@
+#################
+# Test goal: Test include of input CSV files
+# Author: David Flanderka
+# Source for reference: Just run
+
 flow123d_version: 2.0.0
 problem: !Coupling_Sequential
-  description: Test of includes of CSV file
+  description: heck correct includes of CSV files to main input YAML file.
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
     regions: !include_csv:From_Label

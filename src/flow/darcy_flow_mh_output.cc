@@ -63,22 +63,23 @@ const it::Instance & DarcyFlowMHOutput::get_input_type() {
 	return output_fields.make_output_type("Flow_Darcy_MH", "");
 }
 
-const it::Instance & DarcyFlowMHOutput::get_input_type_specific_fields() {
-	OutputSpecificFields output_fields;
-	return output_fields.make_output_type("Flow_Darcy_MH_specific", "");
-}
 
-const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
-    return it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
+const it::Instance & DarcyFlowMHOutput::get_input_type_specific() {
+    
+    static it::Record& rec = it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
+        .copy_keys(OutputSpecificFields::get_input_type())
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
                         "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
         .declare_key("python_solution", it::FileName::input(), it::Default::optional(),
                         "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
-        .declare_key("output", DarcyFlowMHOutput::get_input_type_specific_fields(), it::Default::optional(),
-                "Specific output fields.")
         .close();
+    
+    OutputSpecificFields output_fields;
+    return output_fields.make_output_type_from_record(rec,
+                                                        "Flow_Darcy_MH_specific",
+                                                        "");
 }
 
 
@@ -147,15 +148,12 @@ void DarcyFlowMHOutput::initialize(Input::Record main_mh_in_rec)
             	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
             }
         }
-
-        // possibly read the names of specific output fields
-        auto in_rec_specific_output = in_rec_specific->find<Input::Record>("output");
-        if(in_rec_specific_output){
+        
+        auto fields_array = in_rec_specific->val<Input::Array>("fields");
+        if(fields_array.size() > 0){
             is_output_specific_fields = true;
-            prepare_specific_output(*in_rec_specific_output);
+            prepare_specific_output(*in_rec_specific);
         }
-        else
-            is_output_specific_fields = false;
     }
 }
 
@@ -636,15 +634,18 @@ void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
     }
 
 
+//     result.velocity_diff[ ele.idx() ] = sqrt(velocity_diff);
     result.velocity_diff[ ele.idx() ] = velocity_diff;
     result.velocity_error[dim-1] += velocity_diff;
     if (dim == 2 && result.velocity_mask.size() != 0 ) {
     	result.mask_vel_error += (result.velocity_mask[ ele.idx() ])? 0 : velocity_diff;
     }
 
+//     result.pressure_diff[ ele.idx() ] = sqrt(pressure_diff);
     result.pressure_diff[ ele.idx() ] = pressure_diff;
     result.pressure_error[dim-1] += pressure_diff;
 
+//     result.div_diff[ ele.idx() ] = sqrt(divergence_diff);
     result.div_diff[ ele.idx() ] = divergence_diff;
     result.div_error[dim-1] += divergence_diff;
 
@@ -679,7 +680,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
         diff_data.pressure_error[j] = 0;
         diff_data.velocity_error[j] = 0;
         diff_data.div_error[j] = 0;
-}
+    }
 
     //diff_data.ele_flux = &( ele_flux );
     
@@ -702,18 +703,26 @@ void DarcyFlowMHOutput::compute_l2_difference() {
             break;
         }
     }
+    
+    // square root for L2 norm
+    for(unsigned int j=0; j<3; j++){
+        diff_data.pressure_error[j] = sqrt(diff_data.pressure_error[j]);
+        diff_data.velocity_error[j] = sqrt(diff_data.velocity_error[j]);
+        diff_data.div_error[j] = sqrt(diff_data.div_error[j]);
+    }
+    diff_data.mask_vel_error = sqrt(diff_data.mask_vel_error);
 
     os 	<< "l2 norm output\n\n"
-    	<< "pressure error 1d: " << sqrt(diff_data.pressure_error[0]) << endl
-    	<< "pressure error 2d: " << sqrt(diff_data.pressure_error[1]) << endl
-    	<< "pressure error 3d: " << sqrt(diff_data.pressure_error[2]) << endl
-    	<< "velocity error 1d: " << sqrt(diff_data.velocity_error[0]) << endl
-    	<< "velocity error 2d: " << sqrt(diff_data.velocity_error[1]) << endl
-    	<< "velocity error 3d: " << sqrt(diff_data.velocity_error[2]) << endl
-    	<< "masked velocity error 2d: " << sqrt(diff_data.mask_vel_error) <<endl
-    	<< "div error 1d: " << sqrt(diff_data.div_error[0]) << endl
-    	<< "div error 2d: " << sqrt(diff_data.div_error[1]) << endl
-        << "div error 3d: " << sqrt(diff_data.div_error[2]);
+    	<< "pressure error 1d: " << diff_data.pressure_error[0] << endl
+    	<< "pressure error 2d: " << diff_data.pressure_error[1] << endl
+    	<< "pressure error 3d: " << diff_data.pressure_error[2] << endl
+    	<< "velocity error 1d: " << diff_data.velocity_error[0] << endl
+    	<< "velocity error 2d: " << diff_data.velocity_error[1] << endl
+    	<< "velocity error 3d: " << diff_data.velocity_error[2] << endl
+    	<< "masked velocity error 2d: " << diff_data.mask_vel_error <<endl
+    	<< "div error 1d: " << diff_data.div_error[0] << endl
+    	<< "div error 2d: " << diff_data.div_error[1] << endl
+        << "div error 3d: " << diff_data.div_error[2];
 }
 
 

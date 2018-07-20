@@ -163,7 +163,7 @@ protected:
             main_array->new_item(8, desc_a);
             main_array->new_item(9, desc_b);
             main_array->new_item(10, new StorageString("output_subdir/output.vtk"));
-            main_array->new_item(11, new StorageString("input/${INPUT}/input_subdir/input.in"));
+            main_array->new_item(11, new StorageString("input/$INPUT_DIR$/input_subdir/input.in"));
             main_array->new_item(12, new StorageNull());
             main_array->new_item(13, new StorageInt(1));
             main_array->new_item(14, new StorageInt(1234));

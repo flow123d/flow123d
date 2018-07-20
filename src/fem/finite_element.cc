@@ -45,8 +45,14 @@ template<class FS> const double Dof::evaluate(const FS &function_space,
     {
         // evaluate basis function and return the linear combination of components
         arma::vec vec_value(function_space.n_components());
+        
+        // drop off the last barycentric coordinate
+        // in case of space_dim=0 subvec does not work
+        arma::vec f_coords(function_space.space_dim());
+        if (function_space.space_dim() > 0)
+            f_coords = coords.subvec(0,coords.size()-2);
         for (unsigned int c=0; c<function_space.n_components(); c++)
-            vec_value[c] = function_space.basis_value(basis_idx, coords.subvec(0,coords.size()-2), c);
+            vec_value[c] = function_space.basis_value(basis_idx, f_coords, c);
         return dot(coefs, vec_value);
         break;
     }
@@ -143,6 +149,8 @@ UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
     switch (type_)
     {
         case FEScalar:   
+        case FEVector:
+        case FETensor:
             if (flags & update_gradients)
                 f |= update_inverse_jacobians;
             break;
