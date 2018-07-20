@@ -6,7 +6,7 @@ pressure error 3d: 121.45
 velocity error 1d: 0
 velocity error 2d: 0
 velocity error 3d: 0.055109
-masked vel error 2d: 0
+masked velocity error 2d: 0
 div error 1d: 0
 div error 2d: 0
 div error 3d: 15.9684
