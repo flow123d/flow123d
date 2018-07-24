@@ -31,9 +31,7 @@
 
 #include "fem/fe_rt.hh"
 #include "fem/singularity.hh"
-#include "fem/fe_rt_xfem.hh"
-#include "fem/fe_rt_xfem_single.hh"
-#include "fem/fe_p0_xfem.hh"
+#include "fem/xfe_values.hh"
 
 
 
@@ -67,9 +65,9 @@ bool replace_string(std::string& str, const std::string& from, const std::string
 }
 
 
-void output_field_fe(FiniteElement<1,3>& fe_1,
-                     FiniteElement<2,3>& fe_2,
-                     FiniteElement<3,3>& fe_3,
+void output_field_fe(FiniteElement<1>& fe_1,
+                     FiniteElement<2>& fe_2,
+                     FiniteElement<3>& fe_3,
                      const std::map<unsigned int, double>& dof_values,
                      bool is_scalar,
                      std::string file_name,
@@ -164,10 +162,10 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_2d) {
     auto func = std::make_shared<Singularity<0>>(arma::vec({0.2,0.2,0}),0.05,
                                                  arma::vec({0, 0, 1}), arma::vec({0, 0, 1}), 100);
     
-    FE_RT0<1,3> fe_rt1;
-    FE_RT0<2,3> fe_rt2;
-    FE_RT0_XFEM_S<2,3> fe_rt_xfem(&fe_rt2,{func});
-    FE_RT0<3,3> fe_rt3;
+    FE_RT0<1> fe_rt1;
+    FE_RT0<2> fe_rt2;
+//     FE_RT0_XFEM_S<2,3> fe_rt_xfem(&fe_rt2,{func});
+    FE_RT0<3> fe_rt3;
     
    std::map<unsigned int, double> dof_values;
 
@@ -209,10 +207,10 @@ TEST(ShapeFunctionOutput, rt_xfem_shape_3d) {
     
     auto func = std::make_shared<Singularity<1>>(arma::vec({0.2,0.2,0}),arma::vec({0.2,0.2,1.0}),0.05, 50, 20);
     
-    FE_RT0<1,3> fe_rt1;
-    FE_RT0<2,3> fe_rt2;
-    FE_RT0<3,3> fe_rt3;
-    FE_RT0_XFEM_S<3,3> fe_rt_xfem(&fe_rt3,{func});
+    FE_RT0<1> fe_rt1;
+    FE_RT0<2> fe_rt2;
+    FE_RT0<3> fe_rt3;
+//     FE_RT0_XFEM_S<3,3> fe_rt_xfem(&fe_rt3,{func});
     
    std::map<unsigned int, double> dof_values;
 
