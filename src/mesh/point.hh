@@ -23,8 +23,17 @@
 
 /*
  * TODO:
- * need better resolution of various C++11 functionalities
- * e.g. following is supported from GCC 4.7
+ * - This Point notation is used in:
+ * 		- fields, in particular value and value_list method
+ * 		- io, output_element, output_mesh
+ * 		- bih_tree, bounding box
+ * 		- With own definition in fem/maps... !!
+ * - not used in:
+ *      - Mesh, Node
+ *      -
+ * Used single Point definition in mesh and reuse it elsewhere.
+ * Do not use it in BIH, in order to make BIH separate library (WIP).
+ * Try to use Armor instead of Armadillo fixed vectors.
  */
 
 template<int spacedim>
