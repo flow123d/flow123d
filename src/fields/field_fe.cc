@@ -218,20 +218,22 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 			break;
 		}
 		case 3: { // vector
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
 			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
 			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
 			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-			fe0_ = new FE_P_disc<0>(0); //TODO need fix support of FESystem with dim=0
+			fe0_ = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
 			fe1_ = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
 			fe2_ = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
 			fe3_ = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
 			break;
 		}
 		case 9: { // tensor
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
 			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
 			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
 			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-			fe0_ = new FE_P_disc<0>(0); //TODO need fix support of FESystem with dim=0
+			fe0_ = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
 			fe1_ = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
 			fe2_ = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
 			fe3_ = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
