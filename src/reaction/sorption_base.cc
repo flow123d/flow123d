@@ -482,9 +482,8 @@ void SorptionBase::make_tables(void)
     START_TIMER("SorptionBase::make_tables");
     try
     {
-        
         ElementAccessor<3> elm;
-        BOOST_FOREACH(const Region &reg_iter, this->mesh_->region_db().get_region_set("BULK") )
+        for(const Region &reg_iter: this->mesh_->region_db().get_region_set("BULK"))
         {
             int reg_idx = reg_iter.bulk_idx();
             // true if data has been changed and are constant on the region
@@ -500,33 +499,33 @@ void SorptionBase::make_tables(void)
             
             // find table limit and create interpolation table for every substance
             for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++){
-                // if true then make_table will be called at the end
-                bool call_make_table = false;
-                // default, means that make_table will not create anything
-                double subst_table_limit = 0.0;
                 
                 // clear interpolation tables, if not spacially constant OR switched off
                 if(! data_->is_constant(reg_iter) || table_limit_[i_subst] == 0.0){
                     isotherms[reg_idx][i_subst].clear_table();
 //                     DebugOut().fmt("limit: 0.0 -> clear table\n");
+                    continue;
                 }
-                // if automatic, remake tables with doubled range when table maximum was reached
-                else if((table_limit_[i_subst] < 0.0) &&
-                        (isotherms[reg_idx][i_subst].table_limit() < max_conc[reg_idx][i_subst]))
+                
+                // if true then make_table will be called at the end
+                bool call_make_table = call_reinit;
+                // initialy try to keep the current table limit (it is zero at zero time step)
+                double subst_table_limit = isotherms[reg_idx][i_subst].table_limit();
+                
+                // if automatic, possibly remake tables with doubled range when table maximum was reached
+                if(table_limit_[i_subst] < 0.0)
                 {
-                    call_make_table = true;
-                    subst_table_limit = 2*max_conc[reg_idx][i_subst];
-//                     DebugOut().fmt("limit: max conc\n");
-                }
-                // make tables if isotherm reinited
-                else if(call_reinit)
-                {
-                    call_make_table = true;
-                    subst_table_limit = isotherms[reg_idx][i_subst].table_limit();
-                    if(subst_table_limit < table_limit_[i_subst]){
-                        subst_table_limit = table_limit_[i_subst];
-//                         DebugOut().fmt("limit: isotherm reinit\n");
+                    if(subst_table_limit < max_conc[reg_idx][i_subst])
+                    {
+                        call_make_table = true;
+                        subst_table_limit = 2*max_conc[reg_idx][i_subst];
+//                         DebugOut().fmt("limit: max conc\n");
                     }
+                }
+                // if not automatic, set given table limit
+                else
+                {
+                    subst_table_limit = table_limit_[i_subst];
                 }
                 
                 if(call_make_table){
