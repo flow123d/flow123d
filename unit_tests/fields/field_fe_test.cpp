@@ -310,7 +310,7 @@ TEST_F(FieldFENewTest, scalar) {
 }
 
 
-/*TEST_F(FieldFENewTest, bc_scalar) {
+TEST_F(FieldFENewTest, bc_scalar) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar"), init_data("scalar"));
     field.set_mesh(mesh,true);
@@ -320,7 +320,8 @@ TEST_F(FieldFENewTest, scalar) {
             EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i)) );
         }
     }
-}*/
+
+}
 
 
  TEST_F(FieldFENewTest, scalar_unit_conv) {
@@ -338,7 +339,7 @@ TEST_F(FieldFENewTest, scalar) {
 }
 
 
-/*TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
+TEST_F(FieldFENewTest, bc_scalar_unit_conv) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
     field.set_mesh(mesh,true);
@@ -348,7 +349,8 @@ TEST_F(FieldFENewTest, scalar) {
             EXPECT_DOUBLE_EQ( 110.0+j*10.0+(i-9)*10.0 , field.value(point,mesh->element_accessor(i)) );
         }
     }
-}*/
+
+}
 
 
 TEST_F(FieldFENewTest, scalar_time_shift) {
@@ -476,7 +478,7 @@ TEST_F(FieldFENewTest, scalar_enum) {
 }
 
 
- /*TEST_F(FieldFENewTest, bc_scalar_enum) {
+TEST_F(FieldFENewTest, bc_scalar_enum) {
     EnumField field;
     field.init_from_input(rec.val<Input::Record>("enum"), init_data("enum"));
     field.set_mesh(mesh, true);
@@ -486,10 +488,10 @@ TEST_F(FieldFENewTest, scalar_enum) {
 			EXPECT_EQ( j+1, field.value(point,mesh->element_accessor(i)) );
 		}
     }
-}*/
+}
 
 
- /*TEST_F(FieldFENewTest, default_values) {
+/*TEST_F(FieldFENewTest, default_values) {
 	string expected_vals = "0.1 0.1 0.1";
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
