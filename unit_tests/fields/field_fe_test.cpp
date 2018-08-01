@@ -227,7 +227,7 @@ vector_fixed: !FieldFE
   default_value: 0.0
 tensor_fixed: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
-  field_name: vector_fixed
+  field_name: tensor_fixed
   default_value: 0.0
 vtk_scalar: !FieldFE
   mesh_data_file: fields/vtk_ascii_data.vtu
@@ -237,7 +237,7 @@ vtk_vector: !FieldFE
   field_name: vector_field
 vtk_tensor: !FieldFE
   mesh_data_file: fields/vtk_compressed_data.vtu
-  field_name: scalar_field
+  field_name: tensor_field
 default_values: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: porosity
@@ -397,9 +397,8 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
 }
 
 
-
-/*TEST_F(FieldFENewTest, tensor_fixed) {
-	string expected_vals[2] = {"1 4 7; 2 5 8; 3 6 9", "2 5 8; 3 6 9; 4 7 10"};
+TEST_F(FieldFENewTest, tensor_fixed) {
+	string expected_vals[2] = {"1 2 3; 4 5 6; 7 8 9", "2 3 4; 5 6 7; 8 9 10"};
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
     field.set_mesh(mesh,false);
@@ -410,11 +409,11 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
             EXPECT_TRUE( match.min() );
         }
     }
-}*/
+}
 
 
-/*TEST_F(FieldFENewTest, bc_tensor_fixed) {
-	string expected_vals[2] = {"4 7 10; 5 8 11; 6 9 12", "5 8 11; 6 9 12; 7 10 13"};
+TEST_F(FieldFENewTest, bc_tensor_fixed) {
+	string expected_vals[2] = {"4 5 6; 7 8 9; 10 11 12", "5 6 7; 8 9 10; 11 12 13"};
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("tensor_fixed"), init_data("tensor_fixed"));
     field.set_mesh(mesh, true);
@@ -424,10 +423,8 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
             arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
             EXPECT_TRUE( match.min() );
         }
-        arma::umat match = ( arma::mat33("0 0 0; 0 0 0; 0 0 0") == field.value(point,mesh->element_accessor(13)) );
-        EXPECT_TRUE( match.min() );
     }
-}*/
+}
 
 
 TEST_F(FieldFENewTest, vtk_scalar) {
@@ -455,8 +452,8 @@ TEST_F(FieldFENewTest, vtk_vector) {
 }
 
 
-/*TEST_F(FieldFENewTest, vtk_tensor) {
-	string expected_vals = "1 4 7; 2 5 8; 3 6 9";
+TEST_F(FieldFENewTest, vtk_tensor) {
+	string expected_vals = "1 2 3; 4 5 6; 7 8 9";
     TensorField field;
     field.init_from_input(rec.val<Input::Record>("vtk_tensor"), init_data("vtk_tensor"));
     field.set_mesh(mesh,false);
@@ -465,7 +462,7 @@ TEST_F(FieldFENewTest, vtk_vector) {
     	arma::umat match = ( arma::mat33(expected_vals) == field.value(point,mesh->element_accessor(i)) );
         EXPECT_TRUE( match.min() );
     }
-}*/
+}
 
 
 TEST_F(FieldFENewTest, scalar_enum) {
