@@ -369,7 +369,7 @@ TEST_F(FieldFENewTest, scalar_time_shift) {
 }
 
 
-/*TEST_F(FieldFENewTest, vector_fixed) {
+TEST_F(FieldFENewTest, vector_fixed) {
 	string expected_vals[2] = {"1 2 3", "2 3 4"};
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
@@ -380,10 +380,10 @@ TEST_F(FieldFENewTest, scalar_time_shift) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
         }
     }
-}*/
+}
 
 
-/*TEST_F(FieldFENewTest, bc_vector_fixed) {
+TEST_F(FieldFENewTest, bc_vector_fixed) {
 	string expected_vals[2] = {"4 5 6", "5 6 7"};
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("vector_fixed"), init_data("vector_fixed"));
@@ -393,9 +393,9 @@ TEST_F(FieldFENewTest, scalar_time_shift) {
      	for(unsigned int i=9; i < 13; i++) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
         }
-        EXPECT_TRUE( arma::min(arma::vec3("0 0 0") == field.value(point,mesh->element_accessor(13))) );
     }
-}*/
+}
+
 
 
 /*TEST_F(FieldFENewTest, tensor_fixed) {
@@ -442,7 +442,8 @@ TEST_F(FieldFENewTest, vtk_scalar) {
 }
 
 
-/*TEST_F(FieldFENewTest, vtk_vector) {
+
+TEST_F(FieldFENewTest, vtk_vector) {
 	string expected_vals = "0.5 1 1.5";
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("vtk_vector"), init_data("vtk_vector"));
@@ -451,7 +452,7 @@ TEST_F(FieldFENewTest, vtk_scalar) {
     for(unsigned int i=0; i < mesh->n_elements(); i++) {
     	EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
     }
-}*/
+}
 
 
 /*TEST_F(FieldFENewTest, vtk_tensor) {
@@ -493,7 +494,7 @@ TEST_F(FieldFENewTest, bc_scalar_enum) {
 }
 
 
-/*TEST_F(FieldFENewTest, default_values) {
+TEST_F(FieldFENewTest, default_values) {
 	string expected_vals = "0.1 0.1 0.1";
     VecFixField field;
     field.init_from_input(rec.val<Input::Record>("default_values"), init_data("default_values"));
@@ -504,4 +505,5 @@ TEST_F(FieldFENewTest, bc_scalar_enum) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
         }
     }
-}*/
+}
+
