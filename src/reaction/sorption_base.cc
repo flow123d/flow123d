@@ -63,7 +63,11 @@ const Record & SorptionBase::get_input_type() {
 		.declare_key("solubility", Array(Double(0.0)), Default::optional(), //("-1.0"), //
 								"Specifies solubility limits of all the sorbing species.")
 		.declare_key("table_limits", Array(Double(-1.0)), Default::optional(), //("-1.0"), //
-								"Specifies highest aqueous concentration in interpolation table.")
+                             "Specifies the highest aqueous concentration in the isotherm function interpolation table. "
+                             "Use any negative value for an automatic choice according to current maximal concentration (default and recommended). "
+                             "Use '0' to always evaluate isotherm function directly (can be very slow). "
+                             "Use a positive value to set the interpolation table limit manually "
+                             "(if aqueous concentration is higher, then the isotherm function is evaluated directly).")
 		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
 						"Containes region specific data necessary to construct isotherms.")//;
 		.declare_key("reaction_liquid", ReactionTerm::it_abstract_reaction(), Default::optional(), "Reaction model following the sorption in the liquid.")
