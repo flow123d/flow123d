@@ -89,7 +89,8 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   data_vec_(nullptr),
-  field_name_("")
+  field_name_(""),
+  has_compatible_mesh_(false)
 {}
 
 
@@ -199,7 +200,8 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
-		ReaderCache::get_reader(reader_file_)->check_compatible_mesh( *(dh_->mesh()) );
+		//ReaderCache::get_reader(reader_file_)->check_compatible_mesh( *(dh_->mesh()) );
+		this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, *(dh_->mesh()) );
 	}
 }
 
@@ -274,8 +276,8 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		// TODO: use default and check NaN values in data_vec
 
 		unsigned int n_entities;
-		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) || (this->discretization_ == OutputTime::DiscreteSpace::NATIVE_DATA);
-		if (is_native) {
+		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
+		if (is_native || this->has_compatible_mesh_) {
 			n_entities = dh_->mesh()->n_elements();
 		} else {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
@@ -290,7 +292,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
-		if (is_native) {
+		if (is_native || this->has_compatible_mesh_) {
 			this->calculate_native_values(data_vec);
 		} else {
 			this->interpolate(data_vec);

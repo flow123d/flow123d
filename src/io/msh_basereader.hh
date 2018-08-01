@@ -37,6 +37,7 @@
 
 class ElementDataCacheBase;
 class Mesh;
+class ReaderCache;
 
 
 
@@ -258,6 +259,8 @@ protected:
 
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;
+
+    friend class ReaderCache;
 };
 
 #endif	/* MSH_BASE_READER_HH */
