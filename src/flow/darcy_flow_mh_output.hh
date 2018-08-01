@@ -182,6 +182,7 @@ protected:
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
+    FE_P_disc<0> fe0; //TODO temporary solution - add support of FEData<0>
 
     OutputFields output_fields;
     OutputSpecificFields output_specific_fields;

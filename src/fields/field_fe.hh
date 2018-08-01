@@ -147,10 +147,12 @@ private:
     FEValueHandler<3, spacedim, Value> value_handler3_;
 
     /**
-     * Used in DOFHandler::distribute_dofs method. Represents 1D element.
+     * Used in DOFHandler::distribute_dofs method. Represents 0D element.
      *
      * For correct functionality must be created proper descendant of FiniteElement class.
      */
+    FiniteElement<0> *fe0_;
+    /// Same as previous, but represents 1D element.
     FiniteElement<1> *fe1_;
     /// Same as previous, but represents 2D element.
     FiniteElement<2> *fe2_;

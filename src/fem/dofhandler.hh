@@ -290,13 +290,15 @@ public:
      * for another finite element dofs in the beginning of the
      * global dof vector.
      *
+     * @param fe0d The 0D finite element.
      * @param fe1d The 1D finite element.
      * @param fe2d The 2D finite element.
      * @param fe3d The 3D finite element.
      * @param offset The offset.
      */
-    void distribute_dofs(FiniteElement<1> &fe1d,
-    		FiniteElement<2> &fe2d,
+    void distribute_dofs(FiniteElement<0> &fe0d,
+    		FiniteElement<1> &fe1d,
+			FiniteElement<2> &fe2d,
     		FiniteElement<3> &fe3d,
     		const unsigned int offset = 0);
 
@@ -386,6 +388,7 @@ private:
      * @brief Pointer to the finite element class for which the handler
      * distributes dofs.
      */
+    FiniteElement<0> *fe0d_;
     FiniteElement<1> *fe1d_;
     FiniteElement<2> *fe2d_;
     FiniteElement<3> *fe3d_;

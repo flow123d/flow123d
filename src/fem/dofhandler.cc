@@ -231,6 +231,7 @@
 
 DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 	: DOFHandlerBase(_mesh),
+	  fe0d_(0),
 	  fe1d_(0),
 	  fe2d_(0),
 	  fe3d_(0)
@@ -242,12 +243,12 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 	if (make_elem_part) make_elem_partitioning();
 }
 
-void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
-		FiniteElement<2>& fe2d, FiniteElement<3>& fe3d,
+void DOFHandlerMultiDim::distribute_dofs(FiniteElement<0> &fe0d,
+		FiniteElement<1>& fe1d, FiniteElement<2>& fe2d, FiniteElement<3>& fe3d,
 		const unsigned int offset)
 {
 	// First check if dofs are already distributed.
-	OLD_ASSERT((fe1d_ == 0) && (fe2d_ == 0) && (fe3d_ == 0), "Attempt to distribute DOFs multiple times!");
+	ASSERT((fe0d_ == 0) && (fe1d_ == 0) && (fe2d_ == 0) && (fe3d_ == 0)).error("Attempt to distribute DOFs multiple times!");
 
     unsigned int next_free_dof = offset;
     // n_obj_dofs[element_dim][general_face_dim]
@@ -255,15 +256,18 @@ void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
     unsigned int n_obj_dofs[4][4];
 
 
+    fe0d_ = &fe0d;
     fe1d_ = &fe1d;
    	fe2d_ = &fe2d;
    	fe3d_ = &fe3d;
     global_dof_offset = offset;
-    max_elem_dofs_ = max(fe1d_->n_dofs(), max(fe2d_->n_dofs(), fe3d_->n_dofs()));
+    max_elem_dofs_ = max( max(fe0d_->n_dofs(), fe1d_->n_dofs()), max(fe2d_->n_dofs(), fe3d_->n_dofs()) );
 
     for (unsigned int dm=0; dm <= 3; dm++)
-        for (unsigned int dd=1; dd <= 3; dd++)
+        for (unsigned int dd=0; dd <= 3; dd++)
             n_obj_dofs[dd][dm] = 0;
+    for (unsigned int d=0; d<fe0d.n_dofs(); d++)
+        n_obj_dofs[0][fe0d.dof(d).dim]++;
     for (unsigned int d=0; d<fe1d.n_dofs(); d++)
         n_obj_dofs[1][fe1d.dof(d).dim]++;
     for (unsigned int d=0; d<fe2d.n_dofs(); d++)
@@ -330,6 +334,9 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::
     
 	switch (dim)
 	{
+	case 0:
+		n_objects_dofs = fe0d_->n_dofs();
+		break;
 	case 1:
 		n_objects_dofs = fe1d_->n_dofs();
 		break;
@@ -360,6 +367,9 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, s
     
     switch (dim)
     {
+    case 0:
+        n_objects_dofs = fe0d_->n_dofs();
+        break;
     case 1:
         n_objects_dofs = fe1d_->n_dofs();
         break;
@@ -385,6 +395,9 @@ void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &val
 
 	switch (cell->dim())
 	{
+	case 0:
+		ndofs = fe0d_->n_dofs();
+		break;
 	case 1:
 		ndofs = fe1d_->n_dofs();
 		break;
@@ -466,6 +479,7 @@ std::size_t DOFHandlerMultiDim::hash() const {
 
 
 
+template<> FiniteElement<0> *DOFHandlerMultiDim::fe<0>() const { return fe0d_; }
 template<> FiniteElement<1> *DOFHandlerMultiDim::fe<1>() const { return fe1d_; }
 template<> FiniteElement<2> *DOFHandlerMultiDim::fe<2>() const { return fe2d_; }
 template<> FiniteElement<3> *DOFHandlerMultiDim::fe<3>() const { return fe3d_; }

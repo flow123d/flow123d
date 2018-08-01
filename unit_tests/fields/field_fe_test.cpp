@@ -97,12 +97,13 @@ TEST_F(FieldFETest, scalar) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(1, 2, 3);
 
+	FE_P_disc<0> fe0(1);
 	FE_P_disc<1> fe1(1);
 	FE_P_disc<2> fe2(1);
 	FE_P_disc<3> fe3(1);
     ScalarField field;
 
-    dh->distribute_dofs(fe1, fe2, fe3);
+    dh->distribute_dofs(fe0, fe1, fe2, fe3);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
 
@@ -123,12 +124,13 @@ TEST_F(FieldFETest, vector) {
     create_mesh("fields/one_element_2d.msh");
     create_dof_handler(0, 0, 1);
 
+    FE_P_disc<0> fe0(1); //TODO temporary solution, we don't support FE_RTO<0> objects
     FE_RT0<1> fe1;
 	FE_RT0<2> fe2;
 	FE_RT0<3> fe3;
     VecField field;
 
-    dh->distribute_dofs(fe1, fe2, fe3);
+    dh->distribute_dofs(fe0, fe1, fe2, fe3);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
 

@@ -211,20 +211,23 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
 	switch (this->value_.n_rows() * this->value_.n_cols()) { // by number of components
 		case 1: { // scalar
+			fe0_ = new FE_P_disc<0>(0);
 			fe1_ = new FE_P_disc<1>(0);
 			fe2_ = new FE_P_disc<2>(0);
 			fe3_ = new FE_P_disc<3>(0);
 			break;
 		}
-		case 3: { // vector
+		case 3: /*{ // vector - not implemented yet
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
 			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
 			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
 			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0_ = new FESystem<0>(fe0_ptr, FEType::FEVectorContravariant);
 			fe1_ = new FESystem<1>(fe1_ptr, FEType::FEVectorContravariant);
 			fe2_ = new FESystem<2>(fe2_ptr, FEType::FEVectorContravariant);
 			fe3_ = new FESystem<3>(fe3_ptr, FEType::FEVectorContravariant);
 			break;
-		}
+		}*/
 		case 9: // tensor - not implemented yet
 		default:
 			ASSERT(false).error("Should not happen!\n");
@@ -234,7 +237,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 		dh_ = std::make_shared<DOFHandlerMultiDim>( *(Mesh *)( const_cast<Mesh *>(mesh)->get_bc_mesh() ), false );
 	else
 		dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
-	dh_->distribute_dofs(*fe1_, *fe2_, *fe3_);
+	dh_->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
 
