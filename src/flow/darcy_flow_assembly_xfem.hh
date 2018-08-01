@@ -177,7 +177,7 @@ public:
         fv_xfem.reinit(ele, *xdata, velocity_interpolation_quad_);
         auto velocity = fv_xfem.vector_view(0);
         
-        int dofs[200];
+        std::vector<int> dofs; dofs.reserve(50);
         int ndofs_vel = ele_ac.get_dofs_vel(dofs);
         
         int li = 0;
@@ -252,7 +252,7 @@ protected:
     
     void setup_local(LocalElementAccessorBase<3> ele_ac){
         
-        int dofs[200];
+        std::vector<int> dofs; dofs.reserve(50);
         int ndofs = ele_ac.get_dofs(dofs);
         
         loc_system_.reset(ndofs, ndofs);

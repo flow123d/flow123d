@@ -206,7 +206,7 @@ void DarcyFlowMHOutputXFEM::l2_diff_local_xfem(LocalElementAccessorBase<3> &ele_
 //     double conductivity = result.data_->conductivity.value(ele.centre(), ele );
     double cross = result.data_->cross_section.value(ele.centre(), ele );
     
-    int dofs_vel[100];
+    std::vector<int> dofs_vel; dofs_vel.reserve(50);
     unsigned int ndofs_vel = ele_ac.get_dofs_vel(dofs_vel);
     
     // get values on the current element

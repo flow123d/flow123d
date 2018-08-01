@@ -107,7 +107,7 @@ public:
             fv_rt_xfem_->reinit(ele, *xdata, quad_);
         auto velocity = fv_rt_xfem_->vector_view(0);
         
-        int dofs[fv_rt_xfem_->n_dofs()];
+        std::vector<int> dofs; dofs.reserve(fv_rt_xfem_->n_dofs());
         int ndofs = ele_ac.get_dofs_vel(dofs);
         ASSERT_DBG(fv_rt_xfem_->n_dofs() == ndofs);
         

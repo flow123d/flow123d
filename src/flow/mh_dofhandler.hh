@@ -341,9 +341,9 @@ public:
         return dh->row_4_press_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
     }
 
-    int get_dofs_vel(int dofs[]);
-    int get_dofs_press(int dofs[]);
-    int get_dofs(int dofs[]);
+    int get_dofs_vel(std::vector<int>& dofs);
+    int get_dofs_press(std::vector<int>& dofs);
+    int get_dofs(std::vector<int>& dofs);
     unsigned int n_dofs_vel();
     unsigned int n_dofs_press();
     unsigned int n_sing_dofs();

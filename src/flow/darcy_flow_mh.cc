@@ -748,7 +748,8 @@ void DarcyMH::allocate_mh_matrix()
    
 
     const unsigned int loc_size_max = 200;
-    int local_dofs[loc_size_max];
+    std::vector<int> local_dofs;
+    local_dofs.reserve(loc_size_max);
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
@@ -772,7 +773,7 @@ void DarcyMH::allocate_mh_matrix()
         edge_rows = ele_ac.edge_rows();
         
         // whole local MH matrix
-        ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
+        ls->mat_set_values(loc_size, local_dofs.data(), loc_size, local_dofs.data(), zeros);
         
         if(ele_ac.is_enriched()){
             XFEMElementDataBase* xd = ele_ac.xfem_data_pointer();

@@ -150,9 +150,9 @@ void MH_DofHandler::print_dofs_dbg()
             << "total_size " << total_size() << "\n"
     );
     
+    std::vector<int> dofs; dofs.reserve(50);
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         auto ele_ac = accessor(i_loc);
-        int dofs[200];
         int ndofs = ele_ac.get_dofs(dofs);
         
         DBGCOUT("### DOFS ele " << ele_ac.ele_global_idx() << "   ");
@@ -411,21 +411,22 @@ bool LocalElementAccessorBase<spacedim>::is_enriched()
 }
 
 template <int spacedim>
-int LocalElementAccessorBase<spacedim>::get_dofs_vel(int dofs[])
+int LocalElementAccessorBase<spacedim>::get_dofs_vel(std::vector<int>& dofs)
 {
+    dofs.clear();
     uint i;
-    for(i=0; i< n_sides(); i++) dofs[i] = side_row(i);
+    for(i=0; i< n_sides(); i++) dofs.push_back(side_row(i));
     
     if(is_enriched() && dh->enrich_velocity){
         XFEMElementDataBase* xd = xfem_data_pointer();
         for(uint w=0; w< xd->n_enrichments(); w++){
             if(dh->single_enr){
-                dofs[i] = dh->row_4_vel_sing[xd->global_enrichment_index(w)];
+                dofs.push_back(dh->row_4_vel_sing[xd->global_enrichment_index(w)]);
                 i++;
             }
             else{
                 for(uint j=0; j< xd->n_enriched_dofs(Quantity::velocity,w); j++, i++)
-                    dofs[i] = xd->global_enriched_dofs(Quantity::velocity, w)[j];
+                    dofs.push_back(xd->global_enriched_dofs(Quantity::velocity, w)[j]);
             }
         }
     }
@@ -433,21 +434,22 @@ int LocalElementAccessorBase<spacedim>::get_dofs_vel(int dofs[])
 }
 
 template <int spacedim>
-int LocalElementAccessorBase<spacedim>::get_dofs_press(int dofs[])
+int LocalElementAccessorBase<spacedim>::get_dofs_press(std::vector<int>& dofs)
 {
-    dofs[0] = ele_row();
+    dofs.clear();
+    dofs.push_back(ele_row());
     uint i = 1;
     
     if(is_enriched() && dh->enrich_pressure){
         XFEMElementDataBase* xd = xfem_data_pointer();
         for(uint w=0; w< xd->n_enrichments(); w++){
             if(dh->single_enr){
-                dofs[i] = dh->row_4_press_sing[xd->global_enrichment_index(w)];
+                dofs.push_back(dh->row_4_press_sing[xd->global_enrichment_index(w)]);
                 i++;
             }
             else{
                 for(uint j=0; j< xd->n_enriched_dofs(Quantity::pressure,w); j++, i++)
-                    dofs[i] = xd->global_enriched_dofs(Quantity::pressure, w)[j];
+                    dofs.push_back(xd->global_enriched_dofs(Quantity::pressure, w)[j]);
             }
         }
     }
@@ -455,18 +457,24 @@ int LocalElementAccessorBase<spacedim>::get_dofs_press(int dofs[])
 }
 
 template <int spacedim>
-int LocalElementAccessorBase<spacedim>::get_dofs(int dofs[])
+int LocalElementAccessorBase<spacedim>::get_dofs(std::vector<int>& dofs)
 {
+    dofs.clear();
     int d = get_dofs_vel(dofs);
-    d += get_dofs_press(dofs+d);
-    for(uint i=0; i< n_sides(); i++, d++) dofs[d] = edge_row(i);
+    
+    std::vector<int> dofs_press;
+    d += get_dofs_press(dofs_press);
+    
+    dofs.insert(std::end(dofs), std::begin(dofs_press), std::end(dofs_press));
+    
+    for(uint i=0; i< n_sides(); i++, d++) dofs.push_back(edge_row(i));
     
     // singularity lagrange multipliers
     if(is_enriched()){
         XFEMElementDataBase* xd = xfem_data_pointer();
         for(uint w=0; w< xd->n_enrichments(); w++){
             if(xd->enrichment_intersects(w)){
-                dofs[d] = dh->row_4_sing[xd->global_enrichment_index(w)];
+                dofs.push_back(dh->row_4_sing[xd->global_enrichment_index(w)]);
                 d++;
             }
         }
