@@ -152,6 +152,7 @@ void FieldFE<spacedim, Value>::reinit_fe_data(MappingP1<1,3> *map1,
 	init_data.n_comp = this->n_comp();
 
 	// initialize value handler objects
+	value_handler0_.initialize(init_data);
 	value_handler1_.initialize(init_data, map1);
 	value_handler2_.initialize(init_data, map2);
 	value_handler3_.initialize(init_data, map3);
@@ -169,6 +170,8 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
 	switch (elm.dim()) {
+	case 0:
+		return value_handler0_.value(p, elm);
 	case 1:
 		return value_handler1_.value(p, elm);
 	case 2:
@@ -194,6 +197,9 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point > &point_lis
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	switch (elm.dim()) {
+	case 0:
+		value_handler0_.value_list(point_list, elm, value_list);
+		break;
 	case 1:
 		value_handler1_.value_list(point_list, elm, value_list);
 		break;
@@ -301,6 +307,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.n_comp = this->n_comp();
 
 	// initialize value handler objects
+	value_handler0_.initialize(init_data);
 	value_handler1_.initialize(init_data);
 	value_handler2_.initialize(init_data);
 	value_handler3_.initialize(init_data);
@@ -373,6 +380,9 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 			ElementAccessor<3> elm = source_mesh->element_accessor(*it);
 			bool contains=false;
 			switch (elm->dim()) {
+			case 0:
+				contains = arma::norm(elm.node(0)->point()-ele.centre(), 2) < 4*std::numeric_limits<double>::epsilon();
+				break;
 			case 1:
 				contains = value_handler1_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
