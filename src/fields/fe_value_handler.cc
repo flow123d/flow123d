@@ -146,6 +146,39 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 }
 
 
+template <int spacedim, class Value>
+void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
+{
+	if (dof_indices.size() > 0)
+		WarningOut() << "Multiple initialization of FEValueHandler!";
+
+	dh_ = init_data.dh;
+	data_vec_ = init_data.data_vec;
+    dof_indices.resize(init_data.ndofs);
+    value_.set_n_comp(init_data.n_comp);
+}
+
+
+template <int spacedim, class Value>
+void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+                   std::vector<typename Value::return_type> &value_list)
+{
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
+
+    DOFHandlerBase::CellIterator cell = dh_->mesh()->element_accessor( elm.idx() );
+	dh_->get_dof_indices(cell, dof_indices);
+
+	for (unsigned int k=0; k<point_list.size(); k++) {
+		Value envelope(value_list[k]);
+		envelope.zeros();
+		for (unsigned int i=0; i<dh_->fe<0>()->n_dofs(); i++) {
+			value_list[k] += (*data_vec_)[dof_indices[i]];
+			//							  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
+		}
+	}
+}
+
+
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::~FEValueHandler()
 {}
@@ -168,6 +201,7 @@ template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixe
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
 //INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
 
+INSTANCE_VALUE_HANDLER(0);
 INSTANCE_VALUE_HANDLER(1);
 INSTANCE_VALUE_HANDLER(2);
 INSTANCE_VALUE_HANDLER(3);

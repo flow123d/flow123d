@@ -139,6 +139,8 @@ private:
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices_;
 
+    /// Value handler that allows get value of 0D elements.
+    FEValueHandler<0, spacedim, Value> value_handler0_;
     /// Value handler that allows get value of 1D elements.
     FEValueHandler<1, spacedim, Value> value_handler1_;
     /// Value handler that allows get value of 2D elements.
