@@ -327,7 +327,7 @@ TEST_F(FieldFENewTest, bc_scalar) {
 }
 
 
- TEST_F(FieldFENewTest, scalar_unit_conv) {
+TEST_F(FieldFENewTest, scalar_unit_conv) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("scalar_unit_conversion"), init_data("scalar_unit_conversion"));
     field.set_mesh(mesh,false);
@@ -391,7 +391,7 @@ TEST_F(FieldFENewTest, bc_vector_fixed) {
     field.set_mesh(mesh,true);
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-     	for(unsigned int i=9; i < 13; i++) {
+     	for(unsigned int i=9; i < 15; i++) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
         }
     }
@@ -420,7 +420,7 @@ TEST_F(FieldFENewTest, bc_tensor_fixed) {
     field.set_mesh(mesh, true);
      for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-         for(unsigned int i=9; i < 13; i++) {
+         for(unsigned int i=9; i < 15; i++) {
             arma::umat match = ( arma::mat33(expected_vals[j]) == field.value(point,mesh->element_accessor(i)) );
             EXPECT_TRUE( match.min() );
         }
