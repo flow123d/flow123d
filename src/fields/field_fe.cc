@@ -24,6 +24,8 @@
 #include "fem/fe_p.hh"
 #include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 
@@ -253,9 +255,9 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_entities;
 		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
-			n_entities = dh_->mesh()->element.size();
+			n_entities = dh_->mesh()->n_elements();
 		} else {
-			n_entities = ReaderCache::get_mesh(reader_file_)->element.size();
+			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary_domain, this->component_idx_);
@@ -286,23 +288,23 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 	std::vector<unsigned int> elem_count(4);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 
-	FOR_ELEMENTS( dh_->mesh(), ele ) {
+	for (auto ele : dh_->mesh()->bulk_elements_range()) {
 		searched_elements.clear();
-		source_mesh->get_bih_tree().find_point(ele->centre(), searched_elements);
+		source_mesh->get_bih_tree().find_point(ele.centre(), searched_elements);
 		std::fill(sum_val.begin(), sum_val.end(), 0.0);
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-			ElementFullIter elm = source_mesh->element( *it );
+			ElementAccessor<3> elm = source_mesh->element_accessor(*it);
 			bool contains=false;
 			switch (elm->dim()) {
 			case 1:
-				contains = value_handler1_.contains_point(ele->centre(), *elm);
+				contains = value_handler1_.contains_point(ele.centre(), elm);
 				break;
 			case 2:
-				contains = value_handler2_.contains_point(ele->centre(), *elm);
+				contains = value_handler2_.contains_point(ele.centre(), elm);
 				break;
 			case 3:
-				contains = value_handler3_.contains_point(ele->centre(), *elm);
+				contains = value_handler3_.contains_point(ele.centre(), elm);
 				break;
 			default:
 				ASSERT(false).error("Invalid element dimension!");
@@ -324,7 +326,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 		} while (dim<4);
 
 		dh_->get_dof_indices( ele, dof_indices_);
-		ASSERT_LT_DBG( dof_indices_[0], data_vec_->size());
+		ASSERT_LT_DBG( dof_indices_[0], (int)data_vec_->size());
 		(*data_vec_)[dof_indices_[0]] = elem_value * this->unit_conversion_coefficient_;
 	}
 }
@@ -340,9 +342,9 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
-	FOR_ELEMENTS( dh_->mesh(), ele ) {
+	for (auto ele : dh_->mesh()->bulk_elements_range()) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-		data_vec_i = ele.index() * dof_indices_.size();
+		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];
@@ -364,11 +366,11 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 	unsigned int i, dof_filled_size;
 
 	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
-	FOR_ELEMENTS( dh_->mesh(), ele ) {
+	for (auto ele : dh_->mesh()->bulk_elements_range()) {
 		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
 		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
-		output_data_cache.store_value( ele.index(), loc_values );
+		output_data_cache.store_value( ele.idx(), loc_values );
 	}
 
 	output_data_cache.set_dof_handler_hash( dh_->hash() );

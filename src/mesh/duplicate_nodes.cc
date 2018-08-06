@@ -22,6 +22,8 @@
 #include "system/sys_profiler.hh"
 #include "mesh/duplicate_nodes.h"
 #include "mesh/mesh.h"
+#include "mesh/node_accessor.hh"
+#include "mesh/accessors.hh"
 
 
 
@@ -58,12 +60,12 @@ void DuplicateNodes::init_nodes()
 void DuplicateNodes::init_from_edges()
 {
   // initialize the objects from edges
-  FOR_EDGES(mesh_, edge) {
-    switch (edge->side(0)->dim()) {
+  for (auto edge : mesh_->edges) {
+    switch (edge.side(0)->dim()) {
       case 0:
         {
           MeshObject<0> p;
-          p.nodes[0] = mesh_->node_vector.index(edge->side(0)->node(0));
+          p.nodes[0] = edge.side(0)->node(0).idx();
           obj_4_edg_.push_back(points_.size());
           points_.push_back(p);
         }
@@ -72,7 +74,7 @@ void DuplicateNodes::init_from_edges()
         {
           MeshObject<1> l;
           for (unsigned int i=0; i<2; i++)
-            l.nodes[i] = mesh_->node_vector.index(edge->side(0)->node(i));
+            l.nodes[i] = edge.side(0)->node(i).idx();
           obj_4_edg_.push_back(lines_.size());
           lines_.push_back(l);
         }
@@ -81,7 +83,7 @@ void DuplicateNodes::init_from_edges()
         {
           MeshObject<2> t;
           for (unsigned int i=0; i<3; i++)
-            t.nodes[i] = mesh_->node_vector.index(edge->side(0)->node(i));
+            t.nodes[i] = edge.side(0)->node(i).idx();
           obj_4_edg_.push_back(triangles_.size());
           triangles_.push_back(t);
         }
@@ -95,15 +97,15 @@ void DuplicateNodes::init_from_edges()
 void DuplicateNodes::init_from_elements()
 {
   // initialize the objects from elements
-  FOR_ELEMENTS(mesh_, ele) {
+  for ( auto ele : mesh_->bulk_elements_range() ) {
     switch (ele->dim()) {
       case 1:
         {
           MeshObject<1> l;
           for (unsigned int i=0; i<2; i++)
-            l.nodes[i] = mesh_->node_vector.index(ele->node[i]);
+            l.nodes[i] = ele->node_idx(i);
           for (unsigned int i=0; i<2; i++)
-            l.faces[i] = &points_[obj_4_edg_[ele->side(i)->edge_idx()]];
+            l.faces[i] = &points_[obj_4_edg_[ele->edge_idx(i)]];
           obj_4_el_.push_back(lines_.size());
           lines_.push_back(l);
         }
@@ -112,9 +114,9 @@ void DuplicateNodes::init_from_elements()
         {
           MeshObject<2> tr;
           for (unsigned int i=0; i<3; i++)
-            tr.nodes[i] = mesh_->node_vector.index(ele->node[i]);
+            tr.nodes[i] = ele->node_idx(i);
           for (unsigned int i=0; i<3; i++)
-            tr.faces[i] = &lines_[obj_4_edg_[ele->side(i)->edge_idx()]];
+            tr.faces[i] = &lines_[obj_4_edg_[ele->edge_idx(i)]];
           obj_4_el_.push_back(triangles_.size());
           triangles_.push_back(tr);
         }
@@ -123,9 +125,9 @@ void DuplicateNodes::init_from_elements()
         {
           MeshObject<3> te;
           for (unsigned int i=0; i<4; i++)
-            te.nodes[i] = mesh_->node_vector.index(ele->node[i]);
+            te.nodes[i] = ele->node_idx(i);
           for (unsigned int i=0; i<4; i++)
-            te.faces[i] = &triangles_[obj_4_edg_[ele->side(i)->edge_idx()]];
+            te.faces[i] = &triangles_[obj_4_edg_[ele->edge_idx(i)]];
           obj_4_el_.push_back(tetras_.size());
           tetras_.push_back(te);
         }
@@ -149,17 +151,17 @@ void DuplicateNodes::init_from_elements()
 void DuplicateNodes::duplicate_nodes()
 {
   START_TIMER("duplicate_nodes");
-  FOR_NODES(mesh_, n){
-    // create list of adjacent elements from mesh_->node_elements[n.index()]
+  for ( auto n : mesh_->node_range() ){
+    // create list of adjacent elements from mesh_->node_elements[n.idx()]
     std::list<unsigned int> node_elements;
-    std::copy( mesh_->node_elements()[n.index()].begin(), mesh_->node_elements()[n.index()].end(), std::back_inserter( node_elements ) );
+    std::copy( mesh_->node_elements()[n.idx()].begin(), mesh_->node_elements()[n.idx()].end(), std::back_inserter( node_elements ) );
     
     // create list of edges sharing the node
     std::set<unsigned int> node_edges;
     for (unsigned int el_idx : node_elements)
     {
-      FOR_ELEMENT_SIDES(&mesh_->element[el_idx], sid)
-        node_edges.insert(mesh_->element[el_idx].side(sid)->edge_idx());
+      for (unsigned int sid=0; sid < mesh_->element_accessor(el_idx)->n_sides(); ++sid)
+        node_edges.insert(mesh_->element_accessor(el_idx).side(sid)->edge_idx());
     }
     
     // divide node_elements into components connected by node_edges
@@ -172,17 +174,16 @@ void DuplicateNodes::duplicate_nodes()
       node_elements.erase(node_elements.begin());
       std::set<unsigned int> component;
       while (q.size() > 0) {
-        auto elem = mesh_->element.full_iter(&mesh_->element[q.front()]);
-        component.insert(elem.index());
+        auto elem = mesh_->element_accessor(q.front());
+        component.insert(elem.idx());
         // add to queue adjacent elements sharing one of node_edges
-        FOR_ELEMENT_SIDES(elem, sid) {
-          auto side = elem->side(sid);
+        for (unsigned int sid=0; sid<elem->n_sides(); ++sid) {
+          auto side = elem.side(sid);
           if (node_edges.find(side->edge_idx()) != node_edges.end())
           {
-            unsigned int esid;
-            FOR_EDGE_SIDES(side->edge(), esid) {
-              auto adj_el_idx = side->edge()->side(esid)->element().index();
-              if (adj_el_idx != elem.index())
+            for (unsigned int esid=0; esid < side->edge()->n_sides; ++esid) {
+              auto adj_el_idx = side->edge()->side(esid)->elem_idx();
+              if (adj_el_idx != elem.idx())
               {
                 auto it = std::find(node_elements.begin(), node_elements.end(), adj_el_idx);
                 if (it != node_elements.end()) {
@@ -202,24 +203,24 @@ void DuplicateNodes::duplicate_nodes()
     // If there are more components, then for each additional component
     // create a duplicate of the node and update the affected mesh objects.
     if (components.size() > 0) {
-      node_dim_[n.index()] = mesh_->element[*(components.begin()->begin())].dim();
+      node_dim_[n.idx()] = mesh_->element_accessor(*(components.begin()->begin())).dim();
       components.erase(components.begin());
     }
     for (auto component : components) {
       unsigned int new_nid = n_duplicated_nodes_++;
-      node_dim_.push_back(mesh_->element[*component.begin()].dim());
+      node_dim_.push_back(mesh_->element_accessor(*component.begin()).dim());
       for (auto el_idx : component) {
         // After we have complete graph tetrahedron-triangles-lines-points,
         // the updating of duplicated nodes will have to change.
-        switch (mesh_->element[el_idx].dim()) {
+        switch (mesh_->element_accessor(el_idx).dim()) {
           case 1:
             {
               MeshObject<1> *elem = &lines_[obj_4_el_[el_idx]];
               for (unsigned int i=0; i<2; i++)
-                if (elem->nodes[i] == n.index())
+                if (elem->nodes[i] == n.idx())
                   elem->nodes[i] = new_nid;
               for (unsigned int fi=0; fi<2; fi++)
-                if (elem->faces[fi]->nodes[0] == n.index())
+                if (elem->faces[fi]->nodes[0] == n.idx())
                   elem->faces[fi]->nodes[0] = new_nid;
             }
             break;
@@ -227,11 +228,11 @@ void DuplicateNodes::duplicate_nodes()
             {
               MeshObject<2> *elem = &triangles_[obj_4_el_[el_idx]];
               for (unsigned int i=0; i<3; i++)
-                if (elem->nodes[i] == n.index())
+                if (elem->nodes[i] == n.idx())
                   elem->nodes[i] = new_nid;
               for (unsigned int fi=0; fi<3; fi++)
                 for (unsigned int ni=0; ni<2; ni++)
-                  if (elem->faces[fi]->nodes[ni] == n.index())
+                  if (elem->faces[fi]->nodes[ni] == n.idx())
                     elem->faces[fi]->nodes[ni] = new_nid;
             }
             break;
@@ -239,11 +240,11 @@ void DuplicateNodes::duplicate_nodes()
             {
               MeshObject<3> *elem = &tetras_[obj_4_el_[el_idx]];
               for (unsigned int i=0; i<4; i++)
-                if (elem->nodes[i] == n.index())
+                if (elem->nodes[i] == n.idx())
                   elem->nodes[i] = new_nid;
               for (unsigned int fi=0; fi<4; fi++)
                 for (unsigned int ni=0; ni<3; ni++)
-                  if (elem->faces[fi]->nodes[ni] == n.index())
+                  if (elem->faces[fi]->nodes[ni] == n.idx())
                     elem->faces[fi]->nodes[ni] = new_nid;
             }
             break;

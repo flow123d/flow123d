@@ -23,7 +23,7 @@
 
 
 
-unsigned int EqualOrderDiscreteSpace::n_elem_dofs(const ElementFullIter &cell) const
+unsigned int EqualOrderDiscreteSpace::n_elem_dofs(const ElementAccessor<3> &cell) const
 {
     unsigned int n_dofs = 0;
     switch (cell->dim())
@@ -75,9 +75,9 @@ unsigned int EqualOrderDiscreteSpace::n_node_dofs(unsigned int nid) const
 
 
 
-template<> FiniteElement<1> *DiscreteSpace::fe(const ElementFullIter &cell) const { return fe1d(cell); }
-template<> FiniteElement<2> *DiscreteSpace::fe(const ElementFullIter &cell) const { return fe2d(cell); }
-template<> FiniteElement<3> *DiscreteSpace::fe(const ElementFullIter &cell) const { return fe3d(cell); }
+template<> FiniteElement<1> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe1d(cell); }
+template<> FiniteElement<2> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe2d(cell); }
+template<> FiniteElement<3> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe3d(cell); }
 
 
 

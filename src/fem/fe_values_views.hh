@@ -123,7 +123,56 @@ namespace FEValuesViews {
   
   
   template<unsigned int dim, unsigned int spacedim>
-  class Tensor {};
+  class Tensor {
+      
+  public:
+    
+    Tensor(FEValuesBase<dim,spacedim> &fe_values, unsigned int component)
+      : fe_values_(fe_values),
+        first_tensor_component_(component)
+    {};
+    
+    /**
+     * @brief Return value of tensor-valued shape function.
+     * @param function_no Index of shape function within the FE.
+     * @param point_no    Index of quadrature point.
+     */
+    arma::mat::fixed<spacedim,spacedim> value(unsigned int function_no, unsigned int point_no) const;
+    
+    /**
+     * @brief Return partial derivative of tensor-valued shape function.
+     * @param variable_no Index of spacial variable w.r. to which we differentiate.
+     * @param function_no Index of shape function within the FE.
+     * @param point_no    Index of quadrature point.
+     */
+    arma::mat::fixed<spacedim,spacedim> derivative(
+        unsigned int variable_no,
+        unsigned int function_no,
+        unsigned int point_no) const;
+    
+    /**
+     * @brief Return divergence of tensor-valued shape function.
+     * 
+     * The result is a vector whose components are divergences of tensor columns, i.e.
+     * (div T)_i = dT_ji / dx_j.
+     * 
+     * @param function_no Index of shape function within the FE.
+     * @param point_no    Index of quadrature point.
+     */
+    arma::vec::fixed<spacedim> divergence(unsigned int function_no, unsigned int point_no) const;
+    
+    /// Returns the FEValuesBase class.
+    FEValuesBase<dim,spacedim> &base() const;
+    
+  private:
+    
+    /// Base FEValues class for access to the FE.
+    FEValuesBase<dim,spacedim> &fe_values_;
+    
+    /// Index of the first component of the vector.
+    unsigned int first_tensor_component_;
+    
+  };
 
 };
 

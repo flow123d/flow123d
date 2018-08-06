@@ -26,7 +26,6 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-#include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "coupling/balance.hh"
 #include "transport/transport.h"
@@ -38,8 +37,6 @@
 #include "reaction/radioactive_decay.hh"
 #include "reaction/sorption.hh"
 #include "reaction/dual_porosity.hh"
-
-#include "semchem/semchem_interface.hh"
 
 #include "la/distribution.hh"
 #include "input/input_type.hh"
@@ -247,6 +244,7 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
+    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
     if(reaction)
     {
       reaction->zero_time_step();

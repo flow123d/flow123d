@@ -8,3 +8,5 @@ test_cases:
   - 02_flow_transport_heat.yaml
   - 03_dif_por.yaml
   - 04_dif_por_2d.yaml
+- files: 04_dif_por_2d.yaml
+  time_limit: 32

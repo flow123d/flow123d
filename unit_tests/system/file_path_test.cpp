@@ -90,7 +90,7 @@ TEST(FilePath, output_relative) {
 
     // Following was converted to Warning, that can not be simply tested.
 
-    //EXPECT_DEATH( {FilePath("input/${INPUT}/init.in", FilePath::input_file);},
+    //EXPECT_DEATH( {FilePath("input/$INPUT_DIR$/init.in", FilePath::input_file);},
     //        "Creating FileName object before set_io_dirs is called.");
 
     boost::filesystem::create_directories("./main_root");
@@ -152,7 +152,7 @@ TEST(FilePath, input_relative) {
     }
 
     { // relative input with substitution; conversion to string
-		string str = FilePath("subdir/${INPUT}/init.in", FilePath::input_file);
+		string str = FilePath("subdir/$INPUT_DIR$/init.in", FilePath::input_file);
 		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 
@@ -162,7 +162,7 @@ TEST(FilePath, input_relative) {
     }
 
     { // absolute input with substitution; conversion to string
-		string str = FilePath(FilePath::get_absolute_working_dir()+"subdir/${INPUT}/init.in", FilePath::input_file);
+		string str = FilePath(FilePath::get_absolute_working_dir()+"subdir/$INPUT_DIR$/init.in", FilePath::input_file);
 		EXPECT_TRUE( (boost::filesystem::current_path() / "subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 }
@@ -185,7 +185,7 @@ TEST(FilePath, input_absolute) {
 
     {
         // relative input with substitution; conversion to string
-        string str = FilePath("./subdir/${INPUT}/init.in", FilePath::input_file);
+        string str = FilePath("./subdir/$INPUT_DIR$/init.in", FilePath::input_file);
 		EXPECT_TRUE( (boost::filesystem::current_path() / "main_root/./subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 
@@ -197,7 +197,7 @@ TEST(FilePath, input_absolute) {
 
     {
         // absolute input with substitution; conversion to string
-        string str = FilePath(abs_path+"subdir/${INPUT}/init.in", FilePath::input_file);
+        string str = FilePath(abs_path+"subdir/$INPUT_DIR$/init.in", FilePath::input_file);
 		EXPECT_TRUE( (boost::filesystem::current_path() / "subdir/variant_input/init.in") == boost::filesystem::path(str) );
     }
 

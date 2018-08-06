@@ -20,8 +20,12 @@
 #include <limits>
 
 #include "fields/surface_depth.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
+#include "system/sys_profiler.hh"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
 
 
 SurfaceDepth::SurfaceDepth(const Mesh *mesh, std::string surface_region, std::string surface_direction)
@@ -54,7 +58,8 @@ void SurfaceDepth::create_projection_matrix(arma::vec3 surface_vec)
 void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
 {
 	std::vector<BoundingBox> boxes;
-	nodes_coords_.clear();
+	inv_projection_.clear();
+	b_vecs_.clear();
 
 	RegionSet region_set = mesh->region_db().get_region_set(surface_region);
     if (region_set.size() == 0)
@@ -69,23 +74,27 @@ void SurfaceDepth::construct_bih_tree(Mesh *mesh, std::string surface_region)
     unsigned int i=0;
     unsigned int i_node;
     arma::vec3 project_node("0 0 0");
-    for( ElementFullIter it = mesh->bc_elements.begin(); it != mesh->bc_elements.end(); ++it) {
-        if (it->region().is_in_region_set(region_set)) {
-        	ASSERT_EQ(it->n_nodes(), 3);
+    for( auto ele : mesh->boundary_elements_range() ) {
+        if (ele.region().is_in_region_set(region_set)) {
+        	ASSERT_EQ(ele->n_nodes(), 3);
 
-        	arma::mat coords(3,3);
-        	coords.col(0) = it->node[0]->point();
-        	arma::vec projection = m_ * it->node[0]->point();
+        	arma::vec projection = m_ * ele.node(0)->point();
         	project_node(0) = projection(0); project_node(1) = projection(1);
             BoundingBox bb(project_node);
-            for(i_node=1; i_node<it->n_nodes(); i_node++) {
-            	coords.col(i_node) = it->node[i_node]->point();
-                arma::vec project_coords = m_ * it->node[i_node]->point();
+            for(i_node=1; i_node<ele->n_nodes(); i_node++) {
+                arma::vec project_coords = m_ * ele.node(i_node)->point();
                 project_node(0) = project_coords(0); project_node(1) = project_coords(1);
                 bb.expand(project_node);
             }
             boxes.push_back(bb);
-            nodes_coords_.push_back(coords);
+
+            arma::mat a_mat(3,3);
+        	a_mat.col(0) = ele.node(1)->point() - ele.node(0)->point();
+        	a_mat.col(1) = ele.node(2)->point() - ele.node(0)->point();
+        	a_mat.col(2) = surface_norm_vec_;
+
+            inv_projection_.push_back( a_mat.i() );
+            b_vecs_.push_back( ele.node(0)->point() );
         }
         i++;
     }
@@ -104,7 +113,6 @@ double SurfaceDepth::compute_distance(arma::vec3 point)
 	double distance = std::numeric_limits<double>::max();
 	bool found_surface_projection = false;
 	arma::vec3 project_point;
-	arma::mat a_mat(3,3);
 	arma::vec3 x;
 
 	project_point.subvec(0,1) = m_ * point;
@@ -113,7 +121,7 @@ double SurfaceDepth::compute_distance(arma::vec3 point)
 	searched_elements_.clear();
 	bih_tree_.find_point(project_point, searched_elements_);
 	for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
-		prepare_distance_solve( (*it), point, a_mat, x );
+		prepare_distance_solve( (*it), point, x );
 		if ( (x(0)>=0) && (x(1)>=0) && (x(0)+x(1)<=1) ) { // point is in triangle
 			double new_distance = -x(2);
 			if ( (new_distance>=0) && (new_distance<distance) ) distance = new_distance;
@@ -127,14 +135,14 @@ double SurfaceDepth::compute_distance(arma::vec3 point)
 
 		for (std::vector<unsigned int>::iterator it = searched_elements_.begin(); it!=searched_elements_.end(); it++) {
 			// check snap distance point - triangle
-			prepare_distance_solve( (*it), point, a_mat, x );
+			prepare_distance_solve( (*it), point, x );
 
 			proj_to_surface_plane = point - x(2)*surface_norm_vec_;
 			arma::vec local_point = x.subvec(0,1);
 			auto bary_point = RefElement<2>::local_to_bary(local_point);
 			auto clip_point = RefElement<2>::clip(bary_point);
 			auto proj_ref = RefElement<2>::bary_to_local(clip_point);
-			auto proj_3d = a_mat.submat(0,0,2,1) * proj_ref;
+			auto proj_3d = inv_projection_[*it].submat(0,0,2,1) * proj_ref;
 			double new_snap_dist = arma::norm(proj_3d - proj_to_surface_plane, 2);
 			if (new_snap_dist<snap_dist) {
 				snap_dist = new_snap_dist;
@@ -151,12 +159,7 @@ double SurfaceDepth::compute_distance(arma::vec3 point)
 	return distance;
 }
 
-void SurfaceDepth::prepare_distance_solve(unsigned int elem_idx, arma::vec3 &point, arma::mat &a_mat, arma::vec3 &x)
+void SurfaceDepth::prepare_distance_solve(unsigned int elem_idx, arma::vec3 &point, arma::vec3 &x)
 {
-	auto coords = nodes_coords_[elem_idx];
-	a_mat.col(0) = coords.col(1) - coords.col(0);
-	a_mat.col(1) = coords.col(2) - coords.col(0);
-	a_mat.col(2) = surface_norm_vec_;
-	arma::vec3 b_vec = point - coords.col(0);
-	arma::solve(x, a_mat, b_vec);
+	x = inv_projection_[elem_idx] * (point - b_vecs_[elem_idx]);
 }

@@ -20,9 +20,10 @@
 #include <string>
 
 #include "system/system.hh"
+#include "mesh/side_impl.hh"
+#include "elements.h"
 #include "mesh/mesh.h"
 #include "mesh/ref_element.hh"
-#include "element_impls.hh"
 
 // following deps. should be removed
 #include "mesh/boundaries.h"
@@ -33,45 +34,34 @@
 
 
 Element::Element()
-:  pid(0),
-
-  node(NULL),
-
-//  material(NULL),
-  edge_idx_(NULL),
-  boundary_idx_(NULL),
-  permutation_idx_(NULL),
-
-  n_neighs_vb(0),
+: boundary_idx_(NULL),
   neigh_vb(NULL),
-
+  pid_(0),
+  n_neighs_vb_(0),
   dim_(0)
-
 {
 }
 
 
-Element::Element(unsigned int dim, Mesh *mesh_in, RegionIdx reg)
+Element::Element(unsigned int dim, RegionIdx reg)
 {
-    init(dim, mesh_in, reg);
+    init(dim, reg);
 }
 
 
 
-void Element::init(unsigned int dim, Mesh *mesh_in, RegionIdx reg) {
-    pid=0;
-    n_neighs_vb=0;
+void Element::init(unsigned int dim, RegionIdx reg) {
+    pid_=0;
+    n_neighs_vb_=0;
     neigh_vb=NULL;
     dim_=dim;
-    mesh_=mesh_in;
     region_idx_=reg;
 
-    node = new Node * [ n_nodes()];
-    edge_idx_ = new unsigned int [ n_sides()];
+    edge_idx_.resize( n_sides() );
+    permutation_idx_.resize( n_sides() );
     boundary_idx_ = NULL;
-    permutation_idx_ = new unsigned int[n_sides()];
 
-    FOR_ELEMENT_SIDES(this, si) {
+    for (unsigned int si=0; si<this->n_sides(); si++) {
         edge_idx_[ si ]=Mesh::undef_idx;
         permutation_idx_[si] = Mesh::undef_idx;
     }
@@ -85,65 +75,10 @@ Element::~Element() {
 
 
 /**
- * SET THE "METRICS" FIELD IN STRUCT ELEMENT
- */
-double Element::measure() const {
-    switch (dim()) {
-        case 0:
-            return 1.0;
-            break;
-        case 1:
-            return arma::norm(*(node[ 1 ]) - *(node[ 0 ]) , 2);
-            break;
-        case 2:
-            return
-                arma::norm(
-                    arma::cross(*(node[1]) - *(node[0]), *(node[2]) - *(node[0])),
-                    2
-                ) / 2.0 ;
-            break;
-        case 3:
-            return fabs(
-                arma::dot(
-                    arma::cross(*node[1] - *node[0], *node[2] - *node[0]),
-                    *node[3] - *node[0] )
-                ) / 6.0;
-            break;
-    }
-    return 1.0;
-}
-
-double Element::tetrahedron_jacobian() const
-{
-    OLD_ASSERT(dim_ == 3, "Cannot provide Jacobian for dimension other than 3.");
-    return arma::dot( arma::cross(*node[1] - *node[0], 
-                                  *node[2] - *node[0]),
-                    *node[3] - *node[0]
-                    );
-}
-
-
-/**
- * SET THE "CENTRE[]" FIELD IN STRUCT ELEMENT
- */
-
-arma::vec3 Element::centre() const {
-    unsigned int li;
-
-    arma::vec3 centre;
-    centre.zeros();
-
-    FOR_ELEMENT_NODES(this, li) {
-        centre += node[ li ]->point();
-    }
-    centre /= (double) n_nodes();
-    return centre;
-}
-
-/**
  * Count element sides of the space dimension @p side_dim.
  */
 
+/* If we use this method, it will be moved to mesh accessor class.
 unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 {
     if (side_dim == dim()) return 1;
@@ -152,77 +87,9 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
     for (unsigned int i=0; i<n_sides(); i++)
         if (side(i)->dim() == side_dim) n++;
     return n;
-}
+}*/
 
 
-ElementAccessor< 3 > Element::element_accessor() const
-{
-  return mesh_->element_accessor( mesh_->element.index(this) );
-}
-
-
-
-Region Element::region() const {
-    return Region( region_idx_, mesh_->region_db());
-}
-
-
-unsigned int Element::id() const {
-	return mesh_->element.get_id(this);
-}
-
-double Element::quality_measure_smooth() {
-    if (dim_==3) {
-        double sum_faces=0;
-        double face[4];
-        for(unsigned int i=0;i<4;i++) sum_faces+=( face[i]=side(i)->measure());
-
-        double sum_pairs=0;
-        for(unsigned int i=0;i<3;i++)
-            for(unsigned int j=i+1;j<4;j++) {
-                unsigned int i_line = RefElement<3>::line_between_faces(i,j);
-                arma::vec line = *node[RefElement<3>::interact(Interaction<0,1>(i_line))[1]] - *node[RefElement<3>::interact(Interaction<0,1>(i_line))[0]];
-                sum_pairs += face[i]*face[j]*arma::dot(line, line);
-            }
-        double regular = (2.0*sqrt(2.0/3.0)/9.0); // regular tetrahedron
-        return fabs( measure()
-                * pow( sum_faces/sum_pairs, 3.0/4.0))/ regular;
-
-    }
-    if (dim_==2) {
-        return fabs(
-                measure()/
-                pow(
-                         arma::norm(*node[1] - *node[0], 2)
-                        *arma::norm(*node[2] - *node[1], 2)
-                        *arma::norm(*node[0] - *node[2], 2)
-                        , 2.0/3.0)
-               ) / ( sqrt(3.0) / 4.0 ); // regular triangle
-    }
-    return 1.0;
-}
-
-
-void Element::get_bounding_box(BoundingBox &bounding_box) const
-{
-	bounding_box = BoundingBox( this->node[0]->point() );
-
-	for (unsigned int i=1; i<n_nodes(); i++)
-		bounding_box.expand( this->node[i]->point() );
-}
-
-//BoundingBox &Element::get_bounding_box_fast(BoundingBox &bounding_box) const
-//{
-//    ASSERT_GT(mesh_->element_box_.size(), 0);
-//    return mesh_->element_box_[mesh_->element.index(this)];
-//}
-
-
-unsigned int Element::get_proc() const
-{
-  return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
-}
-    
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

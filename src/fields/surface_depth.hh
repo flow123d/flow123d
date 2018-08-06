@@ -60,7 +60,7 @@ protected:
 	void construct_bih_tree(Mesh *mesh, std::string surface_region);
 
 	/// Precompute solve of distance in transformed coordinations of surface element plane.
-	void prepare_distance_solve(unsigned int elem_idx, arma::vec3 &point, arma::mat &a_mat, arma::vec3 &x);
+	void prepare_distance_solve(unsigned int elem_idx, arma::vec3 &point, arma::vec3 &x);
 
 	/// Tree of mesh elements
 	BIHTree bih_tree_;
@@ -71,8 +71,11 @@ protected:
 	/// projection matrix
 	arma::mat m_;
 
-	/// vector of nodes coordinates of elements above which BIH tree is created
-	std::vector<arma::mat> nodes_coords_;
+	/// vector of inversion projection matrices of elements above which BIH tree is created
+	std::vector<arma::mat> inv_projection_;
+
+	/// vector of b-vectors (right side of equation system) of elements above which BIH tree is created
+	std::vector<arma::vec3> b_vecs_;
 
 	/// Projection search radius given from global_snap_radius of mesh
 	double projection_search_radius_;

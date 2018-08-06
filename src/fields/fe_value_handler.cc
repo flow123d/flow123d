@@ -20,6 +20,7 @@
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
 #include "mesh/bounding_box.hh"
+#include "mesh/accessors.hh"
 #include "fem/fe_values_views.hh"
 
 
@@ -113,28 +114,29 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_PTR(map_).error();
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->element( elm.idx() );
-	dh_->get_loc_dof_indices(cell, dof_indices);
+    DOFHandlerBase::CellIterator cell = dh_->mesh()->element_accessor( elm.idx() );
+	dh_->get_dof_indices(cell, dof_indices);
 
-    arma::mat map_mat = map_->element_map(*elm.element());
+    arma::mat map_mat = map_->element_map(elm);
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(cell), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(elm), update_values);
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>(cell)->n_dofs(); i++)
+		for (unsigned int i=0; i<dh_->fe<elemdim>(elm)->n_dofs(); i++) {
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
+		}
 	}
 }
 
 
 template <int elemdim, int spacedim, class Value>
-bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, Element &elm)
+bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, ElementAccessor<3> elm)
 {
 	ASSERT_PTR(map_).error();
 
@@ -162,8 +164,8 @@ template class FEShapeHandler<1, dim, spacedim, FieldValue<spacedim>::VectorFixe
 template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixed >;
 
 #define INSTANCE_VALUE_HANDLER(dim) \
-INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
+//INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
 
 INSTANCE_VALUE_HANDLER(1);
 INSTANCE_VALUE_HANDLER(2);

@@ -280,10 +280,10 @@ region_sets = [
  *    - find element ID:
  *       if found: add_region(ID, get_label, dim, get_boundary_flag) // possibly set dimension of the region if it is undefined
  *       not found: add_region(ID, default_label, dim, false)
- *    - if region is boundary put element into Mesh::bc_elements
+ *    - if region is boundary put element into Mesh::element_vec_
  *      else put it into Mesh::element
  *  ---
- *  5) Setup topology - we has to connect Boundary with existing bc_elements, and add the remaining elements,
+ *  5) Setup topology - we has to connect Boundary with existing boundary elements, and add the remaining elements,
  *     after we remove support for old bCD files we may skip creation of remaining boundary elements since there will be no way how to set
  *     BC on them.
  *
