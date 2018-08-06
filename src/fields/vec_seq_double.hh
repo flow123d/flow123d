@@ -50,7 +50,7 @@ public:
 
     /// Constructor.
     VectorSeqDouble()
-    : fe1_(0), fe2_(0), fe3_(0) {}
+    : fe0_(0), fe1_(0), fe2_(0), fe3_(0) {}
 
     /// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
@@ -111,7 +111,7 @@ public:
 
         if ( (dh == nullptr) || (dh->mesh()->n_elements() != mesh.n_elements()) ) {
         	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
-        	dh->distribute_dofs(fe1_, fe2_, fe3_);
+        	dh->distribute_dofs(fe0_, fe1_, fe2_, fe3_);
         }
 
         std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
@@ -140,6 +140,7 @@ private:
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
     /// Finite element objects (allow to create DOF handler)
+	FE_P_disc<0> fe0_;
 	FE_P_disc<1> fe1_;
     FE_P_disc<2> fe2_;
     FE_P_disc<3> fe3_;
