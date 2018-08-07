@@ -142,8 +142,8 @@ void DuplicateNodes::init_from_elements()
  * at interfaces with fractures.
  * 
  * For each node:
- * 1) Create the lists of elements (node_elements) and edges (node_edges) sharing the node.
- * 2) Divide node_elements into groups (components) which share one of node_edges.
+ * 1) Create the lists of elements (node_elements) sharing the node.
+ * 2) Divide node_elements into groups (components) connected by edges.
  * 3) If more than one component was created, create for each extra component a new node
  *    and update its index in the elements from this component.
  *    Also set node_dim_ (dimension of elements using the node).
@@ -155,14 +155,6 @@ void DuplicateNodes::duplicate_nodes()
     // create list of adjacent elements from mesh_->node_elements[n.idx()]
     std::list<unsigned int> node_elements;
     std::copy( mesh_->node_elements()[n.idx()].begin(), mesh_->node_elements()[n.idx()].end(), std::back_inserter( node_elements ) );
-    
-    // create list of edges sharing the node
-    std::set<unsigned int> node_edges;
-    for (unsigned int el_idx : node_elements)
-    {
-      for (unsigned int sid=0; sid < mesh_->element_accessor(el_idx)->n_sides(); ++sid)
-        node_edges.insert(mesh_->element_accessor(el_idx).side(sid)->edge_idx());
-    }
     
     // divide node_elements into components connected by node_edges
     std::list<std::set<unsigned int> > components;
@@ -179,17 +171,14 @@ void DuplicateNodes::duplicate_nodes()
         // add to queue adjacent elements sharing one of node_edges
         for (unsigned int sid=0; sid<elem->n_sides(); ++sid) {
           auto side = elem.side(sid);
-          if (node_edges.find(side->edge_idx()) != node_edges.end())
-          {
-            for (unsigned int esid=0; esid < side->edge()->n_sides; ++esid) {
-              auto adj_el_idx = side->edge()->side(esid)->elem_idx();
-              if (adj_el_idx != elem.idx())
-              {
-                auto it = std::find(node_elements.begin(), node_elements.end(), adj_el_idx);
-                if (it != node_elements.end()) {
-                  node_elements.erase(it);
-                  q.push(adj_el_idx);
-                }
+          for (unsigned int esid=0; esid < side->edge()->n_sides; ++esid) {
+            auto adj_el_idx = side->edge()->side(esid)->elem_idx();
+            if (adj_el_idx != elem.idx())
+            {
+              auto it = std::find(node_elements.begin(), node_elements.end(), adj_el_idx);
+              if (it != node_elements.end()) {
+                node_elements.erase(it);
+                q.push(adj_el_idx);
               }
             }
           }
