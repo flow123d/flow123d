@@ -5,6 +5,7 @@ FROM flow123d/@docker_image@
 
 
 COPY . /tmp/
+USER root
 RUN /tmp/setup.sh
 
 # change user from root(0:0) to a current user

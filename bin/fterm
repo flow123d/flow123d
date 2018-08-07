@@ -86,7 +86,7 @@ function configure_file() {
   sed -e "s/@gid@/$gid/g" \
       -e "s/@uid@/$uid/g" \
       -e "s/@uname@/$uname/g" \
-      -e "s/@image_tag@/$image_tag/g" \
+      -e "s/@flow_version@/$flow_version/g" \
       -e "s/@docker_image@/$docker_image/g" \
       -e "s/@git_email@/$git_email/g" \
       -e "s/@git_uname@/$git_uname/g" \
@@ -263,16 +263,16 @@ ROOT=$(realpath --relative-to=$(pwd) $ABS_ROOT)
 REL_BIN=$(realpath --relative-to=$(pwd) $ROOT/bin)
 
 # define paths
-BIN=$ROOT/bin
-CFG=$ROOT/config
-TMP=$ROOT/config/docker/.tmp
-DKR=$ROOT/config/docker
+BIN="$ROOT/bin"
+CFG="$ROOT/config"
+TMP="$ROOT/config/docker/.tmp"
+DKR="$ROOT/config/docker"
 
 
 gid=$(id -g)
 uid=$(id -u)
 uname=$(whoami)
-light_theme=0
+theme=${THEME:-dark}
 
 
 # source config, that way we know what to mount, etc.
@@ -286,6 +286,7 @@ action=run
 version=dbg
 work=$(get_mount_dir $ABS_ROOT)
 numcpus=${FLOW123D_NUMCPUS:-1}
+flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 while [[ $# -gt 0 ]]
   do
@@ -309,6 +310,11 @@ while [[ $# -gt 0 ]]
       usage
       exit 1
     ;;
+    -i|--images)
+      shift
+      flow123d_images=$1
+      shift
+    ;;
     *)
       echo "Invalid argument!"
       usage
@@ -325,7 +331,6 @@ if [[ $verbose -eq 1 ]]; then
 fi
 
 work_image=flow123d/flow-libs-dev-$version:user
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel install"
 
 
 # perform action based on variable action
