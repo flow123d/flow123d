@@ -197,6 +197,13 @@ public:
         OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
         chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
+    
+    const VectorData &data() const
+    {
+        ASSERT_DBG(data_ptr_);
+        return *data_ptr_;
+    }
+
 
     /// Destructor.
     ~VectorMPI()
