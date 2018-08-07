@@ -206,11 +206,11 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     
     output_specific_fields.set_mesh(*mesh_);
 
-    auto vel_diff_ptr =	diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    auto vel_diff_ptr =	diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
     output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
-    auto pressure_diff_ptr = diff_data.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    auto pressure_diff_ptr = diff_data.pressure_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
-    auto div_diff_ptr =	diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
+    auto div_diff_ptr =	diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
