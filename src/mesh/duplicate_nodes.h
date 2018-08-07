@@ -31,18 +31,20 @@ class Mesh;
  * In the future we should think about complete graph, where every n-dimensional object
  * has information only about its (n-1)-dimensional faces.
  */
-template<int dim>
 class MeshObject {
 public:
   
-  MeshObject();
+  MeshObject(unsigned int dim);
   ~MeshObject() {}
   
   /// (dim-1)-dimensional faces
-  MeshObject<dim-1> *faces[dim+1];
+  MeshObject *faces[4];
   
   /// Indices of nodes.
-  unsigned int nodes[dim+1];
+  unsigned int nodes[4];
+  
+  /// Dimension of n-face.
+  unsigned int dim_;
 };
 
 
@@ -102,10 +104,8 @@ public:
   unsigned int n_nodes() const { return n_duplicated_nodes_; }
   const std::vector<unsigned int> &node_dim() const { return node_dim_; }
   
-  const std::vector<MeshObject<0> > &points() const { return points_; }
-  const std::vector<MeshObject<1> > &lines() const { return lines_; }
-  const std::vector<MeshObject<2> > &triangles() const { return triangles_; }
-  const std::vector<MeshObject<3> > &tetras() const { return tetras_; }
+  const std::vector<MeshObject> &objects(unsigned int dim) const
+  { return objects_[dim]; }
   
   const std::vector<unsigned int> &obj_4_el() const { return obj_4_el_; }
   const std::vector<unsigned int> &obj_4_edg() const { return obj_4_edg_; }
@@ -135,17 +135,8 @@ private:
   /// Vector of space dimensions of elements using the particular duplicated node.
   std::vector<unsigned int> node_dim_;
   
-  /// Internal indices of points (0d elements).
-  std::vector<MeshObject<0> > points_;
-  
-  /// Internal indices of lines (1d elements).
-  std::vector<MeshObject<1> > lines_;
-  
-  /// Internal indices of triangles (2d elements).
-  std::vector<MeshObject<2> > triangles_;
-  
-  /// Internal indices of tetrahedra (3d elements).
-  std::vector<MeshObject<3> > tetras_;
+  /// Array of n-faces by their dimension.
+  std::vector<MeshObject> objects_[4];
   
   /** Vector of object indices for each mesh element.
    * For an element with index el_idx, obj_4_el_[el_idx] is the index of the corresponding object

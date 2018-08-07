@@ -28,10 +28,10 @@
 
 
 
-template<int dim>
-MeshObject<dim>::MeshObject()
+MeshObject::MeshObject(unsigned int dim)
+    : dim_(dim)
 {
-  for (unsigned int i=0; i<dim+1; i++)
+  for (unsigned int i=0; i<4; i++)
     faces[i] = nullptr;
 }
 
@@ -61,34 +61,11 @@ void DuplicateNodes::init_from_edges()
 {
   // initialize the objects from edges
   for (auto edge : mesh_->edges) {
-    switch (edge.side(0)->dim()) {
-      case 0:
-        {
-          MeshObject<0> p;
-          p.nodes[0] = edge.side(0)->node(0).idx();
-          obj_4_edg_.push_back(points_.size());
-          points_.push_back(p);
-        }
-        break;
-      case 1:
-        {
-          MeshObject<1> l;
-          for (unsigned int i=0; i<2; i++)
-            l.nodes[i] = edge.side(0)->node(i).idx();
-          obj_4_edg_.push_back(lines_.size());
-          lines_.push_back(l);
-        }
-        break;
-      case 2:
-        {
-          MeshObject<2> t;
-          for (unsigned int i=0; i<3; i++)
-            t.nodes[i] = edge.side(0)->node(i).idx();
-          obj_4_edg_.push_back(triangles_.size());
-          triangles_.push_back(t);
-        }
-        break;
-    }
+    MeshObject obj(edge.side(0)->dim());
+    for (unsigned int i=0; i<edge.side(0)->dim()+1; ++i)
+      obj.nodes[i] = edge.side(0)->node(i).idx();
+    obj_4_edg_.push_back(objects_[edge.side(0)->dim()].size());
+    objects_[edge.side(0)->dim()].push_back(obj);
   }
 }
 
@@ -98,41 +75,13 @@ void DuplicateNodes::init_from_elements()
 {
   // initialize the objects from elements
   for ( auto ele : mesh_->bulk_elements_range() ) {
-    switch (ele->dim()) {
-      case 1:
-        {
-          MeshObject<1> l;
-          for (unsigned int i=0; i<2; i++)
-            l.nodes[i] = ele->node_idx(i);
-          for (unsigned int i=0; i<2; i++)
-            l.faces[i] = &points_[obj_4_edg_[ele->edge_idx(i)]];
-          obj_4_el_.push_back(lines_.size());
-          lines_.push_back(l);
-        }
-        break;
-      case 2:
-        {
-          MeshObject<2> tr;
-          for (unsigned int i=0; i<3; i++)
-            tr.nodes[i] = ele->node_idx(i);
-          for (unsigned int i=0; i<3; i++)
-            tr.faces[i] = &lines_[obj_4_edg_[ele->edge_idx(i)]];
-          obj_4_el_.push_back(triangles_.size());
-          triangles_.push_back(tr);
-        }
-        break;
-      case 3:
-        {
-          MeshObject<3> te;
-          for (unsigned int i=0; i<4; i++)
-            te.nodes[i] = ele->node_idx(i);
-          for (unsigned int i=0; i<4; i++)
-            te.faces[i] = &triangles_[obj_4_edg_[ele->edge_idx(i)]];
-          obj_4_el_.push_back(tetras_.size());
-          tetras_.push_back(te);
-        }
-        break;
-    }
+    MeshObject l(ele->dim());
+    for (unsigned int i=0; i<ele->dim()+1; i++)
+      l.nodes[i] = ele->node_idx(i);
+    for (unsigned int i=0; i<ele->dim()+1; i++)
+      l.faces[i] = &objects_[ele->dim()-1][obj_4_edg_[ele->edge_idx(i)]];
+    obj_4_el_.push_back(objects_[ele->dim()].size());
+    objects_[ele->dim()].push_back(l);
   }
 }
 
@@ -201,43 +150,14 @@ void DuplicateNodes::duplicate_nodes()
       for (auto el_idx : component) {
         // After we have complete graph tetrahedron-triangles-lines-points,
         // the updating of duplicated nodes will have to change.
-        switch (mesh_->element_accessor(el_idx).dim()) {
-          case 1:
-            {
-              MeshObject<1> *elem = &lines_[obj_4_el_[el_idx]];
-              for (unsigned int i=0; i<2; i++)
-                if (elem->nodes[i] == n.idx())
-                  elem->nodes[i] = new_nid;
-              for (unsigned int fi=0; fi<2; fi++)
-                if (elem->faces[fi]->nodes[0] == n.idx())
-                  elem->faces[fi]->nodes[0] = new_nid;
-            }
-            break;
-          case 2:
-            {
-              MeshObject<2> *elem = &triangles_[obj_4_el_[el_idx]];
-              for (unsigned int i=0; i<3; i++)
-                if (elem->nodes[i] == n.idx())
-                  elem->nodes[i] = new_nid;
-              for (unsigned int fi=0; fi<3; fi++)
-                for (unsigned int ni=0; ni<2; ni++)
-                  if (elem->faces[fi]->nodes[ni] == n.idx())
-                    elem->faces[fi]->nodes[ni] = new_nid;
-            }
-            break;
-          case 3:
-            {
-              MeshObject<3> *elem = &tetras_[obj_4_el_[el_idx]];
-              for (unsigned int i=0; i<4; i++)
-                if (elem->nodes[i] == n.idx())
-                  elem->nodes[i] = new_nid;
-              for (unsigned int fi=0; fi<4; fi++)
-                for (unsigned int ni=0; ni<3; ni++)
-                  if (elem->faces[fi]->nodes[ni] == n.idx())
-                    elem->faces[fi]->nodes[ni] = new_nid;
-            }
-            break;
-        }
+        MeshObject *elem = &objects_[mesh_->element_accessor(el_idx).dim()][obj_4_el_[el_idx]];
+        for (unsigned int i=0; i<mesh_->element_accessor(el_idx).dim()+1; i++)
+          if (elem->nodes[i] == n.idx())
+            elem->nodes[i] = new_nid;
+        for (unsigned int fi=0; fi<mesh_->element_accessor(el_idx).dim()+1; fi++)
+          for (unsigned int ni=0; ni<mesh_->element_accessor(el_idx).dim(); ni++)
+            if (elem->faces[fi]->nodes[ni] == n.idx())
+              elem->faces[fi]->nodes[ni] = new_nid;
       }
     }
   }

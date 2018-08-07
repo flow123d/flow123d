@@ -296,17 +296,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
       unsigned int nid;
       for (unsigned int n=0; n<cell->dim()+1; n++)
       {
-        switch (cell->dim()) {
-          case 1:
-            nid = mesh_->tree->lines()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-            break;
-          case 2:
-            nid = mesh_->tree->triangles()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-            break;
-          case 3:
-            nid = mesh_->tree->tetras()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-            break;
-        }
+        nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
         node_status[nid] = VALID_NODE;
         n_dof_indices += ds->n_node_dofs(nid);
       }
@@ -321,17 +311,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
         unsigned int nid;
         for (unsigned int n=0; n<cell->dim()+1; n++)
         {
-          switch (cell->dim()) {
-            case 1:
-              nid = mesh_->tree->lines()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-              break;
-            case 2:
-              nid = mesh_->tree->triangles()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-              break;
-            case 3:
-              nid = mesh_->tree->tetras()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-              break;
-          }
+          nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
           node_status[nid] = INVALID_NODE;
         }
       }
@@ -348,17 +328,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
       unsigned int nid;
       for (unsigned int n=0; n<cell->dim()+1; n++)
       {
-        switch (cell->dim()) {
-          case 1:
-            nid = mesh_->tree->lines()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-            break;
-          case 2:
-            nid = mesh_->tree->triangles()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-            break;
-          case 3:
-            nid = mesh_->tree->tetras()[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-            break;
-        }
+        nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
         
         switch (node_status[nid]) {
           case VALID_NODE:
@@ -545,20 +515,8 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     {
       CellIterator cell = mesh_->element_accessor(el_index(loc_el));
       unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.idx()];
-      switch (cell->dim()) {
-        case 1:
-          for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-            node_is_local[mesh_->tree->lines()[obj_idx].nodes[nid]] = true;
-          break;
-        case 2:
-          for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-            node_is_local[mesh_->tree->triangles()[obj_idx].nodes[nid]] = true;
-          break;
-        case 3:
-          for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-            node_is_local[mesh_->tree->tetras()[obj_idx].nodes[nid]] = true;
-          break;
-      }
+      for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
+        node_is_local[mesh_->tree->objects(cell->dim())[obj_idx].nodes[nid]] = true;
     }
     for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
       if (node_is_local[nid])
@@ -571,32 +529,12 @@ void DOFHandlerMultiDim::make_elem_partitioning()
       {
         bool has_local_node = false;
         unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.idx()];
-        switch (cell->dim()) {
-          case 1:
-            for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-              if (node_is_local[mesh_->tree->lines()[obj_idx].nodes[nid]])
-              {
-                has_local_node = true;
-                break;
-              }
+        for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
+          if (node_is_local[mesh_->tree->objects(cell->dim())[obj_idx].nodes[nid]])
+          {
+            has_local_node = true;
             break;
-          case 2:
-            for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-              if (node_is_local[mesh_->tree->triangles()[obj_idx].nodes[nid]])
-              {
-                has_local_node = true;
-                break;
-              }
-            break;
-          case 3:
-            for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
-              if (node_is_local[mesh_->tree->tetras()[obj_idx].nodes[nid]])
-              {
-                has_local_node = true;
-                break;
-              }
-            break;
-        }
+          }
         if (has_local_node) ghost_4_loc.push_back(cell.idx());
       }
     }
