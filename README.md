@@ -8,7 +8,8 @@ For more information see the project pages:
 [flow123d.github.com](http://flow123d.github.com).
 
 Release [![Build Status](http://ciflow.nti.tul.cz:8080/buildStatus/icon?job=Flow123d-ci2runner-release-multijob)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) |
- Debug [![Build Status](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/badge/icon)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/)
+Debug [![Build Status](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/badge/icon)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/) |
+Coverage [![Coverage Status](https://coveralls.io/repos/github/flow123d/flow123d/badge.svg?branch=master)](https://coveralls.io/github/flow123d/flow123d?branch=master)
  
 ## Docker
 
@@ -311,6 +312,3 @@ To copy out reference manual from docker use command `docker cp`.
    Solution (ATTENTION, depends on Cygwin version): 
     add following to line 110 in the rebase script:
     -e '/\/sys-root\/mingw\/bin/d'
-
-
-
