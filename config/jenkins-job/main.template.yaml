@@ -89,11 +89,8 @@
           docker rm -f contcoverage || echo "container not running"
           docker run --privileged -di --name contcoverage -v $FLOW_CACHE:$FLOW_CACHE flow123d/flow-libs-dev-dbg:user
           # -------------------->
-          docker exec contcoverage cp $FLOW/config/config-jenkins-docker-coverage.cmake $FLOW/config.cmake
-          
           docker exec contcoverage git clone --reference $FLOW_CACHE -b $_GIT_BRANCH https://github.com/flow123d/flow123d.git $FLOW
-          docker exec contcoverage mv $FLOW/../build-$_GIT_BRANCH $FLOW
-          docker exec contcoverage ln -s $FLOW/build-$_GIT_BRANCH $FLOW/../build-$_GIT_BRANCH
+          docker exec contcoverage cp $FLOW/config/config-jenkins-docker-coverage.cmake $FLOW/config.cmake
           
           docker cp $TOKEN contcoverage:$FLOW
           
