@@ -158,7 +158,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
-	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
+	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
@@ -172,11 +172,11 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
 	ele_piezo_head.resize(mesh_->n_elements());
-	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
+	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
-	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(*mesh_, 3);
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
