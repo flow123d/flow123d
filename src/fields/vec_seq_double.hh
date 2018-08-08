@@ -51,7 +51,8 @@ public:
     typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
     /// Constructor.
-    VectorSeqDouble() {}
+    VectorSeqDouble()
+    : dh_(nullptr) {}
 
     /// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
@@ -108,9 +109,8 @@ public:
         static MappingP1<1,3> map1;
         static MappingP1<2,3> map2;
         static MappingP1<3,3> map3;
-        static std::shared_ptr<DOFHandlerMultiDim> dh = nullptr;
 
-        if ( (dh == nullptr) || (dh->mesh()->n_elements() != mesh.n_elements()) ) {
+        if ( (dh_ == nullptr) || (dh_->mesh()->n_elements() != mesh.n_elements()) ) {
         	switch (n_comp) { // by number of components
         		case 1: { // scalar
         			fe0_ = new FE_P_disc<0>(0);
@@ -145,12 +145,12 @@ public:
         			ASSERT(false).error("Should not happen!\n");
         	}
 
-        	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
-        	dh->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
+        	dh_ = std::make_shared<DOFHandlerMultiDim>(mesh);
+        	dh_->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
         }
 
         std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-        field_ptr->set_fe_data(dh, &map1, &map2, &map3, this);
+        field_ptr->set_fe_data(dh_, &map1, &map2, &map3, this);
         return field_ptr;
 	}
 
@@ -179,6 +179,8 @@ private:
 	FiniteElement<1> *fe1_;
 	FiniteElement<2> *fe2_;
 	FiniteElement<3> *fe3_;
+	// DOF handler object allow create FieldFE
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 /**
