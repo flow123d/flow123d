@@ -338,7 +338,7 @@ void SorptionBase::initialize_fields()
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-	  auto output_field_ptr = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, substances_.size());
+	  auto output_field_ptr = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
