@@ -352,24 +352,24 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          rm -rf publish
-          mkdir -p publish
-          docker exec cont{build-type} make -C ${{FLOW}} clean-tests
-          
-          make -C flow123d/bin/docker/package \
-                CID=cont{build-type} \
-                DESTINATION=$(pwd)/publish \
-                DOCKER_TOOLBOX_PATH=/home/builder/jenkins/static/DockerToolbox-1.12.2.exe \
-                FLOW_GIT_HASH=${{GIT_COMMIT:0:6}} \
-                create-packages
-          make -C flow123d/bin/docker/package \
-                CID=cont{build-type} \
-                DESTINATION=$(pwd)/publish \
-                remove-unwanted
-          # copy out docs, now done in makefile script in docker-config repo
-          # docker cp cont{build-type}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
-          # docker cp cont{build-type}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
-          # docker cp cont{build-type}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          destination=$(pwd)/publish
+
+          rm -rf publish && mkdir -p publish
+          git clone https://github.com/janhybs/flow123d-package.git
+
+          make -C flow123d-package \
+                  destination=$destination \
+                  all
+
+          make -C flow123d-package \
+                  destination=$destination \
+                  remove-unwanted
+
+          make -C flow123d-package \
+                  push-to-hub
+
+          ls -la $destination
+
     publishers:
       - cifs: 
           site: 'flow123d@intec'
