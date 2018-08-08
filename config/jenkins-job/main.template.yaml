@@ -87,7 +87,7 @@
           _GIT_BRANCH=master
           
           docker rm -f contcoverage || echo "container not running"
-          docker run --privileged -di --name contcoverage -v $FLOW_CACHE:$FLOW_CACHE
+          docker run --privileged -di --name contcoverage -v $FLOW_CACHE:$FLOW_CACHE flow123d/flow-libs-dev-dbg:user
           # -------------------->
           docker exec contcoverage cp $FLOW/config/config-jenkins-docker-coverage.cmake $FLOW/config.cmake
           
