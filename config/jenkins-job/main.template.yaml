@@ -78,7 +78,9 @@
           skip-tag: true
     triggers:
       - pollscm:
-          cron: "H 2 * * *"
+          cron: |
+            # At 02:00 on Monday, Wednesday, and Friday.
+            H 2 * * 1,3,5
     builders:
       - shell: |
           FLOW=/opt/flow123d/flow123d
@@ -96,7 +98,7 @@
           
           docker exec contcoverage make -C $FLOW all
           docker exec contcoverage make -C $FLOW/unit_tests/ all-unit-test
-          docker exec contcoverage cd $FLOW && coveralls -r . -i src -e src/dealii --follow-symlinks
+          docker exec contcoverage bash -c "cd $FLOW && coveralls -r . -i src -e src/dealii --follow-symlinks"
           # <--------------------
           docker exec stop -f contcoverage
 
