@@ -45,7 +45,7 @@ TEST(DOFHandler, test_all) {
     for (unsigned int i=0; i<5; i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      dh.get_dof_indices(mesh->element.find_id(i+1), indices[i]);
+      dh.get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is shared by elements 2, 3
@@ -110,7 +110,7 @@ TEST(DOFHandler, test_all) {
     for (unsigned int i=0; i<mesh->n_elements(); i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      dh.get_dof_indices(mesh->element.find_id(i+1), indices[i]);
+      dh.get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is not shared by elements 1, 4, 5
