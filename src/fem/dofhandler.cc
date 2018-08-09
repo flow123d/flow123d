@@ -260,7 +260,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     const int VALID_NODE = -2;
     const int ASSIGNED_NODE = -3;
     unsigned int next_free_dof = offset;
-    unsigned int n_elem_dofs = 0;
     unsigned int n_node_dofs = 0;
     unsigned int n_dof_indices = 0;
 
@@ -268,7 +267,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     // We must separate dofs for dimensions because FE functions
     // may be discontinuous on nodes shared by different
     // dimensions.
-    std::vector<int> node_dofs, node_dof_starts, node_status, elem_dofs, elem_dof_starts;
+    std::vector<int> node_dofs, node_dof_starts, node_status;
     for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
     {
       node_dof_starts.push_back(n_node_dofs);
@@ -277,14 +276,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     node_dof_starts.push_back(n_node_dofs);
     node_dofs.resize(n_node_dofs);
     node_status.resize(mesh_->tree->n_nodes(), INVALID_NODE);
-    
-    // initialize dofs on elements
-    for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++) {
-      elem_dof_starts.push_back(n_elem_dofs);
-      n_elem_dofs += ds->n_elem_dofs(mesh_->element_accessor(el_index(loc_el)));
-    }
-    elem_dof_starts.push_back(n_elem_dofs);
-    elem_dofs.resize(n_elem_dofs);
     
     // mark local dofs
     for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++)
@@ -323,33 +314,62 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     for (unsigned int loc_el=0; loc_el < el_ds_->lsize(); loc_el++)
     {
       CellIterator cell = mesh_->element_accessor(el_index(loc_el));
-      
-      // add dofs shared by nodes
-      unsigned int nid;
-      for (unsigned int n=0; n<cell->dim()+1; n++)
-      {
-        nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
-        
-        switch (node_status[nid]) {
-          case VALID_NODE:
-            for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
-              node_dofs[node_dof_starts[nid]+i] = next_free_dof++;
-            node_status[nid] = ASSIGNED_NODE;
+
+      unsigned int ncell_dofs = 0;
+      switch (cell->dim()) {
+        case 1:
+            ncell_dofs = fe<1>(cell)->n_dofs();
             break;
-          case INVALID_NODE:
-            for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
-              node_dofs[node_dof_starts[nid]+i] = INVALID_NODE;
+        case 2:
+            ncell_dofs = fe<2>(cell)->n_dofs();
             break;
-        }
-        for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
-          dof_indices.push_back(node_dofs[node_dof_starts[nid]+i]);
+        case 3:
+            ncell_dofs = fe<3>(cell)->n_dofs();
+            break;
       }
       
-      // add dofs owned only by the element
-      for (int i=0; i<elem_dof_starts[loc_el+1] - elem_dof_starts[loc_el]; i++)
+      vector<unsigned int> loc_node_dof_count(cell->n_nodes(), 0);
+      for (unsigned int idof = 0; idof<ncell_dofs; ++idof)
       {
-        elem_dofs[elem_dof_starts[loc_el]+i] = next_free_dof++;
-        dof_indices.push_back(elem_dofs[elem_dof_starts[loc_el]+i]);
+        unsigned int dof_dim = 0, dof_nface_idx = 0;
+        switch (cell.dim()) {
+        case 1:
+            dof_dim = fe<1>(cell)->dof(idof).dim;
+            dof_nface_idx = fe<1>(cell)->dof(idof).n_face_idx;
+            break;
+        case 2:
+            dof_dim = fe<2>(cell)->dof(idof).dim;
+            dof_nface_idx = fe<2>(cell)->dof(idof).n_face_idx;
+            break;
+        case 3:
+            dof_dim = fe<3>(cell)->dof(idof).dim;
+            dof_nface_idx = fe<3>(cell)->dof(idof).n_face_idx;
+            break;
+        }
+        
+        if (dof_dim == 0) {
+            // add dofs shared by nodes
+            unsigned int nid;
+            nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
+                
+            switch (node_status[nid]) {
+            case VALID_NODE:
+                for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
+                    node_dofs[node_dof_starts[nid]+i] = next_free_dof++;
+                node_status[nid] = ASSIGNED_NODE;
+                break;
+            case INVALID_NODE:
+                for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
+                    node_dofs[node_dof_starts[nid]+i] = 0;
+                break;
+            }
+            dof_indices.push_back(node_dofs[node_dof_starts[nid]+(loc_node_dof_count[dof_nface_idx]++)]);
+        } else if (dof_dim == cell.dim()) {
+            // add dofs owned only by the element
+            dof_indices.push_back(next_free_dof++);
+        } else {
+            ASSERT(false).error("Unsupported dof n_face.");
+        }
       }
       cell_starts[row_4_el[el_4_loc[loc_el]]+1] = dof_indices.size();
       
