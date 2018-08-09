@@ -129,27 +129,27 @@ void FE_P<dim>::init_dofs()
         // whether the dof lies on node, line, triangle or tetrahedron.
         std::vector<arma::uvec> uvbc;
         arma::uvec ubc = arma::zeros<arma::uvec>(dim+1);
-        ubc[dim] = degree_;
+        ubc[0] = degree_;
         bool finish = false;
         do {
             uvbc.push_back(ubc);
-            if (ubc[dim] > 0)
+            if (ubc[0] > 0)
             {
                 // by default increment the first coordinate
-                ubc[0] += 1;
-                ubc[dim] -= 1;
+                ubc[1] += 1;
+                ubc[0] -= 1;
             }
             else
             {
-                // if sum of coordinates is maximal (last coordinate is zero)
+                // if sum of coordinates is maximal (0-th coordinate is zero)
                 // then find first nonzero coordinate,
                 // set it to zero, and increment the following coordinate.
-                unsigned int c = 0;
+                unsigned int c = 1;
                 while (ubc[c] == 0) c++;
                 // if the first nonzero coordinate is the last but one, we reach the end
-                if (c == dim-1) finish = true;
+                if (c == dim) finish = true;
                 else {
-                    ubc[dim] = ubc[c]-1;
+                    ubc[0] = ubc[c]-1;
                     ubc[c] = 0;
                     ubc[c+1] += 1;
                 }

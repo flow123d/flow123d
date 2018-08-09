@@ -46,11 +46,11 @@ template<class FS> const double Dof::evaluate(const FS &function_space,
         // evaluate basis function and return the linear combination of components
         arma::vec vec_value(function_space.n_components());
         
-        // drop off the last barycentric coordinate
+        // drop off the 0-th barycentric coordinate
         // in case of space_dim=0 subvec does not work
         arma::vec f_coords(function_space.space_dim());
         if (function_space.space_dim() > 0)
-            f_coords = coords.subvec(0,coords.size()-2);
+            f_coords = coords.subvec(1,coords.size()-1);
         for (unsigned int c=0; c<function_space.n_components(); c++)
             vec_value[c] = function_space.basis_value(basis_idx, f_coords, c);
         return dot(coefs, vec_value);
