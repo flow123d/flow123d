@@ -156,7 +156,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
         all_element_idx_.resize(mesh_->n_elements());
 	for(unsigned int i=0; i<all_element_idx_.size(); i++) all_element_idx_[i] = i;
 
-	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+	// create shared pointer to a FieldFE and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
 	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);

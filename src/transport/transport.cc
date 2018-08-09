@@ -140,7 +140,7 @@ void ConvectionTransport::initialize()
     data_.subdomain = GenericField<3>::subdomain(*mesh_);
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
-		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+		// create shared pointer to a FieldFE and push this Field to output_field on all regions
 		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
 		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
 	}

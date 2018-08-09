@@ -218,7 +218,7 @@ void DualPorosity::initialize_fields()
   data_.conc_immobile.setup_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
-    // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+    // create shared pointer to a FieldFE and push this Field to output_field on all regions
 	auto output_field_ptr = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
   }
