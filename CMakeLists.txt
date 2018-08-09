@@ -135,18 +135,19 @@ else(FLOW_CC_FLAGS)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
     # Coverage mode creates instrumented binary
-    SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
+    SET(CMAKE_C_FLAGS "-g -O0 --coverage")
+    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
     set(CMAKE_BUILD_TYPE Debug)
     
     # set external libs flags
     SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
     SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
+    
     flow_define(DEBUG)
-    INCLUDE(CodeCoverage)
+    # INCLUDE(CodeCoverage)
     # add custom target to collect coverage into xml file
-    COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
+    # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
   else()
   endif()
 endif(FLOW_CC_FLAGS)
