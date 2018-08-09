@@ -45,7 +45,7 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
-#include "fields/field_elementwise.hh" 
+#include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 

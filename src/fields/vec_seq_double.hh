@@ -24,7 +24,6 @@
 
 #include <petscvec.h>
 
-#include "fields/field_elementwise.hh"
 #include "fields/field_fe.hh"
 #include "fem/dofhandler.hh"
 #include "fem/fe_p.hh"

@@ -12,7 +12,7 @@
 #include <mesh_constructor.hh>
 
 #include <fields/multi_field.hh>
-#include <fields/field_elementwise.hh>
+#include <fields/field_fe.hh>
 #include <fields/field_set.hh>
 #include <tools/unit_si.hh>
 #include <input/type_base.hh>
@@ -27,7 +27,7 @@ using namespace std;
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 string field_constant_input = R"YAML(
 common: !FieldConstant 

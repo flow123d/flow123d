@@ -19,7 +19,7 @@
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
-#include "fields/field_elementwise.hh"
+#include "fields/field_fe.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "fields/field_values.hh"
@@ -40,7 +40,7 @@
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_python)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 using namespace std;
 
