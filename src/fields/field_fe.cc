@@ -318,13 +318,16 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		unsigned int n_entities;
 		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
+		bool boundary;
 		if (is_native || this->has_compatible_mesh_) {
 			n_entities = dh_->mesh()->n_elements();
+			boundary = this->boundary_domain_;
 		} else {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
+			boundary = false;
 		}
 		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				this->boundary_domain_, this->component_idx_);
+				boundary, this->component_idx_);
 		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
 
@@ -348,7 +351,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
-	ASSERT(!this->boundary_domain_)(field_name_).error("Interpolation of boundary FieldFE is not supported yet.\n");
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);

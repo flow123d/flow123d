@@ -247,8 +247,9 @@ default_values: !FieldFE
   default_value: 0.1
 ##### tests of interpolation P0
 interp_scalar: !FieldFE
-  mesh_data_file: fields/simplest_cube_data.msh
+  mesh_data_file: fields/interpolate_boundary_data.msh
   field_name: scalar
+  default_value: 0.0
 interp_scalar_unit_conversion: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
@@ -531,21 +532,18 @@ TEST_F(FieldFENewTest, default_values) {
 }
 
 
-/*TEST_F(FieldFENewTest, 1d_2d_elements_small) {
+TEST_F(FieldFENewTest, 1d_2d_elements_small) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("interp_scalar"), init_data("interp_scalar"));
     field.set_mesh(mesh, true);
+    std::vector<unsigned int> expected_vals = {3,3,2,2};
 
-    for (unsigned int j=1; j<3; j++) {
-    	field.set_time(test_time[j-1]);
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
 
-    	EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0)) );
-        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(1)) );
-        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(2)) );
-        EXPECT_DOUBLE_EQ( j*0.700, field.value(point, mesh->element_accessor(3)) );
-        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(4)) );
-        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(5)) );
-        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(11)) );
+    	for (unsigned int i=0; i<4; ++i) {
+    		EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
+    	}
     }
 
-}*/
+} // */
