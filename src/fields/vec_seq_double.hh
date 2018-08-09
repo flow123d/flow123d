@@ -44,7 +44,7 @@
  * Allows the following functionalities:
  *  - return shared pointer to std::vector of double
  *  - return pointer to PETSC vector
- *  - create shared pointer to FieldElementwise object corresponding with std::vector of double
+ *  - create shared pointer to FieldFE object corresponding with std::vector of double
  */
 class VectorSeqDouble {
 public:
@@ -89,16 +89,6 @@ public:
 	{
 		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
 		std::fill(data_ptr_->begin(), data_ptr_->end(), value);
-	}
-
-
-	/// Create and return shared pointer to FieldElementwise object
-	template <int spacedim, class Value>
-	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)
-	{
-		std::shared_ptr<FieldElementwise<spacedim, Value> > field_ptr(
-		          new FieldElementwise<spacedim, Value>( data_ptr_, n_comp ));
-		return field_ptr;
 	}
 
 
