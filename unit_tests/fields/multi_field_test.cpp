@@ -85,7 +85,7 @@ formula_field_full: !FieldFormula
 formula_field_base: !FieldFormula
   value: x
 
-elementwise_field: !FieldElementwise
+fe_field: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
 interpolated_p0_field: !FieldInterpolatedP0
@@ -106,9 +106,10 @@ protected:
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-        auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        auto mesh_reader = reader_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
         mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
         mesh_reader->read_raw_mesh(mesh);
+        mesh->setup_topology();
 
     }
 
@@ -143,7 +144,7 @@ Input::Type::Record & MultiFieldTest::get_input_type() {
 		.declare_key("const_field_autoconv", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("formula_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("formula_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("elementwise_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+		.declare_key("fe_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("interpolated_p0_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.close();
 }
@@ -193,11 +194,11 @@ TEST_F(MultiFieldTest, complete_test) {
 	    check_field_vals(formula_field, elm);
 	}
 
-	{ // test of FieldElementwise
-		Input::Array elementwise_field = input.val<Input::Array>("elementwise_field");
-		EXPECT_EQ(1, elementwise_field.size());
+	{ // test of FieldFE
+		Input::Array fe_field = input.val<Input::Array>("fe_field");
+		EXPECT_EQ(1, fe_field.size());
 
-        check_field_vals(elementwise_field, mesh->element_accessor(1));
+        check_field_vals(fe_field, mesh->element_accessor(1));
 	}
 
 	{ // test of FieldInterpolatedP0
