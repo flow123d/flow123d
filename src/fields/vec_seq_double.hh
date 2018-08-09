@@ -25,6 +25,10 @@
 #include <petscvec.h>
 
 #include "fields/field_elementwise.hh"
+#include "fields/field_fe.hh"
+#include "fem/dofhandler.hh"
+#include "fem/fe_p.hh"
+#include "fem/mapping_p1.hh"
 
 
 /**
@@ -44,7 +48,11 @@ class VectorSeqDouble {
 public:
     typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
-	/// Create shared pointer and PETSC vector with given size.
+    /// Constructor.
+    VectorSeqDouble()
+    : fe1_(0), fe2_(0), fe3_(0) {}
+
+    /// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
 	{
 		data_ptr_ = std::make_shared< std::vector<double> >(size);
@@ -91,6 +99,26 @@ public:
 		return field_ptr;
 	}
 
+
+	/// Create and return shared pointer to FieldFE object
+	template <int spacedim, class Value>
+	std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh)
+	{
+        static MappingP1<1,3> map1;
+        static MappingP1<2,3> map2;
+        static MappingP1<3,3> map3;
+        static std::shared_ptr<DOFHandlerMultiDim> dh = nullptr;
+
+        if ( (dh == nullptr) || (dh->mesh()->n_elements() != mesh.n_elements()) ) {
+        	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+        	dh->distribute_dofs(fe1_, fe2_, fe3_);
+        }
+
+        std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+        field_ptr->set_fe_data(dh, &map1, &map2, &map3, this);
+        return field_ptr;
+	}
+
 	/// Destructor.
 	~VectorSeqDouble()
 	{
@@ -111,6 +139,10 @@ private:
 	VectorSeq data_ptr_;
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
+    /// Finite element objects (allow to create DOF handler)
+	FE_P_disc<1> fe1_;
+    FE_P_disc<2> fe2_;
+    FE_P_disc<3> fe3_;
 };
 
 /**

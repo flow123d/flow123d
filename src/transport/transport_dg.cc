@@ -26,6 +26,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
 #include "flow/mh_dofhandler.hh"
 #include "transport/advection_diffusion_model.hh"
