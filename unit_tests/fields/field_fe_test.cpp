@@ -198,13 +198,14 @@ TEST_F(FieldFETest, native_data) {
 }
 
 
-/**********************************************************
- *                                                        *
- *     New tests of Elementwise replaced with FieldFE     *
- *                                                        *
- **********************************************************/
+/*******************************************************************************
+ *                                                                             *
+ *     New tests of Elementwise and Interpolation P0 replaced with FieldFE     *
+ *                                                                             *
+ *******************************************************************************/
 
 string elem_input = R"YAML(
+##### tests of elementwise
 scalar: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: scalar
@@ -244,6 +245,23 @@ default_values: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: porosity
   default_value: 0.1
+##### tests of interpolation P0
+interp_scalar: !FieldFE
+  mesh_data_file: fields/simplest_cube_data.msh
+  field_name: scalar
+interp_scalar_unit_conversion: !FieldFE
+  mesh_data_file: fields/simplest_cube_3d.msh
+  field_name: scalar
+  unit: km
+interp_scalar_large: !FieldFE
+  mesh_data_file: fields/bigger_3d_cube_0.5.msh
+  field_name: scalar
+interp_vector_fixed: !FieldFE
+  mesh_data_file: fields/simplest_cube_3d.msh
+  field_name: vector_fixed
+interp_tensor_fixed: !FieldFE
+  mesh_data_file: fields/simplest_cube_3d.msh
+  field_name: tensor_fixed
 )YAML";
 
 
@@ -266,13 +284,18 @@ public:
             .declare_key("scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_time_shift", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-			.declare_key("enum", EnumField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("enum", EnumField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_vector", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_tensor", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("default_values", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
         Input::ReaderToStorage reader( elem_input, rec_type, Input::FileFormat::format_YAML );
@@ -507,3 +530,22 @@ TEST_F(FieldFENewTest, default_values) {
     }
 }
 
+
+/*TEST_F(FieldFENewTest, 1d_2d_elements_small) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("interp_scalar"), init_data("interp_scalar"));
+    field.set_mesh(mesh, true);
+
+    for (unsigned int j=1; j<3; j++) {
+    	field.set_time(test_time[j-1]);
+
+    	EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(0)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(1)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(2)) );
+        EXPECT_DOUBLE_EQ( j*0.700, field.value(point, mesh->element_accessor(3)) );
+        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(4)) );
+        EXPECT_DOUBLE_EQ( j*0.675, field.value(point, mesh->element_accessor(5)) );
+        EXPECT_DOUBLE_EQ( j*0.650, field.value(point, mesh->element_accessor(11)) );
+    }
+
+}*/
