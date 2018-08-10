@@ -403,7 +403,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 				++elem_count[elm->dim()];
 			}
 		}
-		unsigned int dim = ele->dim(); // dim+1 for boundary
+		unsigned int dim = (this->boundary_domain_) ? ele->dim()+1 : ele->dim();
 		double elem_value = 0.0;
 		do {
 			if (elem_count[dim] > 0) {
