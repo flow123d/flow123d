@@ -34,7 +34,6 @@
 #include "fields/multi_field.hh"
 #include "fields/generic_field.hh"
 #include "input/factory.hh"
-// #include "io/equation_output.hh"
 
 
 
@@ -76,7 +75,6 @@ const int Elasticity::registrar =
 namespace Mechanics {
 
 FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
-//   : vec(0)
 {
     unsigned int q_order;
 
@@ -318,7 +316,7 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
 
     // create finite element structures and distribute DOFs
     feo = new Mechanics::FEObjects(mesh_, 1);
-    //DebugOut().fmt("TDG: solution size {}\n", feo->dh()->n_global_dofs());
+    DebugOut().fmt("Mechanics: solution size {}\n", feo->dh()->n_global_dofs());
     
     volume_change.init(mesh_);
 
@@ -351,7 +349,7 @@ void Elasticity::initialize()
     output_vec.resize(output_vector_size);
 // 	data_.output_field.name("displacement");
 // 	data_.output_field.set_mesh(*mesh_);
-    data_.output_type(OutputTime::CORNER_DATA);
+    data_.output_type(OutputTime::NODE_DATA);
 
 //     data_.output_field.setup_components();
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
@@ -721,7 +719,7 @@ void Elasticity::assemble_volume_integrals()
         for (unsigned int k=0; k<qsize; k++)
         {
           double mu = young[k]*0.5/(poisson[k]+1.);
-          double lambda = young[k]*poisson[k]/((poisson[k]+1.)*(1.-2*poisson[k]));
+          double lambda = young[k]*poisson[k]/((poisson[k]+1.)*(1.-2.*poisson[k]));
           
           for (unsigned int i=0; i<ndofs; i++)
           {
@@ -838,13 +836,13 @@ void Elasticity::assemble_fluxes_boundary()
     	SideIter side = edg->side(0);
         ElementAccessor<3> cell = side->element();
         feo->dh()->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, side->elem_idx());
+        fe_values_side.reinit(cell, side->side_idx());
 //         fsv_rt.reinit(cell, side->el_idx());
 // 
 //         calculate_velocity(cell, side_velocity, fsv_rt);
 //         Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
 //         dg_penalty = data_.dg_penalty.value(cell->centre(), ele_acc);
-        unsigned int bc_type = data_.bc_type.value(cell.centre(), side->cond()->element_accessor());
+        unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
 //         data_.cross_section.value_list(fe_values_side.point_list(), ele_acc, csection);
 // 
         	for (unsigned int i=0; i<ndofs; i++)
@@ -915,7 +913,7 @@ void Elasticity::assemble_fluxes_element_side()
 
 		ElementAccessor<3> cell = nb->side()->element();
 		feo->dh()->get_dof_indices(cell, side_dof_indices[1]);
-		fe_values_side.reinit(cell, nb->side()->elem_idx());
+		fe_values_side.reinit(cell, nb->side()->side_idx());
 		n_dofs[1] = fv_sb[1]->n_dofs();
 
 		// Element id's for testing if they belong to local partition.
@@ -1061,9 +1059,9 @@ void Elasticity::set_boundary_conditions()
 			ElementAccessor<3> cell = side->element();
 			ElementAccessor<3> bc_cell = side->cond()->element_accessor();
 
- 			unsigned int bc_type = data_.bc_type.value(cell.centre(), bc_cell);
+ 			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
 
-			fe_values_side.reinit(cell, side->elem_idx());
+			fe_values_side.reinit(cell, side->side_idx());
 // 			fsv_rt.reinit(cell, side->el_idx());
 // 			calculate_velocity(cell, velocity, fsv_rt);
 
