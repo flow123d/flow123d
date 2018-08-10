@@ -29,6 +29,7 @@
 class DarcyFlowInterface;
 class Mesh;
 class AdvectionProcessBase;
+class Elasticity;
 class FieldCommon;
 
 
@@ -90,6 +91,9 @@ private:
 
     /// solute transport with chemistry through operator splitting
     std::vector<AdvectionData> processes_;
+    
+    /// mechanics
+    std::shared_ptr<Elasticity> mechanics;
 
     ///
     double min_velocity_time;
