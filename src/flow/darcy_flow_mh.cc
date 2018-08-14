@@ -730,7 +730,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int dim = ele_ac.dim();
-        DBGVAR(ele_ac.ele_global_idx());
+//         DBGVAR(ele_ac.ele_global_idx());
         assembler[dim-1]->assemble(ele_ac);
     }
 
