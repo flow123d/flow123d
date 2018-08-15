@@ -158,6 +158,11 @@ public:
     	return (*data_ptr_)[idx];
     }
 
+    inline std::shared_ptr<DOFHandlerMultiDim> get_dh()
+    {
+        return dh_;
+    }
+
 private:
 	/// shared pointer to vector of data
 	VectorSeq data_ptr_;
