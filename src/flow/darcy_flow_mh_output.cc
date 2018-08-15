@@ -302,10 +302,16 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
 
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
+	unsigned int ndofs = ele_pressure.get_dh()->max_elem_dofs();
+	ASSERT_EQ(ndofs, 1);
+	ASSERT_EQ(ele_piezo_head.get_dh()->max_elem_dofs(), 1);
+	std::vector<LongIdx> indices(ndofs);
     for(unsigned int i_ele : element_indices) {
         ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
-        ele_pressure[i_ele] = sol[ soi + i_ele];
-        ele_piezo_head[i_ele] = sol[soi + i_ele ]
+        ele_pressure.get_dh()->get_dof_indices(ele, indices);
+        ele_pressure[ indices[0] ] = sol[ soi + i_ele];
+        ele_piezo_head.get_dh()->get_dof_indices(ele, indices);
+        ele_piezo_head[ indices[0] ] = sol[soi + i_ele ]
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele.centre()));
     }
 }
@@ -323,13 +329,17 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
+	unsigned int ndofs = ele_flux.get_dh()->max_elem_dofs();
+	ASSERT_EQ(ndofs, 3);
+	std::vector<LongIdx> indices(ndofs);
     for(unsigned int i_ele : element_indices) {
     	ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
+    	ele_flux.get_dh()->get_dof_indices(ele, indices);
 
         flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
         // place it in the sequential vector
-        for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
+        for(unsigned int j=0; j<3; j++) ele_flux[ indices[j] ]=flux_in_center[j];
     }
 }
 
@@ -435,6 +445,9 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**second pass - calculate scalar  */
     if (count_elements){
+    	unsigned int ndofs = ele_pressure.get_dh()->max_elem_dofs();
+    	ASSERT_EQ(ndofs, 1);
+    	std::vector<LongIdx> indices(ndofs);
     	for (auto ele : mesh_->elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele.node_accessor(li);//!< get NodeAccessor from element */
@@ -446,7 +459,8 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
                         ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
                         ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
-                scalars[node_index] += ele_pressure[ ele.idx() ] *
+                ele_pressure.get_dh()->get_dof_indices(ele, indices);
+                scalars[node_index] += ele_pressure[ indices[0] ] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
