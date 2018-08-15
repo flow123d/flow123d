@@ -28,6 +28,7 @@ problem: !Coupling_Sequential
     output_specific:
       compute_errors: true
       python_solution: 51_analytical_module_5w.py
+      output_linear_system: true
       fields:
         - velocity_enr
         - velocity_reg

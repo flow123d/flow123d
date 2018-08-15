@@ -13,6 +13,7 @@ problem: !Coupling_Sequential
     output_specific:
       compute_errors: true
       python_solution: analytical_module_1w.py
+      output_linear_system: true
       fields:
         - velocity_enr
         - velocity_reg

@@ -1052,6 +1052,10 @@ void DarcyMH::assembly_linear_system() {
 
 void DarcyMH::print_matlab_matrix(std::string matlab_file)
 {
+    // return if ls output not enabled by output specific input record
+    if(! output_object->is_output_ls_enabled())
+        return;
+        
     std::string output_file;
     
     DebugOut() << "Print MH system in matlab format.\n";

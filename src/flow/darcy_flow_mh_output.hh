@@ -114,7 +114,8 @@ public:
 
     //const OutputFields &get_output_fields() { return output_fields; }
 
-
+    inline bool is_output_ls_enabled()
+    { return output_ls_enabled_; }
 
 protected:
     typedef const vector<unsigned int> & ElementSetRef;
@@ -167,6 +168,7 @@ protected:
     bool compute_errors_;
     FilePath python_solution_filename_;
     
+    bool output_ls_enabled_;
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
     VectorSeqDouble corner_pressure;

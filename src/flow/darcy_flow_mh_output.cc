@@ -74,6 +74,8 @@ const it::Instance & DarcyFlowMHOutput::get_input_type_specific() {
                         "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
+        .declare_key("output_linear_system", it::Bool(), it::Default("false"),
+                        "Enables the output of the linear system in matlab format.")
         .close();
     
     OutputSpecificFields output_fields;
@@ -134,6 +136,7 @@ void DarcyFlowMHOutput::initialize(Input::Record main_mh_in_rec)
             in_rec_specific->opt_val("python_solution", python_solution_filename_);
             ASSERT(python_solution_filename_.exists());
         }
+        in_rec_specific->opt_val("output_linear_system", output_ls_enabled_);
         
         // raw output
         int rank;
