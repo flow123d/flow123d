@@ -97,8 +97,8 @@ public:
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
 
-		Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+		Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
 

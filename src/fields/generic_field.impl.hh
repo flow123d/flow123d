@@ -34,7 +34,7 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 
 	RegionSet all_regions=mesh.region_db().get_region_set("ALL");
 	for(Region reg : all_regions) {
-		auto field_algo=std::make_shared<FieldConstant<spacedim, IntegerScalar>>();
+		auto field_algo=std::make_shared<FieldConstant<spacedim, DoubleScalar>>();
 		field_algo->set_value(reg.id());
 		region_id.set_field(
 				{reg} ,
@@ -55,7 +55,7 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 
 	subdomain.set_field(
 		mesh.region_db().get_region_set("ALL"),
-		make_shared< FieldElementwise<spacedim, FieldValue<3>::Integer> >(field_subdomain_data, 1),
+		make_shared< FieldElementwise<spacedim, DoubleScalar> >(field_subdomain_data, 1),
 		0.0); // time=0.0
 
 	return subdomain;

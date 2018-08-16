@@ -39,9 +39,9 @@ class GenericField {
 public:
 
 	/// Index value type
-	typedef typename FieldValue<spacedim>::Integer IntegerScalar;
+	typedef typename FieldValue<spacedim>::Scalar DoubleScalar;
 	/// Index valued field
-	typedef Field<spacedim, IntegerScalar> IndexField;
+	typedef Field<spacedim, DoubleScalar> IndexField;
 
 	/**
 	 * Returns an instance of a scalar integer field that provides ID's of regions.

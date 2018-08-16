@@ -85,8 +85,8 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
-	    Field<3, FieldValue<3>::Integer> subdomain;
-	    Field<3, FieldValue<3>::Integer> region_id;
+	    Field<3, FieldValue<3>::Scalar> subdomain;
+	    Field<3, FieldValue<3>::Scalar> region_id;
 	};
 
     /// Specific quantities for output in DarcyFlowMH - error estimates etc.
