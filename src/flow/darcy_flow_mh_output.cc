@@ -514,10 +514,19 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
+	unsigned int ndofs_pressure = ele_pressure.get_dh()->max_elem_dofs();
+	unsigned int ndofs_flux = ele_flux.get_dh()->max_elem_dofs();
+	ASSERT_EQ(ndofs_pressure, 1);
+	ASSERT_EQ(ndofs_flux, 3);
+	std::vector<LongIdx> indices_pressure(ndofs_pressure);
+	std::vector<LongIdx> indices_flux(ndofs_flux);
     for (auto ele : mesh_->elements_range()) {
-        raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
+    	ele_pressure.get_dh()->get_dof_indices(ele, indices_pressure);
+    	ele_flux.get_dh()->get_dof_indices(ele, indices_flux);
+
+        raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[ indices_pressure[0] ]);
         for (unsigned int i = 0; i < 3; i++)
-            raw_output_file << ele_flux[3*cit+i] << " ";
+            raw_output_file << ele_flux[ indices_flux[i] ] << " ";
 
         raw_output_file << ele->n_sides() << " ";
 
