@@ -52,7 +52,7 @@ public:
 	 * Returns an instance of a scalar integer field that provides ID's of subdomains used for
 	 * domain decomposition.
 	 *
-	 * TODO: FieldElementwise just use provided data pointer (unsafe solution), so currently we store the data into a mesh.
+	 * TODO: FieldFE just use provided data pointer (unsafe solution), so currently we store the data into a mesh.
 	 * Which is safe as long as we have one mesh for whol calculation.
 	 * After we have FieldFE that use some sort of Vector class with own memory management, we should use these
 	 * to pass the data in safe way.
