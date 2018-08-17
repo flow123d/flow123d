@@ -44,6 +44,7 @@ namespace Input {
 		class Record;
 	}
 }
+template <int spacedim, class Value> class FieldFE;
 
 
 /// Class representing dual porosity model in transport.
@@ -161,6 +162,11 @@ protected:
   std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
   //@}
   
+  // Temporary objects holding pointers to appropriate FieldFE
+  // TODO remove after final fix of equations
+  /// Fields correspond with \p out_conc.
+  std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
+
 private:
   /// Registrar of class to factory
   static const int registrar;
