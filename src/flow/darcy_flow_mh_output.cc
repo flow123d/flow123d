@@ -158,7 +158,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 	// create shared pointer to a FieldFE and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
-	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+	ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
@@ -172,11 +172,11 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
 	ele_piezo_head.resize(mesh_->n_elements());
-	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+	ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
-	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(*mesh_, 3);
+	ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(*mesh_, 3);
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
@@ -255,6 +255,10 @@ void DarcyFlowMHOutput::output()
         //else
         //        make_node_scalar_param(observed_elements);
 
+        ele_pressure.fill_output_data(ele_pressure_ptr);
+        ele_piezo_head.fill_output_data(ele_piezo_head_ptr);
+        ele_flux.fill_output_data(ele_flux_ptr);
+
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
@@ -302,16 +306,10 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
 
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
-	unsigned int ndofs = ele_pressure.get_dh()->max_elem_dofs();
-	ASSERT_EQ(ndofs, 1);
-	ASSERT_EQ(ele_piezo_head.get_dh()->max_elem_dofs(), 1);
-	std::vector<LongIdx> indices(ndofs);
     for(unsigned int i_ele : element_indices) {
         ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
-        ele_pressure.get_dh()->get_dof_indices(ele, indices);
-        ele_pressure[ indices[0] ] = sol[ soi + i_ele];
-        ele_piezo_head.get_dh()->get_dof_indices(ele, indices);
-        ele_piezo_head[ indices[0] ] = sol[soi + i_ele ]
+        ele_pressure[i_ele] = sol[ soi + i_ele];
+        ele_piezo_head[i_ele] = sol[soi + i_ele ]
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele.centre()));
     }
 }
@@ -329,17 +327,13 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
-	unsigned int ndofs = ele_flux.get_dh()->max_elem_dofs();
-	ASSERT_EQ(ndofs, 3);
-	std::vector<LongIdx> indices(ndofs);
     for(unsigned int i_ele : element_indices) {
     	ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
-    	ele_flux.get_dh()->get_dof_indices(ele, indices);
 
         flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
         // place it in the sequential vector
-        for(unsigned int j=0; j<3; j++) ele_flux[ indices[j] ]=flux_in_center[j];
+        for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
     }
 }
 
@@ -445,9 +439,6 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**second pass - calculate scalar  */
     if (count_elements){
-    	unsigned int ndofs = ele_pressure.get_dh()->max_elem_dofs();
-    	ASSERT_EQ(ndofs, 1);
-    	std::vector<LongIdx> indices(ndofs);
     	for (auto ele : mesh_->elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele.node_accessor(li);//!< get NodeAccessor from element */
@@ -459,8 +450,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
                         ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
                         ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
                 );
-                ele_pressure.get_dh()->get_dof_indices(ele, indices);
-                scalars[node_index] += ele_pressure[ indices[0] ] *
+                scalars[node_index] += ele_pressure[ ele.idx() ] *
                         (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
                         (sum_elements[node_index] + sum_sides[node_index] - 1);
             }
@@ -514,19 +504,10 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
-	unsigned int ndofs_pressure = ele_pressure.get_dh()->max_elem_dofs();
-	unsigned int ndofs_flux = ele_flux.get_dh()->max_elem_dofs();
-	ASSERT_EQ(ndofs_pressure, 1);
-	ASSERT_EQ(ndofs_flux, 3);
-	std::vector<LongIdx> indices_pressure(ndofs_pressure);
-	std::vector<LongIdx> indices_flux(ndofs_flux);
     for (auto ele : mesh_->elements_range()) {
-    	ele_pressure.get_dh()->get_dof_indices(ele, indices_pressure);
-    	ele_flux.get_dh()->get_dof_indices(ele, indices_flux);
-
-        raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[ indices_pressure[0] ]);
+    	raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
-            raw_output_file << ele_flux[ indices_flux[i] ] << " ";
+        	raw_output_file << ele_flux[3*cit+i] << " ";
 
         raw_output_file << ele->n_sides() << " ";
 

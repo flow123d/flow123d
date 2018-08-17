@@ -55,7 +55,7 @@ namespace Input {
 }
 
 template<unsigned int dim, unsigned int spacedim> class FEValues;
-
+template <int spacedim, class Value> class FieldFE;
 
 /**
  * Actually this class only collect former code from postprocess.*
@@ -174,6 +174,12 @@ protected:
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
 
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;

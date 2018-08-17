@@ -54,6 +54,7 @@ namespace Input {
 		class Selection;
 	}
 }
+template <int spacedim, class Value> class FieldFE;
 
 
 //=============================================================================
@@ -304,6 +305,11 @@ private:
     double **cumulative_corr;
 
     std::vector<VectorSeqDouble> out_conc;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    /// Fields correspond with \p out_conc.
+    std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;

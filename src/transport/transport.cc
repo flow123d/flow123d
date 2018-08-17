@@ -141,8 +141,8 @@ void ConvectionTransport::initialize()
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
 		// create shared pointer to a FieldFE and push this Field to output_field on all regions
-		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+		output_field_ptr[sbi] = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -270,6 +270,8 @@ void ConvectionTransport::alloc_transport_vectors() {
     conc = new double*[n_subst];
     out_conc.clear();
     out_conc.resize(n_subst);
+    output_field_ptr.clear();
+    output_field_ptr.resize(n_subst);
     for (sbi = 0; sbi < n_subst; sbi++) {
         conc[sbi] = new double[el_ds->lsize()];
         out_conc[sbi].resize( el_ds->size() );
@@ -851,6 +853,10 @@ void ConvectionTransport::output_data() {
     //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
     output_vector_gather();
     //}
+
+    for (unsigned int sbi = 0; sbi < n_substances(); sbi++) {
+    	out_conc[sbi].fill_output_data(output_field_ptr[sbi]);
+    }
 
 	data_.output_fields.output(time().step());
     
