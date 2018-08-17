@@ -199,6 +199,8 @@ private:
 
     /// Registrar of class to factory
     static const int registrar;
+
+    friend class VectorSeqDouble;
 };
 
 
