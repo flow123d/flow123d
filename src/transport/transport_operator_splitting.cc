@@ -244,6 +244,7 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
+    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
     if(reaction)
     {
       reaction->zero_time_step();

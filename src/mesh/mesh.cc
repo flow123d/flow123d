@@ -46,6 +46,7 @@
 
 
 #include "mesh/bih_tree.hh"
+#include "mesh/duplicate_nodes.h"
 
 #include "intersection/mixed_mesh_intersections.hh"
 
@@ -102,7 +103,8 @@ Mesh::Mesh()
 : row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
-  bc_mesh_(nullptr)
+  bc_mesh_(nullptr),
+  tree(nullptr)
 {}
 
 
@@ -113,7 +115,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   row_4_el(nullptr),
   el_4_loc(nullptr),
   el_ds(nullptr),
-  bc_mesh_(nullptr)
+  bc_mesh_(nullptr),
+  tree(nullptr)
 {
 	// set in_record_, if input accessor is empty
 	if (in_record_.is_empty()) {
@@ -211,6 +214,7 @@ Mesh::~Mesh() {
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
+    if (tree != nullptr) delete tree;
 }
 
 
@@ -292,6 +296,8 @@ void Mesh::setup_topology() {
     make_edge_permutations();
     count_side_types();
     
+    tree = new DuplicateNodes(this);
+
     part_ = std::make_shared<Partitioning>(this, in_record_.val<Input::Record>("partitioning") );
 
     // create parallel distribution and numbering of elements
