@@ -24,12 +24,10 @@
 
 #include <petscvec.h>
 
-#include "fields/field_fe.hh"
 #include "fem/dofhandler.hh"
-#include "fem/fe_p.hh"
-#include "fem/mapping_p1.hh"
-#include "fem/fe_system.hh"
 #include "fem/finite_element.hh"
+
+template <int spacedim, class Value> class FieldFE;
 
 
 /**
@@ -93,55 +91,15 @@ public:
 
 	/// Create and return shared pointer to FieldFE object
 	template <int spacedim, class Value>
-	std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp)
-	{
-        static MappingP1<1,3> map1;
-        static MappingP1<2,3> map2;
-        static MappingP1<3,3> map3;
+	std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp);
 
-        if ( (dh_ == nullptr) || (dh_->mesh()->n_elements() != mesh.n_elements()) ) {
-        	switch (n_comp) { // by number of components
-        		case 1: { // scalar
-        			fe0_ = new FE_P_disc<0>(0);
-        			fe1_ = new FE_P_disc<1>(0);
-        			fe2_ = new FE_P_disc<2>(0);
-        			fe3_ = new FE_P_disc<3>(0);
-        			break;
-        		}
-        		case 3: { // vector
-        			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-        			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-        			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-        			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-        			fe0_ = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
-        			fe1_ = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
-        			fe2_ = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
-        			fe3_ = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
-        			break;
-        		}
-        		case 9: { // tensor
-        			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-        			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-        			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-        			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
-        			fe0_ = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
-        			fe1_ = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
-        			fe2_ = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
-        			fe3_ = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
-        			break;
-        		}
-        		default:
-        			ASSERT(false).error("Should not happen!\n");
-        	}
-
-        	dh_ = std::make_shared<DOFHandlerMultiDim>(mesh);
-        	dh_->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
-        }
-
-        std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-        field_ptr->set_fe_data(dh_, &map1, &map2, &map3, this);
-        return field_ptr;
-	}
+	/**
+	 * Fill output data of field_ptr.
+	 *
+	 * Set data to data vector of field in correct order according to values of DOF handler indices.
+	 */
+	template <int spacedim, class Value>
+	void fill_output_data(std::shared_ptr<FieldFE<spacedim, Value> > field_ptr);
 
 	/// Destructor.
 	~VectorSeqDouble()

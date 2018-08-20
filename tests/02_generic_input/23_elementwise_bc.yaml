@@ -30,25 +30,25 @@ problem: !Coupling_Sequential
       - region: .1d_channel
         bc_type: dirichlet
         bc_pressure: !FieldElementwise
-          mesh_data_file: ./23_cube_1x1x1_frac21_data.msh
+          mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_pressure
           default_value: 0.0
       - region: .2d_fracture_1
         bc_type: dirichlet
         bc_pressure: !FieldElementwise
-          mesh_data_file: ./23_cube_1x1x1_frac21_data.msh
+          mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_pressure
           default_value: 0.0
       - region: .2d_fracture_2
         bc_type: dirichlet
         bc_pressure: !FieldElementwise
-          mesh_data_file: ./23_cube_1x1x1_frac21_data.msh
+          mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_pressure
           default_value: 0.0
       - region: .3d_cube
         bc_type: dirichlet
         bc_pressure: !FieldElementwise
-          mesh_data_file: ./23_cube_1x1x1_frac21_data.msh
+          mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_pressure
           default_value: 0.0
     balance: {}

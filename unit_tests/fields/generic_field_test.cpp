@@ -36,5 +36,5 @@ TEST(GenericField, all) {
     			   region_id.value(ele.centre(), ele)
     			   );
 
-    delete mesh;
+    //delete mesh;
 }

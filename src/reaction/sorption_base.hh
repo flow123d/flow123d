@@ -184,15 +184,24 @@ protected:
   /// Reinitializes the isotherm.
   /**
    * On data change the isotherm is recomputed, possibly new interpolation table is made.
-   * Pure virtual method.
+   * NOTE: Be sure to update common element data (porosity, rock density etc.)
+   *       by @p compute_common_ele_data(), before calling reinitialization!
    */
-  virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+  void isotherm_reinit(unsigned int i_subst, const ElementAccessor<3> &elm);
+  
+  /// Calls @p isotherm_reinit for all isotherms.
+  void isotherm_reinit_all(const ElementAccessor<3> &elm);
   
     /**
    * Creates interpolation table for isotherms.
    */
   void make_tables(void);
   
+  /// Computes maximal aqueous concentration at the current step.
+  void update_max_conc();
+  
+  /// Sets max conc to zeros on all regins.
+  void clear_max_conc();
 
   /// Pointer to equation data. The object is constructed in descendants.
   EqData *data_;
@@ -214,6 +223,11 @@ protected:
    * Concentration table limits of species dissolved in water.
    */
   std::vector<double> table_limit_;
+  /**
+   * Maximum concentration per region.
+   * It is used for optimization of interpolation table.
+   */
+  std::vector<std::vector<double>> max_conc;
   /**
    * Three dimensional array contains intersections between isotherms and mass balance lines. 
    * It describes behaviour of sorbents in mobile pores of various rock matrix enviroments.
@@ -249,6 +263,26 @@ protected:
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
   std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
+  
+  // Temporary objects holding pointers to appropriate FieldFE
+  // TODO remove after final fix of equations
+  /// Fields correspond with \p conc_solid_out.
+  std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
+
+  /** Structure for data respectful to element, but indepedent of actual isotherm.
+   * Reads mobile/immobile porosity, rock density and then computes concentration scaling parameters.
+   * Is kind of optimization, so that these data are computed only when necessary.
+   */
+  struct CommonElementData{
+    double scale_aqua;
+    double scale_sorbed;
+    double no_sorbing_surface_cond;
+  } common_ele_data;
+  
+  /** Computes @p CommonElementData.
+   * Is pure virtual, implemented differently for simple/mobile/immobile sorption class.
+   */
+  virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
 };
 
 #endif  //SORPTION_BASE_H

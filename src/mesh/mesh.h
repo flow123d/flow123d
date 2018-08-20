@@ -48,6 +48,7 @@ class MixedMeshIntersections;
 class Neighbour;
 class SideIter;
 class BCMesh;
+class DuplicateNodes;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
@@ -263,6 +264,8 @@ public:
      * This is necessary for true mortar.
      */
     vector<vector<unsigned int> >  master_elements;
+    
+    DuplicateNodes *tree;
 
     /**
      * Vector of compatible neighbourings.

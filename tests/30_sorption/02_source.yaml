@@ -80,6 +80,12 @@ problem: !Coupling_Sequential
         - 0.1
         - 1.0
         - 1.0
+      table_limits:
+        - -1     # automatic interpolation
+        - 0.0    # interpolation - table limit is increased to meet solubility limit
+        - 0.5    # ignore, sorption is set to none
+        - 0.01   # interpolation - table limit is increased to meet solubility limit
+        - 0.0    # interpolation switched off
       input_fields:
         - region: volume
           init_conc_solid:

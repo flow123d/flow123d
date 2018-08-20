@@ -171,6 +171,8 @@ void DualPorosity::initialize()
   conc_immobile = new double* [substances_.size()];
   conc_immobile_out.clear();
   conc_immobile_out.resize( substances_.size() );
+  output_field_ptr.clear();
+  output_field_ptr.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_immobile[sbi] = new double [distribution_->lsize()];
@@ -219,8 +221,8 @@ void DualPorosity::initialize_fields()
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	auto output_field_ptr = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
-    data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+	output_field_ptr[sbi] = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+    data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
@@ -410,6 +412,10 @@ void DualPorosity::output_data(void )
     data_.output_fields.set_time(time_->step(), LimitSide::right);
     if ( data_.output_fields.is_field_output_time(data_.conc_immobile, time().step()) ) {
         output_vector_gather();
+    }
+
+    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++) {
+    	conc_immobile_out[sbi].fill_output_data(output_field_ptr[sbi]);
     }
 
     // Register fresh output data
