@@ -207,6 +207,12 @@ protected:
         VectorSeqDouble velocity_diff;
         VectorSeqDouble div_diff;
 
+        // Temporary objects holding pointers to appropriate FieldFE
+        // TODO remove after final fix of equations
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
+
         double * solution;
         const MH_DofHandler * dh;
 
