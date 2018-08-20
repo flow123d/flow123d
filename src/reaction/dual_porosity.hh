@@ -164,7 +164,7 @@ protected:
   
   // Temporary objects holding pointers to appropriate FieldFE
   // TODO remove after final fix of equations
-  /// Fields correspond with \p out_conc.
+  /// Fields correspond with \p conc_immobile_out.
   std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
 
 private:
