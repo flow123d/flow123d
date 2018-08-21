@@ -41,6 +41,7 @@ BIHTree::~BIHTree() {
 
 
 void BIHTree::add_boxes(const std::vector<BoundingBox> &boxes) {
+	main_box_ = BoundingBox( boxes[0].min() ); // fix problem with undefined main_box_
     for(BoundingBox box : boxes) {
         this->elements_.push_back(box);
         main_box_.expand(box);
