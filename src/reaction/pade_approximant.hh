@@ -96,6 +96,8 @@ protected:
     int denominator_degree_;    ///< Degree of the polynomial in the denominator.
     
     arma::mat solution_matrix_;       ///< Solution matrix \f$ e^{At} \f$.
+    
+    double max_eigv_; ///< Largest eigenvalue (in modulus).
 
 private:
     /// Registrar of class to factory
