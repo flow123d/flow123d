@@ -128,7 +128,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
-    dh_->distribute_dofs(ds_);
+    dh_->distribute_dofs(ds_, true);
 }
 
 
@@ -642,7 +642,6 @@ void TransportDG<Model>::output_data()
 
 
     START_TIMER("DG-OUTPUT");
-
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )

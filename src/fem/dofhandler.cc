@@ -248,6 +248,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 
 
 void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
+		bool sequential,
 		const unsigned int offset)
 {
 	// First check if dofs are already distributed.
@@ -400,7 +401,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     // - receive indices of elements required
     // - receive dofs on the required elements
     // - send dofs on the required elements
-        create_sequential();
+    if (sequential) create_sequential();
 }
 
 

@@ -295,6 +295,7 @@ public:
      * @param offset The offset.
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
+            bool sequential = false,
     		const unsigned int offset = 0);
 
     /**
@@ -372,7 +373,6 @@ public:
     /// Destructor.
     ~DOFHandlerMultiDim() override;
     
-    void create_sequential();
     
     
 
@@ -382,7 +382,11 @@ private:
      * @brief Prepare parallel distribution of elements, edges and neighbours.
      */
     void make_elem_partitioning();
+    
+    void create_sequential();
 
+    
+    
     /**
      * @brief Pointer to the finite element class for which the handler
      * distributes dofs.
