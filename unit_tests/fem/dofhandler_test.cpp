@@ -37,7 +37,7 @@ TEST(DOFHandler, test_all) {
     FE_P<3> fe3(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds);
+    dh.distribute_dofs(ds, true);
     
     EXPECT_EQ( 8, dh.n_global_dofs() );
     
@@ -102,7 +102,7 @@ TEST(DOFHandler, test_all) {
     FE_P<3> fe3(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds);
+    dh.distribute_dofs(ds, true);
     
     EXPECT_EQ( 15, dh.n_global_dofs() );
     

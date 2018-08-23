@@ -101,7 +101,8 @@ const unsigned int Mesh::undef_idx;
 Mesh::Mesh()
 : row_4_el(nullptr),
   el_4_loc(nullptr),
-  el_ds(nullptr)
+  el_ds(nullptr),
+  tree(nullptr)
 {}
 
 

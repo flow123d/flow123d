@@ -161,8 +161,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
         ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
 	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	dh_->distribute_dofs(ds);
-        dh_->create_sequential();
+	dh_->distribute_dofs(ds, true);
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
