@@ -270,7 +270,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
 
     init_cell_starts();
     init_node_dof_starts(node_dof_starts);
-    node_dofs.resize(node_dof_starts.size());
+    node_dofs.resize(node_dof_starts[node_dof_starts.size()-1]);
     init_node_status(node_status);
     
     // Distribute dofs on local elements.
