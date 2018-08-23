@@ -109,7 +109,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
-	dh_->distribute_dofs(ds_);
+	dh_->distribute_dofs(ds_, true);
 }
 
 
