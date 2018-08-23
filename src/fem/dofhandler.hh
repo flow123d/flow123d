@@ -171,101 +171,19 @@ protected:
 
 
 
-///**
-// * @brief Provides the numbering of the finite element degrees of freedom
-// * on the computational mesh.
-// *
-// * Class DOFHandler distributes the degrees of freedom (dof) for
-// * a particular finite element on the computational mesh
-// * and provides mappings between local and global dofs.
-// * The template parameter @p dim denotes the spatial dimension of
-// * the reference finite element.
-// *
-// * Currently the functionality is restricted to discontinuous
-// * finite elements, i.e. when the neighboring elements do not
-// * share any common dof.
-// */
-//template<unsigned int dim, unsigned int spacedim>
-//class DOFHandler : public DOFHandlerBase {
-//public:
-//
-//    /**
-//     * @brief Constructor.
-//     * @param _mesh The mesh.
-//     */
-//    DOFHandler(Mesh &_mesh);
-//
-//    /**
-//     * @brief Alias for iterator over cells.
-//     *
-//     * TODO: Notation to be fixed: element or cell
-//     * TODO: Iterator goes through cells of all dimensions, but
-//     * should go only through dim-dimensional ones.
-//     */
-//    typedef ElementFullIter CellIterator;
-//
-//    /**
-//     * @brief Distributes degrees of freedom on the mesh needed
-//     * for the given finite element.
-//     *
-//     * The additional parameter @p offset allows to reserve space
-//     * for another finite element dofs in the beginning of the
-//     * global dof vector.
-//     *
-//     * @param fe The finite element.
-//     * @param offset The offset.
-//     */
-//    void distribute_dofs(FiniteElement<dim,spacedim> &fe, const unsigned int offset = 0);
-//
-//    /**
-//     * @brief Getter for the number of dofs at a single cell.
-//     *
-//     * This value depends on the given finite element.
-//     */
-//    const unsigned int n_local_dofs();
-//
-//    /**
-//     * @brief Returns the global indices of dofs associated to the @p cell.
-//     *
-//     * @param cell The cell.
-//     * @param indices Array of dof indices on the cell.
-//     */
-//    void get_dof_indices(const CellIterator &cell, unsigned int indices[]);
-//
-//    /**
-//     * @brief Returns the dof values associated to the @p cell.
-//     *
-//     * @param cell The cell.
-//     * @param values The global vector of values.
-//     * @param local_values Array of values at local dofs.
-//     */
-//    void get_dof_values(const CellIterator &cell, const Vec &values,
-//            double local_values[]);
-//
-//    /// Destructor.
-//    ~DOFHandler();
-//
-//private:
-//
-//    /**
-//     * @brief Pointer to the finite element class for which the handler
-//     * distributes dofs.
-//     */
-//    FiniteElement<dim,spacedim> *finite_element;
-//
-//    /**
-//     * @brief Number of dofs associated to geometrical entities.
-//     *
-//     * Global numbers of dofs associated to nodes (object_dofs[0]),
-//     * 1D edges (object_dofs[1]), 2D faces (object_difs[2]) and
-//     * volumes (object_dofs[3]).
-//     */
-//    int ***object_dofs;
-//
-//};
-
-
-
+/**
+ * @brief Provides the numbering of the finite element degrees of freedom
+ * on the computational mesh.
+ *
+ * Class DOFHandlerMultiDim distributes the degrees of freedom (dof) for
+ * a particular triplet of 1d, 2d and 3d finite elements on the computational mesh
+ * and provides mappings between local and global dofs.
+ * The template parameter @p dim denotes the spatial dimension of
+ * the reference finite element.
+ *
+ * Currently the functionality is restricted to finite elements with internal and nodal dofs,
+ * i.e. the neighboring elements can share only dofs on nodes.
+ */
 class DOFHandlerMultiDim : public DOFHandlerBase {
 public:
 
@@ -314,16 +232,6 @@ public:
      * @param indices Array of dof indices on the cell.
      */
     unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const override;
-
-    /**
-     * @brief Returns the dof values associated to the @p cell.
-     *
-     * @param cell The cell.
-     * @param values The global vector of values.
-     * @param local_values Array of values at local dofs.
-     */
-//     void get_dof_values(const CellIterator &cell, const Vec &values,
-//             double local_values[]) const override;
 
     /**
      * @brief Returns the global index of local element.
@@ -449,15 +357,6 @@ private:
      */
     std::shared_ptr<DiscreteSpace> ds_;
 
-    /**
-     * @brief Number of dofs associated to geometrical entities.
-     *
-     * Global numbers of dofs associated to nodes (object_dofs[0]),
-     * 1D edges (object_dofs[1]), 2D faces (object_difs[2]) and
-     * volumes (object_dofs[3]).
-     */
-//     LongIdx ***object_dofs;
-    
     std::vector<LongIdx> cell_starts;
     std::vector<LongIdx> dof_indices;
     
