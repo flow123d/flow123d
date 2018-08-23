@@ -31,6 +31,7 @@
 template<unsigned int dim> class FiniteElement;
 class Mesh;
 class Distribution;
+class Dof;
 
 
 /**
@@ -367,6 +368,13 @@ public:
     /// Returns finite element object for given space dimension.
     template<unsigned int dim>
     FiniteElement<dim> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
+    
+    /**
+     * @brief Return dof on a given cell.
+     * @param cell Mesh cell.
+     * @param idof Number of dof on the cell.
+     */
+    const Dof &cell_dof(ElementAccessor<3> cell, unsigned int idof) const;
 
     /**
      * Implements @p DOFHandlerBase::hash.
