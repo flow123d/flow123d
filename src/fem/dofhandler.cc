@@ -247,6 +247,22 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 }
 
 
+unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
+{
+    switch (cell->dim()) {
+        case 1:
+            return fe<1>(cell)->n_dofs();
+            break;
+        case 2:
+            return fe<2>(cell)->n_dofs();
+            break;
+        case 3:
+            return fe<3>(cell)->n_dofs();
+            break;
+    }
+}
+
+
 void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
 		bool sequential,
 		const unsigned int offset)

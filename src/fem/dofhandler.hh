@@ -344,6 +344,9 @@ public:
 	 * @param loc_nb Local index of neighbour.
 	 */
 	inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+	
+	/// Return number of dofs on given cell.
+	unsigned int n_dofs(ElementAccessor<3> cell) const;
 
 	/**
 	 * @brief Returns number of local edges.
