@@ -579,7 +579,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
     // create array of local ghost cells
     for ( auto cell : mesh_->bulk_elements_range() )
     {
-      if (mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[cell.idx()]) != el_ds_->myp())
+      if (cell.proc() != el_ds_->myp())
       {
         bool has_local_node = false;
         unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.idx()];
@@ -589,7 +589,12 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             has_local_node = true;
             break;
           }
-        if (has_local_node) ghost_4_loc.push_back(cell.idx());
+        if (has_local_node)
+        {
+            ghost_4_loc.push_back(cell.idx());
+            ghost_proc.insert(cell.proc());
+            ghost_proc_el[cell.proc()].push_back(cell.idx());
+        }
       }
     }
 }

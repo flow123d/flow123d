@@ -438,6 +438,12 @@ private:
     
     /// Ghost cells (neighbouring with local elements).
     vector<LongIdx> ghost_4_loc;
+    
+    /// Processors of ghost elements.
+    set<unsigned int> ghost_proc;
+    
+    /// Arrays of ghost cells for each neighbouring processor.
+    map<unsigned int, vector<LongIdx> > ghost_proc_el;
 
 };
 
