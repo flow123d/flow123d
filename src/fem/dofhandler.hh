@@ -394,8 +394,53 @@ private:
      */
     void make_elem_partitioning();
     
+    /**
+     * @brief Initialize vector of starting indices for elements.
+     */
+    void init_cell_starts();
+    
+    /**
+     * @brief Initialize auxiliary vector of starting indices of nodal dofs.
+     */
+    void init_node_dof_starts(std::vector<LongIdx> &node_dof_starts);
+    
+    /**
+     * @brief Initialize node_status.
+     * 
+     * Set VALID_NODE for nodes owned by local elements and
+     * INVALID_NODE for nodes owned by ghost elements.
+     */
+    void init_node_status(std::vector<short int> &node_status);
+    
+    /**
+     * @brief Obtain dof numbers on ghost elements from other processor.
+     * @param proc  Neighbouring processor.
+     * @param dofs  Array where dofs are stored (output).
+     */
+    void receive_ghost_dofs(unsigned int proc,
+                            std::vector<LongIdx> &dofs);
+
+    /**
+     * @brief Send dof numbers to other processor.
+     * @param proc  Neighbouring processor.
+     */    
+    void send_ghost_dofs(unsigned int proc);
+    
+    // Update dofs on local elements from ghost element dofs.
+    void update_local_dofs(unsigned int proc,
+                           const std::vector<bool> &update_cells,
+                           const std::vector<LongIdx> &dofs,
+                           const std::vector<LongIdx> &node_dof_starts,
+                           std::vector<LongIdx> &node_dofs
+                          );
+    
     void create_sequential();
 
+    
+    static const int INVALID_NODE = 1;
+    static const int VALID_NODE = 2;
+    static const int ASSIGNED_NODE = 3;
+    static const int INVALID_DOF = -1;
     
     
     /**
