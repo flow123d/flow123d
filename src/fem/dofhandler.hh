@@ -202,20 +202,24 @@ public:
 
     /**
      * @brief Distributes degrees of freedom on the mesh needed
-     * for the given finite elements.
+     * for the given discrete space.
      *
+     * By default, the dof handler is parallel, meaning that each
+     * processor has access to dofs on the local elements and on one
+     * layer of ghost elements (owned by neighbouring elements).
+     * This can be changed by setting @p sequential to true.
+     * 
      * The additional parameter @p offset allows to reserve space
      * for another finite element dofs in the beginning of the
      * global dof vector.
      *
-     * @param fe1d The 1D finite element.
-     * @param fe2d The 2D finite element.
-     * @param fe3d The 3D finite element.
-     * @param offset The offset.
+     * @param ds         The discrete space consisting of finite elements for each mesh element.
+     * @param sequential If true then each processor will have information about all dofs.
+     * @param offset     The offset.
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
-            bool sequential = false,
-    		const unsigned int offset = 0);
+                         bool sequential = false,
+                         const unsigned int offset = 0);
 
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
@@ -223,7 +227,8 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const override;
+    unsigned int get_dof_indices(const CellIterator &cell,
+                                 std::vector<LongIdx> &indices) const override;
     
     /**
      * @brief Returns the indices of dofs associated to the @p cell on the local process.
@@ -231,7 +236,8 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const override;
+    unsigned int get_loc_dof_indices(const CellIterator &cell,
+                                     std::vector<LongIdx> &indices) const override;
 
     /**
      * @brief Returns the global index of local element.
@@ -254,7 +260,11 @@ public:
 	 */
 	inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 	
-	/// Return number of dofs on given cell.
+	/**
+     * @brief Return number of dofs on given cell.
+     * 
+     * @param cell Cell accessor.
+     */
 	unsigned int n_dofs(ElementAccessor<3> cell) const;
 
 	/**
@@ -273,7 +283,11 @@ public:
      */
     bool el_is_local(int index) const;
 
-    /// Returns finite element object for given space dimension.
+    /**
+     * @brief Returns finite element object for given space dimension.
+     * 
+     * @param cell Cell accessor.
+     */
     template<unsigned int dim>
     FiniteElement<dim> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
     
@@ -282,7 +296,8 @@ public:
      * @param cell Mesh cell.
      * @param idof Number of dof on the cell.
      */
-    const Dof &cell_dof(ElementAccessor<3> cell, unsigned int idof) const;
+    const Dof &cell_dof(ElementAccessor<3> cell,
+                        unsigned int idof) const;
 
     /**
      * Implements @p DOFHandlerBase::hash.
@@ -309,6 +324,8 @@ private:
     
     /**
      * @brief Initialize auxiliary vector of starting indices of nodal dofs.
+     * 
+     * @param node_dof_starts Vector of starting indices (output).
      */
     void init_node_dof_starts(std::vector<LongIdx> &node_dof_starts);
     
@@ -317,6 +334,8 @@ private:
      * 
      * Set VALID_NODE for nodes owned by local elements and
      * INVALID_NODE for nodes owned by ghost elements.
+     * 
+     * @param node_status Vector of nodal status (output).
      */
     void init_node_status(std::vector<short int> &node_status);
     
@@ -334,7 +353,16 @@ private:
      */    
     void send_ghost_dofs(unsigned int proc);
     
-    // Update dofs on local elements from ghost element dofs.
+    /** 
+     * @brief Update dofs on local elements from ghost element dofs.
+     * 
+     * @param proc            Neighbouring processor.
+     * @param update_cells    Vector of global indices of elements which need to be updated
+     *                        from ghost elements.
+     * @param dofs            Vector of dof indices on ghost elements from processor @p proc.
+     * @param node_dof_starts Vector of starting indices of nodal dofs.
+     * @param node_dofs       Vector of nodal dof indices (output).
+     */
     void update_local_dofs(unsigned int proc,
                            const std::vector<bool> &update_cells,
                            const std::vector<LongIdx> &dofs,
@@ -342,32 +370,71 @@ private:
                            std::vector<LongIdx> &node_dofs
                           );
     
+    /**
+     * @brief Communicate local dof indices to all processors.
+     */
     void create_sequential();
 
     
-    static const int INVALID_NODE = 1;
-    static const int VALID_NODE = 2;
-    static const int ASSIGNED_NODE = 3;
-    static const int INVALID_DOF = -1;
-    
-    
     /**
-     * @brief Pointer to the finite element class for which the handler
-     * distributes dofs.
+     * Flags used during distribution of dofs to mark node and dof status.
      */
+    static const int INVALID_NODE  = 1;
+    static const int VALID_NODE    = 2;
+    static const int ASSIGNED_NODE = 3;
+    static const int INVALID_DOF   = -1;
+    
+    
+    /// Pointer to the discrete space for which the handler distributes dofs.
     std::shared_ptr<DiscreteSpace> ds_;
 
+    /**
+     * @brief Starting indices for element dofs (parallel version).
+     * 
+     * E.g. dof_indices[cell_starts[idx]] = dof number for first dof on the
+     * cell with index idx within the paralle structure. To use with element
+     * accessor use the following:
+     * 
+     *   ElementAccessor<3> cell;
+     *   ...
+     *   // i-th dof number on the cell
+     *   dof_indices[cell_starts[row_4_el[cell.idx()]]+i] = ...
+     * 
+     * Only local and ghost elements are stored, but the vector has size mesh_->n_elements()+1.
+     */
     std::vector<LongIdx> cell_starts;
+    
+    /**
+     * @brief Dof numbers on local and ghost elements (parallel version).
+     * 
+     * Dofs are ordered accordingly with cell_starts and local dof order
+     * given by the finite element. See cell_starts for more description.
+     */
     std::vector<LongIdx> dof_indices;
     
+    /**
+     * @brief Starting indices for element dofs (sequential version).
+     * 
+     * This vector stores information about all mesh elements.
+     * See cell_starts for paralle version.
+     */
     std::vector<LongIdx> cell_starts_seq;
+    
+    /**
+     * @brief Dof numbers on mesh elements (sequential version).
+     * 
+     * This vector stores information about all mesh elements.
+     * See dof_indices for paralle version.
+     */
     std::vector<LongIdx> dof_indices_seq;
 
 
 	/// Global element index -> index according to partitioning
     LongIdx *row_4_el;
+    
     /// Local element index -> global element index
     LongIdx *el_4_loc;
+    
     /// Distribution of elements
     Distribution *el_ds_;
 
@@ -377,10 +444,10 @@ private:
     /// Local neighbour index -> global neighbour index
     vector<LongIdx> nb_4_loc;
     
-    /// Vector of local nodes in mesh tree.
+    /// Indices of local nodes in mesh tree.
     vector<LongIdx> node_4_loc;
     
-    /// Ghost cells (neighbouring with local elements).
+    /// Indices of ghost cells (neighbouring with local elements).
     vector<LongIdx> ghost_4_loc;
     
     /// Processors of ghost elements.
