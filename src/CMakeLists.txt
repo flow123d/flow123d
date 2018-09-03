@@ -187,6 +187,7 @@ add_library(mesh_lib
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
+    mesh/duplicate_nodes.cc
     mesh/mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
