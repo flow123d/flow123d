@@ -62,7 +62,7 @@ PadeApproximant::PadeApproximant(Input::Record in_rec)
 }
 
 PadeApproximant::PadeApproximant(unsigned int nominator_degree, unsigned int denominator_degree)
-:   nominator_degree_(nominator_degree), denominator_degree_(denominator_degree)
+:   nominator_degree_(nominator_degree), denominator_degree_(denominator_degree), max_eigv_(0)
 {
 }
 
@@ -70,12 +70,65 @@ PadeApproximant::~PadeApproximant()
 {
 }
 
+// Algorithm for efficient computation of matrix power.
+// See D. Knuth, The Art of Computer Programming,
+// section 4.6.3, Algorithm A.
+arma::mat power(arma::mat A, unsigned int n)
+{
+    ASSERT(A.n_rows == A.n_cols).error("Function power(A,n) assumes square matrix.");
+    arma::mat P;
+    
+    P.eye(A.n_rows, A.n_rows);
+
+    while (true) {
+        unsigned int t = n % 2;
+        n = floor(n/2);
+
+        if (t == 1) {
+            P = P * A;
+        }
+
+        if (n == 0) {
+            break;
+        }
+
+        A = A * A;
+    }
+
+    return P;
+}
+
 void PadeApproximant::update_solution(arma::vec& init_vector, arma::vec& output_vec)
 {
+    if (system_matrix_changed_)
+    {
+        // determine largest eigenvalue
+        auto eigs = arma::eig_gen(system_matrix_);
+        max_eigv_ = abs(eigs.max());
+        
+//         MessageOut().fmt("PadeApproximant: max. eigenvalue = {}\n", max_eigv_);
+        system_matrix_changed_ = false;
+    }
     if(step_changed_)
     {
-        solution_matrix_ = system_matrix_*step_;    //coefficients multiplied by time
-        approximate_matrix(solution_matrix_);
+        // Hard limit for argument of Pade approximating function.
+        // If argument exceeds the limit, we split the step into appropriate
+        // number of substeps, approximate the matrix and then power it
+        // to the number of substeps.
+        // The limit depends on the degrees of polynomials, value 0.7 is estimated
+        // for degrees 1,3 so that the difference from exponential is less than 0.001.
+        const double arg_bound = 0.7;
+        if (max_eigv_*step_ <= arg_bound)
+        {
+            solution_matrix_ = system_matrix_*step_;    //coefficients multiplied by time
+            approximate_matrix(solution_matrix_);
+        } else {
+            unsigned int n_substeps = ceil(max_eigv_*step_/arg_bound);
+//             MessageOut().fmt("PadeApproximant: splitting step into {} substeps.\n", n_substeps);
+            arma::mat tmp_matrix = system_matrix_*(step_/n_substeps);
+            approximate_matrix(tmp_matrix);
+            solution_matrix_ = power(tmp_matrix, n_substeps);
+        }
         step_changed_ = false;
     }
     
