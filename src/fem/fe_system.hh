@@ -101,18 +101,24 @@ class FESystem : public FiniteElement<dim>
 public:
   
     /**
-     * @brief Constructor. FESystem for vector or tensor created from a scalar FE.
-     * @param fe Base finite element class.
-     * @param t  Type (vector or tensor).
+     * @brief Constructor for FEVectorContravariant and FEVectorPiola.
+     * @param fe Base finite element class (must be scalar).
+     * @param t  Type (must be FEVectorContravariant or FEVectorPiola).
      */
     FESystem(std::shared_ptr<FiniteElement<dim> > fe, FEType t);
     
     /**
-     * @brief Constructor. FESystem with @p n components created from a scalar FE.
-     * @param fe Base finite element class.
+     * @brief Constructor for FEVector, FETensor and FEMixedSystem.
+     * If @p t == FEVector then @p n must be the space dimension into which
+     * the reference cell will be mapped and that @p fe is scalar.
+     * If @p t == FETensor then @p n must be square of the space dimension into which
+     * the reference cell will be mapped and that @p fe is scalar.
+     * If @p t == FEMixedSystem, then @p n is the number of components.
+     * @param fe Base finite element class (must be scalar if @p t is FEVector or FETensor).
+     * @param t  Type of FESystem (must be either FEVector, FETensor or FEMixedSystem).
      * @param n  Multiplicity (number of components).
      */
-    FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, unsigned int n);
+    FESystem(const std::shared_ptr<FiniteElement<dim> > &fe, FEType t, unsigned int n);
     
     /**
      * @brief Constructor. FESystem for mixed elements.
@@ -125,6 +131,9 @@ public:
     
     std::vector<unsigned int> get_vector_components() const
     { return vector_components_; }
+    
+    std::vector<unsigned int> get_tensor_components() const
+    { return tensor_components_; }
 
     UpdateFlags update_each(UpdateFlags flags) override;
     
@@ -144,6 +153,7 @@ private:
   
   std::vector<unsigned int> scalar_components_;
   std::vector<unsigned int> vector_components_;
+  std::vector<unsigned int> tensor_components_;
   
 };
 

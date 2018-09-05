@@ -171,7 +171,6 @@ RegionSetFromElements::RegionSetFromElements(const Input::Record &rec, Mesh *mes
 	}
 
 	Input::Array element_list = rec.val<Input::Array>("element_list");
-	std::vector<unsigned int> element_ids;
 	for (Input::Iterator<unsigned int> it_element = element_list.begin<unsigned int>();
 			it_element != element_list.end();
 	        ++it_element) {

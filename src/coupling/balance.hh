@@ -28,6 +28,7 @@
 #include "petscvec.h"           // for Vec, _p_Vec
 #include "system/file_path.hh"  // for FilePath
 #include "tools/time_marks.hh"  // for TimeMark, TimeMark::Type
+#include "mesh/long_idx.hh"     // for LongIdx
 
 class Mesh;
 class TimeGovernor;
@@ -37,6 +38,7 @@ namespace Input {
 		class Selection;
 	}
 }
+
 
 
 
@@ -149,6 +151,8 @@ public:
 	/// Input selection for file format.
 	static const Input::Type::Selection & get_format_selection_input_type();
 
+	/// Set global variable to output balance files into YAML format (in addition to the table format).
+	static void set_yaml_output();
 
 	/**
 	 * Constructor.
@@ -161,6 +165,7 @@ public:
 	 * Destructor.
 	 */
 	~Balance();
+
 
     /**
      * Initialize the balance object according to the input.
@@ -254,7 +259,7 @@ public:
 	 */
 	void add_mass_matrix_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<IdxInt> &dof_indices,
+			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
 
 	/**
@@ -273,7 +278,7 @@ public:
 	 */
 	void add_flux_matrix_values(unsigned int quantity_idx,
 			unsigned int boundary_idx,
-			const std::vector<IdxInt> &dof_indices,
+			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
 
 	/**
@@ -285,7 +290,7 @@ public:
 	 */
 	void add_source_matrix_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<IdxInt> &dof_indices,
+			const std::vector<LongIdx> &dof_indices,
 			const std::vector<double> &values);
     
     /**
@@ -319,7 +324,7 @@ public:
 	 */
 	void add_source_vec_values(unsigned int quantity_idx,
 			unsigned int region_idx,
-			const std::vector<IdxInt> &dof_values,
+			const std::vector<LongIdx> &dof_values,
 			const std::vector<double> &values);
 
 	/// This method must be called after assembling the matrix for computing mass.
@@ -424,6 +429,10 @@ private:
 	/// Format double value of csv output. If delimiter is space, align text to column.
 	std::string format_csv_val(double val, char delimiter, bool initial = false);
 
+
+	//**********************************************
+
+	static bool do_yaml_output_;
 
 	/// Allocation parameters. Set by the allocate method used in the lazy_initialize.
     unsigned int n_loc_dofs_;

@@ -40,10 +40,10 @@
 #include "input/type_base.hh"                  // for Array
 #include "input/type_generic.hh"               // for Instance
 #include "input/type_record.hh"                // for Record::ExcRecordKeyNo...
+#include "mesh/long_idx.hh"                    // for LongIdx
 #include "mesh/accessors.hh"                   // for ElementAccessor
-#include "mesh/element_impls.hh"               // for Element::dim, Element:...
-#include "mesh/mesh_types.hh"                  // for ElementFullIter
-#include "mesh/neighbours_impl.hh"             // for Neighbour::element
+#include "mesh/elements.h"                     // for Element::dim, Element:...
+#include "mesh/neighbours.h"                   // for Neighbour::element
 #include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
 #include "mesh/sides.h"                        // for SideIter
 #include "mpi.h"                               // for MPI_Comm_rank
@@ -239,9 +239,9 @@ public:
 
 	void update_after_reactions(bool solution_changed);
 
-    void get_par_info(IdxInt * &el_4_loc, Distribution * &el_ds);
+    void get_par_info(LongIdx * &el_4_loc, Distribution * &el_ds);
 
-    IdxInt *get_row_4_el();
+    LongIdx *get_row_4_el();
 
 
 
@@ -340,7 +340,7 @@ private:
 	 *                 and the shape functions for velocity.
 	 */
 	template<unsigned int dim>
-	void calculate_velocity(const ElementFullIter &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
+	void calculate_velocity(const ElementAccessor<3> &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
 
 	/**
 	 * @brief Calculates the dispersivity (diffusivity) tensor from the velocity field.

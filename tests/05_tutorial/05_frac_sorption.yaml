@@ -68,6 +68,7 @@ problem: !Coupling_Sequential
     output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
+        options: -ksp_type preonly  -pc_type cholesky
         a_tol: 1.0e-15
         r_tol: 1.0e-15
     input_fields:
@@ -93,9 +94,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    solver: !Petsc
-      r_tol: 1.0e-10
-      a_tol: 1.0e-10
     output_stream:
       file: flow.msh
       format: !gmsh
@@ -114,9 +112,6 @@ problem: !Coupling_Sequential
           bc_type: dirichlet
           bc_conc: !FieldFormula
             value: 2.84959e-5*exp(-0.5*((t-2000)/700)^2)
-      solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
     substances:
       - I
       - Ra-lin
@@ -140,9 +135,6 @@ problem: !Coupling_Sequential
           isotherm_other: 0.4
     time:
       end_time: 10000
-    solver: !Petsc
-      a_tol: 1.0e-12
-      r_tol: 1.0e-12
     balance:
       cumulative: true
     output_stream:

@@ -16,6 +16,7 @@
  * @author  Jan Stebel
  */
 
+#include "mesh/side_impl.hh"
 #include "fem/fe_rt.hh"
 #include "fem/fe_values.hh"
 #include "mesh/ref_element.hh"
@@ -75,8 +76,8 @@ FE_RT0<dim>::FE_RT0()
         sp /= RefElement<dim>::n_nodes_per_side;
         // barycentric coordinates
         arma::vec::fixed<dim+1> bsp;
-        bsp.subvec(0,dim-1) = sp;
-        bsp[dim] = 1. - arma::sum(sp);
+        bsp.subvec(1,dim) = sp;
+        bsp[0] = 1. - arma::sum(sp);
         // The dof (flux through side) is computed as scalar product of the value with normal vector times side measure.
         this->dofs_.push_back(Dof(dim, 0, bsp, RefElement<dim>::normal_vector(sid)*RefElement<dim>::side_measure(sid), Value));
     }

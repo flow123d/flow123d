@@ -3,6 +3,7 @@
 #define LOCAL_SYSTEM_HH_
 
 #include <armadillo>
+#include "mesh/long_idx.hh"
 
 class LinSys;
 
@@ -26,8 +27,8 @@ class LinSys;
 class LocalSystem
 {
 public:
-    typedef arma::uvec DofVec;
-    
+    typedef arma::Col<LongIdx> DofVec;
+
     /**
      * Global row and col indices.  Are public and can be freely set.
      * Nevertheless one can also provide reference to already existing arrays through
@@ -53,7 +54,7 @@ public:
     void reset();
     
     /// Resize and reset.
-    void reset(unsigned int nrows, unsigned int ncols);
+    void reset(arma::uword nrows, arma::uword ncols);
 
     /**
      * Resize and reset. Set dofs vectors to reuse arrays provided by given vectors.

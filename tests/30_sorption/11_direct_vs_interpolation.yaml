@@ -1,0 +1,95 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: "Sorption with sources - no flow, no transport, only source term and sorptions. \n\
+    \ Comparison between direct sorption computation (substance As*) and interpolation (substances Bs*).\n\
+    \ Both give the same results."
+  mesh:
+    mesh_file: ../00_mesh/prism_11el.msh
+    regions:
+      - !Union
+        name: .boundary
+        regions:
+          - .back
+          - .front
+          - .left
+          - .up
+          - .down
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    input_fields:
+      - region: volume
+        conductivity: 1.0e-10
+      - region: .boundary
+        bc_type: dirichlet
+        bc_piezo_head: 0
+    output:
+      fields:
+        - pressure_p0
+    balance: {}
+    output_stream:
+      file: test_20.pvd
+      format: !vtk
+        variant: ascii
+  solute_equation: !Coupling_OperatorSplitting
+    transport: !Solute_Advection_FV
+      input_fields:
+        - region: volume
+          init_conc: 0.2
+          porosity: 0.25
+          sources_density:
+            - 0.4
+            - 0.4
+            - 0.4
+            - 0.4
+        - region: .boundary
+          bc_conc: 0
+    substances:
+      - As-lin-limit
+      - As-lin
+      - Bs-lin-limit
+      - Bs-lin
+    reaction_term: !Sorption
+      solvent_density: 3.0
+      substances:
+        - As-lin-limit
+        - As-lin
+        - Bs-lin-limit
+        - Bs-lin
+      solubility:
+        - 0.6
+        - 0.0
+        - 0.6
+        - 0.0
+      table_limits:
+        - -1    # automatic interpolation
+        - -1    # automatic interpolation
+        - 0     # interpolation switched off
+        - 0     # interpolation switched off
+      input_fields:
+        - region: volume
+          init_conc_solid:
+            - 0.3
+            - 0.3
+            - 0.3
+            - 0.3
+          rock_density: 2.0
+          sorption_type:
+            - linear
+            - linear
+            - linear
+            - linear
+          distribution_coefficient: 0.6
+          isotherm_other: 0.4
+    time:
+      end_time: 1.0
+    balance:
+      cumulative: true
+    output_stream:
+      file: transport_test_20.pvd
+      format: !vtk
+        variant: ascii
+      precision: 15
+      times:
+        - step: 0.2

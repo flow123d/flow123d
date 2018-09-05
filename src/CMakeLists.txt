@@ -187,6 +187,7 @@ add_library(mesh_lib
     mesh/boundaries.cc
     mesh/edges.cc
     mesh/elements.cc
+    mesh/duplicate_nodes.cc
     mesh/mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
@@ -300,6 +301,7 @@ add_library(coupling_lib
     fields/field_time_function.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
+    fields/surface_depth.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc

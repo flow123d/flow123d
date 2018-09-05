@@ -11,6 +11,7 @@
 
 #include "system/global_defs.h"
 #include "system/file_path.hh"
+#include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "io/msh_gmshreader.h"
 #include "mesh_constructor.hh"
@@ -133,7 +134,7 @@ void compute_intersection_23d(Mesh *mesh,
     {
         DebugOut() << &ilc[i] << ilc[i];
         for(unsigned int j=0; j < ilc[i].size(); j++)
-            DebugOut() << ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
+            DebugOut() << ilc[i][j].coords(mesh->element_accessor(ilc[i].component_ele_idx()));
     }
     */
     
@@ -147,7 +148,7 @@ void compute_intersection_23d(Mesh *mesh,
         for(unsigned int j=0; j < ilc[i].size(); j++)
     {
         MessageOut().fmt("---------- check Polygon: {} IP: {} ----------\n",i, j);
-        arma::vec3 ip = ilc[i][j].coords(mesh->element(ilc[i].component_ele_idx()));
+        arma::vec3 ip = ilc[i][j].coords(mesh->element_accessor(ilc[i].component_ele_idx()));
         EXPECT_ARMA_EQ(il[i][j], ip);
     }
     

@@ -63,8 +63,8 @@ public:
     ~SorptionSimple(void);
   
 protected:
-    /// Reinitializes the isotherm.
-    void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) override;
+    /// Computes @p CommonElementData.
+    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
 
 private:
     /// Registrar of class to factory
@@ -93,12 +93,10 @@ public:
       }
 
 protected:
-    /// Reinitializes the isotherm.
-    virtual void isotherm_reinit(std::vector<Isotherm> &isotherms, const ElementAccessor<3> &elm) = 0;
+    /// Computes @p CommonElementData. Pure virtual.
+    virtual void compute_common_ele_data(const ElementAccessor<3> &elem) = 0;
     
     Field<3, FieldValue<3>::Scalar > immob_porosity_; //< Immobile porosity field copied from transport
-
-    //virtual double compute_sorbing_scale(double por_m, double por_imm) = 0;
 };
 
 
@@ -119,10 +117,8 @@ public:
     ~SorptionMob(void);
   
 protected:
-    /// Reinitializes the isotherm.
-    void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
-
-    //double compute_sorbing_scale(double por_m, double por_imm) override;
+    /// Computes @p CommonElementData.
+    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
 
 private:
     /// Registrar of class to factory
@@ -147,10 +143,8 @@ public:
     ~SorptionImmob(void);
 
 protected:
-    /// Reinitializes the isotherm.
-    void isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const ElementAccessor<3> &elem) override;
-
-    //double compute_sorbing_scale(double por_m, double por_imm) override;
+    /// Computes @p CommonElementData.
+    void compute_common_ele_data(const ElementAccessor<3> &elem) override;
 
 private:
     /// Registrar of class to factory

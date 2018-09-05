@@ -45,8 +45,14 @@ template<class FS> const double Dof::evaluate(const FS &function_space,
     {
         // evaluate basis function and return the linear combination of components
         arma::vec vec_value(function_space.n_components());
+        
+        // drop off the 0-th barycentric coordinate
+        // in case of space_dim=0 subvec does not work
+        arma::vec f_coords(function_space.space_dim());
+        if (function_space.space_dim() > 0)
+            f_coords = coords.subvec(1,coords.size()-1);
         for (unsigned int c=0; c<function_space.n_components(); c++)
-            vec_value[c] = function_space.basis_value(basis_idx, coords.subvec(0,coords.size()-2), c);
+            vec_value[c] = function_space.basis_value(basis_idx, f_coords, c);
         return dot(coefs, vec_value);
         break;
     }
@@ -124,7 +130,9 @@ arma::vec::fixed<dim> FiniteElement<dim>::shape_grad(const unsigned int i,
     ASSERT_DBG( comp < n_components() );
 	ASSERT_DBG( i < dofs_.size()).error("Index of basis function is out of range.");
     
-    arma::vec grad(dim);
+    // uword is a typedef for an unsigned integer type; it is used for matrix indices as well as all internal counters and loops
+    // sword is a typedef for a signed integer type
+    arma::vec grad((arma::uword)dim);
     grad.zeros();
     for (unsigned int j=0; j<function_space_->dim(); j++)
         grad += function_space_->basis_grad(j, p, comp) * node_matrix(i,j);
@@ -141,6 +149,8 @@ UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
     switch (type_)
     {
         case FEScalar:   
+        case FEVector:
+        case FETensor:
             if (flags & update_gradients)
                 f |= update_inverse_jacobians;
             break;

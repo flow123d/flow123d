@@ -18,7 +18,12 @@
 #include "mesh/partitioning.hh"
 #include "la/sparse_graph.hh"
 #include "la/distribution.hh"
+#include "mesh/side_impl.hh"
+#include "mesh/long_idx.hh"
 #include "mesh/mesh.h"
+#include "mesh/accessors.hh"
+#include "mesh/range_wrapper.hh"
+#include "mesh/neighbours.h"
 
 #include "petscao.h"
 
@@ -78,7 +83,7 @@ const Distribution * Partitioning::get_init_distr() const {
 
 
 
-const IdxInt * Partitioning::get_loc_part() const {
+const LongIdx * Partitioning::get_loc_part() const {
 	OLD_ASSERT(loc_part_, "NULL local partitioning.");
     return loc_part_;
 }
@@ -89,30 +94,30 @@ void Partitioning::make_element_connection_graph() {
 
     Distribution edistr = graph_->get_distr();
 
-    Edge *edg;
-    int li, e_idx;
+    const Edge *edg;
+    int e_idx;
     unsigned int i_neigh;
     int i_s, n_s;
 
     // Add nigbouring edges only for "any_*" graph types
     bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
 
-    FOR_ELEMENTS( mesh_, ele) {
+    for (auto ele : mesh_->bulk_elements_range()) {
         // skip non-local elements
-        if (!edistr.is_local(ele.index()))
+        if ( !edistr.is_local( ele.idx() ) )
             continue;
 
         // for all connected elements
-        FOR_ELEMENT_SIDES( ele, si ) {
-            edg = ele->side(si)->edge();
+        for (unsigned int si=0; si<ele->n_sides(); si++) {
+            edg = ele.side(si)->edge();
 
-            FOR_EDGE_SIDES( edg, li ) {
-            	OLD_ASSERT(edg->side(li)->valid(),"NULL side of edge.");
-                e_idx = ELEMENT_FULL_ITER(mesh_, edg->side(li)->element()).index();
+            for (unsigned int li=0; li<edg->n_sides; li++) {
+            	ASSERT(edg->side(li)->valid()).error("NULL side of edge.");
+                e_idx = edg->side(li)->element().idx();
 
                 // for elements of connected elements, excluding element itself
-                if (e_idx != ele.index()) {
-                    graph_->set_edge(ele.index(), e_idx);
+                if ( e_idx != ele.idx() ) {
+                    graph_->set_edge( ele.idx(), e_idx );
                 }
             }
         }
@@ -120,12 +125,12 @@ void Partitioning::make_element_connection_graph() {
         // include connections from lower dim. edge
         // to the higher dimension
         if (neigh_on) {
-            for (i_neigh = 0; i_neigh < ele->n_neighs_vb; i_neigh++) {
+            for (i_neigh = 0; i_neigh < ele->n_neighs_vb(); i_neigh++) {
                n_s = ele->neigh_vb[i_neigh]->edge()->n_sides;
                 for (i_s = 0; i_s < n_s; i_s++) {
-                   e_idx=ELEMENT_FULL_ITER(mesh_, ele->neigh_vb[i_neigh]->edge()->side(i_s)->element()).index();
-                    graph_->set_edge(ele.index(), e_idx);
-                    graph_->set_edge(e_idx, ele.index());
+                   e_idx = ele->neigh_vb[i_neigh]->edge()->side(i_s)->element().idx();
+                    graph_->set_edge( ele.idx(), e_idx );
+                    graph_->set_edge( e_idx, ele.idx() );
                 }
             }
         }
@@ -159,7 +164,7 @@ void Partitioning::make_partition() {
     make_element_connection_graph();
 
     // compute partitioning
-    loc_part_ = new IdxInt[init_el_ds_->lsize()];
+    loc_part_ = new LongIdx[init_el_ds_->lsize()];
     graph_->partition(loc_part_);
     delete graph_; graph_ = NULL;
 }
@@ -178,9 +183,9 @@ void Partitioning::make_partition() {
  * new_4_id - for given ID, the new index, -1 for unknown IDs
  *
  */
-void Partitioning::id_maps(int n_ids, IdxInt *id_4_old,
-        const Distribution &old_ds, IdxInt *loc_part,
-        Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id) {
+void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,
+        const Distribution &old_ds, LongIdx *loc_part,
+        Distribution * &new_ds, LongIdx * &id_4_loc, LongIdx * &new_4_id) {
 
     IS part, new_numbering;
     unsigned int size = old_ds.size(); // whole size of distr. array
@@ -197,8 +202,8 @@ void Partitioning::id_maps(int n_ids, IdxInt *id_4_old,
     ISPartitioningToNumbering(part, &new_numbering); // new numbering
 
     old_4_new = new int [size];
-    id_4_loc = new IdxInt [ new_ds->lsize() ];
-    new_4_id = new IdxInt [ n_ids + 1 ];
+    id_4_loc = new LongIdx [ new_ds->lsize() ];
+    new_4_id = new LongIdx [ n_ids + 1 ];
 
     // create whole new->old mapping on each proc
     AOCreateBasicIS(new_numbering, PETSC_NULL, &new_old_ao); // app ordering= new; petsc ordering = old
@@ -223,7 +228,7 @@ void Partitioning::id_maps(int n_ids, IdxInt *id_4_old,
 }
 
 
-void Partitioning::id_maps(int n_ids, IdxInt *id_4_old,  Distribution * &new_ds, IdxInt * &id_4_loc, IdxInt * &new_4_id) {
+void Partitioning::id_maps(int n_ids, LongIdx *id_4_old,  Distribution * &new_ds, LongIdx * &id_4_loc, LongIdx * &new_4_id) {
     Partitioning::id_maps(n_ids, id_4_old, *init_el_ds_, loc_part_, new_ds, id_4_loc, new_4_id);
 }
 

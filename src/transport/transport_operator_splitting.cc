@@ -26,19 +26,17 @@
 
 #include "io/output_time.hh"
 #include "tools/time_governor.hh"
-#include "system/sys_vector.hh"
 #include "coupling/equation.hh"
 #include "coupling/balance.hh"
 #include "transport/transport.h"
 #include "mesh/mesh.h"
+#include "mesh/long_idx.hh"
 
 #include "reaction/reaction_term.hh"
 #include "reaction/first_order_reaction.hh"
 #include "reaction/radioactive_decay.hh"
 #include "reaction/sorption.hh"
 #include "reaction/dual_porosity.hh"
-
-#include "semchem/semchem_interface.hh"
 
 #include "la/distribution.hh"
 #include "input/input_type.hh"
@@ -152,7 +150,7 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 	START_TIMER("TransportOperatorSpliting");
 
 	Distribution *el_distribution;
-	IdxInt *el_4_loc;
+	LongIdx *el_4_loc;
 
 	Input::AbstractRecord trans = in_rec.val<Input::AbstractRecord>("transport");
 	convection = trans.factory< ConcentrationTransportBase, Mesh &, const Input::Record >(init_mesh, trans);
@@ -246,6 +244,7 @@ void TransportOperatorSplitting::zero_time_step()
 {
     //DebugOut() << "tos ZERO TIME STEP.\n";
     convection->zero_time_step();
+    convection->calculate_concentration_matrix();   // due to reading of init_conc in reactions
     if(reaction)
     {
       reaction->zero_time_step();

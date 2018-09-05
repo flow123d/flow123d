@@ -1,0 +1,4 @@
+#!/bin/bash
+# Starts container from image
+
+docker run --rm -ti -v /var/run/docker.sock:/var/run/docker.sock nate/dockviz images -t

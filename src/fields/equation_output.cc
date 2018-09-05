@@ -63,7 +63,8 @@ IT::Record &EquationOutput::get_input_type() {
 
 
 
-const IT::Instance &EquationOutput::make_output_type(const string &equation_name, const string &additional_description)
+const IT::Selection &EquationOutput::create_output_field_selection(const string &equation_name,
+                                                                   const string &additional_description)
 {
     string selection_name = equation_name + ":OutputFields";
     string description = "Selection of output fields for the " + equation_name + " model.\n" + additional_description;
@@ -85,12 +86,23 @@ const IT::Instance &EquationOutput::make_output_type(const string &equation_name
         }
     }
 
-    const IT::Selection &output_field_selection = sel.close();
+    return sel.close();
+}
+
+const IT::Instance &EquationOutput::make_output_type(const string &equation_name, const string &additional_description)
+{
+    return make_output_type_from_record(get_input_type(), equation_name, additional_description);
+}
+
+const IT::Instance &EquationOutput::make_output_type_from_record(Input::Type::Record &in_rec,
+                                                                 const string &equation_name,
+                                                                 const string &additional_description)
+{
+    const IT::Selection &output_field_selection = create_output_field_selection(equation_name, additional_description);
 
     std::vector<IT::TypeBase::ParameterPair> param_vec;
     param_vec.push_back( std::make_pair("output_field_selection", std::make_shared< IT::Selection >(output_field_selection) ) );
-    return IT::Instance(get_input_type(), param_vec).close();
-
+    return IT::Instance(in_rec, param_vec).close();
 }
 
 

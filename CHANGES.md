@@ -2,6 +2,16 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version 3.1.0
+* Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
+
+#Flow123d version 3.0.0
+(2017-12-30)
+
+* YAML converter
+
+***********************************************
+
 #Flow123d version 2.2.0
 (2017-11-17)
 
@@ -16,7 +26,6 @@ List of all changes in user interface and major internal changes.
 * Solute_AdvectionDiffusion_DG model supports tensor of diffusion.
 * Anisotropic automatic choice of DG penalty. Helps for pure diffusion into matrix around 
   fractures with high advection.
-  
 
 ## Bug fixes
 * Fix wrong communication between dimensions when porosities differ
@@ -29,6 +38,8 @@ List of all changes in user interface and major internal changes.
 * Simplification of output classes.
 * Simplification in Balance
 
+
+***********************************************
 
 #Flow123d version 2.1.2
 (2017-02-21)

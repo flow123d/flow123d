@@ -39,7 +39,7 @@ add_test_directory("${libs}")
 
     define_test(region)
     define_mpi_test(mesh 2)
-    
+    define_test(range)
 
 
 

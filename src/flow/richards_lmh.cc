@@ -152,7 +152,7 @@ void RichardsLMH::initialize_specific() {
 
     VecScatterCreate(schur0->get_solution(), is_loc,
             data_->phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
-    ISDestroy(&is_loc);
+    chkerr(ISDestroy(&is_loc));
 
 }
 
@@ -174,9 +174,9 @@ void RichardsLMH::read_initial_condition()
 
          init_value = data_->init_pressure.value(ele_ac.centre(), ele_ac.element_accessor());
 
-         FOR_ELEMENT_SIDES(ele_ac.full_iter(),i) {
+         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
              int edge_row = ele_ac.edge_row(i);
-             uint n_sides_of_edge =  ele_ac.full_iter()->side(i)->edge()->n_sides;
+             uint n_sides_of_edge =  ele_ac.element_accessor().side(i)->edge()->n_sides;
              VecSetValue(schur0->get_solution(),edge_row, init_value/n_sides_of_edge, ADD_VALUES);
          }
          VecSetValue(schur0->get_solution(),ele_ac.ele_row(), init_value,ADD_VALUES);
@@ -306,7 +306,7 @@ void RichardsLMH::postprocess() {
       double ele_source = data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
       //double storativity = data_->storativity.value(ele_ac.centre(), ele_ac.element_accessor());
 
-      FOR_ELEMENT_SIDES(ele_ac.full_iter(),i) {
+      for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
           //unsigned int loc_edge_row = ele_ac.edge_local_row(i);
           side_rows[i] = ele_ac.side_row(i);
           double water_content = data_->water_content_previous_it[ele_ac.side_local_idx(i)];

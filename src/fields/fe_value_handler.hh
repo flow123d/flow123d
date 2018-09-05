@@ -23,7 +23,10 @@
 #include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
 #include "mesh/point.hh"
+#include "mesh/long_idx.hh"
 #include <armadillo>
+
+template <int spacedim> class ElementAccessor;
 
 
 /// Initialization structure of FEValueHandler class.
@@ -63,7 +66,7 @@ public:
     void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
     /// Test if element contains given point.
-    bool contains_point(arma::vec point, Element &elm);
+    bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
     /// Destructor.
 	~FEValueHandler();
@@ -73,7 +76,7 @@ private:
     /// Store data of Field
     VectorSeqDouble *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
-    std::vector<IdxInt> dof_indices;
+    std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;

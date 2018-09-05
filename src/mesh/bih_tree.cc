@@ -28,32 +28,42 @@
  */
 const double BIHTree::size_reduce_factor = 0.8;
 
+const unsigned int BIHTree::default_leaf_size_limit = 20;
 
-BIHTree::BIHTree(Mesh* mesh, unsigned int soft_leaf_size_limit)
-: mesh_(mesh),
-  elements_(mesh_->element_box_),
-  main_box_(mesh_->mesh_box_),
-  leaf_size_limit(soft_leaf_size_limit), r_gen(123)
-{
-	OLD_ASSERT(mesh != nullptr, " ");
 
-	mesh_->compute_element_boxes();
-
-    max_n_levels = 2*log(mesh->n_elements())/log(2);
-	nodes_.reserve(2*mesh_->n_elements() / leaf_size_limit);
-	in_leaves_.resize(elements_.size());
-	for(unsigned int i=0; i<in_leaves_.size(); i++) in_leaves_[i] = i;
-
-	// make root node
-	nodes_.push_back(BIHNode());
-	nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
-	make_node(main_box_, 0);
-}
+BIHTree::BIHTree(unsigned int soft_leaf_size_limit)
+: leaf_size_limit(soft_leaf_size_limit) //, r_gen(123)
+{}
 
 
 BIHTree::~BIHTree() {
-
 }
+
+
+void BIHTree::add_boxes(const std::vector<BoundingBox> &boxes) {
+    for(BoundingBox box : boxes) {
+        this->elements_.push_back(box);
+        main_box_.expand(box);
+    }
+}
+
+
+void BIHTree::construct() {
+    ASSERT_GT(elements_.size(), 0);
+
+    max_n_levels = 2*log2(elements_.size());
+    nodes_.reserve(2*elements_.size() / leaf_size_limit);
+    in_leaves_.resize(elements_.size());
+    for(unsigned int i=0; i<in_leaves_.size(); i++) in_leaves_[i] = i;
+
+    // make root node
+    nodes_.push_back(BIHNode());
+    nodes_.back().set_leaf(0, in_leaves_.size(), 0, 0);
+    uint height = make_node(main_box_, 0);
+
+    node_stack_.reserve(2*height);
+}
+
 
 const BoundingBox& BIHTree::ele_bounding_box(unsigned int ele_idx) const
 {
@@ -117,10 +127,11 @@ void BIHTree::split_node(const BoundingBox &node_box, unsigned int node_idx) {
 }
 
 
-void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
+uint BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 	// we must refer to the node by index to prevent seg. fault due to nodes_ reallocation
 
-	split_node(box,node_idx);
+	uint height = 0;
+    split_node(box,node_idx);
 
 	{
 		BIHNode &node = nodes_[node_idx];
@@ -133,7 +144,8 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 // 			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
 // 			)
 		{
-				make_node(node_box, node.child(0) );
+				uint ht = make_node(node_box, node.child(0) );
+				height = max(height, ht);
 		}
 // 		else{
 //             xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
@@ -153,7 +165,8 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 // 			      ||  node_box.size(node_box.longest_axis()) < box.size(node.axis())  * size_reduce_factor )
 // 			)
 		{
-				make_node(node_box, node.child(1) );
+				uint ht = make_node(node_box, node.child(1) );
+				height = max(height, ht);
 		}
 // 		else{
 // 		            xprintf(Msg,"%d %d %f %f\n",node_idx, child.leaf_size(),
@@ -161,6 +174,7 @@ void BIHTree::make_node(const BoundingBox &box, unsigned int node_idx) {
 //                                            box.size(node.axis()));
 //         }
 	}
+	return height+1;
 }
 
 
@@ -215,15 +229,16 @@ const BoundingBox &BIHTree::tree_box() const {
 
 void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int> &result_list, bool full_list) const
 {
-	std::stack<unsigned int, std::vector<unsigned int> > node_stack;
-	OLD_ASSERT_EQUAL(result_list.size() , 0);
+
+	ASSERT_EQ(result_list.size() , 0);
 
     unsigned int counter = 0;
-	node_stack.push(0);
-	while (! node_stack.empty()) {
-		const BIHNode &node = nodes_[node_stack.top()];
+    node_stack_.clear();
+    node_stack_.push_back(0);
+	while (! node_stack_.empty()) {
+		const BIHNode &node = nodes_[node_stack_.back()];
 		//DebugOut().fmt("node: {}\n", node_stack.top() );
-		node_stack.pop();
+		node_stack_.pop_back();
 
 
 		if (node.is_leaf()) {
@@ -241,25 +256,27 @@ void BIHTree::find_bounding_box(const BoundingBox &box, std::vector<unsigned int
 			//START_TIMER("recursion");
 			if ( ! box.projection_gt( node.axis(), nodes_[node.child(0)].bound() ) ) {
 				// box intersects left group
-				node_stack.push( node.child(0) );
+				node_stack_.push_back( node.child(0) );
 			}
 			if ( ! box.projection_lt( node.axis(), nodes_[node.child(1)].bound() ) ) {
 				// box intersects right group
-				node_stack.push( node.child(1) );
+				node_stack_.push_back( node.child(1) );
 			}
 			//END_TIMER("recursion");
 		}
 	}
+	//node_stack_.pop_back();
+	//cout << "stack size: " << node_stack_.size();
 
 // 	xprintf(Msg,"leaves: %d\n",counter);
 
-#ifdef FLOW123D_DEBUG_ASSERTS
-	// check uniqueness of element indexes
-	std::vector<unsigned int> cpy(result_list);
-	sort(cpy.begin(), cpy.end());
-	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
-	OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
-#endif
+//#ifdef FLOW123D_DEBUG_ASSERTS
+//	// check uniqueness of element indexes
+//	std::vector<unsigned int> cpy(result_list);
+//	sort(cpy.begin(), cpy.end());
+//	std::vector<unsigned int>::iterator it = unique(cpy.begin(), cpy.end());
+//	OLD_ASSERT_EQUAL(cpy.size() , it - cpy.begin());
+//#endif
 }
 
 

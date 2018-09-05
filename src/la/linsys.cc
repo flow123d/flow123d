@@ -120,7 +120,7 @@ void view(std::ostream output_stream, int * output_mapping = NULL)
 LinSys:: ~LinSys()
 {
 
-    if (matrix) MatDestroy(&matrix);
+    if (matrix) chkerr(MatDestroy(&matrix));
     VecDestroy(&rhs);
     VecDestroy(&solution);
 

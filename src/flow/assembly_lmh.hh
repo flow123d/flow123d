@@ -8,6 +8,7 @@
 #ifndef SRC_FLOW_ASSEMBLY_LMH_HH_
 #define SRC_FLOW_ASSEMBLY_LMH_HH_
 
+#include "mesh/long_idx.hh"
 #include "flow/darcy_flow_assembly.hh"
 #include "soil_models.hh"
 #include "coupling/balance.hh"
@@ -76,7 +77,7 @@ public:
     void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
-        FOR_ELEMENT_SIDES(ele.full_iter(), i) {
+        for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
             double phead = ad_->phead_edge_[ele.edge_local_idx(i)];
@@ -103,7 +104,7 @@ public:
         if (genuchten_on) {
             conductivity=0;
             head=0;
-            FOR_ELEMENT_SIDES(ele.full_iter(), i)
+            for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
                 uint local_edge = ele.edge_local_idx(i);
                 double phead = ad_->phead_edge_[local_edge];
@@ -134,7 +135,7 @@ public:
         double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
         update_water_content(ele);
-        FOR_ELEMENT_SIDES(ele.full_iter(), i)
+        for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
 
             uint local_edge = ele.edge_local_idx(i);
@@ -173,7 +174,7 @@ public:
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(IdxInt)edge_row}, {source_diagonal});
+                ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)edge_row}, {source_diagonal});
             }
         }
 

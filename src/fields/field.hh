@@ -42,7 +42,7 @@
 #include "input/type_generic.hh"                       // for Instance
 #include "input/type_record.hh"                        // for Record::ExcRec...
 #include "io/output_time.hh"                           // for OutputTime
-#include "mesh/element_impls.hh"                       // for Element::dim
+#include "mesh/elements.h"                             // for Element::dim
 #include "mesh/region.hh"                              // for RegionDB::ExcU...
 #include "system/asserts.hh"                           // for Assert, ASSERT
 #include "system/exc_common.hh"                        // for ExcAssertMsg
