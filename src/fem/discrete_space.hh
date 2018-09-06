@@ -11,8 +11,8 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  * 
- * @file    dofhandler.hh
- * @brief   Declaration of class which handles the ordering of degrees of freedom (dof) and mappings between local and global dofs.
+ * @file    discrete_space.hh
+ * @brief   Declaration of class which provides the finite element for every mesh cell.
  * @author  Jan Stebel
  */
 
