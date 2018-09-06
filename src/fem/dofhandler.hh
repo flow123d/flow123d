@@ -51,15 +51,6 @@ public:
     : n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
 
     /**
-     * @brief Alias for iterator over cells.
-     *
-     * TODO: Notation to be fixed: element or cell
-     * TODO: Iterator goes through cells of all dimensions, but
-     * should go only through dim-dimensional ones.
-     */
-    typedef ElementAccessor<3> CellIterator;
-
-    /**
      * @brief Getter for the number of all mesh dofs required by the given
      * finite element.
      */
@@ -93,7 +84,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const = 0;
+    virtual unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const = 0;
 
     /**
      * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
@@ -101,18 +92,8 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const =0;
+    virtual unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const =0;
     
-    /**
-     * @brief Returns the dof values associated to the @p cell.
-     *
-     * @param cell The cell.
-     * @param values The global vector of values.
-     * @param local_values Array of values at local dofs.
-     */
-//     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
-//             double local_values[]) const = 0;
-
     /**
      * @brief Compute hash value of DOF handler.
      */
@@ -178,12 +159,6 @@ public:
      */
     DOFHandlerMultiDim(Mesh &_mesh);
 
-    /**
-     * @brief Alias for iterator over cells.
-     *
-     * TODO: Notation to be fixed: element or cell
-     */
-    typedef ElementAccessor<3> CellIterator;
 
     /**
      * @brief Distributes degrees of freedom on the mesh needed
@@ -206,7 +181,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_dof_indices(const CellIterator &cell,
+    unsigned int get_dof_indices(const ElementAccessor<3> &cell,
                                  std::vector<LongIdx> &indices) const override;
     
     /**
@@ -215,7 +190,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const CellIterator &cell,
+    unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell,
                                      std::vector<LongIdx> &indices) const override;
 
     /**
@@ -268,7 +243,7 @@ public:
      * @param cell Cell accessor.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
+    FiniteElement<dim> *fe(const ElementAccessor<3> &cell) const { return ds_->fe<dim>(cell); }
     
     /**
      * @brief Return dof on a given cell.
