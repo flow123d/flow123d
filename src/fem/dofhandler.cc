@@ -435,13 +435,13 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const ElementAccessor<3> &c
   {
     ndofs = cell_starts_seq[row_4_el[cell.idx()]+1]-cell_starts_seq[row_4_el[cell.idx()]];
     for (unsigned int k=0; k<ndofs; k++)
-      indices[k] = dof_indices_seq[cell_starts_seq[row_4_el[cell.idx()]]+k] - loffset_;
+      indices[k] = cell_starts_seq[row_4_el[cell.idx()]]+k;
   }
   else
   {
     ndofs = cell_starts[row_4_el[cell.idx()]+1]-cell_starts[row_4_el[cell.idx()]];
     for (unsigned int k=0; k<ndofs; k++)
-      indices[k] = dof_indices[cell_starts[row_4_el[cell.idx()]]+k] - loffset_;
+      indices[k] = cell_starts[row_4_el[cell.idx()]]+k;
   }
 
   return ndofs;
