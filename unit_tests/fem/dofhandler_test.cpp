@@ -16,7 +16,7 @@ TEST(DOFHandler, test_all) {
   // The test checks that the dofs are
   // shared by adjacent elements
   // except for the dofs lying on line 1
-  // without the center point X.
+  // without the center point 3.
   {
     // simple mesh consisting of 4 triangles and 1 line element
     //
@@ -83,7 +83,7 @@ TEST(DOFHandler, test_all) {
   // shared by adjacent elements
   // except for the dofs separated by line elements.
   {
-    // simple mesh consisting of 4 triangles and 1 line element
+    // simple mesh consisting of 5 triangles and 3 line elements
     //
     //  5---------------6
     //  | \           / |
