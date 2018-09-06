@@ -254,19 +254,17 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
 
 
 void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
-        bool sequential,
-        const unsigned int offset)
+        bool sequential)
 {
 	// First check if dofs are already distributed.
 	OLD_ASSERT(ds_ == nullptr, "Attempt to distribute DOFs multiple times!");
     
     ds_ = ds;
-    global_dof_offset = offset;
 
     std::vector<LongIdx> node_dofs, node_dof_starts;
     std::vector<short int> node_status(mesh_->tree->n_nodes(), INVALID_NODE);
     std::vector<bool> update_cells(el_ds_->lsize(), false);
-    unsigned int next_free_dof = offset;
+    unsigned int next_free_dof = 0;
 
     init_cell_starts();
     init_node_dof_starts(node_dof_starts);
@@ -315,7 +313,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
     }
     node_status.clear();
     
-    lsize_ = next_free_dof - offset;
+    lsize_ = next_free_dof;
 
     // communicate n_dofs across all processes
     dof_ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);

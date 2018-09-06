@@ -48,7 +48,7 @@ public:
      * @param _mesh The mesh.
      */
     DOFHandlerBase(Mesh &_mesh)
-    : global_dof_offset(0), n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
+    : n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
 
     /**
      * @brief Alias for iterator over cells.
@@ -65,12 +65,6 @@ public:
      */
     const unsigned int n_global_dofs() const { return n_global_dofs_; }
     
-    /**
-     * @brief Returns the number of the first global dof handled by this
-     * DOFHandler.
-     */
-    const unsigned int offset() const { return global_dof_offset; }
-
     /**
      * @brief Returns the number of dofs on the current process.
      */
@@ -128,15 +122,6 @@ public:
     virtual ~DOFHandlerBase();
 
 protected:
-
-    /**
-     * @brief Index of first global dof.
-     *
-     * Positive value indicates that the first @p global_dof_offset
-     * entries in the global dof vector are reserved for a different
-     * DOFHandler.
-     */
-    unsigned int global_dof_offset;
 
     /**
      * @brief Number of global dofs assigned by the handler.
@@ -208,18 +193,12 @@ public:
      * processor has access to dofs on the local elements and on one
      * layer of ghost elements (owned by neighbouring elements).
      * This can be changed by setting @p sequential to true.
-     * 
-     * The additional parameter @p offset allows to reserve space
-     * for another finite element dofs in the beginning of the
-     * global dof vector.
      *
      * @param ds         The discrete space consisting of finite elements for each mesh element.
      * @param sequential If true then each processor will have information about all dofs.
-     * @param offset     The offset.
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
-                         bool sequential = false,
-                         const unsigned int offset = 0);
+                         bool sequential = false);
 
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
