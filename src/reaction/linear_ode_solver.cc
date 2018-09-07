@@ -22,31 +22,39 @@
 
 using namespace Input::Type;
 
-Abstract & LinearODESolverBase::get_input_type() {
-	return Abstract("LinearODESolver",
-			"Solver of a linear system of ODEs.")
-			.close();
-}
     
-LinearODESolverBase::LinearODESolverBase()
+LinearODESolver::LinearODESolver()
 : step_(0), step_changed_(true),
   system_matrix_changed_(false)
 {
 }
 
-LinearODESolverBase::~LinearODESolverBase()
+LinearODESolver::~LinearODESolver()
 {
 }
 
-void LinearODESolverBase::set_system_matrix(const arma::mat& matrix)
+void LinearODESolver::set_system_matrix(const arma::mat& matrix)
 {
     system_matrix_ = matrix;
-    step_changed_ = true;
     system_matrix_changed_ = true;
 }
 
-void LinearODESolverBase::set_step(double step)
+void LinearODESolver::set_step(double step)
 {
     step_ = step;
     step_changed_ = true;
 }
+
+void LinearODESolver::update_solution(arma::vec& init_vector, arma::vec& output_vec)
+{
+    if(step_changed_ || system_matrix_changed_)
+    {
+        solution_matrix_ = arma::expmat(system_matrix_*step_);    //coefficients multiplied by time
+        step_changed_ = false;
+        system_matrix_changed_ = false;
+    }
+    
+    output_vec = solution_matrix_ * init_vector;
+}
+
+
