@@ -18,7 +18,7 @@
 #include "reaction/radioactive_decay.hh"
 #include "reaction/reaction_term.hh"
 #include "reaction/first_order_reaction_base.hh"
-#include "reaction/pade_approximant.hh"
+#include "reaction/linear_ode_solver.hh"
 
 #include "system/global_defs.h"
 #include "mesh/mesh.h"
@@ -66,8 +66,6 @@ const Record & RadioactiveDecay::get_input_type() {
         .derive_from( ReactionTerm::it_abstract_reaction() )
 		.declare_key("decays", Array( RadioactiveDecay::get_input_type_single_decay(), 1), Default::obligatory(),
 					"An array of radioactive decays.")
-		.declare_key("ode_solver", PadeApproximant::get_input_type(), Default("{}"),
-					 "Numerical solver for the system of first order ordinary differential equations coming from the model.")
 		.close();
 }
 
