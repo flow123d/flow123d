@@ -177,6 +177,13 @@ public:
     std::shared_ptr<DOFHandlerMultiDim> sequential();
     
     /**
+     * @brief Returns scatter context from parallel to sequential vectors.
+     * 
+     * For sequential dof handler it returns null pointer.
+     */
+    std::shared_ptr<VecScatter> sequential_scatter();
+    
+    /**
      * @brief Returns the global indices of dofs associated to the @p cell.
      *
      * @param cell The cell.
@@ -348,6 +355,9 @@ private:
     
     /// Sequential dof handler associated to the current (parallel) one.
     std::shared_ptr<DOFHandlerMultiDim> dh_seq_;
+    
+    /// Scatter context for parallel to sequential vectors.
+    std::shared_ptr<VecScatter> scatter_to_seq_;
 
     /**
      * @brief Starting indices for element dofs.

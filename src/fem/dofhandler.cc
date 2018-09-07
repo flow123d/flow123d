@@ -45,6 +45,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	  ds_(nullptr),
 	  is_parallel_(true),
 	  dh_seq_(nullptr),
+	  scatter_to_seq_(nullptr),
 	  row_4_el(nullptr),
 	  el_4_loc(nullptr),
 	  el_ds_(nullptr)
@@ -89,6 +90,13 @@ std::shared_ptr<DOFHandlerMultiDim> DOFHandlerMultiDim::sequential()
 {
     create_sequential();
     return dh_seq_;
+}
+
+
+std::shared_ptr<VecScatter> DOFHandlerMultiDim::sequential_scatter()
+{
+    create_sequential();
+    return scatter_to_seq_;
 }
 
 
@@ -389,8 +397,6 @@ void DOFHandlerMultiDim::create_sequential()
     MPI_COMM_WORLD);
 
   
-  
-  
   // Auxiliary vectors cell_starts_loc and dof_indices_loc contain
   // only local element data (without ghost elements).
   // Then it is possible to create sequential vectors by simple reduce/gather operation.
@@ -434,6 +440,13 @@ void DOFHandlerMultiDim::create_sequential()
                   (const int *)distr.get_starts_array(),
                   MPI_LONG_IDX,
                   MPI_COMM_WORLD );
+  
+  // create scatter from parallel to sequential vector
+  Vec v_from;
+  VecCreateMPI(PETSC_COMM_WORLD, lsize_, PETSC_DETERMINE, &v_from);
+  scatter_to_seq_ = std::make_shared<VecScatter>();
+  VecScatterCreateToAll(v_from, scatter_to_seq_.get(), NULL);
+  
 }
 
 
