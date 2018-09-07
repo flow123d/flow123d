@@ -114,7 +114,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_PTR(map_).error();
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->element_accessor( elm.idx() );
+    ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.idx() );
 	dh_->get_dof_indices(cell, dof_indices);
 
     arma::mat map_mat = map_->element_map(elm);
@@ -122,12 +122,12 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(elm), update_values);
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++) {
+		for (unsigned int i=0; i<dh_->fe<elemdim>(elm)->n_dofs(); i++) {
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
 		}

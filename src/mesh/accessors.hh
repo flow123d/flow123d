@@ -25,6 +25,7 @@
 #include "mesh/nodes.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/sides.h"
+#include "la/distribution.hh"
 #include <vector>
 #include <armadillo>
 
@@ -112,6 +113,10 @@ public:
 
     inline unsigned int index() const {
     	return (unsigned int)mesh_->find_elem_id(element_idx_);
+    }
+    
+    inline unsigned int proc() const {
+        return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
     inline void inc() {
@@ -203,6 +208,7 @@ public:
     inline const Element * operator ->() const {
     	return &(mesh_->element_vec_[element_idx_]);
     }
+    
 
 private:
     /**

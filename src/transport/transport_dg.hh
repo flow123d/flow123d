@@ -52,10 +52,9 @@
 #include "transport/concentration_model.hh"    // for ConcentrationTransport...
 #include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
 
-class Edge;
-class LinSys;
-class Mesh;
+class DiscreteSpace;
 class Distribution;
+class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -112,6 +111,8 @@ private:
 	MappingP1<1,3> *map1_;
 	MappingP1<2,3> *map2_;
 	MappingP1<3,3> *map3_;
+    
+        std::shared_ptr<DiscreteSpace> ds_;
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;

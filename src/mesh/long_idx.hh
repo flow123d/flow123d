@@ -21,4 +21,6 @@
 /// Define type that represents indices of large arrays (elements, nodes, dofs etc.)
 typedef int LongIdx;
 
+#define MPI_LONG_IDX MPI_INT
+
 #endif // LONG_IDX_HH
