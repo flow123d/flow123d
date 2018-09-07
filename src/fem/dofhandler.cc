@@ -291,6 +291,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     
     // Distribute dofs on local elements.
     dof_indices.resize(cell_starts[cell_starts.size()-1]);
+    local_to_global_dof_idx_.reserve(dof_indices.size());
     for (unsigned int loc_el=0; loc_el < el_ds_->lsize(); loc_el++)
     {
       ElementAccessor<3> cell = mesh_->element_accessor(el_index(loc_el));
@@ -311,7 +312,10 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
             {
             case VALID_NODE:
                 for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
+                {
+                    local_to_global_dof_idx_.push_back(next_free_dof);
                     node_dofs[node_dof_starts[nid]+i] = next_free_dof++;
+                }
                 node_status[nid] = ASSIGNED_NODE;
                 break;
             case INVALID_NODE:
@@ -323,8 +327,11 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
             loc_node_dof_count[dof_nface_idx]++;
         }
         else if (dof_dim == cell.dim())
+        {
             // add dofs owned only by the element
+            local_to_global_dof_idx_.push_back(next_free_dof);
             dof_indices[cell_starts[row_4_el[cell.idx()]]+idof] = next_free_dof++;
+        }
         else
             ASSERT(false).error("Unsupported dof n_face.");
       }
@@ -357,6 +364,9 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
                 
                 // update dof_indices and node_dofs on ghost elements
                 update_local_dofs(proc, update_cells, dofs, node_dof_starts, node_dofs);
+                
+                for (auto dof : dofs)
+                    local_to_global_dof_idx_.push_back(dof);
             }
             else
                 send_ghost_dofs(proc);

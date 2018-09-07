@@ -384,6 +384,14 @@ private:
      */
     std::vector<LongIdx> dof_indices;
     
+    /**
+     * @brief Maps local and ghost dof indices to global ones.
+     * 
+     * First lsize_ entries correspond to dofs owned by local processor,
+     * the remaining entries are ghost dofs sorted by neighbouring processor id.
+     */
+    std::vector<LongIdx> local_to_global_dof_idx_;
+    
 	/// Global element index -> index according to partitioning
     LongIdx *row_4_el;
     
