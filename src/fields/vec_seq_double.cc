@@ -66,7 +66,9 @@ std::shared_ptr<FieldFE<spacedim, Value> > VectorSeqDouble::create_field(Mesh & 
 		}
 
 		dh_ = std::make_shared<DOFHandlerMultiDim>(mesh);
-		dh_->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
+		//dh_->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0_, fe1_, fe2_, fe3_);
+		dh_->distribute_dofs(ds, true);
 	}
 
 	VectorSeqDouble *data_vec = new VectorSeqDouble();

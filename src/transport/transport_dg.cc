@@ -127,9 +127,10 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     map2_ = new MappingP1<2,3>;
     map3_ = new MappingP1<3,3>;
 
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
-    dh_->distribute_dofs(*fe0_, *fe1_, *fe2_, *fe3_);
+    dh_->distribute_dofs(ds_, true);
 }
 
 
@@ -603,7 +604,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
     // calculate element averages of solution
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
+        ElementAccessor<3> elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
 
         unsigned int n_dofs;
         switch (elem->dim())
@@ -644,7 +645,6 @@ void TransportDG<Model>::output_data()
 
 
     START_TIMER("DG-OUTPUT");
-
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
@@ -707,7 +707,7 @@ void TransportDG<Model>::assemble_mass_matrix()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
+        ElementAccessor<3> cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
@@ -799,7 +799,7 @@ void TransportDG<Model>::assemble_volume_integrals()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
+        ElementAccessor<3> cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
@@ -866,7 +866,7 @@ void TransportDG<Model>::set_sources()
     // assemble integral over elements
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
+        ElementAccessor<3> cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (cell->dim() != dim) continue;
 
         fe_values.reinit(cell);
@@ -936,7 +936,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
         for (int sid=0; sid<edg->n_sides; sid++)
         {
-            typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
+            ElementAccessor<3> cell = Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
             feo->dh()->get_dof_indices(cell, side_dof_indices[sid]);
             fe_values[sid]->reinit(cell, edg->side(sid)->side_idx());
             fsv_rt.reinit(cell, edg->side(sid)->side_idx());
@@ -1064,7 +1064,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
         if (edg->side(0)->cond() == NULL) continue;
 
         SideIter side = edg->side(0);
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( side->element().idx() );
+        ElementAccessor<3> cell = Model::mesh_->element_accessor( side->element().idx() );
         feo->dh()->get_dof_indices(cell, side_dof_indices);
         fe_values_side.reinit(cell, side->side_idx());
         fsv_rt.reinit(cell, side->side_idx());
@@ -1176,7 +1176,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         // skip neighbours of different dimension
         if (nb->element()->dim() != dim-1) continue;
 
-        typename DOFHandlerBase::CellIterator cell_sub = Model::mesh_->element_accessor( nb->element().idx() );
+        ElementAccessor<3> cell_sub = Model::mesh_->element_accessor( nb->element().idx() );
 		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i] = indices[i];
@@ -1184,7 +1184,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         fe_values_vb.reinit(cell_sub);
         n_dofs[0] = fv_sb[0]->n_dofs();
 
-        typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( nb->side()->element().idx() );
+        ElementAccessor<3> cell = Model::mesh_->element_accessor( nb->side()->element().idx() );
 		n_indices = feo->dh()->get_dof_indices(cell, indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i+n_dofs[0]] = indices[i];
@@ -1310,7 +1310,7 @@ void TransportDG<Model>::set_boundary_conditions()
             }
 
             SideIter side = edg->side(0);
-            typename DOFHandlerBase::CellIterator cell = Model::mesh_->element_accessor( side->element().idx() );
+            ElementAccessor<3> cell = Model::mesh_->element_accessor( side->element().idx() );
             ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
             arma::uvec bc_type;
@@ -1430,7 +1430,7 @@ void TransportDG<Model>::set_boundary_conditions()
 
 template<class Model>
 template<unsigned int dim>
-void TransportDG<Model>::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, 
+void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell, 
                                             vector<arma::vec3> &velocity, 
                                             FEValuesBase<dim,3> &fv)
 {
@@ -1645,7 +1645,7 @@ void TransportDG<Model>::prepare_initial_condition()
 
     for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
     {
-        typename DOFHandlerBase::CellIterator elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
+        ElementAccessor<3> elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
         if (elem->dim() != dim) continue;
 
         feo->dh()->get_dof_indices(elem, dof_indices);
@@ -1695,7 +1695,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
     {
         for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
         {
-            typename DOFHandlerBase::CellIterator elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
+            ElementAccessor<3> elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
 
             unsigned int n_dofs;
             switch (elem->dim())

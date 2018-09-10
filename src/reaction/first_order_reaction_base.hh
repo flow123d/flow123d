@@ -26,7 +26,7 @@
 #include "armadillo"
 
 class Mesh;
-class PadeApproximant;
+class LinearODESolver;
 namespace Input { class Record; }
 
 /** @brief Base class for linear reactions and decay chain.
@@ -112,7 +112,7 @@ protected:
     arma::mat molar_matrix_;      ///< Diagonal matrix with molar masses of substances.
     arma::mat molar_mat_inverse_; ///< Inverse of @p molar_matrix_.
 
-    std::shared_ptr<PadeApproximant> linear_ode_solver_;
+    std::shared_ptr<LinearODESolver> linear_ode_solver_;
 };
 
 #endif  // FIRST_ORDER_REACTION_BASE_H_
