@@ -69,7 +69,6 @@ void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
 
 void PvdMeshReader::check_compatible_mesh(Mesh &mesh) {
-	ASSERT(false).error("Should not happen.\n");
 	ASSERT(file_list_.size()).error("Empty PVD file, no DataSet tag found.\n");
 	ASSERT(file_list_[0].reader == nullptr).error("Method check_compatible_mesh must be called as first, before reading element data.\n");
 
