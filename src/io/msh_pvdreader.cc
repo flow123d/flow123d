@@ -50,13 +50,13 @@ void PvdMeshReader::read_physical_names(Mesh * mesh) {
 
 
 void PvdMeshReader::read_nodes(Mesh * mesh) {
-	ASSERT(false).error("Reading of VTK mesh is not supported yet!");
-	// will be implemented later
+	file_list_[0].reader = new VtkMeshReader(file_list_[0].file_name, this->element_data_values_, file_list_[0].time);
+	file_list_[0].reader->read_nodes(mesh);
 }
 
 
 void PvdMeshReader::read_elements(Mesh * mesh) {
-	// will be implemented later
+	file_list_[0].reader->read_elements(mesh);
 }
 
 
@@ -69,6 +69,7 @@ void PvdMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshData
 
 
 void PvdMeshReader::check_compatible_mesh(Mesh &mesh) {
+	ASSERT(false).error("Should not happen.\n");
 	ASSERT(file_list_.size()).error("Empty PVD file, no DataSet tag found.\n");
 	ASSERT(file_list_[0].reader == nullptr).error("Method check_compatible_mesh must be called as first, before reading element data.\n");
 
