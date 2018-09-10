@@ -619,7 +619,7 @@ void Elasticity::calculate_cumulative_balance()
 //     // assemble integral over elements
 //     for (unsigned int i_cell=0; i_cell<mesh_->get_el_ds()->lsize(); i_cell++)
 //     {
-//     	typename DOFHandlerBase::CellIterator cell = mesh_->element(feo->dh()->el_index(i_cell));
+//     	ElementAccessor<3> cell = mesh_->element(feo->dh()->el_index(i_cell));
 //         if (cell->dim() != dim) continue;
 // 
 //         fe_values.reinit(cell);
@@ -1176,7 +1176,7 @@ void Elasticity::set_boundary_conditions()
 
 
 template<unsigned int dim>
-void Elasticity::calculate_velocity(const typename DOFHandlerBase::CellIterator &cell, 
+void Elasticity::calculate_velocity(const ElementAccessor<3> &cell, 
                                             vector<arma::vec3> &velocity, 
                                             FEValuesBase<dim,3> &fv)
 {

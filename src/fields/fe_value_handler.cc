@@ -114,7 +114,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_PTR(map_).error();
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->element_accessor( elm.idx() );
+    ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.idx() );
 	dh_->get_dof_indices(cell, dof_indices);
 
     arma::mat map_mat = map_->element_map(elm);

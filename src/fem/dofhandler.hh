@@ -23,7 +23,6 @@
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
-// #include "mesh/mesh_types.hh"  // for ElementFullIter
 #include "mesh/long_idx.hh"    // for LongIdx
 #include "fem/discrete_space.hh" // for DiscreteSpace
 #include "petscvec.h"          // for Vec
@@ -48,16 +47,7 @@ public:
      * @param _mesh The mesh.
      */
     DOFHandlerBase(Mesh &_mesh)
-    : global_dof_offset(0), n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
-
-    /**
-     * @brief Alias for iterator over cells.
-     *
-     * TODO: Notation to be fixed: element or cell
-     * TODO: Iterator goes through cells of all dimensions, but
-     * should go only through dim-dimensional ones.
-     */
-    typedef ElementAccessor<3> CellIterator;
+    : n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
 
     /**
      * @brief Getter for the number of all mesh dofs required by the given
@@ -65,12 +55,6 @@ public:
      */
     const unsigned int n_global_dofs() const { return n_global_dofs_; }
     
-    /**
-     * @brief Returns the number of the first global dof handled by this
-     * DOFHandler.
-     */
-    const unsigned int offset() const { return global_dof_offset; }
-
     /**
      * @brief Returns the number of dofs on the current process.
      */
@@ -99,7 +83,7 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const = 0;
+    virtual unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const = 0;
 
     /**
      * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
@@ -107,18 +91,8 @@ public:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_loc_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const =0;
+    virtual unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const =0;
     
-    /**
-     * @brief Returns the dof values associated to the @p cell.
-     *
-     * @param cell The cell.
-     * @param values The global vector of values.
-     * @param local_values Array of values at local dofs.
-     */
-//     virtual void get_dof_values(const CellIterator &cell, const Vec &values,
-//             double local_values[]) const = 0;
-
     /**
      * @brief Compute hash value of DOF handler.
      */
@@ -128,15 +102,6 @@ public:
     virtual ~DOFHandlerBase();
 
 protected:
-
-    /**
-     * @brief Index of first global dof.
-     *
-     * Positive value indicates that the first @p global_dof_offset
-     * entries in the global dof vector are reserved for a different
-     * DOFHandler.
-     */
-    unsigned int global_dof_offset;
 
     /**
      * @brief Number of global dofs assigned by the handler.
@@ -193,12 +158,6 @@ public:
      */
     DOFHandlerMultiDim(Mesh &_mesh);
 
-    /**
-     * @brief Alias for iterator over cells.
-     *
-     * TODO: Notation to be fixed: element or cell
-     */
-    typedef ElementAccessor<3> CellIterator;
 
     /**
      * @brief Distributes degrees of freedom on the mesh needed
@@ -208,18 +167,12 @@ public:
      * processor has access to dofs on the local elements and on one
      * layer of ghost elements (owned by neighbouring elements).
      * This can be changed by setting @p sequential to true.
-     * 
-     * The additional parameter @p offset allows to reserve space
-     * for another finite element dofs in the beginning of the
-     * global dof vector.
      *
      * @param ds         The discrete space consisting of finite elements for each mesh element.
      * @param sequential If true then each processor will have information about all dofs.
-     * @param offset     The offset.
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
-                         bool sequential = false,
-                         const unsigned int offset = 0);
+                         bool sequential = false);
 
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
@@ -227,7 +180,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_dof_indices(const CellIterator &cell,
+    unsigned int get_dof_indices(const ElementAccessor<3> &cell,
                                  std::vector<LongIdx> &indices) const override;
     
     /**
@@ -236,7 +189,7 @@ public:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const CellIterator &cell,
+    unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell,
                                      std::vector<LongIdx> &indices) const override;
 
     /**
@@ -254,22 +207,22 @@ public:
     inline LongIdx edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
-	 * @brief Returns the global index of local neighbour.
-	 *
-	 * @param loc_nb Local index of neighbour.
-	 */
-	inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+     * @brief Returns the global index of local neighbour.
+     *
+     * @param loc_nb Local index of neighbour.
+     */
+    inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 	
-	/**
+    /**
      * @brief Return number of dofs on given cell.
      * 
      * @param cell Cell accessor.
      */
-	unsigned int n_dofs(ElementAccessor<3> cell) const;
+    unsigned int n_dofs(ElementAccessor<3> cell) const;
 
-	/**
-	 * @brief Returns number of local edges.
-	 */
+    /**
+     * @brief Returns number of local edges.
+     */
     inline unsigned int n_loc_edges() const { return edg_4_loc.size(); }
 
     /**
@@ -289,7 +242,7 @@ public:
      * @param cell Cell accessor.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe(const CellIterator &cell) const { return ds_->fe<dim>(cell); }
+    FiniteElement<dim> *fe(const ElementAccessor<3> &cell) const { return ds_->fe<dim>(cell); }
     
     /**
      * @brief Return dof on a given cell.
@@ -400,12 +353,12 @@ private:
      *   // i-th dof number on the cell
      *   dof_indices[cell_starts[row_4_el[cell.idx()]]+i] = ...
      * 
-     * Only local and ghost elements are stored.
+     * Only local and ghost elements are stored, but the vector has size mesh_->n_elements()+1.
      */
     std::vector<LongIdx> cell_starts;
     
     /**
-     * @brief Dof numbers on local and ghost elements (paralle version).
+     * @brief Dof numbers on local and ghost elements (parallel version).
      * 
      * Dofs are ordered accordingly with cell_starts and local dof order
      * given by the finite element. See cell_starts for more description.

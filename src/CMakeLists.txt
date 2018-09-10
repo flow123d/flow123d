@@ -341,13 +341,11 @@ add_library(flow123d_lib
     reaction/first_order_reaction.cc
     reaction/first_order_reaction_base.cc
     reaction/radioactive_decay.cc
-    reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
-    reaction/linear_ode_analytic.cc
     #semchem/semchem_interface.cc
 
     transport/concentration_model.cc
