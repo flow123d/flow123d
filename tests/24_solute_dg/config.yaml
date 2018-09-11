@@ -3,8 +3,8 @@ common_config:
   memory_limit: 1000
 
 test_cases:
-  - files: 01_sources.yaml
+  - files: 02_aniso_diff.yaml
 
 # long running test
-  - files: 02_aniso_diff.yaml
+  - files: 01_sources.yaml
     time_limit: 40
