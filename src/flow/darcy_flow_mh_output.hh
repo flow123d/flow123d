@@ -189,6 +189,7 @@ protected:
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     FE_P_disc<0> fe0; //TODO temporary solution - add support of FEData<0>
+    std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
     OutputSpecificFields output_specific_fields;

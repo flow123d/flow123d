@@ -90,11 +90,6 @@ unsigned int Element::n_sides_by_dim(unsigned int side_dim)
 }*/
 
 
-/*unsigned int Element::get_proc() const
-{
-  return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[index()]);
-}*/
-    
 
 //-----------------------------------------------------------------------------
 // vim: set cindent:

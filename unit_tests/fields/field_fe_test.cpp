@@ -104,9 +104,10 @@ TEST_F(FieldFETest, scalar) {
 	FE_P_disc<1> fe1(1);
 	FE_P_disc<2> fe2(1);
 	FE_P_disc<3> fe3(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     ScalarField field;
 
-    dh->distribute_dofs(fe0, fe1, fe2, fe3);
+    dh->distribute_dofs(ds);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
 
@@ -131,9 +132,10 @@ TEST_F(FieldFETest, vector) {
     FE_RT0<1> fe1;
 	FE_RT0<2> fe2;
 	FE_RT0<3> fe3;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     VecField field;
 
-    dh->distribute_dofs(fe0, fe1, fe2, fe3);
+    dh->distribute_dofs(ds);
     field.set_fe_data(dh, &map1, &map2, &map3, &v);
     field.set_time(0.0);
 

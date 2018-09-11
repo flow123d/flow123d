@@ -20,6 +20,6 @@ test_cases:
 # long running tests
   - files:
       - 31_surf_cube_23d_p0.yaml
-    time_limit: 120  
+    time_limit: 150  
     proc: [1]
   
