@@ -65,6 +65,9 @@ public:
     /// Returns std::vector of scalar values in several points at once.
     void value_list (const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                        std::vector<typename Value::return_type> &value_list);
+    /// Compute real coordinates and weights (use QGauss) for given element
+    unsigned int compute_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
+    		const ElementAccessor<spacedim> &elm, unsigned int order=3);
 
     /// Destructor.
 	~FEValueHandler();

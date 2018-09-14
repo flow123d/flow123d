@@ -29,6 +29,7 @@
 #include "io/msh_gmshreader.h"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
+#include "quadrature/quadrature_lib.hh"
 
 
 
@@ -366,15 +367,81 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
+	static const unsigned int quadrature_order = 1; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
-	std::vector<double> sum_val(4);
-	std::vector<unsigned int> elem_count(4);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
+	std::vector<arma::vec::fixed<3>> q_points; // real coordinates of quadrature points
+	std::vector<double> q_weights; // weights of quadrature points
+	unsigned int quadrature_size; // size of quadrature point and weight vector
+	double sum_val; // sum of value of one quadrature point
+	unsigned int elem_count; // count of intersect (source) elements of one quadrature point
+	double elem_value; // computed value of one (target) element
+	bool contains; // sign if source element contains quadrature point
+
+	{
+		// set size of vectors to maximal count of quadrature points
+		QGauss<3> quad(quadrature_order);
+		q_points.resize(quad.size());
+		q_weights.resize(quad.size());
+	}
 
 	for (auto ele : dh_->mesh()->elements_range()) {
+		elem_value = 0.0;
+		switch (ele->dim()) {
+		case 0:
+			quadrature_size = 1;
+			q_points[0] = ele.node(0)->point();
+			q_weights[0] = 1.0;
+			break;
+		case 1:
+			quadrature_size = value_handler1_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			break;
+		case 2:
+			quadrature_size = value_handler2_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			break;
+		case 3:
+			quadrature_size = value_handler3_.compute_quadrature(q_points, q_weights, ele, quadrature_order);
+			break;
+		}
 		searched_elements.clear();
-		source_mesh->get_bih_tree().find_point(ele.centre(), searched_elements);
-		std::fill(sum_val.begin(), sum_val.end(), 0.0);
+		source_mesh->get_bih_tree().find_bounding_box(ele.bounding_box(), searched_elements);
+
+		for (unsigned int i=0; i<quadrature_size; ++i) {
+			sum_val = 0.0;
+			elem_count = 0;
+			for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
+				ElementAccessor<3> elm = source_mesh->element_accessor(*it);
+				contains=false;
+				switch (elm->dim()) {
+				case 0:
+					contains = arma::norm(elm.node(0)->point()-q_points[i], 2) < 4*std::numeric_limits<double>::epsilon();
+					break;
+				case 1:
+					contains = value_handler1_.get_mapping()->contains_point(q_points[i], elm);
+					break;
+				case 2:
+					contains = value_handler2_.get_mapping()->contains_point(q_points[i], elm);
+					break;
+				case 3:
+					contains = value_handler3_.get_mapping()->contains_point(q_points[i], elm);
+					break;
+				default:
+					ASSERT(false).error("Invalid element dimension!");
+				}
+				if ( contains ) {
+					// projection point in element
+					sum_val += (*data_vec)[*it];
+					++elem_count;
+				}
+			}
+
+			if (elem_count > 0) {
+				elem_value += (sum_val / elem_count) * q_weights[i];
+			}
+		}
+
+		/* OLD CODE */
+		/*std::fill(sum_val.begin(), sum_val.end(), 0.0);
 		std::fill(elem_count.begin(), elem_count.end(), 0);
 		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
 			ElementAccessor<3> elm = source_mesh->element_accessor(*it);
@@ -409,7 +476,7 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 				break;
 			}
 			++dim;
-		} while (dim<4);
+		} while (dim<4); // */
 
 		dh_->get_dof_indices( ele, dof_indices_);
 		ASSERT_LT_DBG( dof_indices_[0], (int)data_vec_->size());
