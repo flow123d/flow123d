@@ -119,7 +119,7 @@ public:
         return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
-    inline void inc() {
+    inline virtual void inc() {
         ASSERT(!is_regional()).error("Do not call inc() for regional accessor!");
         element_idx_++;
         r_idx_ = element()->region_idx();
@@ -210,7 +210,7 @@ public:
     }
     
 
-private:
+protected:
     /**
      * When dim_ == undefined_dim_ ; the value of element_idx_ is invalid.
      * Is used for ElementAccessors for whole region

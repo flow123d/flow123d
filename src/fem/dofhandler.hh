@@ -25,10 +25,13 @@
 #include "mesh/accessors.hh"
 // #include "mesh/mesh_types.hh"  // for ElementFullIter
 #include "mesh/long_idx.hh"    // for LongIdx
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 #include "fem/discrete_space.hh" // for DiscreteSpace
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
+template <int spacedim> class DofElementAccessor;
 class Mesh;
 class Distribution;
 class Dof;
@@ -257,6 +260,9 @@ public:
      * Implements @p DOFHandlerBase::hash.
      */
     std::size_t hash() const override;
+
+    /// Returns range of local DOF handler elements
+    Range<DofElementAccessor<3>, DOFHandlerMultiDim> local_elements_range() const;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
