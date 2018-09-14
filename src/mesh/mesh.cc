@@ -895,16 +895,16 @@ Element * Mesh::add_element_to_vector(int id, bool boundary) {
 	return elem;
 }
 
-Range<ElementAccessor<3>> Mesh::bulk_elements_range() const {
-    return Range<ElementAccessor<3>>(this, 0, bulk_size_);
+Range<ElementAccessor<3>, Mesh> Mesh::bulk_elements_range() const {
+    return Range<ElementAccessor<3>, Mesh>(this, 0, bulk_size_);
 }
 
-Range<ElementAccessor<3>> Mesh::boundary_elements_range() const {
-    return Range<ElementAccessor<3>>(this, bulk_size_, element_vec_.size());
+Range<ElementAccessor<3>, Mesh> Mesh::boundary_elements_range() const {
+    return Range<ElementAccessor<3>, Mesh>(this, bulk_size_, element_vec_.size());
 }
 
-Range<NodeAccessor<3>> Mesh::node_range() const {
-    return Range<NodeAccessor<3>>(this, 0, node_vec_.size());
+Range<NodeAccessor<3>, Mesh> Mesh::node_range() const {
+    return Range<NodeAccessor<3>, Mesh>(this, 0, node_vec_.size());
 }
 
 inline void Mesh::check_element_size(unsigned int elem_idx) const

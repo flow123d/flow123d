@@ -48,7 +48,7 @@ class MixedMeshIntersections;
 class Neighbour;
 class SideIter;
 class DuplicateNodes;
-template <class Object> class Range;
+template <class Object, class Source> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
 
@@ -329,13 +329,13 @@ public:
     void init_node_vector(unsigned int size);
 
     /// Returns range of bulk elements
-    Range<ElementAccessor<3>> bulk_elements_range() const;
+    Range<ElementAccessor<3>, Mesh> bulk_elements_range() const;
 
     /// Returns range of boundary elements
-    Range<ElementAccessor<3>> boundary_elements_range() const;
+    Range<ElementAccessor<3>, Mesh> boundary_elements_range() const;
 
     /// Returns range of nodes
-    Range<NodeAccessor<3>> node_range() const;
+    Range<NodeAccessor<3>, Mesh> node_range() const;
 
     /// Returns count of boundary or bulk elements
     inline unsigned int n_elements(bool boundary=false) const {

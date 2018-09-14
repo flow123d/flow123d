@@ -26,28 +26,28 @@
  *
  * Allow iterate in bounds given by begin and end range. Class can be used for iterable accessor classes.
  */
-template<class Object>
+template<class Object, class Source>
 class Range
 {
 public:
-	Range(const Mesh * mesh, unsigned int begin, unsigned int end)
-	: mesh_(mesh), begin_(begin), end_(end) {
+	Range(const Source * src, unsigned int begin, unsigned int end)
+	: source_(src), begin_(begin), end_(end) {
 		ASSERT_LE(begin, end).error("Invalid range, begin is greater than end!");
 	}
 
 	Iter<Object> begin() {
-		return make_iter<Object>( Object(mesh_, begin_) );
+		return make_iter<Object>( Object(source_, begin_) );
 	}
 
 	Iter<Object> end() {
-		return make_iter<Object>( Object(mesh_, end_) );
+		return make_iter<Object>( Object(source_, end_) );
 	}
 
 	inline unsigned int size() const {
 		return end_ - begin_;
 	}
 private:
-	const Mesh * mesh_;
+	const Source * source_;
 	unsigned int begin_;
 	unsigned int end_;
 };
