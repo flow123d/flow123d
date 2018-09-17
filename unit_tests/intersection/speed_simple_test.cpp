@@ -152,34 +152,30 @@ void generate_meshes(unsigned int N,
             mesh->add_node(i, point);
         }
 
-        ElementFullIter eleAit = mesh->element.add_item(0);
-        ElementFullIter eleBit = mesh->element.add_item(1);
-        Element eleA(dimA, mesh, RegionIdx());      //dim, mesh pointer, empty RegionIdx
-        Element eleB(dimB, mesh, RegionIdx());      //dim, mesh pointer, empty RegionIdx
+        mesh->init_element_vector(2);
 
-        eleA.node = new Node * [nA];
-        eleB.node = new Node * [nB];
-        
+        std::vector<unsigned int> eleA_node_ids;
         for(unsigned int i =0; i < nA; i++)
-            eleA.node[i] = nodes(i);
+        	eleA_node_ids.push_back(i);
+        mesh->add_element(0, dimA, 1, 0, eleA_node_ids);
+
+        std::vector<unsigned int> eleB_node_ids;
         for(unsigned int i =0; i < nB; i++)
-            eleB.node[i] = nodes(nA+i);
-        
+        	eleB_node_ids.push_back(nA+i);
         // test tetrahedron node order
         if(dimB == 3)
         {
-            double jac = arma::dot( arma::cross(eleB.node[1]->point() - eleB.node[0]->point(),
-                                                eleB.node[2]->point() - eleB.node[0]->point()),
-                                    eleB.node[3]->point() - eleB.node[0]->point());
+            double jac = arma::dot( arma::cross(mesh->node_accessor(nA+1)->point() - mesh->node_accessor(nA)->point(),
+                                                mesh->node_accessor(nA+2)->point() - mesh->node_accessor(nA)->point()),
+                                    mesh->node_accessor(nA+3)->point() - mesh->node_accessor(nA)->point());
             if( jac < 0)
             {
 //                 DBGMSG("swap nodes: J = %f\n",jac);
-                std::swap(eleB.node[2], eleB.node[3]);
+                std::swap(eleB_node_ids[2], eleB_node_ids[3]);
             }
         }
+        mesh->add_element(1, dimB, 2, 0, eleB_node_ids);
         
-        mesh->element[0] = eleA; // dangerous since Element has no deep copy constructor.
-        mesh->element[1] = eleB; // dangerous since Element has no deep copy constructor.
         mesh->side_nodes.resize(3);
         switch(dimA){
             case 1: mesh->side_nodes[0] = {{0},{1}}; break;
@@ -215,8 +211,8 @@ void compute_intersection<1,2>(Mesh* mesh)
     vector<Space<3>::Point> verticesA(2);
     vector<Space<3>::Point> verticesB(3);
     
-    for(unsigned int i=0; i<2; i++) verticesA[i]=eleA->node[i]->point();
-    for(unsigned int i=0; i<3; i++) verticesB[i]=eleB->node[i]->point();
+    for(unsigned int i=0; i<2; i++) verticesA[i]=eleA.node(i)->point();
+    for(unsigned int i=0; i<3; i++) verticesB[i]=eleB.node(i)->point();
      
     BoundingBox bbA(verticesA);
     BoundingBox bbB(verticesB);
@@ -249,8 +245,8 @@ void compute_intersection(Mesh* mesh)
     vector<Space<3>::Point> verticesA(dimA+1);
     vector<Space<3>::Point> verticesB(dimB+1);
     
-    for(unsigned int i=0; i<dimA+1; i++) verticesA[i]=eleA->node[i]->point();
-    for(unsigned int i=0; i<dimB+1; i++) verticesB[i]=eleB->node[i]->point();
+    for(unsigned int i=0; i<dimA+1; i++) verticesA[i]=eleA.node(i)->point();
+    for(unsigned int i=0; i<dimB+1; i++) verticesB[i]=eleB.node(i)->point();
      
     BoundingBox bbA(verticesA);
     BoundingBox bbB(verticesB);
