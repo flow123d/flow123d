@@ -32,10 +32,11 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
     
+    FE_P<0> fe0(1);
     FE_P<1> fe1(1);
     FE_P<2> fe2(1);
     FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds, true);
     
@@ -97,10 +98,11 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
+    FE_P<0> fe0(1);
     FE_P<1> fe1(1);
     FE_P<2> fe2(1);
     FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds, true);
     

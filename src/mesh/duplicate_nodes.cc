@@ -75,7 +75,7 @@ void DuplicateNodes::init_from_edges()
 void DuplicateNodes::init_from_elements()
 {
   // initialize the objects from elements
-  for ( auto ele : mesh_->bulk_elements_range() ) {
+  for ( auto ele : mesh_->elements_range() ) {
     MeshObject l(ele->dim());
     for (unsigned int i=0; i<ele->dim()+1; i++)
       l.nodes[i] = ele->node_idx(i);

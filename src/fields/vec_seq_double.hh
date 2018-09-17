@@ -24,7 +24,10 @@
 
 #include <petscvec.h>
 
-#include "fields/field_elementwise.hh"
+#include "fem/dofhandler.hh"
+#include "fem/finite_element.hh"
+
+template <int spacedim, class Value> class FieldFE;
 
 
 /**
@@ -38,13 +41,17 @@
  * Allows the following functionalities:
  *  - return shared pointer to std::vector of double
  *  - return pointer to PETSC vector
- *  - create shared pointer to FieldElementwise object corresponding with std::vector of double
+ *  - create shared pointer to FieldFE object corresponding with std::vector of double
  */
 class VectorSeqDouble {
 public:
     typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
-	/// Create shared pointer and PETSC vector with given size.
+    /// Constructor.
+    VectorSeqDouble()
+    : dh_(nullptr) {}
+
+    /// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
 	{
 		data_ptr_ = std::make_shared< std::vector<double> >(size);
@@ -82,14 +89,17 @@ public:
 	}
 
 
-	/// Create and return shared pointer to FieldElementwise object
+	/// Create and return shared pointer to FieldFE object
 	template <int spacedim, class Value>
-	std::shared_ptr<FieldElementwise<spacedim, Value> > create_field(unsigned int n_comp)
-	{
-		std::shared_ptr<FieldElementwise<spacedim, Value> > field_ptr(
-		          new FieldElementwise<spacedim, Value>( data_ptr_, n_comp ));
-		return field_ptr;
-	}
+	std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp);
+
+	/**
+	 * Fill output data of field_ptr.
+	 *
+	 * Set data to data vector of field in correct order according to values of DOF handler indices.
+	 */
+	template <int spacedim, class Value>
+	void fill_output_data(std::shared_ptr<FieldFE<spacedim, Value> > field_ptr);
 
 	/// Destructor.
 	~VectorSeqDouble()
@@ -111,6 +121,13 @@ private:
 	VectorSeq data_ptr_;
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
+    /// Finite element objects (allow to create DOF handler)
+	FiniteElement<0> *fe0_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
+	// DOF handler object allow create FieldFE
+	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
 
 /**

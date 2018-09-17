@@ -66,6 +66,7 @@ protected:
   DiscreteSpace(Mesh *mesh)
   : mesh_(mesh) {}
   
+  virtual FiniteElement<0> *fe0d(const ElementAccessor<3> &) const = 0;
   virtual FiniteElement<1> *fe1d(const ElementAccessor<3> &) const = 0;
   virtual FiniteElement<2> *fe2d(const ElementAccessor<3> &) const = 0;
   virtual FiniteElement<3> *fe3d(const ElementAccessor<3> &) const = 0;
@@ -82,13 +83,14 @@ protected:
 class EqualOrderDiscreteSpace : public DiscreteSpace {
 public:
   
-  EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<1> *fe1, FiniteElement<2> *fe2, FiniteElement<3> *fe3)
-  : DiscreteSpace(mesh), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
+  EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<0> *fe0, FiniteElement<1> *fe1, FiniteElement<2> *fe2, FiniteElement<3> *fe3)
+  : DiscreteSpace(mesh), fe0_(fe0), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
   
   unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const override;
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   
+  FiniteElement<0> *fe0d(const ElementAccessor<3> &cell) const override { return fe0_; }
   FiniteElement<1> *fe1d(const ElementAccessor<3> &cell) const override { return fe1_; }
   FiniteElement<2> *fe2d(const ElementAccessor<3> &cell) const override { return fe2_; }
   FiniteElement<3> *fe3d(const ElementAccessor<3> &cell) const override { return fe3_; }
@@ -96,6 +98,7 @@ public:
   
 private:
   
+  FiniteElement<0> *fe0_;
   FiniteElement<1> *fe1_;
   FiniteElement<2> *fe2_;
   FiniteElement<3> *fe3_;

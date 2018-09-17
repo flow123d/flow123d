@@ -95,6 +95,8 @@ public:
 	 *  - the same must occur for elements
 	 *  - method fill vector \p bulk_elements_id_
 	 *  - it is necessary to call this method before calling \p get_element_data
+	 *
+	 * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
 	 */
 	void check_compatible_mesh(Mesh &mesh) override;
 

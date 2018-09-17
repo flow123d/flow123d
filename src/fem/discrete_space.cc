@@ -28,6 +28,11 @@ unsigned int EqualOrderDiscreteSpace::n_elem_dofs(const ElementAccessor<3> &cell
     unsigned int n_dofs = 0;
     switch (cell->dim())
     {
+        case 0:
+            for (unsigned int d=0; d<fe0_->n_dofs(); d++)
+                if (fe0_->dof(d).dim == 0)
+                    n_dofs++;
+            break;
         case 1:
             for (unsigned int d=0; d<fe1_->n_dofs(); d++)
                 if (fe1_->dof(d).dim == 1)
@@ -54,6 +59,11 @@ unsigned int EqualOrderDiscreteSpace::n_node_dofs(unsigned int nid) const
     unsigned int dim = mesh_->tree->node_dim()[nid];
     switch (dim)
     {
+        case 0:
+            for (unsigned int d=0; d<fe0_->n_dofs(); d++)
+                if (fe0_->dof(d).dim == 0 && fe0_->dof(d).n_face_idx == 0)
+                    n_dofs++;
+            break;
         case 1:
             for (unsigned int d=0; d<fe1_->n_dofs(); d++)
                 if (fe1_->dof(d).dim == 0 && fe1_->dof(d).n_face_idx == 0)
@@ -75,6 +85,7 @@ unsigned int EqualOrderDiscreteSpace::n_node_dofs(unsigned int nid) const
 
 
 
+template<> FiniteElement<0> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe0d(cell); }
 template<> FiniteElement<1> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe1d(cell); }
 template<> FiniteElement<2> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe2d(cell); }
 template<> FiniteElement<3> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe3d(cell); }

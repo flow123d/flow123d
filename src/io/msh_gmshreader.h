@@ -67,6 +67,8 @@ public:
      * Empty method for GMSH reader now.
      *
      * Implements @p BaseMeshReader::check_compatible_mesh.
+     *
+     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
      */
     void check_compatible_mesh(Mesh &mesh) override;
 

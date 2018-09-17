@@ -26,6 +26,7 @@
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
 #include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
 #include "flow/mh_dofhandler.hh"
 #include "transport/advection_diffusion_model.hh"
@@ -108,6 +109,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     unsigned int q_order;
 
     q_order = 2*fe_order;
+    fe0_ = new FE_P_disc<0>(fe_order);
     fe1_ = new FE_P_disc<1>(fe_order);
     fe2_ = new FE_P_disc<2>(fe_order);
     fe3_ = new FE_P_disc<3>(fe_order);
@@ -125,7 +127,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     map2_ = new MappingP1<2,3>;
     map3_ = new MappingP1<3,3>;
 
-    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe1_, fe2_, fe3_);
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
     dh_->distribute_dofs(ds_, true);
@@ -134,6 +136,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 
 FEObjects::~FEObjects()
 {
+    delete fe0_;
     delete fe1_;
     delete fe2_;
     delete fe3_;
@@ -149,7 +152,7 @@ FEObjects::~FEObjects()
     delete map3_;
 }
 
-template<> FiniteElement<0> *FEObjects::fe<0>() { return 0; }
+template<> FiniteElement<0> *FEObjects::fe<0>() { return fe0_; }
 template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
