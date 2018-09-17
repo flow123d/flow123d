@@ -237,6 +237,10 @@ FE_P_disc<dim>::FE_P_disc(unsigned int degree)
 
 
 
+template class FE_P<0>;
+template class FE_P<1>;
+template class FE_P<2>;
+template class FE_P<3>;
 
 
 template class FE_P_disc<0>;
