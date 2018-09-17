@@ -24,6 +24,7 @@
 #include "mesh/mesh.h"
 #include "mesh/node_accessor.hh"
 #include "mesh/accessors.hh"
+#include "mesh/side_impl.hh"
 
 
 
