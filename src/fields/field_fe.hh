@@ -54,8 +54,9 @@ public:
 	enum DataInterpolation
 	{
 		identic_msh,    //!< identical mesh
-		equivalent_msh, //!< equivalent mesh
-		interp_p0       //!< P0 interpolation
+		equivalent_msh, //!< equivalent mesh (default value)
+		gauss_p0,       //!< P0 interpolation (with the use of Gaussian distribution)
+		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
 	};
 
     /**
@@ -196,6 +197,9 @@ private:
 
 	/// Specify section where to find the field data in input mesh file
 	OutputTime::DiscreteSpace discretization_;
+
+	/// Specify type of FE data interpolation
+	DataInterpolation interpolation_;
 
 	/// Field flags.
 	FieldFlag::Flags flags_;

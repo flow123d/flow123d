@@ -94,7 +94,10 @@ const Input::Type::Selection & FieldFE<spacedim, Value>::get_interp_selection_in
 				"and target mesh are identical. This interpolation is typically used for GMSH data defined in separate mesh "
 				"file without topology.")
 		.add_value(DataInterpolation::equivalent_msh, "equivalent_mesh", "Topologies of source and target mesh are identical.") // default value
-		.add_value(DataInterpolation::interp_p0, "P0", "Topologies of source and target mesh can be different.")
+		.add_value(DataInterpolation::gauss_p0, "P0_gauss", "Topologies of source and target mesh can be different. Gaussian "
+				"distribution is used for interpolation.")
+		.add_value(DataInterpolation::interp_p0, "P0_intersection", "Topologies of source and target mesh can be different. "
+				"Calculation of intersections between source and target mesh is used for interpolation.")
 		.close();
 }
 
@@ -162,6 +165,7 @@ void FieldFE<spacedim, Value>::reinit_fe_data(MappingP1<1,3> *map1,
 
 	// set discretization
 	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
+	interpolation_ = DataInterpolation::equivalent_msh;
 }
 
 
@@ -231,6 +235,9 @@ void FieldFE<spacedim, Value>::init_from_input(const Input::Record &rec, const s
 	field_name_ = rec.val<std::string>("field_name");
 	if (! rec.opt_val<OutputTime::DiscreteSpace>("input_discretization", discretization_) ) {
 		discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
+	}
+	if (! rec.opt_val<DataInterpolation>("interpolation", interpolation_) ) {
+		interpolation_ = DataInterpolation::equivalent_msh;
 	}
     if (! rec.opt_val("default_value", default_value_) ) {
     	default_value_ = numeric_limits<double>::signaling_NaN();
