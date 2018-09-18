@@ -367,7 +367,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
-	static const unsigned int quadrature_order = 1; // parameter of quadrature
+	static const unsigned int quadrature_order = 4; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 	std::vector<arma::vec::fixed<3>> q_points; // real coordinates of quadrature points
