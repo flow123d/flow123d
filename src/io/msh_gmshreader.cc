@@ -255,6 +255,7 @@ void GmshMeshReader::read_element_data(ElementDataCacheBase &data_cache, MeshDat
     unsigned int id, i_row;
     unsigned int n_read = 0;
     std::vector<int> const & el_ids = this->get_element_vector(boundary_domain);
+    DebugOut().fmt("bc: {}, n_el: {}\n", boundary_domain, el_ids.size());
     vector<int>::const_iterator id_iter = el_ids.begin();
 
     // read @p data buffer as we have correct header with already passed time

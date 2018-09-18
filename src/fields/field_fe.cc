@@ -17,7 +17,7 @@
 
 
 #include <limits>
-
+#include "input/accessors.hh"
 #include "fields/field_fe.hh"
 #include "fields/vec_seq_double.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
@@ -56,6 +56,8 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         		"point_data/node_data, cell_data/element_data, -/element_node_data, native/-.\n"
         		"If not given by user we try to find the field in all sections, but report error \n"
         		"if it is found in more the one section.")
+        // TODO: Use interpolation instead. Check compatibility only if the mesh sections are presented.
+        .declare_key("check_compatibility", IT::Bool(), IT::Default("false"), "Force check compatibility of the data mesh.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
@@ -228,7 +230,8 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
-		this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh) );
+		bool check_comp = in_rec_.val<bool>("check_compatibility");
+		this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh), check_comp);
 	}
 }
 

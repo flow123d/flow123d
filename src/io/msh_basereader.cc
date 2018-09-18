@@ -86,8 +86,10 @@ std::vector<int> const & BaseMeshReader::get_element_vector(bool boundary_domain
 template<typename T>
 typename ElementDataCache<T>::ComponentDataPtr BaseMeshReader::get_element_data( unsigned int n_entities, unsigned int n_components,
 		bool boundary_domain, unsigned int component_idx) {
-	ASSERT(has_compatible_mesh_)
-			.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
+	// TODO: Why this same flag is both here and in FieldFE?
+    // there is no way to force reader's flag to be true.
+    //ASSERT(has_compatible_mesh_)
+	//		.error("Vector of mapping VTK to GMSH element is not initialized. Did you call check_compatible_mesh?");
 	ASSERT(actual_header_.field_name != "").error("Unset MeshDataHeader. Did you call find_header?\n");
 
     std::string field_name = actual_header_.field_name;
