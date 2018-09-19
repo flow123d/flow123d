@@ -255,9 +255,8 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		this->make_dof_handler(mesh);
 		switch (this->interpolation_) {
 		case DataInterpolation::identic_msh:
-			// TODO: need to fill vectors of mesh reader
 			this->has_compatible_mesh_ = true;
-			ASSERT(false).error("Not supported yet!\n");
+			ReaderCache::get_element_ids(reader_file_, *mesh);
 			break;
 		case DataInterpolation::equivalent_msh:
 			this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh) );

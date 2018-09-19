@@ -248,6 +248,16 @@ default_values: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: porosity
   default_value: 0.1
+scalar_identic_mesh: !FieldFE
+  mesh_data_file: fields/identic_mesh_data.msh
+  field_name: scalar
+  default_value: 0.0
+  interpolation: identic_mesh
+vector_identic_mesh: !FieldFE
+  mesh_data_file: fields/identic_mesh_data.msh
+  field_name: vector_fixed
+  default_value: 0.0
+  interpolation: identic_mesh
 ##### temporary test
 interp_scalar_old: !FieldInterpolatedP0
   mesh_data_file: fields/interpolate_boundary_data.msh
@@ -301,6 +311,8 @@ public:
             .declare_key("vtk_vector", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vtk_tensor", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("default_values", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("scalar_identic_mesh", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("vector_identic_mesh", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("interp_scalar_old", ScalarFieldOld::get_input_type(), Input::Type::Default::obligatory(),"" )   // temporary
             .declare_key("interp_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("interp_scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
@@ -537,6 +549,63 @@ TEST_F(FieldFENewTest, default_values) {
     	field.set_time(test_time[j]);
      	for(unsigned int i=9; i < 13; i++) {
             EXPECT_TRUE( arma::min(arma::vec3(expected_vals) == field.value(point,mesh->element_accessor(i))) );
+        }
+    }
+}
+
+
+TEST_F(FieldFENewTest, scalar_identic_mesh) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_identic_mesh"), init_data("scalar_identic_mesh"));
+    field.set_mesh(mesh,false);
+
+    for (unsigned int j=0; j<2; j++) {
+        field.set_time(test_time[j]);
+        for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_DOUBLE_EQ( 1.0+j*0.1+(i+1)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+}
+
+
+TEST_F(FieldFENewTest, bc_scalar_identic_mesh) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("scalar_identic_mesh"), init_data("scalar_identic_mesh"));
+    field.set_mesh(mesh,true);
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+
+        for(unsigned int i=9; i < 13; i++) {
+            EXPECT_DOUBLE_EQ( 2.0+j*0.1+(i-8)*0.1 , field.value(point,mesh->element_accessor(i)) );
+        }
+    }
+
+}
+
+
+TEST_F(FieldFENewTest, vector_fixed_identic_mesh) {
+	string expected_vals[2] = {"3 4 5", "6 7 8"};
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("vector_identic_mesh"), init_data("vector_identic_mesh"));
+    field.set_mesh(mesh,false);
+     for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+         for(unsigned int i=0; i < mesh->n_elements(); i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
+        }
+    }
+}
+
+
+TEST_F(FieldFENewTest, bc_vector_fixed_identic_mesh) {
+	string expected_vals[2] = {"1 2 3", "4 5 6"};
+    VecFixField field;
+    field.init_from_input(rec.val<Input::Record>("vector_identic_mesh"), init_data("vector_identic_mesh"));
+    field.set_mesh(mesh,true);
+     for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+     	for(unsigned int i=9; i < 13; i++) {
+            EXPECT_TRUE( arma::min(arma::vec3(expected_vals[j]) == field.value(point,mesh->element_accessor(i))) );
         }
     }
 }
