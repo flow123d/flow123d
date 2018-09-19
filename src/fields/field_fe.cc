@@ -253,7 +253,28 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
 		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
-		this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh) );
+		switch (this->interpolation_) {
+		case DataInterpolation::identic_msh:
+			// TODO: need to fill vectors of mesh reader
+			this->has_compatible_mesh_ = true;
+			ASSERT(false).error("Not supported yet!\n");
+			break;
+		case DataInterpolation::equivalent_msh:
+			this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh) );
+			if (!this->has_compatible_mesh_) {
+				this->interpolation_ = DataInterpolation::gauss_p0;
+	            WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
+	            		field_name_);
+			}
+			break;
+		case DataInterpolation::gauss_p0:
+			this->has_compatible_mesh_ = false;
+			break;
+		case DataInterpolation::interp_p0:
+			this->has_compatible_mesh_ = false;
+			ASSERT(false).error("Not supported yet!\n");
+			break;
+		}
 	}
 }
 
