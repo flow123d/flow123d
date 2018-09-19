@@ -149,8 +149,8 @@ private:
 	/// Create DofHandler object
 	void make_dof_handler(const Mesh *mesh);
 
-	/// Interpolate data over all elements of target mesh.
-	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
+	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
+	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
 
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
@@ -212,9 +212,6 @@ private:
 
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
-
-    /// Flag that determines if source mesh and target mesh are compatible
-    bool has_compatible_mesh_;
 
     /// Registrar of class to factory
     static const int registrar;

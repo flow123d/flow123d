@@ -112,8 +112,7 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   data_vec_(nullptr),
-  field_name_(""),
-  has_compatible_mesh_(false)
+  field_name_("")
 {}
 
 
@@ -255,22 +254,18 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		this->make_dof_handler(mesh);
 		switch (this->interpolation_) {
 		case DataInterpolation::identic_msh:
-			this->has_compatible_mesh_ = true;
 			ReaderCache::get_element_ids(reader_file_, *mesh);
 			break;
 		case DataInterpolation::equivalent_msh:
-			this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh) );
-			if (!this->has_compatible_mesh_) {
+			if (!ReaderCache::check_compatible_mesh( reader_file_, const_cast<Mesh &>(*mesh) )) {
 				this->interpolation_ = DataInterpolation::gauss_p0;
 	            WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
 	            		field_name_);
 			}
 			break;
 		case DataInterpolation::gauss_p0:
-			this->has_compatible_mesh_ = false;
 			break;
 		case DataInterpolation::interp_p0:
-			this->has_compatible_mesh_ = false;
 			ASSERT(false).error("Not supported yet!\n");
 			break;
 		}
@@ -362,7 +357,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		unsigned int n_entities;
 		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
 		bool boundary;
-		if (is_native || this->has_compatible_mesh_) {
+		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
 			n_entities = dh_->mesh()->n_elements();
 			boundary = this->boundary_domain_;
 		} else {
@@ -379,10 +374,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
-		if (is_native || this->has_compatible_mesh_) {
+		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
 			this->calculate_native_values(data_vec);
 		} else {
-			this->interpolate(data_vec);
+			this->interpolate_gauss(data_vec);
 		}
 
 		return true;
@@ -392,7 +387,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
+void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
 	static const unsigned int quadrature_order = 4; // parameter of quadrature
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
