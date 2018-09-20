@@ -450,10 +450,22 @@ void Field<spacedim,Value>::update_history(const TimeStep &time) {
 					OLD_ASSERT_EQUAL( field_instance->n_comp() , n_comp());
 					field_instance->set_mesh( mesh() , is_bc() );
 					for(const Region &reg: domain) {
-						data_->region_history_[reg.idx()].push_front(
-								HistoryPoint(input_time, field_instance)
-						);
-						//DebugOut() << "Update history" << print_var(this->name()) <<print_var(reg.label()) << print_var(input_time);
+                        // if region history is empty, add new field
+                        // or if region history is not empty and the input_time is higher, add new field
+                        // otherwise (region history is not empty and the input_time is the same),
+                        //      rewrite the region field
+                        if( data_->region_history_[reg.idx()].size() == 0
+                            || data_->region_history_[reg.idx()].back().first < input_time)
+                        {
+                            data_->region_history_[reg.idx()].push_front(
+                                    HistoryPoint(input_time, field_instance));
+                            //DebugOut() << "Update history" << print_var(this->name()) << print_var(reg.label()) << print_var(input_time);
+                        }
+                        else
+                        {
+                            data_->region_history_[reg.idx()].back() = 
+                                    HistoryPoint(input_time, field_instance);
+                        }
 					}
 					break;
 				}
