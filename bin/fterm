@@ -47,6 +47,17 @@
 # otherwise will return dir in $HOME, in which is flow123d located (can be even more nested)
 # if the flow is not in a $HOME dir, will return parent directory 
 #    of the flow123d repo root direcotry (the one containing build-master etc)
+
+
+# default version of the image used when **running** personalized image
+image_version=dbg
+
+# default label  of the image when **building** personalized images
+# can be changed with action 'build' in the following manner:
+#     ./fterm build@2.2.0
+image_tag=3.0.0
+
+
 function get_mount_dir() {
   if [[ -n $FLOW123D_WORK ]]; then
     echo $FLOW123D_WORK;
@@ -97,26 +108,29 @@ function configure_file() {
 
 # Will configure all the files for the build process
 function configure_files {
-  docker_image=${1:-flow-libs-dev-dbg}
+  docker_image=${1:-flow-libs-dev-dbg:latest}
   
-  configure_file "$DKR/customize/setup.sh" "$TMP/setup.sh"
-  configure_file "$DKR/customize/Dockerfile" "$TMP/Dockerfile"
+  configure_file "$DKR/customize/setup.sh"    "$TMP/setup.sh"
+  configure_file "$DKR/customize/Dockerfile"  "$TMP/Dockerfile"
 }
 
 # Will alter single image
 function alter_image() {
-  mkdir -p "$TMP"
-  image=$1
+  image=$1  # something like 'flow-libs-dev-dbg'
+  tag=$2    # something like 'latest' or '2.2.0'
 
   # create dummy config files
-  mkdir -p "$TMP/.ssh/"
-  touch "$TMP/.gitconfig"
-  touch "$TMP/.ssh/known_hosts"
+  mkdir -p  "$TMP/.ssh/"
+  touch     "$TMP/.gitconfig"
+  touch     "$TMP/.ssh/known_hosts"
 
-  configure_files $image
-  cp -r "$HOME/.ssh/" "$TMP/"
-  cp -r "$HOME/.gitconfig" "$TMP/"
-  docker rm -f flow123d/$image:user
+  # create Dockerfile and sh file for this image
+  configure_files $image:$tag
+  
+  cp -r "$HOME/.ssh/"       "$TMP/"
+  cp -r "$HOME/.gitconfig"  "$TMP/"
+  
+  docker rm -f       flow123d/$image:user # remove previous image
   docker build --tag flow123d/$image:user --no-cache=true "$TMP"
   
   # remove tmp dir
@@ -130,10 +144,10 @@ function make_work_images() {
 
   for image in $flow123d_images
   do
-      if image_exist "flow123d/$image:latest"; then
+      if image_exist "flow123d/$image:$image_tag"; then
         echo '----------------------------------------------------'
-        echo "altering image $image"
-        alter_image $image
+        echo "altering image $image:$image_tag"
+        alter_image "$image" "$image_tag"
       fi
   done
 }
@@ -150,7 +164,7 @@ function remove_custom_images() {
 function update_images() {
   for image in $flow123d_images
   do
-    docker pull flow123d/$image
+    docker pull flow123d/$image:$image_tag
   done
 }
 
@@ -208,50 +222,61 @@ function remove_old() {
 
 # prints usage
 function usage() {
-  echo "usage [options] [dbg|rel] [action] [arguments]"
-  echo "  options:"
-  echo "    -v|--verbose"
-  echo "    |-d|--debug    - turn on debug mode (set -x)"
-  echo ""
-  echo "  actions:"
-  echo "    clean          - will remove all personalized images, the other images"
-  echo "                     will be left untouched"
-  echo ""
-  echo "    remove-old     - will prompt to remove old docker images and containers"
-  echo "                     (those with no name)"
-  echo ""
-  echo "    build          - will create customized images (ending with user)"
-  echo ""
-  echo "    update         - will update all flow123d images (will download new images"
-  echo "                     from the hub.docker.com/u/flow123d if necessary)"
-  echo ""
-  echo "    run            - (default action) will start a personalized image"
-  echo "                     directory specified in config/docker.cfg file"
-  echo "                     currently directory '$work' will be mounted"
-  echo ""
-  echo "    flow123d       - will run flow123d binary and pass all given arguments"
-  echo "                     specified after this value"
-  echo ""
-  echo "    runtest        - will run runtest binary and pass all given arguments"
-  echo "                     specified after this value"
-  echo ""
-  echo "    make           - will run make and pass all given arguments"
-  echo "                     specified after this value, DO NOT SET flag -j manually"
-  echo "                     use FLOW123D_NUMCPUS for that"
+  cat << EOF
+usage:
+  ./fterm [options] [dbg|rel] [action] [arguments]
+  
+  options:
+    -v|--verbose| -d|--debug
+                    - turn on debug mode (set -x)
 
-  echo ""
-  echo "  arguments: additional arguments passed to binary"
-  echo "             (if action is flow123d or run or runtest)"
-  echo ""
-  echo "  To compile flow under docker, you can do the following:"
-  echo "    $REL_BIN/fterm make -C $ROOT all"
-  echo ""
-  echo "  To run flow under docker, you can do the following:"
-  echo "    $REL_BIN/fterm flow123d --help"
-  echo ""
-  echo "  To run tests under docker, you can do the following:"
-  echo "    $REL_BIN/fterm runtest $ROOT/tests/10_darcy"
-    
+  actions:
+    clean          - will remove all personalized images, the other images
+                     will be left untouched
+
+    remove-old     - will prompt to remove old docker images and containers
+                     (those with no name)
+
+    build          - will create customized images (ending with user)
+
+    build@<tag>    - will create customized images (ending with user)
+                     <tag> value change the tag value of the docker image which is used for
+                     personalization
+                     
+                     Example values can be '3.0.0' or '2.2.0', current value is '$image_tag' (no quotes)
+                     e.g. 
+                     ./fterm build build@2.2.0
+
+    update         - will update all flow123d images (will download new images
+                     from the hub.docker.com/u/flow123d if necessary)
+    update@<tag>     see build@<tag>
+
+    run            - (default action) will start a personalized image
+                     directory specified in config/docker.cfg file
+                     currently directory '$work' will be mounted
+
+    flow123d       - will run flow123d binary and pass all given arguments
+                     specified after this value
+
+    runtest        - will run runtest binary and pass all given arguments
+                     specified after this value
+
+    make           - will run make and pass all given arguments
+                     specified after this value, DO NOT SET flag -j manually
+                     use FLOW123D_NUMCPUS for that
+
+  arguments: additional arguments passed to binary
+             (if action is flow123d or run or runtest)
+
+  To compile flow under docker, you can do the following:
+    $REL_BIN/fterm make -C $ROOT all
+
+  To run flow under docker, you can do the following:
+    $REL_BIN/fterm flow123d --help
+
+  To run tests under docker, you can do the following:
+    $REL_BIN/fterm runtest $ROOT/tests/10_darcy
+EOF
 }
 
 
@@ -283,9 +308,9 @@ fi
 # default settings
 verbose=0
 action=run
-version=dbg
 work=$(get_mount_dir $ABS_ROOT)
 numcpus=${FLOW123D_NUMCPUS:-1}
+
 
 while [[ $# -gt 0 ]]
   do
@@ -295,16 +320,28 @@ while [[ $# -gt 0 ]]
       verbose=1
       shift
     ;;
-    build|config|clean|remove-old|flow123d|update|run|runtest|make)
+    config|clean|remove-old|flow123d|run|runtest|make)
       action=$1
       shift
       break
     ;;
     dbg|rel)
-      version=$1
+      image_version=$1
       shift
     ;;
-    -h|--help)
+    build@*)
+      action=build
+      image_tag=${1#build@}  # cut at (@) from the value
+      shift
+      break
+    ;;
+    update@*)
+      action=update
+      image_tag=${1#update@}  # cut at (@) from the value
+      shift
+      break
+    ;;
+    -h|--help|help)
       echo "Help for the fterm:"
       usage
       exit 1
@@ -318,14 +355,13 @@ while [[ $# -gt 0 ]]
 done
 
 
-
 # turn on verbose in demand
 if [[ $verbose -eq 1 ]]; then
   set -x
 fi
 
-work_image=flow123d/flow-libs-dev-$version:user
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel install"
+work_image=flow123d/flow-libs-dev-$image_version:user
+flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 
 # perform action based on variable action
@@ -352,7 +388,7 @@ case $action in
   make)
     docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "/usr/bin/make -j $numcpus $*"
   ;;
-  build|config)
+  build)
     make_work_images
   ;;
   update)
