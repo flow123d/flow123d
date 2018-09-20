@@ -77,8 +77,6 @@ public:
     	return nodes_.at(ni);
     }
 
-    //unsigned int get_proc() const;
-
 
     // TODO move data members to protected part, add access trough getters or use direct access of friend class Mesh
 

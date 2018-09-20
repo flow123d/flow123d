@@ -67,6 +67,17 @@ public:
 };
 
 
+/// Partial template specialization of FEShapeHandler for tensor fields
+template<int elemdim, int spacedim, class Value>
+class FEShapeHandler<2, elemdim, spacedim, Value> {
+public:
+	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
+	{
+		return fe_val.tensor_view(0).value(i_dof, i_qp);
+	}
+};
+
+
 
 template <int elemdim, int spacedim, class Value>
 FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
@@ -78,7 +89,8 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 template <int elemdim, int spacedim, class Value>
 void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
 {
-	ASSERT_EQ(dof_indices.size(), 0).error("Multiple initialization.");
+	if (dof_indices.size() > 0)
+		WarningOut() << "Multiple initialization of FEValueHandler!";
 
 	dh_ = init_data.dh;
 	data_vec_ = init_data.data_vec;
@@ -114,7 +126,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_PTR(map_).error();
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DOFHandlerBase::CellIterator cell = dh_->mesh()->element_accessor( elm.idx() );
+    ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() );
 	dh_->get_dof_indices(cell, dof_indices);
 
     arma::mat map_mat = map_->element_map(elm);
@@ -122,12 +134,12 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(elm), update_values);
 		fe_values.reinit(cell);
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>()->n_dofs(); i++) {
+		for (unsigned int i=0; i<dh_->fe<elemdim>(elm)->n_dofs(); i++) {
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
 		}
@@ -135,13 +147,35 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 }
 
 
-template <int elemdim, int spacedim, class Value>
-bool FEValueHandler<elemdim, spacedim, Value>::contains_point(arma::vec point, ElementAccessor<3> elm)
+template <int spacedim, class Value>
+void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 {
-	ASSERT_PTR(map_).error();
+	if (dof_indices.size() > 0)
+		WarningOut() << "Multiple initialization of FEValueHandler!";
 
-	arma::vec projection = map_->project_real_to_unit(point, map_->element_map(elm));
-	return (projection.min() >= -BoundingBox::epsilon);
+	dh_ = init_data.dh;
+	data_vec_ = init_data.data_vec;
+    dof_indices.resize(init_data.ndofs);
+    value_.set_n_comp(init_data.n_comp);
+}
+
+
+template <int spacedim, class Value>
+void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
+                   std::vector<typename Value::return_type> &value_list)
+{
+	ASSERT_EQ( point_list.size(), value_list.size() ).error();
+
+	ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() );
+	dh_->get_dof_indices(cell, dof_indices);
+
+	for (unsigned int k=0; k<point_list.size(); k++) {
+		Value envelope(value_list[k]);
+		envelope.zeros();
+		for (unsigned int i=0; i<dh_->fe<0>(elm)->n_dofs(); i++) {
+			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += (*data_vec_)[dof_indices[i]];
+		}
+	}
 }
 
 
@@ -167,6 +201,7 @@ template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixe
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
 //INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
 
+INSTANCE_VALUE_HANDLER(0);
 INSTANCE_VALUE_HANDLER(1);
 INSTANCE_VALUE_HANDLER(2);
 INSTANCE_VALUE_HANDLER(3);

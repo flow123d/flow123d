@@ -34,7 +34,8 @@
 #include "input/type_selection.hh"
 
 #include "fields/field_set.hh"
-#include "fields/field_elementwise.hh" 
+#include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 
 using namespace Input::Type;
 
@@ -193,6 +194,8 @@ void SorptionBase::initialize()
   conc_solid = new double* [substances_.size()];
   conc_solid_out.clear();
   conc_solid_out.resize( substances_.size() );
+  output_field_ptr.clear();
+  output_field_ptr.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_solid[sbi] = new double [distribution_->lsize()];
@@ -342,9 +345,9 @@ void SorptionBase::initialize_fields()
   data_->conc_solid.setup_components();
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
-      // create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-	  auto output_field_ptr = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(substances_.size());
-      data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+      // create shared pointer to a FieldFE and push this Field to output_field on all regions
+	  output_field_ptr[sbi] = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+      data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
   data_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), time());
@@ -633,6 +636,10 @@ void SorptionBase::output_data(void )
     data_->output_fields.set_time(time().step(), LimitSide::right);
     if ( data_->output_fields.is_field_output_time(data_->conc_solid, time().step()) ) {
         output_vector_gather();
+    }
+
+    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++) {
+    	conc_solid_out[sbi].fill_output_data(output_field_ptr[sbi]);
     }
 
     // Register fresh output data

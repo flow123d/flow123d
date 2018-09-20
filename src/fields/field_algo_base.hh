@@ -45,6 +45,7 @@
 
 class Mesh;
 class UnitSI;
+class DOFHandlerMultiDim;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -98,7 +99,7 @@ struct FieldAlgoBaseInitData {
 /// Declaration of exception.
 TYPEDEF_ERR_INFO(EI_Field, std::string);
 DECLARE_INPUT_EXCEPTION(ExcUndefElementValue,
-        << "Values of some elements of FieldElementwise " << EI_Field::qval << " is undefined.\n"
+        << "Values of some elements of FieldFE " << EI_Field::qval << " is undefined.\n"
 		   << "Please specify in default_value key.\n");
 
 
@@ -232,6 +233,12 @@ public:
         */
        virtual void value_list(const std::vector< Point >  &point_list, const ElementAccessor<spacedim> &elm,
                           std::vector<typename Value::return_type>  &value_list)=0;
+
+       /**
+        * Postponed setter of Dof handler for FieldFE. For other types of fields has no effect.
+        */
+       virtual void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+       {}
 
        /**
         * Virtual destructor.

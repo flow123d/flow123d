@@ -28,7 +28,7 @@ problem: !Coupling_Sequential
             - - 2000
               - 5.0
           time_unit: "s"
-        sigma: !FieldElementwise
+        sigma: !FieldFE
           mesh_data_file: ./11_mesh_with_data_11el.msh
           field_name: sigma
           time_unit: "min"

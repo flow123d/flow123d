@@ -174,7 +174,7 @@ void MixedMeshIntersections::compute_intersections(InspectElementsAlgorithm< dim
     START_TIMER("Intersection into storage");
     storage.reserve(iea.n_intersections_);
     
-    for (auto elm : mesh->bulk_elements_range()) {
+    for (auto elm : mesh->elements_range()) {
         unsigned int idx = elm.idx();
         
         if(elm->dim() == dim)
@@ -389,7 +389,7 @@ void MixedMeshIntersections::compute_intersections(IntersectionType d)
     append_to_index(intersection_storage12_);
 
     // release temporary links from 3d elements
-    for (auto elm : mesh->bulk_elements_range()) {
+    for (auto elm : mesh->elements_range()) {
         if(elm->dim() == 3) element_intersections_[elm.idx()].clear();
     }
 
@@ -455,7 +455,7 @@ void MixedMeshIntersections::print_mesh_to_file_13(string name)
         fprintf(file,"$Elements\n");
         fprintf(file,"%d\n", ((unsigned int)intersection_storage13_.size() + mesh->n_elements()) );
 
-        for (auto elee : mesh->bulk_elements_range()) {
+        for (auto elee : mesh->elements_range()) {
             if(elee->dim() == 3){
                 int id1 = elee.node_accessor(0).idx() + 1;
                 int id2 = elee.node_accessor(1).idx() + 1;
@@ -552,7 +552,7 @@ void MixedMeshIntersections::print_mesh_to_file_23(string name)
         fprintf(file,"$Elements\n");
         fprintf(file,"%d\n", (number_of_intersection_points + mesh->n_elements()) );
 
-        for (auto elee : mesh->bulk_elements_range()) {
+        for (auto elee : mesh->elements_range()) {
             if(elee->dim() == 3){
                 int id1 = elee.node_accessor(0).idx() + 1;
                 int id2 = elee.node_accessor(1).idx() + 1;

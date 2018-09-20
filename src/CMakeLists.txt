@@ -189,6 +189,7 @@ add_library(mesh_lib
     mesh/elements.cc
     mesh/duplicate_nodes.cc
     mesh/mesh.cc
+    mesh/bc_mesh.cc
     mesh/neighbours.cc
     mesh/sides.cc
 #    mesh/intersection.cc
@@ -233,6 +234,7 @@ target_link_libraries(mesh_lib
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
     quadrature/intersection_quadrature.cc
+    fem/discrete_space.cc
     fem/dofhandler.cc
     fem/finite_element.cc
     fem/fe_p.cc
@@ -295,13 +297,14 @@ add_library(coupling_lib
     fields/generic_field.cc
     fields/field_constant.cc
     fields/field_formula.cc
-    fields/field_elementwise.cc
+    # fields/field_elementwise.cc
     fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
     fields/field_fe.cc
     fields/fe_value_handler.cc
     fields/surface_depth.cc
+    fields/vec_seq_double.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc
@@ -340,13 +343,11 @@ add_library(flow123d_lib
     reaction/first_order_reaction.cc
     reaction/first_order_reaction_base.cc
     reaction/radioactive_decay.cc
-    reaction/pade_approximant.cc
     reaction/sorption_base.cc
     reaction/sorption.cc
     reaction/dual_porosity.cc
     reaction/isotherm.cc
     reaction/linear_ode_solver.cc
-    reaction/linear_ode_analytic.cc
     #semchem/semchem_interface.cc
 
     transport/concentration_model.cc

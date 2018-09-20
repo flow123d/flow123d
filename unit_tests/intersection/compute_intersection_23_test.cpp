@@ -306,7 +306,7 @@ TEST(area_intersections, all) {
                 reader->read_raw_mesh(mesh);
                 
                 // permute nodes:
-                for (auto ele : mesh->bulk_elements_range()) {
+                for (auto ele : mesh->elements_range()) {
                     if(ele->dim() == 2)
                         mesh->permute_triangle(ele.idx(), permutations_triangle[p]);
                     if(ele->dim() == 3)
