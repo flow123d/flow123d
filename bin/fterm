@@ -1,0 +1,403 @@
+#!/bin/bash
+# This script can personalize flow123d images (adding user/group, adding keys, setting up git)
+# usage ./fterm [options] [dbg|rel] [action] [arguments]
+#   options:
+#     -v|--verbose
+#     |-d|--debug    - turn on debug mode (set -x)
+#     
+#   actions:
+#     clean          - will remove all personalized images, the other images
+#                      will be left untouched
+# 
+#     remove-old     - will prompt to remove old docker images and containers
+#                      (those with no name)
+#     
+#     update         - will update all flow123d images (will download new images
+#                      from the hub.docker.com/u/flow123d if necessary)
+#     
+#     build          - will create customized images (ending with user)
+# 
+#     run            - (default action) will start a personalized image
+#                      directory specified in config/docker.cfg file
+#                      currently directory '$work' will be mounted
+# 
+#   arguments: additional arguments passed to binary (if action is flow123d or run or runtest)
+# 
+#    run            - (default action) will start a personalized image
+#                     directory specified in config/docker.cfg file
+#                     currently directory '$work' will be mounted
+#
+#    flow123d       - will run flow123d binary and pass all given arguments
+#                     specified after this value
+#
+#    runtest        - will run runtest binary and pass all given arguments
+#                     specified after this value
+#
+#    make           - will run make and pass all given arguments
+#                     specified after this value, DO NOT SET flag -j manually
+#                     use FLOW123D_NUMCPUS for that
+
+# The script can be configure with system variables:
+#    FLOW123D_WORK      - the folder, which will be mounted
+#    FLOW123D_NUMCPUS   - number of cpus, which will be used when called with pmake
+
+
+# function will try to find proper dir to be mounted
+# it will return $FLOW123D_WORK is set
+# otherwise will return dir in $HOME, in which is flow123d located (can be even more nested)
+# if the flow is not in a $HOME dir, will return parent directory 
+#    of the flow123d repo root direcotry (the one containing build-master etc)
+
+
+# default version of the image used when **running** personalized image
+image_version=dbg
+
+# default label  of the image when **building** personalized images
+# can be changed with action 'build' in the following manner:
+#     ./fterm build@2.2.0
+image_tag=3.0.0
+
+
+function get_mount_dir() {
+  if [[ -n $FLOW123D_WORK ]]; then
+    echo $FLOW123D_WORK;
+  else
+    # try to find the first dir in $HOME, in which
+    # flow123d is located
+    local workdir=$1
+    local workdir_tmp=
+    for (( i = 0; i < 10; i++ )); do
+      workdir_tmp=$(dirname $workdir)
+      if [[ "$workdir_tmp" == "$HOME" ]]; then
+        # we found what we were looking for
+        echo $workdir
+        return
+      fi
+      workdir=$workdir_tmp
+    done
+    # the folder is too deep or not in HOME
+    # we return entire $HOME
+    echo $(dirname $1)
+  fi
+}
+
+
+# Will check whether given image exists and return 0 if it does
+function image_exist() {
+  did=$(docker images $1 -q)
+  if [[ -z $did ]]; then
+    return 1
+  else
+    return 0
+  fi
+}
+
+# Will configure single file and makes it executabůe
+function configure_file() {
+  sed -e "s/@gid@/$gid/g" \
+      -e "s/@uid@/$uid/g" \
+      -e "s/@uname@/$uname/g" \
+      -e "s/@image_tag@/$image_tag/g" \
+      -e "s/@docker_image@/$docker_image/g" \
+      -e "s/@git_email@/$git_email/g" \
+      -e "s/@git_uname@/$git_uname/g" \
+      -e "s/@light_theme@/$light_theme/g" \
+      "$1" > "$2"
+  chmod +x $2
+}
+
+# Will configure all the files for the build process
+function configure_files {
+  docker_image=${1:-flow-libs-dev-dbg:latest}
+  
+  configure_file "$DKR/customize/setup.sh"    "$TMP/setup.sh"
+  configure_file "$DKR/customize/Dockerfile"  "$TMP/Dockerfile"
+}
+
+# Will alter single image
+function alter_image() {
+  image=$1  # something like 'flow-libs-dev-dbg'
+  tag=$2    # something like 'latest' or '2.2.0'
+
+  # create dummy config files
+  mkdir -p  "$TMP/.ssh/"
+  touch     "$TMP/.gitconfig"
+  touch     "$TMP/.ssh/known_hosts"
+
+  # create Dockerfile and sh file for this image
+  configure_files $image:$tag
+  
+  cp -r "$HOME/.ssh/"       "$TMP/"
+  cp -r "$HOME/.gitconfig"  "$TMP/"
+  
+  docker rm -f       flow123d/$image:user # remove previous image
+  docker build --tag flow123d/$image:user --no-cache=true "$TMP"
+  
+  # remove tmp dir
+  rm -rf "$TMP"
+}
+
+# Will build custom images
+function make_work_images() {
+  echo '----------------------------------------------------'
+  echo "Creating developer images for user $uname ($uid:$gid)"
+
+  for image in $flow123d_images
+  do
+      if image_exist "flow123d/$image:$image_tag"; then
+        echo '----------------------------------------------------'
+        echo "altering image $image:$image_tag"
+        alter_image "$image" "$image_tag"
+      fi
+  done
+}
+
+# Will remove all custom images
+function remove_custom_images() {
+  for image in $flow123d_images
+  do
+    docker rmi -f flow123d/$image:user
+  done
+}
+
+# Will pull all the images to newest
+function update_images() {
+  for image in $flow123d_images
+  do
+    docker pull flow123d/$image:$image_tag
+  done
+}
+
+
+# Detects exited containers  and prompt user to delete them
+# Detects untagged images and prompt user to delete them
+function remove_old() {
+  # ------------------------------------------------------------------------------
+  EXITED=$(docker ps -q -f status=exited)
+  if [[ -n $EXITED ]]; then
+      echo "--------------------------------------------"
+      echo "Note: You have exited containers present. Exited containers are usually"
+      echo "      left overs which can be safely removed."
+      echo "Containers are: "
+      docker images | grep "^<none>"
+
+      if [[ $YES_TO_ALL -eq 1 ]]; then
+          docker rm -f $EXITED
+      else
+          read -p "Would you like to remove them? " -n 1 -r
+          echo
+          if [[ $REPLY =~ ^[Yy]$ ]]
+          then
+              docker rm -f $EXITED
+          fi
+      fi
+      echo "--------------------------------------------"
+  fi
+
+  
+  # ------------------------------------------------------------------------------
+  UNNAMED=$(docker images | grep "^<none>" | awk "{print \$3}")
+  if [[ -n $UNNAMED ]]; then
+      echo "--------------------------------------------"
+      echo "Note: You have untagged images present, this probably occured when images"
+      echo "      were reinstalled. Even though these images can still be used it is "
+      echo "      recommended to simply delete them."
+      echo "Images are: "
+      docker images | grep "^<none>"
+
+      if [[ $YES_TO_ALL -eq 1 ]]; then
+          docker rmi -f $UNNAMED
+      else
+          read -p "Would you like to remove them? " -n 1 -r
+          echo
+          if [[ $REPLY =~ ^[Yy]$ ]]
+          then
+              docker rmi -f $UNNAMED
+          fi
+      fi
+      echo "--------------------------------------------"
+  fi
+}
+
+
+# prints usage
+function usage() {
+  cat << EOF
+usage:
+  ./fterm [options] [dbg|rel] [action] [arguments]
+  
+  options:
+    -v|--verbose| -d|--debug
+                    - turn on debug mode (set -x)
+
+  actions:
+    clean          - will remove all personalized images, the other images
+                     will be left untouched
+
+    remove-old     - will prompt to remove old docker images and containers
+                     (those with no name)
+
+    build          - will create customized images (ending with user)
+
+    build@<tag>    - will create customized images (ending with user)
+                     <tag> value change the tag value of the docker image which is used for
+                     personalization
+                     
+                     Example values can be '3.0.0' or '2.2.0', current value is '$image_tag' (no quotes)
+                     e.g. 
+                     ./fterm build build@2.2.0
+
+    update         - will update all flow123d images (will download new images
+                     from the hub.docker.com/u/flow123d if necessary)
+    update@<tag>     see build@<tag>
+
+    run            - (default action) will start a personalized image
+                     directory specified in config/docker.cfg file
+                     currently directory '$work' will be mounted
+
+    flow123d       - will run flow123d binary and pass all given arguments
+                     specified after this value
+
+    runtest        - will run runtest binary and pass all given arguments
+                     specified after this value
+
+    make           - will run make and pass all given arguments
+                     specified after this value, DO NOT SET flag -j manually
+                     use FLOW123D_NUMCPUS for that
+
+  arguments: additional arguments passed to binary
+             (if action is flow123d or run or runtest)
+
+  To compile flow under docker, you can do the following:
+    $REL_BIN/fterm make -C $ROOT all
+
+  To run flow under docker, you can do the following:
+    $REL_BIN/fterm flow123d --help
+
+  To run tests under docker, you can do the following:
+    $REL_BIN/fterm runtest $ROOT/tests/10_darcy
+EOF
+}
+
+
+# get CWD as realtive path to current directory, which enables to build image on Windows
+OLD_PWD="$(pwd)"
+ABS_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
+ABS_BIN="$ABS_ROOT/bin"
+ROOT=$(realpath --relative-to=$(pwd) $ABS_ROOT)
+REL_BIN=$(realpath --relative-to=$(pwd) $ROOT/bin)
+
+# define paths
+BIN=$ROOT/bin
+CFG=$ROOT/config
+TMP=$ROOT/config/docker/.tmp
+DKR=$ROOT/config/docker
+
+
+gid=$(id -g)
+uid=$(id -u)
+uname=$(whoami)
+light_theme=0
+
+
+# source config, that way we know what to mount, etc.
+if [[ -f "$CFG/docker.cfg" ]]; then
+  source $CFG/docker.cfg
+fi
+
+# default settings
+verbose=0
+action=run
+work=$(get_mount_dir $ABS_ROOT)
+numcpus=${FLOW123D_NUMCPUS:-1}
+
+
+while [[ $# -gt 0 ]]
+  do
+  key="$1"
+  case $key in
+    -v|--verbose|-d|--debug)
+      verbose=1
+      shift
+    ;;
+    config|clean|remove-old|flow123d|run|runtest|make)
+      action=$1
+      shift
+      break
+    ;;
+    dbg|rel)
+      image_version=$1
+      shift
+    ;;
+    build@*)
+      action=build
+      image_tag=${1#build@}  # cut at (@) from the value
+      shift
+      break
+    ;;
+    update@*)
+      action=update
+      image_tag=${1#update@}  # cut at (@) from the value
+      shift
+      break
+    ;;
+    -h|--help|help)
+      echo "Help for the fterm:"
+      usage
+      exit 1
+    ;;
+    *)
+      echo "Invalid argument!"
+      usage
+      exit 1
+    ;;
+  esac
+done
+
+
+# turn on verbose in demand
+if [[ $verbose -eq 1 ]]; then
+  set -x
+fi
+
+work_image=flow123d/flow-libs-dev-$image_version:user
+flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
+
+
+# perform action based on variable action
+case $action in
+  flow123d)
+    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "$ROOT/bin/flow123d $*"
+  ;;
+  runtest)
+    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "$ROOT/bin/runtest $*"
+  ;;
+  run)
+    if [[ "$#" -eq 0 ]]; then
+      docker run --rm -it \
+          -w "$OLD_PWD" \
+          -v "$work":"$work" \
+          -e TESTS_DIR="$ABS_ROOT/tests" \
+          $work_image \
+          bash -lc \
+          "export PATH=\$PATH:$ABS_BIN; bash -l"
+    else
+      docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "$*"
+    fi
+  ;;
+  make)
+    docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $work_image bash -lc "/usr/bin/make -j $numcpus $*"
+  ;;
+  build)
+    make_work_images
+  ;;
+  update)
+    update_images
+  ;;
+  clean)
+    remove_custom_images
+  ;;
+  remove-old)
+    remove_old
+  ;;
+esac
