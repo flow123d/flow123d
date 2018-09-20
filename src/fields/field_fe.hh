@@ -152,6 +152,9 @@ private:
 	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
 	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
 
+	/// Interpolate data (use intersection library) over all elements of target mesh.
+	void interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec);
+
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 

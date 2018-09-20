@@ -31,6 +31,11 @@
 #include "mesh/range_wrapper.hh"
 #include "quadrature/quadrature_lib.hh"
 
+#include "system/sys_profiler.hh"
+#include "intersection/intersection_aux.hh"
+#include "intersection/intersection_local.hh"
+#include "intersection/compute_intersection.hh"
+
 
 
 
@@ -266,7 +271,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		case DataInterpolation::gauss_p0:
 			break;
 		case DataInterpolation::interp_p0:
-			ASSERT(false).error("Not supported yet!\n");
 			break;
 		}
 	}
@@ -376,8 +380,10 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
 			this->calculate_native_values(data_vec);
-		} else {
+		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
 			this->interpolate_gauss(data_vec);
+		} else { // DataInterpolation::interp_p0
+			this->interpolate_intersection(data_vec);
 		}
 
 		return true;
@@ -503,6 +509,107 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		dh_->get_dof_indices( ele, dof_indices_);
 		ASSERT_LT_DBG( dof_indices_[0], (int)data_vec_->size());
 		(*data_vec_)[dof_indices_[0]] = elem_value * this->unit_conversion_coefficient_;
+	}
+}
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec)
+{
+	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
+	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
+	std::vector<double> value(dh_->max_elem_dofs());
+	double total_measure, measure;
+
+	for (auto elm : dh_->mesh()->elements_range()) {
+		if (elm.dim() == 3) {
+			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
+		}
+
+		double epsilon = 4* numeric_limits<double>::epsilon() * elm.measure();
+
+		// gets suspect elements
+		if (elm.dim() == 0) {
+			searched_elements.clear();
+			source_mesh->get_bih_tree().find_point(elm.node(0)->point(), searched_elements);
+		} else {
+			BoundingBox bb = elm.bounding_box();
+			searched_elements.clear();
+			source_mesh->get_bih_tree().find_bounding_box(bb, searched_elements);
+		}
+
+		// set zero values of value object
+		std::fill(value.begin(), value.end(), 0.0);
+		total_measure=0.0;
+
+		START_TIMER("compute_pressure");
+		ADD_CALLS(searched_elements.size());
+
+
+        MappingP1<3,3> mapping;
+
+        for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++)
+        {
+            ElementAccessor<3> ele = source_mesh->element_accessor(*it);
+            if (ele->dim() == 3) {
+                // get intersection (set measure = 0 if intersection doesn't exist)
+                switch (elm.dim()) {
+                    case 0: {
+                        arma::vec::fixed<3> real_point = elm.node(0)->point();
+                        arma::mat::fixed<3, 4> elm_map = mapping.element_map(ele);
+                        arma::vec::fixed<4> unit_point = mapping.project_real_to_unit(real_point, elm_map);
+
+                        measure = (std::fabs(arma::sum( unit_point )-1) <= 1e-14
+                                        && arma::min( unit_point ) >= 0)
+                                            ? 1.0 : 0.0;
+                        break;
+                    }
+                    case 1: {
+                        IntersectionAux<1,3> is;
+                        ComputeIntersection<1,3> CI(elm, ele, source_mesh.get());
+                        CI.init();
+                        CI.compute(is);
+
+                        IntersectionLocal<1,3> ilc(is);
+                        measure = ilc.compute_measure() * elm.measure();
+                        break;
+                    }
+                    case 2: {
+                        IntersectionAux<2,3> is;
+                        ComputeIntersection<2,3> CI(elm, ele, source_mesh.get());
+                        CI.init();
+                        CI.compute(is);
+
+                        IntersectionLocal<2,3> ilc(is);
+                        measure = 2 * ilc.compute_measure() * elm.measure();
+                        break;
+                    }
+                }
+
+				//adds values to value_ object if intersection exists
+				if (measure > epsilon) {
+					unsigned int index = value.size() * (*it);
+			        std::vector<double> &vec = *( data_vec.get() );
+			        for (unsigned int i=0; i < value.size(); i++) {
+			        	value[i] += vec[index+i] * measure;
+			        }
+					total_measure += measure;
+				}
+			}
+		}
+
+		// computes weighted average, store it to data vector
+		if (total_measure > epsilon) {
+			VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
+			dh_->get_dof_indices( elm, dof_indices_ );
+			for (unsigned int i=0; i < value.size(); i++) {
+				(*data_vector)[ dof_indices_[i] ] = value[i] / total_measure;
+			}
+		} else {
+			WarningOut().fmt("Processed element with idx {} is out of source mesh!\n", elm.idx());
+		}
+		END_TIMER("compute_pressure");
+
 	}
 }
 

@@ -263,22 +263,28 @@ interp_scalar_old: !FieldInterpolatedP0
   mesh_data_file: fields/interpolate_boundary_data.msh
   field_name: scalar
   default_value: 0.0
-##### tests of interpolation P0
-interp_scalar: !FieldFE
+##### tests of intersection interpolation P0
+interp_scalar_intersect: !FieldFE
   mesh_data_file: fields/interpolate_boundary_data.msh
   field_name: scalar
   default_value: 0.0
-interp_scalar_unit_conversion: !FieldFE
+  interpolation: P0_intersection
+##### tests of gauss interpolation P0
+interp_scalar_gauss: !FieldFE
+  mesh_data_file: fields/interpolate_boundary_data.msh
+  field_name: scalar
+  default_value: 0.0
+interp_scalar_gauss_unit_conversion: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
   unit: km
-interp_scalar_large: !FieldFE
+interp_scalar_gauss_large: !FieldFE
   mesh_data_file: fields/bigger_3d_cube_0.5.msh
   field_name: scalar
-interp_vector_fixed: !FieldFE
+interp_vector_gauss_fixed: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: vector_fixed
-interp_tensor_fixed: !FieldFE
+interp_tensor_gauss_fixed: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: tensor_fixed
 )YAML";
@@ -314,11 +320,12 @@ public:
             .declare_key("scalar_identic_mesh", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_identic_mesh", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("interp_scalar_old", ScalarFieldOld::get_input_type(), Input::Type::Default::obligatory(),"" )   // temporary
-            .declare_key("interp_scalar", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("interp_scalar_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("interp_scalar_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("interp_vector_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("interp_tensor_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_intersect", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_gauss", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_gauss_unit_conversion", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_scalar_gauss_large", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_vector_gauss_fixed", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
+            .declare_key("interp_tensor_gauss_fixed", TensorField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .close();
 
         Input::ReaderToStorage reader( elem_input, rec_type, Input::FileFormat::format_YAML );
@@ -611,9 +618,34 @@ TEST_F(FieldFENewTest, bc_vector_fixed_identic_mesh) {
 }
 
 
-TEST_F(FieldFENewTest, 1d_2d_elements_small) {
+/*TEST_F(FieldFENewTest, intersection_1d_2d_elements_small) {
     ScalarField field;
-    field.init_from_input(rec.val<Input::Record>("interp_scalar"), init_data("interp_scalar"));
+    field.init_from_input(rec.val<Input::Record>("interp_scalar_intersect"), init_data("interp_scalar_intersect"));
+    field.set_mesh(mesh, true);
+    std::vector<unsigned int> expected_vals = {4,9,6,7};
+
+    ScalarFieldOld field_old;
+    field_old.init_from_input(rec.val<Input::Record>("interp_scalar_old"), init_data("interp_scalar_old"));
+    field_old.set_mesh(mesh, true);
+
+    for (unsigned int j=0; j<2; j++) {
+    	field.set_time(test_time[j]);
+    	field_old.set_time(test_time[j]);
+    	std::cout << "Time: " << test_time[j] << std::endl;
+
+    	for (unsigned int i=9; i<13; ++i) {
+    		ElementAccessor<3> elm = mesh->element_accessor(i);
+    		std::cout << " - " << field_old.value(point, elm) << " - " << field.value(elm.centre(), elm) << std::endl;
+    		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
+    	}
+    }
+
+} // */
+
+
+TEST_F(FieldFENewTest, gauss_1d_2d_elements_small) {
+    ScalarField field;
+    field.init_from_input(rec.val<Input::Record>("interp_scalar_gauss"), init_data("interp_scalar_gauss"));
     field.set_mesh(mesh, true);
     std::vector<unsigned int> expected_vals = {4,9,6,7};
 
