@@ -3,7 +3,7 @@
 # Author: David Flanderka
 # Source for reference: Just run
 
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: heck correct includes of CSV files to main input YAML file.
   mesh:
@@ -48,8 +48,6 @@ problem: !Coupling_Sequential
     output_stream: 
       file: ./test1.msh
       format: !gmsh
-        variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -104,7 +102,6 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
       precision: 14  

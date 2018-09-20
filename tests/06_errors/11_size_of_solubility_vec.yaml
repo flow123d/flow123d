@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Simple sorption test - no flow, no transport, known values of sorbed
     substances.
@@ -14,7 +14,6 @@ problem: !Coupling_Sequential
           - .up
           - .down
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
