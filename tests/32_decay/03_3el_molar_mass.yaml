@@ -23,7 +23,6 @@ problem: !Coupling_Sequential
       file: ./flow.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -41,7 +40,6 @@ problem: !Coupling_Sequential
       file: ./transport_decay.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.5
     substances:

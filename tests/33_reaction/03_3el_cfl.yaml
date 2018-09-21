@@ -23,7 +23,6 @@ problem: !Coupling_Sequential
       file: ./decay.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:

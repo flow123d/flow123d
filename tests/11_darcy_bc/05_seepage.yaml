@@ -70,4 +70,3 @@ problem: !Coupling_Sequential
       file: ./test05.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

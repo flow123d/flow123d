@@ -31,7 +31,6 @@ problem: !Coupling_Sequential
       file: ./flow.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
       output_mesh:
         max_level: 5 # default value
         refine_by_error: true

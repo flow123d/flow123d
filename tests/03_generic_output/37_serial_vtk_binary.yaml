@@ -50,4 +50,3 @@ problem: !Coupling_Sequential
       file: test37_32d.pvd
       format: !vtk
         variant: binary
-      name: flow_output_stream

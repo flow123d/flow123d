@@ -43,4 +43,3 @@ problem: !Coupling_Sequential
       file: test6_32d.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

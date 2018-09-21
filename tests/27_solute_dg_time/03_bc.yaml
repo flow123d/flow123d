@@ -26,7 +26,6 @@ problem: !Coupling_Sequential
       file: ./test14.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
@@ -51,7 +50,6 @@ problem: !Coupling_Sequential
       file: ./transport-implicit.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 1.0
     substances:

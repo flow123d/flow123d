@@ -47,7 +47,6 @@ problem: !Coupling_Sequential
       file: flow.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     balance:
       cumulative: true
@@ -68,7 +67,6 @@ problem: !Coupling_Sequential
       file: ./transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
     solver: !Petsc
@@ -100,7 +98,6 @@ problem: !Coupling_Sequential
       file: ./heat.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 5
     solver: !Petsc

@@ -58,4 +58,3 @@ problem: !Coupling_Sequential
       file: ./test1.msh
       format: !gmsh
         variant: ascii
-      name: flow_output_stream

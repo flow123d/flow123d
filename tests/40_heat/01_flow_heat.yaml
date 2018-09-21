@@ -42,7 +42,6 @@ problem: !Coupling_Sequential
       file: flow.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   heat_equation: !Heat_AdvectionDiffusion_DG
     balance:
       cumulative: true
@@ -65,7 +64,6 @@ problem: !Coupling_Sequential
       file: ./heat.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 1
     solver: !Petsc

@@ -51,4 +51,3 @@ problem: !Coupling_Sequential
       format: !vtk
         variant: ascii
         parallel: true
-      name: flow_output_stream
