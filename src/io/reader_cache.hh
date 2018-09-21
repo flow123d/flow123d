@@ -54,7 +54,7 @@ public:
 	/**
 	 * Check if nodes and elements of reader mesh are compatible with \p mesh.
 	 */
-	static bool check_compatible_mesh(const FilePath &file_path, Mesh &mesh);
+	static bool check_compatible_mesh(const FilePath &file_path, Mesh &mesh, bool check_compatibility = true);
 
 private:
 	/// Returns singleton instance
