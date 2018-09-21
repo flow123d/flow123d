@@ -65,7 +65,6 @@ problem: !Coupling_Sequential
           - .left
           - .left_points
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         options: -ksp_type preonly  -pc_type cholesky

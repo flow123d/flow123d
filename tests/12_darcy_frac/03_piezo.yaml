@@ -12,7 +12,6 @@ problem: !Coupling_Sequential
           - 2d_fracture_1
           - 2d_fracture_2
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10

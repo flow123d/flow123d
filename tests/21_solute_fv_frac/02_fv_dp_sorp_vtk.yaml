@@ -15,7 +15,6 @@ problem: !Coupling_Sequential
           - .2d
           - .1d
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

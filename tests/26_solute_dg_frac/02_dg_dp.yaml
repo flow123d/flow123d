@@ -15,7 +15,6 @@ problem: !Coupling_Sequential
           - .2d
           - .1d
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: 1d
         anisotropy: 10

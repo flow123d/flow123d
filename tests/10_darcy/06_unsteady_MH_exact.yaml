@@ -18,7 +18,6 @@ problem: !Coupling_Sequential
     mesh_file: ../00_mesh/square_1x1_942el.msh
   #flow_equation: !Flow_Richards_LMH
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     time:
       end_time: 1
       max_dt: 0.01
@@ -60,4 +59,4 @@ problem: !Coupling_Sequential
       name: flow_output_stream
       times:
         - step: 0.1
-      precision: 15  
+      precision: 15

@@ -4,7 +4,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_1x1_942el_4bc.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     n_schurs: 2
     input_fields:
       - region: plane

@@ -8,7 +8,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_xz_1x1.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: ALL
         storativity: 1.0
@@ -43,4 +42,4 @@ problem: !Coupling_Sequential
       name: flow_output_stream
       times:
         - step: 0.1
-      precision: 15  
+      precision: 15
