@@ -61,7 +61,6 @@ problem: !Coupling_Sequential
       times:
         - step: 0.8
       precision: 15
-    sorption_enable: false
     substances:
       - conc
     time:

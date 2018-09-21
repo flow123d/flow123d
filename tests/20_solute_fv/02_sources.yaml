@@ -55,7 +55,6 @@ problem: !Coupling_Sequential
       times:
         - step: 0.8
       precision: 15  
-    sources_file: ./input/test16.tso
     substances:
       - conc
     time:

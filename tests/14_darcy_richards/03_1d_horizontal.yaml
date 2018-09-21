@@ -53,7 +53,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./flow.msh
       format: !gmsh
-        variant: ascii
       times:
         - step: 100
       observe_points:

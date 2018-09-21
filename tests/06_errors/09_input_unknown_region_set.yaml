@@ -18,7 +18,6 @@ problem: !Coupling_Sequential
         - velocity_p0
     output_stream:
       format: !gmsh
-        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_AdvectionDiffusion_DG
       input_fields:
@@ -33,7 +32,6 @@ problem: !Coupling_Sequential
     balance: {}
     output_stream:
       format: !gmsh
-        variant: ascii
       times:
         - step: 36000
       observe_points:

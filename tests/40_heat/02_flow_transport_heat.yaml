@@ -62,8 +62,6 @@ problem: !Coupling_Sequential
       times:
         - step: 0.1
       precision: 15
-    solver: !Petsc
-      a_tol: 1.0e-07
     time:
       end_time: 1
   heat_equation: !Heat_AdvectionDiffusion_DG

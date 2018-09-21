@@ -57,4 +57,3 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./test1.msh
       format: !gmsh
-        variant: ascii

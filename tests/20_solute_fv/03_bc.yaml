@@ -31,9 +31,6 @@ problem: !Coupling_Sequential
           bc_conc: 2
         - region: .top
           bc_conc: 3
-      solver: !Petsc
-        a_tol: 1e-15    # default
-        r_tol: 1e-15    # default
     output_stream:
       file: ./transport.pvd
       format: !vtk

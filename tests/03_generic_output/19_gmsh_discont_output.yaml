@@ -46,7 +46,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
   solute_equation: !Coupling_OperatorSplitting
     balance:
       cumulative: true
@@ -65,11 +64,8 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./transport.msh
       format: !gmsh
-        variant: ascii
       times:
         - step: 0.1
-    solver: !Petsc
-      a_tol: 1.0e-07
     time:
       end_time: 1
   heat_equation: !Heat_AdvectionDiffusion_DG
@@ -96,7 +92,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./heat.msh
       format: !gmsh
-        variant: ascii
       times:
         - step: 5
     solver: !Petsc

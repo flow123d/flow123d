@@ -42,4 +42,3 @@ problem: !Coupling_Sequential
     balance: {}
     output_stream:
       format: !gmsh
-        variant: ascii

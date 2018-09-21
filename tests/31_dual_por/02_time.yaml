@@ -35,10 +35,6 @@ problem: !Coupling_Sequential
     time:
       end_time: 10
       # init_dt:1.0
-    solver: !Petsc
-      a_tol: 1.0e-07
-      r_tol: 1.0e-07
-      # options:"-ksp_type gmres -ksp_monitor"
     reaction_term: !DualPorosity
       input_fields:
         - time: 0.0

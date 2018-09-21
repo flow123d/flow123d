@@ -8,7 +8,7 @@ problem: !Coupling_Sequential
   description: Check correct time unit conversion of different time declaration in input YAML file.
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
-  global_snap_radius: 0.1
+    global_snap_radius: 0.1
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

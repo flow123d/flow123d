@@ -21,7 +21,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !vtk
-        variant: ascii
     output:
       fields:
         - pressure_p0
@@ -35,7 +34,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
       times:
         - step: 0.5
     substances:

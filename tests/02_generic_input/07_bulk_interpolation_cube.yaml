@@ -37,4 +37,3 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./large_cube.msh
       format: !gmsh
-        variant: ascii

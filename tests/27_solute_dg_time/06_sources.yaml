@@ -1,5 +1,5 @@
 flow123d_version: 3.0.0_dev
-COMMENT_Stop_time: '1275'
+#COMMENT_Stop_time: '1275'
 problem: !Coupling_Sequential
   description: Steady flow + transport with time dependent source
   mesh:
@@ -64,7 +64,6 @@ problem: !Coupling_Sequential
       solver: !Petsc
         a_tol: 1.0e-12
         r_tol: 1.0e-12
-    dual_porosity: false
     output_stream:
       file: ./transport_test16.pvd
       format: !vtk

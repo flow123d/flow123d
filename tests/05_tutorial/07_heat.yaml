@@ -190,7 +190,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: flow
       format: !gmsh
-        variant: ascii
     output:
       fields:
         - piezo_head_p0
@@ -238,11 +237,11 @@ problem: !Coupling_Sequential
     output_stream:
       file: heat
       format: !gmsh
-        variant: ascii
       times:
         - step: 31557600       # 1 yr
-    output_fields:
-      - temperature
+    output:
+      fields:
+        - temperature
     solver: !Petsc
       a_tol: 1.0e-14
       r_tol: 1.0e-14
