@@ -84,7 +84,7 @@ void FieldInterpolatedP0<spacedim, Value>::init_from_input(const Input::Record &
     {
        reader_file_ = FilePath( rec.val<FilePath>("mesh_data_file") );
        source_mesh_ = ReaderCache::get_mesh(reader_file_ );
-       source_mesh_->setup_topology();
+       //source_mesh_->setup_topology();
        ReaderCache::check_compatible_mesh(reader_file_, *source_mesh_);
     }
 	bih_tree_ = new BIHTree();

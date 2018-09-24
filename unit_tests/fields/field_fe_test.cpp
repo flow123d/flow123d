@@ -618,7 +618,7 @@ TEST_F(FieldFENewTest, bc_vector_fixed_identic_mesh) {
 }
 
 
-/*TEST_F(FieldFENewTest, intersection_1d_2d_elements_small) {
+TEST_F(FieldFENewTest, intersection_1d_2d_elements_small) {
     ScalarField field;
     field.init_from_input(rec.val<Input::Record>("interp_scalar_intersect"), init_data("interp_scalar_intersect"));
     field.set_mesh(mesh, true);

@@ -71,6 +71,14 @@ public:
 
     /// Destructor.
 	~FEValueHandler();
+
+	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<LongIdx> > boundary_dofs) {
+		this->boundary_dofs_ = boundary_dofs;
+	}
+
+	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -83,6 +91,13 @@ private:
     typename Value::return_type r_value_;
     /// Mapping object.
     MappingP1<elemdim,3> *map_;
+
+    /**
+     * Hold dofs of boundary elements.
+     *
+     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+     */
+    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
 };
 
 
@@ -118,6 +133,15 @@ public:
 
     /// Destructor.
 	~FEValueHandler() {}
+
+	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	inline void set_boundary_dofs_vector(std::shared_ptr< std::vector<LongIdx> > boundary_dofs) {
+		this->boundary_dofs_ = boundary_dofs;
+	}
+
+	/// TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const;
+
 private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -128,6 +152,13 @@ private:
     /// Last value, prevents passing large values (vectors) by value.
     Value value_;
     typename Value::return_type r_value_;
+
+    /**
+     * Hold dofs of boundary elements.
+     *
+     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+     */
+    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
 };
 
 

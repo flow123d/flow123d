@@ -163,6 +163,14 @@ private:
 			MappingP1<2,3> *map2,
 			MappingP1<3,3> *map3);
 
+	/**
+	 * Fill data to boundary_dofs_ vector.
+	 *
+	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	 */
+	void fill_boundary_dofs();
+
+
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
@@ -215,6 +223,13 @@ private:
 
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
+
+    /**
+     * Hold dofs of boundary elements.
+     *
+     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+     */
+    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
 
     /// Registrar of class to factory
     static const int registrar;

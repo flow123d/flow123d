@@ -29,6 +29,7 @@
 #include "io/msh_gmshreader.h"
 #include "mesh/accessors.hh"
 #include "mesh/range_wrapper.hh"
+#include "mesh/bc_mesh.hh"
 #include "quadrature/quadrature_lib.hh"
 
 #include "system/sys_profiler.hh"
@@ -266,14 +267,52 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 				this->interpolation_ = DataInterpolation::gauss_p0;
 	            WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
 	            		field_name_);
+	            if (boundary_domain) fill_boundary_dofs();
 			}
 			break;
 		case DataInterpolation::gauss_p0:
+			if (boundary_domain) fill_boundary_dofs();
 			break;
 		case DataInterpolation::interp_p0:
+			if (!boundary_domain) {
+				this->interpolation_ = DataInterpolation::gauss_p0;
+	            WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n", field_name_);
+			} else
+				fill_boundary_dofs();
 			break;
 		}
 	}
+}
+
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::fill_boundary_dofs() {
+	ASSERT(this->boundary_domain_);
+
+	auto bc_mesh = dh_->mesh()->get_bc_mesh();
+	unsigned int n_comp = this->value_.n_rows() * this->value_.n_cols();
+	boundary_dofs_ = std::make_shared< std::vector<LongIdx> >( n_comp * bc_mesh->n_elements() );
+	std::vector<LongIdx> &in_vec = *( boundary_dofs_.get() );
+	unsigned int j = 0; // actual index to boundary_dofs_ vector
+
+	for (auto ele : bc_mesh->elements_range()) {
+		LongIdx elm_shift = n_comp * ele.idx();
+		for (unsigned int i=0; i<n_comp; ++i, ++j) {
+			in_vec[j] = elm_shift + i;
+		}
+	}
+
+	value_handler0_.set_boundary_dofs_vector(boundary_dofs_);
+	value_handler1_.set_boundary_dofs_vector(boundary_dofs_);
+	value_handler2_.set_boundary_dofs_vector(boundary_dofs_);
+	value_handler3_.set_boundary_dofs_vector(boundary_dofs_);
+
+	data_vec_->resize(boundary_dofs_->size());
+
+	//std::cout << "FieldFE::fill_boundary_dofs - elements: " << bc_mesh->n_elements() << std::endl;
+	//for (auto ii : *boundary_dofs_ ) std::cout << " " << ii;
+	//std::cout << std::endl;
 }
 
 
@@ -413,7 +452,10 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		q_weights.resize(quad.size());
 	}
 
-	for (auto ele : dh_->mesh()->elements_range()) {
+	Mesh *mesh;
+	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
+	else mesh = dh_->mesh();
+	for (auto ele : mesh->elements_range()) {
 		elem_value = 0.0;
 		switch (ele->dim()) {
 		case 0:
@@ -506,7 +548,8 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 			++dim;
 		} while (dim<4); // */
 
-		dh_->get_dof_indices( ele, dof_indices_);
+		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
+		else dh_->get_dof_indices( ele, dof_indices_);
 		ASSERT_LT_DBG( dof_indices_[0], (int)data_vec_->size());
 		(*data_vec_)[dof_indices_[0]] = elem_value * this->unit_conversion_coefficient_;
 	}
@@ -521,7 +564,10 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 	std::vector<double> value(dh_->max_elem_dofs());
 	double total_measure, measure;
 
-	for (auto elm : dh_->mesh()->elements_range()) {
+	Mesh *mesh;
+	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
+	else mesh = dh_->mesh();
+	for (auto elm : mesh->elements_range()) {
 		if (elm.dim() == 3) {
 			xprintf(Err, "Dimension of element in target mesh must be 0, 1 or 2! elm.idx() = %d\n", elm.idx());
 		}
@@ -601,7 +647,8 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		// computes weighted average, store it to data vector
 		if (total_measure > epsilon) {
 			VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
-			dh_->get_dof_indices( elm, dof_indices_ );
+			if (this->boundary_domain_) value_handler1_.get_dof_indices( elm, dof_indices_ );
+			else dh_->get_dof_indices( elm, dof_indices_ );
 			for (unsigned int i=0; i < value.size(); i++) {
 				(*data_vector)[ dof_indices_[i] ] = value[i] / total_measure;
 			}

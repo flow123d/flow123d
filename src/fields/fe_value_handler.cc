@@ -166,6 +166,17 @@ unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::v
 }
 
 
+template <int elemdim, int spacedim, class Value>
+unsigned int FEValueHandler<elemdim, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
+{
+    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+    for (unsigned int k=0; k<ndofs; k++) {
+        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
+    }
+    return ndofs;
+}
+
+
 template <int spacedim, class Value>
 void FEValueHandler<0, spacedim, Value>::initialize(FEValueInitData init_data)
 {
@@ -195,6 +206,17 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += (*data_vec_)[dof_indices[i]];
 		}
 	}
+}
+
+
+template <int spacedim, class Value>
+unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
+{
+    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+    for (unsigned int k=0; k<ndofs; k++) {
+        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
+    }
+    return ndofs;
 }
 
 
