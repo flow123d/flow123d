@@ -259,27 +259,35 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
 		switch (this->interpolation_) {
-		case DataInterpolation::identic_msh:
-			ReaderCache::get_element_ids(reader_file_, *mesh);
-			break;
-		case DataInterpolation::equivalent_msh:
-			if (!ReaderCache::check_compatible_mesh( reader_file_, const_cast<Mesh &>(*mesh) )) {
-				this->interpolation_ = DataInterpolation::gauss_p0;
-	            WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
-	            		field_name_);
-	            if (boundary_domain) fill_boundary_dofs();
+			case DataInterpolation::identic_msh:
+				ReaderCache::get_element_ids(reader_file_, *mesh);
+				break;
+			case DataInterpolation::equivalent_msh:
+				if (!ReaderCache::check_compatible_mesh( reader_file_, const_cast<Mesh &>(*mesh) )) {
+					this->interpolation_ = DataInterpolation::gauss_p0;
+					WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
+							field_name_);
+					if (boundary_domain) fill_boundary_dofs();
+				}
+				break;
+			case DataInterpolation::gauss_p0:
+			{
+				auto source_mesh = ReaderCache::get_mesh(reader_file_);
+				ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()) );
+				if (boundary_domain) fill_boundary_dofs();
+				break;
 			}
-			break;
-		case DataInterpolation::gauss_p0:
-			if (boundary_domain) fill_boundary_dofs();
-			break;
-		case DataInterpolation::interp_p0:
-			if (!boundary_domain) {
-				this->interpolation_ = DataInterpolation::gauss_p0;
-	            WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n", field_name_);
-			} else
-				fill_boundary_dofs();
-			break;
+			case DataInterpolation::interp_p0:
+			{
+				auto source_msh = ReaderCache::get_mesh(reader_file_);
+				ReaderCache::get_element_ids(reader_file_, *(source_msh.get()) );
+				if (!boundary_domain) {
+					this->interpolation_ = DataInterpolation::gauss_p0;
+					WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n", field_name_);
+				} else
+					fill_boundary_dofs();
+				break;
+			}
 		}
 	}
 }
@@ -440,9 +448,9 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 	std::vector<arma::vec::fixed<3>> q_points; // real coordinates of quadrature points
 	std::vector<double> q_weights; // weights of quadrature points
 	unsigned int quadrature_size; // size of quadrature point and weight vector
-	double sum_val; // sum of value of one quadrature point
+	std::vector<double> sum_val(dh_->max_elem_dofs()); // sum of value of one quadrature point
 	unsigned int elem_count; // count of intersect (source) elements of one quadrature point
-	double elem_value; // computed value of one (target) element
+	std::vector<double> elem_value(dh_->max_elem_dofs()); // computed value of one (target) element
 	bool contains; // sign if source element contains quadrature point
 
 	{
@@ -456,7 +464,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
 	else mesh = dh_->mesh();
 	for (auto ele : mesh->elements_range()) {
-		elem_value = 0.0;
+		std::fill(elem_value.begin(), elem_value.end(), 0.0);
 		switch (ele->dim()) {
 		case 0:
 			quadrature_size = 1;
@@ -477,7 +485,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		source_mesh->get_bih_tree().find_bounding_box(ele.bounding_box(), searched_elements);
 
 		for (unsigned int i=0; i<quadrature_size; ++i) {
-			sum_val = 0.0;
+			std::fill(sum_val.begin(), sum_val.end(), 0.0);
 			elem_count = 0;
 			for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
 				ElementAccessor<3> elm = source_mesh->element_accessor(*it);
@@ -500,58 +508,27 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 				}
 				if ( contains ) {
 					// projection point in element
-					sum_val += (*data_vec)[*it];
+					unsigned int index = sum_val.size() * (*it);
+					for (unsigned int j=0; j < sum_val.size(); j++) {
+						sum_val[j] += (*data_vec)[index+j];
+					}
 					++elem_count;
 				}
 			}
 
 			if (elem_count > 0) {
-				elem_value += (sum_val / elem_count) * q_weights[i];
+				for (unsigned int j=0; j < sum_val.size(); j++) {
+					elem_value[j] += (sum_val[j] / elem_count) * q_weights[i];
+				}
 			}
 		}
-
-		/* OLD CODE */
-		/*std::fill(sum_val.begin(), sum_val.end(), 0.0);
-		std::fill(elem_count.begin(), elem_count.end(), 0);
-		for (std::vector<unsigned int>::iterator it = searched_elements.begin(); it!=searched_elements.end(); it++) {
-			ElementAccessor<3> elm = source_mesh->element_accessor(*it);
-			bool contains=false;
-			switch (elm->dim()) {
-			case 0:
-				contains = arma::norm(elm.node(0)->point()-ele.centre(), 2) < 4*std::numeric_limits<double>::epsilon();
-				break;
-			case 1:
-				contains = value_handler1_.get_mapping()->contains_point(ele.centre(), elm);
-				break;
-			case 2:
-				contains = value_handler2_.get_mapping()->contains_point(ele.centre(), elm);
-				break;
-			case 3:
-				contains = value_handler3_.get_mapping()->contains_point(ele.centre(), elm);
-				break;
-			default:
-				ASSERT(false).error("Invalid element dimension!");
-			}
-			if (contains) {
-				// projection point in element
-				sum_val[elm->dim()] += (*data_vec)[*it];
-				++elem_count[elm->dim()];
-			}
-		}
-		unsigned int dim = (this->boundary_domain_) ? ele->dim()+1 : ele->dim();
-		double elem_value = 0.0;
-		do {
-			if (elem_count[dim] > 0) {
-				elem_value = sum_val[dim] / elem_count[dim];
-				break;
-			}
-			++dim;
-		} while (dim<4); // */
 
 		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
 		else dh_->get_dof_indices( ele, dof_indices_);
-		ASSERT_LT_DBG( dof_indices_[0], (int)data_vec_->size());
-		(*data_vec_)[dof_indices_[0]] = elem_value * this->unit_conversion_coefficient_;
+		for (unsigned int i=0; i < elem_value.size(); i++) {
+			ASSERT_LT_DBG( dof_indices_[i], (int)data_vec_->size());
+			(*data_vec_)[dof_indices_[i]] = elem_value[i] * this->unit_conversion_coefficient_;
+		}
 	}
 }
 
