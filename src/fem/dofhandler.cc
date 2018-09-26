@@ -318,11 +318,8 @@ void DOFHandlerMultiDim::init_node_dof_starts(std::vector<LongIdx> &node_dof_sta
 void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
 {
     // mark local dofs
-//	for (auto cell : this->local_elements_range())
-    for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++)
+	for (auto cell : this->local_elements_range())
     {
-      ElementAccessor<3> cell = mesh_->element_accessor(el_index(loc_el));
-
       for (unsigned int n=0; n<cell->dim()+1; n++)
       {
         unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
