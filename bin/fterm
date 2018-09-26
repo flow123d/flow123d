@@ -320,7 +320,7 @@ while [[ $# -gt 0 ]]
       verbose=1
       shift
     ;;
-    config|clean|remove-old|flow123d|run|runtest|make)
+    config|clean|remove-old|flow123d|run|runtest|make|build|udpate)
       action=$1
       shift
       break
