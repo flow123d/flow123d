@@ -438,6 +438,7 @@ message(STATUS "PETSC_DIR = ${PETSC_DIR}")
 message(STATUS "PETSC_ARCH = ${PETSC_ARCH}")
 
 find_package(MPI REQUIRED)
+set(ORIG_MPI_INCLUDE ${MPI_CXX_INCLUDE_PATH})
 find_package(PETSc 3.6.0 REQUIRED)
 flow_define(HAVE_PETSC)
 flow_define(HAVE_MPI)
@@ -654,7 +655,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
-    ${MPI_CXX_LIBRARIES}
+    ${ORIG_MPI_INCLUDE}
     
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
