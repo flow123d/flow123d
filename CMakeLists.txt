@@ -630,8 +630,9 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/fparser-4.5.1
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
-    ${BDDCML_INCLUDES}
     ${MPI_CXX_LIBRARIES}
+    ${PYTHON_INCLUDE_DIRS}
+
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
     ${MPI_CXX_INCLUDE_PATH}
