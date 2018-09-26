@@ -43,9 +43,9 @@ BCMesh::~BCMesh()
 }
 
 
-Range<ElementAccessor<3>> BCMesh::elements_range() const
+Range<ElementAccessor<3>, Mesh> BCMesh::elements_range() const
 {
-    return Range<ElementAccessor<3>>(parent_mesh_, parent_mesh_->bulk_size_, parent_mesh_->element_vec_.size());
+    return Range<ElementAccessor<3>, Mesh>(parent_mesh_, parent_mesh_->bulk_size_, parent_mesh_->element_vec_.size());
 }
 
 

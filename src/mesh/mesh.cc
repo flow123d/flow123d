@@ -1031,7 +1031,7 @@ Element * Mesh::add_element_to_vector(int id, bool boundary) {
 }
 
 Range<ElementAccessor<3>, Mesh> Mesh::elements_range() const {
-	return Range<ElementAccessor<3>>(this, 0, bulk_size_);;
+	return Range<ElementAccessor<3>, Mesh>(this, 0, bulk_size_);;
 }
 
 Range<NodeAccessor<3>, Mesh> Mesh::node_range() const {
