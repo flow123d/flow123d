@@ -191,7 +191,7 @@ bool Field<spacedim, Value>::is_constant(Region reg) {
 	OLD_ASSERT(this->set_time_result_ != TimeStatus::unknown, "Unknown time status.\n");
 	OLD_ASSERT_LESS(reg.idx(), this->region_fields_.size());
     FieldBasePtr region_field = this->region_fields_[reg.idx()];
-    return (region_field && typeid(*region_field) == typeid(FieldConstant<spacedim, Value>));
+    return ( region_field && region_field->is_constant_in_space() );
 }
 
 
