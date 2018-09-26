@@ -159,8 +159,9 @@ public:
     /**
      * @brief Constructor.
      * @param _mesh The mesh.
+     * @param make_elem_part Allow switch off make_element_partitioning, necessary for boundary DOF handler.
      */
-    DOFHandlerMultiDim(Mesh &_mesh);
+    DOFHandlerMultiDim(Mesh &_mesh, bool make_elem_part = true);
 
 
     /**

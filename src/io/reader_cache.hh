@@ -51,6 +51,11 @@ public:
 	 */
 	static std::shared_ptr<Mesh> get_mesh(const FilePath &file_path);
 
+	/**
+	 * Check if nodes and elements of reader mesh are compatible with \p mesh.
+	 */
+	static bool check_compatible_mesh(const FilePath &file_path, Mesh &mesh);
+
 private:
 	/// Returns singleton instance
 	static ReaderCache * instance();

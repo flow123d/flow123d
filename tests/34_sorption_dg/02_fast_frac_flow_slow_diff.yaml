@@ -1,4 +1,4 @@
-flow123d_version: 2.0.0
+flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: |
     Fast fracture flow + slow diffusion and sorption into rock
@@ -10,7 +10,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/rectangle_refined_y.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-15
@@ -42,9 +41,6 @@ problem: !Coupling_Sequential
     transport: !Solute_AdvectionDiffusion_DG
       dg_order: 3
       input_fields:
-        - region: .right
-          bc_type: dirichlet
-          bc_conc: 0
         - region: fracture
           porosity: 1
           diff_m: 1e-9

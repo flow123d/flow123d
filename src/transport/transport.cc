@@ -45,7 +45,8 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
-#include "fields/field_elementwise.hh" 
+#include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
 #include "reaction/isotherm.hh" // SorptionType enum
@@ -139,9 +140,9 @@ void ConvectionTransport::initialize()
     data_.subdomain = GenericField<3>::subdomain(*mesh_);
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
-		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_substances());
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+		// create shared pointer to a FieldFE and push this Field to output_field on all regions
+		output_field_ptr[sbi] = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -162,7 +163,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
 //    int * id_4_old = new int[mesh_->n_elements()];
 //    int i = 0;
-//    for (auto ele : mesh_->bulk_elements_range()) id_4_old[i++] = ele.index();
+//    for (auto ele : mesh_->elements_range()) id_4_old[i++] = ele.index();
 //    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 //    delete[] id_4_old;
 	el_ds = mesh_->get_el_ds();
@@ -177,7 +178,7 @@ void ConvectionTransport::make_transport_partitioning() {
     // - possibility to have different ref_output for different num of proc.
     // - or do not test such kind of output
     //
-    //for (auto ele : mesh_->bulk_elements_range()) {
+    //for (auto ele : mesh_->elements_range()) {
     //    ele->pid()=el_ds->get_proc(row_4_el[ele.index()]);
     //}
 
@@ -237,7 +238,7 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-	for (auto elem : mesh_->bulk_elements_range()) {
+	for (auto elem : mesh_->elements_range()) {
     	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
 
     	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
@@ -269,6 +270,8 @@ void ConvectionTransport::alloc_transport_vectors() {
     conc = new double*[n_subst];
     out_conc.clear();
     out_conc.resize(n_subst);
+    output_field_ptr.clear();
+    output_field_ptr.resize(n_subst);
     for (sbi = 0; sbi < n_subst; sbi++) {
         conc[sbi] = new double[el_ds->lsize()];
         out_conc[sbi].resize( el_ds->size() );
@@ -850,6 +853,10 @@ void ConvectionTransport::output_data() {
     //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
     output_vector_gather();
     //}
+
+    for (unsigned int sbi = 0; sbi < n_substances(); sbi++) {
+    	out_conc[sbi].fill_output_data(output_field_ptr[sbi]);
+    }
 
 	data_.output_fields.output(time().step());
     

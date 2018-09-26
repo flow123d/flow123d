@@ -58,10 +58,10 @@ MH_DofHandler::~MH_DofHandler()
 void MH_DofHandler::reinit(Mesh *mesh) {
     mesh_ = mesh;
     elem_side_to_global.resize(mesh->n_elements() );
-    for (auto ele : mesh->bulk_elements_range()) elem_side_to_global[ ele.idx() ].resize(ele->n_sides());
+    for (auto ele : mesh->elements_range()) elem_side_to_global[ ele.idx() ].resize(ele->n_sides());
 
     unsigned int i_side_global=0;
-    for (auto ele : mesh->bulk_elements_range()) {
+    for (auto ele : mesh->elements_range()) {
         for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
             elem_side_to_global[ ele.idx() ][i_lside] = i_side_global++;
     }
@@ -142,7 +142,7 @@ void MH_DofHandler::prepare_parallel() {
     {
         int is = 0;
         loc_i = 0;
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 // partition
                 if (init_side_ds.is_local(is)) {

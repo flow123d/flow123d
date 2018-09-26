@@ -6,13 +6,13 @@
  */
 
 
+#define TEST_USE_MPI
 #define FEAL_OVERRIDE_ASSERTS
-
-#include <flow_gtest.hh>
+#include <flow_gtest_mpi.hh>
 #include <mesh_constructor.hh>
 
 #include <fields/multi_field.hh>
-#include <fields/field_elementwise.hh>
+#include <fields/field_fe.hh>
 #include <fields/field_set.hh>
 #include <tools/unit_si.hh>
 #include <input/type_base.hh>
@@ -27,7 +27,7 @@ using namespace std;
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 string field_constant_input = R"YAML(
 common: !FieldConstant 
@@ -85,7 +85,7 @@ formula_field_full: !FieldFormula
 formula_field_base: !FieldFormula
   value: x
 
-elementwise_field: !FieldElementwise
+fe_field: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
 interpolated_p0_field: !FieldInterpolatedP0
@@ -102,12 +102,14 @@ protected:
     virtual void SetUp() {
     	Profiler::initialize();
     	FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+        PetscInitialize(0,PETSC_NULL,PETSC_NULL,PETSC_NULL);
 
     	point(0)=1.0; point(1)=2.0; point(2)=3.0;
 
-        auto mesh_reader = reader_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+        auto mesh_reader = reader_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
         mesh = mesh_constructor("{mesh_file=\"fields/simplest_cube_data.msh\"}");
         mesh_reader->read_raw_mesh(mesh);
+        mesh->setup_topology();
 
     }
 
@@ -142,7 +144,7 @@ Input::Type::Record & MultiFieldTest::get_input_type() {
 		.declare_key("const_field_autoconv", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("formula_field_full", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("formula_field_base", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
-		.declare_key("elementwise_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
+		.declare_key("fe_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.declare_key("interpolated_p0_field", empty_mf.get_multifield_input_type(), Input::Type::Default::obligatory(),"" )
 		.close();
 }
@@ -192,11 +194,11 @@ TEST_F(MultiFieldTest, complete_test) {
 	    check_field_vals(formula_field, elm);
 	}
 
-	{ // test of FieldElementwise
-		Input::Array elementwise_field = input.val<Input::Array>("elementwise_field");
-		EXPECT_EQ(1, elementwise_field.size());
+	{ // test of FieldFE
+		Input::Array fe_field = input.val<Input::Array>("fe_field");
+		EXPECT_EQ(1, fe_field.size());
 
-        check_field_vals(elementwise_field, mesh->element_accessor(1));
+        check_field_vals(fe_field, mesh->element_accessor(1));
 	}
 
 	{ // test of FieldInterpolatedP0
