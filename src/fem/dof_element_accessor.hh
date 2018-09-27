@@ -52,8 +52,10 @@ private:
     inline void set_data() {
     	this->element_idx_ = dof_handler_->el_index(loc_ele_idx_);
     	this->boundary_ = (this->element_idx_ >= this->mesh_->n_elements());
-    	this->r_idx_ = this->element()->region_idx();
-        this->dim_ = this->element()->dim();
+    	if ( dof_handler_->el_index(loc_ele_idx_) < this->mesh_->n_elements() ) {
+    		this->r_idx_ = this->element()->region_idx();
+    		this->dim_ = this->element()->dim();
+    	}
     }
 
     /// Pointer to the DOF handler owning the element.
