@@ -267,14 +267,12 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 					this->interpolation_ = DataInterpolation::gauss_p0;
 					WarningOut().fmt("Source mesh of FieldFE '{}' is not compatible with target mesh.\nInterpolation of input data will be changed to 'P0_gauss'.\n",
 							field_name_);
-					if (boundary_domain) fill_boundary_dofs();
 				}
 				break;
 			case DataInterpolation::gauss_p0:
 			{
 				auto source_mesh = ReaderCache::get_mesh(reader_file_);
 				ReaderCache::get_element_ids(reader_file_, *(source_mesh.get()) );
-				if (boundary_domain) fill_boundary_dofs();
 				break;
 			}
 			case DataInterpolation::interp_p0:
@@ -284,11 +282,11 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 				if (!boundary_domain) {
 					this->interpolation_ = DataInterpolation::gauss_p0;
 					WarningOut().fmt("Interpolation 'P0_intersection' of FieldFE '{}' can't be used on bulk region.\nIt will be changed to 'P0_gauss'.\n", field_name_);
-				} else
-					fill_boundary_dofs();
+				}
 				break;
 			}
 		}
+		if (boundary_domain) fill_boundary_dofs(); // temporary solution for boundary mesh
 	}
 }
 
@@ -648,8 +646,12 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
-	for (auto ele : dh_->mesh()->elements_range()) {
-		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
+	Mesh *mesh;
+	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
+	else mesh = dh_->mesh();
+	for (auto ele : mesh->elements_range()) {
+		if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
+		else dof_size = dh_->get_dof_indices( ele, dof_indices_ );
 		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
