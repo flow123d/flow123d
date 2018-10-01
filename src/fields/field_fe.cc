@@ -93,7 +93,9 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
   data_vec_(nullptr),
   field_name_(""),
   has_compatible_mesh_(false)
-{}
+{
+	this->is_constant_in_space_ = false;
+}
 
 
 template <int spacedim, class Value>
