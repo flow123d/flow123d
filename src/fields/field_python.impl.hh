@@ -60,6 +60,8 @@ template <int spacedim, class Value>
 FieldPython<spacedim, Value>::FieldPython(unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>( n_comp)
 {
+	this->is_constant_in_space_ = false;
+
 #ifdef FLOW123D_HAVE_PYTHON
     p_func_=NULL;
     p_module_=NULL;
