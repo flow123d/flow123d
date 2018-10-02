@@ -567,6 +567,10 @@ string field_input = R"INPUT(
    conductivity={ //3x3 tensor
        TYPE="FieldFormula",
        value=["x","y", "z"]
+   },
+   conductivity_3d={ //3x3 tensor - for test of Field::is_constant method
+       TYPE="FieldFormula",
+       value=["1", "t", "t*t"]
    }
 }
 )INPUT";
@@ -590,6 +594,7 @@ TEST(Field, init_from_input) {
     Field<3, FieldValue<3>::Enum > sorption_type;
     Field<3, FieldValue<3>::VectorFixed > init_conc;
     Field<3, FieldValue<3>::TensorFixed > conductivity;
+    Field<3, FieldValue<3>::TensorFixed > conductivity_3d;
 
 
     std::vector<string> component_names = { "comp_0", "comp_1", "comp_2" };
@@ -603,6 +608,7 @@ TEST(Field, init_from_input) {
             .declare_key("sorption_type", sorption_type.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("init_conc", init_conc.get_input_type(), it::Default::obligatory(), "desc")
             .declare_key("conductivity", conductivity.get_input_type(), it::Default::obligatory(), "desc")
+            .declare_key("conductivity_3d", conductivity_3d.get_input_type(), it::Default::obligatory(), "desc")
 			.close();
 
 
@@ -613,16 +619,19 @@ TEST(Field, init_from_input) {
     sorption_type.set_mesh(*mesh);
     init_conc.set_mesh(*mesh);
     conductivity.set_mesh(*mesh);
+    conductivity_3d.set_mesh(*mesh);
 
     sorption_type.units( UnitSI().m() );
     init_conc.units( UnitSI().m() );
     conductivity.units( UnitSI().m() );
+    conductivity_3d.units( UnitSI().m() );
 
     auto region_set = mesh->region_db().get_region_set("BULK");
 
     sorption_type.set_field(region_set, in_rec.val<Input::AbstractRecord>("sorption_type"));
     init_conc.set_field(region_set, in_rec.val<Input::AbstractRecord>("init_conc"));
     conductivity.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity"));
+    conductivity_3d.set_field(region_set, in_rec.val<Input::AbstractRecord>("conductivity_3d"));
 
 
 
@@ -631,6 +640,7 @@ TEST(Field, init_from_input) {
     sorption_type.set_time(TimeGovernor().step(), LimitSide::right);
     init_conc.set_time(TimeGovernor().step(), LimitSide::right);
     conductivity.set_time(TimeGovernor().step(), LimitSide::right);
+    conductivity_3d.set_time(TimeGovernor().step(), LimitSide::right);
 
     {	
 
@@ -658,6 +668,8 @@ TEST(Field, init_from_input) {
 
 	    EXPECT_TRUE( sorption_type.is_constant(reg) );
 	    EXPECT_TRUE( init_conc.is_constant(reg) );
+	    EXPECT_FALSE( conductivity.is_constant(reg) );
+	    EXPECT_TRUE( conductivity_3d.is_constant(reg) );
 
 	    ele = ElementAccessor<3>(mesh, reg);
 	    EXPECT_EQ( 1, sorption_type.value(ele.centre(), ele) );

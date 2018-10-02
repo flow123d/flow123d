@@ -42,8 +42,9 @@ std::shared_ptr<Mesh> ReaderCache::get_mesh(const FilePath &file_path) {
 	// Create and fill mesh if doesn't exist
 	if ( (*it).second.mesh_ == nullptr ) {
 		(*it).second.mesh_ = std::make_shared<Mesh>( Input::Record() );
+		(*it).second.reader_->read_physical_names( (*it).second.mesh_.get() );
 		(*it).second.reader_->read_raw_mesh( (*it).second.mesh_.get() );
-		(*it).second.reader_->check_compatible_mesh( *((*it).second.mesh_) );
+		//(*it).second.reader_->check_compatible_mesh( *((*it).second.mesh_) );
 
 	}
 	return (*it).second.mesh_;
@@ -69,3 +70,9 @@ ReaderCache::ReaderTable::iterator ReaderCache::get_reader_data(const FilePath &
 	return it;
 }
 
+bool ReaderCache::check_compatible_mesh(const FilePath &file_path, Mesh &mesh) {
+	auto mesh_ptr = ReaderCache::get_mesh(file_path);
+	auto reader_ptr = ReaderCache::get_reader(file_path);
+	reader_ptr->has_compatible_mesh_ = true;
+	return mesh_ptr->check_compatible_mesh(mesh, reader_ptr->bulk_elements_id_, reader_ptr->boundary_elements_id_);
+}

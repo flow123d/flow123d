@@ -1085,7 +1085,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     double d_max = std::numeric_limits<double>::max();
     double h1 = d_max, h2 = d_max, h3 = d_max;
     double he2 = d_max, he3 = d_max;
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
         switch(ele->dim()){
             case 1: h1 = std::min(h1,ele.measure()); break;
             case 2: h2 = std::min(h2,ele.measure()); break;
@@ -1330,7 +1330,7 @@ void DarcyMH::make_serial_scatter() {
             else{
                 
             //velocity
-            for (auto ele : mesh_->bulk_elements_range())
+            for (auto ele : mesh_->elements_range())
             	for (unsigned int si=0; si<ele->n_sides(); si++)
                     loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
             
@@ -1354,7 +1354,7 @@ void DarcyMH::make_serial_scatter() {
 //             }
             
             //pressure
-            for (auto ele : mesh_->bulk_elements_range())
+            for (auto ele : mesh_->elements_range())
                 loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
                 
 //             //enriched pressure

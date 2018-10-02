@@ -9,4 +9,4 @@ test_cases:
   
 - files:
   - 02_sources.yaml
-  time_limit: 120
+  time_limit: 150

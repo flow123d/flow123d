@@ -20,7 +20,7 @@
 set(libs coupling_lib mesh_lib system_lib)
 add_test_directory("${libs}")
 
-define_test( reader_cache )
+define_mpi_test( reader_cache 1 )
 
 define_mpi_test( output 1 )
 define_mpi_test( output_vtk 1)

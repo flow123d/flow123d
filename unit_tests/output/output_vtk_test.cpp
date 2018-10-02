@@ -27,6 +27,8 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_p.hh"
 #include "fields/field_fe.hh"
+#include "fields/vec_seq_double.hh"
+#include "fields/fe_value_handler.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
@@ -112,10 +114,12 @@ public:
 		field.units(UnitSI::one());
 
 		std::shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>( *(this->_mesh) );
+		FE_P_disc<0> fe0(0);
 		FE_P_disc<1> fe1(0);
 		FE_P_disc<2> fe2(0);
 		FE_P_disc<3> fe3(0);
-		dh->distribute_dofs(fe1, fe2, fe3);
+        std::shared_ptr<::DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(this->_mesh, &fe0, &fe1, &fe2, &fe3);
+		dh->distribute_dofs(ds);
 
 		VectorSeqDouble v;
         v.resize(size);

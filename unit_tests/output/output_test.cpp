@@ -521,7 +521,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
     Node *node;
     int node_id;
     int corner_data_count, corner_id = 0;
-    for (auto ele : mesh->bulk_elements_range()) {
+    for (auto ele : mesh->elements_range()) {
     	for (node_id=0; node_id<ele->n_nodes(); node_id++) {
             EXPECT_EQ((*(OutputData<double>*)output_data)[corner_id], 20.0);
             corner_id++;
@@ -541,7 +541,7 @@ TEST_F( OutputTest, test_register_corner_fields_data ) {
 
     /* All values has to be equal 100 */
     corner_id = 0;
-    for (auto ele : mesh->bulk_elements_range()) {
+    for (auto ele : mesh->elements_range()) {
     	for (node_id=0; node_id<ele->n_nodes(); node_id++) {
             EXPECT_EQ((*(OutputData<int>*)output_data)[corner_id], -1);
             corner_id++;

@@ -56,7 +56,9 @@ const int FieldConstant<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldConstant<spacedim, Value>::FieldConstant( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp)
-{}
+{
+	this->is_constant_in_space_ = true;
+}
 
 
 template <int spacedim, class Value>

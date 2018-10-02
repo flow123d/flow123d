@@ -25,6 +25,7 @@
 #include "mesh/nodes.hh"
 #include "mesh/node_accessor.hh"
 #include "mesh/sides.h"
+#include "la/distribution.hh"
 #include <vector>
 #include <armadillo>
 
@@ -106,12 +107,23 @@ public:
         return boundary_;
     }
 
+    /// Return local idx of element in boundary / bulk part of element vector
     inline unsigned int idx() const {
+        if (boundary_) return ( element_idx_ - mesh_->bulk_size_ );
+        else return element_idx_;
+    }
+
+    /// Return global idx of element in full element vector
+    inline unsigned int mesh_idx() const {
         return element_idx_;
     }
 
     inline unsigned int index() const {
     	return (unsigned int)mesh_->find_elem_id(element_idx_);
+    }
+    
+    inline unsigned int proc() const {
+        return mesh_->get_el_ds()->get_proc(mesh_->get_row_4_el()[element_idx_]);
     }
 
     inline void inc() {
@@ -207,6 +219,7 @@ public:
     inline const Element * operator ->() const {
     	return &(mesh_->element_vec_[element_idx_]);
     }
+    
 
 private:
     /**

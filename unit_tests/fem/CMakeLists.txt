@@ -22,18 +22,19 @@
 #
 
 
-# set(libs fem_lib)
-set(libs fem_lib mesh_lib io_lib)
+set(libs fem_lib io_lib)
 add_test_directory("${libs}")
 
 
 define_test(quadrature)
 define_test(fe_values)
+define_mpi_test(dofhandler 1)
+define_mpi_test(dofhandler 2)
+define_mpi_test(dofhandler 3)
 define_test(enr_function)
 define_mpi_test(qxfem 1)
 # define_mpi_test(fe_xfem 1)
 define_test(xfe_values)
-
 define_test(fe_system)
 
 

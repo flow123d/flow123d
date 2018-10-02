@@ -76,10 +76,10 @@ MH_DofHandler::~MH_DofHandler()
 void MH_DofHandler::fill_elem_side_to_global()
 {
     elem_side_to_global.resize(mesh_->n_elements() );
-    for (auto ele : mesh_->bulk_elements_range()) elem_side_to_global[ ele.idx() ].resize(ele->n_sides());
+    for (auto ele : mesh_->elements_range()) elem_side_to_global[ ele.idx() ].resize(ele->n_sides());
 
     unsigned int i_side_global=0;
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
         for(unsigned int i_lside=0; i_lside < ele->n_sides(); i_lside++)
             elem_side_to_global[ ele.idx() ][i_lside] = i_side_global++;
     }
@@ -238,7 +238,7 @@ void MH_DofHandler::prepare_parallel() {
     {
         int is = 0;
         loc_i = 0;
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 // partition
                 if (init_side_ds.is_local(is)) {
@@ -586,7 +586,7 @@ void MH_DofHandler::clear_mesh_flags()
 
 void MH_DofHandler::clear_node_aux()
 {
-    for (auto ele : mesh_->bulk_elements_range())
+    for (auto ele : mesh_->elements_range())
         for(unsigned int i=0; i < ele.element()->n_nodes(); i++){
             ele.node(i)->aux = empty_node_idx;
         }
@@ -653,7 +653,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
     
     bool found = false;
     ElementAccessor<3> ele2d;
-    for (auto ele : mesh_->bulk_elements_range()){
+    for (auto ele : mesh_->elements_range()){
         if(ele.dim() == 2){
             MappingP1<2,3> map;
             arma::vec p = map.project_real_to_unit(center,map.element_map(ele));
@@ -749,7 +749,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Si
     Point center = a;
     bool found = false;
     ElementAccessor<3> ele3d;
-    for (auto ele : mesh_->bulk_elements_range()){
+    for (auto ele : mesh_->elements_range()){
         if(ele.dim() == 3){
             MappingP1<3,3> map;
             arma::vec p = map.project_real_to_unit(center,map.element_map(ele));

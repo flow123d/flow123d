@@ -262,7 +262,8 @@ public:
      * @brief Returns the number of degrees of freedom needed by the finite
      * element.
      */
-    const unsigned int n_dofs() const { return dofs_.size(); }
+    inline const unsigned int n_dofs() const
+    { return dofs_.size(); }
 
     /**
      * @brief Calculates the value of the @p comp-th component of
@@ -274,7 +275,8 @@ public:
      * @param comp Number of vector component.
      */
     double shape_value(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
+                       const arma::vec::fixed<dim> &p,
+                       const unsigned int comp = 0) const;
 
     /**
      * @brief Calculates the @p comp-th component of the gradient
@@ -286,13 +288,16 @@ public:
      * @param comp Number of vector component.
      */
     arma::vec::fixed<dim> shape_grad(const unsigned int i,
-            const arma::vec::fixed<dim> &p, const unsigned int comp = 0) const;
+                                     const arma::vec::fixed<dim> &p,
+                                     const unsigned int comp = 0) const;
 
     /// Returns numer of components of the basis function.    
-    unsigned int n_components() const { return function_space_->n_components(); }
+    inline unsigned int n_components() const
+    { return function_space_->n_components(); }
     
     /// Returns @p i -th degree of freedom.
-    Dof dof(unsigned int i) const { return dofs_[i]; }
+    inline const Dof &dof(unsigned int i) const
+    { return dofs_[i]; }
     
     /**
      * @brief Destructor.
@@ -304,7 +309,8 @@ protected:
     /**
      * @brief Clears all internal structures.
      */
-    void init(bool primitive = true, FEType type = FEScalar);
+    void init(bool primitive = true,
+              FEType type = FEScalar);
     
     /**
      * @brief Initialize vectors with information about components of basis functions.
@@ -331,20 +337,21 @@ protected:
      * @brief Indicates whether the basis functions have one or more
      * nonzero components (scalar FE spaces are always primitive).
      */
-    inline const bool is_primitive() const { return is_primitive_; }
+    inline const bool is_primitive() const
+    { return is_primitive_; }
     
     /**
      * @brief Returns the component index for vector valued finite elements.
      * @param sys_idx Index of shape function.
      */
-    unsigned int system_to_component_index(unsigned sys_idx) const
+    inline unsigned int system_to_component_index(unsigned sys_idx) const
     { return component_indices_[sys_idx]; }
     
     /**
      * @brief Returns the mask of nonzero components for given basis function.
      * @param sys_idx Index of basis function.
      */
-    const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const
+    inline const std::vector<bool> &get_nonzero_components(unsigned int sys_idx) const
     { return nonzero_components_[sys_idx]; }
     
     

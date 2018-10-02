@@ -100,7 +100,7 @@ public:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    void fill_fe_values(const typename DOFHandlerBase::CellIterator &cell,
+    void fill_fe_values(const ElementAccessor<3> &cell,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data);
@@ -114,7 +114,7 @@ public:
      * @param data Precomputed mapping data.
      * @param fv_data Data to be computed.
      */
-    void fill_fe_side_values(const typename DOFHandlerBase::CellIterator &cell,
+    void fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
@@ -147,6 +147,9 @@ public:
      * projection to the element surface is used.
      */
     BaryPoint clip_to_element(BaryPoint &barycentric);
+
+    /// Test if element contains given point.
+    bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
     ///Tests whether the given point lies within the element.
     bool is_point_inside(const BaryPoint &barycentric);

@@ -19,8 +19,6 @@
 #include "reaction/reaction_term.hh"
 
 #include "reaction/linear_ode_solver.hh"
-#include "reaction/pade_approximant.hh"
-#include "reaction/linear_ode_analytic.hh"
 
 
 #include "system/global_defs.h"
@@ -30,8 +28,6 @@
 #include "la/distribution.hh"
 #include "input/accessors.hh"
 
-// FLOW123D_FORCE_LINK_IN_PARENT(padeApproximant);
-FLOW123D_FORCE_LINK_IN_PARENT(linearODEAnalytic);
 
 
 using namespace Input::Type;
@@ -40,8 +36,7 @@ using namespace Input::Type;
 FirstOrderReactionBase::FirstOrderReactionBase(Mesh &init_mesh, Input::Record in_rec)
     : ReactionTerm(init_mesh, in_rec)
 {
-    Input::Iterator<Input::Record> num_it = input_record_.find<Input::Record>("ode_solver");
-    linear_ode_solver_ = std::make_shared<PadeApproximant>(*num_it);
+    linear_ode_solver_ = std::make_shared<LinearODESolver>();
 }
 
 FirstOrderReactionBase::~FirstOrderReactionBase()

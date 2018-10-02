@@ -141,14 +141,17 @@ FEValuesBase<dim,spacedim> &FEValuesViews::Tensor<dim,spacedim>::base() const
 
 
 
+template class FEValuesViews::Scalar<0,3>;
 template class FEValuesViews::Scalar<1,3>;
 template class FEValuesViews::Scalar<2,3>;
 template class FEValuesViews::Scalar<3,3>;
 
+template class FEValuesViews::Vector<0,3>;
 template class FEValuesViews::Vector<1,3>;
 template class FEValuesViews::Vector<2,3>;
 template class FEValuesViews::Vector<3,3>;
 
+template class FEValuesViews::Tensor<0,3>;
 template class FEValuesViews::Tensor<1,3>;
 template class FEValuesViews::Tensor<2,3>;
 template class FEValuesViews::Tensor<3,3>;

@@ -70,6 +70,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
+    this->is_constant_in_space_ = false;
 }
 
 
@@ -185,8 +186,7 @@ typename Value::return_type const & FieldElementwise<spacedim, Value>::value(con
         OLD_ASSERT( elm.is_elemental(), "FieldElementwise works only for 'elemental' ElementAccessors.\n");
         OLD_ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
 
-        unsigned int boundary_shift = (boundary_domain_ ? mesh_->n_elements() : 0);
-        unsigned int idx = n_components_ * (elm.idx()-boundary_shift); // move indices of values of boundary data to begin of data vector
+        unsigned int idx = n_components_ * elm.idx();
         std::vector<typename Value::element_type> &vec = *( data_.get() );
 
         return Value::from_raw(this->r_value_, (typename Value::element_type *)(&vec[idx]));
@@ -205,8 +205,7 @@ void FieldElementwise<spacedim, Value>::value_list (const std::vector< Point >  
 	OLD_ASSERT( elm.is_boundary() == boundary_domain_, "Trying to get value of FieldElementwise '%s' for wrong ElementAccessor type (boundary/bulk).\n", field_name_.c_str() );
 	OLD_ASSERT_EQUAL( point_list.size(), value_list.size() );
     if (boost::is_floating_point< typename Value::element_type>::value) {
-        unsigned int boundary_shift = (boundary_domain_ ? mesh_->n_elements() : 0);
-        unsigned int idx = n_components_ * (elm.idx()-boundary_shift); // move indices of values of boundary data to begin of data vector
+        unsigned int idx = n_components_ * elm.idx();
         std::vector<typename Value::element_type> &vec = *( data_.get() );
 
         typename Value::return_type const &ref = Value::from_raw(this->r_value_, (typename Value::element_type *)(&vec[idx]));

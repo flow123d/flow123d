@@ -18,6 +18,8 @@
 
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
+#include "mesh/mesh.h"
+#include "mesh/duplicate_nodes.h"
 #include "mesh/partitioning.hh"
 #include "mesh/long_idx.hh"
 #include "mesh/accessors.hh"
@@ -28,6 +30,10 @@
 
 
 
+DOFHandlerBase::~DOFHandlerBase()
+{
+  if (dof_ds_ != nullptr) delete dof_ds_;
+}
 
 
 
@@ -97,7 +103,7 @@
 //    	if (proc == myp)
 //    		loffset_ = next_free_dof;
 //
-//    	for (auto cell : mesh->bulk_elements_range()) {
+//    	for (auto cell : mesh->elements_range()) {
 //    		if (cell->dim() != dim) continue;
 //
 //    		if (loc_part[cell.index()] != proc) continue;
@@ -123,7 +129,7 @@
 //    if (mesh->get_part()->get_init_distr()->myp() != 0)
 //    	delete[] loc_part;
 //
-////    for (auto cell : mesh->bulk_elements_range()) {
+////    for (auto cell : mesh->elements_range()) {
 ////        // skip cells of different dimension
 ////        if (cell->dim() != dim) continue;
 ////
@@ -137,7 +143,7 @@
 ////    }
 //
 //
-////    for (auto cell : mesh->bulk_elements_range()) {
+////    for (auto cell : mesh->elements_range()) {
 ////        // skip cells of different dimension
 ////        if (cell->dim != dim) continue;
 ////
@@ -229,191 +235,416 @@
 
 
 
-DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
+DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 	: DOFHandlerBase(_mesh),
-	  fe1d_(0),
-	  fe2d_(0),
-	  fe3d_(0)
+	  ds_(nullptr)
 {
-	object_dofs = new LongIdx**[mesh_->n_elements()];
-	for (unsigned int i=0; i<mesh_->n_elements(); i++)
-		object_dofs[i] = NULL;
-
-	make_elem_partitioning();
+	if (make_elem_part) make_elem_partitioning();
 }
 
-void DOFHandlerMultiDim::distribute_dofs(FiniteElement<1>& fe1d,
-		FiniteElement<2>& fe2d, FiniteElement<3>& fe3d,
-		const unsigned int offset)
+
+unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
+{
+    switch (cell->dim()) {
+        case 1:
+            return fe<1>(cell)->n_dofs();
+            break;
+        case 2:
+            return fe<2>(cell)->n_dofs();
+            break;
+        case 3:
+            return fe<3>(cell)->n_dofs();
+            break;
+    }
+}
+
+
+const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> cell, unsigned int idof) const
+{
+    switch (cell.dim())
+    {
+        case 1:
+            return fe<1>(cell)->dof(idof);
+            break;
+        case 2:
+            return fe<2>(cell)->dof(idof);
+            break;
+        case 3:
+            return fe<3>(cell)->dof(idof);
+            break;
+    }
+}
+
+
+void DOFHandlerMultiDim::init_cell_starts()
+{
+    // get number of dofs per element and then set up cell_starts
+    cell_starts = std::vector<LongIdx>(mesh_->n_elements()+1, 0);
+    for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); ++loc_el)
+    {
+        auto cell = mesh_->element_accessor(el_index(loc_el));
+        cell_starts[row_4_el[cell.idx()]+1] = n_dofs(cell);
+        max_elem_dofs_ = max((int)max_elem_dofs_, (int)n_dofs(cell));
+    }
+    for (unsigned int gid=0; gid<ghost_4_loc.size(); ++gid)
+    {
+        auto cell = mesh_->element_accessor(ghost_4_loc[gid]);
+        cell_starts[row_4_el[cell.idx()]+1] = n_dofs(cell);
+        max_elem_dofs_ = max((int)max_elem_dofs_, (int)n_dofs(cell));
+    }
+    for (unsigned int i=0; i<mesh_->n_elements(); ++i)
+        cell_starts[i+1] += cell_starts[i];
+}
+
+
+void DOFHandlerMultiDim::init_node_dof_starts(std::vector<LongIdx> &node_dof_starts)
+{
+    // initialize dofs on nodes
+    // We must separate dofs for dimensions because FE functions
+    // may be discontinuous on nodes shared by different
+    // dimensions.
+    unsigned int n_node_dofs = 0;
+    
+    for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
+    {
+      node_dof_starts.push_back(n_node_dofs);
+      n_node_dofs += ds_->n_node_dofs(nid);
+    }
+    node_dof_starts.push_back(n_node_dofs);
+}
+
+
+void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
+{
+    // mark local dofs
+    for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++)
+    {
+      ElementAccessor<3> cell = mesh_->element_accessor(el_index(loc_el));
+
+      for (unsigned int n=0; n<cell->dim()+1; n++)
+      {
+        unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
+        node_status[nid] = VALID_NODE;
+      }
+    }
+    
+    // unmark dofs on ghost cells from lower procs
+    for (unsigned int gid=0; gid<ghost_4_loc.size(); gid++)
+    {
+      ElementAccessor<3> cell = mesh_->element_accessor(ghost_4_loc[gid]);
+      if (cell.proc() < el_ds_->myp())
+      {
+        for (unsigned int n=0; n<cell->dim()+1; n++)
+        {
+          unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
+          node_status[nid] = INVALID_NODE;
+        }
+      }
+    }
+}
+
+
+void DOFHandlerMultiDim::receive_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs)
+{
+    // send number of elements required from the other processor
+    unsigned int n_elems = ghost_proc_el[proc].size();
+    MPI_Send(&n_elems, 1, MPI_UNSIGNED, proc, 0, MPI_COMM_WORLD);
+    
+    // send indices of elements required
+    MPI_Send(&(ghost_proc_el[proc][0]), n_elems, MPI_LONG_IDX, proc, 1, MPI_COMM_WORLD);
+    
+    // receive numbers of dofs on required elements
+    vector<unsigned int> n_dofs(n_elems);
+    MPI_Recv(&(n_dofs[0]), n_elems, MPI_UNSIGNED, proc, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+    // receive dofs on required elements
+    unsigned int n_dofs_sum = 0;
+    for (auto nd : n_dofs) n_dofs_sum += nd;
+    dofs.resize(n_dofs_sum);
+    MPI_Recv(&(dofs[0]), n_dofs_sum, MPI_LONG_IDX, proc, 3, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+}
+
+
+void DOFHandlerMultiDim::send_ghost_dofs(unsigned int proc)
+{
+    // receive number of elements required by the other processor
+    unsigned int n_elems;
+    MPI_Recv(&n_elems, 1, MPI_UNSIGNED, proc, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+    // receive indices of elements required
+    vector<LongIdx> elems(n_elems);
+    MPI_Recv(&(elems[0]), n_elems, MPI_LONG_IDX, proc, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+    // send numbers of dofs on required elements
+    vector<unsigned int> n_dofs;
+    for (LongIdx el : elems) n_dofs.push_back(cell_starts[row_4_el[el]+1] - cell_starts[row_4_el[el]]);
+    MPI_Send(&(n_dofs[0]), n_elems, MPI_UNSIGNED, proc, 2, MPI_COMM_WORLD);
+    
+    // send dofs on the required elements
+    vector<LongIdx> dofs;
+    for (LongIdx el : elems)
+        dofs.insert(dofs.end(), dof_indices.begin()+cell_starts[row_4_el[el]], dof_indices.begin()+cell_starts[row_4_el[el]+1]);
+    MPI_Send(&(dofs[0]), dofs.size(), MPI_LONG_IDX, proc, 3, MPI_COMM_WORLD);
+}
+
+
+void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
+                                           const std::vector<bool> &update_cells,
+                                           const std::vector<LongIdx> &dofs, 
+                                           const std::vector<LongIdx> &node_dof_starts,
+                                           std::vector<LongIdx> &node_dofs
+                                          )
+{
+    // update dof_indices on ghost cells
+    unsigned int dof_offset=0;
+    for (unsigned int gid=0; gid<ghost_proc_el[proc].size(); gid++)
+    {
+        auto cell = mesh_->element_accessor(ghost_proc_el[proc][gid]);
+        
+        for (unsigned dof=0; dof<n_dofs(cell); dof++)
+            dof_indices[cell_starts[row_4_el[cell.idx()]]+dof] = dofs[dof_offset+dof];
+        
+        vector<unsigned int> loc_node_dof_count(cell->n_nodes(), 0);
+        for (unsigned int idof = 0; idof<n_dofs(cell); ++idof)
+        {
+            if (cell_dof(cell, idof).dim == 0)
+            {   // update nodal dof
+                unsigned int dof_nface_idx = cell_dof(cell, idof).n_face_idx;
+                unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
+                    
+                if (node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] == INVALID_DOF)
+                    node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] = dofs[dof_offset+idof];
+                
+                loc_node_dof_count[dof_nface_idx]++;
+            }
+        }
+        
+        dof_offset += n_dofs(cell);
+    }
+    
+    // update dof_indices on local elements
+    for (unsigned int loc_el=0; loc_el < el_ds_->lsize(); loc_el++)
+    {
+        if (!update_cells[loc_el]) continue;
+        
+        ElementAccessor<3> cell = mesh_->element_accessor(el_index(loc_el));
+        
+        // loop over element dofs
+        vector<unsigned int> loc_node_dof_count(cell->n_nodes(), 0);
+        for (unsigned int idof = 0; idof<n_dofs(cell); ++idof)
+        {
+            if (cell_dof(cell,idof).dim == 0)
+            {
+                unsigned int dof_nface_idx = cell_dof(cell, idof).n_face_idx;
+                if (dof_indices[cell_starts[row_4_el[cell.idx()]]+idof] == INVALID_DOF)
+                {   // update nodal dof
+                    unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
+                    dof_indices[cell_starts[row_4_el[cell.idx()]]+idof] = node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]];
+                }
+                loc_node_dof_count[dof_nface_idx]++;
+            }
+        }
+    }
+}
+
+
+void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
+        bool sequential)
 {
 	// First check if dofs are already distributed.
-	OLD_ASSERT((fe1d_ == 0) && (fe2d_ == 0) && (fe3d_ == 0), "Attempt to distribute DOFs multiple times!");
-
-    unsigned int next_free_dof = offset;
-    // n_obj_dofs[element_dim][general_face_dim]
-    // for every dim of ref. element, number of DoFs on its generalized face (face, edge, vertex)
-    unsigned int n_obj_dofs[4][4];
-
-
-    fe1d_ = &fe1d;
-   	fe2d_ = &fe2d;
-   	fe3d_ = &fe3d;
-    global_dof_offset = offset;
-    max_elem_dofs_ = max(fe1d_->n_dofs(), max(fe2d_->n_dofs(), fe3d_->n_dofs()));
-
-    for (unsigned int dm=0; dm <= 3; dm++)
-        for (unsigned int dd=1; dd <= 3; dd++)
-            n_obj_dofs[dd][dm] = 0;
-    for (unsigned int d=0; d<fe1d.n_dofs(); d++)
-        n_obj_dofs[1][fe1d.dof(d).dim]++;
-    for (unsigned int d=0; d<fe2d.n_dofs(); d++)
-        n_obj_dofs[2][fe2d.dof(d).dim]++;
-    for (unsigned int d=0; d<fe3d.n_dofs(); d++)
-        n_obj_dofs[3][fe3d.dof(d).dim]++;
-
-    // Broadcast partition of elements to all processes.
-    LongIdx *loc_part;
-    unsigned int myp = mesh_->get_part()->get_init_distr()->myp();
-    if (myp == 0)
-    {
-    	loc_part = (LongIdx*)mesh_->get_part()->get_loc_part();
-    }
-    else
-    {
-    	loc_part = new int[mesh_->n_elements()];
-    }
-    MPI_Bcast(loc_part, mesh_->n_elements(), MPI_INT, 0, mesh_->get_part()->get_init_distr()->get_comm());
-
-    // Distribute element dofs.
-    // First we distribute dofs on elements associated to process 0 and so on.
-    for (unsigned int proc=0; proc<mesh_->get_part()->get_init_distr()->np(); proc++)
-    {
-    	if (proc == myp)
-    		loffset_ = next_free_dof;
-
-    	for (auto cell : mesh_->bulk_elements_range()) {
-    		if (loc_part[ cell.idx() ] != (int)proc) continue;
-
-    		unsigned int dim = cell->dim();
-
-    		// distribute dofs
-			// TODO: For the moment we distribute only dofs associated to the cell
-			//       In the future we want to distribute dofs on vertices, lines,
-			//       and triangles as well.
-			object_dofs[ cell.idx() ] = new LongIdx*[dim+1];
-			for (unsigned int i=0; i<dim+1; i++)
-				object_dofs[ cell.idx() ][i] = NULL;
-			object_dofs[ cell.idx() ][dim] = new int[n_obj_dofs[dim][dim]];
-
-			for (unsigned int i=0; i<n_obj_dofs[dim][dim]; i++)
-			   object_dofs[ cell.idx() ][dim][i] = next_free_dof++;
-    	}
-
-    	if (proc == myp) {
-    		lsize_ = next_free_dof - loffset_;
-    		ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);
-    	}
-    }
-
-    // Finally we free the unused array loc_part.
-    if (mesh_->get_part()->get_init_distr()->myp() != 0)
-    	delete[] loc_part;
-
-    n_dofs = next_free_dof - offset;
-}
-
-unsigned int DOFHandlerMultiDim::get_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const
-{
-	unsigned int dim = cell->dim();
-    unsigned int n_objects_dofs;
+	OLD_ASSERT(ds_ == nullptr, "Attempt to distribute DOFs multiple times!");
     
-	switch (dim)
-	{
-	case 1:
-		n_objects_dofs = fe1d_->n_dofs();
-		break;
-	case 2:
-		n_objects_dofs = fe2d_->n_dofs();
-		break;
-	case 3:
-		n_objects_dofs = fe3d_->n_dofs();
-		break;
-	}
-	
-	ASSERT_LE(n_objects_dofs, indices.size()).error();
+    ds_ = ds;
 
-	for (unsigned int k = 0; k < n_objects_dofs; k++)
-        indices[k] = object_dofs[cell.idx()][dim][k];
+    std::vector<LongIdx> node_dofs, node_dof_starts;
+    std::vector<short int> node_status(mesh_->tree->n_nodes(), INVALID_NODE);
+    std::vector<bool> update_cells(el_ds_->lsize(), false);
+    unsigned int next_free_dof = 0;
 
-	return n_objects_dofs;
-}
-
-unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const CellIterator &cell, std::vector<LongIdx> &indices) const
-{
-	/*
-	 * TODO: This method is currently wrong (the shift by loc_offset_ is not enough for
-	 * local <-> global mapping. Only local to global mapping should be used in future.
-	 */
-    unsigned int dim = cell->dim();
-    unsigned int n_objects_dofs;
+    init_cell_starts();
+    init_node_dof_starts(node_dof_starts);
+    node_dofs.resize(node_dof_starts[node_dof_starts.size()-1]);
+    init_node_status(node_status);
     
-    switch (dim)
+    // Distribute dofs on local elements.
+    dof_indices.resize(cell_starts[cell_starts.size()-1]);
+    for (unsigned int loc_el=0; loc_el < el_ds_->lsize(); loc_el++)
     {
-    case 1:
-        n_objects_dofs = fe1d_->n_dofs();
-        break;
-    case 2:
-        n_objects_dofs = fe2d_->n_dofs();
-        break;
-    case 3:
-        n_objects_dofs = fe3d_->n_dofs();
-        break;
+      ElementAccessor<3> cell = mesh_->element_accessor(el_index(loc_el));
+      
+      // loop over element dofs
+      vector<unsigned int> loc_node_dof_count(cell->n_nodes(), 0);
+      for (unsigned int idof = 0; idof<n_dofs(cell); ++idof)
+      {
+        unsigned int dof_dim = cell_dof(cell, idof).dim;
+        unsigned int dof_nface_idx = cell_dof(cell, idof).n_face_idx;
+        
+        if (dof_dim == 0)
+        {   // add dofs shared by nodes
+            unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
+            unsigned int node_dof_idx = node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx];
+                
+            switch (node_status[nid])
+            {
+            case VALID_NODE:
+                for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
+                    node_dofs[node_dof_starts[nid]+i] = next_free_dof++;
+                node_status[nid] = ASSIGNED_NODE;
+                break;
+            case INVALID_NODE:
+                node_dofs[node_dof_idx] = INVALID_DOF;
+                update_cells[loc_el] = true;
+                break;
+            }
+            dof_indices[cell_starts[row_4_el[cell.idx()]]+idof] = node_dofs[node_dof_idx];
+            loc_node_dof_count[dof_nface_idx]++;
+        }
+        else if (dof_dim == cell.dim())
+            // add dofs owned only by the element
+            dof_indices[cell_starts[row_4_el[cell.idx()]]+idof] = next_free_dof++;
+        else
+            ASSERT(false).error("Unsupported dof n_face.");
+      }
     }
+    node_status.clear();
+    
+    lsize_ = next_free_dof;
 
-    ASSERT_LE(n_objects_dofs, indices.size()).error();
-
-    for (unsigned int k = 0; k < n_objects_dofs; k++)
-        indices[k] = object_dofs[cell.idx()][dim][k] - loffset_;
-
-    return n_objects_dofs;
+    // communicate n_dofs across all processes
+    dof_ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);
+    n_global_dofs_ = dof_ds_->size();
+    
+    // shift dof indices
+    loffset_ = dof_ds_->get_starts_array()[dof_ds_->myp()];
+    if (loffset_ > 0)
+      for (unsigned int i=0; i<dof_indices.size(); i++)
+        if (dof_indices[i] != INVALID_DOF)
+          dof_indices[i] += loffset_;
+    
+    // communicate dofs from ghost cells
+    // first propagate from lower procs to higher procs and then vice versa
+    for (unsigned int from_higher = 0; from_higher < 2; from_higher++)
+    {
+        for (unsigned int proc : ghost_proc)
+        {
+            if ((proc > el_ds_->myp()) == from_higher)
+            { // receive dofs from master processor
+                vector<LongIdx> dofs;
+                receive_ghost_dofs(proc, dofs);
+                
+                // update dof_indices and node_dofs on ghost elements
+                update_local_dofs(proc, update_cells, dofs, node_dof_starts, node_dofs);
+            }
+            else
+                send_ghost_dofs(proc);
+        }
+    }
+    update_cells.clear();
+    node_dofs.clear();
+    node_dof_starts.clear();
+    
+    if (sequential) create_sequential();
 }
 
-void DOFHandlerMultiDim::get_dof_values(const CellIterator &cell, const Vec &values, double local_values[]) const
+
+void DOFHandlerMultiDim::create_sequential()
 {
-	int ndofs=0;
+  ASSERT(dof_indices.size() > 0).error("Attempt to create sequential dof handler from uninitialized or already sequential object!");
+  
+  // Auxiliary vectors cell_starts_loc and dof_indices_loc contain
+  // only local element data (without ghost elements).
+  // Then it is possible to create sequential vectors by simple reduce/gather operation.
+  vector<LongIdx> cell_starts_loc(mesh_->n_elements()+1, 0);
+  vector<LongIdx> dof_indices_loc;
+  
+  // construct cell_starts_loc
+  for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); ++loc_el)
+  {
+    auto cell = mesh_->element_accessor(el_index(loc_el));
+    cell_starts_loc[row_4_el[cell.idx()]+1] = n_dofs(cell);
+  }
+  for (unsigned int i=0; i<mesh_->n_elements(); ++i)
+    cell_starts_loc[i+1] += cell_starts_loc[i];
 
-	switch (cell->dim())
-	{
-	case 1:
-		ndofs = fe1d_->n_dofs();
-		break;
-	case 2:
-		ndofs = fe2d_->n_dofs();
-		break;
-	case 3:
-		ndofs = fe3d_->n_dofs();
-		break;
-	}
-
-    std::vector<LongIdx> indices(ndofs);
-
-    get_dof_indices(cell, indices);
-    VecGetValues(values, ndofs, (PetscInt *)indices[0], local_values);
+  // construct dof_indices_loc
+  dof_indices_loc.resize(cell_starts_loc[mesh_->n_elements()]);
+  for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); ++loc_el)
+  {
+    auto cell = mesh_->element_accessor(el_index(loc_el));
+    for (unsigned int idof=0; idof<n_dofs(cell); idof++)
+        dof_indices_loc[cell_starts_loc[row_4_el[cell.idx()]]+idof] = dof_indices[cell_starts[row_4_el[cell.idx()]]+idof];
+  }
+  
+  // Parallel data are no more used.
+  cell_starts.clear();
+  dof_indices.clear();
+  
+  Distribution distr(dof_indices_loc.size(), PETSC_COMM_WORLD);
+  cell_starts_seq.resize(mesh_->n_elements()+1);
+  dof_indices_seq.resize(distr.size());
+  
+  MPI_Allreduce( cell_starts_loc.data(),
+                 cell_starts_seq.data(),
+                 cell_starts_loc.size(),
+                 MPI_LONG_IDX,
+                 MPI_SUM,
+                 MPI_COMM_WORLD );
+  
+  MPI_Allgatherv( dof_indices_loc.data(),
+                  dof_indices_loc.size(),
+                  MPI_LONG_IDX,
+                  dof_indices_seq.data(),
+                  (const int *)distr.get_lsizes_array(),
+                  (const int *)distr.get_starts_array(),
+                  MPI_LONG_IDX,
+                  MPI_COMM_WORLD );
 }
+
+
+
+unsigned int DOFHandlerMultiDim::get_dof_indices(const ElementAccessor<3> &cell, std::vector<int> &indices) const
+{
+  unsigned int ndofs = 0;
+  if ( cell_starts_seq.size() > 0 && dof_indices_seq.size() > 0)
+  {
+    ndofs = cell_starts_seq[row_4_el[cell.idx()]+1]-cell_starts_seq[row_4_el[cell.idx()]];
+    for (unsigned int k=0; k<ndofs; k++)
+      indices[k] = dof_indices_seq[cell_starts_seq[row_4_el[cell.idx()]]+k];
+  }
+  else
+  {
+    ndofs = cell_starts[row_4_el[cell.idx()]+1]-cell_starts[row_4_el[cell.idx()]];
+    for (unsigned int k=0; k<ndofs; k++)
+      indices[k] = dof_indices[cell_starts[row_4_el[cell.idx()]]+k];
+  }
+  
+  return ndofs;
+}
+
+
+
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
+{
+  unsigned int ndofs = 0;
+  if ( cell_starts_seq.size() > 0 && dof_indices_seq.size() > 0)
+  {
+    ndofs = cell_starts_seq[row_4_el[cell.idx()]+1]-cell_starts_seq[row_4_el[cell.idx()]];
+    for (unsigned int k=0; k<ndofs; k++)
+      indices[k] = cell_starts_seq[row_4_el[cell.idx()]]+k;
+  }
+  else
+  {
+    ndofs = cell_starts[row_4_el[cell.idx()]+1]-cell_starts[row_4_el[cell.idx()]];
+    for (unsigned int k=0; k<ndofs; k++)
+      indices[k] = cell_starts[row_4_el[cell.idx()]]+k;
+  }
+
+  return ndofs;
+}
+
 
 DOFHandlerMultiDim::~DOFHandlerMultiDim()
-{
-	for ( auto ele : mesh_->bulk_elements_range() )
-		if (object_dofs[ele.idx()] != NULL)
-		{
-			for (unsigned int j=0; j<=ele->dim(); j++)
-				if (object_dofs[ele.idx()][j] != NULL)
-					delete[] object_dofs[ele.idx()][j];
-
-			delete[] object_dofs[ele.idx()];
-		}
-	delete[] object_dofs;
-}
+{}
 
 
 
@@ -447,6 +678,41 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 				|| el_is_local(nb->side()->element().idx()) )
 			nb_4_loc.push_back(inb);
 	}
+	
+	// create array of local nodes
+	std::vector<bool> node_is_local(mesh_->tree->n_nodes(), false);
+    for (unsigned int loc_el=0; loc_el<el_ds_->lsize(); loc_el++)
+    {
+      ElementAccessor<3> cell = mesh_->element_accessor(el_index(loc_el));
+      unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.idx()];
+      for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
+        node_is_local[mesh_->tree->objects(cell->dim())[obj_idx].nodes[nid]] = true;
+    }
+    for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
+      if (node_is_local[nid])
+        node_4_loc.push_back(nid);
+    
+    // create array of local ghost cells
+    for ( auto cell : mesh_->elements_range() )
+    {
+      if (cell.proc() != el_ds_->myp())
+      {
+        bool has_local_node = false;
+        unsigned int obj_idx = mesh_->tree->obj_4_el()[cell.idx()];
+        for (unsigned int nid=0; nid<cell->n_nodes(); nid++)
+          if (node_is_local[mesh_->tree->objects(cell->dim())[obj_idx].nodes[nid]])
+          {
+            has_local_node = true;
+            break;
+          }
+        if (has_local_node)
+        {
+            ghost_4_loc.push_back(cell.idx());
+            ghost_proc.insert(cell.proc());
+            ghost_proc_el[cell.proc()].push_back(cell.idx());
+        }
+      }
+    }
 }
 
 
@@ -457,19 +723,6 @@ bool DOFHandlerMultiDim::el_is_local(int index) const
 
 
 std::size_t DOFHandlerMultiDim::hash() const {
-	return this->n_dofs;
+	return this->n_global_dofs_;
 }
 
-
-
-
-
-template<> FiniteElement<1> *DOFHandlerMultiDim::fe<1>() const { return fe1d_; }
-template<> FiniteElement<2> *DOFHandlerMultiDim::fe<2>() const { return fe2d_; }
-template<> FiniteElement<3> *DOFHandlerMultiDim::fe<3>() const { return fe3d_; }
-
-
-//template class DOFHandler<0,3>;
-//template class DOFHandler<1,3>;
-//template class DOFHandler<2,3>;
-//template class DOFHandler<3,3>;

@@ -55,7 +55,7 @@ namespace Input {
 }
 
 template<unsigned int dim, unsigned int spacedim> class FEValues;
-
+template <int spacedim, class Value> class FieldFE;
 
 /**
  * Actually this class only collect former code from postprocess.*
@@ -85,8 +85,8 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
-	    Field<3, FieldValue<3>::Integer> subdomain;
-	    Field<3, FieldValue<3>::Integer> region_id;
+	    Field<3, FieldValue<3>::Scalar> subdomain;
+	    Field<3, FieldValue<3>::Scalar> region_id;
 	};
 
     /// Specific quantities for output in DarcyFlowMH - error estimates etc.
@@ -182,6 +182,12 @@ protected:
     // that we can pass there directly vector< arma:: vec3 >
     VectorSeqDouble ele_flux;
 
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
+
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;
 
@@ -189,6 +195,8 @@ protected:
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
+    FE_P_disc<0> fe0; //TODO temporary solution - add support of FEData<0>
+    std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
     OutputSpecificFields output_specific_fields;
@@ -206,6 +214,12 @@ protected:
         VectorSeqDouble pressure_diff;
         VectorSeqDouble velocity_diff;
         VectorSeqDouble div_diff;
+
+        // Temporary objects holding pointers to appropriate FieldFE
+        // TODO remove after final fix of equations
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
 
         double * solution;
         const MH_DofHandler * dh;

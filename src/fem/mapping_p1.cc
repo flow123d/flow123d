@@ -86,7 +86,7 @@ UpdateFlags MappingP1<dim,spacedim>::update_each(UpdateFlags flags)
 
 
 template<unsigned int dim, unsigned int spacedim>
-void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::CellIterator &cell,
+void MappingP1<dim,spacedim>::fill_fe_values(const ElementAccessor<3> &cell,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
                             FEValuesData<dim,spacedim> &fv_data)
@@ -159,7 +159,7 @@ void MappingP1<dim,spacedim>::fill_fe_values(const typename DOFHandlerBase::Cell
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void MappingP1<dim,spacedim>::fill_fe_side_values(const typename DOFHandlerBase::CellIterator &cell,
+void MappingP1<dim,spacedim>::fill_fe_side_values(const ElementAccessor<3> &cell,
                             unsigned int sid,
                             const Quadrature<dim> &q,
                             MappingInternalData &data,
@@ -296,6 +296,13 @@ auto MappingP1<dim,spacedim>::project_unit_to_real(const BaryPoint &point, const
 template<unsigned int dim, unsigned int spacedim>
 auto MappingP1<dim,spacedim>::clip_to_element(BaryPoint &barycentric) -> BaryPoint{
     return RefElement<dim>::clip(barycentric);
+}
+
+template <unsigned int dim, unsigned int spacedim>
+bool MappingP1<dim,spacedim>::contains_point(arma::vec point, ElementAccessor<3> elm)
+{
+	arma::vec projection = this->project_real_to_unit(point, this->element_map(elm));
+	return (projection.min() >= -BoundingBox::epsilon);
 }
 
 template<unsigned int dim, unsigned int spacedim>

@@ -52,10 +52,9 @@
 #include "transport/concentration_model.hh"    // for ConcentrationTransport...
 #include "transport/heat_model.hh"             // for HeatTransferModel, Hea...
 
-class Edge;
-class LinSys;
-class Mesh;
+class DiscreteSpace;
 class Distribution;
+class OutputTime;
 class DOFHandlerMultiDim;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
@@ -93,6 +92,7 @@ public:
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<0> *fe0_;
 	FiniteElement<1> *fe1_;
 	FiniteElement<2> *fe2_;
 	FiniteElement<3> *fe3_;
@@ -112,6 +112,8 @@ private:
 	MappingP1<1,3> *map1_;
 	MappingP1<2,3> *map2_;
 	MappingP1<3,3> *map3_;
+    
+        std::shared_ptr<DiscreteSpace> ds_;
 
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -165,8 +167,8 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
-        Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+        Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
 
         EquationOutput output_fields;
 
