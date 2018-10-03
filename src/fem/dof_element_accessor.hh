@@ -49,7 +49,7 @@ public:
 
     /// Return ElementAccessor to element of loc_ele_idx_.
     inline const ElementAccessor<3> element_accessor() const {
-    	return dof_handler_->mesh()->element_accessor(loc_ele_idx_);
+    	return dof_handler_->mesh()->element_accessor( element_idx() );
     }
 
     /// Iterates to next local element.
@@ -73,7 +73,7 @@ public:
  @endcode
      */
     inline const ElementAccessor<3> operator ->() const {
-    	return dof_handler_->mesh()->element_accessor(loc_ele_idx_);
+    	return dof_handler_->mesh()->element_accessor( element_idx() );
     }
 
 private:
