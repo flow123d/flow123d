@@ -21,43 +21,62 @@
 
 #include "mesh/accessors.hh"
 
-template <int spacedim>
-class DofElementAccessor : public ElementAccessor<spacedim> {
+class DofElementAccessor {
 public:
     /**
      * Default invalid accessor.
      */
     DofElementAccessor()
-    : ElementAccessor<spacedim>()
+    : dof_handler_(NULL)
     {}
 
     /**
-     * Element accessor.
+     * DOF element accessor.
      */
     DofElementAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
     : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
-    {
-        this->mesh_ = dof_handler_->mesh();
-    	set_data();
+    {}
+
+    /// Return local index to element (index of DOF handler).
+    inline unsigned int local_idx() const {
+        return loc_ele_idx_;
+    }
+
+    /// Return serial idx to element of loc_ele_idx_.
+    inline unsigned int element_idx() const {
+        return dof_handler_->el_index(loc_ele_idx_);
+    }
+
+    /// Return ElementAccessor to element of loc_ele_idx_.
+    inline const ElementAccessor<3> element_accessor() const {
+    	return dof_handler_->mesh()->element_accessor(loc_ele_idx_);
     }
 
     /// Iterates to next local element.
-    inline void inc() override {
+    inline void inc() {
         loc_ele_idx_++;
-		set_data();
+    }
+
+    bool operator==(const DofElementAccessor& other) {
+    	return (loc_ele_idx_ == other.loc_ele_idx_);
+    }
+
+    /**
+     * -> dereference operator
+     *
+     * Return ElementAccessor to element of loc_ele_idx_. Allow to simplify code:
+ @code
+     DofElementAccessor dof_ac(dh, loc_index);
+     unsigned int dim;
+     dim = dof_ac.element_accessor().dim();  // full format of access to element
+     dim = dof_ac->dim();                    // short format with dereference operator
+ @endcode
+     */
+    inline const ElementAccessor<3> operator ->() const {
+    	return dof_handler_->mesh()->element_accessor(loc_ele_idx_);
     }
 
 private:
-    /// Set data of parent class ElementAccessor
-    inline void set_data() {
-    	this->element_idx_ = dof_handler_->el_index(loc_ele_idx_);
-    	this->boundary_ = (this->element_idx_ >= this->mesh_->n_elements());
-    	if ( dof_handler_->el_index(loc_ele_idx_) < this->mesh_->n_elements() ) {
-    		this->r_idx_ = this->element()->region_idx();
-    		this->dim_ = this->element()->dim();
-    	}
-    }
-
     /// Pointer to the DOF handler owning the element.
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.

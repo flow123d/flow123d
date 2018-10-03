@@ -322,7 +322,7 @@ void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
     {
       for (unsigned int n=0; n<cell->dim()+1; n++)
       {
-        unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
+        unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.element_idx()]].nodes[n];
         node_status[nid] = VALID_NODE;
       }
     }
@@ -726,7 +726,7 @@ std::size_t DOFHandlerMultiDim::hash() const {
 }
 
 
-Range<DofElementAccessor<3>, DOFHandlerMultiDim> DOFHandlerMultiDim::local_elements_range() const {
-    return Range<DofElementAccessor<3>, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
+Range<DofElementAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::local_elements_range() const {
+    return Range<DofElementAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
 }
 
