@@ -39,12 +39,15 @@ public:
 
     /// Return local index to element (index of DOF handler).
     inline unsigned int local_idx() const {
+    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()).error("Method 'local_idx()' can't be used for ghost cells!\n");
         return loc_ele_idx_;
     }
 
     /// Return serial idx to element of loc_ele_idx_.
     inline unsigned int element_idx() const {
-        return dof_handler_->el_index(loc_ele_idx_);
+    	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
+        if (loc_ele_idx_<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
+        else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
     }
 
     /// Return ElementAccessor to element of loc_ele_idx_.

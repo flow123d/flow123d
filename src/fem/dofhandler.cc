@@ -281,16 +281,10 @@ void DOFHandlerMultiDim::init_cell_starts()
 {
     // get number of dofs per element and then set up cell_starts
     cell_starts = std::vector<LongIdx>(mesh_->n_elements()+1, 0);
-    for (auto cell : this->own_range()) // TODO: use local range method, merge with next loop
+    for (auto cell : this->local_range())
     {
         cell_starts[row_4_el[cell.element_idx()]+1] = n_dofs(cell.element_accessor());
         max_elem_dofs_ = max((int)max_elem_dofs_, (int)n_dofs(cell.element_accessor()));
-    }
-    for (unsigned int gid=0; gid<ghost_4_loc.size(); ++gid)
-    {
-        auto cell = mesh_->element_accessor(ghost_4_loc[gid]);
-        cell_starts[row_4_el[cell.idx()]+1] = n_dofs(cell);
-        max_elem_dofs_ = max((int)max_elem_dofs_, (int)n_dofs(cell));
     }
     for (unsigned int i=0; i<mesh_->n_elements(); ++i)
         cell_starts[i+1] += cell_starts[i];
@@ -327,14 +321,13 @@ void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
     }
     
     // unmark dofs on ghost cells from lower procs
-    for (unsigned int gid=0; gid<ghost_4_loc.size(); gid++)
+	for (auto cell : this->ghost_range())
     {
-      ElementAccessor<3> cell = mesh_->element_accessor(ghost_4_loc[gid]);
-      if (cell.proc() < el_ds_->myp())
+      if (cell.element_accessor().proc() < el_ds_->myp())
       {
         for (unsigned int n=0; n<cell->dim()+1; n++)
         {
-          unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[n];
+          unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.element_idx()]].nodes[n];
           node_status[nid] = INVALID_NODE;
         }
       }
@@ -721,5 +714,15 @@ std::size_t DOFHandlerMultiDim::hash() const {
 
 Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::own_range() const {
     return Range<DofCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
+}
+
+
+Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::local_range() const {
+    return Range<DofCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize()+ghost_4_loc.size());
+}
+
+
+Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::ghost_range() const {
+    return Range<DofCellAccessor, DOFHandlerMultiDim>(this, el_ds_->lsize(), el_ds_->lsize()+ghost_4_loc.size());
 }
 

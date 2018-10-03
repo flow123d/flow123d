@@ -265,6 +265,12 @@ public:
     /// Returns range of DOF handler cells (only range of own without ghost cells)
     Range<DofCellAccessor, DOFHandlerMultiDim> own_range() const;
 
+    /// Returns range over own and ghost cells of DOF handler
+    Range<DofCellAccessor, DOFHandlerMultiDim> local_range() const;
+
+    /// Returns range over ghosts DOF handler cells
+    Range<DofCellAccessor, DOFHandlerMultiDim> ghost_range() const;
+
     /// Destructor.
     ~DOFHandlerMultiDim() override;
     
