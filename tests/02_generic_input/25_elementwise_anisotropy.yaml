@@ -1,0 +1,55 @@
+# Test goal: Test reading tensor field, anisotropy in Darcy flow in particular.
+# Author: Pavel Exner
+# Source for reference: qualitative
+#   This test reads anisotropy tensor field from vtu file a write it in the output.
+
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Test10 - Steady flow with anisotropic conductivity
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
+    regions:
+      - !Union
+        name: fractures
+        regions:
+          - 2d_fracture_1
+          - 2d_fracture_2
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-07
+    n_schurs: 2
+    input_fields:
+      # creating the input field for anisotropy
+      #- region: 3d_cube
+        #anisotropy: [1, 2, 3]
+        #conductivity: 0.1
+      #- region: fractures
+        #anisotropy: [4, 5, 6]
+        #conductivity: 1
+        #cross_section: 0.01
+      #- region: 1d_channel
+        #anisotropy: [7, 8, 9]
+        #conductivity: 10
+        #cross_section: 0.01
+        
+      - region: BULK
+        anisotropy: !FieldFE
+          mesh_data_file: ./25_elementwise_anisotropy.vtu
+          field_name: anisotropy
+        conductivity: 0.02
+        
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x+y+z
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - anisotropy
+    balance: {}
+    output_stream:
+      file: ./test05.pvd
+      format: !vtk
+        variant: ascii
