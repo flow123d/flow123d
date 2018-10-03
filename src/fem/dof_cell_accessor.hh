@@ -11,29 +11,29 @@
  * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
  *
- * @file    dof_element_accessors.hh
+ * @file    dof_cell_accessor.hh
  * @brief
  * @author  David Flanderka
  */
 
-#ifndef DOF_ELEMENT_ACCESSORS_HH_
-#define DOF_ELEMENT_ACCESSORS_HH_
+#ifndef DOF_CELL_ACCESSOR_HH_
+#define DOF_CELL_ACCESSOR_HH_
 
 #include "mesh/accessors.hh"
 
-class DofElementAccessor {
+class DofCellAccessor {
 public:
     /**
      * Default invalid accessor.
      */
-    DofElementAccessor()
+	DofCellAccessor()
     : dof_handler_(NULL)
     {}
 
     /**
-     * DOF element accessor.
+     * DOF cell accessor.
      */
-    DofElementAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
+	DofCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
     : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
     {}
 
@@ -57,7 +57,7 @@ public:
         loc_ele_idx_++;
     }
 
-    bool operator==(const DofElementAccessor& other) {
+    bool operator==(const DofCellAccessor& other) {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
     }
 
@@ -66,7 +66,7 @@ public:
      *
      * Return ElementAccessor to element of loc_ele_idx_. Allow to simplify code:
  @code
-     DofElementAccessor dof_ac(dh, loc_index);
+     DofCellAccessor dof_ac(dh, loc_index);
      unsigned int dim;
      dim = dof_ac.element_accessor().dim();  // full format of access to element
      dim = dof_ac->dim();                    // short format with dereference operator
@@ -84,4 +84,4 @@ private:
 };
 
 
-#endif /* DOF_ELEMENT_ACCESSORS_HH_ */
+#endif /* DOF_CELL_ACCESSOR_HH_ */

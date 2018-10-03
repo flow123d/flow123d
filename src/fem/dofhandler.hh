@@ -31,7 +31,7 @@
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
-class DofElementAccessor;
+class DofCellAccessor;
 class Mesh;
 class Distribution;
 class Dof;
@@ -262,15 +262,15 @@ public:
      */
     std::size_t hash() const override;
 
-    /// Returns range of local DOF handler elements
-    Range<DofElementAccessor, DOFHandlerMultiDim> local_elements_range() const;
+    /// Returns range of DOF handler cells (only range of own without ghost cells)
+    Range<DofCellAccessor, DOFHandlerMultiDim> own_range() const;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
     
     
     
-    friend class DofElementAccessor;
+    friend class DofCellAccessor;
 
 private:
 

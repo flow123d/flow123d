@@ -18,7 +18,7 @@
 
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
-#include "fem/dof_element_accessor.hh"
+#include "fem/dof_cell_accessor.hh"
 #include "mesh/mesh.h"
 #include "mesh/duplicate_nodes.h"
 #include "mesh/partitioning.hh"
@@ -318,7 +318,7 @@ void DOFHandlerMultiDim::init_node_dof_starts(std::vector<LongIdx> &node_dof_sta
 void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
 {
     // mark local dofs
-	for (auto cell : this->local_elements_range())
+	for (auto cell : this->own_range())
     {
       for (unsigned int n=0; n<cell->dim()+1; n++)
       {
@@ -726,7 +726,7 @@ std::size_t DOFHandlerMultiDim::hash() const {
 }
 
 
-Range<DofElementAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::local_elements_range() const {
-    return Range<DofElementAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
+Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::own_range() const {
+    return Range<DofCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
 }
 
