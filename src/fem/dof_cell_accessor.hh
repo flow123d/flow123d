@@ -21,6 +21,11 @@
 
 #include "mesh/accessors.hh"
 
+/**
+ * Cell accessor allow iterate over DOF handler cells.
+ *
+ * Iterating is possible over different ranges of local and ghost elements.
+ */
 class DofCellAccessor {
 public:
     /**
@@ -60,6 +65,7 @@ public:
         loc_ele_idx_++;
     }
 
+    /// Comparison of accessors.
     bool operator==(const DofCellAccessor& other) {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
     }

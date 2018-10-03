@@ -25,24 +25,32 @@
  * @brief Range helper class.
  *
  * Allow iterate in bounds given by begin and end range. Class can be used for iterable accessor classes.
+ *
+ * Template arguments:
+ *  - Object Type over its instances is iterated,
+ *  - Source Type that holds container of 'Object' instances.
  */
 template<class Object, class Source>
 class Range
 {
 public:
+	/// Constructor.
 	Range(const Source * src, unsigned int begin, unsigned int end)
 	: source_(src), begin_(begin), end_(end) {
 		ASSERT_LE(begin, end).error("Invalid range, begin is greater than end!");
 	}
 
+	/// Iterator to begin item of range.
 	Iter<Object> begin() {
 		return make_iter<Object>( Object(source_, begin_) );
 	}
 
+	/// Iterator to end item of range.
 	Iter<Object> end() {
 		return make_iter<Object>( Object(source_, end_) );
 	}
 
+	/// Size of range.
 	inline unsigned int size() const {
 		return end_ - begin_;
 	}
