@@ -16,6 +16,7 @@
  */
 
 #include "fields/fe_value_handler.hh"
+#include "fields/vec_seq_double.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"

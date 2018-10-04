@@ -20,13 +20,20 @@
 
 #include <vector>
 #include <memory>
+#include "system/system.hh"
 #include "system/global_defs.h"
 
-#include <petscvec.h>
-
+#include "fields/fe_value_handler.hh"
+#include "fields/field_fe.hh"
+#include "fem/fe_p.hh"
+#include "fem/mapping_p1.hh"
+#include "fem/fe_system.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 
+#include <petscvec.h>
+
+class Mesh;
 template <int spacedim, class Value> class FieldFE;
 
 
@@ -48,8 +55,7 @@ public:
     typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
     /// Constructor.
-    VectorSeqDouble()
-    : dh_(nullptr) {}
+    VectorSeqDouble() {}
 
     /// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
@@ -89,18 +95,6 @@ public:
 	}
 
 
-	/// Create and return shared pointer to FieldFE object
-	template <int spacedim, class Value>
-	std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp);
-
-	/**
-	 * Fill output data of field_ptr.
-	 *
-	 * Set data to data vector of field in correct order according to values of DOF handler indices.
-	 */
-	template <int spacedim, class Value>
-	void fill_output_data(std::shared_ptr<FieldFE<spacedim, Value> > field_ptr);
-
 	/// Destructor.
 	~VectorSeqDouble()
 	{
@@ -121,14 +115,87 @@ private:
 	VectorSeq data_ptr_;
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
-    /// Finite element objects (allow to create DOF handler)
-	FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
-	// DOF handler object allow create FieldFE
-	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
+
+
+/// Create and return shared pointer to FieldFE object
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorSeqDouble & vec_seq, Mesh & mesh, unsigned int n_comp)
+{
+	static MappingP1<1,3> map1;
+	static MappingP1<2,3> map2;
+	static MappingP1<3,3> map3;
+
+	std::shared_ptr<DOFHandlerMultiDim> dh; // DOF handler object allow create FieldFE
+	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
+	FiniteElement<1> *fe1;
+	FiniteElement<2> *fe2;
+	FiniteElement<3> *fe3;
+
+	switch (n_comp) { // by number of components
+		case 1: { // scalar
+			fe0 = new FE_P_disc<0>(0);
+			fe1 = new FE_P_disc<1>(0);
+			fe2 = new FE_P_disc<2>(0);
+			fe3 = new FE_P_disc<3>(0);
+			break;
+		}
+		case 3: { // vector
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
+			break;
+		}
+		case 9: { // tensor
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
+			break;
+		}
+		default:
+			ASSERT(false).error("Should not happen!\n");
+	}
+
+	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
+	dh->distribute_dofs(ds, true);
+
+	VectorSeqDouble *data_vec = new VectorSeqDouble();
+	data_vec->resize( vec_seq.size() );
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+	field_ptr->set_fe_data(dh, &map1, &map2, &map3, data_vec);
+	return field_ptr;
+}
+
+/**
+ * Fill output data of field_ptr.
+ *
+ * Set data to data vector of field in correct order according to values of DOF handler indices.
+ */
+template <int spacedim, class Value>
+void fill_output_data(VectorSeqDouble & vec_seq, std::shared_ptr<FieldFE<spacedim, Value> > field_ptr)
+{
+	auto dh = field_ptr->get_dofhandler();
+	unsigned int ndofs = dh->max_elem_dofs();
+	unsigned int idof; // iterate over indices
+	std::vector<LongIdx> indices(ndofs);
+
+	for (auto ele : dh->mesh()->elements_range()) {
+		dh->get_dof_indices(ele, indices);
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.get_data_ptr())[ ndofs*ele.idx()+idof ];
+	}
+}
+
 
 /**
  * Like VectorSeqDouble but for MPI PETSC vectors. Have acces to local part.

@@ -125,6 +125,14 @@ public:
      */
     unsigned int data_size() const;
 
+    inline std::shared_ptr<DOFHandlerMultiDim> get_dofhandler() const {
+    	return dh_;
+    }
+
+    inline VectorSeqDouble *get_data_vec() const {
+    	return data_vec_;
+    }
+
 
     /// Destructor.
 	virtual ~FieldFE();
@@ -199,8 +207,6 @@ private:
 
     /// Registrar of class to factory
     static const int registrar;
-
-    friend class VectorSeqDouble;
 };
 
 

@@ -18,7 +18,6 @@
 #ifndef FE_VALUE_HANDLER_HH_
 #define FE_VALUE_HANDLER_HH_
 
-#include "fields/vec_seq_double.hh"
 #include "fields/field_values.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
@@ -26,6 +25,7 @@
 #include "mesh/long_idx.hh"
 #include <armadillo>
 
+class VectorSeqDouble;
 template <int spacedim> class ElementAccessor;
 
 

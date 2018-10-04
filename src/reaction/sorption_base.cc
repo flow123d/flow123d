@@ -346,7 +346,7 @@ void SorptionBase::initialize_fields()
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	  output_field_ptr[sbi] = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+	  output_field_ptr[sbi] = create_field<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], *mesh_, 1);
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
@@ -639,7 +639,7 @@ void SorptionBase::output_data(void )
     }
 
     for (unsigned int sbi = 0; sbi < substances_.size(); sbi++) {
-    	conc_solid_out[sbi].fill_output_data(output_field_ptr[sbi]);
+    	fill_output_data(conc_solid_out[sbi], output_field_ptr[sbi]);
     }
 
     // Register fresh output data
