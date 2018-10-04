@@ -437,6 +437,8 @@ set(PETSC_EXPORT_LIST
 message(STATUS "PETSC_DIR = ${PETSC_DIR}")
 message(STATUS "PETSC_ARCH = ${PETSC_ARCH}")
 
+find_package(MPI REQUIRED)
+set(ORIG_MPI_INCLUDE ${MPI_CXX_INCLUDE_PATH})
 find_package(PETSc 3.6.0 REQUIRED)
 flow_define(HAVE_PETSC)
 flow_define(HAVE_MPI)
@@ -653,6 +655,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/third_party/FADBAD++
     ${PETSC_INCLUDES}
     ${PYTHON_INCLUDE_DIRS}
+    ${ORIG_MPI_INCLUDE}
     
     ${Boost_INCLUDE_DIR}
     ${Armadillo_INCLUDE_DIRS}
@@ -735,7 +738,7 @@ if(PETSC_MPIEXEC)
           message(STATUS "path does not point to valid location: ${RESOLVED_MPIEXEC} using ${PETSC_MPIEXEC}")
           # set MPIEXEC_PATH to full path of PETSC_MPIEXEC
           execute_process(COMMAND
-              which ${PETSC_MPIEXEC}
+              which mpirun
               OUTPUT_VARIABLE MPIEXEC_PATH OUTPUT_STRIP_TRAILING_WHITESPACE
           )
           get_filename_component(MPIEXEC_PATH "${MPIEXEC_PATH}" REALPATH)
@@ -894,7 +897,12 @@ message(STATUS "YamlCpp:    ${YamlCpp_LIBRARY}")
 message(STATUS "PugiXml:    ${PugiXml_LIBRARY}")
 message(STATUS "ZLib:       ${Zlib_LIBRARY}")
 message(STATUS "===========================================")
-
+message(STATUS "INCLUDE_DIRECTORIES:")
+ get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS " - ${dir}")
+endforeach()
+message(STATUS "===========================================")
 
 
 ####################################################################################
