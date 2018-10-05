@@ -644,6 +644,10 @@ include_directories(
 #    ${CMAKE_SOURCE_DIR}/third_party/tbb43_20150316oss/include
 )
 
+if (BDDCML_FOUND)
+    include_directories(${BDDCML_INCLUDES})
+endif()
+
 ######################################################################################################################
 # custom targets
 
