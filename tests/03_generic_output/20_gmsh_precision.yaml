@@ -1,0 +1,33 @@
+# Test goal: Testing the output precision in GMSH format.
+# Author: Pavel Exner
+# Source for reference: Compare mesh data with the mesh on input.
+# The reference data (node coordinates) were taken from the original mesh.
+# Precision is set to 10 digits, also ndiff tolerance is set to 1e-10 in config.yaml.
+# Only conductivity (given constant) is written, so it is accurate and no linear solver error is involved
+# in the output file.
+
+flow123d_version: 2.0.0
+problem: !Coupling_Sequential
+  description: 'Testing the output precision in GMSH format.'
+  mesh:
+    mesh_file: ../00_mesh/cube_1x1x1_frac.msh
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: BULK
+        conductivity: 0.02
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: x+y
+    output:
+      fields:
+        - conductivity
+    balance: {}
+    output_stream:
+      file: flow.msh
+      format: !gmsh
+      precision: 10
