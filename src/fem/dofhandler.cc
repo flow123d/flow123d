@@ -552,6 +552,23 @@ void DOFHandlerMultiDim::make_elem_partitioning()
         }
       }
     }
+    for (auto nb : nb_4_loc)
+    {
+        auto cell = mesh_->vb_neighbours_[nb].element();
+        if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
+        {
+            ghost_4_loc.push_back(cell.idx());
+            ghost_proc.insert(cell.proc());
+            ghost_proc_el[cell.proc()].push_back(cell.idx());
+        }
+        cell = mesh_->vb_neighbours_[nb].side()->element();
+        if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
+        {
+            ghost_4_loc.push_back(cell.idx());
+            ghost_proc.insert(cell.proc());
+            ghost_proc_el[cell.proc()].push_back(cell.idx());
+        }
+    }
 }
 
 
