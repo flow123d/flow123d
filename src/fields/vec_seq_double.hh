@@ -118,7 +118,15 @@ private:
 };
 
 
-/// Create and return shared pointer to FieldFE object
+/**
+ * Method creates FieldFE of existing VectorSeqDouble that represents elementwise field.
+ *
+ * It's necessary to create new VectorSeqDouble of FieldFE, because DOF handler has generally
+ * a different ordering than mesh.
+ * Then is need to call fill_output_data method.
+ *
+ * Temporary solution that will be remove after solving issue 995.
+ */
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorSeqDouble & vec_seq, Mesh & mesh, unsigned int n_comp)
 {
@@ -132,7 +140,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorSeqDouble & vec_se
 	FiniteElement<2> *fe2;
 	FiniteElement<3> *fe3;
 
-	switch (n_comp) { // by number of components
+	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
 		case 1: { // scalar
 			fe0 = new FE_P_disc<0>(0);
 			fe1 = new FE_P_disc<1>(0);
@@ -166,21 +174,27 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorSeqDouble & vec_se
 			ASSERT(false).error("Should not happen!\n");
 	}
 
+	// Prepare DOF handler
 	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
 	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
 	dh->distribute_dofs(ds, true);
 
+	// Prepare new empty VectorSeqDouble with corresponding size
 	VectorSeqDouble *data_vec = new VectorSeqDouble();
 	data_vec->resize( vec_seq.size() );
+
+	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
 	field_ptr->set_fe_data(dh, &map1, &map2, &map3, data_vec);
 	return field_ptr;
 }
 
 /**
- * Fill output data of field_ptr.
+ * Fill data to VecSeqDouble in order corresponding with element DOFs.
  *
  * Set data to data vector of field in correct order according to values of DOF handler indices.
+ *
+ * Temporary solution that will be remove after solving issue 995.
  */
 template <int spacedim, class Value>
 void fill_output_data(VectorSeqDouble & vec_seq, std::shared_ptr<FieldFE<spacedim, Value> > field_ptr)
@@ -190,6 +204,7 @@ void fill_output_data(VectorSeqDouble & vec_seq, std::shared_ptr<FieldFE<spacedi
 	unsigned int idof; // iterate over indices
 	std::vector<LongIdx> indices(ndofs);
 
+	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
 	for (auto ele : dh->mesh()->elements_range()) {
 		dh->get_dof_indices(ele, indices);
 		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.get_data_ptr())[ ndofs*ele.idx()+idof ];
