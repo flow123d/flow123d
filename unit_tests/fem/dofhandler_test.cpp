@@ -37,15 +37,17 @@ TEST(DOFHandler, test_all) {
     FE_P<3> fe3(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds, true);
+    dh.distribute_dofs(ds);
     
     EXPECT_EQ( 8, dh.n_global_dofs() );
+    
+    auto dh_seq = dh.sequential();
     
     std::vector<int> indices[5];
     for (unsigned int i=0; i<5; i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      dh.get_dof_indices(mesh->element_accessor(i), indices[i]);
+      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is shared by elements 2, 3
@@ -102,15 +104,17 @@ TEST(DOFHandler, test_all) {
     FE_P<3> fe3(1);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds, true);
+    dh.distribute_dofs(ds);
     
     EXPECT_EQ( 15, dh.n_global_dofs() );
+    
+    auto dh_seq = dh.sequential();
     
     std::vector<int> indices[mesh->n_elements()];
     for (unsigned int i=0; i<mesh->n_elements(); i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      dh.get_dof_indices(mesh->element_accessor(i), indices[i]);
+      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is not shared by elements 1, 4, 5
