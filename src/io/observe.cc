@@ -260,7 +260,7 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 void ObservePoint::output(ostream &out, unsigned int indent_spaces, unsigned int precision)
 {
     out << setw(indent_spaces) << "" << "- name: " << name_ << endl;
-    out << setw(indent_spaces) << "" << "  init_point: " << field_value_to_yaml(input_point_) << endl;
+    out << setw(indent_spaces) << "" << "  init_point: " << field_value_to_yaml(input_point_, precision) << endl;
     out << setw(indent_spaces) << "" << "  snap_dim: " << snap_dim_ << endl;
     out << setw(indent_spaces) << "" << "  snap_region: " << snap_region_name_ << endl;
     out << setw(indent_spaces) << "" << "  observe_point: " << field_value_to_yaml(global_coords_, precision) << endl;
