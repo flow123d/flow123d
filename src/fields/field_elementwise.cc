@@ -70,6 +70,7 @@ FieldElementwise<spacedim, Value>::FieldElementwise( unsigned int n_comp)
 
 {
     n_components_ = this->value_.n_rows() * this->value_.n_cols();
+    this->is_constant_in_space_ = false;
 }
 
 

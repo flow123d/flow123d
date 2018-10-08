@@ -241,6 +241,13 @@ public:
        {}
 
        /**
+        * Return true if field is only dependent on time.
+        */
+       inline bool is_constant_in_space() const {
+    	   return is_constant_in_space_;
+       }
+
+       /**
         * Virtual destructor.
         */
        virtual ~FieldAlgorithmBase() {}
@@ -260,6 +267,8 @@ protected:
        unsigned int component_idx_;
        /// Coeficient of conversion of user-defined unit
        double unit_conversion_coefficient_;
+       /// Flag detects that field is only dependent on time
+       bool is_constant_in_space_;
 };
 
 

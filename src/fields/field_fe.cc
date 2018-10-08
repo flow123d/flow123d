@@ -119,7 +119,9 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   data_vec_(nullptr),
   field_name_("")
-{}
+{
+	this->is_constant_in_space_ = false;
+}
 
 
 template <int spacedim, class Value>
