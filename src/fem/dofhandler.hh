@@ -70,7 +70,7 @@ public:
      */
     const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
-    Distribution *distr() const { return dof_ds_; }
+    std::shared_ptr<Distribution> distr() const { return dof_ds_; }
 
     /**
      * @brief Returns the mesh.
@@ -129,7 +129,7 @@ protected:
     /**
      * @brief Distribution of dofs associated to local process.
      */
-     Distribution *dof_ds_;
+     std::shared_ptr<Distribution> dof_ds_;
 
 };
 

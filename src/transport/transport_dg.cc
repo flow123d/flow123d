@@ -324,11 +324,11 @@ void TransportDG<Model>::initialize()
     ret_vec.resize(Model::n_substances(), nullptr);
 
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-        ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
+        ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         ls[sbi]->set_solution(NULL);
 
-        ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
+        ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
         
@@ -1189,7 +1189,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		}
         fe_values_side.reinit(cell, nb->side()->side_idx());
         n_dofs[1] = fv_sb[1]->n_dofs();
-
+        
         // Element id's for testing if they belong to local partition.
         int element_id[2];
         element_id[0] = cell_sub.idx();

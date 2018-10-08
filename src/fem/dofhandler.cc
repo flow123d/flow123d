@@ -31,9 +31,7 @@
 
 
 DOFHandlerBase::~DOFHandlerBase()
-{
-  if (dof_ds_ != nullptr) delete dof_ds_;
-}
+{}
 
 
 
@@ -341,7 +339,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     lsize_ = next_free_dof;
 
     // communicate n_dofs across all processes
-    dof_ds_ = new Distribution(lsize_, PETSC_COMM_WORLD);
+    dof_ds_ = std::make_shared<Distribution>(lsize_, PETSC_COMM_WORLD);
     n_global_dofs_ = dof_ds_->size();
     
     // shift dof indices
@@ -394,7 +392,7 @@ void DOFHandlerMultiDim::create_sequential()
   dh_seq_->lsize_ = n_global_dofs_;
   dh_seq_->loffset_ = 0;
   dh_seq_->mesh_ = mesh_;
-  dh_seq_->dof_ds_ = nullptr;  // should be sequential distribution
+  dh_seq_->dof_ds_ = dof_ds_;  // should be sequential distribution
   dh_seq_->ds_ = ds_;
   dh_seq_->is_parallel_ = false;
   
