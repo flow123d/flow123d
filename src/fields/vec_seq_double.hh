@@ -220,11 +220,12 @@ public:
     typedef typename std::vector<double> VectorData;
     typedef typename std::shared_ptr< VectorData > VectorDataPtr;
 
-    VectorMPI() {
-    }
+    VectorMPI(MPI_Comm comm = PETSC_COMM_WORLD)
+    : communicator_(comm) {}
 
     /// Create shared pointer and PETSC vector with given size. COLLECTIVE.
-    VectorMPI(unsigned int local_size) {
+    VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_WORLD)
+    : communicator_(comm) {
         resize(local_size);
     }
 
@@ -240,12 +241,16 @@ public:
             chkerr(VecDestroy(&data_petsc_));
             data_ptr_->resize(local_size);
         }
-        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
+        if (communicator_ == PETSC_COMM_SELF)
+        	chkerr(VecCreateSeqWithArray(PETSC_COMM_SELF, 1, local_size, &((*data_ptr_)[0]), &data_petsc_));
+        else
+        	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
         chkerr(VecZeroEntries( data_petsc_ ));
     }
 
     /// Return new vector with same parallel structure.
     void duplicate(VectorMPI other) {
+    	ASSERT_EQ(this->communicator_, other.communicator_);
         this->resize(other.data().size());
     }
 
@@ -282,7 +287,8 @@ public:
     }*/
 
     void swap(VectorMPI &other) {
-        OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
+    	ASSERT_EQ(this->communicator_, other.communicator_);
+        ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
         uint size = this->data_ptr_->size();
         std::swap(this->data_ptr_, other.data_ptr_);
         chkerr(VecDestroy(&data_petsc_));
@@ -293,7 +299,8 @@ public:
 
 
     void copy(VectorMPI &other) {
-        OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
+    	ASSERT_EQ(this->communicator_, other.communicator_);
+        ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
         chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
 
@@ -319,6 +326,8 @@ private:
     VectorDataPtr data_ptr_;
     /// stored vector of data in PETSC format
     Vec data_petsc_;
+    /// communicator
+    MPI_Comm communicator_;
 };
 
 
