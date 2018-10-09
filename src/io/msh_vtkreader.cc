@@ -271,7 +271,7 @@ BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::Head
 
 		// check discretization
 		if (header_query.discretization != table_it->second.discretization) {
-			if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
+			if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED && header_query.discretization != OutputTime::DiscreteSpace::NATIVE_DATA) {
 				WarningOut().fmt(
 						"Invalid value of 'input_discretization' for field '{}', time: {}.\nCorrect discretization type will be used.\n",
 						header_query.field_name, header_query.time);
@@ -285,13 +285,13 @@ BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::Head
 			}
 		actual_header_ = table_it->second;
 	} else {
-		HeaderTable::iterator table_it;
+		/*HeaderTable::iterator table_it;
 		for (table_it=header_table_.equal_range(header_query.field_name).first; table_it!=header_table_.equal_range(header_query.field_name).second; ++table_it) {
 			if (header_query.discretization != table_it->second.discretization) {
 				header_query.dof_handler_hash = table_it->second.dof_handler_hash;
 				actual_header_ = table_it->second;
 			}
-		}
+		}*/
 		THROW( ExcMissingFieldDiscretization() << EI_FieldName(header_query.field_name) << EI_Time(header_query.time) << EI_MeshFile(tok_.f_name()));
 	}
 

@@ -166,7 +166,7 @@ public:
 			//cout << "box: " << box <<endl;
 
 			vector<unsigned int> bf_result;
-			for (auto ele : mesh->bulk_elements_range()) {
+			for (auto ele : mesh->elements_range()) {
 				EXPECT_EQ( box.intersect(ele.bounding_box()) , ele.bounding_box().intersect(box) );
 				if (box.intersect(ele.bounding_box()) ) bf_result.push_back( ele.idx() );
 			}
@@ -199,7 +199,7 @@ public:
 			//cout << "point: " << point << endl;
 
 			vector<unsigned int> bf_point_result;
-			for (auto ele : mesh->bulk_elements_range()) {
+			for (auto ele : mesh->elements_range()) {
 				if (ele.bounding_box().contains_point(point) ) bf_point_result.push_back( ele.idx() );
 			}
 
@@ -330,7 +330,7 @@ TEST(BIH_Tree_Test, bih_tree_above_region) {
 
         // make element boxes
         unsigned int i=0;
-        for (auto element : mesh->bulk_elements_range()) {
+        for (auto element : mesh->elements_range()) {
         	if (element.region().is_in_region_set(region_set)) {
                 boxes.push_back(element.bounding_box());
                 elm_idx.push_back(i);

@@ -21,8 +21,6 @@
 #include "petscmat.h"
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
-#include "fields/vec_seq_double.hh"
-#include "fields/fe_value_handler.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
@@ -34,6 +32,9 @@
 
 #include <memory>
 
+class VectorSeqDouble;
+template<unsigned int dim, unsigned int spacedim> class MappingP1;
+template <int elemdim, int spacedim, class Value> class FEValueHandler;
 
 
 /**
@@ -77,6 +78,14 @@ public:
 			VectorSeqDouble *data);
 
     /**
+     * Postponed setter of Dof handler.
+     *
+     * Allow to set native Dof handler after set_mesh.
+     * @param dh   Dof handler.
+     */
+    void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh) override;
+
+    /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
      */
     virtual typename Value::return_type const &value(const Point &p, const ElementAccessor<spacedim> &elm);
@@ -114,9 +123,7 @@ public:
     /**
      * Return size of vector of data stored in Field
      */
-    inline unsigned int data_size() const {
-    	return data_vec_->size();
-    }
+    unsigned int data_size() const;
 
 
     /// Destructor.
@@ -132,6 +139,11 @@ private:
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
+	/// Ensure data setting of methods set_fe_data and set_native_dh.
+	void reinit_fe_data(MappingP1<1,3> *map1,
+			MappingP1<2,3> *map2,
+			MappingP1<3,3> *map3);
+
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
@@ -139,6 +151,8 @@ private:
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices_;
 
+    /// Value handler that allows get value of 0D elements.
+    FEValueHandler<0, spacedim, Value> value_handler0_;
     /// Value handler that allows get value of 1D elements.
     FEValueHandler<1, spacedim, Value> value_handler1_;
     /// Value handler that allows get value of 2D elements.
@@ -147,10 +161,12 @@ private:
     FEValueHandler<3, spacedim, Value> value_handler3_;
 
     /**
-     * Used in DOFHandler::distribute_dofs method. Represents 1D element.
+     * Used in DOFHandler::distribute_dofs method. Represents 0D element.
      *
      * For correct functionality must be created proper descendant of FiniteElement class.
      */
+    FiniteElement<0> *fe0_;
+    /// Same as previous, but represents 1D element.
     FiniteElement<1> *fe1_;
     /// Same as previous, but represents 2D element.
     FiniteElement<2> *fe2_;
@@ -175,8 +191,16 @@ private:
     /// Accessor to Input::Record
     Input::Record in_rec_;
 
+    /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
+    bool boundary_domain_;
+
+    /// Flag that determines if source mesh and target mesh are compatible
+    bool has_compatible_mesh_;
+
     /// Registrar of class to factory
     static const int registrar;
+
+    friend class VectorSeqDouble;
 };
 
 

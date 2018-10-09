@@ -5,9 +5,9 @@
  *      Author: jb
  */
 
+#define TEST_USE_PETSC
 #define FEAL_OVERRIDE_ASSERTS
-
-#include <flow_gtest.hh>
+#include <flow_gtest_mpi.hh>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -46,7 +46,8 @@ TEST(ReaderCache, get_bulk_element_) {
     auto reader = ReaderCache::get_reader(file_name);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-    reader->check_compatible_mesh(*mesh);
+    mesh->setup_topology();
+    ReaderCache::check_compatible_mesh(file_name, *mesh);
 
     // read  by components for MultiField
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);
@@ -127,7 +128,8 @@ TEST(ReaderCache, find_header) {
     auto reader = ReaderCache::get_reader(file_name);
     reader->read_physical_names(mesh);
     reader->read_raw_mesh(mesh);
-    reader->check_compatible_mesh(*mesh);
+    mesh->setup_topology();
+    ReaderCache::check_compatible_mesh(file_name, *mesh);
     delete mesh;
 
     BaseMeshReader::HeaderQuery header_params("vector_fixed", 0.0, OutputTime::DiscreteSpace::ELEM_DATA);

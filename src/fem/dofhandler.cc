@@ -38,7 +38,7 @@ DOFHandlerBase::~DOFHandlerBase()
 
 
 
-DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
+DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 	: DOFHandlerBase(_mesh),
 	  ds_(nullptr),
 	  is_parallel_(true),
@@ -48,7 +48,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh)
 	  el_4_loc(nullptr),
 	  el_ds_(nullptr)
 {
-	make_elem_partitioning();
+	if (make_elem_part) make_elem_partitioning();
 }
 
 
@@ -532,7 +532,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
         node_4_loc.push_back(nid);
     
     // create array of local ghost cells
-    for ( auto cell : mesh_->bulk_elements_range() )
+    for ( auto cell : mesh_->elements_range() )
     {
       if (cell.proc() != el_ds_->myp())
       {
@@ -581,7 +581,4 @@ bool DOFHandlerMultiDim::el_is_local(int index) const
 std::size_t DOFHandlerMultiDim::hash() const {
 	return this->n_global_dofs_;
 }
-
-
-
 

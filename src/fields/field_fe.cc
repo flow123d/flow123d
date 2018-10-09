@@ -19,9 +19,12 @@
 #include <limits>
 
 #include "fields/field_fe.hh"
+#include "fields/vec_seq_double.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
+#include "fields/fe_value_handler.hh"
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
+#include "fem/fe_system.hh"
 #include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/accessors.hh"
@@ -88,8 +91,11 @@ template <int spacedim, class Value>
 FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   data_vec_(nullptr),
-  field_name_("")
-{}
+  field_name_(""),
+  has_compatible_mesh_(false)
+{
+	this->is_constant_in_space_ = false;
+}
 
 
 template <int spacedim, class Value>
@@ -101,6 +107,26 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
 {
     dh_ = dh;
     data_vec_ = data;
+    reinit_fe_data(map1, map2, map3);
+}
+
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
+{
+    dh_ = dh;
+    reinit_fe_data(nullptr, nullptr, nullptr);
+}
+
+
+
+template <int spacedim, class Value>
+void FieldFE<spacedim, Value>::reinit_fe_data(MappingP1<1,3> *map1,
+		MappingP1<2,3> *map2,
+		MappingP1<3,3> *map3)
+{
+	//ASSERT_EQ(dh_->n_global_dofs(), data_vec_->size());
 
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
@@ -113,6 +139,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
 	init_data.n_comp = this->n_comp();
 
 	// initialize value handler objects
+	value_handler0_.initialize(init_data);
 	value_handler1_.initialize(init_data, map1);
 	value_handler2_.initialize(init_data, map2);
 	value_handler3_.initialize(init_data, map3);
@@ -130,6 +157,8 @@ template <int spacedim, class Value>
 typename Value::return_type const & FieldFE<spacedim, Value>::value(const Point &p, const ElementAccessor<spacedim> &elm)
 {
 	switch (elm.dim()) {
+	case 0:
+		return value_handler0_.value(p, elm);
 	case 1:
 		return value_handler1_.value(p, elm);
 	case 2:
@@ -155,6 +184,9 @@ void FieldFE<spacedim, Value>::value_list (const std::vector< Point > &point_lis
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	switch (elm.dim()) {
+	case 0:
+		value_handler0_.value_list(point_list, elm, value_list);
+		break;
 	case 1:
 		value_handler1_.value_list(point_list, elm, value_list);
 		break;
@@ -196,8 +228,9 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 	// Mesh can be set only for field initialized from input.
 	if ( flags_.match(FieldFlag::equation_input) && flags_.match(FieldFlag::declare_input) ) {
 		ASSERT(field_name_ != "").error("Uninitialized FieldFE, did you call init_from_input()?\n");
+		this->boundary_domain_ = boundary_domain;
 		this->make_dof_handler(mesh);
-		ReaderCache::get_reader(reader_file_)->check_compatible_mesh( *(dh_->mesh()) );
+		this->has_compatible_mesh_ = ReaderCache::check_compatible_mesh(reader_file_, const_cast<Mesh &>(*mesh) );
 	}
 }
 
@@ -206,12 +239,42 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	// temporary solution - these objects will be set through FieldCommon
-	fe1_ = new FE_P_disc<1>(0);
-	fe2_ = new FE_P_disc<2>(0);
-	fe3_ = new FE_P_disc<3>(0);
+	switch (this->value_.n_rows() * this->value_.n_cols()) { // by number of components
+		case 1: { // scalar
+			fe0_ = new FE_P_disc<0>(0);
+			fe1_ = new FE_P_disc<1>(0);
+			fe2_ = new FE_P_disc<2>(0);
+			fe3_ = new FE_P_disc<3>(0);
+			break;
+		}
+		case 3: { // vector
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0_ = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
+			fe1_ = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
+			fe2_ = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
+			fe3_ = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
+			break;
+		}
+		case 9: { // tensor
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0_ = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
+			fe1_ = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
+			fe2_ = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
+			fe3_ = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
+			break;
+		}
+		default:
+			ASSERT(false).error("Should not happen!\n");
+	}
 
 	DOFHandlerMultiDim dh_par( const_cast<Mesh &>(*mesh) );
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe1_, fe2_, fe3_);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe0_, fe1_, fe2_, fe3_);
 	dh_par.distribute_dofs(ds);
     dh_ = dh_par.sequential();
     unsigned int ndofs = dh_->max_elem_dofs();
@@ -230,6 +293,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.n_comp = this->n_comp();
 
 	// initialize value handler objects
+	value_handler0_.initialize(init_data);
 	value_handler1_.initialize(init_data);
 	value_handler2_.initialize(init_data);
 	value_handler3_.initialize(init_data);
@@ -246,7 +310,6 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		if ( reader_file_ == FilePath() ) return false;
 
 		unsigned int n_components = this->value_.n_rows() * this->value_.n_cols();
-		bool boundary_domain = false;
 		double time_unit_coef = time.read_coef(in_rec_.find<string>("time_unit"));
 		double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 		double read_time = (time.end()+time_shift) / time_unit_coef;
@@ -255,21 +318,23 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 		// TODO: use default and check NaN values in data_vec
 
 		unsigned int n_entities;
-		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+		bool is_native = (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA);
+		if (is_native || this->has_compatible_mesh_) {
 			n_entities = dh_->mesh()->n_elements();
 		} else {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 		}
 		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
-				boundary_domain, this->component_idx_);
+				this->boundary_domain_, this->component_idx_);
 		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
+
 
 	    if (checked_data == CheckResult::not_a_number) {
 	        THROW( ExcUndefElementValue() << EI_Field(field_name_) );
 	    }
 
-		if (header_query.discretization == OutputTime::DiscreteSpace::NATIVE_DATA) {
+		if (is_native || this->has_compatible_mesh_) {
 			this->calculate_native_values(data_vec);
 		} else {
 			this->interpolate(data_vec);
@@ -284,12 +349,13 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDataPtr data_vec)
 {
+	ASSERT(!this->boundary_domain_)(field_name_).error("Interpolation of boundary FieldFE is not supported yet.\n");
 	std::shared_ptr<Mesh> source_mesh = ReaderCache::get_mesh(reader_file_);
 	std::vector<double> sum_val(4);
 	std::vector<unsigned int> elem_count(4);
 	std::vector<unsigned int> searched_elements; // stored suspect elements in calculating the intersection
 
-	for (auto ele : dh_->mesh()->bulk_elements_range()) {
+	for (auto ele : dh_->mesh()->elements_range()) {
 		searched_elements.clear();
 		source_mesh->get_bih_tree().find_point(ele.centre(), searched_elements);
 		std::fill(sum_val.begin(), sum_val.end(), 0.0);
@@ -298,14 +364,17 @@ void FieldFE<spacedim, Value>::interpolate(ElementDataCache<double>::ComponentDa
 			ElementAccessor<3> elm = source_mesh->element_accessor(*it);
 			bool contains=false;
 			switch (elm->dim()) {
+			case 0:
+				contains = arma::norm(elm.node(0)->point()-ele.centre(), 2) < 4*std::numeric_limits<double>::epsilon();
+				break;
 			case 1:
-				contains = value_handler1_.contains_point(ele.centre(), elm);
+				contains = value_handler1_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
 			case 2:
-				contains = value_handler2_.contains_point(ele.centre(), elm);
+				contains = value_handler2_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
 			case 3:
-				contains = value_handler3_.contains_point(ele.centre(), elm);
+				contains = value_handler3_.get_mapping()->contains_point(ele.centre(), elm);
 				break;
 			default:
 				ASSERT(false).error("Invalid element dimension!");
@@ -343,7 +412,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
-	for (auto ele : dh_->mesh()->bulk_elements_range()) {
+	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
 		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
@@ -367,7 +436,7 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 	unsigned int i, dof_filled_size;
 
 	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
-	for (auto ele : dh_->mesh()->bulk_elements_range()) {
+	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
 		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
@@ -375,6 +444,13 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 	}
 
 	output_data_cache.set_dof_handler_hash( dh_->hash() );
+}
+
+
+
+template <int spacedim, class Value>
+inline unsigned int FieldFE<spacedim, Value>::data_size() const {
+	return data_vec_->size();
 }
 
 

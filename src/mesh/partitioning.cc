@@ -102,7 +102,7 @@ void Partitioning::make_element_connection_graph() {
     // Add nigbouring edges only for "any_*" graph types
     bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
 
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
         // skip non-local elements
         if ( !edistr.is_local( ele.idx() ) )
             continue;

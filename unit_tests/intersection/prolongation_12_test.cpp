@@ -78,7 +78,7 @@ void compute_intersection_12d(Mesh *mesh, const std::vector<std::vector<arma::ve
 //     }
     
 //     //write the first intersection
-//     for (auto elm : mesh->bulk_elements_range()) {
+//     for (auto elm : mesh->elements_range()) {
 //         
 //         if( (elm->dim() == 1) && (ie.intersection_map_[elm.index()].size() > 0) )
 //         {

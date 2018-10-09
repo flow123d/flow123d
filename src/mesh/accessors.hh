@@ -107,7 +107,14 @@ public:
         return boundary_;
     }
 
+    /// Return local idx of element in boundary / bulk part of element vector
     inline unsigned int idx() const {
+        if (boundary_) return ( element_idx_ - mesh_->bulk_size_ );
+        else return element_idx_;
+    }
+
+    /// Return global idx of element in full element vector
+    inline unsigned int mesh_idx() const {
         return element_idx_;
     }
 

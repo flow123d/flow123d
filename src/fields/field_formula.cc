@@ -72,6 +72,7 @@ FieldFormula<spacedim, Value>::FieldFormula( unsigned int n_comp)
   formula_matrix_(this->value_.n_rows(), this->value_.n_cols()),
   first_time_set_(true)
 {
+	this->is_constant_in_space_ = false;
     parser_matrix_.resize(this->value_.n_rows());
     for(unsigned int row=0; row < this->value_.n_rows(); row++) {
         parser_matrix_[row].resize(this->value_.n_cols());
@@ -97,6 +98,7 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
     bool any_parser_changed = false;
     std::string value_input_address = in_rec_.address_string();
     has_depth_var_ = false;
+    this->is_constant_in_space_ = true; // set flag to true, then if found 'x', 'y', 'z' or 'd' reset to false
 
 
     std::string vars = string("x,y,z").substr(0, 2*spacedim-1);
@@ -123,13 +125,17 @@ bool FieldFormula<spacedim, Value>::set_time(const TimeStep &time) {
             BOOST_FOREACH(std::string &var_name, var_list ) {
                 if (var_name == std::string("t") ) time_dependent[row*this->value_.n_rows()+col]=true;
                 else if (var_name == std::string("d") ) {
+                	this->is_constant_in_space_ = false;
                 	if (surface_depth_)
                 		has_depth_var_=true;
                 	else
                     	WarningOut().fmt("Unset surface region. Variable '{}' in the FieldFormula[{}][{}] == '{}' will be set to zero\n at the input address:\n {} \n",
                                 var_name, row, col, formula_matrix_.at(row,col), value_input_address );
                 }
-                else if (var_name == "x" || var_name == "y" || var_name == "z") continue;
+                else if (var_name == "x" || var_name == "y" || var_name == "z") {
+                	this->is_constant_in_space_ = false;
+                	continue;
+                }
                 else
                 	WarningOut().fmt("Unknown variable '{}' in the  FieldFormula[{}][{}] == '{}'\n at the input address:\n {} \n",
                             var_name, row, col, formula_matrix_.at(row,col), value_input_address );

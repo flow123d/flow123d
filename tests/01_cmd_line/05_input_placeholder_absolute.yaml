@@ -14,7 +14,7 @@ problem: !Coupling_Sequential
         bc_pressure: 0.5
       - region: BULK
         anisotropy: 1
-        sigma: !FieldElementwise
+        sigma: !FieldFE
           # placeholder in absolute path
           mesh_data_file: $INPUT_DIR$/04_data.msh
           field_name: sigma

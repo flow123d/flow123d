@@ -255,6 +255,7 @@ void FESystem<dim>::compute_node_matrix()
 
 
 
+template class FESystem<0>;
 template class FESystem<1>;
 template class FESystem<2>;
 template class FESystem<3>;

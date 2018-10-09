@@ -54,6 +54,7 @@ namespace Input {
 		class Selection;
 	}
 }
+template <int spacedim, class Value> class FieldFE;
 
 
 //=============================================================================
@@ -97,8 +98,8 @@ public:
 		/// Initial concentrations.
 		MultiField<3, FieldValue<3>::Scalar> init_conc;
 
-		Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+		Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
         MultiField<3, FieldValue<3>::Scalar>    conc_mobile;    ///< Calculated concentrations in the mobile zone.
 
 
@@ -304,6 +305,11 @@ private:
     double **cumulative_corr;
 
     std::vector<VectorSeqDouble> out_conc;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    /// Fields correspond with \p out_conc.
+    std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
 
 	/// Record with input specification.
 	const Input::Record input_rec;
