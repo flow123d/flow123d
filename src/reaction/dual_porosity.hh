@@ -159,7 +159,7 @@ protected:
   //@{
   VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
-  std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
+  std::vector<VectorMPI> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
   //@}
   
   // Temporary objects holding pointers to appropriate FieldFE

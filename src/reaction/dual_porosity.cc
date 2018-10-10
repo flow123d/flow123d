@@ -385,13 +385,13 @@ void DualPorosity::allocate_output_mpi(void )
         VecZeroEntries(vconc_immobile[sbi]);
 
         //  if(rank == 0)
-        VecZeroEntries(conc_immobile_out[sbi].get_data_petsc());
+        VecZeroEntries(conc_immobile_out[sbi].petsc_vec());
     }
     
     // create output vector scatter
     IS is;
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_immobile[0], is, conc_immobile_out[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc_immobile[0], is, conc_immobile_out[0].petsc_vec(), PETSC_NULL, &vconc_out_scatter);
     ISDestroy(&(is));
 }
 
@@ -401,8 +401,8 @@ void DualPorosity::output_vector_gather()
     unsigned int sbi;
 
     for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
     }
 }
 

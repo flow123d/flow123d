@@ -609,13 +609,13 @@ void SorptionBase::allocate_output_mpi(void )
                 &vconc_solid[sbi]);
         VecZeroEntries(vconc_solid[sbi]);
 
-        VecZeroEntries(conc_solid_out[sbi].get_data_petsc());
+        VecZeroEntries(conc_solid_out[sbi].petsc_vec());
     }
     
     // creating output vector scatter
     IS is;
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_solid[0], is, conc_solid_out[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc_solid[0], is, conc_solid_out[0].petsc_vec(), PETSC_NULL, &vconc_out_scatter);
     ISDestroy(&(is));
 }
 
@@ -625,8 +625,8 @@ void SorptionBase::output_vector_gather()
     unsigned int sbi;
 
     for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
     }
 }
 

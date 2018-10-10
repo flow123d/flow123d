@@ -69,8 +69,7 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 
 	auto field_subdomain_data = mesh.get_part()->subdomain_id_field_data();
 	std::vector<LongIdx> indices(1);
-	VectorSeqDouble *data_vec = new VectorSeqDouble();
-	data_vec->resize(mesh.n_elements());
+	VectorMPI *data_vec = new VectorMPI(mesh.n_elements());
 	ASSERT_EQ(dh->max_elem_dofs(), 1);
 	for(unsigned int i_ele=0; i_ele<mesh.n_elements(); ++i_ele) {
 		ElementAccessor<3> ele = mesh.element_accessor(i_ele);
