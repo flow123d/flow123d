@@ -50,7 +50,7 @@ template <int spacedim, class Value> class FieldFE;
  *  - return pointer to PETSC vector
  *  - create shared pointer to FieldFE object corresponding with std::vector of double
  */
-class VectorSeqDouble {
+/*class VectorSeqDouble {
 public:
     typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
@@ -101,9 +101,7 @@ public:
 		if (data_ptr_) chkerr(VecDestroy(&data_petsc_));
 	}
 
-    /**
-     * Access to the vector element on index @p idx.
-     */
+    /// Access to the vector element on index @p idx.
     inline double &operator[](unsigned int idx)
     {
     	ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
@@ -115,7 +113,7 @@ private:
 	VectorSeq data_ptr_;
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
-};
+};*/
 
 
 /**

@@ -5,7 +5,7 @@
 #include "fields/vec_seq_double.hh"
 
 
-TEST(VecSeqDouble, vec_data) {
+/*TEST(VecSeqDouble, vec_data) {
 	PetscInitialize(0, PETSC_NULL, PETSC_NULL, PETSC_NULL);
 
 	unsigned int data_size = 5;
@@ -28,7 +28,7 @@ TEST(VecSeqDouble, vec_data) {
 
 	v.fill(0.0);
 	EXPECT_DOUBLE_EQ(0.0, v[0]);
-}
+}*/
 
 
 TEST(VecMPI, vec_data) {
