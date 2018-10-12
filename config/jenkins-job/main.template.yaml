@@ -355,7 +355,8 @@
           destination=$(pwd)/publish
 
           rm -rf publish && mkdir -p publish
-          git clone https://github.com/janhybs/flow123d-package.git
+          rm -rf flow123d-package
+          git clone https://github.com/flow123d/flow123d-package.git
 
           make -C flow123d-package \
                   destination=$destination \
