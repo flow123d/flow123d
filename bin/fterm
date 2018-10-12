@@ -423,8 +423,8 @@ esac
 # perform action based on variable action
 case $action in
   raw)
-    dbg docker run "$rest" $user_image
-    docker run "$rest" $user_image
+    dbg docker run $rest $user_image
+    docker run $rest $user_image
   ;;
   flow123d)
     dbg docker run --rm -it -w "$OLD_PWD" -v "$work":"$work" $user_image bash -lc "$ROOT/bin/flow123d $*"
