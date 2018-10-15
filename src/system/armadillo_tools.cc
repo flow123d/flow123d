@@ -81,10 +81,10 @@ string field_value_to_yaml_matrix(const T &mat, unsigned int prec) {
     ss.precision(prec);
     ss << "[ ";
     for(unsigned int i_row=0; i_row < mat.n_rows; i_row ++ ) {
-        if (i_row != 0) ss << ", ";
+        if (i_row != 0) ss << " , ";
         ss << "[ ";
         for(unsigned int i_col=0; i_col < mat.n_cols; i_col++) {
-            if (i_col != 0) ss << ", ";
+            if (i_col != 0) ss << " , ";
             ss << mat.at(i_row, i_col);
         }
         ss << " ]";
@@ -100,7 +100,7 @@ string field_value_to_yaml_vector(const T &vec, unsigned int prec) {
     ss.precision(prec);
     ss <<  "[ ";
     for(unsigned int i=0; i < vec.n_elem; i++) {
-        if (i != 0) ss << ", ";
+        if (i != 0) ss << " , ";
         ss << vec(i);
     }
     ss << " ]";

@@ -177,7 +177,7 @@ void ElementDataCache<T>::print_all_yaml(ostream &out_stream, unsigned int preci
     out_stream << "[ ";
 	std::vector<T> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-        if (idx != 0) out_stream << ", ";
+        if (idx != 0) out_stream << " , ";
         unsigned int vec_pos = n_elem_ * idx; // position of element value in data cache
         switch (this->n_elem_) {
             case NumCompValueType::N_SCALAR: {
