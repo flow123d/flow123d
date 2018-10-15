@@ -70,7 +70,9 @@ const int FieldInterpolatedP0<spacedim, Value>::registrar =
 template <int spacedim, class Value>
 FieldInterpolatedP0<spacedim, Value>::FieldInterpolatedP0(const unsigned int n_comp)
 : FieldAlgorithmBase<spacedim, Value>(n_comp)
-{}
+{
+	this->is_constant_in_space_ = false;
+}
 
 
 
