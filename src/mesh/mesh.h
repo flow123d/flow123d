@@ -49,7 +49,7 @@ class Neighbour;
 class SideIter;
 class BCMesh;
 class DuplicateNodes;
-template <class Object, class Source> class Range;
+template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
 
@@ -337,10 +337,10 @@ public:
     void init_node_vector(unsigned int size);
 
     /// Returns range of bulk elements
-    virtual Range<ElementAccessor<3>, Mesh> elements_range() const;
+    virtual Range<ElementAccessor<3>> elements_range() const;
 
     /// Returns range of nodes
-    Range<NodeAccessor<3>, Mesh> node_range() const;
+    Range<NodeAccessor<3>> node_range() const;
 
     /// Returns count of boundary or bulk elements
     virtual unsigned int n_elements(bool boundary=false) const {

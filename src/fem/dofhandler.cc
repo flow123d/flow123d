@@ -712,17 +712,23 @@ std::size_t DOFHandlerMultiDim::hash() const {
 }
 
 
-Range<DHCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::own_range() const {
-    return Range<DHCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
+Range<DHCellAccessor> DOFHandlerMultiDim::own_range() const {
+	auto bgn_it = make_iter<DHCellAccessor>( DHCellAccessor(this, 0) );
+	auto end_it = make_iter<DHCellAccessor>( DHCellAccessor(this, el_ds_->lsize()) );
+    return Range<DHCellAccessor>(bgn_it, end_it);
 }
 
 
-Range<DHCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::local_range() const {
-    return Range<DHCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize()+ghost_4_loc.size());
+Range<DHCellAccessor> DOFHandlerMultiDim::local_range() const {
+	auto bgn_it = make_iter<DHCellAccessor>( DHCellAccessor(this, 0) );
+	auto end_it = make_iter<DHCellAccessor>( DHCellAccessor(this, el_ds_->lsize()+ghost_4_loc.size()) );
+    return Range<DHCellAccessor>(bgn_it, end_it);
 }
 
 
-Range<DHCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::ghost_range() const {
-    return Range<DHCellAccessor, DOFHandlerMultiDim>(this, el_ds_->lsize(), el_ds_->lsize()+ghost_4_loc.size());
+Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
+	auto bgn_it = make_iter<DHCellAccessor>( DHCellAccessor(this, el_ds_->lsize()) );
+	auto end_it = make_iter<DHCellAccessor>( DHCellAccessor(this, el_ds_->lsize()+ghost_4_loc.size()) );
+    return Range<DHCellAccessor>(bgn_it, end_it);
 }
 

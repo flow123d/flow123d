@@ -30,7 +30,7 @@ TEST(RangeWrapper, range) {
 
     unsigned int counter=0;
     std::vector<unsigned int> expected_dims = {1,2,2,3,3,3,3,3,3};
-	Range<ElementAccessor<3>, Mesh> range(const_cast<const Mesh *>(mesh), 0, 9);
+	Range<ElementAccessor<3>> range( mesh->element_accessor(0), mesh->element_accessor(9) );
 	for (auto v : range) {
 		EXPECT_EQ(v.idx(), counter);
 		EXPECT_EQ(v.dim(), expected_dims[counter]);

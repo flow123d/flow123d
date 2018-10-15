@@ -263,13 +263,13 @@ public:
     std::size_t hash() const override;
 
     /// Returns range of DOF handler cells (only range of own without ghost cells)
-    Range<DHCellAccessor, DOFHandlerMultiDim> own_range() const;
+    Range<DHCellAccessor> own_range() const;
 
     /// Returns range over own and ghost cells of DOF handler
-    Range<DHCellAccessor, DOFHandlerMultiDim> local_range() const;
+    Range<DHCellAccessor> local_range() const;
 
     /// Returns range over ghosts DOF handler cells
-    Range<DHCellAccessor, DOFHandlerMultiDim> ghost_range() const;
+    Range<DHCellAccessor> ghost_range() const;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
