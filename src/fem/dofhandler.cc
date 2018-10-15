@@ -18,7 +18,7 @@
 
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
-#include "fem/dof_cell_accessor.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
 #include "mesh/duplicate_nodes.h"
 #include "mesh/partitioning.hh"
@@ -712,17 +712,17 @@ std::size_t DOFHandlerMultiDim::hash() const {
 }
 
 
-Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::own_range() const {
-    return Range<DofCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
+Range<DHCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::own_range() const {
+    return Range<DHCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize());
 }
 
 
-Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::local_range() const {
-    return Range<DofCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize()+ghost_4_loc.size());
+Range<DHCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::local_range() const {
+    return Range<DHCellAccessor, DOFHandlerMultiDim>(this, 0, el_ds_->lsize()+ghost_4_loc.size());
 }
 
 
-Range<DofCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::ghost_range() const {
-    return Range<DofCellAccessor, DOFHandlerMultiDim>(this, el_ds_->lsize(), el_ds_->lsize()+ghost_4_loc.size());
+Range<DHCellAccessor, DOFHandlerMultiDim> DOFHandlerMultiDim::ghost_range() const {
+    return Range<DHCellAccessor, DOFHandlerMultiDim>(this, el_ds_->lsize(), el_ds_->lsize()+ghost_4_loc.size());
 }
 
