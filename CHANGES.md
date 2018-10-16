@@ -2,11 +2,14 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.2.1
+# Flow123d version 2.2.1
 (2018-10-16)
 
 ### User interface
-* 
+* Improve a docker wrapper script `fterm` under Linux and Windows.
+* Edit mount options under Windows (now mounting entire drives instead of specific folders).
+* Improve image labelling via `fterm` script under Linux
+  (newly customized image name now contains version and debug type).
 
 ### New features
 * Add element neighboring data into raw output of Darcy flow equation.
@@ -19,7 +22,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.2.0
+# Flow123d version 2.2.0
 (2017-11-17)
 
 ### User interface
@@ -49,7 +52,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.1.2
+# Flow123d version 2.1.2
 (2017-02-21)
 
 ### User interface
@@ -72,7 +75,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.1.0
+# Flow123d version 2.1.0
 (2016-12-16)
 
 ### User interface
@@ -112,7 +115,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 2.0.0
+# Flow123d version 2.0.0
 (2016-08-31)
 
 ### User interface
@@ -252,7 +255,7 @@ List of all changes in user interface and major internal changes.
 
 ************************************************
 
-#Flow123d version 1.8.2
+# Flow123d version 1.8.2
 (2015-03-15)
 
 ### User interface
@@ -314,7 +317,7 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
-#Flow123d version 1.8.1
+# Flow123d version 1.8.1
 (2014-05-14)
 
 ### Bug fixes
@@ -338,7 +341,7 @@ List of all changes in user interface and major internal changes.
 
 ************************************************
 
-#Flow123d version 1.8.0 
+# Flow123d version 1.8.0 
 (2014-03-31)
 
 ### User interface:
