@@ -14,7 +14,6 @@
 
 
 #include "fields/field_fe.hh"
-#include "fields/field_interpolated_p0.hh" // temporary
 #include "fields/vec_seq_double.hh"
 #include "fields/fe_value_handler.hh"
 #include "tools/unit_si.hh"
@@ -258,15 +257,6 @@ vector_identic_mesh: !FieldFE
   field_name: vector_fixed
   default_value: 0.0
   interpolation: identic_mesh
-##### temporary test
-interp_scalar_old: !FieldInterpolatedP0
-  mesh_data_file: fields/interpolate_boundary_data.msh
-  field_name: scalar
-  default_value: 0.0
-interp_vector_old: !FieldInterpolatedP0
-  mesh_data_file: fields/interpolate_boundary_data.msh
-  field_name: vector_fixed
-  default_value: 0.0
 ##### tests of intersection interpolation P0
 interp_scalar_intersect: !FieldFE
   mesh_data_file: fields/interpolate_boundary_data.msh
@@ -298,8 +288,6 @@ interp_vector_fixed_gauss: !FieldFE
 
 class FieldFENewTest : public testing::Test {
 public:
-    typedef FieldInterpolatedP0<3, FieldValue<3>::Scalar > ScalarFieldOld; // temporary
-    typedef FieldInterpolatedP0<3, FieldValue<3>::VectorFixed > VecFixFieldOld; // temporary
     typedef FieldFE<3, FieldValue<3>::Scalar > ScalarField;
     typedef FieldFE<3, FieldValue<3>::Enum > EnumField;
     typedef FieldFE<3, FieldValue<3>::VectorFixed > VecFixField;
@@ -326,8 +314,6 @@ public:
             .declare_key("default_values", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("scalar_identic_mesh", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("vector_identic_mesh", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
-            .declare_key("interp_scalar_old", ScalarFieldOld::get_input_type(), Input::Type::Default::obligatory(),"" )   // temporary
-            .declare_key("interp_vector_old", VecFixFieldOld::get_input_type(), Input::Type::Default::obligatory(),"" )   // temporary
             .declare_key("interp_scalar_intersect", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("interp_vector_fixed_intersect", VecFixField::get_input_type(), Input::Type::Default::obligatory(),"" )
             .declare_key("interp_scalar_gauss", ScalarField::get_input_type(), Input::Type::Default::obligatory(),"" )
@@ -632,18 +618,13 @@ TEST_F(FieldFENewTest, intersection_1d_2d_elements_small_scalar) {
     field.set_mesh(mesh, true);
     //std::vector<unsigned int> expected_vals = {4,9,6,7};
 
-    ScalarFieldOld field_old;
-    field_old.init_from_input(rec.val<Input::Record>("interp_scalar_old"), init_data("interp_scalar_old"));
-    field_old.set_mesh(mesh, true);
-
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-    	field_old.set_time(test_time[j]);
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=9; i<13; ++i) {
     		ElementAccessor<3> elm = mesh->element_accessor(i);
-    		std::cout << " - " << field_old.value(point, elm) << " - " << field.value(elm.centre(), elm) << std::endl;
+    		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
     }
@@ -657,18 +638,13 @@ TEST_F(FieldFENewTest, intersection_1d_2d_elements_small_vector) {
     field.set_mesh(mesh, true);
     //std::vector<unsigned int> expected_vals = {4,9,6,7};
 
-    ScalarFieldOld field_old;
-    field_old.init_from_input(rec.val<Input::Record>("interp_scalar_old"), init_data("interp_scalar_old"));
-    field_old.set_mesh(mesh, true);
-
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-    	field_old.set_time(test_time[j]);
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=9; i<13; ++i) {
     		ElementAccessor<3> elm = mesh->element_accessor(i);
-    		std::cout << " - " << field_old.value(point, elm) << " - " << field.value(elm.centre(), elm) << std::endl;
+    		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
     }
@@ -682,18 +658,13 @@ TEST_F(FieldFENewTest, gauss_1d_2d_elements_small_scalar) {
     field.set_mesh(mesh, true);
     std::vector<unsigned int> expected_vals = {4,9,6,7};
 
-    ScalarFieldOld field_old;
-    field_old.init_from_input(rec.val<Input::Record>("interp_scalar_old"), init_data("interp_scalar_old"));
-    field_old.set_mesh(mesh, true);
-
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-    	field_old.set_time(test_time[j]);
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=0; i<4; ++i) {
     		ElementAccessor<3> elm = mesh->element_accessor(i+9);
-    		std::cout << " - " << field_old.value(point, elm) << " - " << field.value(elm.centre(), elm) << std::endl;
+    		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
     }
@@ -707,18 +678,13 @@ TEST_F(FieldFENewTest, gauss_1d_2d_elements_small_vector) {
     field.set_mesh(mesh, true);
     std::vector<unsigned int> expected_vals = {4,9,6,7};
 
-    ScalarFieldOld field_old;
-    field_old.init_from_input(rec.val<Input::Record>("interp_scalar_old"), init_data("interp_scalar_old"));
-    field_old.set_mesh(mesh, true);
-
     for (unsigned int j=0; j<2; j++) {
     	field.set_time(test_time[j]);
-    	field_old.set_time(test_time[j]);
     	std::cout << "Time: " << test_time[j] << std::endl;
 
     	for (unsigned int i=0; i<4; ++i) {
     		ElementAccessor<3> elm = mesh->element_accessor(i+9);
-    		std::cout << " - " << field_old.value(point, elm) << " - " << field.value(elm.centre(), elm) << std::endl;
+    		std::cout << " - " << field.value(elm.centre(), elm) << std::endl;
     		//EXPECT_DOUBLE_EQ( 0.1*(j+expected_vals[i]), field.value(point, mesh->element_accessor(i+9)) );
     	}
     }

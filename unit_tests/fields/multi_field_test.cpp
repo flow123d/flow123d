@@ -26,7 +26,6 @@ using namespace std;
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
-FLOW123D_FORCE_LINK_IN_PARENT(field_interpolated)
 FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 string field_constant_input = R"YAML(
@@ -88,9 +87,10 @@ formula_field_base: !FieldFormula
 fe_field: !FieldFE
   mesh_data_file: fields/simplest_cube_data.msh
   field_name: vector_fixed
-interpolated_p0_field: !FieldInterpolatedP0
+interpolated_p0_field: !FieldFE
   mesh_data_file: fields/simplest_cube_3d.msh
   field_name: scalar
+  interpolation: P0_intersection
 )YAML";
 
 class MultiFieldTest : public testing::Test {
