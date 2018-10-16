@@ -116,7 +116,7 @@ const Record & TimeGovernor::get_input_type() {
 				"1) Time units of time value keys in: TimeGovernor, FieldDescriptors.\n"
 				"   Global definition of unit can be overwrite for every declared time.\n"
 				"2) Time units in: \n"
-				"   a) input fields: FieldInterpolatedP0, FieldFE and FieldTimeFunction\n"
+				"   a) input fields: FieldFE and FieldTimeFunction\n"
 				"   b) time steps definition of OutputTimeSet\n"
 				"   Global definition can be overwrite by one unit value for every whole mesh data file or time function.\n"
 				"3) Time units in output files: Observe times, balance times, frame times of VTK and GMSH\n"
