@@ -12,10 +12,10 @@ problem: !Coupling_Sequential
     input_fields:
       - region: volume
         time: 0.0
-        conductivity: !FieldElementwise
+        conductivity: !FieldFE
           mesh_data_file: ./ref_out/22_elementwise_fields/test22/test22-000000.vtu
           field_name: conductivity
-        sigma: !FieldElementwise
+        sigma: !FieldFE
           mesh_data_file: ./11_mesh_with_data_11el.msh
           field_name: sigma
       - region: .BOUNDARY
