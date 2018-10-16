@@ -109,7 +109,7 @@ public:
 class TestObserve : public Observe {
 public:
     TestObserve(Mesh &mesh, Input::Array in_array)
-    : Observe("test_eq", mesh, in_array, 5, "s")
+    : Observe("test_eq", mesh, in_array, 6, "s")
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
