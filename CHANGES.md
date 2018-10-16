@@ -2,10 +2,27 @@ List of all changes in user interface and major internal changes.
 
 ***********************************************
 
+#Flow123d version 2.2.1
+(2018-10-16)
+
+### User interface
+* 
+
+### New features
+* Add element neighboring data into raw output of Darcy flow equation.
+
+### Bug fixes
+* Use consistently the precision, given by a user in an input file, for observe data output.
+* Fix the field region history after reading from an input file
+  (if a field on a region has the same input time, rewrite the region field).
+
+
+***********************************************
+
 #Flow123d version 2.2.0
 (2017-11-17)
 
-## User interface
+### User interface
 * Input YAML file supports including of other YAML files and
   including of tables in CSV files.
 * Support for binary and compressed VTK output.
@@ -18,7 +35,7 @@ List of all changes in user interface and major internal changes.
   fractures with high advection.
   
 
-## Bug fixes
+### Bug fixes
 * Fix wrong communication between dimensions when porosities differ
   in heat and solute transport.
 * Fix in batch wrappers for Windows. Return to caller after simulation is done.
@@ -30,10 +47,12 @@ List of all changes in user interface and major internal changes.
 * Simplification in Balance
 
 
+***********************************************
+
 #Flow123d version 2.1.2
 (2017-02-21)
 
-## User interface
+### User interface
 * Improved installer script and extended install documentation.
 
 ### New features
@@ -56,7 +75,7 @@ List of all changes in user interface and major internal changes.
 #Flow123d version 2.1.0
 (2016-12-16)
 
-## User interface
+### User interface
 
 * introduction of tutorials (tests/05_tutorials)
 * Docker is used for running Flow123d in platform independent environment.
