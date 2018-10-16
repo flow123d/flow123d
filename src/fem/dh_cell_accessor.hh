@@ -60,6 +60,13 @@ public:
     	return dof_handler_->mesh()->element_accessor( element_idx() );
     }
 
+    /**
+     * @brief Fill vector of the global indices of dofs associated to the cell.
+     *
+     * @param indices Vector of dof indices on the cell.
+     */
+    unsigned int get_dof_indices(std::vector<int> &indices) const;
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -92,5 +99,25 @@ private:
     unsigned int loc_ele_idx_;
 };
 
+
+inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) const
+{
+  unsigned int elem_idx = this->element_idx();
+  unsigned int ndofs = 0;
+  if ( dof_handler_->cell_starts_seq.size() > 0 && dof_handler_->dof_indices_seq.size() > 0)
+  {
+    ndofs = dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]];
+    for (unsigned int k=0; k<ndofs; k++)
+      indices[k] = dof_handler_->dof_indices_seq[dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]]+k];
+  }
+  else
+  {
+    ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
+    for (unsigned int k=0; k<ndofs; k++)
+      indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k];
+  }
+
+  return ndofs;
+}
 
 #endif /* DH_CELL_ACCESSOR_HH_ */
