@@ -137,10 +137,10 @@ to allow script to execute.*
 
 ## Getting started
 Please refer to a **User Guide and Input Reference manual** available
-at our [officite website](http://flow123d.github.io/) where there is a entire section dedicated
+at our [official website](http://flow123d.github.io/) where there is a entire section dedicated
 to this topic. You can find step-by-step tutorial explaining geometries, `yaml` input files
 and more. Below you can see a result from the tutorial problem.
-![](/figure.png)
+![](/doc/graphics/figure.png)
 
 
 
@@ -165,4 +165,3 @@ make ref-doc
 ```
 To copy out reference manual from docker use command
 [`docker cp`](https://docs.docker.com/engine/reference/commandline/cp/).
-
