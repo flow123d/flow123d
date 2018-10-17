@@ -247,8 +247,8 @@ public:
      */
     void expand(const Point &point) {
    		for(unsigned int j=0; j<dimension; j++) {
-   			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
-   			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
+   			min_vertex_(j) = std::min( point[j], min_vertex_[j] );
+   			max_vertex_(j) = std::max( point[j], max_vertex_[j] );
    		}
     }
 
@@ -257,8 +257,8 @@ public:
      */
     void expand(const BoundingBox &box) {
         for(unsigned int j=0; j<dimension; j++) {
-            min_vertex_[j] = std::min( min_vertex_[j], box.min_vertex_[j] );
-            max_vertex_[j] = std::max( max_vertex_[j], box.max_vertex_[j] );
+            min_vertex_[j] = std::min( box.min_vertex_[j], min_vertex_[j] );
+            max_vertex_[j] = std::max( box.max_vertex_[j], max_vertex_[j] );
         }
     }
 
