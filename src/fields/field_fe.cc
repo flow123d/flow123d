@@ -25,6 +25,7 @@
 #include "input/input_type.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_system.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "io/reader_cache.hh"
 #include "io/msh_gmshreader.h"
 #include "mesh/accessors.hh"
@@ -410,13 +411,28 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	data_vec_->fill(0.0);
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
-	// iterate through elements, assembly global vector and count number of writes
-	for (auto ele : dh_->mesh()->elements_range()) {
-		dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-		data_vec_i = ele.idx() * dof_indices_.size();
-		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
-			++count_vector[ dof_indices_[i] ];
+	int rank;
+	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+	if (rank == 0) {
+		// iterate through elements, assembly global vector and count number of writes
+		for (auto ele : dh_->mesh()->elements_range()) { // remove special case for rank == 0 - necessary for correct output
+			dof_size = dh_->get_dof_indices( ele, dof_indices_ );
+			data_vec_i = ele.idx() * dof_indices_.size();
+			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ dof_indices_[i] ];
+			}
+		}
+	} else {
+		// iterate through cells, assembly global vector and count number of writes
+		for (auto cell : dh_->own_range()) {
+			dof_size = cell.get_dof_indices(dof_indices_);
+			data_vec_i = cell.element_idx() * dof_indices_.size();
+			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+				++count_vector[ dof_indices_[i] ];
+			}
 		}
 	}
 
