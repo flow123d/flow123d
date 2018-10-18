@@ -20,6 +20,7 @@
 #define DH_CELL_ACCESSOR_HH_
 
 #include "mesh/accessors.hh"
+#include "fem/dofhandler.hh"
 
 /**
  * Cell accessor allow iterate over DOF handler cells.

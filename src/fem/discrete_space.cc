@@ -18,12 +18,13 @@
 
 #include "fem/discrete_space.hh"
 #include "fem/finite_element.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
 #include "mesh/duplicate_nodes.h"
 
 
 
-unsigned int EqualOrderDiscreteSpace::n_elem_dofs(const ElementAccessor<3> &cell) const
+unsigned int EqualOrderDiscreteSpace::n_elem_dofs(const DHCellAccessor &cell) const
 {
     unsigned int n_dofs = 0;
     switch (cell->dim())

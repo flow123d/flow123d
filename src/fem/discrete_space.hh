@@ -24,6 +24,7 @@
 
 template<unsigned int dim> class FiniteElement;
 class Mesh;
+class DHCellAccessor;
 
 
 /**
@@ -42,7 +43,7 @@ public:
   virtual unsigned int n_node_dofs(unsigned int nid) const = 0;
   
   /// Number of dofs associated to element (not shared by adjacent elements).
-  virtual unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const = 0;
+  virtual unsigned int n_elem_dofs(const DHCellAccessor &cell) const = 0;
   
   /// Number of dofs associated to generalized n-face (node, line, triangle or tetrahedron).
   template<unsigned int dim>
@@ -86,7 +87,7 @@ public:
   EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<0> *fe0, FiniteElement<1> *fe1, FiniteElement<2> *fe2, FiniteElement<3> *fe3)
   : DiscreteSpace(mesh), fe0_(fe0), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
   
-  unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const override;
+  unsigned int n_elem_dofs(const DHCellAccessor &cell) const override;
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   
