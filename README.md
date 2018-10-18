@@ -64,7 +64,7 @@ cp /config/config-jenkins-docker-release.cmake config.cmake
 
 An `fterm` script is by default using a docker image which contains a `debug` version of libraries.
 They can be useful to a developer but for production use you may want to switch to a `release` version.
-To use a `release` libraries run `fterm` with a flag `rel` (as for a `release`):*
+To use a `release` libraries run `fterm` with a flag `rel` (as for a `release`):
 
 ```sh
 bin/fterm rel
@@ -148,7 +148,7 @@ Please refer to a **User Guide and Input Reference manual** available
 at our [official website](http://flow123d.github.io/) where there is a entire section dedicated
 to this topic. You can find step-by-step tutorial explaining geometries, `yaml` input files
 and more. Below you can see a result from the tutorial problem.
-![](/figure.png)
+![](/doc/graphics/figure.png)
 
 
 
@@ -158,9 +158,8 @@ and more. Below you can see a result from the tutorial problem.
   * When problem occurs during the compilation process it may be due to a leftover files in a build folder.
   Cleaning this directory can solve this issue. You can either remove `build-<branch>` folder
   (the folder is located one level above repository root) via
-  `make clean-all`, which removes build folders and also remove any symlinks.
-  <br/>
-  To clean all the build folders manually run `rm -rf ../build-*` while in a repository root.
+  `make clean-all`, which removes build folders and also remove any symlinks.  
+  To clean all the build folders manually run <code>rm -rf ../build-*</code> while in a repository root.  
   **Running `rm -rf` can quite easily cause a lot of damage, double check that you're
   in a correct folder.**
   
