@@ -19,8 +19,7 @@ This guide summarises how to install Flow123d. Basically, they are two ways to u
 
   1) [**Docker containers**](#docker-containers):
    - *This is the easiest and the most reliable way is start using Flow123d.
-   It is available for Linux and Windows users.*
-   <br/>
+   It is available for Linux and Windows users.*  
    *Windows platform support is limited and is therefore recommended to use
    stable only packages for the installation.*
 
