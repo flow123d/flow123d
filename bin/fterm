@@ -85,15 +85,15 @@ usage:
   ./fterm [options] [dbg|rel] [action] [arguments]
   
   **Note** No need to call build, images are automatically downloaded and
-           even personalized when on the fly
+           even personalized on the fly
            
-           To user different docker image libraries, use @<tag> syntax, such as:
+           To use different docker image libraries, use @<tag> syntax, such as:
               $REL_BIN/fterm @2.2.0 build
               $REL_BIN/fterm @3.0.0 update
               $REL_BIN/fterm @latest
            
            You can also use file 'config/docker/image_tag' where you can change
-           default <tag> value, currently, the <tag> value is set to '$image_tag'
+           default <tag> value. Currently, the <tag> value is set to '$image_tag'.
 
   options:
     -v|--verbose    - turn on debug mode
@@ -364,7 +364,7 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    config|clean|remove-old|flow123d|run|runtest|make|build|udpate)
+    config|clean|remove-old|flow123d|run|runtest|make|build|update)
       action=$1
       shift
       break
