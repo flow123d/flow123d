@@ -1,68 +1,45 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <!--Import materialize.css-->
-    <link href="http://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link type="text/css" rel="stylesheet" href="css/materialize.min.css"  media="screen,projection"/>
-    <link type="text/css" rel="stylesheet" href="css/katex.min.css"  media="screen,projection"/>
-    <link type="text/css" rel="stylesheet" href="css/main.css" media="screen,projection" />
-    <link type="text/css" rel="stylesheet" href="css/colors.css" media="screen,projection" />
-    
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
-
-    <!--Let browser know website is optimized for mobile-->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Flow123d IST reference</title>
-  </head>
-
-  <body>
-      
-      
-    <nav id='nav' class="grey lighten-2" role="navigation">
-      <div class="nav-wrapper container">
-          <object data="flow123d-color-banner.svg" type="image/svg+xml">
-              <img src="flow123d-fallback.jpg" />
-          </object>
-          ver @VERSION@
-          <ul class="right hide-on-med-and-down menu-links">
-              <li class="n"><a class="show-root" href="#Root">Go to ROOT</a></li>
-              <li class="r"><a class="toggle-btn r" data-family=".toggle-btn.r" data-filter='.main-section.r' href="#">Records</a></li>
-              <li class="t"><a class="toggle-btn t" data-family=".toggle-btn.t" data-filter='.main-section.t' href="#">Tuples</a></li>
-              <li class="a"><a class="toggle-btn a" data-family=".toggle-btn.a" data-filter='.main-section.a' href="#">Abstracts</a></li>
-              <li class="s"><a class="toggle-btn s" data-family=".toggle-btn.s" data-filter='.main-section.s' href="#">Selections</a></li>
-          </ul>
-
-          <ul id="nav-mobile" class="side-nav menu-links">
-              <li class="n"><a class="show-root" href="#Root">Go to ROOT</a></li>
-              <li class="r"><a class="toggle-btn r" data-family=".toggle-btn.r" data-filter='.main-section.r' href="#">Records</a></li>
-              <li class="t"><a class="toggle-btn t" data-family=".toggle-btn.t" data-filter='.main-section.t' href="#">Tuples</a></li>
-              <li class="a"><a class="toggle-btn a" data-family=".toggle-btn.a" data-filter='.main-section.a' href="#">Abstracts</a></li>
-              <li class="s"><a class="toggle-btn s" data-family=".toggle-btn.s" data-filter='.main-section.s' href="#">Selections</a></li>
-          </ul>
-          <a href="#" data-activates="nav-mobile" class="button-collapse text-black"><i class="material-icons">menu</i></a>
-      </div>
-    </nav>
-    <div id="navspace">&nbsp;</div>
-    
-    <div class="generated robot">Generated @GENERATED@</div>
-      
-    <div class="container">
-        <hr />
-        <div class="row content">
-            <div class="col items">
-                @NAVIGATION@
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta http-equiv="X-UA-Compatible" content="chrome=1">
+      <title>Flow123d IST reference</title>
+      <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+      <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+      <link rel="stylesheet" href="assets/css/css/mdb.min.css">
+      <link rel="stylesheet" href="assets/css/katex.min.css">
+      <link rel="stylesheet" href="assets/css/main.css">
+      <link rel="shortcut icon" href="assets/favicon.ico">
+      <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+   </head>
+   <body>
+      <div class="generated robot">Generated @GENERATED@</div>
+      <main>
+         <div class="menu list-group" data-spy="scroll">
+            @NAVIGATION@
+         </div>
+         <div class="content">
+            <header class="header">
+               <div class="header-content">
+                  <h3>
+                     <a href="/">
+                       <img src="assets/img/flow123d-logo.svg" height="80" alt="Flow123d" title="Flow123d">
+                     </a>
+                     @VERSION@
+                     <div class="robot"><small>Transport Processes in Fractured Media</small></div>
+                  </h3>
+               </div>
+            </header>
+            <div class="ist">
+               @IST@
             </div>
-
-            <div class="col input-reference">
-                @IST@
-            </div>
-        </div>
-    </div>
-
-    <!--Import jQuery before materialize.js-->
-    <script type="text/javascript" src="js/jquery-3.1.1.min.js"></script>
-    <script type="text/javascript" src="js/materialize.min.js"></script>
-    <script type="text/javascript" src="js/katex.min.js"></script>
-    <script type="text/javascript" src="js/main.js"></script>
-  </body>
+         </div>
+      </main>
+      <script type="text/javascript" src="assets/js/jquery.min.js"></script>
+      <script type="text/javascript" src="assets/js/bootstrap.min.js"></script>
+      <script type="text/javascript" src="assets/js/mdb.min.js"></script>
+      <script type="text/javascript" src="assets/js/katex.min.js"></script>
+      <script type="text/javascript" src="assets/js/jquery.onscreen.min.js"></script>
+      <script type="text/javascript" src="assets/js/flow123d.js"></script>
+   </body>
 </html>
