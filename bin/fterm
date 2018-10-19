@@ -262,6 +262,8 @@ function update_images() {
   do
     docker pull flow123d/$image:$image_tag
   done
+  # remove custom images after an update
+  remove_custom_images
 }
 
 
