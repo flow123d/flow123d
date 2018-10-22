@@ -69,7 +69,7 @@ const Record & SorptionBase::get_input_type() {
                              "Use '0' to always evaluate isotherm function directly (can be very slow). "
                              "Use a positive value to set the interpolation table limit manually "
                              "(if aqueous concentration is higher, then the isotherm function is evaluated directly).")
-		.declare_key("input_fields", Array(EqData("").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
+		.declare_key("input_fields", Array(EqData("","").input_data_set_.make_field_descriptor_type("Sorption")), Default::obligatory(), //
 						"Containes region specific data necessary to construct isotherms.")//;
 		.declare_key("reaction_liquid", ReactionTerm::it_abstract_reaction(), Default::optional(), "Reaction model following the sorption in the liquid.")
 		.declare_key("reaction_solid", ReactionTerm::it_abstract_reaction(), Default::optional(), "Reaction model following the sorption in the solid.")
@@ -77,7 +77,7 @@ const Record & SorptionBase::get_input_type() {
 }
     
 
-SorptionBase::EqData::EqData(const string &output_field_name)
+SorptionBase::EqData::EqData(const string &output_field_name, const string &output_field_desc)
 {
     ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
     	rock_density.units( UnitSI().kg().m(-3) );
@@ -107,7 +107,10 @@ SorptionBase::EqData::EqData(const string &output_field_name)
 			.set_limits(0.0);
     
     output_fields += *this;
-    output_fields += conc_solid.name(output_field_name).units( UnitSI().dimensionless() ).flags(FieldFlag::equation_result);
+    output_fields += conc_solid.name(output_field_name)
+                     .description(output_field_desc)
+                     .units( UnitSI().dimensionless() )
+                     .flags(FieldFlag::equation_result);
 }
 
 

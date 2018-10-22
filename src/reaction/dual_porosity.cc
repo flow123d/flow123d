@@ -92,6 +92,7 @@ DualPorosity::EqData::EqData()
   //creating field for porosity that is set later from the governing equation (transport)
   *this +=porosity
         .name("porosity")
+        .description("Concentration solution in the mobile phase.")
         .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy )
 		.set_limits(0.0);
