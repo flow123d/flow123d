@@ -73,10 +73,11 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
                 "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
                 "time shift 'S' and if 't > T', we read time frame 't + S'.")
         .declare_key("interpolation", FieldFE<spacedim, Value>::get_interp_selection_input_type(),
-        		IT::Default("\"equivalent_mesh\""), "Allow set interpolation of input data.\n"
-        		"Check of compatibility of source and target mesh is provided for 'equivalent_mesh' and 'P0' and interpolation "
-        		"can be changed if it's necessary. Value 'identic_mesh' has no control, topology, element and node indexes "
-        		"must be identical.")
+        		IT::Default("\"equivalent_mesh\""), "Type of interpolation applied to the input spatial data.\n"
+        		"The default value 'equivalent_mesh' assumes data constant on elements living on the mesh that"
+        		"is same as the computational mesh, but possibly with different numbering. In the case of the same numbering"
+        		"the user can set 'identical_mesh' to omit algorithm for guessing node and element renumbering."
+        		"Alternatively, in the case of different input mesh, several interpolation algorithm s are available.")
         .close();
 }
 
@@ -95,15 +96,22 @@ const Input::Type::Selection & FieldFE<spacedim, Value>::get_disc_selection_inpu
 template <int spacedim, class Value>
 const Input::Type::Selection & FieldFE<spacedim, Value>::get_interp_selection_input_type()
 {
-	return it::Selection("interpolation", "Specify interpolation of input data.")
-		.add_value(DataInterpolation::identic_msh, "identic_mesh", "Topology and indexes of nodes and elements of source "
-				"and target mesh are identical. This interpolation is typically used for GMSH data defined in separate mesh "
-				"file without topology.")
-		.add_value(DataInterpolation::equivalent_msh, "equivalent_mesh", "Topologies of source and target mesh are identical.") // default value
-		.add_value(DataInterpolation::gauss_p0, "P0_gauss", "Topologies of source and target mesh can be different. Gaussian "
-				"distribution is used for interpolation.")
-		.add_value(DataInterpolation::interp_p0, "P0_intersection", "Topologies of source and target mesh can be different. "
-				"Calculation of intersections between source and target mesh is used for interpolation.")
+	return it::Selection("interpolation", "Specify interpolation of the input data from its input mesh to the computational mesh.")
+		.add_value(DataInterpolation::identic_msh, "identic_mesh", "Topology and indexes of nodes and elements of"
+				"the input mesh and the computational mesh are identical. "
+				"This interpolation is typically used for GMSH input files containing only the field values without "
+				"explicit mesh specification.")
+		.add_value(DataInterpolation::equivalent_msh, "equivalent_mesh", "Topologies of the input mesh and the computational mesh"
+				"are same, the node and element numbering can differ."
+				"This interpolation can be used also for VTK input data.") // default value
+		.add_value(DataInterpolation::gauss_p0, "P0_gauss", "Topologies of the input mesh and the computational mesh may differ."
+				"Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of fixed order 4,"
+				"where the quadrature points and their values are found in the input mesh and input data using the BIH tree search."
+				)
+		.add_value(DataInterpolation::interp_p0, "P0_intersection", "Topologies of the input mesh and the computational mesh may differ."
+				"Can be applied only for boundary fields. For every (boundary) element of the computational mesh the"
+				"intersection with the input mesh is computed. Constant values on the elements of the computational mesh "
+				"are evaluated as the weighted average of the (constant) values on the intersecting elements of the input mesh.")
 		.close();
 }
 
