@@ -77,22 +77,22 @@ const Selection & TransportDG<Model>::EqData::get_output_selection() {
 template<class Model>
 const Record & TransportDG<Model>::get_input_type() {
     std::string equation_name = std::string(Model::ModelEqData::name()) + "_DG";
-    return Model::get_input_type("DG", "DG solver")
+    return Model::get_input_type("DG", "Discontinuous Galerkin (DG) solver")
         .declare_key("solver", LinSys_PETSC::get_input_type(), Default("{}"),
-                "Linear solver for MH problem.")
+                "Solver for the linear system.")
         .declare_key("input_fields", Array(
                 TransportDG<Model>::EqData()
                     .make_field_descriptor_type(equation_name)),
                 IT::Default::obligatory(),
                 "Input fields of the equation.")
         .declare_key("dg_variant", TransportDG<Model>::get_dg_variant_selection_input_type(), Default("\"non-symmetric\""),
-                "Variant of interior penalty discontinuous Galerkin method.")
+                "Variant of the interior penalty discontinuous Galerkin method.")
         .declare_key("dg_order", Integer(0,3), Default("1"),
-                "Polynomial order for finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
+                "Polynomial order for the finite element in DG method (order 0 is suitable if there is no diffusion/dispersion).")
         .declare_key("output",
                 EqData().output_fields.make_output_type(equation_name, ""),
                 IT::Default("{ \"fields\": [ " + Model::ModelEqData::default_output_field() + "] }"),
-                "Setting of the field output.")
+                "Specification of output fields and output times.")
         .close();
 }
 
@@ -196,11 +196,13 @@ TransportDG<Model>::EqData::EqData() : Model::ModelEqData()
 
     *this += region_id.name("region_id")
                 .units( UnitSI::dimensionless())
-                .flags(FieldFlag::equation_external_output);
+                .flags(FieldFlag::equation_external_output)
+                .description("Region ids.");
                 
     *this += subdomain.name("subdomain")
       .units( UnitSI::dimensionless() )
-      .flags(FieldFlag::equation_external_output);
+      .flags(FieldFlag::equation_external_output)
+      .description("Subdomain ids of the domain decomposition.");
 
 
     // add all input fields to the output list

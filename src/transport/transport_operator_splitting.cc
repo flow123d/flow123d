@@ -73,16 +73,16 @@ const Record & TransportOperatorSplitting::get_input_type() {
 		.derive_from(AdvectionProcessBase::get_input_type())
 		.add_attribute( FlowAttribute::subfields_address(), "\"/problem/solute_equation/substances/*/name\"")
 		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-				"Time governor setting for the secondary equation.")
+				"Time governor settings for the transport equation.")
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
-				"Settings for computing balance.")
+				"Settings for computing mass balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
-				"Parameters of output stream.")
+				"Output stream settings.\n Specify file format, precision etc.")
 		.declare_key("substances", Array( Substance::get_input_type(), 1), Default::obligatory(),
 				"Specification of transported substances.")
 				// input data
 		.declare_key("transport", ConcentrationTransportBase::get_input_type(), Default::obligatory(),
-				"Type of numerical method for solute transport.")
+				"Type of the numerical method for the transport equation.")
 		.declare_key("reaction_term", ReactionTerm::it_abstract_term(), Default::optional(),
 					"Reaction model involved in transport.")
 /*
@@ -106,12 +106,12 @@ const int TransportOperatorSplitting::registrar =
 TransportEqData::TransportEqData()
 {
 
-	ADD_FIELD(porosity, "Mobile porosity", "1.0");
+	ADD_FIELD(porosity, "Porosity of the mobile phase.", "1.0");
 	porosity
 	.units( UnitSI::dimensionless() )
 	.flags_add(in_main_matrix & in_rhs);
 
-	add_field(&water_content, "water_content", "INTERNAL - water content passed from unsaturated Darcy", "")
+	add_field(&water_content, "water_content", "INTERNAL. Water content passed from unsaturated Darcy flow model.", "")
 	.units( UnitSI::dimensionless() )
 	.flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 

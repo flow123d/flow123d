@@ -17,8 +17,10 @@
 \begin{SelectionType}
 	{IT::instance-GraphType}
 	{instance{\_}GraphType}
-	{{{Different algorithms to make the sparse graph with weighted edges{\textbackslash}nfrom the multidimensional mesh.
-Main difference is dealing with {\textbackslash}nneighborings of elements of different dimension.}% 
+	{{{Different algorithms to make the sparse graph with weighted edges}\\{
+from the multidimensional mesh.
+Main difference is dealing with }\\{
+neighborings of elements of different dimension.}% 
 }}
 		\SelectionItem
 			{instance-GraphType::any-neighboring}
@@ -59,7 +61,8 @@ Main difference is dealing with {\textbackslash}nneighborings of elements of dif
 \begin{SelectionType}
 	{IT::instance-FE-discretization}
 	{instance{\_}FE{\_}discretization}
-	{{{Specify the section in mesh input file where field data is listed.{\textbackslash}nSome sections are specific to file format.}% 
+	{{{Specify the section in mesh input file where field data is listed.}\\{
+Some sections are specific to file format.}% 
 }}
 		\SelectionItem
 			{instance-FE-discretization::node-data}
@@ -83,41 +86,72 @@ Main difference is dealing with {\textbackslash}nneighborings of elements of dif
 }}
 \end{SelectionType}
 \begin{SelectionType}
+	{IT::instance-interpolation}
+	{instance{\_}interpolation}
+	{{{Specify interpolation of the input data from its input mesh to the computational mesh.}% 
+}}
+		\SelectionItem
+			{instance-interpolation::identic-mesh}
+			{identic{\_}mesh}
+			{{{Topology and indexes of nodes and elements ofthe input mesh and the computational mesh are identical.
+This interpolation is typically used for GMSH input files containing only the field values without explicit mesh specification.}% 
+}}
+		\SelectionItem
+			{instance-interpolation::equivalent-mesh}
+			{equivalent{\_}mesh}
+			{{{Topologies of the input mesh and the computational meshare same, the node and element numbering can differ.
+This interpolation can be used also for VTK input data.}% 
+}}
+		\SelectionItem
+			{instance-interpolation::P0-gauss}
+			{P0{\_}gauss}
+			{{{Topologies of the input mesh and the computational mesh may differ.
+Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of fixed order 4,where the quadrature points and their values are found in the input mesh and input data using the BIH tree search.}% 
+}}
+		\SelectionItem
+			{instance-interpolation::P0-intersection}
+			{P0{\_}intersection}
+			{{{Topologies of the input mesh and the computational mesh may differ.
+Can be applied only for boundary fields.
+For every (boundary) element of the computational mesh theintersection with the input mesh is computed.
+Constant values on the elements of the computational mesh are evaluated as the weighted average of the (constant) values on the intersecting elements of the input mesh.}% 
+}}
+\end{SelectionType}
+\begin{SelectionType}
 	{IT::instance-Flow-Darcy-BC-Type}
 	{instance{\_}Flow{\_}Darcy{\_}BC{\_}Type}
 	{}
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::none}
 			{none}
-			{{{Homogeneous Neumann boundary condition.
-Zero flux}% 
+			{{{Homogeneous Neumann boundary condition}\\{
+(zero normal flux over the boundary).}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::dirichlet}
 			{dirichlet}
 			{{{Dirichlet boundary condition.
-Specify the pressure head through the ''bc{\_}pressure'' field or the piezometric head through the ''bc{\_}piezo{\_}head'' field.}% 
+Specify the pressure head through the }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ field or the piezometric head through the }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{ field.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::total-flux}
 			{total{\_}flux}
-			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$ \\delta_d(q_d^N + \\sigma_d (h_d^R - h_d) )$}{. Specify the water inflow by the 'bc{\_}flux' field, the transition coefficient by 'bc{\_}robin{\_}sigma' and the reference pressure head or pieozmetric head through ''bc{\_}pressure'' or ''bc{\_}piezo{\_}head'' respectively.}% 
+			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$ \delta_d(q_d^N + \sigma_d (h_d^R - h_d) )$}{. Specify the water inflow by the }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ field, the transition coefficient by }\begin{ttfamily}bc{\_}robin{\_}sigma\end{ttfamily}{ and the reference pressure head or pieozmetric head through }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ or }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::seepage}
 			{seepage}
 			{{{Seepage face boundary condition.
 Pressure and inflow bounded from above.
-Boundary with potential seepage flow is described by the pair of inequalities: }{$h_d \\le h_d^D$}{ and }{$ -\\boldsymbol q_d\\cdot\\boldsymbol n \\le \\delta q_d^N$}{, where the equality holds in at least one of them.
-Caution.
-Setting }{$q_d^N$}{ strictly negative may lead to an ill posed problem since a positive outflow is enforced.
-Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by fields }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{ (or }\begin{ttfamily}bc{\_}switch{\_}piezo{\_}head\end{ttfamily}{) and }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ respectively.}% 
+Boundary with potential seepage flow is described by the pair of inequalities: }{$h_d \le h_d^D$}{ and }{$ -\boldsymbol q_d\cdot\boldsymbol n \le \delta q_d^N$}{, where the equality holds in at least one of them.
+Caution: setting }{$q_d^N$}{ strictly negative may lead to an ill posed problem since a positive outflow is enforced.
+Parameters }{$h_d^D$}{ and }{$q_d^N$}{ are given by the fields }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{ (or }\begin{ttfamily}bc{\_}switch{\_}piezo{\_}head\end{ttfamily}{) and }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::river}
 			{river}
 			{{{River boundary condition.
-For the water level above the bedrock, }{$H_d > H_d^S$}{, the Robin boundary condition is used with the inflow given by: }{ $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d) )$}{. For the water level under the bedrock, constant infiltration is used: }{ $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d^S) )$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma,\end{ttfamily}{bc{\_}flux``.}% 
+For the water level above the bedrock, }{$H_d > H_d^S$}{, the Robin boundary condition is used with the inflow given by: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d) )$}{. For the water level under the bedrock, constant infiltration is used: }{ $ \delta_d(q_d^N + \sigma_d(H_d^D - H_d^S) )$}{. Parameters: }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{, }\begin{ttfamily}bc{\_}switch{\_}pressure\end{ttfamily}{,  }\begin{ttfamily}bc{\_}sigma\end{ttfamily}{, }\begin{ttfamily}bc{\_}flux\end{ttfamily}{.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -171,37 +205,37 @@ Determines type of output data (element, node, native etc).}%
 \begin{SelectionType}
 	{IT::instance-Flow-Darcy-MH-OutputFields}
 	{instance{\_}Flow{\_}Darcy{\_}MH:OutputFields}
-	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.{\textbackslash}n}% 
+	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH model.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::pressure-p0}
 			{pressure{\_}p0}
-			{{{}{$[m]$}{ Input field: }% 
+			{{{}{$[m]$}{ Pressure solution - P0 interpolation.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::pressure-p1}
 			{pressure{\_}p1}
-			{{{}{$[m]$}{ Input field: }% 
+			{{{}{$[m]$}{ Pressure solution - P1 interpolation.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::piezo-head-p0}
 			{piezo{\_}head{\_}p0}
-			{{{}{$[m]$}{ Input field: }% 
+			{{{}{$[m]$}{ Piezo head solution - P0 interpolation.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::velocity-p0}
 			{velocity{\_}p0}
-			{{{}{$[ms^{-1}]$}{ Input field: }% 
+			{{{}{$[ms^{-1}]$}{ Velocity solution - P0 interpolation.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::subdomain}
 			{subdomain}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::region-id}
 			{region{\_}id}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::anisotropy}
@@ -231,33 +265,33 @@ Determines type of output data (element, node, native etc).}%
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::init-pressure}
 			{init{\_}pressure}
-			{{{}{$[m]$}{ Input field: Initial condition for pressure}% 
+			{{{}{$[m]$}{ Input field: Initial condition for pressure in time dependent problems.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-OutputFields::storativity}
 			{storativity}
-			{{{}{$[m^{-1}]$}{ Input field: Storativity.}% 
+			{{{}{$[m^{-1}]$}{ Input field: Storativity (in time dependent problems).}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
 	{IT::instance-Flow-Darcy-MH-specific-OutputFields}
 	{instance{\_}Flow{\_}Darcy{\_}MH{\_}specific:OutputFields}
-	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH{\_}specific model.{\textbackslash}n}% 
+	{{{Selection of output fields for the Flow{\_}Darcy{\_}MH{\_}specific model.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-specific-OutputFields::pressure-diff}
 			{pressure{\_}diff}
-			{{{}{$[m]$}{ Input field: }% 
+			{{{}{$[m]$}{ Error norm of the pressure solution. [Experimental]}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-specific-OutputFields::velocity-diff}
 			{velocity{\_}diff}
-			{{{}{$[ms^{-1}]$}{ Input field: }% 
+			{{{}{$[ms^{-1}]$}{ Error norm of the velocity solution. [Experimental]}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-MH-specific-OutputFields::div-diff}
 			{div{\_}diff}
-			{{{}{$[s^{-1}]$}{ Input field: }% 
+			{{{}{$[s^{-1}]$}{ Error norm of the divergence of the velocity solution. [Experimental]}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -288,7 +322,7 @@ Determines type of output data (element, node, native etc).}%
 		\SelectionItem
 			{instance-MH-MortarMethod::None}
 			{None}
-			{{{Mortar space: P0 on elements of lower dimension.}% 
+			{{{No Mortar method is applied.}% 
 }}
 		\SelectionItem
 			{instance-MH-MortarMethod::P0}
@@ -320,17 +354,17 @@ Suitable for bentonite.}%
 \begin{SelectionType}
 	{IT::instance-Solute-Advection-FV-OutputFields}
 	{instance{\_}Solute{\_}Advection{\_}FV:OutputFields}
-	{{{Selection of output fields for the Solute{\_}Advection{\_}FV model.{\textbackslash}n}% 
+	{{{Selection of output fields for the Solute{\_}Advection{\_}FV model.}% 
 }}
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::porosity}
 			{porosity}
-			{{{}{$[-]$}{ Input field: Mobile porosity}% 
+			{{{}{$[-]$}{ Input field: Porosity of the mobile phase.}% 
 }}
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::water-content}
 			{water{\_}content}
-			{{{}{$[-]$}{ Input field: INTERNAL - water content passed from unsaturated Darcy}% 
+			{{{}{$[-]$}{ Input field: INTERNAL. Water content passed from unsaturated Darcy flow model.}% 
 }}
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::sources-density}
@@ -350,22 +384,22 @@ Suitable for bentonite.}%
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::init-conc}
 			{init{\_}conc}
-			{{{}{$[m^{-3}kg]$}{ Input field: Initial concentrations.}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Initial values for concentration of substances.}% 
 }}
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::conc}
 			{conc}
-			{{{}{$[m^{-3}kg]$}{ }% 
+			{{{}{$[m^{-3}kg]$}{ Concentration solution.}% 
 }}
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::region-id}
 			{region{\_}id}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
 			{instance-Solute-Advection-FV-OutputFields::subdomain}
 			{subdomain}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -376,22 +410,26 @@ Suitable for bentonite.}%
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-BC-Type::inflow}
 			{inflow}
-			{{{Default transport boundary condition.{\textbackslash}nOn water inflow }{$(q_w \\le 0)$}{, total flux is given by the reference concentration 'bc{\_}conc'. On water outflow we prescribe zero diffusive flux, i.e. the mass flows out only due to advection.}% 
+			{{{Default transport boundary condition.}\\{
+On water inflow }{$(q_w \le 0)$}{, total flux is given by the reference concentration 'bc{\_}conc'. On water outflow we prescribe zero diffusive flux, i.e. the mass flows out only due to advection.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-BC-Type::dirichlet}
 			{dirichlet}
-			{{{Dirichlet boundary condition }{$ c = c_D $}{.{\textbackslash}nThe prescribed concentration }{$c_D$}{ is specified by the field 'bc{\_}conc'.}% 
+			{{{Dirichlet boundary condition }{$ c = c_D $}{.}\\{
+The prescribed concentration }{$c_D$}{ is specified by the field 'bc{\_}conc'.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-BC-Type::total-flux}
 			{total{\_}flux}
-			{{{Total mass flux boundary condition.{\textbackslash}nThe prescribed total incoming flux can have the general form }{$\\delta(f_N+\\sigma_R(c_R-c) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference concentration }{$c_R$}{ by 'bc{\_}conc'.}% 
+			{{{Total mass flux boundary condition.}\\{
+The prescribed total incoming flux can have the general form }{$\delta(f_N+\sigma_R(c_R-c) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference concentration }{$c_R$}{ by 'bc{\_}conc'.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-BC-Type::diffusive-flux}
 			{diffusive{\_}flux}
-			{{{Diffusive flux boundary condition.{\textbackslash}nThe prescribed incoming mass flux due to diffusion can have the general form }{$\\delta(f_N+\\sigma_R(c_R-c) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference concentration }{$c_R$}{ by 'bc{\_}conc'.}% 
+			{{{Diffusive flux boundary condition.}\\{
+The prescribed incoming mass flux due to diffusion can have the general form }{$\delta(f_N+\sigma_R(c_R-c) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference concentration }{$c_R$}{ by 'bc{\_}conc'.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -418,17 +456,17 @@ Suitable for bentonite.}%
 \begin{SelectionType}
 	{IT::instance-Solute-AdvectionDiffusion-DG-OutputFields}
 	{instance{\_}Solute{\_}AdvectionDiffusion{\_}DG:OutputFields}
-	{{{Selection of output fields for the Solute{\_}AdvectionDiffusion{\_}DG model.{\textbackslash}n}% 
+	{{{Selection of output fields for the Solute{\_}AdvectionDiffusion{\_}DG model.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::porosity}
 			{porosity}
-			{{{}{$[-]$}{ Input field: Mobile porosity}% 
+			{{{}{$[-]$}{ Input field: Porosity of the mobile phase.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::water-content}
 			{water{\_}content}
-			{{{}{$[-]$}{ Input field: INTERNAL - water content passed from unsaturated Darcy}% 
+			{{{}{$[-]$}{ Input field: INTERNAL. Water content passed from unsaturated Darcy flow model.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::sources-density}
@@ -448,17 +486,17 @@ Suitable for bentonite.}%
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::init-conc}
 			{init{\_}conc}
-			{{{}{$[m^{-3}kg]$}{ Input field: Initial concentrations.}% 
+			{{{}{$[m^{-3}kg]$}{ Input field: Initial values for concentration of substances.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
-			{{{}{$[m]$}{ Input field: Longitudal dispersivity in the liquid (for each substance).}% 
+			{{{}{$[m]$}{ Input field: Longitudinal dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
-			{{{}{$[m]$}{ Input field: Transversal dispersivity in the liquid (for each substance).}% 
+			{{{}{$[m]$}{ Input field: Transverse dispersivity in the liquid (for each substance).}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::diff-m}
@@ -478,7 +516,7 @@ Suitable for bentonite.}%
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::conc}
 			{conc}
-			{{{}{$[m^{-3}kg]$}{ }% 
+			{{{}{$[m^{-3}kg]$}{ Concentration solution.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
@@ -494,12 +532,12 @@ Higher value diminishes the inter-element jumps.}%
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
 			{instance-Solute-AdvectionDiffusion-DG-OutputFields::subdomain}
 			{subdomain}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -530,7 +568,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{SelectionType}
 	{IT::instance-Sorption-OutputFields}
 	{instance{\_}Sorption:OutputFields}
-	{{{Selection of output fields for the Sorption model.{\textbackslash}n}% 
+	{{{Selection of output fields for the Sorption model.}% 
 }}
 		\SelectionItem
 			{instance-Sorption-OutputFields::rock-density}
@@ -562,13 +600,13 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-Sorption-OutputFields::conc-solid}
 			{conc{\_}solid}
-			{{{}{$[-]$}{ }% 
+			{{{}{$[-]$}{ Concentration solution in the solid phase.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
 	{IT::instance-SorptionMobile-OutputFields}
 	{instance{\_}SorptionMobile:OutputFields}
-	{{{Selection of output fields for the SorptionMobile model.{\textbackslash}n}% 
+	{{{Selection of output fields for the SorptionMobile model.}% 
 }}
 		\SelectionItem
 			{instance-SorptionMobile-OutputFields::rock-density}
@@ -600,13 +638,13 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-SorptionMobile-OutputFields::conc-solid}
 			{conc{\_}solid}
-			{{{}{$[-]$}{ }% 
+			{{{}{$[-]$}{ Concentration solution in the solid mobile phase.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
 	{IT::instance-SorptionImmobile-OutputFields}
 	{instance{\_}SorptionImmobile:OutputFields}
-	{{{Selection of output fields for the SorptionImmobile model.{\textbackslash}n}% 
+	{{{Selection of output fields for the SorptionImmobile model.}% 
 }}
 		\SelectionItem
 			{instance-SorptionImmobile-OutputFields::rock-density}
@@ -638,13 +676,13 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-SorptionImmobile-OutputFields::conc-immobile-solid}
 			{conc{\_}immobile{\_}solid}
-			{{{}{$[-]$}{ }% 
+			{{{}{$[-]$}{ Concentration solution in the solid immobile phase.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
 	{IT::instance-DualPorosity-OutputFields}
 	{instance{\_}DualPorosity:OutputFields}
-	{{{Selection of output fields for the DualPorosity model.{\textbackslash}n}% 
+	{{{Selection of output fields for the DualPorosity model.}% 
 }}
 		\SelectionItem
 			{instance-DualPorosity-OutputFields::diffusion-rate-immobile}
@@ -675,28 +713,32 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-Heat-BC-Type::inflow}
 			{inflow}
-			{{{Default heat transfer boundary condition.{\textbackslash}nOn water inflow }{$(q_w \\le 0)$}{, total energy flux is given by the reference temperature 'bc{\_}temperature'. On water outflow we prescribe zero diffusive flux, i.e. the energy flows out only due to advection.}% 
+			{{{Default heat transfer boundary condition.}\\{
+On water inflow }{$(q_w \le 0)$}{, total energy flux is given by the reference temperature 'bc{\_}temperature'. On water outflow we prescribe zero diffusive flux, i.e. the energy flows out only due to advection.}% 
 }}
 		\SelectionItem
 			{instance-Heat-BC-Type::dirichlet}
 			{dirichlet}
-			{{{Dirichlet boundary condition }{$T = T_D $}{.{\textbackslash}nThe prescribed temperature }{$T_D$}{ is specified by the field 'bc{\_}temperature'.}% 
+			{{{Dirichlet boundary condition }{$T = T_D $}{.}\\{
+The prescribed temperature }{$T_D$}{ is specified by the field 'bc{\_}temperature'.}% 
 }}
 		\SelectionItem
 			{instance-Heat-BC-Type::total-flux}
 			{total{\_}flux}
-			{{{Total energy flux boundary condition.{\textbackslash}nThe prescribed incoming total flux can have the general form }{$\\delta(f_N+\\sigma_R(T_R-T) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference temperature }{$T_R$}{ by 'bc{\_}temperature'.}% 
+			{{{Total energy flux boundary condition.}\\{
+The prescribed incoming total flux can have the general form }{$\delta(f_N+\sigma_R(T_R-T) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference temperature }{$T_R$}{ by 'bc{\_}temperature'.}% 
 }}
 		\SelectionItem
 			{instance-Heat-BC-Type::diffusive-flux}
 			{diffusive{\_}flux}
-			{{{Diffusive flux boundary condition.{\textbackslash}nThe prescribed incoming energy flux due to diffusion can have the general form }{$\\delta(f_N+\\sigma_R(T_R-T) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference temperature }{$T_R$}{ by 'bc{\_}temperature'.}% 
+			{{{Diffusive flux boundary condition.}\\{
+The prescribed incoming energy flux due to diffusion can have the general form }{$\delta(f_N+\sigma_R(T_R-T) )$}{, where the absolute flux }{$f_N$}{ is specified by the field 'bc{\_}flux', the transition parameter }{$\sigma_R$}{ by 'bc{\_}robin{\_}sigma', and the reference temperature }{$T_R$}{ by 'bc{\_}temperature'.}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
 	{IT::instance-Heat-AdvectionDiffusion-DG-OutputFields}
 	{instance{\_}Heat{\_}AdvectionDiffusion{\_}DG:OutputFields}
-	{{{Selection of output fields for the Heat{\_}AdvectionDiffusion{\_}DG model.{\textbackslash}n}% 
+	{{{Selection of output fields for the Heat{\_}AdvectionDiffusion{\_}DG model.}% 
 }}
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::init-temperature}
@@ -746,12 +788,12 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::disp-l}
 			{disp{\_}l}
-			{{{}{$[m]$}{ Input field: Longitudal heat dispersivity in fluid.}% 
+			{{{}{$[m]$}{ Input field: Longitudinal heat dispersivity in fluid.}% 
 }}
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::disp-t}
 			{disp{\_}t}
-			{{{}{$[m]$}{ Input field: Transversal heat dispersivity in fluid.}% 
+			{{{}{$[m]$}{ Input field: Transverse heat dispersivity in fluid.}% 
 }}
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fluid-thermal-source}
@@ -786,7 +828,7 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::temperature}
 			{temperature}
-			{{{}{$[K]$}{ }% 
+			{{{}{$[K]$}{ Temperature solution.}% 
 }}
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::fracture-sigma}
@@ -802,11 +844,11 @@ Higher value diminishes the inter-element jumps.}%
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::region-id}
 			{region{\_}id}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Region ids.}% 
 }}
 		\SelectionItem
 			{instance-Heat-AdvectionDiffusion-DG-OutputFields::subdomain}
 			{subdomain}
-			{{{}{$[-]$}{ Input field: }% 
+			{{{}{$[-]$}{ Input field: Subdomain ids of the domain decomposition.}% 
 }}
 \end{SelectionType}

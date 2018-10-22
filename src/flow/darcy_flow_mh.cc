@@ -77,7 +77,7 @@ namespace it = Input::Type;
 
 const it::Selection & DarcyMH::get_mh_mortar_selection() {
 	return it::Selection("MH_MortarMethod")
-		.add_value(NoMortar, "None", "Mortar space: P0 on elements of lower dimension.")
+		.add_value(NoMortar, "None", "No Mortar method is applied.")
 		.add_value(MortarP0, "P0", "Mortar space: P0 on elements of lower dimension.")
 		.add_value(MortarP1, "P1", "Mortar space: P1 on intersections, using non-conforming pressures.")
 		.close();
@@ -87,28 +87,28 @@ const it::Selection & DarcyMH::get_mh_mortar_selection() {
 const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
 	return it::Selection("Flow_Darcy_BC_Type")
         .add_value(none, "none",
-            "Homogeneous Neumann boundary condition. Zero flux")
+            "Homogeneous Neumann boundary condition\n(zero normal flux over the boundary).")
         .add_value(dirichlet, "dirichlet",
             "Dirichlet boundary condition. "
-            "Specify the pressure head through the ''bc_pressure'' field "
-            "or the piezometric head through the ''bc_piezo_head'' field.")
+            "Specify the pressure head through the ``bc_pressure`` field "
+            "or the piezometric head through the ``bc_piezo_head`` field.")
         .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
             "Water inflow equal to (($ \\delta_d(q_d^N + \\sigma_d (h_d^R - h_d) )$)). "
-            "Specify the water inflow by the 'bc_flux' field, the transition coefficient by 'bc_robin_sigma' "
-            "and the reference pressure head or pieozmetric head through ''bc_pressure'' or ''bc_piezo_head'' respectively.")
+            "Specify the water inflow by the ``bc_flux`` field, the transition coefficient by ``bc_robin_sigma`` "
+            "and the reference pressure head or pieozmetric head through ``bc_pressure`` or ``bc_piezo_head`` respectively.")
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
             "is described by the pair of inequalities: "
             "(($h_d \\le h_d^D$)) and (($ -\\boldsymbol q_d\\cdot\\boldsymbol n \\le \\delta q_d^N$)), where the equality holds in at least one of them. "
-            "Caution. Setting (($q_d^N$)) strictly negative "
+            "Caution: setting (($q_d^N$)) strictly negative "
             "may lead to an ill posed problem since a positive outflow is enforced. "
-            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by fields ``bc_switch_pressure`` (or ``bc_switch_piezo_head``) and ``bc_flux`` respectively."
+            "Parameters (($h_d^D$)) and (($q_d^N$)) are given by the fields ``bc_switch_pressure`` (or ``bc_switch_piezo_head``) and ``bc_flux`` respectively."
             )
         .add_value(river, "river",
             "River boundary condition. For the water level above the bedrock, (($H_d > H_d^S$)), the Robin boundary condition is used with the inflow given by: "
             "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d) )$)). For the water level under the bedrock, constant infiltration is used: "
             "(( $ \\delta_d(q_d^N + \\sigma_d(H_d^D - H_d^S) )$)). Parameters: ``bc_pressure``, ``bc_switch_pressure``, "
-            " ``bc_sigma, ``bc_flux``."
+            " ``bc_sigma``, ``bc_flux``."
             )
         .close();
 }
@@ -130,24 +130,24 @@ const it::Record & DarcyMH::type_field_descriptor() {
 
 const it::Record & DarcyMH::get_input_type() {
 
-    it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Parameters to a non-linear solver.")
+    it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
         .declare_key("tolerance", it::Double(0.0), it::Default("1E-6"),
             "Residual tolerance.")
         .declare_key("min_it", it::Integer(0), it::Default("1"),
-            "Minimum number of iterations (linear solves) to use. This is usefull if the convergence criteria "
-            "does not characterize your goal well enough so it converges prematurely possibly without the single linear solve."
+            "Minimum number of iterations (linear solutions) to use.\nThis is usefull if the convergence criteria "
+            "does not characterize your goal well enough so it converges prematurely, possibly even without a single linear solution."
             "If greater then 'max_it' the value is set to 'max_it'.")
         .declare_key("max_it", it::Integer(0), it::Default("100"),
-            "Maximum number of iterations (linear solves) of the non-linear solver.")
+            "Maximum number of iterations (linear solutions) of the non-linear solver.")
         .declare_key("converge_on_stagnation", it::Bool(), it::Default("false"),
             "If a stagnation of the nonlinear solver is detected the solver stops. "
-            "A divergence is reported by default forcing the end of the simulation. Setting this flag to 'true', the solver"
-            "ends with convergence success on stagnation, but report warning about it.")
+            "A divergence is reported by default, forcing the end of the simulation. By setting this flag to 'true', the solver "
+            "ends with convergence success on stagnation, but it reports warning about it.")
         .close();
 
-    return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for STEADY saturated Darcy flow.")
+    return it::Record("Flow_Darcy_MH", "Mixed-Hybrid  solver for saturated Darcy flow.")
 		.derive_from(DarcyFlowInterface::get_input_type())
         .declare_key("gravity", it::Array(it::Double(), 3,3), it::Default("[ 0, 0, -1]"),
                 "Vector of the gravity force. Dimensionless.")
@@ -156,20 +156,21 @@ const it::Record & DarcyMH::get_input_type() {
         .declare_key("nonlinear_solver", ns_rec, it::Default("{}"),
                 "Non-linear solver for MH problem.")
         .declare_key("output_stream", OutputTime::get_input_type(), it::Default("{}"),
-                "Parameters of output stream.")
+                "Output stream settings.\n Specify file format, precision etc.")
 
         .declare_key("output", DarcyFlowMHOutput::get_input_type(), IT::Default("{ \"fields\": [ \"pressure_p0\", \"velocity_p0\" ] }"),
-                "Parameters of output from MH module.")
+                "Specification of output fields and output times.")
         .declare_key("output_specific", DarcyFlowMHOutput::get_input_type_specific(), it::Default::optional(),
-                "Parameters of output form MH module.")
+                "Output settings specific to Darcy flow model.\n"
+                "Includes raw output and some experimental functionality.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
         .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
-                "Time governor setting for the unsteady Darcy flow model.")
+                "Time governor settings for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
-				"Method for coupling Darcy flow between dimensions." )
+				"Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]" )
 		.close();
 }
 
@@ -199,34 +200,34 @@ DarcyMH::EqData::EqData()
     ADD_FIELD(water_source_density, "Water source density.", "0.0");
     	water_source_density.units( UnitSI().s(-1) );
     
-    ADD_FIELD(bc_type,"Boundary condition type, possible values:", "\"none\"" );
+    ADD_FIELD(bc_type,"Boundary condition type.", "\"none\"" );
     	// TODO: temporary solution, we should try to get rid of pointer to the selection after having generic types
         bc_type.input_selection( get_bc_type_selection() );
         bc_type.units( UnitSI::dimensionless() );
 
-    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of 'bc_type' except for 'none' and 'seepage'. "
-		"See documentation of 'bc_type' for exact meaning of 'bc_pressure' in individual boundary condition types.", "0.0");
+    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of ``bc_type`` except ``none`` and ``seepage``. "
+		"See documentation of ``bc_type`` for exact meaning of ``bc_pressure`` in individual boundary condition types.", "0.0");
     	bc_pressure.disable_where(bc_type, {none, seepage} );
         bc_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : 'total_flux', 'seepage', 'river'.", "0.0");
+    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : ``total_flux``, ``seepage``, ``river``.", "0.0");
     	bc_flux.disable_where(bc_type, {none, dirichlet} );
         bc_flux.units( UnitSI().m(4).s(-1).md() );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the 'total_flux' or the 'river' boundary condition type.", "0.0");
+    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the ``total_flux`` or the ``river`` boundary condition type.", "0.0");
     	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, seepage} );
         bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
 
     ADD_FIELD(bc_switch_pressure,
-            "Critical switch pressure for 'seepage' and 'river' boundary conditions.", "0.0");
+            "Critical switch pressure for ``seepage`` and ``river`` boundary conditions.", "0.0");
     bc_switch_pressure.disable_where(bc_type, {none, dirichlet, total_flux} );
     bc_switch_pressure.units( UnitSI().m() );
 
     //these are for unsteady
-    ADD_FIELD(init_pressure, "Initial condition for pressure", "0.0" );
+    ADD_FIELD(init_pressure, "Initial condition for pressure in time dependent problems.", "0.0" );
     	init_pressure.units( UnitSI().m() );
 
-    ADD_FIELD(storativity,"Storativity.", "0.0" );
+    ADD_FIELD(storativity,"Storativity (in time dependent problems).", "0.0" );
     	storativity.units( UnitSI().m(-1) );
 
     //time_term_fields = this->subset({"storativity"});
