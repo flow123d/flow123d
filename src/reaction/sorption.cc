@@ -38,7 +38,7 @@ const IT::Record & SorptionSimple::get_input_type() {
         .copy_keys(SorptionBase::get_input_type())
         //.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "Sorption_Output")),
         //             IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
-        .declare_key("output", make_output_type("Sorption", "conc_solid"),
+        .declare_key("output", make_output_type("Sorption", "conc_solid", "Concentration solution in the solid phase."),
              IT::Default("{ \"fields\": [ \"conc_solid\" ] }"),
              "Setting of the fields output.")
 
@@ -48,7 +48,7 @@ const IT::Record & SorptionSimple::get_input_type() {
 SorptionSimple::SorptionSimple(Mesh &init_mesh, Input::Record in_rec)
   : SorptionBase(init_mesh, in_rec)
 {
-	data_ = new EqData("conc_solid");
+	data_ = new EqData("conc_solid", "Concentration solution in the solid phase.");
     this->eq_data_ = data_;
 	//output_selection = make_output_selection(
     //        "SorptionSimple_output_fields",
@@ -113,10 +113,11 @@ void SorptionSimple::isotherm_reinit(std::vector<Isotherm> &isotherms_vec, const
 
 SorptionDual::SorptionDual(Mesh &init_mesh, Input::Record in_rec,
                            const string &output_conc_name,
-                           const string &output_selection_name)
+                           const string &output_selection_name,
+                           const string &output_conc_desc)
     : SorptionBase(init_mesh, in_rec)
 {
-    data_ = new EqData(output_conc_name);
+    data_ = new EqData(output_conc_name, output_conc_desc);
     *data_+=immob_porosity_
         .flags_add(FieldFlag::input_copy)
         .name("porosity_immobile")
@@ -138,7 +139,7 @@ const IT::Record & SorptionMob::get_input_type() {
         .copy_keys(SorptionBase::get_input_type())
         //.declare_key("output_fields", IT::Array(make_output_selection("conc_solid", "SorptionMobile_Output")),
         //    IT::Default("\"conc_solid\""), "List of fields to write to output stream.")
-        .declare_key("output", make_output_type("SorptionMobile", "conc_solid"),
+        .declare_key("output", make_output_type("SorptionMobile", "conc_solid", "Concentration solution in the solid mobile phase."),
              IT::Default("{ \"fields\": [ \"conc_solid\" ] }"),
              "Setting of the fields output.")
 
@@ -152,7 +153,7 @@ const int SorptionMob::registrar =
 
 
 SorptionMob::SorptionMob(Mesh &init_mesh, Input::Record in_rec)
-    : SorptionDual(init_mesh, in_rec, "conc_solid", "SorptionMobile_Output")
+    : SorptionDual(init_mesh, in_rec, "conc_solid", "SorptionMobile_Output", "Concentration solution in the solid mobile phase.")
 {}
 
 
@@ -226,7 +227,7 @@ const IT::Record & SorptionImmob::get_input_type() {
         .copy_keys(SorptionBase::get_input_type())
         //.declare_key("output_fields", IT::Array(make_output_selection("conc_immobile_solid", "SorptionImmobile_Output")),
         //    IT::Default("\"conc_immobile_solid\""), "List of fields to write to output stream.")
-        .declare_key("output", make_output_type("SorptionImmobile", "conc_immobile_solid"),
+        .declare_key("output", make_output_type("SorptionImmobile", "conc_immobile_solid", "Concentration solution in the solid immobile phase."),
              IT::Default("{ \"fields\": [ \"conc_immobile_solid\" ] }"),
              "Setting of the fields output.")
 
@@ -238,7 +239,7 @@ const int SorptionImmob::registrar =
 		SorptionImmob::get_input_type().size();
 
 SorptionImmob::SorptionImmob(Mesh &init_mesh, Input::Record in_rec)
-: SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output")
+: SorptionDual(init_mesh, in_rec, "conc_immobile_solid", "SorptionImmobile_Output", "Concentration solution in the solid immobile phase.")
 {}
 
 SorptionImmob::~SorptionImmob(void)
