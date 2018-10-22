@@ -220,7 +220,7 @@ public:
 	
 	/**
      * @brief Return number of dofs on given cell.
-     * 
+     *
      * @param cell Cell accessor.
      */
 	unsigned int n_dofs(ElementAccessor<3> cell) const;
@@ -247,7 +247,7 @@ public:
      * @param cell Cell accessor.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe(const ElementAccessor<3> &cell) const { return ds_->fe<dim>(cell); }
+    FiniteElement<dim> *fe(const DHCellAccessor &cell) const { return ds_->fe<dim>(cell); }
     
     /**
      * @brief Return dof on a given cell.
@@ -270,6 +270,9 @@ public:
 
     /// Returns range over ghosts DOF handler cells
     Range<DHCellAccessor> ghost_range() const;
+
+    /// Return DHCellAccessor appropriate to ElementAccessor of given element_idx
+    DHCellAccessor cell_accessor_from_element(unsigned int element_idx) const;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;

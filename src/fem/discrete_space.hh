@@ -55,7 +55,7 @@ public:
   
   /// Return finite element object for given element.
   template<unsigned int dim>
-  FiniteElement<dim> *fe(const ElementAccessor<3> &) const;
+  FiniteElement<dim> *fe(const DHCellAccessor &) const;
 
   /// Destructor.
   virtual ~DiscreteSpace() {};
@@ -67,10 +67,10 @@ protected:
   DiscreteSpace(Mesh *mesh)
   : mesh_(mesh) {}
   
-  virtual FiniteElement<0> *fe0d(const ElementAccessor<3> &) const = 0;
-  virtual FiniteElement<1> *fe1d(const ElementAccessor<3> &) const = 0;
-  virtual FiniteElement<2> *fe2d(const ElementAccessor<3> &) const = 0;
-  virtual FiniteElement<3> *fe3d(const ElementAccessor<3> &) const = 0;
+  virtual FiniteElement<0> *fe0d(const DHCellAccessor &) const = 0;
+  virtual FiniteElement<1> *fe1d(const DHCellAccessor &) const = 0;
+  virtual FiniteElement<2> *fe2d(const DHCellAccessor &) const = 0;
+  virtual FiniteElement<3> *fe3d(const DHCellAccessor &) const = 0;
   
   Mesh *mesh_;
 
@@ -91,10 +91,10 @@ public:
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   
-  FiniteElement<0> *fe0d(const ElementAccessor<3> &cell) const override { return fe0_; }
-  FiniteElement<1> *fe1d(const ElementAccessor<3> &cell) const override { return fe1_; }
-  FiniteElement<2> *fe2d(const ElementAccessor<3> &cell) const override { return fe2_; }
-  FiniteElement<3> *fe3d(const ElementAccessor<3> &cell) const override { return fe3_; }
+  FiniteElement<0> *fe0d(const DHCellAccessor &cell) const override { return fe0_; }
+  FiniteElement<1> *fe1d(const DHCellAccessor &cell) const override { return fe1_; }
+  FiniteElement<2> *fe2d(const DHCellAccessor &cell) const override { return fe2_; }
+  FiniteElement<3> *fe3d(const DHCellAccessor &cell) const override { return fe3_; }
   
   
 private:

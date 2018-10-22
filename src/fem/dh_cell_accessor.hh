@@ -75,6 +75,15 @@ public:
      */
     unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const;
 
+    /// Return number of dofs on given cell.
+    unsigned int n_dofs() const;
+
+    /**
+     * @brief Return dof on a given cell.
+     * @param idof Number of dof on the cell.
+     */
+    const Dof &cell_dof(unsigned int idof) const;
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -147,6 +156,39 @@ inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &in
   }
 
   return ndofs;
+}
+
+
+inline unsigned int DHCellAccessor::n_dofs() const
+{
+    switch (element_accessor().dim()) {
+        case 1:
+            return dof_handler_->fe<1>(*this)->n_dofs();
+            break;
+        case 2:
+            return dof_handler_->fe<2>(*this)->n_dofs();
+            break;
+        case 3:
+            return dof_handler_->fe<3>(*this)->n_dofs();
+            break;
+    }
+}
+
+
+inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
+{
+    switch (element_accessor().dim())
+    {
+        case 1:
+            return dof_handler_->fe<1>(*this)->dof(idof);
+            break;
+        case 2:
+            return dof_handler_->fe<2>(*this)->dof(idof);
+            break;
+        case 3:
+            return dof_handler_->fe<3>(*this)->dof(idof);
+            break;
+    }
 }
 
 
