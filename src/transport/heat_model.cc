@@ -155,14 +155,14 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=disp_l
             .name("disp_l")
-            .description("Longitudal heat dispersivity in fluid.")
+            .description("Longitudinal heat dispersivity in fluid.")
             .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
 
     *this+=disp_t
             .name("disp_t")
-            .description("Transversal heat dispersivity in fluid.")
+            .description("Transverse heat dispersivity in fluid.")
             .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add(in_main_matrix);
@@ -216,6 +216,7 @@ HeatTransferModel::ModelEqData::ModelEqData()
 
     *this+=output_field
             .name("temperature")
+            .description("Temperature solution.")
             .units( UnitSI().K() )
             .flags(equation_result);
 }

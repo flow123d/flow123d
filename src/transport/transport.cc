@@ -59,7 +59,7 @@ const int ConvectionTransport::registrar =
 
 const IT::Record &ConvectionTransport::get_input_type()
 {
-	return IT::Record(_equation_name, "Explicit in time finite volume method for advection only solute transport.")
+	return IT::Record(_equation_name, "Finite volume method, explicit in time, for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("input_fields", IT::Array(
 			        EqData().make_field_descriptor_type(_equation_name)),
@@ -68,28 +68,31 @@ const IT::Record &ConvectionTransport::get_input_type()
             .declare_key("output",
                     EqData().output_fields.make_output_type(_equation_name, ""),
                     IT::Default("{ \"fields\": [ \"conc\" ] }"),
-                    "Setting of the fields output.")
+                    "Specification of output fields and output times.")
 			.close();
 }
 
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
-	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
+	ADD_FIELD(bc_conc, "Boundary condition for concentration of substances.", "0.0");
     	bc_conc.units( UnitSI().kg().m(-3) );
-	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
+	ADD_FIELD(init_conc, "Initial values for concentration of substances.", "0.0");
     	init_conc.units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
     output_fields += conc_mobile.name("conc")
             .units( UnitSI().kg().m(-3) )
-            .flags(FieldFlag::equation_result);
+            .flags(FieldFlag::equation_result)
+            .description("Concentration solution.");
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
-	        .flags(FieldFlag::equation_external_output);
+	        .flags(FieldFlag::equation_external_output)
+            .description("Region ids.");
     output_fields += subdomain.name("subdomain")
             .units( UnitSI::dimensionless() )
-            .flags(FieldFlag::equation_external_output);
+            .flags(FieldFlag::equation_external_output)
+            .description("Subdomain ids of the domain decomposition.");
 }
 
 

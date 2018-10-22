@@ -27,17 +27,19 @@ namespace IT = Input::Type;
 
 
 const Input::Type::Record & ObservePoint::get_input_type() {
-    return IT::Record("ObservePoint", "Specification of the observation point. The actual observe element and the observe point on it is determined as follows:\n\n"
-            "1. Find an initial element containing the initial point. If no such element exists we report the error.\n"
-            "2. Use BFS starting from the inital element to find the 'observe element'. The observe element is the closest element "
-            "3. Find the closest projection of the inital point on the observe element and snap this projection according to the 'snap_dim'.\n")
+    return IT::Record("ObservePoint", "Specification of the observation point.\n"
+            "The actual observation element and the observation point on it is determined as follows:\n\n"
+            "1. Find an initial element containing the initial point. If no such element exists, we report an error.\n"
+            "2. Use BFS (Breadth-first search) starting from the inital element to find the 'observe element'. The observe element is the closest element.\n"
+            "3. Find the closest projection of the inital point on the observe element and snap this projection according to the ``snap_dim``.\n")
         .allow_auto_conversion("point")
         .declare_key("name", IT::String(),
                 IT::Default::read_time(
                         "Default name have the form 'obs_<id>', where 'id' "
                         "is the rank of the point on the input."),
-                "Optional point name. Has to be unique. Any string that is valid YAML key in record without any quoting can be used however"
-                "using just alpha-numerical characters and underscore instead of the space is recommended. "
+                "Optional point name, which has to be unique.\n"
+                "Any string that is a valid YAML key in record without any quoting can be used, however,"
+                "using just alpha-numerical characters, and underscore instead of the space, is recommended."
                 )
         .declare_key("point", IT::Array( IT::Double(), 3, 3 ), IT::Default::obligatory(),
                 "Initial point for the observe point search.")

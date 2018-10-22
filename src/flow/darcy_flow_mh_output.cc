@@ -60,7 +60,7 @@ const it::Instance & DarcyFlowMHOutput::get_input_type() {
 const it::Record & DarcyFlowMHOutput::get_input_type_specific() {
     return it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
-                        "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
+                        "SPECIAL PURPOSE. Computes error norms of the solution, particulary suited for non-compatible coupling models.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data form MH module.")
         .close();
@@ -71,20 +71,36 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 : EquationOutput()
 {
 
-    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
-    *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
-	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
-	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
+    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P0 interpolation.");
+    *this += field_node_pressure.name("pressure_p1").units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P1 interpolation.");
+	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Piezo head solution - P0 interpolation.");
+	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Velocity solution - P0 interpolation.");
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
-					  .flags(FieldFlag::equation_external_output);
+					  .flags(FieldFlag::equation_external_output)
+                      .description("Subdomain ids of the domain decomposition.");
 	*this += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
-	        .flags(FieldFlag::equation_external_output);
+	        .flags(FieldFlag::equation_external_output)
+            .description("Region ids.");
 
-	error_fields_for_output += pressure_diff.name("pressure_diff").units(UnitSI().m());
-	error_fields_for_output += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
-	error_fields_for_output += div_diff.name("div_diff").units(UnitSI().s(-1));
+	error_fields_for_output += pressure_diff.name("pressure_diff").units(UnitSI().m())
+                               .flags(FieldFlag::equation_result) 
+                               .description("Error norm of the pressure solution. [Experimental]");
+	error_fields_for_output += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1))
+                               .flags(FieldFlag::equation_result)
+                               .description("Error norm of the velocity solution. [Experimental]");
+	error_fields_for_output += div_diff.name("div_diff").units(UnitSI().s(-1))
+                               .flags(FieldFlag::equation_result)
+                               .description("Error norm of the divergence of the velocity solution. [Experimental]");
 
 }
 

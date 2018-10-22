@@ -27,7 +27,7 @@
 namespace it = Input::Type;
 
 it::Abstract & LinSys::get_input_type() {
-	return it::Abstract("LinSys", "Linear solver setting.")
+	return it::Abstract("LinSys", "Linear solver settings.")
 	        .allow_auto_conversion("Petsc")
 			.close();
 }

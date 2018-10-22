@@ -35,11 +35,13 @@ namespace it = Input::Type;
 
 
 const it::Record & LinSys_BDDC::get_input_type() {
-	return it::Record("Bddc", "Solver setting.")
+	return it::Record("Bddc", "BDDCML (Balancing Domain Decomposition by Constraints - Multi-Level) solver settings.")
 		.derive_from(LinSys::get_input_type())
-        .declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
-                    "Relative residual tolerance,  (to initial error).")
-        .declare_key("max_it", it::Integer(0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1000."),
+        .declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1.0e-7."),
+                    "Residual tolerance relative to the initial error.")
+        .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
 
         .declare_key("max_nondecr_it", it::Integer(0), it::Default("30"),
@@ -49,7 +51,7 @@ const it::Record & LinSys_BDDC::get_input_type() {
 		.declare_key("use_adaptive_bddc", it::Bool(), it::Default("false"),
 					 "Use adaptive selection of constraints in BDDCML.")
 		.declare_key("bddcml_verbosity_level", it::Integer(0,2), it::Default("0"),
-					 "Level of verbosity of the BDDCML library:\n\n - 0 - no output\n - 1 - mild output\n - 2 - detailed output.")
+					 "Level of verbosity of the BDDCML library:\n\n - 0 - no output,\n - 1 - mild output,\n - 2 - detailed output.")
 		.close();
 }
 

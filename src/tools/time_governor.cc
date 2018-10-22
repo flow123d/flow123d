@@ -40,26 +40,30 @@ using namespace Input::Type;
 
 const Record & TimeGovernor::get_input_type() {
 	return Record("TimeGovernor",
-            "Setting of the simulation time. (can be specific to one equation)")
+            "Time axis settings of the simulation.\n"
+            "The settings is specific to a particular equation.")
 		.allow_auto_conversion("max_dt")
 		.declare_key("start_time", Double(), Default("0.0"),
 					"Start time of the simulation.")
 		.declare_key("end_time", Double(), Default(MAX_END_TIME_STR),
-					"End time of the simulation. Default value is more then age of universe in seconds.")
+					"End time of the simulation.\n"
+                    "The default value is higher than the age of the Universe (given in seconds).")
 		.declare_key("init_dt", Double(0.0), Default("0.0"),
 				"Initial guess for the time step.\n"
-				"Only useful for equations that use adaptive time stepping."
+				"It applies to equations that use an adaptive time stepping."
 				"If set to 0.0, the time step is determined in fully autonomous"
-				" way if the equation supports it.")
+				" way, assuming the equation supports it.")
 		.declare_key("min_dt", Double(0.0),
 				Default::read_time("Machine precision."),
-				"Soft lower limit for the time step. Equation using adaptive time stepping can not"
-				"suggest smaller time step, but actual time step could be smaller in order to match "
-				"prescribed input or output times.")
+				"Soft lower limit for the time step.\n"
+                "Equation using an adaptive time stepping cannot suggest smaller time step."
+				"The actual time step can only decrease below the limit in order to match "
+				"the prescribed input or output times.")
 		.declare_key("max_dt", Double(0.0),
 				Default::read_time("Whole time of the simulation if specified, infinity else."),
-				"Hard upper limit for the time step. Actual length of the time step is also limited"
-				"by input and output times.")
+				"Hard upper limit for the time step.\n"
+                "The actual time step can only increase above the limit in order to match "
+                "the prescribed input or output times.")
 		.close();
 }
 

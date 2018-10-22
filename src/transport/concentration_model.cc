@@ -97,17 +97,17 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
     *this+=init_conc
             .name("init_conc")
             .units( UnitSI().kg().m(-3) )
-            .description("Initial concentrations.")
+            .description("Initial values for concentration of substances.")
             .input_default("0.0");
     *this+=disp_l
             .name("disp_l")
-            .description("Longitudal dispersivity in the liquid (for each substance).")
+            .description("Longitudinal dispersivity in the liquid (for each substance).")
             .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
     *this+=disp_t
             .name("disp_t")
-            .description("Transversal dispersivity in the liquid (for each substance).")
+            .description("Transverse dispersivity in the liquid (for each substance).")
             .units( UnitSI().m() )
             .input_default("0.0")
             .flags_add( in_main_matrix & in_rhs );
@@ -132,6 +132,7 @@ ConcentrationTransportModel::ModelEqData::ModelEqData()
 
 	*this+=output_field
 	        .name("conc")
+            .description("Concentration solution.")
 	        .units( UnitSI().kg().m(-3) )
 	        .flags( equation_result );
 }
@@ -145,7 +146,7 @@ IT::Record ConcentrationTransportModel::get_input_type(const string &implementat
 				description + " for solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("solvent_density", IT::Double(0), IT::Default("1.0"),
-					"Density of the solvent [ (($kg.m^(-3)$)) ].");
+					"Density of the solvent [ (($kg.m^{-3}$)) ].");
 }
 
 IT::Selection ConcentrationTransportModel::ModelEqData::get_output_selection()
