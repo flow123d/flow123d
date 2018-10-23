@@ -19,6 +19,7 @@
 #include "fem/mapping_p1.hh"
 #include "fem/fe_values.hh"
 #include "quadrature/quadrature.hh"
+#include "quadrature/quadrature_lib.hh"
 #include "mesh/bounding_box.hh"
 #include "mesh/accessors.hh"
 #include "fem/fe_values_views.hh"
@@ -127,7 +128,8 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
     ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() );
-	dh_->get_dof_indices(cell, dof_indices);
+    if (boundary_dofs_) this->get_dof_indices( cell, dof_indices);
+    else dh_->get_dof_indices(cell, dof_indices);
 
     arma::mat map_mat = map_->element_map(elm);
 	for (unsigned int k=0; k<point_list.size(); k++) {
@@ -144,6 +146,35 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
 		}
 	}
+}
+
+
+template <int elemdim, int spacedim, class Value>
+unsigned int FEValueHandler<elemdim, spacedim, Value>::compute_quadrature(std::vector<arma::vec::fixed<3>> & q_points, std::vector<double> & q_weights,
+		const ElementAccessor<spacedim> &ele, unsigned int order)
+{
+	static const double weight_coefs[] = { 1., 1., 2., 6. };
+
+	QGauss<elemdim> qgauss(order);
+	arma::mat map_mat = map_->element_map(ele);
+
+	for(unsigned i=0; i<qgauss.size(); ++i) {
+		q_weights[i] = qgauss.weight(i)*weight_coefs[elemdim];
+		q_points[i] = map_->project_unit_to_real(RefElement<elemdim>::local_to_bary(qgauss.point(i)), map_mat);
+	}
+
+	return qgauss.size();
+}
+
+
+template <int elemdim, int spacedim, class Value>
+unsigned int FEValueHandler<elemdim, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
+{
+    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+    for (unsigned int k=0; k<ndofs; k++) {
+        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
+    }
+    return ndofs;
 }
 
 
@@ -167,7 +198,8 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() );
-	dh_->get_dof_indices(cell, dof_indices);
+	if (boundary_dofs_) this->get_dof_indices( cell, dof_indices);
+	else dh_->get_dof_indices(cell, dof_indices);
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
@@ -176,6 +208,17 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += (*data_vec_)[dof_indices[i]];
 		}
 	}
+}
+
+
+template <int spacedim, class Value>
+unsigned int FEValueHandler<0, spacedim, Value>::get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
+{
+    unsigned int ndofs = this->value_.n_rows() * this->value_.n_cols();
+    for (unsigned int k=0; k<ndofs; k++) {
+        indices[k] = (*boundary_dofs_)[ndofs*cell.idx()+k];
+    }
+    return ndofs;
 }
 
 
