@@ -20,22 +20,22 @@
 	{{{Different algorithms to make the sparse graph with weighted edges}\\{
 from the multidimensional mesh.
 Main difference is dealing with }\\{
-neighborings of elements of different dimension.}% 
+neighboring of elements of different dimension.}% 
 }}
 		\SelectionItem
 			{instance-GraphType::any-neighboring}
 			{any{\_}neighboring}
-			{{{Add edge for any pair of neighboring elements.}% 
+			{{{Add an edge for any pair of neighboring elements.}% 
 }}
 		\SelectionItem
-			{instance-GraphType::any-wight-lower-dim-cuts}
-			{any{\_}wight{\_}lower{\_}dim{\_}cuts}
+			{instance-GraphType::any-weight-lower-dim-cuts}
+			{any{\_}weight{\_}lower{\_}dim{\_}cuts}
 			{{{Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.}% 
 }}
 		\SelectionItem
-			{instance-GraphType::same-dimension-neghboring}
-			{same{\_}dimension{\_}neghboring}
-			{{{Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).}% 
+			{instance-GraphType::same-dimension-neighboring}
+			{same{\_}dimension{\_}neighboring}
+			{{{Add an edge for any pair of neighboring elements of the same dimension (bad for matrix multiply).}% 
 }}
 \end{SelectionType}
 \begin{SelectionType}
@@ -93,27 +93,27 @@ Some sections are specific to file format.}%
 		\SelectionItem
 			{instance-interpolation::identic-mesh}
 			{identic{\_}mesh}
-			{{{Topology and indexes of nodes and elements ofthe input mesh and the computational mesh are identical.
+			{{{Topology and indices of nodes and elements ofthe input mesh and the computational mesh are identical.
 This interpolation is typically used for GMSH input files containing only the field values without explicit mesh specification.}% 
 }}
 		\SelectionItem
 			{instance-interpolation::equivalent-mesh}
 			{equivalent{\_}mesh}
-			{{{Topologies of the input mesh and the computational meshare same, the node and element numbering can differ.
+			{{{Topologies of the input mesh and the computational mesh are the same, the node and element numbering may differ.
 This interpolation can be used also for VTK input data.}% 
 }}
 		\SelectionItem
 			{instance-interpolation::P0-gauss}
 			{P0{\_}gauss}
 			{{{Topologies of the input mesh and the computational mesh may differ.
-Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of fixed order 4,where the quadrature points and their values are found in the input mesh and input data using the BIH tree search.}% 
+Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of the fixed order 4, where the quadrature points and their values are found in the input mesh and input data using the BIH tree search.}% 
 }}
 		\SelectionItem
 			{instance-interpolation::P0-intersection}
 			{P0{\_}intersection}
 			{{{Topologies of the input mesh and the computational mesh may differ.
 Can be applied only for boundary fields.
-For every (boundary) element of the computational mesh theintersection with the input mesh is computed.
+For every (boundary) element of the computational mesh the intersection with the input mesh is computed.
 Constant values on the elements of the computational mesh are evaluated as the weighted average of the (constant) values on the intersecting elements of the input mesh.}% 
 }}
 \end{SelectionType}
@@ -136,7 +136,7 @@ Specify the pressure head through the }\begin{ttfamily}bc{\_}pressure\end{ttfami
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::total-flux}
 			{total{\_}flux}
-			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$ \delta_d(q_d^N + \sigma_d (h_d^R - h_d) )$}{. Specify the water inflow by the }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ field, the transition coefficient by }\begin{ttfamily}bc{\_}robin{\_}sigma\end{ttfamily}{ and the reference pressure head or pieozmetric head through }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ or }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{ respectively.}% 
+			{{{Flux boundary condition (combines Neumann and Robin type). Water inflow equal to }{$ \delta_d(q_d^N + \sigma_d (h_d^R - h_d) )$}{. Specify the water inflow by the }\begin{ttfamily}bc{\_}flux\end{ttfamily}{ field, the transition coefficient by }\begin{ttfamily}bc{\_}robin{\_}sigma\end{ttfamily}{ and the reference pressure head or piezometric head through }\begin{ttfamily}bc{\_}pressure\end{ttfamily}{ or }\begin{ttfamily}bc{\_}piezo{\_}head\end{ttfamily}{ respectively.}% 
 }}
 		\SelectionItem
 			{instance-Flow-Darcy-BC-Type::seepage}
@@ -578,8 +578,8 @@ Higher value diminishes the inter-element jumps.}%
 		\SelectionItem
 			{instance-Sorption-OutputFields::sorption-type}
 			{sorption{\_}type}
-			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.
-If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
+			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.}\\{
+If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
 			{instance-Sorption-OutputFields::distribution-coefficient}
@@ -594,8 +594,8 @@ If porosity on an element is equal or even higher than 1.0 (meaning no sorbing s
 		\SelectionItem
 			{instance-Sorption-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Initial solid concentration of substances.
-Vector, one value for every substance.}% 
+			{{{}{$[-]$}{ Input field: Initial solid concentration of substances.
+It is a vector: one value for every substance.}% 
 }}
 		\SelectionItem
 			{instance-Sorption-OutputFields::conc-solid}
@@ -616,8 +616,8 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-SorptionMobile-OutputFields::sorption-type}
 			{sorption{\_}type}
-			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.
-If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
+			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.}\\{
+If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
 			{instance-SorptionMobile-OutputFields::distribution-coefficient}
@@ -632,8 +632,8 @@ If porosity on an element is equal or even higher than 1.0 (meaning no sorbing s
 		\SelectionItem
 			{instance-SorptionMobile-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Initial solid concentration of substances.
-Vector, one value for every substance.}% 
+			{{{}{$[-]$}{ Input field: Initial solid concentration of substances.
+It is a vector: one value for every substance.}% 
 }}
 		\SelectionItem
 			{instance-SorptionMobile-OutputFields::conc-solid}
@@ -654,8 +654,8 @@ Vector, one value for every substance.}%
 		\SelectionItem
 			{instance-SorptionImmobile-OutputFields::sorption-type}
 			{sorption{\_}type}
-			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.
-If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically.}% 
+			{{{}{$[-]$}{ Input field: Considered sorption is described by selected isotherm.}\\{
+If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.}% 
 }}
 		\SelectionItem
 			{instance-SorptionImmobile-OutputFields::distribution-coefficient}
@@ -670,8 +670,8 @@ If porosity on an element is equal or even higher than 1.0 (meaning no sorbing s
 		\SelectionItem
 			{instance-SorptionImmobile-OutputFields::init-conc-solid}
 			{init{\_}conc{\_}solid}
-			{{{}{$[kg^{-1}mol]$}{ Input field: Initial solid concentration of substances.
-Vector, one value for every substance.}% 
+			{{{}{$[-]$}{ Input field: Initial solid concentration of substances.
+It is a vector: one value for every substance.}% 
 }}
 		\SelectionItem
 			{instance-SorptionImmobile-OutputFields::conc-immobile-solid}
