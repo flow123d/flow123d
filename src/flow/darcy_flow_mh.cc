@@ -95,7 +95,7 @@ const it::Selection & DarcyMH::EqData::get_bc_type_selection() {
         .add_value(total_flux, "total_flux", "Flux boundary condition (combines Neumann and Robin type). "
             "Water inflow equal to (($ \\delta_d(q_d^N + \\sigma_d (h_d^R - h_d) )$)). "
             "Specify the water inflow by the ``bc_flux`` field, the transition coefficient by ``bc_robin_sigma`` "
-            "and the reference pressure head or pieozmetric head through ``bc_pressure`` or ``bc_piezo_head`` respectively.")
+            "and the reference pressure head or piezometric head through ``bc_pressure`` or ``bc_piezo_head`` respectively.")
         .add_value(seepage, "seepage",
             "Seepage face boundary condition. Pressure and inflow bounded from above. Boundary with potential seepage flow "
             "is described by the pair of inequalities: "
