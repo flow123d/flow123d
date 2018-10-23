@@ -86,12 +86,12 @@ SorptionBase::EqData::EqData(const string &output_field_name, const string &outp
             .units( UnitSI::dimensionless() );
 
     *this += distribution_coefficient.name("distribution_coefficient")
-            .description("Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.")
+            .description("Distribution coefficient (( $k_l, k_F, k_L $)) of linear, Freundlich or Langmuir isotherm respectively.")
             .input_default("1.0")
             .units( UnitSI().m(3).kg(-1) );
 
     *this += isotherm_other.name("isotherm_other")
-            .description("Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).")
+            .description("Additional parameter (($ \\alpha $)) of nonlinear isotherms.")
             .input_default("1.0")
             .units( UnitSI::dimensionless() );
 
