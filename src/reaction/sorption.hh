@@ -81,7 +81,6 @@ public:
     /// Constructor.
     SorptionDual(Mesh &init_mesh, Input::Record in_rec,
                 const string &output_conc_name,
-                const string &output_selection_name,
                 const string &output_conc_desc);
 
     /// Destructor.

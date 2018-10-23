@@ -66,14 +66,6 @@ public:
    *   Static variable for new input data types input
    */
   static const Input::Type::Record & get_input_type();
-  
-  /*
-  static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
-  {
-      return EqData(output_field_name).output_fields
-        .make_output_field_selection(selection_name, "desc")
-        .close();
-  }*/
 
   static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name, const string &output_field_desc )
   {
@@ -245,10 +237,6 @@ protected:
    * Array for storage infos about sorbed species concentrations.
    */
   double** conc_solid;
-  
-  //Input::Array output_array;
-
-  //Input::Type::Selection output_selection;
 
   /**
    * Reaction model that follows the sorption.
