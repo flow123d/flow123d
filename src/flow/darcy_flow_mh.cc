@@ -183,55 +183,82 @@ const int DarcyMH::registrar =
 
 DarcyMH::EqData::EqData()
 {
-    ADD_FIELD(anisotropy, "Anisotropy of the conductivity tensor.", "1.0" );
-    	anisotropy.units( UnitSI::dimensionless() );
+    *this += anisotropy.name("anisotropy")
+            .description("Anisotropy of the conductivity tensor.")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() );
 
-    ADD_FIELD(cross_section, "Complement dimension parameter (cross section for 1D, thickness for 2D).", "1.0" );
-    	cross_section.units( UnitSI().m(3).md() );
+    *this += cross_section.name("cross_section")
+            .description("Complement dimension parameter (cross section for 1D, thickness for 2D).")
+            .input_default("1.0")
+            .units( UnitSI().m(3).md() );
 
-    ADD_FIELD(conductivity, "Isotropic conductivity scalar.", "1.0" );
-    	conductivity.units( UnitSI().m().s(-1) ).set_limits(0.0);
+    *this += conductivity.name("conductivity")
+            .description("Isotropic conductivity scalar.")
+            .input_default("1.0")
+            .units( UnitSI().m().s(-1) )
+            .set_limits(0.0);
 
-    ADD_FIELD(sigma, "Transition coefficient between dimensions.", "1.0");
-    	sigma.units( UnitSI::dimensionless() );
+    *this += sigma.name("sigma")
+            .description("Transition coefficient between dimensions.")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() );
 
-    ADD_FIELD(water_source_density, "Water source density.", "0.0");
-    	water_source_density.units( UnitSI().s(-1) );
+    *this += water_source_density.name("water_source_density")
+            .description("Water source density.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) );
+
+    *this += bc_type.name("bc_type")
+            .description("Boundary condition type.")
+            .input_selection( get_bc_type_selection() )
+            .input_default("\"none\"")
+            .units( UnitSI::dimensionless() );
     
-    ADD_FIELD(bc_type,"Boundary condition type.", "\"none\"" );
-    	// TODO: temporary solution, we should try to get rid of pointer to the selection after having generic types
-        bc_type.input_selection( get_bc_type_selection() );
-        bc_type.units( UnitSI::dimensionless() );
+    *this += bc_pressure
+            .disable_where(bc_type, {none, seepage} )
+            .name("bc_pressure")
+            .description("Prescribed pressure value on the boundary. Used for all values of ``bc_type`` except ``none`` and ``seepage``. "
+                "See documentation of ``bc_type`` for exact meaning of ``bc_pressure`` in individual boundary condition types.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
 
-    ADD_FIELD(bc_pressure,"Prescribed pressure value on the boundary. Used for all values of ``bc_type`` except ``none`` and ``seepage``. "
-		"See documentation of ``bc_type`` for exact meaning of ``bc_pressure`` in individual boundary condition types.", "0.0");
-    	bc_pressure.disable_where(bc_type, {none, seepage} );
-        bc_pressure.units( UnitSI().m() );
+    *this += bc_flux
+            .disable_where(bc_type, {none, dirichlet} )
+            .name("bc_flux")
+            .description("Incoming water boundary flux. Used for bc_types : ``total_flux``, ``seepage``, ``river``.")
+            .input_default("0.0")
+            .units( UnitSI().m().s(-1) );
 
-    ADD_FIELD(bc_flux,"Incoming water boundary flux. Used for bc_types : ``total_flux``, ``seepage``, ``river``.", "0.0");
-    	bc_flux.disable_where(bc_type, {none, dirichlet} );
-        bc_flux.units( UnitSI().m(4).s(-1).md() );
+    *this += bc_robin_sigma
+            .disable_where(bc_type, {none, dirichlet, seepage} )
+            .name("bc_robin_sigma")
+            .description("Conductivity coefficient in the ``total_flux`` or the ``river`` boundary condition type.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) );
 
-    ADD_FIELD(bc_robin_sigma,"Conductivity coefficient in the ``total_flux`` or the ``river`` boundary condition type.", "0.0");
-    	bc_robin_sigma.disable_where(bc_type, {none, dirichlet, seepage} );
-        bc_robin_sigma.units( UnitSI().m(3).s(-1).md() );
+    *this += bc_switch_pressure
+            .disable_where(bc_type, {none, dirichlet, total_flux} )
+            .name("bc_switch_pressure")
+            .description("Critical switch pressure for ``seepage`` and ``river`` boundary conditions.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
 
-    ADD_FIELD(bc_switch_pressure,
-            "Critical switch pressure for ``seepage`` and ``river`` boundary conditions.", "0.0");
-    bc_switch_pressure.disable_where(bc_type, {none, dirichlet, total_flux} );
-    bc_switch_pressure.units( UnitSI().m() );
 
     //these are for unsteady
-    ADD_FIELD(init_pressure, "Initial condition for pressure in time dependent problems.", "0.0" );
-    	init_pressure.units( UnitSI().m() );
+    *this += init_pressure.name("init_pressure")
+            .description("Initial condition for pressure in time dependent problems.")
+            .input_default("0.0")
+            .units( UnitSI().m() );
 
-    ADD_FIELD(storativity,"Storativity (in time dependent problems).", "0.0" );
-    	storativity.units( UnitSI().m(-1) );
+    *this += storativity.name("storativity")
+            .description("Storativity (in time dependent problems).")
+            .input_default("0.0")
+            .units( UnitSI().m(-1) );
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
-
 }
 
 
