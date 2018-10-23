@@ -121,18 +121,9 @@ inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) c
 {
   unsigned int elem_idx = this->element_idx();
   unsigned int ndofs = 0;
-  if ( dof_handler_->cell_starts_seq.size() > 0 && dof_handler_->dof_indices_seq.size() > 0)
-  {
-    ndofs = dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]];
-    for (unsigned int k=0; k<ndofs; k++)
-      indices[k] = dof_handler_->dof_indices_seq[dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]]+k];
-  }
-  else
-  {
-    ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
-    for (unsigned int k=0; k<ndofs; k++)
-      indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k];
-  }
+  ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
+  for (unsigned int k=0; k<ndofs; k++)
+    indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k];
 
   return ndofs;
 }
@@ -142,18 +133,9 @@ inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &in
 {
   unsigned int elem_idx = this->element_idx();
   unsigned int ndofs = 0;
-  if ( dof_handler_->cell_starts_seq.size() > 0 && dof_handler_->dof_indices_seq.size() > 0)
-  {
-    ndofs = dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]];
-    for (unsigned int k=0; k<ndofs; k++)
-      indices[k] = dof_handler_->cell_starts_seq[dof_handler_->row_4_el[elem_idx]]+k;
-  }
-  else
-  {
-    ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
-    for (unsigned int k=0; k<ndofs; k++)
-      indices[k] = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k;
-  }
+  ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
+  for (unsigned int k=0; k<ndofs; k++)
+    indices[k] = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k;
 
   return ndofs;
 }
