@@ -658,15 +658,10 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 	int rank;
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-	bool boundary;
-	if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
-		boundary = this->boundary_domain_;
-	} else {
-		boundary = false;
-	}
 
-	if ( (rank == 0) || boundary ) {
+	if ( (rank == 0) || this->boundary_domain_ ) {
 		// iterate through elements, assembly global vector and count number of writes
+		Mesh *mesh;
 		if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
 		else mesh = dh_->mesh();
 		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output

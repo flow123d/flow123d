@@ -129,7 +129,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
     DHCellAccessor cell = dh_->cell_accessor_from_element( elm.mesh_idx() );
-    if (boundary_dofs_) this->get_dof_indices( cell, dof_indices);
+    if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
     else dh_->get_dof_indices( dh_->mesh()->element_accessor( elm.mesh_idx() ), dof_indices );
 
     arma::mat map_mat = map_->element_map(elm);
@@ -199,7 +199,7 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
 	DHCellAccessor cell = dh_->cell_accessor_from_element( elm.mesh_idx() );
-	if (boundary_dofs_) this->get_dof_indices( cell, dof_indices);
+	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
 	else dh_->get_dof_indices( dh_->mesh()->element_accessor( elm.mesh_idx() ), dof_indices );
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
