@@ -79,22 +79,31 @@ const Record & SorptionBase::get_input_type() {
 
 SorptionBase::EqData::EqData(const string &output_field_name, const string &output_field_desc)
 {
-    ADD_FIELD(rock_density, "Rock matrix density.", "0.0");
-    	rock_density.units( UnitSI().kg().m(-3) );
+    *this += rock_density.name("rock_density")
+            .description("Rock matrix density.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
 
-    ADD_FIELD(sorption_type,"Considered sorption is described by selected isotherm. If porosity on an element is equal or even higher than 1.0 (meaning no sorbing surface), then type 'none' will be selected automatically."); //
-        sorption_type.input_selection(get_sorption_type_selection());
-        sorption_type.units( UnitSI::dimensionless() );
+    *this += sorption_type.name("sorption_type")
+            .description("Considered sorption is described by selected isotherm.\n"
+                "If porosity on an element is equal to 1.0 (or even higher), meaning no sorbing surface, then type 'none' will be selected automatically.")
+            .input_selection(get_sorption_type_selection())
+            .units( UnitSI::dimensionless() );
 
-    ADD_FIELD(distribution_coefficient,"Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.","1.0");
-    	distribution_coefficient.units( UnitSI().m(3).kg(-1) );
+    *this += distribution_coefficient.name("distribution_coefficient")
+            .description("Multiplication parameters (k, omega) in either Langmuir c_s = omega * (alpha*c_a)/(1- alpha*c_a) or in linear c_s = k * c_a isothermal description.")
+            .input_default("1.0")
+            .units( UnitSI().m(3).kg(-1) );
 
-    ADD_FIELD(isotherm_other,"Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).","1.0");
-    	isotherm_other.units( UnitSI::dimensionless() );
+    *this += isotherm_other.name("isotherm_other")
+            .description("Second parameters (alpha, ...) defining isotherm  c_s = omega * (alpha*c_a)/(1- alpha*c_a).")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() );
 
-    ADD_FIELD(init_conc_solid, "Initial solid concentration of substances."
-            " Vector, one value for every substance.", "0");
-    	init_conc_solid.units( UnitSI().mol().kg(-1) );
+    *this += init_conc_solid.name("init_conc_solid")
+            .description("Initial solid concentration of substances. It is a vector: one value for every substance.")
+            .input_default("0")
+            .units( UnitSI().dimensionless() );
 
     input_data_set_ += *this;
 
