@@ -371,9 +371,10 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 			ASSERT(false).error("Should not happen!\n");
 	}
 
-	dh_ = std::make_shared<DOFHandlerMultiDim>( const_cast<Mesh &>(*mesh) );
+	DOFHandlerMultiDim dh_par( const_cast<Mesh &>(*mesh) );
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &const_cast<Mesh &>(*mesh), fe0_, fe1_, fe2_, fe3_);
-	dh_->distribute_dofs(ds, true);
+	dh_par.distribute_dofs(ds);
+    dh_ = dh_par.sequential();
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
 

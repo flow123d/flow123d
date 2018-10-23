@@ -130,7 +130,7 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     ds_ = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe0_, fe1_, fe2_, fe3_);
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
-    dh_->distribute_dofs(ds_, true);
+    dh_->distribute_dofs(ds_);
 }
 
 
@@ -301,7 +301,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_field_ptr->set_fe_data(feo->dh(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
+        output_field_ptr->set_fe_data(feo->dh()->sequential(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
         data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
@@ -327,11 +327,11 @@ void TransportDG<Model>::initialize()
     ret_vec.resize(Model::n_substances(), nullptr);
 
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
-        ls[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
+        ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         ls[sbi]->set_solution(NULL);
 
-        ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr(), petsc_default_opts);
+        ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
         solution_elem_[sbi] = new double[Model::mesh_->get_el_ds()->lsize()];
         
@@ -645,6 +645,7 @@ void TransportDG<Model>::output_data()
 
 
     START_TIMER("DG-OUTPUT");
+
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
@@ -1191,7 +1192,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 		}
         fe_values_side.reinit(cell, nb->side()->side_idx());
         n_dofs[1] = fv_sb[1]->n_dofs();
-
+        
         // Element id's for testing if they belong to local partition.
         int element_id[2];
         element_id[0] = cell_sub.idx();
