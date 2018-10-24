@@ -105,30 +105,37 @@ const int TransportOperatorSplitting::registrar =
 
 TransportEqData::TransportEqData()
 {
+    *this += porosity.name("porosity")
+            .description("Porosity of the mobile phase.")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() )
+            .flags_add(in_main_matrix & in_rhs);
 
-	ADD_FIELD(porosity, "Porosity of the mobile phase.", "1.0");
-	porosity
-	.units( UnitSI::dimensionless() )
-	.flags_add(in_main_matrix & in_rhs);
+    *this += water_content.name("water_content")
+            .description("INTERNAL. Water content passed from unsaturated Darcy flow model.")
+            .units( UnitSI::dimensionless() )
+            .flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 
-	add_field(&water_content, "water_content", "INTERNAL. Water content passed from unsaturated Darcy flow model.", "")
-	.units( UnitSI::dimensionless() )
-	.flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
+    *this += cross_section.name("cross_section")
+            .flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 
-	ADD_FIELD(cross_section, "");
-	cross_section.flags( FieldFlag::input_copy ).flags_add(in_time_term & in_main_matrix & in_rhs);
+    *this += sources_density.name("sources_density")
+            .description("Density of concentration sources.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3).s(-1) )
+            .flags_add(in_rhs);
 
-	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
-	sources_density.units( UnitSI().kg().m(-3).s(-1) )
-			.flags_add(in_rhs);
+    *this += sources_sigma.name("sources_sigma")
+            .description("Concentration flux.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) )
+            .flags_add(in_main_matrix & in_rhs);
 
-	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
-	sources_sigma.units( UnitSI().s(-1) )
-			.flags_add(in_main_matrix & in_rhs);
-
-	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
-	sources_conc.units( UnitSI().kg().m(-3) )
-			.flags_add(in_rhs);
+    *this += sources_conc.name("sources_conc")
+            .description("Concentration sources threshold.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) )
+            .flags_add(in_rhs);
 }
 
 

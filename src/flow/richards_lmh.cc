@@ -43,33 +43,29 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-    string desc;
+    *this += water_content_saturated.name("water_content_saturated")
+            .description(R"(Saturated water content (($ \theta_s $)).
+                Relative volume of water in a reference volume of a saturated porous media.)")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
+
+    *this += water_content_residual.name("water_content_residual")
+            .description(R"(Residual water content (($ \theta_r $)).
+                Relative volume of water in a reference volume of an ideally dry porous media.)")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
     
-    desc = R"(
-Saturated water content (($ \theta_s $)).
-Relative volume of water in a reference volume of a saturated porous media.
-)" ;
-    ADD_FIELD(water_content_saturated, desc, "0.0");
-    water_content_saturated.units( UnitSI::dimensionless() );
+    *this += genuchten_p_head_scale.name("genuchten_p_head_scale")
+            .description(R"(The van Genuchten pressure head scaling parameter (($ \alpha $)).
+                It is related to the inverse of the air entry pressure, i.e. the pressure
+                where the relative water content starts to decrease below 1.)")
+            .input_default("0.0")
+            .units( UnitSI().m(-1) );
 
-    desc = R"(
-Residual water content (($ \theta_r $)).
-Relative volume of water in a reference volume of an ideally dry porous media.
-)";
-    ADD_FIELD(water_content_residual, desc, "0.0");
-    water_content_residual.units( UnitSI::dimensionless() );
-
-    desc = R"(
-The van Genuchten pressure head scaling parameter (($ \alpha $)).
-Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.
-)";
-    ADD_FIELD(genuchten_p_head_scale, desc, "0.0");
-    genuchten_p_head_scale.units( UnitSI().m(-1) );
-
-    ADD_FIELD(genuchten_n_exponent,
-            "The van Genuchten exponent parameter (($ n $)).", "2.0");
-    genuchten_n_exponent.units( UnitSI::dimensionless() );
-
+    *this += genuchten_n_exponent.name("genuchten_n_exponent")
+            .description("The van Genuchten exponent parameter (($ n $)).")
+            .input_default("2.0")
+            .units( UnitSI::dimensionless() );
 }
 
 

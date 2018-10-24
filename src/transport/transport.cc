@@ -82,10 +82,15 @@ const IT::Record &ConvectionTransport::get_input_type()
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
-	ADD_FIELD(bc_conc, "Boundary condition for concentration of substances.", "0.0");
-    	bc_conc.units( UnitSI().kg().m(-3) );
-	ADD_FIELD(init_conc, "Initial values for concentration of substances.", "0.0");
-    	init_conc.units( UnitSI().kg().m(-3) );
+    *this += bc_conc.name("bc_conc")
+            .description("Boundary condition for concentration of substances.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
+    *this += init_conc.name("init_conc")
+            .description("Initial values for concentration of substances.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
     output_fields += conc_mobile.name("conc")
