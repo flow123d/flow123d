@@ -31,7 +31,7 @@ In $\Omega_d$, $d\in\{1,2,3\}$, we consider the following system of mass balance
     \label{e:ADE}
    \partial_t ( \delta \th c^i) + \div ( \vc q c^i ) - \div (\th \delta \D^i \grad c^i ) = F_S^i + F^c_C + F_R(c^1,\dots, c^s).
 \end{equation}
-The principal unknown is the concentration $c^i$ \units{1}{-3}{} of a substance $i\in\{1,\dots, s\}$, which means the weight of the substance in the unit volume of water.
+The principal unknown is the concentration $c^i$ \units{1}{-3}{} of a~substance $i\in\{1,\dots, s\}$, which means the weight of the substance in the unit volume of water.
 Other quantities are:
 \begin{itemize}
 \item The \hyperA{Solute-AdvectionDiffusion-DG-Data::porosity}{porosity} $\th$ \units{}{}{}, i.e. the fraction of space occupied by water and the total volume.
@@ -40,13 +40,13 @@ Other quantities are:
   \label{eqn:transport_disp}
   \D^i =\tau \D_m^i + \abs{\vc v}\left(\alpha_T^i \tn I + (\alpha_L^i - \alpha_T^i) \frac{\vc v \otimes \vc v}{\abs{\vc v}^2}\right),
 \end{equation}
-which represents (generally anisotropic) molecular diffusion, and mechanical dispersion in longitudal and transversal direction to the flow.
+which represents (generally anisotropic) molecular diffusion, and mechanical dispersion in longitudinal and transverse direction to the flow.
 Here $\D_m^i$ \units{}{2}{-1} is the $2^{\text{nd}}$-order \hyperA{Solute-AdvectionDiffusion-DG-Data::diff-m}{molecular diffusion coefficient} of the $i$-th substance 
 (usual magnitude in clear water is $10^{-9}$), $\tau=\th^{1/3}$ is the tortuosity (by \cite{millington_quirk}), 
-$\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::disp-l}{longitudal dispersivity} 
+$\alpha_L^i$ \units{}{1}{} and $\alpha_T^i$ \units{}{1}{} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::disp-l}{longitudinal dispersivity} 
 and the \hyperA{Solute-AdvectionDiffusion-DG-Data::disp-t}{transverse dispersivity}, respectively.
 The diffusion and dispersion coefficients are related to the liquid phase.
-Note that although we allow dispersivities to have different values for different substances, it is often assumed that they are intrinsic parameters
+Note that although we allow dispersivity to have different values for different substances, it is often assumed that they are intrinsic parameters
 of the porous medium.
 Finally, $\vc v$ \units{}{1}{-1} is the \emph{microscopic} water velocity, also called \emph{seepage velocity}, 
 related to the Darcy flux $\vc q$ by the relation $\vc q = \th\delta\vc v$.
@@ -61,10 +61,10 @@ Its form is:
 Here $f_S^i$ \units{1}{-3}{-1} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::sources-density}{density of concentration sources}, $c_S^i$ \units{1}{-3}{} is an \hyperA{Solute-AdvectionDiffusion-DG-Data::sources-conc}{equilibrium concentration} and $\sigma_S^i$ \units{}{}{-1} is the \hyperA{Solute-AdvectionDiffusion-DG-Data::sources-sigma}{concentration flux}.
 One has to pay attention when prescribing the source, namely to determine whether it is related to the \emph{liquid} or the \emph{porous medium}. We mention several examples:
 \begin{itemize}
-\item extraction of solution: $f_S^i = 0$, $c_S^i = 0$, $\sigma_S^i>0$ is the intensity of extraction, i.e. volume of liquid extracted from a unit volume of porous medium per second;
-\item injection of solution: $f_S^i = 0$, $c_S^i$ is the concentration of the substance in the injected liquid, $\sigma_S^i>0$ is the intensity of injection (volume of liquid injected into a unit volume of porous medium per second);
+\item extraction of solution: $f_S^i = 0$, $c_S^i = 0$, $\sigma_S^i>0$ is the intensity of extraction, i.e. volume of liquid extracted from a~unit volume of porous medium per second;
+\item injection of solution: $f_S^i = 0$, $c_S^i$ is the concentration of the substance in the injected liquid, $\sigma_S^i>0$ is the intensity of injection (volume of liquid injected into a~unit volume of porous medium per second);
 % \item source of contamination
-\item production or degradation of substances due to bacteria present in liquid: $f_S^i=\th p^i$, where $p^i$ is the production/degradation rate in a unit volume of liquid;
+\item production or degradation of substances due to bacteria present in liquid: $f_S^i=\th p^i$, where $p^i$ is the production/degradation rate in a~unit volume of liquid;
 \item age of liquid: if $f_S^i=\th$ then $c^i$ is the age of liquid, i.e. the time spent in the domain.
 \end{itemize}
 
@@ -91,7 +91,7 @@ We prescribe the following \hyperA{Solute-AdvectionDiffusion-DG-Data::bc-type}{b
 $$ (\vc q c^i - \th\delta\D^i\nabla c^i)\cdot\vc n = \vc q\cdot\vc n c_D^i \mbox{ on }\Gamma_I^+, $$
 while on the outflow $\Gamma_I^-$ we prescribe zero diffusive flux:
 $$ -\th\delta\D^i\nabla c^i\cdot\vc n = 0 \mbox{ on }\Gamma_I^-. $$
-\item \textbf{dirichlet} On $\Gamma_D$, the Dirichlet condition is imposed via \hyperA{Solute-AdvectionDiffusion-DG-Data::bc-conc}{prescribed concentration} $c_D^i$:
+\item \textbf{Dirichlet} On $\Gamma_D$, the Dirichlet condition is imposed via \hyperA{Solute-AdvectionDiffusion-DG-Data::bc-conc}{prescribed concentration} $c_D^i$:
 $$ c^i = c^i_D \mbox{ on }\Gamma_D. $$
 \item \textbf{total\_flux}
 On $\Gamma_{TF}$ we impose total mass flux condition:
@@ -104,11 +104,11 @@ $$ \th\delta\D^i\nabla c^i\cdot\vc n = \delta(f^i_N+\sigma^i_R(c^i_D-c^i)). $$
 \end{itemize}
 We mention several typical uses of boundary conditions:
 \begin{itemize}
-\item natural inflow: Use dirichlet or inflow b.c. (the later type is useful when the location of liquid inflow is not known a priori) and specify $c_D^i$.
-\item natural outflow: The substance leaves the domain only due to advection by the liquid. Use zero diffusive\_flux or inflow (the latter in case that the outflow boundary is not known a priori).
+\item natural inflow: Use Dirichlet or inflow b.c. (the later type is useful when the location of liquid inflow is not known a~priori) and specify $c_D^i$.
+\item natural outflow: The substance leaves the domain only due to advection by the liquid. Use zero diffusive\_flux or inflow (the latter in case that the outflow boundary is not known a~priori).
 \item boundary with known mass flux: Use total\_flux and $f_N^i$.
 \item impermeable boundary: Use zero total\_flux.
-\item partially permeable boundary: When the exterior of the domain represents a reservoir with known concentration and the Darcy flux is reasonably small, the mass exchange is proportional to the concentration difference inside and outside the domain.
+\item partially permeable boundary: When the exterior of the domain represents a~reservoir with known concentration and the Darcy flux is reasonably small, the mass exchange is proportional to the concentration difference inside and outside the domain.
 Use diffusive\_flux, $c_D^i$ and $\sigma_R^i$. 
 \end{itemize}
 
@@ -119,7 +119,7 @@ Use diffusive\_flux, $c_D^i$ and $\sigma_R^i$.
 
 \paragraph{Communication between dimensions.}
 Transport of substances is considered also on interfaces of physical domains with adjacent dimensions (i.e. 3D-2D and 2D-1D, but not 3D-1D).
-Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1}$ and $\Omega_d$, respectively, the comunication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by the quantity
+Denoting $c_{d+1}$, $c_d$ the concentration of a~given substance in $\Omega_{d+1}$ and $\Omega_d$, respectively, the communication on the interface between $\Omega_{d+1}$ and $\Omega_d$ is described by the quantity
 \begin{equation}
   \label{e:inter_dim_flux}
   q^c_{d+1,d} = \sigma^c_{d+1,d} \frac{\delta_{d+1}^2}{\delta_d}2\th_d\D_d:\n\otimes\n ( c_{d+1} - c_d) + q^l_{d+1,d}\begin{cases} c_{d+1} & \mbox{ if }q^l_{d+1,d}\ge 0,\\ c_d & \mbox{ if }q^l_{d+1,d}<0,\end{cases}
@@ -127,7 +127,7 @@ Denoting $c_{d+1}$, $c_d$ the concentration of a given substance in $\Omega_{d+1
 where
 \begin{itemize}
 \item $q^c_{d+1,d}$ \units{1}{-d}{-1} is the density of concentration flux from $\Omega_{d+1}$ to $\Omega_d$,
-\item $\sigma^c_{d+1,d}$ \units{}{}{} is a \hyperA{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}{transition parameter}.
+\item $\sigma^c_{d+1,d}$ \units{}{}{} is a~\hyperA{Solute-AdvectionDiffusion-DG-Data::fracture-sigma}{transition parameter}.
 Its value determines the mass exchange between dimensions whenever the concentrations differ.
 In general, it is recommended to leave the default value $\sigma^c=1$ or to set $\sigma^c=0$ (when exchange is due to water flux only).
 \item $q^l_{d+1,d}$ \units{}{3-d}{-1} is the water flux from $\Omega_{d+1}$ to $\Omega_d$, i.e. $q^l_{d+1,d} = \vc q_{d+1}\cdot\n_{d+1}$.
@@ -137,7 +137,7 @@ The communication between dimensions is incorporated as the total flux boundary 
 \label{e:FC}
 -\th\delta\D\nabla c\cdot\vc n + q^l c = q^c
 \end{equation}
-and a source term in $\Omega_d$:
+and a~source term in $\Omega_d$:
 \begin{equation}
 F^c_{C3} = 0,\quad
 F^c_{C2} = q^c_{32},\quad
@@ -148,10 +148,10 @@ F^c_{C1} = q^c_{21}.
 \paragraph{Two transport models.}
 Within the above presented model, Flow123d presents two possible approaches to solute transport.
 \begin{itemize}
-\item For modelling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. 
+\item For modeling pure advection ($\tn D=0$) one can choose {\tt TransportOperatorSplitting} method, which represents an explicit in time finite volume solver. 
 Only the inflow/outflow boundary condition is available and the source term has the form
 \[ F_S^i = \delta f_S^i + \delta(c_S^i-c^i)^+\sigma_S^i. \]
-The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorption).
+The solution process for one time step is faster, but the maximal time step is restricted. The resulting concentration is piecewise constant on mesh elements. This solver supports reaction term (involving simple chemical reactions, dual porosity and sorptions).
 \item The full model including dispersion is solved by {\tt SoluteTransport\_DG}, an implicit in time discontinuous Galerkin solver. It has no restriction of the computational time step and the space approximation is piecewise polynomial, currently up to order 3.
 Reaction term is implemented only for the case of linear sorption, i.e.
 \[ F_R^i = -\partial_t\left((1-\th)\delta \varrho_s c_s^i\right), \quad c_s^i = k_l^i c, \]
