@@ -55,7 +55,7 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 
 unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
 {
-	DHCellAccessor dh_cell = cell_accessor_from_element(cell.idx());
+	DHCellAccessor dh_cell = cell_accessor_from_element(cell);
     switch (cell->dim()) {
         case 1:
             return fe<1>(dh_cell)->n_dofs();
@@ -72,7 +72,7 @@ unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
 
 const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> cell, unsigned int idof) const
 {
-	DHCellAccessor dh_cell = cell_accessor_from_element(cell.idx());
+	DHCellAccessor dh_cell = cell_accessor_from_element(cell);
     switch (cell.dim())
     {
         case 1:
@@ -215,7 +215,7 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
     for (unsigned int gid=0; gid<ghost_proc_el[proc].size(); gid++)
     {
         auto cell = mesh_->element_accessor(ghost_proc_el[proc][gid]);
-        //auto dh_cell = this->cell_accessor_from_element( cell.idx() );
+        //auto dh_cell = this->cell_accessor_from_element( cell );
         
         for (unsigned dof=0; dof<n_dofs(cell); dof++)
             dof_indices[cell_starts[row_4_el[cell.idx()]]+dof] = dofs[dof_offset+dof];
@@ -592,7 +592,16 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 }
 
 
-DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int element_idx) const {
-	return DHCellAccessor(this, row_4_el[element_idx]);
+DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(ElementAccessor<3> elm_acc) const {
+	auto elm_idx = elm_acc.idx();
+	if ( el_is_local(elm_idx) ) { //own element
+		return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
+	}
+
+	//ghost element
+	auto ghost_it = std::find(ghost_4_loc.begin(), ghost_4_loc.end(), elm_idx);
+	auto dh_acc = DHCellAccessor(this, el_ds_->lsize()+std::distance(ghost_4_loc.begin(), ghost_it) );
+	ASSERT_LT_DBG( dh_acc.element_idx(), mesh_->n_elements() )(dh_acc.element_idx())(elm_idx).error("Invalid accessor!\n");
+	return dh_acc;
 }
 

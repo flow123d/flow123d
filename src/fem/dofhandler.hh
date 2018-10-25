@@ -279,8 +279,8 @@ public:
     /// Returns range over ghosts DOF handler cells
     Range<DHCellAccessor> ghost_range() const;
 
-    /// Return DHCellAccessor appropriate to ElementAccessor of given element_idx
-    DHCellAccessor cell_accessor_from_element(unsigned int element_idx) const;
+    /// Return DHCellAccessor appropriate to ElementAccessor
+    DHCellAccessor cell_accessor_from_element(ElementAccessor<3> elm_acc) const;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
