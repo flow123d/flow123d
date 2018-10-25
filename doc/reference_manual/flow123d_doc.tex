@@ -170,11 +170,11 @@ Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Jan Hyb\v s
 
 \vspace{3cm}
 \noindent
-{\bf Acknowledgement}
+{\bf Acknowledgment}
 
 \vspace{3ex}
 \noindent This work was supported by S\'URAO within the project Decovalex 2015, SO2013-077 and by the TA\v CR project no. TA04020506: 
-"Softwarov\'e n\'astroje pro simulaci a anal\'yzu proces\r u v geosf\'e\v re".
+"Softwarov\'e n\'astroje pro simulaci a~anal\'yzu proces\r u v geosf\'e\v re".
 \noindent 
 \pagebreak
 \noindent
@@ -189,23 +189,23 @@ Jan B\v rezina, Jan Stebel, David Flanderka, Pavel Exner, Jan Hyb\v s
 \chapter{Getting Started} \label{chapter:getting_started}
 
 \section{Introduction}
-Flow123D is a software for simulation of water flow, reactionary solute transport and heat transfer in a heterogeneous 
-porous and fractured medium. In particular it is suited for simulation of underground processes in a granite rock.
+Flow123d is a~software for simulation of water flow, reactionary solute transport and heat transfer in a~heterogeneous 
+porous and fractured medium. In particular it is suited for simulation of underground processes in a~granite rock.
 The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
-domains of different dimensions. The computational mesh is therefore a collection of tetrahedra, triangles and line segments.
+domains of different dimensions. The computational mesh is therefore a~collection of tetrahedra, triangles and line segments.
 
-Two water flow models are available: The water flow model for a saturated medium based on the Darcy law 
+Two water flow models are available: The water flow model for a~saturated medium based on the Darcy law 
 and the model for partially saturated medium described by the Richards' equation. 
 Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization. 
-Both models can also switch between a transient case and a sequence of the steady states within a single simulation. The model for unsaturated medium use 
+Both models can also switch between a~transient case and a~sequence of the steady states within a~single simulation. The model for unsaturated medium use 
 a lumped variant of the mixed-hybrid method in order to guarantee stability for short time steps which is connected with the satisfaction of the maximum principle.
 
 In the present version,  only the model for the unsaturated media can be sequentially coupled  with the transport models including 
 two models for the solute transport and one model for the heat transfer.
 
-The first solute transport model can deal only with a pure advection of several substances without any diffusion-dispersion term. It uses 
+The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses 
 the explicit Euler method for time discretization and the finite volume method for space discretization.
-The second solute transport model describes a general advection with hydrodynamic dispersion for several substances. 
+The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances. 
 It uses the implicit Euler method for time discretization and the discontinuous Galerkin method of
 the first, second or third order for the discretization in space.
 The operator splitting method can be used to couple any of these two solute transport models with  
@@ -231,7 +231,7 @@ with sources on the GitHub:
 
 \section{Reading Documentation}
 The Flow123d documentation has two main parts. The chapters \ref{chapter:getting_started} up to \ref{chapter:tutorials} 
-form a user guide while the last chapter \ref{chapter:input-tree-reference} provides an input reference.
+form a~user guide while the last chapter \ref{chapter:input-tree-reference} provides an input reference.
 The user manual starts with Chapter \ref{chapter:getting_started} providing instructions for installation and execution of the program.
 The Chapter \ref{chapter:mathematical_models} provides detailed description of the implemented mathematical models.
 The Chapter \ref{chapter:numerical} presents used numerical methods. The input and output file formats are documented by the Chapter 
@@ -247,7 +247,7 @@ The document is interactive. The blue text marks the links in the document. The 
 \section{Installing Flow123d}
 Software Flow123d requires tool \href{https://www.docker.com}{Docker}. 
 Docker is an open-source project that automates the deployment of Linux applications inside software containers. 
-Entire Flow123d software is wrapped in a docker image that contains also necessary libraries and crucial components 
+Entire Flow123d software is wrapped in a~docker image that contains also necessary libraries and crucial components 
 of the Linux operating system.
 
 The installation process imports docker image into your machine and personalize the docker image. The installation 
@@ -259,7 +259,7 @@ Download the Linux installation package archive \verb'Flow123d-<version>-linux-i
 \begin{verbatim}
   > tar -xzf flow123d_<version>_linux_install.tar.gz 
 \end{verbatim}
-This will create a directory \verb'Flow123d-<version>'. In next step, navigate to \verb'Flow123d-<version>' directory
+This will create a~directory \verb'Flow123d-<version>'. In next step, navigate to \verb'Flow123d-<version>' directory
 and execute the \verb'install.sh' script:
 \begin{verbatim}
   > cd flow123d_2.1.0
@@ -268,17 +268,17 @@ and execute the \verb'install.sh' script:
   Modifying docker image 'flow123d/v2.1.0'
   ...
 \end{verbatim}
-Install script will first import image into your system and then personalise this image for the current user. The script will also print
+Install script will first import image into your system and then personalize this image for the current user. The script will also print
 additional information during personalization process. Whole process may take several minutes (depending on your machine performance).
 
 
 \subsection{Installing Flow123d on Windows}
-On the Windows systems we require Powershell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
+On the Windows systems we require PowerShell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
 It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions at
 \href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft pages}.
 
 Make sure \verb'powershell' command is in the system PATH. 
-\href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{Powershell executable location}
+\href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{PowerShell executable location}
  is specific to the particular Windows version, but usual location is:
  \begin{verbatim}
     %SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe  
@@ -295,7 +295,7 @@ The directory \verb'flow123d_2.1.0' will be created. You can rename it or move i
 This directory will become the root directory of the Flow123d installation. 
 
 Navigate to the Flow123d root directory and execute \verb'install.bat'. Depending on your system settings you may be asked to allow 
-execution of the installation script by pressing \verb'R'. This starts the instalation consisting of following two steps:
+execution of the installation script by pressing \verb'R'. This starts the installation consisting of following two steps:
 \begin{enumerate}
 	\item Installation of the \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} is performed unless it is installed already. 
 	First you have to agree with execution of the setup 'DockerToolbox-1.12.2.exe' and then
@@ -304,7 +304,7 @@ execution of the installation script by pressing \verb'R'. This starts the insta
         \href{https://www.virtualbox.org/}{VirtualBox} which is installed along with Docker Toolbox as well as other necessary components.
         Default configuration of components is acceptable, however you can uncheck 
         \emph{'Docker Compose for Windows'} and \emph{'Kinematic for Windows'}, while keeping \emph{'VirtualBox'} and \emph{'Git for Windows'} that are essential,
-        see the dialog in Figure \ref{fig:DockerComponents} (left). Next dialog selects additional tasks, you can uncheck \emph{'Create a desktop shortcut'} as 
+        see the dialog in Figure \ref{fig:DockerComponents} (left). Next dialog selects additional tasks, you can uncheck \emph{'Create a~desktop shortcut'} as 
         depicted in Figure \ref{fig:DockerComponents} (right)
         \begin{figure}
           \center  
@@ -320,12 +320,12 @@ execution of the installation script by pressing \verb'R'. This starts the insta
 	and further modified to provide better integration with your system.
 	You will be asked several times to allow changes to the \emph{'VirtualBox Interface'}, do not hesitate to confirm any dialog containing 'Oracle'.
 		
-	Since flow123d run in the Docker container we must set a mapping of the Windows directories to the directories in the Docker container. 
+	Since flow123d run in the Docker container we must set a~mapping of the Windows directories to the directories in the Docker container. 
 	By default we setup such mapping for the home directory \verb'C:/Users' which is mapped to \verb'/c/Users'. 
 	
 	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other disk for mapping 
 	(recursively). The question is repeated allowing to add more custom mappings one by one. To mount other disks please enter only letter 
-	of a disk you want to mount such as \verb'd'.
+	of a~disk you want to mount such as \verb'd'.
 	If you agree to mount disk, virtual machine will be stopped 
 	(this may take several seconds). Example of adding two disks can be following:
 	\begin{verbatim}
@@ -370,7 +370,7 @@ Directory \verb'bin' contains:
 	 Script will invoke shell inside docker container and mount your home directory.
 	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
 	 
-	\textbf{Note:} On some systems, shell's font is extremely small, you can change this behaviour by right-clicking on window bar and selecting 
+	\textbf{Note:} On some systems, shell's font is extremely small, you can change this behavior by right-clicking on window bar and selecting 
 	\verb'default' or (\verb'vychozi' in Czech) see \autoref{fig:TerminalFont}.
 	 \begin{figure}
 		 \center
@@ -394,7 +394,7 @@ Directory \verb'bin' contains:
 
 \textbf{Note:}
 \textit{Using above} \verb'.sh' \textit{scripts will mount your your home  directory to docker container under the same name.}
-\textit{Also your current working directory will be the same. Example below shows behaviour of the scripts:}
+\textit{Also your current working directory will be the same. Example below shows behavior of the scripts:}
 \begin{verbatim}
 $> pwd
 /home/jan-hybs/install-folder
@@ -443,8 +443,8 @@ Directory \verb'bin' contains two \verb'bat' files:
 \verb'C:\Users' \textit{directory. Directories outside this directory will not be automatically mounted.} 
 
 \subsubsection{Running from other batch file}
-The Windows system calls the batch files in the different way then the binaries. In particular the colling batch file is not processed further after the child batch 
-file is done. In order to do so ane have to use the \verb'CALL' command. This is especially necessary for various calibration tools. The correct calling batch file 
+The Windows system calls the batch files in the different way then the binaries. In particular the calling batch file is not processed further after the child batch 
+file is done. In order to do so, one have to use the \verb'CALL' command. This is especially necessary for various calibration tools. The correct calling batch file 
 may look like:
 \begin{verbatim}
     echo "Starting Flow123d ..."
@@ -456,14 +456,14 @@ may look like:
 \subsection{Setting memory of virtual machine}
 The virtual machine (VM) used for running the Docker with Flow123d inside claims predefined portion of the RAM 
 of the host system to be used as the RAM of the guest Docker system. Unfortunately the default size of this memory is
-quite small, e.g. 1GB on a 4GB machine. About 500MB is taken by the Docker kernel leaving just 500MB for Flow123d.
+quite small, e.g. 1GB on a~4GB machine. About 500MB is taken by the Docker kernel leaving just 500MB for Flow123d.
 This is may be enough just for the small problems with thousands of elements. In order to treat realistic problems one have to 
 enlarge the RAM size of the guest system. This can be easily done as follows:
 
 \subsection{Issues with Windows 10}
 Beginning with Windows 10, Microsoft apply all updates incrementally including major upgrades. As the Virtual Box deals with very internals of the system
 any such update may broke it. The solution is to install manually the latest available version of the VirtualBox. In the case of fresh installation 
-one also can not use automatical installotion of the Virtual Box by the Flow123d installer. An up-to-date version of Virtual Box has to be installed followed by 
+one also cannot use automatic installation of the Virtual Box by the Flow123d installer. An up-to-date version of Virtual Box has to be installed followed by 
 installation of the Flow123d.
 
 In particular for the "Creator's update" update, version 1703, you have to install at least version 5.2 
@@ -472,7 +472,7 @@ uninstall VirtualBox, {\bf reboot}, install VirtualBox 5.2.
 
  
 \begin{enumerate}
- \item Start \verb'Oracle VM VirtualBox' either by a shortcut on your desktop or through the start menu. 
+ \item Start \verb'Oracle VM VirtualBox' either by a~shortcut on your desktop or through the start menu. 
  A medium size window appears with the list of existing virtual machines 
  on the left. The docker VM is named 'default'.
  \item Next step is to power off the VM \verb'default' if it is running. 
@@ -480,7 +480,7 @@ uninstall VirtualBox, {\bf reboot}, install VirtualBox 5.2.
  \verb'Power Off' (Vypnout). Confirm the turn off of the VM machine. 
  \item Final step is setting the size of RAM of the VM. Follow the right Figure \ref{fig:vm_ram_setup}. 
  Select the VM \verb'default', click on \verb'Settings' (Nastave\' i) and select \verb'System' in the left column.
- On the tab \verb'Motherboard' (Z\' akladn\' i deska) you find a slide to select the size of the RAM. You can select sizes  
+ On the tab \verb'Motherboard' (Z\' akladn\' i deska) you find a~slide to select the size of the RAM. You can select sizes  
  in the orange or even red range since the memory is only reserved not actually used, however setting it to close to the 
  whole RAM size of the host allows the applications, i.e. Flow123d, running on the VM to compete for RAM with applications on the host system.
  \item The VM is restarted automatically at the next start of the Flow123d or the fterm.
@@ -526,7 +526,7 @@ Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arg
  \item[{\tt --petsc\_redirect <file>}] \hfill\\
         Redirect all PETSc stdout and stderr to given file.       
  \item[{\tt --input\_format}] \hfill\\ 
-        Prints a description of the main input file in JSON format. Is used by GeoMop model editor and by python scripts for 
+        Prints a~description of the main input file in JSON format. Is used by GeoMop model editor and by python scripts for 
         generating reference documentation in Latex or HTML format.
  \item[{\tt --yaml\_balance}] \hfill\\
         Generate balance file also in machine readable YAML format. Will be default in future, used by GeoMop.
@@ -565,7 +565,7 @@ The script has following options:
   \item[{\tt --host}] \verb'<hostname>' \hfill\\
   		Valid only when option \verb'--queue' is set.
         Default value is the host name obtained by python \verb'platform.node()' call, this argument can be used to override it. 
-        Resulting value is used to select a correct PBS module from lookup table \verb'config/host_table.yaml'.
+        Resulting value is used to select a~correct PBS module from lookup table \verb'config/host_table.yaml'.
   \item[{\tt -n}] \verb'<number of processes>' \hfill\\
   	Specify number of MPI parallel processes for calculation.
   \item[{\tt -t, --limit-time}] \verb'<timeout>' \hfill\\
@@ -628,17 +628,17 @@ The complete description of the YAML format is given in chapter \ref{chapter:inp
 Flow123d provides models for Darcy flow in porous media as well as for the transport and reactions of solutes. In this section, we describe 
 mathematical formulations of these models together with physical meaning and units of all involved quantities. In the first section we present 
 basic notation and assumptions about computational domains and meshes that combine different dimensions. In the next section we
-derive approximation of thin fractures by lower dimensional interfaces for a general transport process. Latter sections describe details for models of particular
+derive approximation of thin fractures by lower dimensional interfaces for a~general transport process. Latter sections describe details for models of particular
 physical processes.
 
 \section{Meshes of Mixed Dimension}
 Unique feature common to all models in Flow123d is the support of
 domains with mixed dimension. 
 Let $\Omega_{3} \subset \Real^3$ be an open set representing continuous approximation of porous and fractured medium.
-Similarly, we consider a set of 2D manifolds $\Omega_2\subset\overline\Omega_3$, representing the 2D fractures and a set of 1D manifolds $\Omega_1\subset \overline\Omega_2$ 
+Similarly, we consider a~set of 2D manifolds $\Omega_2\subset\overline\Omega_3$, representing the 2D fractures and a~set of 1D manifolds $\Omega_1\subset \overline\Omega_2$ 
 representing the 1D channels or preferential paths (see Fig \ref{fig:multi-dim}).
 We assume that $\Omega_2$ and $\Omega_1$ are polytopic (i.e. polygonal and piecewise linear, respectively).
-For every dimension $d=1,2,3$, we introduce a triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
+For every dimension $d=1,2,3$, we introduce a~triangulation $\mathcal{T}_{d}$ of the open set $\Omega_d$
 that consists of finite elements $T_{d}^{i},$\ $i = 1,\dots,N_{E}^{d}$.
 The elements are simplices, i.e. lines, triangles and tetrahedra, respectively.
 
@@ -647,7 +647,7 @@ The elements are simplices, i.e. lines, triangles and tetrahedra, respectively.
 \includegraphics[width=10cm]{\fig/ground_fractures}
 \caption{
     \label{fig:multi-dim}
-    Scheme of a problem with domains of multiple dimensions.
+    Scheme of a~problem with domains of multiple dimensions.
 }
 \end{figure}
 
@@ -661,8 +661,8 @@ and
 \end{equation}
 for every $i\in\{1,\dots, N_{E}^{d-1}\}$, $j\in\{1,\dots,N_{E}^{d}\}$,  and $d=2,3$. 
 That is, the $(d-1)$-dimensional elements are either between $d$-dimensional elements and
-match their sides or they poke out of $\Omega_d$. Support for a coupling between non-compatible
-meshes of different dimesion is in developement and partly supported by the Darcy Flow model.
+match their sides or they poke out of $\Omega_d$. Support for a~coupling between non-compatible
+meshes of different dimensions is under development and partially supported by the Darcy Flow model.
 
 \section{Advection-Diffusion Processes on Fractures}
 \label{sc:ad_on_fractures}
@@ -671,16 +671,16 @@ the higher dimensional domains. The reader not interested in the details of this
 the later sections describing mathematical models of individual physical processes.
 
 As was already mentioned, the unique feature of Flow123d is support of models living on 2D and 1D manifolds. The aim is to capture 
-features significantly influencing the solution despite of their small cross-section. Such a tiny features are
-challenging for numerical simulations since a direct discretization requires highly refined
+features significantly influencing the solution despite of their small cross-section. Such a~tiny features are
+challenging for numerical simulations since a~direct discretization requires highly refined
 computational mesh. One possible solution is to model these features (fractures, channels) 
 as lower dimensional objects (2D and 1D manifolds) and introduce their coupling with the surrounding continuum.
-The equations modeling a physical process on a manifold as well as its coupling to the model in the surrounding continuum
-has to be derived from the model on the 3D continuum. This section presents such a procedure for the case of the abstract
-advection-diffusion process inspired by the paper \cite{martin_modeling_2005}. Later, we this abstract approach to 
-particular advection-diffusion processes: Darcian flow, solute transport, and heat transfer.
+The equations modeling a~physical process on a~manifold as well as its coupling to the model in the surrounding continuum
+has to be derived from the model on the 3D continuum. This section presents such a~procedure for the case of the abstract
+advection-diffusion process inspired by the paper \cite{martin_modeling_2005}. Later, we apply this abstract approach to 
+particular advection-diffusion processes: Darcy flow, solute transport, and heat transfer.
 
-Let us consider a fracture as a strip domain 
+Let us consider a~fracture as a~strip domain 
 \[
  \Omega_f \subset [0,\delta] \times \Real^{d-1}
 \]
@@ -690,7 +690,7 @@ for $d=2$ or $d=3$ and surrounding continuum domains
  \Omega_2 \subset (\delta,\infty)\times \Real^{d-1}.
 \]
 Further, we denote by $\gamma_i$, $i=1,2$ the fracture faces common with domains $\Omega_1$ and $\Omega_2$ respectively.
-By $x$, $\vc y$ we denote normal and tangential coordinate of a point in $\Omega_f$. 
+By $x$, $\vc y$ we denote normal and tangential coordinate of a~point in $\Omega_f$. 
 We consider the normal vector  $\vc n=\vc n_1=-\vc n_2=(1,0,0)^\top$.
 An advection-diffusion process is given by equations:
 \begin{align}
@@ -717,7 +717,7 @@ Furthermore, we assume that $\tn A_f(x, \vc y)=\tn A_f(\vc y)$ is constant in th
 Our next aim is to integrate equations on the fracture $\Omega_f$ in the normal direction 
 and obtain their approximations on the surface $\gamma=\Omega_f \cap \{x=\delta/2\}$ running through the middle of the fracture. 
 For the sake of clarity, we will not write subscript $f$ for quantities on the fracture. 
-To make the following procedure mathematicaly correct we have to assume that functions
+To make the following procedure mathematically correct we have to assume that functions
 $\prtl_x w$, $\prtl_x \grad_{\vc y} u$, $\prtl_x \vc b_{\vc y}$ are continuous and bounded on $\Omega_f$. Here and later on 
 $\vc b_x=(\vc b \cdot \vc n)\, \vc n$ is the normal part of the velocity field and $\vc b_{\vc y} = \vc b - \vc b_x$ is the tangential part.
 The same notation will be used for normal and tangential part of the field $\vc q$.
@@ -771,7 +771,7 @@ we obtain
 
 
 So far, we have derived equations for the state quantities $U$ and $\vc J$ on the fracture manifold $\gamma$. In order to
-get a well possed problem, we have to prescribe two conditions for boundaries $\gamma_i$, $i=1,2$. To this end, we
+get a~well-posed problem, we have to prescribe two conditions for boundaries $\gamma_i$, $i=1,2$. To this end, we
 perform integration of the normal flux $\vc j_x$, given by \eqref{eq:fr:flux}, separately for the left and right half of the fracture.
 Similarly as before we use approximations
 \[
@@ -789,8 +789,8 @@ and their counter parts on the interval $(\delta/2, \delta)$ to get
     \vc j_2 \cdot \vc n_2 &= -\frac{2a_n}{\delta} (U - u_2) + \vc b_2\cdot \vc n_2 \tilde{w}_2
 \end{align}
 where $\tilde w_i$ can be any convex combination of $w_i$ and $W$. Equations \eqref{eq:fracture_normal_1}  
-and \eqref{eq:fracture_normal_2} have meaning of a semi-discretized flux from domains $\Omega_i$ into fracture.
-In order to get a stable numerical scheme, we introduce a kind of upwind already on this level using a different convex 
+and \eqref{eq:fracture_normal_2} have meaning of a~semi-discretized flux from domains $\Omega_i$ into fracture.
+In order to get a~stable numerical scheme, we introduce a~kind of upwind already on this level using a~different convex 
 combination for each flow direction:
 \begin{align}
    \notag 
@@ -860,7 +860,7 @@ This chapter contains generated reference to the main input file. Described type
 deep first search of the input structure tree which somehow keep description of related types close to each other.
 Interactive links allows passing through the tree structure in top-bottom manner. 
 
-Ranges of arrays, integers and doubles use following notation: \verb'INT' for maximum of a signed 32-bit integer ($\approx 2.147\times 10^9$), 
+Ranges of arrays, integers and doubles use following notation: \verb'INT' for maximum of a~signed 32-bit integer ($\approx 2.147\times 10^9$), 
 \verb'UINT' for maximum of unsigned 32-bit integer ($\approx 4.295\times 10^9$), and
 \verb'inf' for maximum of the double precision floating point number ($\approx1.798\times 10^{308}$). 
 \pagebreak

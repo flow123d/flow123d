@@ -302,7 +302,7 @@ add_library(coupling_lib
     fields/field_constant.cc
     fields/field_formula.cc
     # fields/field_elementwise.cc
-    fields/field_interpolated_p0.cc
+    # fields/field_interpolated_p0.cc
     fields/table_function.cc
     fields/field_time_function.cc
     fields/field_fe.cc

@@ -86,7 +86,12 @@ image_tag="@image_tag@"
 if [[ -z "${image_tag}" ]]; then
     image_tag="@docker_image@"
 fi
-
+image_version="@image_version@"
+if [[ -z "${image_version}" ]]; then
+    image_version="rel"
+fi
+image_version="$image_version-"
+image_id=${image_version}${image_tag}
 
 # Color definition
 txtblk='\e[0;30m' # Black - Regular
@@ -110,20 +115,20 @@ txtrst='\e[0m'    # Text Reset
 
 LIGHT_THEME="@light_theme@"
 if [[ "${LIGHT_THEME}" -eq 1 ]]; then
-  PS1_DOCKER="${bldgrn}\u${txtrst}@${bldgrn}${image_tag}${bldylw} \w ${txtrst}"
+  PS1_DOCKER="${bldgrn}\u${txtrst}@${bldgrn}${image_id}${bldylw} \w ${txtrst}"
 else
-  PS1_DOCKER="${bldpur}\u${txtrst}@${bldpur}${image_tag}${bldblu} \w ${txtrst}"
+  PS1_DOCKER="${bldpur}\u${txtrst}@${bldpur}${image_id}${bldblu} \w ${txtrst}"
 fi
 
 cat >> /etc/bash.bashrc << EOL
 export PS1="$PS1_DOCKER"
-# clear the terminal  
+# clear the terminal
 printf '\033[2J'
 echo " ___ _            _ ___ ____    _  "
-echo "| __| |_____ __ _/ |_  )__ / __| |"
-echo "| _|| / _ \ V  V / |/ / |_ \/ _  |"
-echo "|_| |_\___/\_/\_/|_/___|___/\__,_|"
-echo "                                  "
+echo "| __| |_____ __ _/ |_  )__ / __| | "
+echo "| _|| / _ \ V  V / |/ / |_ \/ _  | "
+echo "|_| |_\___/\_/\_/|_/___|___/\__,_| "
+echo "                          $image_id"
 EOL
 
 # copy git configuration
