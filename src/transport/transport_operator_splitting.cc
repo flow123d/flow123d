@@ -117,7 +117,8 @@ TransportEqData::TransportEqData()
             .flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 
     *this += cross_section.name("cross_section")
-            .flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
+               .flags( FieldFlag::input_copy )
+               .flags_add(in_time_term & in_main_matrix & in_rhs);
 
     *this += sources_density.name("sources_density")
             .description("Density of concentration sources.")
