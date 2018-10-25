@@ -113,10 +113,12 @@ usage:
       of the docker run command
       docker run [options] <predefined-image>
                      
-    ${bold}--deamon <name>${reset}
+    ${bold}--detach <name> [<opts> ...]${reset}
       will execute docker as a deamon in the background.
       Value <name> refers to a name of the container which will
-      be assigned to a new container.
+      be assigned to a new container. <opts> are passed to the 
+      docker run. e.g.:
+      docker run <opts> ... flow123d/flow-libs-dev-dbg:2.2.0 
       
       ** This operation will delete any container which has **
               ** the same name as the name provided **
@@ -342,9 +344,9 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    --deamon)
+    --detach)
       contname="$2"
-      action=deamon
+      action=detach
       shift; shift;
       rest="$@"
       break
@@ -389,7 +391,6 @@ done
 # determine image names
 base_image=flow123d/flow-libs-dev-$image_version:$image_tag
 flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
-flow123d_images="dev-dbg dev-rel"
 
 
 dbg "base_image     = $base_image"
@@ -409,11 +410,11 @@ case $action in
     dbgc docker run $rest $base_image
     docker run $rest $base_image
   ;;
-  deamon)
+  detach)
     dbgc "docker rm -f $contname > /dev/null 2>&1"
-    docker rm -f $contname  > /dev/null 2>&1
-    dbgc docker run -di $envarg --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
-    docker run -di $envarg --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
+    docker rm -f $contname > /dev/null 2>&1
+    dbgc docker run -di $envarg $rest --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
+    docker run -di $envarg $rest --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
     dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
     docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
