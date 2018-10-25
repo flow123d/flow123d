@@ -138,9 +138,19 @@ public:
     : communicator_(comm) {}
 
     /// Create shared pointer and PETSC vector with given size. COLLECTIVE.
-    VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_SELF)
+    VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_WORLD)
     : communicator_(comm) {
         resize(local_size);
+    }
+
+    /**
+     * Helper method creating VectorMPI of given size with serial Petsc communicator.
+     *
+     * Method is used for better readability of code.
+     */
+    static VectorMPI * sequential(unsigned int size)
+    {
+    	return new VectorMPI(size, PETSC_COMM_SELF);
     }
 
     /**
@@ -231,13 +241,6 @@ public:
 	}
 
 
-	void set_communicator(MPI_Comm comm)
-	{
-		ASSERT( data_ptr_.use_count() == 0 ).error("Do not change PETSC communicator of initialized vector!\n");
-		communicator_ = comm;
-	}
-
-
     /// Destructor.
     ~VectorMPI()
     {
@@ -264,16 +267,6 @@ private:
     MPI_Comm communicator_;
 };
 
-
-/**
- * Helper method creating VectorMPI of given size with serial Petsc communicator.
- *
- * Method is used for better readability of code.
- */
-inline VectorMPI * create_vector_mpi(unsigned int size)
-{
-	return new VectorMPI(size);
-}
 
 
 /**
@@ -339,7 +332,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data(dh, &map1, &map2, &map3, create_vector_mpi(vec_seq.size()) );
+	field_ptr->set_fe_data(dh, &map1, &map2, &map3, VectorMPI::sequential(vec_seq.size()) );
 	return field_ptr;
 }
 

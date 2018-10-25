@@ -43,12 +43,6 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-    phead_edge_.set_communicator(PETSC_COMM_WORLD);
-    water_content_previous_it.set_communicator(PETSC_COMM_WORLD);
-    water_content_previous_time.set_communicator(PETSC_COMM_WORLD);
-    capacity.set_communicator(PETSC_COMM_WORLD);
-    postprocess_side_sources.set_communicator(PETSC_COMM_WORLD);
-
     string desc;
     
     desc = R"(

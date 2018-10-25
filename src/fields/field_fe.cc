@@ -280,7 +280,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
     dof_indices_.resize(ndofs);
 
     // allocate data_vec_
-	data_vec_ = create_vector_mpi( dh_->n_global_dofs() );
+	data_vec_ = VectorMPI::sequential( dh_->n_global_dofs() );
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
