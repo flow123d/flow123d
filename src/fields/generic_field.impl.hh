@@ -62,10 +62,10 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 	static FE_P_disc<1> fe1(0);
 	static FE_P_disc<2> fe2(0);
 	static FE_P_disc<3> fe3(0);
-	std::shared_ptr<DOFHandlerMultiDim> dh;
-    dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+    DOFHandlerMultiDim dh_par(mesh);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, &fe0, &fe1, &fe2, &fe3);
-    dh->distribute_dofs(ds, true);
+    dh_par.distribute_dofs(ds);
+    std::shared_ptr<DOFHandlerMultiDim> dh = dh_par.sequential();
 
 	auto field_subdomain_data = mesh.get_part()->subdomain_id_field_data();
 	std::vector<LongIdx> indices(1);
