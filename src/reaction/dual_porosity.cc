@@ -92,6 +92,7 @@ DualPorosity::EqData::EqData()
   //creating field for porosity that is set later from the governing equation (transport)
   *this +=porosity
         .name("porosity")
+        .description("Concentration solution in the mobile phase.")
         .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy )
 		.set_limits(0.0);
@@ -213,7 +214,6 @@ void DualPorosity::initialize_fields()
   data_.set_mesh(*mesh_);
   
   //initialization of output
-  //output_array = input_record_.val<Input::Array>("output_fields");
   data_.output_fields.set_components(substances_.names());
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
@@ -224,7 +224,6 @@ void DualPorosity::initialize_fields()
 	output_field_ptr[sbi] = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
   }
-  //output_stream_->add_admissible_field_names(output_array);
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
 }
 
@@ -256,11 +255,6 @@ void DualPorosity::zero_time_step()
       WarningOut() << ss.str();
   }
   set_initial_condition();
-  
-  // write initial condition
-  //output_vector_gather();
-  //data_.output_fields.set_time(time_->step(0), LimitSide::right);
-  //data_.output_fields.output(output_stream_);
 
   output_data();
   

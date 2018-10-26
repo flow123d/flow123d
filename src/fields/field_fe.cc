@@ -59,25 +59,25 @@ const Input::Type::Record & FieldFE<spacedim, Value>::get_input_type()
         .declare_key("mesh_data_file", IT::FileName::input(), IT::Default::obligatory(),
                 "GMSH mesh with data. Can be different from actual computational mesh.")
         .declare_key("input_discretization", FieldFE<spacedim, Value>::get_disc_selection_input_type(), IT::Default::optional(),
-                "Section where to find the field, some sections are specific to file format \n"
+                "Section where to find the field.\n Some sections are specific to file format: "
         		"point_data/node_data, cell_data/element_data, -/element_node_data, native/-.\n"
-        		"If not given by user we try to find the field in all sections, but report error \n"
-        		"if it is found in more the one section.")
+        		"If not given by a user, we try to find the field in all sections, but we report an error "
+        		"if it is found in more than one section.")
         .declare_key("field_name", IT::String(), IT::Default::obligatory(),
                 "The values of the Field are read from the ```$ElementData``` section with field name given by this key.")
         .declare_key("default_value", IT::Double(), IT::Default::optional(),
-                "Allow set default value of elements that have not listed values in mesh data file.")
+                "Default value is set on elements which values have not been listed in the mesh data file.")
         .declare_key("time_unit", IT::String(), IT::Default::read_time("Common unit of TimeGovernor."),
-                "Definition of unit of all times defined in mesh data file.")
+                "Definition of the unit of all times defined in the mesh data file.")
         .declare_key("read_time_shift", TimeGovernor::get_input_time_type(), IT::Default("0.0"),
-                "Allow set time shift of field data read from the mesh data file. For time 't', field descriptor with time 'T', "
-                "time shift 'S' and if 't > T', we read time frame 't + S'.")
+                "This key allows reading field data from the mesh data file shifted in time. Considering the time 't', field descriptor with time 'T', "
+                "time shift 'S', then if 't > T', we read the time frame 't + S'.")
         .declare_key("interpolation", FieldFE<spacedim, Value>::get_interp_selection_input_type(),
         		IT::Default("\"equivalent_mesh\""), "Type of interpolation applied to the input spatial data.\n"
-        		"The default value 'equivalent_mesh' assumes data constant on elements living on the mesh that"
-        		"is same as the computational mesh, but possibly with different numbering. In the case of the same numbering"
-        		"the user can set 'identical_mesh' to omit algorithm for guessing node and element renumbering."
-        		"Alternatively, in the case of different input mesh, several interpolation algorithm s are available.")
+        		"The default value 'equivalent_mesh' assumes the data being constant on elements living on the same mesh "
+        		"as the computational mesh, but possibly with different numbering. In the case of the same numbering, "
+        		"the user can set 'identical_mesh' to omit algorithm for guessing node and element renumbering. "
+        		"Alternatively, in case of different input mesh, several interpolation algorithms are available.")
         .close();
 }
 
@@ -97,19 +97,19 @@ template <int spacedim, class Value>
 const Input::Type::Selection & FieldFE<spacedim, Value>::get_interp_selection_input_type()
 {
 	return it::Selection("interpolation", "Specify interpolation of the input data from its input mesh to the computational mesh.")
-		.add_value(DataInterpolation::identic_msh, "identic_mesh", "Topology and indexes of nodes and elements of"
+		.add_value(DataInterpolation::identic_msh, "identic_mesh", "Topology and indices of nodes and elements of"
 				"the input mesh and the computational mesh are identical. "
 				"This interpolation is typically used for GMSH input files containing only the field values without "
 				"explicit mesh specification.")
-		.add_value(DataInterpolation::equivalent_msh, "equivalent_mesh", "Topologies of the input mesh and the computational mesh"
-				"are same, the node and element numbering can differ."
+		.add_value(DataInterpolation::equivalent_msh, "equivalent_mesh", "Topologies of the input mesh and the computational mesh "
+				"are the same, the node and element numbering may differ. "
 				"This interpolation can be used also for VTK input data.") // default value
-		.add_value(DataInterpolation::gauss_p0, "P0_gauss", "Topologies of the input mesh and the computational mesh may differ."
-				"Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of fixed order 4,"
+		.add_value(DataInterpolation::gauss_p0, "P0_gauss", "Topologies of the input mesh and the computational mesh may differ. "
+				"Constant values on the elements of the computational mesh are evaluated using the Gaussian quadrature of the fixed order 4, "
 				"where the quadrature points and their values are found in the input mesh and input data using the BIH tree search."
 				)
-		.add_value(DataInterpolation::interp_p0, "P0_intersection", "Topologies of the input mesh and the computational mesh may differ."
-				"Can be applied only for boundary fields. For every (boundary) element of the computational mesh the"
+		.add_value(DataInterpolation::interp_p0, "P0_intersection", "Topologies of the input mesh and the computational mesh may differ. "
+				"Can be applied only for boundary fields. For every (boundary) element of the computational mesh the "
 				"intersection with the input mesh is computed. Constant values on the elements of the computational mesh "
 				"are evaluated as the weighted average of the (constant) values on the intersecting elements of the input mesh.")
 		.close();
