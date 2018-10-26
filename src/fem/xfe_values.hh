@@ -126,8 +126,7 @@ private:
     using FEValuesBase<dim,spacedim>::data;
     using FEValuesBase<dim,spacedim>::quadrature;
     
-    void fill_data(const FEInternalData &fe_data) override;
-//     void fill_xfem();
+    void fill_data_xfem(const FEInternalData &fe_data);
     void fill_scalar_xfem_single();
     void fill_vec_piola_xfem_single();
     

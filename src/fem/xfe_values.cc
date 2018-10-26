@@ -107,11 +107,11 @@ void XFEValues<dim,spacedim>::reinit(ElementAccessor<3> &ele,
                             *mapping_data,
                             data);
 
-    this->fill_data(*this->fe_data);
+    this->fill_data_xfem(*this->fe_data);
 }
 
 template<unsigned int dim, unsigned int spacedim>
-void XFEValues<dim,spacedim>::fill_data(const FEInternalData &fe_data)
+void XFEValues<dim,spacedim>::fill_data_xfem(const FEInternalData &fe_data)
 {
 //     DebugOut() << "XFEValues::fill_data\n";
     switch (fe->type_) {
