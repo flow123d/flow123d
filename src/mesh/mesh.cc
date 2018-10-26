@@ -710,6 +710,7 @@ MixedMeshIntersections & Mesh::mixed_intersections() {
     if (! intersections) {
         intersections = std::make_shared<MixedMeshIntersections>(this);
         intersections->compute_intersections();
+        // use if you need to experiment with some particular dimensions
 //             static_cast<IntersectionType> (
 //                 static_cast<unsigned int> (IntersectionType::d12_2) |
 //                 static_cast<unsigned int> (IntersectionType::d13))

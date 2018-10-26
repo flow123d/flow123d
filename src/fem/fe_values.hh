@@ -152,7 +152,10 @@ public:
     /**
      * @brief Divergence of shape functions (for vectorial finite elements).
      * 
-     * TODO: compute div from grads; (is not trivial in rt xfem)
+     * Normally, divergence is computed as the trace of the jacobian matrix.
+     * In XFEM with 1/r singularity, we take advantage of the form
+     * in which the div can be derived in polar coordinates.
+     * That is much easier and cheaper than computing the jacobian matrix in standard coordinates.
      */
     std::vector<std::vector<double> > shape_divergence;
     
