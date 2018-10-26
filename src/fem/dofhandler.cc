@@ -443,7 +443,14 @@ void DOFHandlerMultiDim::create_sequential()
   VecCreateMPI(PETSC_COMM_WORLD, lsize_, PETSC_DETERMINE, &v_from);
   scatter_to_seq_ = std::make_shared<VecScatter>();
   VecScatterCreateToAll(v_from, scatter_to_seq_.get(), NULL);
+  VecDestroy(&v_from);
   
+  // create scatter for sequential dof handler
+  Vec v_seq;
+  VecCreateSeq(PETSC_COMM_SELF, n_global_dofs_, &v_seq);
+  dh_seq_->scatter_to_seq_ = std::make_shared<VecScatter>();
+  VecScatterCreateToAll(v_seq, dh_seq_->scatter_to_seq_.get(), NULL);
+  VecDestroy(&v_seq);
 }
 
 
