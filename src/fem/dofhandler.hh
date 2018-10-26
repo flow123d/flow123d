@@ -177,13 +177,17 @@ public:
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds);
 
-    /// Returns sequential version of the current dof handler.
+    /** @brief Returns sequential version of the current dof handler.
+     * 
+     * Collective on all processors.
+     */
     std::shared_ptr<DOFHandlerMultiDim> sequential();
     
     /**
      * @brief Returns scatter context from parallel to sequential vectors.
      * 
      * For sequential dof handler it returns null pointer.
+     * Collective on all processors.
      */
     std::shared_ptr<VecScatter> sequential_scatter();
     
@@ -351,6 +355,8 @@ private:
     
     /**
      * @brief Communicate local dof indices to all processors and create new sequential dof handler.
+     *
+     * Collective on all processors.
      */
     void create_sequential();
 
