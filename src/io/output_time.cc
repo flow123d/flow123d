@@ -44,9 +44,9 @@ const IT::Record & OutputTime::get_input_type() {
 				"File path to the connected output file.")
 				// The format
 		.declare_key("format", OutputTime::get_input_format_type(), IT::Default("{}"),
-				"Format of output stream and possible parameters.")
+				"File format of the output stream and possible parameters.")
 		.declare_key("times", OutputTimeSet::get_input_type(), IT::Default::optional(),
-		        "Output times used for equations without is own output times key.")
+		        "Output times used for fields that do not have their own output times defined.")
         .declare_key("output_mesh", OutputMeshBase::get_input_type(), IT::Default::optional(),
                 "Output mesh record enables output on a refined mesh [EXPERIMENTAL, VTK only]."
                 "Sofar refinement is performed only in discontinous sense."
@@ -54,8 +54,8 @@ const IT::Record & OutputTime::get_input_type() {
                 "Node data are to be transformed to corner data, native data cannot be written."
                 "Do not include any node or native data in output fields.")
         .declare_key("precision", IT::Integer(0), IT::Default(default_prec.str()),
-                "The number of decimal digits used in output of floating point values.\\ "
-                "Default is about 17 decimal digits which is enough to keep double values exect after write-read cycle.")
+                "The number of decimal digits used in output of floating point values.\n"
+                "Default is 17 decimal digits which are necessary to reproduce double values exactly after write-read cycle.")
         .declare_key("observe_points", IT::Array(ObservePoint::get_input_type()), IT::Default("[]"),
                 "Array of observe points.")
 		.close();
