@@ -97,7 +97,7 @@ void XFEMElementSingularData<dim>::create_sing_quads(ElementAccessor<3> &ele)
             //slow projection
             arma::vec unit_p = map.project_real_to_unit(p, proj);
             
-            if( map.is_point_inside(unit_p)){
+            if( map.contains_unit_point(unit_p)){
         
 //                 DBGCOUT(<< "qpoint inside\n");
                 unit_points_inside[q] = unit_p;

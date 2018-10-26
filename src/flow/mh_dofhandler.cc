@@ -656,8 +656,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
     for (auto ele : mesh_->elements_range()){
         if(ele.dim() == 2){
             MappingP1<2,3> map;
-            arma::vec p = map.project_real_to_unit(center,map.element_map(ele));
-            if(map.is_point_inside(p))
+            if(map.contains_point(center,ele))
             {
                 n = arma::cross(ele.node(1)->point() - ele.node(0)->point(),
                                 ele.node(2)->point() - ele.node(0)->point());
@@ -710,8 +709,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<0>>(std::vector< Si
 //     for(; ele2d != mesh_->element.end(); ++ele2d){
 //         if(ele2d->dim() == 2){
 //             MappingP1<2,3> map;
-//             arma::vec p = map.project_real_to_unit(center2,map.element_map(*ele2d));
-//             if(map.is_point_inside(p))
+//             if(map.contains_point(center2,*ele2d))
 //             {
 //                 n2 = arma::cross(ele2d->node[1]->point() - ele2d->node[0]->point(),
 //                                 ele2d->node[2]->point() - ele2d->node[0]->point());
@@ -752,8 +750,7 @@ void MH_DofHandler::create_testing_singularities<Singularity<1>>(std::vector< Si
     for (auto ele : mesh_->elements_range()){
         if(ele.dim() == 3){
             MappingP1<3,3> map;
-            arma::vec p = map.project_real_to_unit(center,map.element_map(ele));
-            if(map.is_point_inside(p)){
+            if(map.contains_point(center,ele)){
                 found = true;
                 ele3d = ele;
                 break;
@@ -1209,8 +1206,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity0DPtr sing,
         else
         {
             MappingP1<2,3> map;
-            arma::vec up = map.project_real_to_unit(sing->geometry_ellipse().center(),map.element_map(ele));
-            if(map.is_point_inside(up))
+            if(map.contains_point(sing->geometry_ellipse().center(),ele))
                 enrich = true;
         }
     }
@@ -1271,8 +1267,7 @@ void MH_DofHandler::find_ele_to_enrich(Singularity1DPtr sing,
 //                 DebugOut().fmt("d: {} < enr_r: {}\n",d,radius);
                 Point p = ele.node(i)->point() - dp;
                 MappingP1<1,3> map;
-                arma::vec up = map.project_real_to_unit(p,map.element_map(mesh_->element_accessor(ele1d_global_idx)));
-                if(map.is_point_inside(up)){
+                if(map.contains_point(p,mesh_->element_accessor(ele1d_global_idx))){
                     enrich = true;
                     break;
                 }
