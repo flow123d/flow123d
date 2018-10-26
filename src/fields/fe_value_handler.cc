@@ -128,7 +128,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     ASSERT_PTR(map_).error();
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DHCellAccessor cell = dh_->cell_accessor_from_element( elm );
+    DHCellAccessor cell = dh_->cell_accessor_from_element( elm.mesh_idx() );
     if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
     else dh_->get_dof_indices( dh_->mesh()->element_accessor( elm.mesh_idx() ), dof_indices );
     //else cell.get_dof_indices(dof_indices);
@@ -199,7 +199,7 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-	DHCellAccessor cell = dh_->cell_accessor_from_element( elm );
+	DHCellAccessor cell = dh_->cell_accessor_from_element( elm.mesh_idx() );
 	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
 	else dh_->get_dof_indices( dh_->mesh()->element_accessor( elm.mesh_idx() ), dof_indices );
 	//else cell.get_dof_indices(dof_indices);
