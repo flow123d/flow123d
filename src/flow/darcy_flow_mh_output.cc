@@ -116,6 +116,13 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
 : EquationOutput()
 {
+    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1))
+            .flags(FieldFlag::equation_result)
+            .description("Enrichment part of the XFEM solution. [Experimental]");
+    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1))
+            .flags(FieldFlag::equation_result)
+            .description("Regular part of the XFEM solution. [Experimental]");
+
     *this += pressure_diff.name("pressure_diff").units(UnitSI().m())
              .flags(FieldFlag::equation_result) 
              .description("Error norm of the pressure solution. [Experimental]");
@@ -125,13 +132,7 @@ DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
     *this += div_diff.name("div_diff").units(UnitSI().s(-1))
              .flags(FieldFlag::equation_result)
              .description("Error norm of the divergence of the velocity solution. [Experimental]");
-             
-    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1))
-            .flags(FieldFlag::equation_result)
-            .description("Enrichment part of the XFEM solution. [Experimental]");
-    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1))
-            .flags(FieldFlag::equation_result)
-            .description("Regular part of the XFEM solution. [Experimental]");
+
     *this += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1))
             .flags(FieldFlag::equation_result)
             .description("Analytic solution, if provided. [Experimental]");
