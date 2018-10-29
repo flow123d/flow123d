@@ -76,10 +76,8 @@ public:
 	BoundingBox()
     {
 		// set undefined vertices
-		for (unsigned int axis=0; axis<dimension; ++axis) {
-			min_vertex_[axis] = std::numeric_limits<double>::signaling_NaN();
-			max_vertex_[axis] = std::numeric_limits<double>::signaling_NaN();
-		}
+		min_vertex_.fill( std::numeric_limits<double>::signaling_NaN() );
+		max_vertex_.fill( std::numeric_limits<double>::signaling_NaN() );
     }
 
 	/**
