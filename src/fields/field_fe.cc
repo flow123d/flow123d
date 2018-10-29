@@ -326,10 +326,6 @@ void FieldFE<spacedim, Value>::fill_boundary_dofs() {
 	value_handler3_.set_boundary_dofs_vector(boundary_dofs_);
 
 	data_vec_->resize(boundary_dofs_->size());
-
-	//std::cout << "FieldFE::fill_boundary_dofs - elements: " << bc_mesh->n_elements() << std::endl;
-	//for (auto ii : *boundary_dofs_ ) std::cout << " " << ii;
-	//std::cout << std::endl;
 }
 
 
@@ -657,34 +653,29 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	data_vec_->fill(0.0);
 	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
 
-	int rank;
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-	if ( (rank == 0) || this->boundary_domain_ ) {
-		// iterate through elements, assembly global vector and count number of writes
-		Mesh *mesh;
-		if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
-		else mesh = dh_->mesh();
-		for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
-			if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
-			else dof_size = dh_->get_dof_indices( ele, dof_indices_ );
-			data_vec_i = ele.idx() * dof_indices_.size();
-			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ dof_indices_[i] ];
-			}
-		}
-	} else {
-		// iterate through cells, assembly global vector and count number of writes
-		for (auto cell : dh_->own_range()) {
-			dof_size = cell.get_dof_indices(dof_indices_);
-			data_vec_i = cell.element_idx() * dof_indices_.size();
-			for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
-				(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
-				++count_vector[ dof_indices_[i] ];
-			}
+	// iterate through elements, assembly global vector and count number of writes
+	Mesh *mesh;
+	if (this->boundary_domain_) mesh = dh_->mesh()->get_bc_mesh();
+	else mesh = dh_->mesh();
+	for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
+		if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
+		else dof_size = dh_->get_dof_indices( ele, dof_indices_ );
+		data_vec_i = ele.idx() * dof_indices_.size();
+		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+			++count_vector[ dof_indices_[i] ];
 		}
 	}
+
+	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
+	/*for (auto cell : dh_->own_range()) {
+		dof_size = cell.get_dof_indices(dof_indices_);
+		data_vec_i = cell.element_idx() * dof_indices_.size();
+		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
+			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
+			++count_vector[ dof_indices_[i] ];
+		}
+	}*/
 
 	// compute averages of values
 	for (unsigned int i=0; i<data_vec_->size(); ++i) {
