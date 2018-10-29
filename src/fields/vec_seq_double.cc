@@ -22,6 +22,8 @@
 #include "fem/fe_p.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/fe_system.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "mesh/range_wrapper.hh"
 
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > VectorSeqDouble::create_field(Mesh & mesh, unsigned int n_comp)
@@ -85,6 +87,11 @@ void VectorSeqDouble::fill_output_data(std::shared_ptr<FieldFE<spacedim, Value> 
 	unsigned int ndofs = dh_->max_elem_dofs();
 	unsigned int idof; // iterate over indices
 	std::vector<LongIdx> indices(ndofs);
+
+	/*for (auto cell : dh_->own_range()) {
+		cell.get_dof_indices(indices);
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->data_vec_)[ indices[idof] ] = (*data_ptr_)[ ndofs*cell.elm_idx()+idof ];
+	}*/
 
 	for (auto ele : dh_->mesh()->elements_range()) {
 		dh_->get_dof_indices(ele, indices);

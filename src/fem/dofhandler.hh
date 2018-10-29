@@ -24,10 +24,13 @@
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/long_idx.hh"    // for LongIdx
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 #include "fem/discrete_space.hh" // for DiscreteSpace
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
+class DHCellAccessor;
 class Mesh;
 class Distribution;
 class Dof;
@@ -229,7 +232,7 @@ public:
 	
 	/**
      * @brief Return number of dofs on given cell.
-     * 
+     *
      * @param cell Cell accessor.
      */
 	unsigned int n_dofs(ElementAccessor<3> cell) const;
@@ -271,11 +274,24 @@ public:
      */
     std::size_t hash() const override;
 
+    /// Returns range of DOF handler cells (only range of own without ghost cells)
+    Range<DHCellAccessor> own_range() const;
+
+    /// Returns range over own and ghost cells of DOF handler
+    Range<DHCellAccessor> local_range() const;
+
+    /// Returns range over ghosts DOF handler cells
+    Range<DHCellAccessor> ghost_range() const;
+
+    /// Return DHCellAccessor appropriate to ElementAccessor of given idx
+    DHCellAccessor cell_accessor_from_element(unsigned int elm_idx) const;
+
     /// Destructor.
     ~DOFHandlerMultiDim() override;
     
     
     
+    friend class DHCellAccessor;
 
 private:
 
@@ -339,6 +355,7 @@ private:
     
     /**
      * @brief Communicate local dof indices to all processors and create new sequential dof handler.
+     *
      * Collective on all processors.
      */
     void create_sequential();
