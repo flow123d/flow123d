@@ -89,6 +89,15 @@ public:
     	return elm().dim();
     }
 
+    /**
+     * @brief Returns finite element object for given space dimension.
+     */
+    template<unsigned int dim>
+    FiniteElement<dim> *fe() const {
+    	ElementAccessor<3> elm_acc = this->elm();
+    	return dof_handler_->ds_->fe<dim>(elm_acc);
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -134,16 +143,15 @@ inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &in
 
 inline unsigned int DHCellAccessor::n_dofs() const
 {
-	ElementAccessor<3> elm_acc = this->elm();
-    switch (elm_acc.dim()) {
+    switch (this->dim()) {
         case 1:
-            return dof_handler_->fe<1>(elm_acc)->n_dofs();
+            return fe<1>()->n_dofs();
             break;
         case 2:
-            return dof_handler_->fe<2>(elm_acc)->n_dofs();
+            return fe<2>()->n_dofs();
             break;
         case 3:
-            return dof_handler_->fe<3>(elm_acc)->n_dofs();
+            return fe<3>()->n_dofs();
             break;
     }
 }
@@ -151,17 +159,16 @@ inline unsigned int DHCellAccessor::n_dofs() const
 
 inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 {
-	ElementAccessor<3> elm_acc = this->elm();
-    switch (elm_acc.dim())
+    switch (this->dim())
     {
         case 1:
-            return dof_handler_->fe<1>(elm_acc)->dof(idof);
+            return fe<1>()->dof(idof);
             break;
         case 2:
-            return dof_handler_->fe<2>(elm_acc)->dof(idof);
+            return fe<2>()->dof(idof);
             break;
         case 3:
-            return dof_handler_->fe<3>(elm_acc)->dof(idof);
+            return fe<3>()->dof(idof);
             break;
     }
 }
