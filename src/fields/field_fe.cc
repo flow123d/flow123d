@@ -670,7 +670,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 	/*for (auto cell : dh_->own_range()) {
 		dof_size = cell.get_dof_indices(dof_indices_);
-		data_vec_i = cell.element_idx() * dof_indices_.size();
+		data_vec_i = cell.elm_idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
 			++count_vector[ dof_indices_[i] ];

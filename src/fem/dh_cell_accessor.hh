@@ -50,15 +50,15 @@ public:
     }
 
     /// Return serial idx to element of loc_ele_idx_.
-    inline unsigned int element_idx() const {
+    inline unsigned int elm_idx() const {
     	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
         if (loc_ele_idx_<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
         else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
     }
 
     /// Return ElementAccessor to element of loc_ele_idx_.
-    inline const ElementAccessor<3> element_accessor() const {
-    	return dof_handler_->mesh()->element_accessor( element_idx() );
+    inline const ElementAccessor<3> elm() const {
+    	return dof_handler_->mesh()->element_accessor( elm_idx() );
     }
 
     /**
@@ -84,6 +84,11 @@ public:
      */
     const Dof &cell_dof(unsigned int idof) const;
 
+    /// Return dimension of element appropriate to cell.
+    inline unsigned int dim() const {
+    	return elm().dim();
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -92,21 +97,6 @@ public:
     /// Comparison of accessors.
     bool operator==(const DHCellAccessor& other) {
     	return (loc_ele_idx_ == other.loc_ele_idx_);
-    }
-
-    /**
-     * -> dereference operator
-     *
-     * Return ElementAccessor to element of loc_ele_idx_. Allow to simplify code:
- @code
-     DHCellAccessor dh_ac(dh, loc_index);
-     unsigned int dim;
-     dim = dh_ac.element_accessor().dim();  // full format of access to element
-     dim = dh_ac->dim();                    // short format with dereference operator
- @endcode
-     */
-    inline const ElementAccessor<3> operator ->() const {
-    	return dof_handler_->mesh()->element_accessor( element_idx() );
     }
 
 private:
@@ -119,7 +109,7 @@ private:
 
 inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) const
 {
-  unsigned int elem_idx = this->element_idx();
+  unsigned int elem_idx = this->elm_idx();
   ASSERT_LT( dof_handler_->row_4_el[elem_idx]+1, dof_handler_->cell_starts.size() )(dof_handler_->row_4_el[elem_idx])(dof_handler_->cell_starts.size());
   unsigned int ndofs = 0;
   ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
@@ -132,7 +122,7 @@ inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) c
 
 inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &indices) const
 {
-  unsigned int elem_idx = this->element_idx();
+  unsigned int elem_idx = this->elm_idx();
   unsigned int ndofs = 0;
   ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
   for (unsigned int k=0; k<ndofs; k++)
@@ -144,7 +134,7 @@ inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &in
 
 inline unsigned int DHCellAccessor::n_dofs() const
 {
-	ElementAccessor<3> elm_acc = this->element_accessor();
+	ElementAccessor<3> elm_acc = this->elm();
     switch (elm_acc.dim()) {
         case 1:
             return dof_handler_->fe<1>(elm_acc)->n_dofs();
@@ -161,7 +151,7 @@ inline unsigned int DHCellAccessor::n_dofs() const
 
 inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 {
-	ElementAccessor<3> elm_acc = this->element_accessor();
+	ElementAccessor<3> elm_acc = this->elm();
     switch (elm_acc.dim())
     {
         case 1:

@@ -90,7 +90,7 @@ void VectorSeqDouble::fill_output_data(std::shared_ptr<FieldFE<spacedim, Value> 
 
 	/*for (auto cell : dh_->own_range()) {
 		cell.get_dof_indices(indices);
-		for(idof=0; idof<ndofs; idof++) (*field_ptr->data_vec_)[ indices[idof] ] = (*data_ptr_)[ ndofs*cell.element_idx()+idof ];
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->data_vec_)[ indices[idof] ] = (*data_ptr_)[ ndofs*cell.elm_idx()+idof ];
 	}*/
 
 	for (auto ele : dh_->mesh()->elements_range()) {
