@@ -128,10 +128,9 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     ASSERT_PTR(map_).error();
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    DHCellAccessor cell = dh_->cell_accessor_from_element( elm.mesh_idx() );
+    ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() ); // non-const ElementAccessor
     if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-    else dh_->get_dof_indices( dh_->mesh()->element_accessor( elm.mesh_idx() ), dof_indices );
-    //else cell.get_dof_indices(dof_indices);
+    else dh_->get_dof_indices( cell, dof_indices );
 
     arma::mat map_mat = map_->element_map(elm);
     for (unsigned int k=0; k<point_list.size(); k++) {
@@ -199,10 +198,9 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-	DHCellAccessor cell = dh_->cell_accessor_from_element( elm.mesh_idx() );
+	ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() ); // non-const ElementAccessor
 	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-	else dh_->get_dof_indices( dh_->mesh()->element_accessor( elm.mesh_idx() ), dof_indices );
-	//else cell.get_dof_indices(dof_indices);
+	else dh_->get_dof_indices( cell, dof_indices );
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);

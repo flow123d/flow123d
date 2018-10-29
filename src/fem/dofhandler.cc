@@ -55,16 +55,15 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 
 unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
 {
-	DHCellAccessor dh_cell = cell_accessor_from_element(cell.idx());
     switch (cell->dim()) {
         case 1:
-            return fe<1>(dh_cell)->n_dofs();
+            return fe<1>(cell)->n_dofs();
             break;
         case 2:
-            return fe<2>(dh_cell)->n_dofs();
+            return fe<2>(cell)->n_dofs();
             break;
         case 3:
-            return fe<3>(dh_cell)->n_dofs();
+            return fe<3>(cell)->n_dofs();
             break;
     }
 }
@@ -72,17 +71,16 @@ unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
 
 const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> cell, unsigned int idof) const
 {
-	DHCellAccessor dh_cell = cell_accessor_from_element(cell.idx());
     switch (cell.dim())
     {
         case 1:
-            return fe<1>(dh_cell)->dof(idof);
+            return fe<1>(cell)->dof(idof);
             break;
         case 2:
-            return fe<2>(dh_cell)->dof(idof);
+            return fe<2>(cell)->dof(idof);
             break;
         case 3:
-            return fe<3>(dh_cell)->dof(idof);
+            return fe<3>(cell)->dof(idof);
             break;
     }
 }
@@ -600,6 +598,7 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 
 
 DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
+	//ASSERT( el_is_local(elm_idx) )(elm_idx);
 	if ( el_is_local(elm_idx) ) { //own element
 		return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
 	}

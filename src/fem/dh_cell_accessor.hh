@@ -144,15 +144,16 @@ inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &in
 
 inline unsigned int DHCellAccessor::n_dofs() const
 {
-    switch (element_accessor().dim()) {
+	ElementAccessor<3> elm_acc = this->element_accessor();
+    switch (elm_acc.dim()) {
         case 1:
-            return dof_handler_->fe<1>(*this)->n_dofs();
+            return dof_handler_->fe<1>(elm_acc)->n_dofs();
             break;
         case 2:
-            return dof_handler_->fe<2>(*this)->n_dofs();
+            return dof_handler_->fe<2>(elm_acc)->n_dofs();
             break;
         case 3:
-            return dof_handler_->fe<3>(*this)->n_dofs();
+            return dof_handler_->fe<3>(elm_acc)->n_dofs();
             break;
     }
 }
@@ -160,16 +161,17 @@ inline unsigned int DHCellAccessor::n_dofs() const
 
 inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 {
-    switch (element_accessor().dim())
+	ElementAccessor<3> elm_acc = this->element_accessor();
+    switch (elm_acc.dim())
     {
         case 1:
-            return dof_handler_->fe<1>(*this)->dof(idof);
+            return dof_handler_->fe<1>(elm_acc)->dof(idof);
             break;
         case 2:
-            return dof_handler_->fe<2>(*this)->dof(idof);
+            return dof_handler_->fe<2>(elm_acc)->dof(idof);
             break;
         case 3:
-            return dof_handler_->fe<3>(*this)->dof(idof);
+            return dof_handler_->fe<3>(elm_acc)->dof(idof);
             break;
     }
 }

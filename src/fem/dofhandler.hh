@@ -259,7 +259,7 @@ public:
      * @param cell Cell accessor.
      */
     template<unsigned int dim>
-    FiniteElement<dim> *fe(const DHCellAccessor &cell) const { return ds_->fe<dim>(cell); }
+    FiniteElement<dim> *fe(const ElementAccessor<3> &cell) const { return ds_->fe<dim>(cell); }
     
     /**
      * @brief Return dof on a given cell.
