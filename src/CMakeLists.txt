@@ -233,6 +233,7 @@ target_link_libraries(mesh_lib
 # fem_lib    
 add_library(fem_lib 
     quadrature/quadrature_lib.cc
+    quadrature/qxfem_factory.cc
     quadrature/intersection_quadrature.cc
     fem/discrete_space.cc
     fem/dofhandler.cc
@@ -243,6 +244,9 @@ add_library(fem_lib
     fem/fe_values.cc
     fem/fe_values_views.cc
     fem/mapping_p1.cc
+    fem/singularity.cc
+    fem/xfem_element_data.cc
+    fem/xfe_values.cc
 )
 target_link_libraries(fem_lib
     system_lib mesh_lib 
@@ -334,6 +338,7 @@ set(sources_lib_non_system
 add_library(flow123d_lib 
     flow/mh_dofhandler.cc
     flow/darcy_flow_mh_output.cc
+    flow/darcy_flow_mh_output_xfem.cc
     flow/darcy_flow_mh.cc
     flow/soil_models.cc
     flow/richards_lmh.cc

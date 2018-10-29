@@ -150,6 +150,16 @@ public:
 //     std::vector<std::vector<arma::mat::fixed<spacedim,spacedim> > > shape_grad_vectors;
 
     /**
+     * @brief Divergence of shape functions (for vectorial finite elements).
+     * 
+     * Normally, divergence is computed as the trace of the jacobian matrix.
+     * In XFEM with 1/r singularity, we take advantage of the form
+     * in which the div can be derived in polar coordinates.
+     * That is much easier and cheaper than computing the jacobian matrix in standard coordinates.
+     */
+    std::vector<std::vector<double> > shape_divergence;
+    
+    /**
      * @brief Normal vectors to the element at the quadrature points lying
      * on a side.
      */
@@ -259,6 +269,7 @@ public:
     void allocate(Mapping<dim,spacedim> &_mapping,
             Quadrature<dim> &_quadrature,
             FiniteElement<dim> &_fe,
+            unsigned int ndofs,
             UpdateFlags flags);
     
     /**
@@ -313,6 +324,20 @@ public:
                                                            const unsigned int point_no,
                                                            const unsigned int comp) const;
 
+    /**
+     * @brief Return the divergence of the @p function_no-th shape function at
+     * the @p point_no-th quadrature point.
+     *
+     * For vectorial finite elements.
+     *
+     * @param function_no Number of the shape function.
+     * @param point_no Number of the quadrature point.
+     */
+    inline double shape_divergence(const unsigned int function_no, const unsigned int point_no)
+    {
+        return data.shape_divergence[point_no][function_no];
+    }
+    
     /**
      * @brief Return the relative volume change of the cell (Jacobian determinant).
      *
@@ -414,7 +439,7 @@ public:
      */
     inline unsigned int n_dofs()
     {
-        return fe->n_dofs();
+        return n_dofs_;
     }
 
 
@@ -509,6 +534,8 @@ protected:
     
     /// Number of components of the FE.
     unsigned int n_components_;
+    
+    unsigned int n_dofs_;
     
     /// Auxiliary storage of FEValuesViews accessors.
     ViewsCache views_cache_;

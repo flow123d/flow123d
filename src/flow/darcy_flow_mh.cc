@@ -48,9 +48,10 @@
 #include "la/local_to_global_map.hh"
 
 #include "flow/darcy_flow_mh.hh"
-
 #include "flow/darcy_flow_mh_output.hh"
-
+#include "flow/darcy_flow_mh_output_xfem.hh"
+#include "darcy_flow_assembly.hh"
+#include "darcy_flow_assembly_xfem.hh"
 
 #include "tools/time_governor.hh"
 #include "fields/field_algo_base.hh"
@@ -62,7 +63,6 @@
 
 #include "fields/vec_seq_double.hh"
 
-#include "darcy_flow_assembly.hh"
 
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
@@ -130,6 +130,17 @@ const it::Record & DarcyMH::type_field_descriptor() {
 
 const it::Record & DarcyMH::get_input_type() {
 
+    it::Record xfem_rec = Input::Type::Record("XFEM", "Settings of XFEM.")
+        .allow_auto_conversion("use_xfem")
+        .declare_key("use_xfem", it::Bool(), it::Default::obligatory(), "Use XFEM for 0d-2d.")
+        .declare_key("enrich_velocity", it::Bool(), it::Default("false"), "Use enrichment for velocity.")
+        .declare_key("enrich_pressure", it::Bool(), it::Default("false"), "Use enrichment for pressure.")
+        .declare_key("continuous_pu", it::Bool(), it::Default("false"), "Set true for continuous partition of unity.")
+        .declare_key("single", it::Bool(), it::Default("false"), "Type of enrichment.")
+        .declare_key("dim", it::Integer(2,3), it::Default("2"), "Dimension allowed.")
+        .declare_key("enr_radius", it::Double(0.0), it::Default("0.0"), "Enrichment radius.")
+        .close();
+        
     it::Record ns_rec = Input::Type::Record("NonlinearSolver", "Non-linear solver settings.")
         .declare_key("linear_solver", LinSys::get_input_type(), it::Default("{}"),
             "Linear solver for MH problem.")
@@ -171,6 +182,7 @@ const it::Record & DarcyMH::get_input_type() {
 				"Number of Schur complements to perform when solving MH system.")
 		.declare_key("mortar_method", get_mh_mortar_selection(), it::Default("\"None\""),
 				"Method for coupling Darcy flow between dimensions on incompatible meshes. [Experimental]" )
+        .declare_key("use_xfem", xfem_rec, it::Default("false"), "XFEM support.")
 		.close();
 }
 
@@ -284,12 +296,12 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     solution(nullptr),
-    data_changed_(false),
     schur0(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	previous_solution(nullptr)
+	previous_solution(nullptr),
+	data_changed_(false)
 {
 
     START_TIMER("Darcy constructor");
@@ -306,14 +318,16 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     
     data_->is_linear=true;
 
-    size = mesh_->n_elements() + mesh_->n_sides() + mesh_->n_edges();
     n_schur_compls = in_rec.val<int>("n_schurs");
+    
     data_->mortar_method_= in_rec.val<MortarMethod>("mortar_method");
-    if (data_->mortar_method_ != NoMortar) {
+    Input::Record xfem_rec = input_record_.val<Input::Record>("use_xfem");
+    use_xfem = xfem_rec.val<bool>("use_xfem");
+    DBGVAR(use_xfem);
+    if (data_->mortar_method_ != NoMortar || use_xfem) {
         mesh_->mixed_intersections();
     }
     
-
 
     //side_ds->view( std::cout );
     //el_ds->view( std::cout );
@@ -368,9 +382,7 @@ void DarcyMH::init_eq_data()
 void DarcyMH::initialize() {
 
     init_eq_data();
-    output_object = new DarcyFlowMHOutput(this, input_record_);
-
-    mh_dh.reinit(mesh_);
+    
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
@@ -382,6 +394,41 @@ void DarcyMH::initialize() {
 
     // auxiliary set_time call  since allocation assembly evaluates fields as well
     data_changed_ = data_->set_time(time_->step(), LimitSide::right) || data_changed_;
+       
+    if(use_xfem){
+        Input::Record xfem_rec = input_record_.val<Input::Record>("use_xfem");
+        mh_dh.enrich_velocity = xfem_rec.val<bool>("enrich_velocity");
+        mh_dh.enrich_pressure = xfem_rec.val<bool>("enrich_pressure");
+        mh_dh.continuous_pu = xfem_rec.val<bool>("continuous_pu");
+        mh_dh.single_enr = xfem_rec.val<bool>("single");
+        mh_dh.xfem_dim = xfem_rec.val<int>("dim");
+        mh_dh.enr_radius = xfem_rec.val<double>("enr_radius");
+        
+        ASSERT(mh_dh.enr_radius > 0.0).error("Invalid enrichment radius set.\n");
+        
+        DBGVAR(mh_dh.enrich_velocity);
+        DBGVAR(mh_dh.enrich_pressure);
+        DBGVAR(mh_dh.continuous_pu);
+        DBGVAR(mh_dh.single_enr);
+        DBGVAR(mh_dh.xfem_dim);
+        DBGVAR(mh_dh.enr_radius);
+                
+        // init dofhandler including enrichments
+        mh_dh.reinit(mesh_, data_->cross_section, data_->sigma);
+        
+//         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
+//         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");
+//         mh_dh.print_array(mh_dh.row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
+        output_object = new DarcyFlowMHOutputXFEM(this);
+    }
+    else{
+        mh_dh.reinit(mesh_);
+        output_object = new DarcyFlowMHOutput(this);
+    }
+    
+    output_object->initialize(input_record_);
+    size = mh_dh.total_size();
+    
     create_linear_system(rec);
 
 
@@ -599,7 +646,6 @@ void DarcyMH::solve_nonlinear()
     }
 
     solution_changed_for_scatter=true;
-
 }
 
 
@@ -646,8 +692,10 @@ void DarcyMH::postprocess()
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
     //time_->view("DARCY"); //time governor information output
-	this->output_object->output();
+    this->output_object->output();
 
+    if(use_xfem)
+        mh_dh.print_array(mh_dh.mh_solution, mh_dh.total_size(), "MH solution");
 
     START_TIMER("Darcy balance output");
     balance_->calculate_cumulative(data_->water_balance_idx, schur0->get_solution());
@@ -710,9 +758,9 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         unsigned int dim = ele_ac.dim();
+//         DBGVAR(ele_ac.ele_global_idx());
         assembler[dim-1]->assemble(ele_ac);
-    }    
-    
+    }
 
     balance_->finish_flux_assembly(data_->water_balance_idx);
 
@@ -723,13 +771,13 @@ void DarcyMH::allocate_mh_matrix()
 {
     START_TIMER("DarcyFlowMH_Steady::allocate_mh_matrix");
 
-    // set auxiliary flag for switchting Dirichlet like BC
     data_->n_schur_compls = n_schur_compls;
     LinSys *ls = schur0;
    
 
-
-    int local_dofs[10];
+    const unsigned int loc_size_max = 200;
+    std::vector<int> local_dofs;
+    local_dofs.reserve(loc_size_max);
 
     // to make space for second schur complement, max. 10 neighbour edges of one el.
     double zeros[100000];
@@ -739,27 +787,40 @@ void DarcyMH::allocate_mh_matrix()
     tmp_rows.reserve(200);
     
     unsigned int nsides, loc_size;
+    int* edge_rows;
 
     for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
         auto ele_ac = mh_dh.accessor(i_loc);
         nsides = ele_ac.n_sides();
         
-        //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
-        loc_size = 1 + 2*nsides;
-        unsigned int i_side = 0;
+        loc_size = ele_ac.get_dofs(local_dofs);
+        ASSERT_DBG(loc_size < loc_size_max);
         
-        for (; i_side < nsides; i_side++) {
-            local_dofs[i_side] = ele_ac.side_row(i_side);
-            local_dofs[i_side+nsides] = ele_ac.edge_row(i_side);
-        }
-        local_dofs[i_side+nsides] = ele_ac.ele_row();
-        int * edge_rows = local_dofs + nsides;
-        //int ele_row = local_dofs[0];
+        nsides = ele_ac.n_sides();
+        int ele_row = ele_ac.ele_row();
+        edge_rows = ele_ac.edge_rows();
         
         // whole local MH matrix
-        ls->mat_set_values(loc_size, local_dofs, loc_size, local_dofs, zeros);
+        ls->mat_set_values(loc_size, local_dofs.data(), loc_size, local_dofs.data(), zeros);
         
-
+        if(ele_ac.is_enriched()){
+            XFEMElementDataBase* xd = ele_ac.xfem_data_pointer();
+            {
+                int w_row, ele1d_row;
+                for(int w=0; w < xd->n_enrichments(); w++){
+                    if(xd->enrichment_intersects(w)){
+                        // singularity edge integrals for p1d
+                        w_row = ele_ac.sing_row(w);
+                        ele1d_row = mh_dh.row_4_el[xd->intersection_ele_global_idx(w)];
+                        ls->mat_set_value(w_row, w_row, 0.0);
+                        ls->mat_set_value(w_row, ele1d_row, 0.0);
+                        ls->mat_set_value(ele1d_row, w_row, 0.0);
+                        ls->mat_set_value(ele1d_row, ele1d_row, 0.0);
+                    }
+                }
+            }
+        }
+        
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
         for (unsigned int i = 0; i < n_neighs; i++) {
@@ -771,6 +832,10 @@ void DarcyMH::allocate_mh_matrix()
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
 
+        
+        ls->mat_set_values(1, &ele_row, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
+        ls->mat_set_values(n_neighs, tmp_rows.data(), 1, &ele_row, zeros); // (neigh edges) x (edges, ele)
+        
         // allocate always also for schur 2
         ls->mat_set_values(nsides+1, edge_rows, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
         ls->mat_set_values(n_neighs, tmp_rows.data(), nsides+1, edge_rows, zeros); // (neigh edges) x (edges, ele)
@@ -972,11 +1037,17 @@ void DarcyMH::assembly_linear_system() {
 
         assembly_source_term();
         
-        auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-	    assembly_mh_matrix( multidim_assembler ); // fill matrix
+        // create proper assembler
+        AssemblyBase::MultidimAssembly multidim_assembler;
+        if(use_xfem)
+            multidim_assembler =  AssemblyBase::create< AssemblyMHXFEM >(data_);
+        else
+            multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+        
+        assembly_mh_matrix( multidim_assembler );
 
 	    schur0->finish_assembly();
-//         print_matlab_matrix("matrix");
+        print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
@@ -1009,7 +1080,13 @@ void DarcyMH::assembly_linear_system() {
 
 void DarcyMH::print_matlab_matrix(std::string matlab_file)
 {
+    // return if ls output not enabled by output specific input record
+    if(! output_object->is_output_ls_enabled())
+        return;
+        
     std::string output_file;
+    
+    DebugOut() << "Print MH system in matlab format.\n";
     
     if ( typeid(*schur0) == typeid(LinSys_BDDC) ){
 //         WarningOut() << "Can output matrix only on a single processor.";
@@ -1017,6 +1094,7 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
 //         ofstream os( output_file );
 //         auto bddc = static_cast<LinSys_BDDC*>(schur0);
 //         bddc->print_matrix(os);
+        return;
     }
     else {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
         output_file = FilePath(matlab_file + ".m", FilePath::output_file);
@@ -1255,6 +1333,7 @@ DarcyMH::~DarcyMH() {
 
 void DarcyMH::make_serial_scatter() {
     START_TIMER("prepare scatter");
+    DBGCOUT("SCATTER start\n");
     // prepare Scatter form parallel to sequantial in original numbering
     {
             IS is_loc;
@@ -1269,18 +1348,77 @@ void DarcyMH::make_serial_scatter() {
             // use essentialy row_4_id arrays
             loc_idx = new int [size];
             i = 0;
-            for (auto ele : mesh_->elements_range()) {
-            	for (unsigned int si=0; si<ele->n_sides(); si++) {
-                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
+            
+            
+            if(use_xfem){
+                for (; i < mh_dh.total_size(); i++) {
+                    loc_idx[i] = i;
                 }
             }
-            for (auto ele : mesh_->elements_range()) {
+            else{
+                
+            //velocity
+            for (auto ele : mesh_->elements_range())
+            	for (unsigned int si=0; si<ele->n_sides(); si++)
+                    loc_idx[i++] = mh_dh.side_row_4_id[ mh_dh.side_dof( ele.side(si) ) ];
+            
+//             //enriched velocity
+//             if(use_xfem && mh_dh.enrich_velocity){
+//                 int dofs[100];
+//                 int ndofs;
+// //                 DBGCOUT("vel\n");
+//                 for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+//                     auto ele_ac = mh_dh.accessor(i_loc);
+// //                     DBGVAR(ele_ac.ele_global_idx());
+//                     if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//                         ndofs = ele_ac.get_dofs_vel(dofs);
+//                         for(int j=ele_ac.n_sides(); j < ndofs; j++){
+// //                             loc_idx[i++] = dofs[j];
+//                             loc_idx[i] = i;
+//                             i++;
+//                         }
+//                     }
+//                 }
+//             }
+            
+            //pressure
+            for (auto ele : mesh_->elements_range())
                 loc_idx[i++] = mh_dh.row_4_el[ ele.idx() ];
-            }
-            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++) {
+                
+//             //enriched pressure
+//             if(use_xfem && mh_dh.enrich_pressure){
+//                 int dofs[100];
+//                 int ndofs;
+// //                 DBGCOUT("press\n");
+//                 for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
+//                     auto ele_ac = mh_dh.accessor(i_loc);
+// //                     DBGVAR(ele_ac.ele_global_idx());
+//                     if(ele_ac.is_enriched() && ! ele_ac.xfem_data_pointer()->is_complement()){
+//                         ndofs = ele_ac.get_dofs_press(dofs);
+//                         for(int j=1; j < ndofs; j++){
+// //                             loc_idx[i++] = dofs[j];
+//                             loc_idx[i] = i;
+//                             i++;
+//                         }
+//                     }
+//                 }
+//             }
+            
+            //pressure lagrange multiplier
+            for(unsigned int i_edg=0; i_edg < mesh_->n_edges(); i_edg++)
                 loc_idx[i++] = mh_dh.row_4_edge[i_edg];
+            
+//             //singualrity lagrange multiplier
+//             if(use_xfem){
+//                 for(unsigned int s=0; s < mh_dh.n_enrichments(); s++)
+//                     loc_idx[i++] = mh_dh.row_4_sing[s];
+//             }
+            
+//             mh_dh.print_array(loc_idx, size, "loc_idx");
+//             DBGVAR(i);
+//             DBGVAR(size);
+            ASSERT_DBG(i==size).error("Size of array does not match number of fills.\n");
             }
-            OLD_ASSERT( i==size,"Size of array does not match number of fills.\n");
             //DBGPRINT_INT("loc_idx",size,loc_idx);
             ISCreateGeneral(PETSC_COMM_SELF, size, loc_idx, PETSC_COPY_VALUES, &(is_loc));
             delete [] loc_idx;
@@ -1290,6 +1428,7 @@ void DarcyMH::make_serial_scatter() {
     }
     solution_changed_for_scatter=true;
 
+    DBGCOUT("SCATTER end\n");
     END_TIMER("prepare scatter");
 
 }

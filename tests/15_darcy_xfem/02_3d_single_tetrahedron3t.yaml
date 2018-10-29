@@ -1,0 +1,48 @@
+flow123d_version: 3.0.0_r1
+problem: !Coupling_Sequential
+  description: Test15 - Steady flow with xfem singular connection 1D-3D on simple 3d mesh.
+  mesh:
+    mesh_file: ./input/tetrahedron3t/tetrahedron3t_1.msh
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+      compute_errors: true
+      python_solution: analytical_module.py
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 0
+    use_xfem:
+      use_xfem: true
+      enrich_velocity: true
+      enrich_pressure: false
+      continuous_pu: false
+      single: true
+      enr_radius: 2.0
+      dim: 3
+    input_fields:
+      - region: bulk
+        anisotropy: 1
+      - region: .surface
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 40 + (40 - 100)/(1.0/(0.03*10)-log(0.03/10))*log(((x-3.33)^2+(y-3.33)^2)^0.5 / 10) # const sigma problem with R and P_D
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+        - velocity_enr
+        - velocity_reg
+        - velocity_diff
+        - velocity_exact
+        #- pressure_diff
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      output_mesh:
+        max_level: 2
+        refine_by_error: false
+        error_control_field: pressure_p0

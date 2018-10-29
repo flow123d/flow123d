@@ -38,6 +38,17 @@ template <int spacedim> class LocalElementAccessorBase;
 
 using namespace std;
 
+template <unsigned int dimA, unsigned int dimB>
+class IntersectionLocal;
+
+
+#include "fields/field.hh"
+#include "fem/xfem_element_data.hh"
+
+template<int> class XFEMElementSingularData;
+template <int> class Singularity;
+
+
 /// temporary solution to provide access to results
 /// from DarcyFlowMH independent of mesh
 class MH_DofHandler {
@@ -47,6 +58,7 @@ public:
     void reinit(Mesh *mesh);
 
     void prepare_parallel();
+    void fill_elem_side_to_global();
     void make_row_numberings();
     void prepare_parallel_bddc();
 
@@ -101,6 +113,106 @@ public:
     double time_;
 
     friend LocalElementAccessorBase<3>;
+    
+    
+    
+    // XFEM:
+public:
+    
+    typedef typename std::shared_ptr<Singularity<0>> Singularity0DPtr;
+    typedef typename std::shared_ptr<Singularity<1>> Singularity1DPtr;
+    
+    void reinit(Mesh *mesh,
+                Field<3, FieldValue<3>::Scalar>& cross_section,
+                Field<3, FieldValue<3>::Scalar>& sigma);
+    
+    template<class T>
+    void print_array(T * array, unsigned int length, std::string name = "array"){
+        DBGCOUT("print '" << name  << "' (" << length << "): \n");
+        for(unsigned int i=0; i < length; i++){
+            DBGCOUT(<< "[" << i << "]:  " << array[i] << "\n");
+        }
+    }
+    
+    int total_size();
+    
+    int *row_4_sing;        //< singularity index to matrix row (lagrange multiplier)
+    int *row_4_vel_sing;        //< velocity singularity enr index to matrix row
+    int *row_4_press_sing;        //< pressure singularity enr index to matrix row
+    
+    unsigned int n_enrichments();
+    
+    bool enrich_velocity, enrich_pressure, continuous_pu, single_enr;
+    int xfem_dim;
+    double enr_radius;
+    
+protected:
+    static const int empty_node_idx;
+    
+    template<int dim>
+    void create_enrichment(std::vector<std::shared_ptr<Singularity<dim-2>>> &singularities,
+                           std::vector<XFEMElementSingularData<dim>>& xfem_data,
+                           Field<3, FieldValue<3>::Scalar>& cross_section,
+                           Field<3, FieldValue<3>::Scalar>& sigma);
+    
+    template<int dim>
+    std::shared_ptr<Singularity<dim-2>> create_sing(IntersectionLocal<1,dim>* il,
+                                                    double cross_section,
+                                                    double sigma);
+    
+    template<class Enr>
+    void create_testing_singularities(std::vector<std::shared_ptr<Enr>> &singularities,
+                                      int & new_enrich_node_idx);
+
+    void find_ele_to_enrich(Singularity0DPtr sing, int ele1d_global_idx,
+                            ElementAccessor<3> &ele, double radius, int& new_enrich_node_idx);
+    void find_ele_to_enrich(Singularity1DPtr sing, int ele1d_global_idx,
+                            ElementAccessor<3> &ele, double radius, int& new_enrich_node_idx);
+    
+    template<int dim, class Enr>
+    void enrich_ele(std::shared_ptr<Enr> sing, unsigned int sing_idx,
+                    std::vector<XFEMElementSingularData<dim>>& xfem_data,
+                    int ele1d_global_idx,
+                    ElementAccessor<3> &ele, int& new_enrich_node_idx);
+    
+    void clear_mesh_flags();
+    
+    void clear_node_aux();
+    
+    void print_dofs_dbg();
+    
+    /// prepare_parallel for single processor in XFEM
+    void prepare_single_proc();
+    
+    /// Distribute continuous enriched FE DoFs.
+    void distribute_enriched_dofs();
+        
+    /// (Internal) Distribute continuous enriched DoFs.
+    void distribute_enriched_dofs(std::vector<std::vector<int>>& temp_dofs, int& offset, Quantity quant);
+    
+    /// (Internal) Distribute discontinuous enriched DoFs.
+    void distribute_enriched_dofs(int& offset, Quantity quant);
+    
+    void update_standard_dofs();
+    
+    std::vector<Singularity0DPtr> singularities_12d_;
+    std::vector<Singularity1DPtr> singularities_13d_;
+    
+//     std::vector<XFEMComplementData> xfem_data_1d;
+    std::vector<XFEMElementSingularData<2>> xfem_data_2d;
+    std::vector<XFEMElementSingularData<3>> xfem_data_3d;
+    
+    template<int dim>
+    XFEMElementSingularData<dim> * get_xfem_sing_data(int ele_idx);
+    std::vector<int> xdata_4_el;
+    
+//     std::vector<std::map<int, double> > node_values;
+//     std::vector<std::map<int, Space<3>::Point> > node_vec_values;
+    
+    std::vector<bool> mesh_flags_;
+    
+    unsigned int offset_velocity, offset_pressure, offset_enr_velocity,
+                 offset_enr_pressure, offset_edges, offset_enr_lagrange;
 };
 
 
@@ -178,7 +290,7 @@ public:
     }
 
     int *edge_rows() {
-        for(uint i=0; i< dim(); i++) edge_rows_[i] = edge_row(i);
+        for(uint i=0; i< n_sides(); i++) edge_rows_[i] = edge_row(i);
         return edge_rows_;
     }
 
@@ -203,9 +315,39 @@ public:
     }
 
     int *side_rows() {
-        for(uint i=0; i< dim(); i++) side_rows_[i] = side_row(i);
+        for(uint i=0; i< n_sides(); i++) side_rows_[i] = side_row(i);
         return side_rows_;
     }
+
+    
+    XFEMElementDataBase* xfem_data_pointer();
+    
+    template<int dim>
+    XFEMElementSingularData<dim>* xfem_data_sing(){
+        return dh->get_xfem_sing_data<dim>(ele.idx());
+    }
+    
+    bool is_enriched();
+    
+    int sing_row(uint local_enrichment_index){
+        return dh->row_4_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
+    }
+
+    int vel_sing_row(uint local_enrichment_index){
+        return dh->row_4_vel_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
+    }
+
+    int press_sing_row(uint local_enrichment_index){
+        return dh->row_4_press_sing[xfem_data_pointer()->global_enrichment_index(local_enrichment_index)];
+    }
+
+    int get_dofs_vel(std::vector<int>& dofs);
+    int get_dofs_press(std::vector<int>& dofs);
+    int get_dofs(std::vector<int>& dofs);
+    unsigned int n_dofs_vel();
+    unsigned int n_dofs_press();
+    unsigned int n_sing_dofs();
+    unsigned int n_dofs();
 
 private:
     int side_rows_[4];

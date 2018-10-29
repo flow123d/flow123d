@@ -1,0 +1,9 @@
+"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"well_1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"well_2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"aquifer"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	".well_1_top"	"water_volume"	2.82743e+07	2.82743e+07	0	0	0	0	0	0	0	0	0	0
+0	".well_2_top"	"water_volume"	2.82743e+07	2.82743e+07	0	0	0	0	0	0	0	0	0	0
+0	".well_1_bot"	"water_volume"	-2.82743e+07	0	-2.82743e+07	0	0	0	0	0	0	0	0	0
+0	".well_2_bot"	"water_volume"	-2.82743e+07	0	-2.82743e+07	0	0	0	0	0	0	0	0	0
+0	".aquifer"	"water_volume"	-0.583824	0	-0.583824	0	0	0	0	0	0	0	0	0

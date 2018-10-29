@@ -151,6 +151,8 @@ public:
     /// Test if element contains given point.
     bool contains_point(arma::vec point, ElementAccessor<3> elm);
 
+    /// Tests whether the given barycentric point lies within the reference element.
+    bool contains_unit_point(const BaryPoint &barycentric);
 private:
 
     /**

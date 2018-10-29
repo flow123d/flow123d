@@ -7,7 +7,6 @@ unit_tests/*/makefile
 unit_tests/makefile
 unit_tests/fields/speed_test_*.log
 unit_tests/output/*.pvd
-unit_tests/output/*.msh
 unit_tests/output/*.yaml
 unit_tests/output/test?/
 unit_tests/system/profiler_info*
@@ -18,6 +17,7 @@ unit_tests/intersection/output_intersection*.msh
 bin/tests/makefile
 tests/*/test_results
 tests/*/output
+tests/*/python.log
 
 CMakeCache.txt
 CMakeFiles

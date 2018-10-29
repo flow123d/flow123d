@@ -97,9 +97,13 @@ public:
             Field<3, FieldValue<3>::Scalar> velocity_diff;
             Field<3, FieldValue<3>::Scalar> pressure_diff;
             Field<3, FieldValue<3>::Scalar> div_diff;
+            Field<3, FieldValue<3>::VectorFixed> field_ele_flux_enr;
+            Field<3, FieldValue<3>::VectorFixed> field_ele_flux_reg;
+            Field<3, FieldValue<3>::VectorFixed> velocity_exact;
     };
 
-    DarcyFlowMHOutput(DarcyMH *flow, Input::Record in_rec) ;
+    DarcyFlowMHOutput(DarcyMH *flow);
+    void initialize(Input::Record in_rec);
     virtual ~DarcyFlowMHOutput();
 
     static const Input::Type::Instance & get_input_type();
@@ -110,7 +114,8 @@ public:
 
     //const OutputFields &get_output_fields() { return output_fields; }
 
-
+    inline bool is_output_ls_enabled()
+    { return output_ls_enabled_; }
 
 protected:
     typedef const vector<unsigned int> & ElementSetRef;
@@ -127,7 +132,7 @@ protected:
      *  but we still use MHDofHandler. Once we are able to make output routines
      *  parallel, we can use simply FieldFE for velocity here.
      */
-    void make_element_vector(ElementSetRef element_indices);
+    virtual void make_element_vector(ElementSetRef element_indices);
 
     //void make_sides_scalar();
     /**
@@ -153,7 +158,7 @@ protected:
      * 3) implement pressure postprocessing (result is DG_P2 field)
      * 4) implement calculation of L2 norm for two field (compute the norm and values on individual elements as P0 field)
      */
-    void compute_l2_difference();
+    virtual void compute_l2_difference();
 
 
     DarcyMH *darcy_flow;
@@ -161,7 +166,9 @@ protected:
 
     /// Specific experimental error computing.
     bool compute_errors_;
+    FilePath python_solution_filename_;
     
+    bool output_ls_enabled_;
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
     VectorSeqDouble corner_pressure;
@@ -225,6 +232,7 @@ protected:
     
     /// Struct containing all dim dependent FE classes needed for output
     /// (and for computing solution error).
+    /// IDEA: create object of class like this only once and use it throughout the assembly, output and elsewhere
     template<int dim> struct FEData{
         FEData();
         

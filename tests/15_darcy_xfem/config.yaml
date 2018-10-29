@@ -1,0 +1,21 @@
+common_config:
+  proc: []
+  memory_limit: 3000
+  time_limit: 600
+  
+test_cases:
+  - files:
+      #- 01_2d_single_triangle.yaml
+      #- 02_3d_single_tetrahedron3t.yaml
+      #- 03_2d_single_circle.yaml
+      #- 04_2d_single_circle_source.yaml
+      #- 05_3d_single_cylinder.yaml
+      - 21_2d_triangle_well.yaml
+      - 23_2d_circle_well.yaml
+      - 24_2d_circle_well_source.yaml
+      - 25_3d_cylinder_well.yaml
+      - 26_square_2w.yaml
+      - 27_block_2w.yaml
+      - 50_single_aquifer.yaml
+      - 51_single_aquifer_analytical.yaml
+    proc: [1]

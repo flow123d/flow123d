@@ -200,6 +200,10 @@ public:
     bool operator==(const ElementAccessor<spacedim>& other) {
     	return (element_idx_ == other.element_idx_);
     }
+    
+    bool operator!=(const ElementAccessor<spacedim>& other) {
+    	return (element_idx_ != other.element_idx_);
+    }
 
     /**
      * -> dereference operator

@@ -1,0 +1,73 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Test15 - Steady flow with xfem singular connection 1D-2D on simple 2d mesh.
+  mesh:
+    mesh_file: ./input/triangle/triangle_well_2.msh
+    regions:
+      - !Union
+        name: .well
+        regions:
+          - .well_top
+          - .well_bottom
+      - !Union
+        name: .aquifer
+        regions:
+          - .xzero
+          - .yzero
+          - .xy
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+      compute_errors: true
+      python_solution: analytical_module.py
+      output_linear_system: true
+      fields:
+        - velocity_enr
+        - velocity_reg
+        - velocity_diff
+        - velocity_exact
+        - pressure_diff
+    nonlinear_solver:
+      linear_solver: !Petsc
+        options: -ksp_type preonly  -pc_type cholesky
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 0
+    use_xfem:
+      use_xfem: true
+      enrich_velocity: true
+      enrich_pressure: false
+      continuous_pu: false
+      single: true
+      enr_radius: 2.0
+      dim: 2
+    input_fields:
+      - region: well
+        anisotropy: 1e10
+        sigma: 10
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: aquifer
+        anisotropy: 1
+        #cross_section: 4.5
+        cross_section: 1.0
+      - region: .well
+        bc_type: dirichlet
+        bc_pressure: 100
+      - region: .aquifer
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value: 40 + (40 - 100)/(1.0/(0.03*10)-log(0.03/10))*log(((x-3.33)^2+(y-3.33)^2)^0.5 / 10) # const sigma problem with R and P_D
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      output_mesh:
+        max_level: 3
+        refine_by_error: false
+        error_control_field: pressure_p0

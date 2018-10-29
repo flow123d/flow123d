@@ -71,8 +71,12 @@ const it::Instance & DarcyFlowMHOutput::get_input_type_specific() {
         .copy_keys(OutputSpecificFields::get_input_type())
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
                         "SPECIAL PURPOSE. Computes error norms of the solution, particulary suited for non-compatible coupling models.")
+        .declare_key("python_solution", it::FileName::input(), it::Default::optional(),
+                        "SPECIAL PURPOSE. Python script for computing analytical solution.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
+        .declare_key("output_linear_system", it::Bool(), it::Default("false"),
+                        "Enables the output of the linear system in matlab format.")
         .close();
     
     OutputSpecificFields output_fields;
@@ -112,6 +116,13 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
 : EquationOutput()
 {
+    *this += field_ele_flux_enr.name("velocity_enr").units(UnitSI().m().s(-1))
+            .flags(FieldFlag::equation_result)
+            .description("Enrichment part of the XFEM solution. [Experimental]");
+    *this += field_ele_flux_reg.name("velocity_reg").units(UnitSI().m().s(-1))
+            .flags(FieldFlag::equation_result)
+            .description("Regular part of the XFEM solution. [Experimental]");
+
     *this += pressure_diff.name("pressure_diff").units(UnitSI().m())
              .flags(FieldFlag::equation_result) 
              .description("Error norm of the pressure solution. [Experimental]");
@@ -121,14 +132,21 @@ DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
     *this += div_diff.name("div_diff").units(UnitSI().s(-1))
              .flags(FieldFlag::equation_result)
              .description("Error norm of the divergence of the velocity solution. [Experimental]");
+
+    *this += velocity_exact.name("velocity_exact").units(UnitSI().m().s(-1))
+            .flags(FieldFlag::equation_result)
+            .description("Analytic solution, if provided. [Experimental]");
 }
 
-DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
+DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
   fe0(1),
   is_output_specific_fields(false)
+{}
+
+void DarcyFlowMHOutput::initialize(Input::Record main_mh_in_rec)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
     
@@ -140,6 +158,11 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
     auto in_rec_specific = main_mh_in_rec.find<Input::Record>("output_specific");
     if (in_rec_specific) {
         in_rec_specific->opt_val("compute_errors", compute_errors_);
+        if(compute_errors_){
+            in_rec_specific->opt_val("python_solution", python_solution_filename_);
+            ASSERT(python_solution_filename_.exists());
+        }
+        in_rec_specific->opt_val("output_linear_system", output_ls_enabled_);
         
         // raw output
         int rank;
@@ -221,7 +244,7 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     diff_data.pressure_diff.resize( mesh_->n_elements() );
     diff_data.velocity_diff.resize( mesh_->n_elements() );
     diff_data.div_diff.resize( mesh_->n_elements() );
-    
+
     output_specific_fields.set_mesh(*mesh_);
 
     diff_data.vel_diff_ptr = diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
@@ -230,7 +253,13 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.pressure_diff_ptr, 0);
     diff_data.div_diff_ptr = diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.div_diff_ptr, 0);
-
+    
+    /// Create empty fields
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>(3));
+    output_specific_fields.field_ele_flux_enr.set_field(mesh_->region_db().get_region_set("ALL"), field_ptr);
+    output_specific_fields.field_ele_flux_reg.set_field(mesh_->region_db().get_region_set("ALL"), field_ptr);
+    output_specific_fields.velocity_exact.set_field(mesh_->region_db().get_region_set("ALL"), field_ptr);
+    
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
 }
@@ -273,9 +302,14 @@ void DarcyFlowMHOutput::output()
         //else
         //        make_node_scalar_param(observed_elements);
 
+        DebugOut() << "fill output data\n";
+        
         ele_pressure.fill_output_data(ele_pressure_ptr);
+        DebugOut() << "fill output data\n";
         ele_piezo_head.fill_output_data(ele_piezo_head_ptr);
+        DebugOut() << "fill output data\n";
         ele_flux.fill_output_data(ele_flux_ptr);
+        DebugOut() << "fill output data\n";
 
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
@@ -287,6 +321,7 @@ void DarcyFlowMHOutput::output()
 
     {
         START_TIMER("evaluate output fields");
+        DebugOut() << "evaluate output fields\n";
         output_fields.output(darcy_flow->time().step());
     }
     
@@ -298,7 +333,8 @@ void DarcyFlowMHOutput::output()
     
     if(is_output_specific_fields)
     {
-        START_TIMER("evaluate output fields");
+        START_TIMER("evaluate specific output fields");
+        DebugOut() << "evaluate specific output fields\n";
         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
         diff_data.velocity_diff.fill_output_data(diff_data.vel_diff_ptr);
         diff_data.pressure_diff.fill_output_data(diff_data.pressure_diff_ptr);
@@ -322,15 +358,13 @@ void DarcyFlowMHOutput::output()
 void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
 {
     START_TIMER("DarcyFlowMHOutput::make_element_scalar");
-    unsigned int sol_size;
-    double *sol;
-
-    darcy_flow->get_solution_vector(sol, sol_size);
-    unsigned int soi = mesh_->n_sides();
+    // need to call this to create mh solution vector
+    darcy_flow->get_mh_dofhandler();
+    
     for(unsigned int i_ele : element_indices) {
         ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
-        ele_pressure[i_ele] = sol[ soi + i_ele];
-        ele_piezo_head[i_ele] = sol[soi + i_ele ]
+        ele_pressure[i_ele] = darcy_flow->mh_dh.element_scalar(ele);
+        ele_piezo_head[i_ele] = ele_pressure[i_ele] +
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele.centre()));
     }
 }
@@ -666,19 +700,21 @@ template<int dim> DarcyFlowMHOutput::FEData<dim>::FEData()
 {}
 
 
+
+
 void DarcyFlowMHOutput::compute_l2_difference() {
 	DebugOut() << "l2 norm output\n";
     ofstream os( FilePath("solution_error", FilePath::output_file) );
 
-    FilePath source_file( "analytical_module.py", FilePath::input_file);
+    ASSERT(python_solution_filename_.exists());
     ExactSolution  anal_sol_1d(5);   // components: pressure, flux vector 3d, divergence
-    anal_sol_1d.set_python_field_from_file( source_file, "all_values_1d");
+    anal_sol_1d.set_python_field_from_file( python_solution_filename_, "all_values_1d");
 
     ExactSolution anal_sol_2d(5);
-    anal_sol_2d.set_python_field_from_file( source_file, "all_values_2d");
+    anal_sol_2d.set_python_field_from_file( python_solution_filename_, "all_values_2d");
 
     ExactSolution anal_sol_3d(5);
-    anal_sol_3d.set_python_field_from_file( source_file, "all_values_3d");
+    anal_sol_3d.set_python_field_from_file( python_solution_filename_, "all_values_3d");
 
     diff_data.dh = &( darcy_flow->get_mh_dofhandler());
     diff_data.mask_vel_error=0;

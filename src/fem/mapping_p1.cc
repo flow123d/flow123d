@@ -305,7 +305,10 @@ bool MappingP1<dim,spacedim>::contains_point(arma::vec point, ElementAccessor<3>
 	return (projection.min() >= -BoundingBox::epsilon);
 }
 
-
+template<unsigned int dim, unsigned int spacedim>
+bool MappingP1<dim,spacedim>::contains_unit_point(const BaryPoint &bp){
+    return (bp.min() >= -BoundingBox::epsilon);
+}
 
 template class MappingP1<1,3>;
 template class MappingP1<2,3>;

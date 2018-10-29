@@ -6,6 +6,7 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     output_specific:
       compute_errors: true
+      python_solution: analytical_module.py
       fields:
         - velocity_diff
         - pressure_diff

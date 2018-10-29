@@ -354,7 +354,6 @@ protected:
 	// Propagate test for the time term to the assembly.
 	// This flag is necessary for switching BC to avoid setting zero neumann on the whole boundary in the steady case.
 	bool use_steady_assembly_;
-	bool data_changed_;
 
 	// Setting of the nonlinear solver. TODO: Move to the solver class later on.
 	double tolerance_;
@@ -376,8 +375,13 @@ protected:
     Vec previous_solution;
 
 	std::shared_ptr<EqData> data_;
+    bool data_changed_;
+    
+    //XFEM:
+    bool use_xfem;  ///< Flag determines using XFEM
 
     friend class DarcyFlowMHOutput;
+    friend class DarcyFlowMHOutputXFEM;
     //friend class P0_CouplingAssembler;
     //friend class P1_CouplingAssembler;
 

@@ -1,0 +1,78 @@
+flow123d_version: 3.0.0_dev
+problem: !Coupling_Sequential
+  description: Test25 - Steady flow with xfem singular connection 1D-2D
+  mesh:
+    mesh_file: ./input/block/block_wells_1.msh
+    regions:
+      - !Union
+        name: .well_1
+        regions:
+          - .well_1_top
+          - .well_1_bot
+      - !Union
+        name: .well_2
+        regions:
+          - .well_2_top
+          - .well_2_bot
+      - !Union
+        name: wells
+        regions:
+          - well_1
+          - well_2
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+      compute_errors: true
+      python_solution: analytical_module_2w.py
+      output_linear_system: true
+      fields:
+        - velocity_enr
+        - velocity_reg
+        - velocity_diff
+        - velocity_exact
+        - pressure_diff
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 0
+    use_xfem:
+      use_xfem: true
+      enrich_velocity: true
+      enrich_pressure: false
+      continuous_pu: false
+      single: true
+      enr_radius: 1.0
+      dim: 3
+    input_fields:
+      - region: wells
+        anisotropy: 1e10
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: .well_1
+        bc_type: dirichlet
+        bc_pressure: 150
+      - region: .well_2
+        bc_type: dirichlet
+        bc_pressure: 100
+        
+      - region: aquifer
+        anisotropy: 1e-3
+      - region: .aquifer
+        bc_type: dirichlet
+        bc_pressure: !FieldFormula
+          value:  -52.2453721919971 * log(((x-4.1)^2+(y-4.3)^2)^0.5) -40.6805832786121 * log(((x-5.7)^2+(y-5.9)^2)^0.5)
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
+      output_mesh:
+        max_level: 1
+        refine_by_error: false
+        error_control_field: pressure_p0

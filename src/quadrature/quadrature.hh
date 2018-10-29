@@ -21,7 +21,6 @@
 
 #include <armadillo>
 #include <vector>
-
 #include "mesh/ref_element.hh"
 
 /**
@@ -109,7 +108,6 @@ protected:
      * To be filled by the constructors of the derived classes.
      */
     std::vector<double> weights;
-
 };
 
 
@@ -137,7 +135,7 @@ void Quadrature<dim>::resize(const unsigned int n_q)
 
 template<unsigned int dim>
 inline const unsigned int Quadrature<dim>::size() const {
-    return weights.size();
+    return quadrature_points.size();
 }
 
 template<unsigned int dim>

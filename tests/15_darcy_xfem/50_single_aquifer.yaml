@@ -1,0 +1,181 @@
+##---
+##title: Flow123d tutorial 50 -- ``5 Wells intersecting 2D aquifer''
+##---
+##
+###Description
+##This tutorial describes a hydraulic model of an aquifer (modelled as 2d layer) which communicates with 5 wells intersecting the aquifer in arbitrary 3d space.
+##
+##The user will learn how to:
+##
+##* Use XFEM for 1d-2d mesh coupling between wells and aquifer, resolving the singularities.
+##
+###Geometry
+##In this model we consider 5 wells simply perpendicular to the aquifer.
+##The wells are simplified as 1d straight channels of given cross sections in z coordinate,
+##the aquifer is 2d plane of given thickness in x-y coordinates.
+##The intersections (points) are situated in arbitrary positions to the nodes of aquifer mesh:
+##  - well_1: [2.8, 2.5]
+##  - well_2: [4.9, 5.4]
+##  - well_3: [2.9, 7.4]
+##  - well_4: [7.3, 7.8]
+##  - well_5: [7.4, 2.8]
+##The aquifer is a square between vertices [0,0] and [10,10], with third coordinate z=0.
+##The mesh "./input/aquifers/single_aquifer_12d.msh" can be generated from the geo file
+##"./input/aquifers/single_aquifer_12d.geo"
+##
+##All wells have the same cross section $\pi r_w^2$ with $r_w=0.03$.
+##
+##
+### Input
+##The problem is considered in such way that we can easily check the water balance.
+##On the aquifer boundary we set no flow BC.
+##The bottom ends of the wells are sealed, so there is also no flow BC.
+##At the tops of the wells we prescribe 4 fluxes:
+##
+##    - region: .well_1_top
+##      bc_type: total_flux
+##      bc_flux: !FieldFormula
+##        value: 2 / (3.141592653589793 * 0.03*0.03)
+##    - region: .well_3_top
+##      bc_type: total_flux
+##      bc_flux: !FieldFormula
+##        value: 3 / 0.00282743338823081 # pi*r^2
+##    - region: .well_4_top
+##      bc_type: total_flux
+##      bc_flux: !FieldFormula
+##        value: 1 / 0.00282743338823081 # pi*r^2
+##    - region: .well_5_top
+##      bc_type: total_flux
+##      bc_flux: !FieldFormula
+##        value: -1 / 0.00282743338823081 # pi*r^2
+##
+## and Dirichlet BC at the well num. 2:
+##
+##    - region: .well_2_top
+##      bc_type: dirichlet
+##      bc_pressure: 0
+##
+##Note that we scaled the values of flux by the cross sections $\pi*r_w^2$,
+##so we obtain the integers in water balance output.
+##
+##The linear system coming from the xfem discretization cannot be solved 
+##using schur complements at the moment, so we need to set
+##  - n_schurs: 0
+##
+##To activate xfem discretization, we need to set the following:
+##
+##  - use_xfem:
+##      use_xfem: true
+##      enrich_velocity: true
+##      enrich_pressure: false
+##      single: true
+##      enr_radius: 1.5
+##      dim: 2
+##
+##Currently we enable enrichment of the velocity (set true) and no enrichment in pressure (set false).
+##The key 'single' is true, so one enrichement DoF per singularity is considered (only true is available at the moment).
+##Key 'enr_radius' is the value so called enrichment radius - the radius around the singularity center, in which 
+##the elements are enriched.
+##The key 'dim: 2' tells the program to consider only point singularity in 2d.
+##
+##
+###Results
+##
+##We see the singular velocity in Figure {@fig:flow} and the singular pressure in Figure {@fig:pressure}.
+##![Singular velocity.](tutor_figures/50_velocity.pdf){#fig:velocity}
+##![Singular pressure with numbered wells.](tutor_figures/50_pressure_num.pdf){#fig:pressure width=100%}
+##
+##Further we can check the water balance output. Due to prescribed BC, we see that the sum of fluxes given
+##for wells [1,3,4,5] is equal the flux from well 5.
+##
+##
+flow123d_version: 2.0.0_rc
+problem: !Coupling_Sequential
+  description: Test15 - Steady flow with xfem singular connection 1D-2D
+  mesh:
+    mesh_file: ./input/aquifers/single_aquifer_12d_1.msh
+    
+  flow_equation: !Flow_Darcy_MH
+    nonlinear_solver:
+      linear_solver: !Petsc
+        r_tol: 1.0e-10
+        a_tol: 1.0e-10
+    n_schurs: 0
+    use_xfem:
+      use_xfem: true
+      enrich_velocity: true
+      enrich_pressure: false
+      single: true
+      enr_radius: 0.8
+      dim: 2
+    output_specific:
+      #compute_errors: true
+      #python_solution: analytical_module_2w.py
+      output_linear_system: true
+      fields:
+        - velocity_enr
+        - velocity_reg
+        #- velocity_diff
+        #- velocity_exact
+        #- pressure_diff
+    input_fields:
+      - region: aquifer
+        anisotropy: 0.001
+      
+      - region: well_1
+        anisotropy: 1
+        sigma: 200
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_2
+        anisotropy: 100
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_3
+        anisotropy: 100
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_4
+        anisotropy: 100
+        sigma: 100
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+      - region: well_5
+        anisotropy: 100
+        sigma: 200
+        cross_section: !FieldFormula
+          value: 3.141592653589793 * 0.03*0.03 # pi*r^2
+
+      - region: .well_1_top
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: 2 / 0.00282743338823081 # pi*r^2
+      - region: .well_2_top
+        bc_type: dirichlet
+        bc_pressure: 0
+      - region: .well_3_top
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: 3 / 0.00282743338823081 # pi*r^2
+      - region: .well_4_top
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: 1 / 0.00282743338823081 # pi*r^2
+      - region: .well_5_top
+        bc_type: total_flux
+        bc_flux: !FieldFormula
+          value: -1 / 0.00282743338823081 # pi*r^2
+
+    balance: {}
+    output:
+      fields:
+        - pressure_p0
+        - velocity_p0
+    output_stream: 
+      file: ./test15.pvd
+      format: !vtk
+        variant: ascii
+      output_mesh:
+        max_level: 3

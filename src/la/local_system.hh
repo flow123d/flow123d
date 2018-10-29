@@ -53,8 +53,11 @@ public:
     /// Resets the matrix, RHS, dofs to zero and clears solution settings
     void reset();
     
-    /// Resize and reset.
-    void reset(arma::uword nrows, arma::uword ncols);
+    /** Resets the matrix, RHS, dofs to zero and clears solution settings
+     * @p nrows is number of rows of local system
+     * @p ncols is number of columns of local system
+     */
+     void reset(arma::uword nrows, arma::uword ncols);
 
     /**
      * Resize and reset. Set dofs vectors to reuse arrays provided by given vectors.

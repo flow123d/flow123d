@@ -20,6 +20,7 @@
 
 #include "fem/mapping.hh"
 #include "quadrature/quadrature.hh"
+#include <quadrature/qxfem.hh>
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
 #include "fem/fe_system.hh"
@@ -67,12 +68,18 @@ void FEValuesData<dim,spacedim>::allocate(unsigned int size, UpdateFlags flags, 
 
     if (update_flags & update_values)
     {
+        shape_values.clear();
         shape_values.resize(size, vector<double>(n_comp));
     }
 
     if (update_flags & update_gradients)
     {
+        shape_gradients.clear();
         shape_gradients.resize(size, vector<arma::vec::fixed<spacedim> >(n_comp));
+    }
+    
+    if (update_flags & update_divergence){
+        shape_divergence.resize(size);
     }
 
     if (update_flags & update_quadrature_points)
@@ -139,6 +146,7 @@ template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         Quadrature<dim> & _quadrature,
         FiniteElement<dim> & _fe,
+        unsigned int ndofs,
         UpdateFlags _flags)
 {
     // For FEVector and FETensor check number of components.
@@ -151,6 +159,7 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
     mapping = &_mapping;
     quadrature = &_quadrature;
     fe = &_fe;
+    n_dofs_ = ndofs;
 
     switch (fe->type_) {
         case FEScalar:
@@ -169,7 +178,7 @@ void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
             break;
     }
     // add flags required by the finite element or mapping
-    data.allocate(quadrature->size(), update_each(_flags), fe->n_dofs()*n_components_);
+    data.allocate(quadrature->size(), update_each(_flags), ndofs*n_components_);
     
     views_cache_.initialize(*this);
 }
@@ -223,7 +232,7 @@ UpdateFlags FEValuesBase<dim,spacedim>::update_each(UpdateFlags flags)
 template<unsigned int dim, unsigned int spacedim>
 double FEValuesBase<dim,spacedim>::shape_value(const unsigned int function_no, const unsigned int point_no)
 {
-  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(function_no, n_dofs_);
   ASSERT_LT_DBG(point_no, quadrature->size());
   return data.shape_values[point_no][function_no];
 }
@@ -232,7 +241,7 @@ double FEValuesBase<dim,spacedim>::shape_value(const unsigned int function_no, c
 template<unsigned int dim, unsigned int spacedim>
 arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad(const unsigned int function_no, const unsigned int point_no)
 {
-  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(function_no, n_dofs_);
   ASSERT_LT_DBG(point_no, quadrature->size());
   return data.shape_gradients[point_no][function_no];
 }
@@ -243,7 +252,7 @@ double FEValuesBase<dim,spacedim>::shape_value_component(const unsigned int func
                                     const unsigned int point_no, 
                                     const unsigned int comp) const
 {
-  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(function_no, n_dofs_);
   ASSERT_LT_DBG(point_no, quadrature->size());
   ASSERT_LT_DBG(comp, n_components_);
   return data.shape_values[point_no][function_no*n_components_+comp];
@@ -255,7 +264,7 @@ arma::vec::fixed<spacedim> FEValuesBase<dim,spacedim>::shape_grad_component(cons
                                                         const unsigned int point_no,
                                                         const unsigned int comp) const
 {
-  ASSERT_LT_DBG(function_no, fe->n_dofs());
+  ASSERT_LT_DBG(function_no, n_dofs_);
   ASSERT_LT_DBG(point_no, quadrature->size());
   ASSERT_LT_DBG(comp, n_components_);
   return data.shape_gradients[point_no][function_no*n_components_+comp];
@@ -505,8 +514,20 @@ FEValues<dim,spacedim>::FEValues(Mapping<dim,spacedim> &_mapping,
          UpdateFlags _flags)
 :FEValuesBase<dim, spacedim>()
 {
-    this->allocate(_mapping, _quadrature, _fe, _flags);
+    this->allocate(_mapping, _quadrature, _fe, _fe.n_dofs(), _flags);
 
+    //UpdateFlags map_update_flags = this->data.update_flags;
+    
+    if(typeid(_quadrature) == typeid(QXFEM<dim,spacedim>)){
+//         DBGCOUT("FEValues: quad XFEM - dismiss update_quadrature_points flag.\n");
+        QXFEM<dim,spacedim>* q = static_cast<QXFEM<dim,spacedim>*>(&_quadrature);
+        
+//         map_update_flags = map_update_flags & (~update_quadrature_points);
+        this->data.update_flags = this->data.update_flags & (~update_quadrature_points);
+        //TODO: think of way to avoid copying the whole vector
+        this->data.points = q->get_real_points();
+    }
+    
     // precompute the maping data and finite element data
     this->mapping_data = this->mapping->initialize(*this->quadrature, this->data.update_flags);
     this->fe_data = this->init_fe_data(this->quadrature);
@@ -556,7 +577,7 @@ FESideValues<dim,spacedim>::FESideValues(Mapping<dim,spacedim> & _mapping,
 {
     sub_quadrature = &_sub_quadrature;
     Quadrature<dim> *q = new Quadrature<dim>(_sub_quadrature.size());
-    this->allocate(_mapping, *q, _fe, _flags);
+    this->allocate(_mapping, *q, _fe, _fe.n_dofs(), _flags);
 
     for (unsigned int sid = 0; sid < RefElement<dim>::n_sides; sid++)
     {
