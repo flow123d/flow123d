@@ -139,8 +139,6 @@ protected:
    */
   EqData data_;
 
-  //Input::Array output_array;
-
   /**
    * Input data set - fields in this set are read from the input file.
    */

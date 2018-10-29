@@ -48,6 +48,17 @@ public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
 
+	/**
+	 * Possible interpolations of input data.
+	 */
+	enum DataInterpolation
+	{
+		identic_msh,    //!< identical mesh
+		equivalent_msh, //!< equivalent mesh (default value)
+		gauss_p0,       //!< P0 interpolation (with the use of Gaussian distribution)
+		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
+	};
+
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
      */
@@ -62,6 +73,11 @@ public:
      * Return Input selection for discretization type (determines the section of VTK file).
      */
     static const Input::Type::Selection & get_disc_selection_input_type();
+
+    /**
+     * Return Input selection that allow to set interpolation of input data.
+     */
+    static const Input::Type::Selection & get_interp_selection_input_type();
 
     /**
      * Setter for the finite element data. The mappings are required for computation of local coordinates.
@@ -141,8 +157,11 @@ private:
 	/// Create DofHandler object
 	void make_dof_handler(const Mesh *mesh);
 
-	/// Interpolate data over all elements of target mesh.
-	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
+	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
+	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
+
+	/// Interpolate data (use intersection library) over all elements of target mesh.
+	void interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec);
 
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
@@ -151,6 +170,14 @@ private:
 	void reinit_fe_data(MappingP1<1,3> *map1,
 			MappingP1<2,3> *map2,
 			MappingP1<3,3> *map3);
+
+	/**
+	 * Fill data to boundary_dofs_ vector.
+	 *
+	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	 */
+	void fill_boundary_dofs();
+
 
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
@@ -190,6 +217,9 @@ private:
 	/// Specify section where to find the field data in input mesh file
 	OutputTime::DiscreteSpace discretization_;
 
+	/// Specify type of FE data interpolation
+	DataInterpolation interpolation_;
+
 	/// Field flags.
 	FieldFlag::Flags flags_;
 
@@ -202,8 +232,12 @@ private:
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
 
-    /// Flag that determines if source mesh and target mesh are compatible
-    bool has_compatible_mesh_;
+    /**
+     * Hold dofs of boundary elements.
+     *
+     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+     */
+    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
 
     /// Registrar of class to factory
     static const int registrar;

@@ -66,18 +66,10 @@ public:
    *   Static variable for new input data types input
    */
   static const Input::Type::Record & get_input_type();
-  
-  /*
-  static Input::Type::Selection make_output_selection(const string &output_field_name, const string &selection_name)
-  {
-      return EqData(output_field_name).output_fields
-        .make_output_field_selection(selection_name, "desc")
-        .close();
-  }*/
 
-  static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name )
+  static Input::Type::Instance make_output_type(const string &equation_name, const string &output_field_name, const string &output_field_desc )
   {
-      return EqData(output_field_name).output_fields.make_output_type(equation_name, "");
+      return EqData(output_field_name, output_field_desc).output_fields.make_output_type(equation_name, "");
   }
 
   class EqData : public FieldSet
@@ -89,7 +81,7 @@ public:
     static const Input::Type::Selection & get_sorption_type_selection();
 
     /// Collect all fields
-    EqData(const string &output_field_name);
+    EqData(const string &output_field_name, const string &output_field_desc);
 
     MultiField<3, FieldValue<3>::Enum > sorption_type; ///< Discrete need Selection for initialization.
     Field<3, FieldValue<3>::Scalar > rock_density;      ///< Rock matrix density.
@@ -245,10 +237,6 @@ protected:
    * Array for storage infos about sorbed species concentrations.
    */
   double** conc_solid;
-  
-  //Input::Array output_array;
-
-  //Input::Type::Selection output_selection;
 
   /**
    * Reaction model that follows the sorption.

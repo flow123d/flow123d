@@ -30,11 +30,11 @@
 namespace IT=Input::Type;
 
 const IT::Record & OutputMeshBase::get_input_type() {
-    return IT::Record("OutputMesh", "Parameters of the refined output mesh.")
+    return IT::Record("OutputMesh", "Parameters of the refined output mesh. [Not impemented]")
         .declare_key("max_level", IT::Integer(1,20),IT::Default("3"),
             "Maximal level of refinement of the output mesh.")
         .declare_key("refine_by_error", IT::Bool(), IT::Default("false"),
-            "Set true for using error_control_field. Set false for global uniform refinement to max_level.")
+            "Set true for using ``error_control_field``. Set false for global uniform refinement to max_level.")
         .declare_key("error_control_field",IT::String(), IT::Default::optional(),
             "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
         .declare_key("refinement_error_tolerance",IT::Double(0.0), IT::Default("0.01"),

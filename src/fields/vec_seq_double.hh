@@ -30,6 +30,8 @@
 #include "fem/fe_system.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "mesh/range_wrapper.hh"
 
 #include <petscvec.h>
 
@@ -328,7 +330,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 	// Prepare DOF handler
 	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
 	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
-	dh->distribute_dofs(ds, true);
+	dh->distribute_dofs(ds);
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
@@ -351,6 +353,11 @@ void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Val
 	unsigned int ndofs = dh->max_elem_dofs();
 	unsigned int idof; // iterate over indices
 	std::vector<LongIdx> indices(ndofs);
+
+	/*for (auto cell : dh_->own_range()) {
+		cell.get_dof_indices(indices);
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->data_vec_)[ indices[idof] ] = (*data_ptr_)[ ndofs*cell.elm_idx()+idof ];
+	}*/
 
 	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
 	for (auto ele : dh->mesh()->elements_range()) {
