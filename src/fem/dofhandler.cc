@@ -598,15 +598,9 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 
 
 DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
-	//ASSERT( el_is_local(elm_idx) )(elm_idx);
-	if ( el_is_local(elm_idx) ) { //own element
-		return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
-	}
-
-	//ghost element
-	auto ghost_it = std::find(ghost_4_loc.begin(), ghost_4_loc.end(), elm_idx);
-	auto dh_acc = DHCellAccessor(this, el_ds_->lsize()+std::distance(ghost_4_loc.begin(), ghost_it) );
-	//ASSERT_LT_DBG( dh_acc.elm_idx(), mesh_->n_elements() )(dh_acc.elm_idx())(elm_idx).error("Invalid accessor!\n");
-	return dh_acc;
+	// TODO: We need replace ASSERT with if condition and return accessor of own element.
+	// In else case we create and return accessor of ghost element.
+	ASSERT( el_is_local(elm_idx) )(elm_idx);
+	return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
 }
 
