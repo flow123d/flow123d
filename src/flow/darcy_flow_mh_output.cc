@@ -175,12 +175,12 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	// DOF handler object allow create scalar FieldFE
 	shared_ptr<DOFHandlerMultiDim> dh_scalar = make_shared<DOFHandlerMultiDim>(*mesh_);
 	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe_data_1d.fe_p0, &fe_data_2d.fe_p0, &fe_data_3d.fe_p0);
-	dh_scalar->distribute_dofs(ds, true);
+	dh_scalar->distribute_dofs(ds);
 
 	// create shared pointer to a FieldFE and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
 	ele_pressure_ptr=make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	ele_pressure_ptr->set_fe_data(dh_scalar, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, create_vector_mpi(ele_pressure.size()) );
+	ele_pressure_ptr->set_fe_data(dh_scalar, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_pressure.size()) );
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe0, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
@@ -197,7 +197,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 	ele_piezo_head.resize(mesh_->n_elements());
 	ele_piezo_head_ptr=make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	ele_piezo_head_ptr->set_fe_data(dh_scalar, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, create_vector_mpi(ele_piezo_head.size()) );
+	ele_piezo_head_ptr->set_fe_data(dh_scalar, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_piezo_head.size()) );
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	// DOF handler object allow create vector FieldFE
@@ -212,13 +212,13 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 		FiniteElement<2> *felm2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
 		FiniteElement<3> *felm3 = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
 		shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, felm0, felm1, felm2, felm3);
-		dh_vector->distribute_dofs(ds, true);
+		dh_vector->distribute_dofs(ds);
 	}
 
 	ele_flux.resize(3*mesh_->n_elements());
 	//ele_flux_ptr=create_field<3, FieldValue<3>::VectorFixed>(ele_flux, *mesh_, 3);
 	ele_flux_ptr=make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
-	ele_flux_ptr->set_fe_data(dh_vector, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, create_vector_mpi(ele_flux.size()) );
+	ele_flux_ptr->set_fe_data(dh_vector, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_flux.size()) );
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
