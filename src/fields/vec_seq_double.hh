@@ -30,6 +30,8 @@
 #include "fem/fe_system.hh"
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "mesh/range_wrapper.hh"
 
 #include <petscvec.h>
 
@@ -138,9 +140,19 @@ public:
     : communicator_(comm) {}
 
     /// Create shared pointer and PETSC vector with given size. COLLECTIVE.
-    VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_SELF)
+    VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_WORLD)
     : communicator_(comm) {
         resize(local_size);
+    }
+
+    /**
+     * Helper method creating VectorMPI of given size with serial Petsc communicator.
+     *
+     * Method is used for better readability of code.
+     */
+    static VectorMPI * sequential(unsigned int size)
+    {
+    	return new VectorMPI(size, PETSC_COMM_SELF);
     }
 
     /**
@@ -231,13 +243,6 @@ public:
 	}
 
 
-	void set_communicator(MPI_Comm comm)
-	{
-		ASSERT( data_ptr_.use_count() == 0 ).error("Do not change PETSC communicator of initialized vector!\n");
-		communicator_ = comm;
-	}
-
-
     /// Destructor.
     ~VectorMPI()
     {
@@ -264,16 +269,6 @@ private:
     MPI_Comm communicator_;
 };
 
-
-/**
- * Helper method creating VectorMPI of given size with serial Petsc communicator.
- *
- * Method is used for better readability of code.
- */
-inline VectorMPI * create_vector_mpi(unsigned int size)
-{
-	return new VectorMPI(size);
-}
 
 
 /**
@@ -333,13 +328,14 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 	}
 
 	// Prepare DOF handler
-	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+	DOFHandlerMultiDim dh_par(mesh);
 	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
-	dh->distribute_dofs(ds, true);
+	dh_par.distribute_dofs(ds);
+    dh = dh_par.sequential();
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data(dh, &map1, &map2, &map3, create_vector_mpi(vec_seq.size()) );
+	field_ptr->set_fe_data(dh, &map1, &map2, &map3, VectorMPI::sequential(vec_seq.size()) );
 	return field_ptr;
 }
 
@@ -358,6 +354,11 @@ void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Val
 	unsigned int ndofs = dh->max_elem_dofs();
 	unsigned int idof; // iterate over indices
 	std::vector<LongIdx> indices(ndofs);
+
+	/*for (auto cell : dh_->own_range()) {
+		cell.get_dof_indices(indices);
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->data_vec_)[ indices[idof] ] = (*data_ptr_)[ ndofs*cell.elm_idx()+idof ];
+	}*/
 
 	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
 	for (auto ele : dh->mesh()->elements_range()) {

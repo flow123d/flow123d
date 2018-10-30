@@ -1,10 +1,11 @@
+flow123d_version: 3.1.0
 common_config:
   proc: [1, 2]
   memory_limit: 1000
 
 test_cases:
-- files:
-  - 01_inflow.yaml
-  - 02_dirichlet.yaml
-  - 03_total_flux.yaml
-  - 04_diff_flux.yaml
+  - files:
+      - 01_inflow.yaml
+      - 02_dirichlet.yaml
+      - 03_total_flux.yaml
+      - 04_diff_flux.yaml

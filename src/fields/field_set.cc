@@ -184,16 +184,6 @@ bool FieldSet::is_jump_time() const {
 }
 
 
-
-// OBSOLETE method
-FieldCommon &FieldSet::add_field( FieldCommon *field, const string &name,
-                                      const string &desc, const string & d_val) {
-    *this += field->name(name).description(desc).input_default(d_val);
-    return *field;
-}
-
-
-
 std::ostream &operator<<(std::ostream &stream, const FieldSet &set) {
     for(FieldCommon * field : set.field_list) {
         stream << *field

@@ -14,9 +14,9 @@ $\tn K_d$ is the conductivity tensor, and $H$ \units{}{1}{} is the piezometric h
     \vc q_d = \delta_d \vc w_d,
 \]
 where $\delta_d$ \units{}{3-d}{} is the \hyperA{Flow-Darcy-MH-Data::cross-section}{cross section} coefficient,
-in particular $\delta_3=1$, $\delta_2$ \units{}{1}{} is the thickness of a fracture, and $\delta_1$ \units{}{2}{} is the cross-section of a channel.
-The flux $\vc q_d\cdot\vc n$ is the volume of the liquid (water) that passes through a unit square ($d=3$),
-unit line ($d=2$), or through a point ($d=1$) per one second. 
+in particular $\delta_3=1$, $\delta_2$ \units{}{1}{} is the thickness of a~fracture, and $\delta_1$ \units{}{2}{} is the cross-section of a~channel.
+The flux $\vc q_d\cdot\vc n$ is the volume of the liquid (water) that passes through a~unit square ($d=3$),
+unit line ($d=2$), or through a~point ($d=1$) per one second. 
 The conductivity tensor is given by the product \penalty-500
 $\tn K_d = k_d \tn A_d$, where $k_d>0$ \units{}{1}{-1}
  is the \hyperA{Flow-Darcy-MH-Data::conductivity}{hydraulic conductivity}  and 
@@ -62,7 +62,7 @@ In $\Omega_3$ we simply have $F_3  = f_3$ \units{}{}{-1}.
 
 \subsection{Coupling on mixed meshes}
 In the set $\Omega_2 \cap \Omega_3$ the fracture is surrounded by at most one 3D surface from every side.
-On $\prtl\Omega_3 \cap \Omega_2$ we prescribe a boundary condition of the Robin type:
+On $\prtl\Omega_3 \cap \Omega_2$ we prescribe a~boundary condition of the Robin type:
 \begin{align*}
         \vc{q}_3\cdot \vc n^{+} &= q_{32}^{+} =\sigma_{3} (h_3^{+}-h_2),\\
         \vc{q}_3\cdot \vc n^{-} &= q_{32}^{-} =\sigma_{3} (h_3^{-}-h_2),
@@ -95,12 +95,12 @@ where $\sigma_2$ \units{}{1}{-1} is the transition coefficient integrated over t
   \sigma_2 = \sigma_{21} \frac{2\delta_2^2\tn K_1:{\vc n_1^i}\otimes{\vc n_1^i}}{\delta_1}.
 \]
 Here $\vc n_1^i$ is the unit normal to the channel that is tangential to the fracture $i$.
-Sum of the fluxes forms a part of $F_1$ \units{}{2}{-1}:
+Sum of the fluxes forms a~part of $F_1$ \units{}{2}{-1}:
 \begin{equation}
    \label{source_1D}
    F_1 = \delta_1 f_1 + \sum_{i=1}^n q_{21}^{i}. 
 \end{equation}
-We remark that the direct communication between 3D and 1D (e.g. model of a well) is not supported yet.
+We remark that the direct communication between 3D and 1D (e.g. model of a~well) is not supported yet.
 The \hyperA{Flow-Darcy-MH-Data::sigma}{transition coefficients} 
 {$\sigma_{32}$} \units{}{}{} and
 {$\sigma_{21}$} \units{}{}{} are independent scaling parameters which represent 
@@ -109,7 +109,7 @@ on the fracture walls one may choice $\sigma_{32} < 1$.
 
 \subsection{Boundary conditions}
 In order to obtain unique solution we have to prescribe boundary conditions.
-Currently we consider a disjoint decomposition of the boundary
+Currently we consider a~disjoint decomposition of the boundary
 \[
     \prtl\Omega_d = \Gamma_d^D \cup \Gamma_d^{TF} \cup \Gamma_d^{Sp} \cup \Gamma_d^{Ri}
 \]
@@ -135,7 +135,7 @@ is the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient}.
 As before one can also prescribe the \Alink{Flow-Darcy-MH-Data::bc-piezo-head}{boundary piezo head}
 $H_d^R$ to specify $h_d^R$.
 
-{\bf Seepage face} condition is used to model a surface with possible springs:
+{\bf Seepage face} condition is used to model a~surface with possible springs:
 \begin{equation}\label{eq:seepage}
     h_d \le h_d^S\quad \text{and} \quad -\vc q_d \cdot \vc n \le \delta_d q_d^N
 \end{equation}
@@ -179,7 +179,7 @@ Now if we take $h_d^S=h_d^D$, we obtain
 \end{align}
 where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficiently large.
 
-% \tbd{TODO: Once we implement mixing of BC on  a single element. This may be usefull. Mixing seepage and river condition on single element using weighting.
+% \tbd{TODO: Once we implement mixing of BC on  a~single element. This may be usefull. Mixing seepage and river condition on single element using weighting.
 % \begin{align}
 %   \vc q_d \cdot \vc n &= \alpha \sigma_d^R ( H_d - H_d^D) + (1-\alpha) \sigma_{big}(H_d - H_d^S), \quad \text{for} H_d \ge H_d^S,\\
 %   \vc q_d \cdot \vc n &= \alpha \sigma_d^R ( H_d^S - H_d^D)+(1-\alpha) q_d^N, \quad \text{for} H_d < H_d^S,
@@ -191,13 +191,13 @@ where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficien
 % where the additional terms are to preserve continuity of the condition in the switch point.
 % }
 
-%This boundary condition models small scale free water surface, namely a watercourse.
-%To begin with consider a small scale case where elements have scale of the width of the watercourse and the boundary match the free water surface of the water course.
-%In such a case we can prescribe the boundary condition:
+%This boundary condition models small scale free water surface, namely a~watercourse.
+%To begin with consider a~small scale case where elements have scale of the width of the watercourse and the boundary match the free water surface of the water course.
+%In such a~case we can prescribe the boundary condition:
 %\[
 %  h_d \le h_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (h - h_r)
 %\]
-%where $\sigma$ is a transmissivity of the river bedrock and $h_r=0$ is the height of the water column above the discrete boundary.
+%where $\sigma$ is a~transmissivity of the river bedrock and $h_r=0$ is the height of the water column above the discrete boundary.
 %This condition use the information about water depth $h_0$ clearly can not be smaller then the pressure head at the same place. However, if the pressure head is 
 %smaller, we do not allow arbitrary infiltration as in the seepage face boundary condition, but limit the infiltration by the transmissivity of the bedrock. 
 %Next, if discrete boundary do not match the free surface of height $H_r$, we should rather use the piezometric head in boundary condition, getting:
@@ -205,8 +205,8 @@ where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficien
 %  \label{BC:river_raw}
 %  H_d \le H_r\quad \text{and}\quad \vc q_d \cdot \vc n \ge \sigma (H - H_r).
 %\end{equation}
-%Finally, let us assume elements significantly larger then width of the watercourse. Let, $A_e$ be the surface of a boundary element face
-%containing a water source with the surface $A_R=\alpha_r A_e$. We want to combine the seepage face condition out of the watercourse with 
+%Finally, let us assume elements significantly larger then width of the watercourse. Let, $A_e$ be the surface of a~boundary element face
+%containing a~water source with the surface $A_R=\alpha_r A_e$. We want to combine the seepage face condition out of the watercourse with 
 %the river condition \eqref{BC:river_raw} in to single condition. The inequality for the flux is weighted by the area:
 %\[
 %   \vc q\cdot \vc n \ge \alpha_r \sigma(H-H_r) + (1-\alpha_r)q_i
@@ -215,7 +215,7 @@ where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficien
 %\[
 %  H_d \le H_c = (\alpha_r) H_r + (1-\alpha_r) H_s
 %\]
-%where the critical piezometric head $H_c$ is a weighted average of the river head and the average height $H_s$ of the real surface.
+%where the critical piezometric head $H_c$ is a~weighted average of the river head and the average height $H_s$ of the real surface.
 %
 %
 %Parameters: $\alpha_r$ \units{}{}{} the \hyperA{Flow-Darcy-MH-Data::bc-river-fraction}{river surface fraction}, $H_r$ \units{1}{}{} 
@@ -224,7 +224,7 @@ where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficien
 %the infiltration or evapotranspiration rate, $\sigma=\sigma_d^R$ \units{}{3-d}{-1}  
 %the \hyperA{Flow-Darcy-MH-Data::bc-robin-sigma}{transition coefficient} of the bedrock.
 %
-%Implementation: prescribing $\alpha_r$ as a field makes only sense for the case of element-wise field since the value depends on the cross-section 
+%Implementation: prescribing $\alpha_r$ as a~field makes only sense for the case of element-wise field since the value depends on the cross-section 
 %of the river and the boundary element. Ultimate goal should be to prescribe river as an 1D line and set width of the river on its elements. Then we can 
 %modify non-compatible intersection algorithms to compute value of $\alpha_r$ for individual elements.
 %
@@ -233,7 +233,7 @@ where the first equation approximates $h_d = h_d^S$ if $\sigma_d^R$ is sufficien
 \subsection{Steady and unsteady Darcian flow}
 
 By default, the \hyperA{Flow-Darcy-MH-Data::storativity}{storativity} is zero which means that the flow is calculated steady.
-If, in addition, some input fields are time-dependent, a sequence of steady problems is calculated for times in which the data change.
+If, in addition, some input fields are time-dependent, a~sequence of steady problems is calculated for times in which the data change.
 When storativity is nonzero, the problem becomes unsteady and one has to specify the initial condition and the computational time interval.
 
 \subsection{Initial condition}
@@ -257,21 +257,21 @@ If, in addition, \Alink{Balance::cumulative}{cumulative} is set to true then the
 The format of balance output is described in Section \ref{sec:balance_output}.
 
 \subsection{Richards Equation}
-This section contains a preliminary documentation to the unsaturated water flow model. We use the Richards equation in the form:
+This section contains a~preliminary documentation to the unsaturated water flow model. We use the Richards equation in the form:
 
 \begin{equation}
  \prtl_t \delta \theta_t + \div \vc q = F\quad \in\Omega_d, \text{ for } d=1,2,3
 \end{equation}
-where the total water content $\theta_t(h)$ \units{}{}{} is a function of the principal unknown $h$ and the water flux $\vc q$ is given by \eqref{eq:darcy_flux} 
+where the total water content $\theta_t(h)$ \units{}{}{} is a~function of the principal unknown $h$ and the water flux $\vc q$ is given by \eqref{eq:darcy_flux} 
 in which the conductivity $k_d$ is function of the pressure head $h$ as well.
 Currently the total water content is given as:
 \begin{equation}
     \theta_t(h) = \theta(h) + Sh
 \end{equation}
-where $S$ is the storativity and $\theta(h)$ is the water content. The functions $\theta(h)$ and $k(h)$ are given by the choosen soil model.
+where $S$ is the storativity and $\theta(h)$ is the water content. The functions $\theta(h)$ and $k(h)$ are given by the chosen soil model.
 Two soil models are currently supported.
 
-\subsubsection{van Genuchen}
+\subsubsection{van Genuchten}
 Classical van Genuchten model use:
 \[
     \theta(h) = (\theta_s-\theta_r)\theta_e + \theta_r,\quad \theta_e = (1+ (\alpha h)^n)^m
@@ -285,11 +285,11 @@ The model parameters are:
     $n$ \units{}{}{} the exponent parameter.
 The exponent $m$ is taken as $1/n-1$ and $\theta_e$ \units{}{}{} is called the effective water content.
 
-The conductivity function $k(h)$ is then derived from the capilary model due to Mualem with result:
+The conductivity function $k(h)$ is then derived from the capillary model due to Mualem with result:
 \[
     k(h) = \theta_e^{0.5} \left[ \frac{1-F(\theta)}{1-F(\theta_s)} \right]^2,\quad F(\theta)= \left[ 1- \theta_e^{1/m} \right]^m
 \]
-In fact we use slight modification due to Vogel and Císlerová where the saturation happens at some preassure head slightly smaller then zero.
+In fact we use slight modification due to Vogel and Císlerová where the saturation happens at some pressure head slightly smaller then zero.
 Then the water content curve is given by 
 \[
     \theta(h) = (\theta_m-\theta_r)\theta_e + \theta_r,
@@ -306,11 +306,11 @@ The model used for bentonite is due to Irmay and use simple power relation for t
 \subsection{Coupling of dimensions for non-conforming meshes}
 Version 3.0.0 introduce an experimental support for the non-conforming meshes of mixed dimension. 
 In particular 1D-2D coupling is supported in the 2D ambient space and 2D-3D and 2D-2D coupling is 
-supported for the 3D ambient space. Non-conforming coupling is supported only by the Dracy flow model
-and lower dimensional elements can not represent barrieres, i.e. we consider that the pressure 
-and the velocity fields are continuous accross the lower dimensional fractures. Search for the non-conforming intersections 
+supported for the 3D ambient space. Non-conforming coupling is supported only by the Darcy flow model
+and lower dimensional elements can not represent barriers, i.e. we consider that the pressure 
+and the velocity fields are continuous across the lower dimensional fractures. Search for the non-conforming intersections 
 and assembly of the associated terms in the weak formulation is turned on by the key \hyperA{Flow-Darcy-MH::mortar-method}{mortar\_method}.
-One of two methods can be selected: $P0$ method is faster but can be a bit unstable for coarse meshes, $P1$ method should be more robust.
+One of two methods can be selected: $P0$ method is faster but can be a~bit unstable for coarse meshes, $P1$ method should be more robust.
 
     
 

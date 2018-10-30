@@ -73,7 +73,12 @@ public:
 	 * No initialization of vertices. Be very careful using this.
 	 * One necessary usage is vector of BoundigBox.
 	 */
-	BoundingBox() {}
+	BoundingBox()
+    {
+		// set undefined vertices
+		min_vertex_.fill( std::numeric_limits<double>::signaling_NaN() );
+		max_vertex_.fill( std::numeric_limits<double>::signaling_NaN() );
+    }
 
 	/**
 	 * Constructor for point box.
@@ -90,7 +95,7 @@ public:
 	BoundingBox(const Point &min, const Point &max)
 	: min_vertex_(min), max_vertex_(max)
 	{
-		OLD_ASSERT( arma::min( min <= max ) , "Wrong coordinates in constructor.");
+		ASSERT( arma::min( min <= max ) ).error("Wrong coordinates in constructor.");
 	};
 
 	/**
@@ -247,8 +252,9 @@ public:
      */
     void expand(const Point &point) {
    		for(unsigned int j=0; j<dimension; j++) {
-   			min_vertex_(j) = std::min( min_vertex_[j], point[j] );
-   			max_vertex_(j) = std::max( max_vertex_[j], point[j] );
+   			// parameters of min and max functions must be in correct order, vertices can be set to NaN (see default constructor)
+   			min_vertex_(j) = std::min( point[j], min_vertex_[j] );
+   			max_vertex_(j) = std::max( point[j], max_vertex_[j] );
    		}
     }
 
@@ -257,8 +263,9 @@ public:
      */
     void expand(const BoundingBox &box) {
         for(unsigned int j=0; j<dimension; j++) {
-            min_vertex_[j] = std::min( min_vertex_[j], box.min_vertex_[j] );
-            max_vertex_[j] = std::max( max_vertex_[j], box.max_vertex_[j] );
+        	// parameters of min and max functions must be in correct order, vertices can be set to NaN (see default constructor)
+            min_vertex_[j] = std::min( box.min_vertex_[j], min_vertex_[j] );
+            max_vertex_[j] = std::max( box.max_vertex_[j], max_vertex_[j] );
         }
     }
 

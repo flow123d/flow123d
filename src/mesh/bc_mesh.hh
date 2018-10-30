@@ -43,7 +43,7 @@ public:
 	~BCMesh();
 
     /// Returns range of boundary elements of parent mesh
-    Range<ElementAccessor<3>, Mesh> elements_range() const override;
+    Range<ElementAccessor<3>> elements_range() const override;
 
     /// Returns count of boundary elements of parent mesh
     unsigned int n_elements(bool boundary=false) const;

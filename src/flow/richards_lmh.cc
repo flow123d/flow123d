@@ -43,40 +43,29 @@ namespace it=Input::Type;
 
 RichardsLMH::EqData::EqData()
 {
-    phead_edge_.set_communicator(PETSC_COMM_WORLD);
-    water_content_previous_it.set_communicator(PETSC_COMM_WORLD);
-    water_content_previous_time.set_communicator(PETSC_COMM_WORLD);
-    capacity.set_communicator(PETSC_COMM_WORLD);
-    postprocess_side_sources.set_communicator(PETSC_COMM_WORLD);
+    *this += water_content_saturated.name("water_content_saturated")
+            .description(R"(Saturated water content (($ \theta_s $)).
+                Relative volume of water in a reference volume of a saturated porous media.)")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
 
-    string desc;
+    *this += water_content_residual.name("water_content_residual")
+            .description(R"(Residual water content (($ \theta_r $)).
+                Relative volume of water in a reference volume of an ideally dry porous media.)")
+            .input_default("0.0")
+            .units( UnitSI::dimensionless() );
     
-    desc = R"(
-Saturated water content (($ \theta_s $)).
-relative volume of the water in a reference volume of a saturated porous media.
-)" ;
-    ADD_FIELD(water_content_saturated, desc, "0.0");
-    water_content_saturated.units( UnitSI::dimensionless() );
+    *this += genuchten_p_head_scale.name("genuchten_p_head_scale")
+            .description(R"(The van Genuchten pressure head scaling parameter (($ \alpha $)).
+                It is related to the inverse of the air entry pressure, i.e. the pressure
+                where the relative water content starts to decrease below 1.)")
+            .input_default("0.0")
+            .units( UnitSI().m(-1) );
 
-    desc = R"(
-Residual water content (($ \theta_r $)).
-Relative volume of the water in a reference volume of an ideally dry porous media.
-)";
-    ADD_FIELD(water_content_residual, desc, "0.0");
-    water_content_residual.units( UnitSI::dimensionless() );
-
-    desc = R"(
-The van Genuchten pressure head scaling parameter (($ \alpha $)).
-The parameter of the van Genuchten's model to scale the pressure head.
-Related to the inverse of the air entry pressure, i.e. the pressure where the relative water content starts to decrease below 1.
-)";
-    ADD_FIELD(genuchten_p_head_scale, desc, "0.0");
-    genuchten_p_head_scale.units( UnitSI().m(-1) );
-
-    ADD_FIELD(genuchten_n_exponent,
-            "The van Genuchten exponent parameter (($ n $)).", "2.0");
-    genuchten_n_exponent.units( UnitSI::dimensionless() );
-
+    *this += genuchten_n_exponent.name("genuchten_n_exponent")
+            .description("The van Genuchten exponent parameter (($ n $)).")
+            .input_default("2.0")
+            .units( UnitSI::dimensionless() );
 }
 
 
@@ -91,7 +80,7 @@ const it::Record & RichardsLMH::get_input_type() {
             .add_value(SoilModelBase::irmay, "irmay", "Irmay model for conductivity, Van Genuchten model for the water content. Suitable for bentonite.")
             .close();
 
-    auto soil_rec = it::Record("SoilModel", "Setting for the soil model.")
+    auto soil_rec = it::Record("SoilModel", "Soil model settings.")
         .allow_auto_conversion("model_type")
         .declare_key("model_type", model_selection, it::Default("\"van_genuchten\""),
             "Selection of the globally applied soil model. In future we replace this key by a field for selection of the model."
@@ -100,13 +89,13 @@ const it::Record & RichardsLMH::get_input_type() {
                 "Fraction of the water content where we cut  and rescale the curve.")
         .close();
 
-    return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady saturated Darcy flow.")
+    return it::Record("Flow_Richards_LMH", "Lumped Mixed-Hybrid solver for unsteady unsaturated Darcy flow.")
         .derive_from(DarcyFlowInterface::get_input_type())
         .copy_keys(DarcyMH::get_input_type())
         .declare_key("input_fields", it::Array( field_descriptor ), it::Default::obligatory(),
                 "Input data for Darcy flow model.")
         .declare_key("soil_model", soil_rec, it::Default("\"van_genuchten\""),
-                "Setting for the soil model.")
+                "Soil model settings.")
         .close();
 }
 
