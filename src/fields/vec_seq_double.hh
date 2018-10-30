@@ -328,9 +328,10 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 	}
 
 	// Prepare DOF handler
-	dh = std::make_shared<DOFHandlerMultiDim>(mesh);
+	DOFHandlerMultiDim dh_par(mesh);
 	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
-	dh->distribute_dofs(ds);
+	dh_par.distribute_dofs(ds);
+    dh = dh_par.sequential();
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
