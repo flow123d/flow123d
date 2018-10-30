@@ -121,8 +121,7 @@ public:
         std::shared_ptr<::DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(this->_mesh, &fe0, &fe1, &fe2, &fe3);
 		dh->distribute_dofs(ds);
 
-		VectorSeqDouble v;
-        v.resize(size);
+		VectorMPI v(size);
         for (unsigned int i=0; i<size; ++i) v[i] = step*i;
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();

@@ -20,13 +20,22 @@
 
 #include <vector>
 #include <memory>
+#include "system/system.hh"
 #include "system/global_defs.h"
+
+#include "fields/fe_value_handler.hh"
+#include "fields/field_fe.hh"
+#include "fem/fe_p.hh"
+#include "fem/mapping_p1.hh"
+#include "fem/fe_system.hh"
+#include "fem/dofhandler.hh"
+#include "fem/finite_element.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "mesh/range_wrapper.hh"
 
 #include <petscvec.h>
 
-#include "fem/dofhandler.hh"
-#include "fem/finite_element.hh"
-
+class Mesh;
 template <int spacedim, class Value> class FieldFE;
 
 
@@ -43,13 +52,12 @@ template <int spacedim, class Value> class FieldFE;
  *  - return pointer to PETSC vector
  *  - create shared pointer to FieldFE object corresponding with std::vector of double
  */
-class VectorSeqDouble {
+/*class VectorSeqDouble {
 public:
     typedef typename std::shared_ptr< std::vector<double> > VectorSeq;
 
     /// Constructor.
-    VectorSeqDouble()
-    : dh_(nullptr) {}
+    VectorSeqDouble() {}
 
     /// Create shared pointer and PETSC vector with given size.
 	void resize(unsigned int size)
@@ -89,27 +97,13 @@ public:
 	}
 
 
-	/// Create and return shared pointer to FieldFE object
-	template <int spacedim, class Value>
-	std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp);
-
-	/**
-	 * Fill output data of field_ptr.
-	 *
-	 * Set data to data vector of field in correct order according to values of DOF handler indices.
-	 */
-	template <int spacedim, class Value>
-	void fill_output_data(std::shared_ptr<FieldFE<spacedim, Value> > field_ptr);
-
 	/// Destructor.
 	~VectorSeqDouble()
 	{
 		if (data_ptr_) chkerr(VecDestroy(&data_petsc_));
 	}
 
-    /**
-     * Access to the vector element on index @p idx.
-     */
+    /// Access to the vector element on index @p idx.
     inline double &operator[](unsigned int idx)
     {
     	ASSERT_DBG(idx < data_ptr_->size()) (idx) (data_ptr_->size());
@@ -121,29 +115,44 @@ private:
 	VectorSeq data_ptr_;
 	/// stored vector of data in PETSC format
 	Vec data_petsc_;
-    /// Finite element objects (allow to create DOF handler)
-	FiniteElement<0> *fe0_;
-	FiniteElement<1> *fe1_;
-	FiniteElement<2> *fe2_;
-	FiniteElement<3> *fe3_;
-	// DOF handler object allow create FieldFE
-	std::shared_ptr<DOFHandlerMultiDim> dh_;
-};
+};*/
+
 
 /**
- * Like VectorSeqDouble but for MPI PETSC vectors. Have acces to local part.
+ * Auxiliary class for output elementwise concentration vectors
+ * in convection transport, sorptions, dual porosity etc.
+ *
+ * Stores data in two formats:
+ *  - shared pointer to std::vector of double
+ *  - pointer to PETSC vector that use same data
+ *
+ * Allows the following functionalities:
+ *  - access to local part
+ *  - return shared pointer to std::vector of double
+ *  - return pointer to PETSC vector
  */
 class VectorMPI {
 public:
     typedef typename std::vector<double> VectorData;
     typedef typename std::shared_ptr< VectorData > VectorDataPtr;
 
-    VectorMPI() {
-    }
+    VectorMPI(MPI_Comm comm = PETSC_COMM_SELF)
+    : communicator_(comm) {}
 
     /// Create shared pointer and PETSC vector with given size. COLLECTIVE.
-    VectorMPI(unsigned int local_size) {
+    VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_WORLD)
+    : communicator_(comm) {
         resize(local_size);
+    }
+
+    /**
+     * Helper method creating VectorMPI of given size with serial Petsc communicator.
+     *
+     * Method is used for better readability of code.
+     */
+    static VectorMPI * sequential(unsigned int size)
+    {
+    	return new VectorMPI(size, PETSC_COMM_SELF);
     }
 
     /**
@@ -158,12 +167,16 @@ public:
             chkerr(VecDestroy(&data_petsc_));
             data_ptr_->resize(local_size);
         }
-        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
+        if (communicator_ == PETSC_COMM_SELF)
+        	chkerr(VecCreateSeqWithArray(PETSC_COMM_SELF, 1, local_size, &((*data_ptr_)[0]), &data_petsc_));
+        else
+        	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
         chkerr(VecZeroEntries( data_petsc_ ));
     }
 
     /// Return new vector with same parallel structure.
     void duplicate(VectorMPI other) {
+    	ASSERT_EQ(this->communicator_, other.communicator_);
         this->resize(other.data().size());
     }
 
@@ -200,20 +213,35 @@ public:
     }*/
 
     void swap(VectorMPI &other) {
-        OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
+    	ASSERT_EQ(this->communicator_, other.communicator_);
+        ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
         uint size = this->data_ptr_->size();
         std::swap(this->data_ptr_, other.data_ptr_);
         chkerr(VecDestroy(&data_petsc_));
         chkerr(VecDestroy(&other.data_petsc_));
-        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
-        chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, size, PETSC_DECIDE, &((*other.data_ptr_)[0]), &other.data_petsc_));
+        if (communicator_ == PETSC_COMM_SELF) {
+        	chkerr(VecCreateSeqWithArray(PETSC_COMM_SELF, 1, size, &((*data_ptr_)[0]), &data_petsc_));
+        	chkerr(VecCreateSeqWithArray(PETSC_COMM_SELF, 1, size, &((*other.data_ptr_)[0]), &other.data_petsc_));
+        } else {
+            chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
+            chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, size, PETSC_DECIDE, &((*other.data_ptr_)[0]), &other.data_petsc_));
+        }
     }
 
 
     void copy(VectorMPI &other) {
-        OLD_ASSERT_EQUAL(this->data_ptr_->size(), other.data_ptr_->size());
+    	ASSERT_EQ(this->communicator_, other.communicator_);
+        ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
         chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
+
+	/// Return size of output data.
+	unsigned int size()
+	{
+		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
+		return data_ptr_->size();
+	}
+
 
     /// Destructor.
     ~VectorMPI()
@@ -237,8 +265,107 @@ private:
     VectorDataPtr data_ptr_;
     /// stored vector of data in PETSC format
     Vec data_petsc_;
+    /// communicator
+    MPI_Comm communicator_;
 };
 
+
+
+/**
+ * Method creates FieldFE of existing VectorMPI that represents elementwise field.
+ *
+ * It's necessary to create new VectorMPI of FieldFE, because DOF handler has generally
+ * a different ordering than mesh.
+ * Then is need to call fill_output_data method.
+ *
+ * Temporary solution that will be remove after solving issue 995.
+ */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mesh & mesh, unsigned int n_comp)
+{
+	static MappingP1<1,3> map1;
+	static MappingP1<2,3> map2;
+	static MappingP1<3,3> map3;
+
+	std::shared_ptr<DOFHandlerMultiDim> dh; // DOF handler object allow create FieldFE
+	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
+	FiniteElement<1> *fe1;
+	FiniteElement<2> *fe2;
+	FiniteElement<3> *fe3;
+
+	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
+		case 1: { // scalar
+			fe0 = new FE_P_disc<0>(0);
+			fe1 = new FE_P_disc<1>(0);
+			fe2 = new FE_P_disc<2>(0);
+			fe3 = new FE_P_disc<3>(0);
+			break;
+		}
+		case 3: { // vector
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
+			break;
+		}
+		case 9: { // tensor
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
+			break;
+		}
+		default:
+			ASSERT(false).error("Should not happen!\n");
+	}
+
+	// Prepare DOF handler
+	DOFHandlerMultiDim dh_par(mesh);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
+	dh_par.distribute_dofs(ds);
+    dh = dh_par.sequential();
+
+	// Construct FieldFE
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+	field_ptr->set_fe_data(dh, &map1, &map2, &map3, VectorMPI::sequential(vec_seq.size()) );
+	return field_ptr;
+}
+
+
+/**
+ * Fill data to VecSeqDouble in order corresponding with element DOFs.
+ *
+ * Set data to data vector of field in correct order according to values of DOF handler indices.
+ *
+ * Temporary solution that will be remove after solving issue 995.
+ */
+template <int spacedim, class Value>
+void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Value> > field_ptr)
+{
+	auto dh = field_ptr->get_dofhandler();
+	unsigned int ndofs = dh->max_elem_dofs();
+	unsigned int idof; // iterate over indices
+	std::vector<LongIdx> indices(ndofs);
+
+	/*for (auto cell : dh_->own_range()) {
+		cell.get_dof_indices(indices);
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->data_vec_)[ indices[idof] ] = (*data_ptr_)[ ndofs*cell.elm_idx()+idof ];
+	}*/
+
+	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
+	for (auto ele : dh->mesh()->elements_range()) {
+		dh->get_dof_indices(ele, indices);
+		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
+	}
+}
 
 
 #endif /* VECTOR_SEQ_DOUBLE_HH_ */

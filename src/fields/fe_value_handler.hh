@@ -18,7 +18,6 @@
 #ifndef FE_VALUE_HANDLER_HH_
 #define FE_VALUE_HANDLER_HH_
 
-#include "fields/vec_seq_double.hh"
 #include "fields/field_values.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
@@ -26,6 +25,7 @@
 #include "mesh/long_idx.hh"
 #include <armadillo>
 
+class VectorMPI;
 template <int spacedim> class ElementAccessor;
 
 
@@ -35,7 +35,7 @@ struct FEValueInitData
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh;
     /// Store data of Field
-    VectorSeqDouble *data_vec;
+    VectorMPI *data_vec;
     /// number of dofs
     unsigned int ndofs;
     /// number of components
@@ -83,7 +83,7 @@ private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorSeqDouble *data_vec_;
+    VectorMPI *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
@@ -146,7 +146,7 @@ private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorSeqDouble *data_vec_;
+    VectorMPI *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.

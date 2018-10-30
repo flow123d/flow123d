@@ -85,7 +85,7 @@ public:
     Mesh *mesh;
     std::shared_ptr<DOFHandlerMultiDim> dh;
     double dof_values[3];
-    VectorSeqDouble v;
+    VectorMPI v;
 
 	MappingP1<1,3> map1;
 	MappingP1<2,3> map2;

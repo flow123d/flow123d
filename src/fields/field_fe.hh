@@ -32,7 +32,7 @@
 
 #include <memory>
 
-class VectorSeqDouble;
+class VectorMPI;
 template<unsigned int dim, unsigned int spacedim> class MappingP1;
 template <int elemdim, int spacedim, class Value> class FEValueHandler;
 
@@ -91,7 +91,7 @@ public:
     		MappingP1<1,3> *map1,
     		MappingP1<2,3> *map2,
     		MappingP1<3,3> *map3,
-			VectorSeqDouble *data);
+			VectorMPI *data);
 
     /**
      * Postponed setter of Dof handler.
@@ -141,6 +141,14 @@ public:
      */
     unsigned int data_size() const;
 
+    inline std::shared_ptr<DOFHandlerMultiDim> get_dofhandler() const {
+    	return dh_;
+    }
+
+    inline VectorMPI *get_data_vec() const {
+    	return data_vec_;
+    }
+
 
     /// Destructor.
 	virtual ~FieldFE();
@@ -174,7 +182,7 @@ private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorSeqDouble *data_vec_;
+    VectorMPI *data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices_;
 
@@ -233,8 +241,6 @@ private:
 
     /// Registrar of class to factory
     static const int registrar;
-
-    friend class VectorSeqDouble;
 };
 
 

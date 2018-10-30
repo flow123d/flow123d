@@ -491,7 +491,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<VectorSeqDouble> output_vec;
+	vector<VectorMPI> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

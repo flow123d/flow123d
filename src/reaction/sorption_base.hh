@@ -249,7 +249,7 @@ protected:
   VecScatter vconc_out_scatter; ///< Output vector scatter.
   // TODO: replace vconc_solid + conc_solid by VecSeqDouble, use the same principle as in 'conc_solid_out'
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
-  std::vector<VectorSeqDouble> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
+  std::vector<VectorMPI> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
   
   // Temporary objects holding pointers to appropriate FieldFE

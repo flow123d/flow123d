@@ -304,7 +304,7 @@ private:
     Vec *vcumulative_corr;
     double **cumulative_corr;
 
-    std::vector<VectorSeqDouble> out_conc;
+    std::vector<VectorMPI> out_conc;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations

@@ -358,7 +358,7 @@ void SorptionBase::initialize_fields()
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	  output_field_ptr[sbi] = conc_solid_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+	  output_field_ptr[sbi] = create_field<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], *mesh_, 1);
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
   }
   //output_stream_->add_admissible_field_names(output_array);
@@ -621,13 +621,13 @@ void SorptionBase::allocate_output_mpi(void )
                 &vconc_solid[sbi]);
         VecZeroEntries(vconc_solid[sbi]);
 
-        VecZeroEntries(conc_solid_out[sbi].get_data_petsc());
+        VecZeroEntries(conc_solid_out[sbi].petsc_vec());
     }
     
     // creating output vector scatter
     IS is;
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_solid[0], is, conc_solid_out[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc_solid[0], is, conc_solid_out[0].petsc_vec(), PETSC_NULL, &vconc_out_scatter);
     ISDestroy(&(is));
 }
 
@@ -637,8 +637,8 @@ void SorptionBase::output_vector_gather()
     unsigned int sbi;
 
     for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
     }
 }
 
@@ -651,7 +651,7 @@ void SorptionBase::output_data(void )
     }
 
     for (unsigned int sbi = 0; sbi < substances_.size(); sbi++) {
-    	conc_solid_out[sbi].fill_output_data(output_field_ptr[sbi]);
+    	fill_output_data(conc_solid_out[sbi], output_field_ptr[sbi]);
     }
 
     // Register fresh output data

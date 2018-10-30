@@ -138,7 +138,7 @@ void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> d
 		MappingP1<1,3> *map1,
 		MappingP1<2,3> *map2,
 		MappingP1<3,3> *map3,
-		VectorSeqDouble *data)
+		VectorMPI *data)
 {
     dh_ = dh;
     data_vec_ = data;
@@ -375,9 +375,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
     dof_indices_.resize(ndofs);
 
     // allocate data_vec_
-	unsigned int data_size = dh_->n_global_dofs();
-	data_vec_ = new VectorSeqDouble();
-	data_vec_->resize(data_size);
+	data_vec_ = VectorMPI::sequential( dh_->n_global_dofs() );
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
@@ -629,7 +627,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 
 		// computes weighted average, store it to data vector
 		if (total_measure > epsilon) {
-			VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
+			VectorMPI::VectorDataPtr data_vector = data_vec_->data_ptr();
 			if (this->boundary_domain_) value_handler1_.get_dof_indices( elm, dof_indices_ );
 			else dh_->get_dof_indices( elm, dof_indices_ );
 			for (unsigned int i=0; i < value.size(); i++) {
@@ -650,8 +648,8 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	// Same algorithm as in output of Node_data. Possibly code reuse.
 	unsigned int dof_size, data_vec_i;
 	std::vector<unsigned int> count_vector(data_vec_->size(), 0);
-	data_vec_->fill(0.0);
-	VectorSeqDouble::VectorSeq data_vector = data_vec_->get_data_ptr();
+	data_vec_->zero_entries();
+	VectorMPI::VectorDataPtr data_vector = data_vec_->data_ptr();
 
 	// iterate through elements, assembly global vector and count number of writes
 	Mesh *mesh;
@@ -691,7 +689,7 @@ void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &outp
 	double loc_values[output_data_cache.n_elem()];
 	unsigned int i, dof_filled_size;
 
-	VectorSeqDouble::VectorSeq data_vec = data_vec_->get_data_ptr();
+	VectorMPI::VectorDataPtr data_vec = data_vec_->data_ptr();
 	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
