@@ -1069,16 +1069,17 @@ void TransportDG<Model>::assemble_fluxes_boundary()
         if (edg->side(0)->cond() == NULL) continue;
 
         SideIter side = edg->side(0);
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( side->element().idx() );
-        feo->dh()->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, side->side_idx());
-        fsv_rt.reinit(cell, side->side_idx());
+        auto cell = feo->dh()->cell_accessor_from_element( side->element().idx() );
+        ElementAccessor<3> elm_acc = cell.elm();
+        cell.get_dof_indices(side_dof_indices);
+        fe_values_side.reinit(elm_acc, side->side_idx());
+        fsv_rt.reinit(elm_acc, side->side_idx());
 
-        calculate_velocity(cell, side_velocity, fsv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, cell, ad_coef, dif_coef);
+        calculate_velocity(elm_acc, side_velocity, fsv_rt);
+        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, elm_acc, ad_coef, dif_coef);
         arma::uvec bc_type;
         Model::get_bc_type(side->cond()->element_accessor(), bc_type);
-        data_.cross_section.value_list(fe_values_side.point_list(), cell, csection);
+        data_.cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
         {
@@ -1096,7 +1097,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
             if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
             {
                 // set up the parameters for DG method
-                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(cell.centre(), cell), gamma_l);
+                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
                 gamma[sbi][side->cond_idx()] = gamma_l;
                 transport_flux += gamma_l;
             }
