@@ -1327,7 +1327,8 @@ void TransportDG<Model>::set_boundary_conditions()
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element(), ad_coef, dif_coef);
             data_.cross_section.value_list(fe_values_side.point_list(), side->element(), csection);
 
-			feo->dh()->get_dof_indices(elm, side_dof_indices);
+            auto dh_cell = feo->dh()->cell_accessor_from_element( side->element().idx() );
+            dh_cell.get_dof_indices(side_dof_indices);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
