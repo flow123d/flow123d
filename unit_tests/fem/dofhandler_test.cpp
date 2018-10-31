@@ -5,7 +5,6 @@
 #include "mesh/mesh.h"
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
-#include "fem/dh_cell_accessor.hh"
 
 
 
@@ -46,14 +45,12 @@ TEST(DOFHandler, test_all) {
     auto dh_seq = dh.sequential();
     
     std::vector<int> indices[5];
-    unsigned int i=0;
-    for (auto cell : dh_seq->own_range())
+    for (unsigned int i=0; i<5; i++)
     {
-    	indices[i].resize(dh.max_elem_dofs());
-    	cell.get_dof_indices(indices[i]);
-    	++i;
+      indices[i].resize(dh.max_elem_dofs());
+      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
-
+    
     // dof at node 1 is shared by elements 2, 3
     EXPECT_EQ( indices[1][0], indices[2][0] );
     
@@ -116,12 +113,10 @@ TEST(DOFHandler, test_all) {
     auto dh_seq = dh.sequential();
     
     std::vector<int> indices[mesh->n_elements()];
-    unsigned int i=0;
-    for (auto cell : dh_seq->own_range())
+    for (unsigned int i=0; i<mesh->n_elements(); i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      cell.get_dof_indices(indices[i]);
-      ++i;
+      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is not shared by elements 1, 4, 5
