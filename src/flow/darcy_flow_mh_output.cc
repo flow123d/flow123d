@@ -180,7 +180,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	// create shared pointer to a FieldFE and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
 	ele_pressure_ptr=make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	ele_pressure_ptr->set_fe_data(dh_scalar, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_pressure.size()) );
+	ele_pressure_ptr->set_fe_data(dh_scalar->sequential(), &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_pressure.size()) );
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 	ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe0, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
@@ -197,7 +197,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 
 	ele_piezo_head.resize(mesh_->n_elements());
 	ele_piezo_head_ptr=make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	ele_piezo_head_ptr->set_fe_data(dh_scalar, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_piezo_head.size()) );
+	ele_piezo_head_ptr->set_fe_data(dh_scalar->sequential(), &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_piezo_head.size()) );
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	// DOF handler object allow create vector FieldFE
@@ -218,7 +218,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	ele_flux.resize(3*mesh_->n_elements());
 	//ele_flux_ptr=create_field<3, FieldValue<3>::VectorFixed>(ele_flux, *mesh_, 3);
 	ele_flux_ptr=make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
-	ele_flux_ptr->set_fe_data(dh_vector, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_flux.size()) );
+	ele_flux_ptr->set_fe_data(dh_vector->sequential(), &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_flux.size()) );
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
