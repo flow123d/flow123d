@@ -305,10 +305,6 @@ void DarcyFlowMHOutput::output()
         //else
         //        make_node_scalar_param(observed_elements);
 
-        fill_output_data(ele_pressure, ele_pressure_ptr);
-        fill_output_data(ele_piezo_head, ele_piezo_head_ptr);
-        fill_output_data(ele_flux, ele_flux_ptr);
-
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
@@ -359,11 +355,21 @@ void DarcyFlowMHOutput::make_element_scalar(ElementSetRef element_indices)
 
     darcy_flow->get_solution_vector(sol, sol_size);
     unsigned int soi = mesh_->n_sides();
+
+    auto dh = ele_pressure_ptr->get_dofhandler(); //ele_pressure and ele_piezo_head use same DofHandler
+    ASSERT_EQ(dh->max_elem_dofs(), 1);
+    unsigned int idof; // iterate over indices
+    std::vector<LongIdx> indices(1);
+
     for(unsigned int i_ele : element_indices) {
         ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
         ele_pressure[i_ele] = sol[ soi + i_ele];
         ele_piezo_head[i_ele] = sol[soi + i_ele ]
           - (darcy_flow->data_->gravity_[3] + arma::dot(darcy_flow->data_->gravity_vec_,ele.centre()));
+
+        dh->get_dof_indices(ele, indices);
+        (*ele_pressure_ptr->get_data_vec())[ indices[0] ] = ele_pressure[i_ele];
+        (*ele_piezo_head_ptr->get_data_vec())[ indices[0] ] = ele_piezo_head[i_ele];
     }
 }
 
@@ -380,13 +386,23 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
 
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
+
+    auto dh = ele_flux_ptr->get_dofhandler();
+    ASSERT_EQ(dh->max_elem_dofs(), 3);
+    unsigned int idof; // iterate over indices
+    std::vector<LongIdx> indices(3);
+
     for(unsigned int i_ele : element_indices) {
     	ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
 
         flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
 
         // place it in the sequential vector
-        for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];
+        dh->get_dof_indices(ele, indices);
+        for(idof=0; idof<3; idof++) {
+        	ele_flux[3*i_ele + idof]=flux_in_center[idof];
+            (*ele_flux_ptr->get_data_vec())[ indices[idof] ] = flux_in_center[idof];
+        }
     }
 }
 
