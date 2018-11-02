@@ -87,10 +87,6 @@ public:
     double dof_values[3];
     VectorMPI v;
 
-	MappingP1<1,3> map1;
-	MappingP1<2,3> map2;
-	MappingP1<3,3> map3;
-
 };
 
 
@@ -107,7 +103,7 @@ TEST_F(FieldFETest, scalar) {
     ScalarField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, &map1, &map2, &map3, &v);
+    field.set_fe_data(dh, &v);
     field.set_time(0.0);
 
     vector<double> values(3);
@@ -135,7 +131,7 @@ TEST_F(FieldFETest, vector) {
     VecField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, &map1, &map2, &map3, &v);
+    field.set_fe_data(dh, &v);
     field.set_time(0.0);
 
     // The Raviart-Thomas function given by the following dofs

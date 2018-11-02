@@ -80,18 +80,13 @@ public:
     static const Input::Type::Selection & get_interp_selection_input_type();
 
     /**
-     * Setter for the finite element data. The mappings are required for computation of local coordinates.
+     * Setter for the finite element data.
      * @param dh   Dof handler.
-     * @param map1 1D mapping.
-     * @param map2 2D mapping.
-     * @param map3 3D mapping.
-     * @param data Vector of dof values.
+     * @param data Vector of dof values, optional (create own vector according to dofhandler).
+     * @return     Data vector of dof values.
      */
-    void set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-    		MappingP1<1,3> *map1,
-    		MappingP1<2,3> *map2,
-    		MappingP1<3,3> *map3,
-			VectorMPI *data);
+    VectorMPI * set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
+			VectorMPI *data = nullptr);
 
     /**
      * Postponed setter of Dof handler.

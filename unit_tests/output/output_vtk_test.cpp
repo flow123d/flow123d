@@ -125,7 +125,7 @@ public:
         for (unsigned int i=0; i<size; ++i) v[i] = step*i;
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, &map1, &map2, &map3, &v);
+		native_data_ptr->set_fe_data(dh, &v);
 
 		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
 		field.output_type(OutputTime::NATIVE_DATA);
@@ -167,9 +167,6 @@ public:
 	}
 
 	std::vector<string> component_names;
-	MappingP1<1,3> map1;
-	MappingP1<2,3> map2;
-	MappingP1<3,3> map3;
 	Mesh *_mesh;
 	std::shared_ptr<OutputMeshBase> output_mesh_;
 };

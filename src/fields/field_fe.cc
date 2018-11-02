@@ -134,15 +134,22 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		MappingP1<1,3> *map1,
-		MappingP1<2,3> *map2,
-		MappingP1<3,3> *map3,
+VectorMPI * FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
 		VectorMPI *data)
 {
+	static MappingP1<1,3> map1;
+	static MappingP1<2,3> map2;
+	static MappingP1<3,3> map3;
+
     dh_ = dh;
-    data_vec_ = data;
-    reinit_fe_data(map1, map2, map3);
+    if (data==nullptr) { //create data vector according to dof handler - Warning not tested yet
+        data_vec_ = new VectorMPI(dh_->mesh()->n_elements());
+        data_vec_->zero_entries();
+    } else {
+        data_vec_ = data;
+    }
+    reinit_fe_data(&map1, &map2, &map3);
+    return data_vec_;
 }
 
 
