@@ -216,7 +216,6 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	}
 
 	ele_flux.resize(3*mesh_->n_elements());
-	//ele_flux_ptr=create_field<3, FieldValue<3>::VectorFixed>(ele_flux, *mesh_, 3);
 	ele_flux_ptr=make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 	ele_flux_ptr->set_fe_data(dh_vector->sequential(), &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(ele_flux.size()) );
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
@@ -248,11 +247,20 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     
     output_specific_fields.set_mesh(*mesh_);
 
-    diff_data.vel_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.velocity_diff, *mesh_, 1);
+	// DOF handler object allow create scalar FieldFE
+	auto dh_par = make_shared<DOFHandlerMultiDim>(*mesh_);
+	shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe_data_1d.fe_p0, &fe_data_2d.fe_p0, &fe_data_3d.fe_p0);
+	dh_par->distribute_dofs(ds);
+	auto dh_seq = dh_par->sequential();
+
+	diff_data.vel_diff_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+	diff_data.vel_diff_ptr->set_fe_data(dh_seq, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(diff_data.velocity_diff.size()) );
     output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.vel_diff_ptr, 0);
-    diff_data.pressure_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.pressure_diff, *mesh_, 1);
+	diff_data.pressure_diff_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+	diff_data.pressure_diff_ptr->set_fe_data(dh_seq, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(diff_data.pressure_diff.size()) );
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.pressure_diff_ptr, 0);
-    diff_data.div_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.div_diff, *mesh_, 1);
+	diff_data.div_diff_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+	diff_data.div_diff_ptr->set_fe_data(dh_seq, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, VectorMPI::sequential(diff_data.div_diff.size()) );
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.div_diff_ptr, 0);
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
