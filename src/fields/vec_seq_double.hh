@@ -283,10 +283,6 @@ private:
 template <int spacedim, class Value>
 std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mesh & mesh, unsigned int n_comp)
 {
-	static MappingP1<1,3> map1;
-	static MappingP1<2,3> map2;
-	static MappingP1<3,3> map3;
-
 	std::shared_ptr<DOFHandlerMultiDim> dh; // DOF handler object allow create FieldFE
 	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
 	FiniteElement<1> *fe1;
@@ -335,7 +331,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data(dh, &map1, &map2, &map3, VectorMPI::sequential(vec_seq.size()) );
+	field_ptr->set_fe_data(dh, VectorMPI::sequential(vec_seq.size()) );
 	return field_ptr;
 }
 

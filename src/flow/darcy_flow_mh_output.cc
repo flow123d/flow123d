@@ -184,7 +184,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh_, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, &corner_pressure);
+	corner_ptr->set_fe_data(dh_, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
