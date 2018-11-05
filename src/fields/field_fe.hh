@@ -81,12 +81,13 @@ public:
 
     /**
      * Setter for the finite element data.
-     * @param dh   Dof handler.
-     * @param data Vector of dof values, optional (create own vector according to dofhandler).
-     * @return     Data vector of dof values.
+     * @param dh              Dof handler.
+     * @param data            Vector of dof values, optional (create own vector according to dofhandler).
+     * @param component_index Index of component (for vector_view/tensor_view)
+     * @return                Data vector of dof values.
      */
     VectorMPI * set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-			VectorMPI *data = nullptr);
+			VectorMPI *data = nullptr, unsigned int component_index = 0);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.

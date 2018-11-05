@@ -40,6 +40,8 @@ struct FEValueInitData
     unsigned int ndofs;
     /// number of components
     unsigned int n_comp;
+    /// index of component (of vector_value/tensor_value)
+    unsigned int comp_index;
 };
 
 /**
@@ -92,6 +94,8 @@ private:
     typename Value::return_type r_value_;
     /// Mapping object.
     MappingP1<elemdim,3> *map_;
+    /// Index of component (of vector_value/tensor_value)
+    unsigned int comp_index_;
 
     /**
      * Hold dofs of boundary elements.
