@@ -20,6 +20,7 @@
 #define DOFHANDLER_HH_
 
 #include <vector>              // for vector
+#include <unordered_map>       // for unordered_map
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
@@ -414,6 +415,11 @@ private:
      * the remaining entries are ghost dofs sorted by neighbouring processor id.
      */
     std::vector<LongIdx> local_to_global_dof_idx_;
+    
+    /**
+     * @brief Maps global element index into local/ghost index (obsolete).
+     */
+    std::unordered_map<LongIdx,LongIdx> global_to_local_el_idx_;
     
 	/// Global element index -> index according to partitioning
     LongIdx *row_4_el;

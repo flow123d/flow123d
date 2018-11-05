@@ -529,6 +529,10 @@ void DOFHandlerMultiDim::make_elem_partitioning()
       if (node_is_local[nid])
         node_4_loc.push_back(nid);
     
+    // init global to local element map with locally owned elements (later add ghost elements)
+    for ( unsigned int iel = 0; iel < el_ds_->lsize(); iel++ )
+        global_to_local_el_idx_[el_4_loc[iel]] = iel;
+    
     // create array of local ghost cells
     for ( auto cell : mesh_->elements_range() )
     {
@@ -547,6 +551,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
             ghost_proc_el[cell.proc()].push_back(cell.idx());
+            global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
       }
     }
@@ -558,6 +563,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
             ghost_proc_el[cell.proc()].push_back(cell.idx());
+            global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
         cell = mesh_->vb_neighbours_[nb].side()->element();
         if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
@@ -565,6 +571,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
             ghost_proc_el[cell.proc()].push_back(cell.idx());
+            global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
     }
 }
