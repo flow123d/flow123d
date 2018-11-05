@@ -227,7 +227,10 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                 unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
                     
                 if (node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] == INVALID_DOF)
+                {
                     node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] = dofs[dof_offset+idof];
+                    local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
+                }
                 
                 loc_node_dof_count[dof_nface_idx]++;
             }
@@ -274,7 +277,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
 
     init_cell_starts();
     init_node_dof_starts(node_dof_starts);
-    node_dofs.resize(node_dof_starts[node_dof_starts.size()-1]);
+    node_dofs.resize(node_dof_starts[node_dof_starts.size()-1], (LongIdx)INVALID_DOF);
     init_node_status(node_status);
     
     // Distribute dofs on local elements.
@@ -334,9 +337,13 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     // shift dof indices
     loffset_ = dof_ds_->get_starts_array()[dof_ds_->myp()];
     if (loffset_ > 0)
+    {
       for (unsigned int i=0; i<dof_indices.size(); i++)
         if (dof_indices[i] != INVALID_DOF)
           dof_indices[i] += loffset_;
+      for (auto &i : local_to_global_dof_idx_)
+          i += loffset_;
+    }
     
     // communicate dofs from ghost cells
     // first propagate from lower procs to higher procs and then vice versa
@@ -352,8 +359,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
                 // update dof_indices and node_dofs on ghost elements
                 update_local_dofs(proc, update_cells, dofs, node_dof_starts, node_dofs);
                 
-                for (auto dof : dofs)
-                    local_to_global_dof_idx_.push_back(dof);
             }
             else
                 send_ghost_dofs(proc);
