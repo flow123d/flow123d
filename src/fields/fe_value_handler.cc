@@ -90,7 +90,7 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
+void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data)
 {
 	if (dof_indices.size() > 0)
 		WarningOut() << "Multiple initialization of FEValueHandler!";
@@ -100,12 +100,8 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
     dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
 
-    if (map == nullptr) {
-		// temporary solution - these objects will be set through FieldCommon
-		map_ = new MappingP1<elemdim,3>();
-    } else {
-    	map_ = map;
-    }
+	// temporary solution - these objects will be set through FieldCommon
+	map_ = new MappingP1<elemdim,3>();
 }
 
 

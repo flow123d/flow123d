@@ -55,9 +55,10 @@ public:
 	FEValueHandler();
 
 	/// Initialize data members
-	void initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map = nullptr);
+	void initialize(FEValueInitData init_data);
 	/// Return mapping object
 	inline MappingP1<elemdim,3> *get_mapping() {
+		ASSERT_PTR(map_).error("Uninitialized FEValueHandler!\n");
 		return map_;
 	}
     /// Returns one value in one given point.
