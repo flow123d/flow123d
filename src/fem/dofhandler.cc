@@ -616,3 +616,56 @@ DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_i
 	return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
 }
 
+
+void DOFHandlerMultiDim::print() const {
+    stringstream s;
+    std::vector<int> dofs(max_elem_dofs_);
+    
+    s << "DOFHandlerMultiDim structure:" << endl;
+    s << "- is parallel: " << (is_parallel_?"true":"false") << endl;
+    s << "- proc id: " << el_ds_->myp() << endl;
+    s << "- global number of dofs: " << n_global_dofs_ << endl;
+    s << "- number of locally owned cells: " << el_ds_->lsize() << endl;
+    s << "- number of ghost cells: " << ghost_4_loc.size() << endl;
+    s << "- dofs on locally owned cells:" << endl;
+    
+    for (auto cell : own_range())
+    {
+        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        s << "-- cell " << cell.elm().index() << ": ";
+        for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
+    }
+    s << "- dofs on ghost cells:" << endl;
+    for (auto cell : ghost_range())
+    {
+        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        s << "-- cell " << cell.elm().index() << ": ";
+        for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
+    }
+    s << "- locally owned dofs (" << lsize_ << "): ";
+    for (unsigned int i=0; i<lsize_; i++) s << local_to_global_dof_idx_[i] << " "; s << endl;
+    s << "- ghost dofs (" << local_to_global_dof_idx_.size() - lsize_ << "): ";
+    for (unsigned int i=lsize_; i<local_to_global_dof_idx_.size(); i++) s << local_to_global_dof_idx_[i] << " "; s << endl;
+    s << "- global-to-local-cell map:" << endl;
+    for (auto cell : global_to_local_el_idx_) s << "-- " << cell.first << " -> " << cell.second << " " << endl;
+    s << endl;
+    
+    printf("%s", s.str().c_str());
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

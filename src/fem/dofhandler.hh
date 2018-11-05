@@ -269,6 +269,9 @@ public:
      */
     const Dof &cell_dof(ElementAccessor<3> cell,
                         unsigned int idof) const;
+    
+    /// Output structure of dof handler.
+    void print() const;
 
     /**
      * Implements @p DOFHandlerBase::hash.
