@@ -1182,16 +1182,18 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         // skip neighbours of different dimension
         if (nb->element()->dim() != dim-1) continue;
 
-        ElementAccessor<3> cell_sub = Model::mesh_->element_accessor( nb->element().idx() );
-		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
+        auto dh_cell_sub = feo->dh()->cell_accessor_from_element( nb->element().idx() );
+        ElementAccessor<3> cell_sub = dh_cell_sub.elm();
+        n_indices = dh_cell_sub.get_dof_indices(indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i] = indices[i];
 		}
         fe_values_vb.reinit(cell_sub);
         n_dofs[0] = fv_sb[0]->n_dofs();
 
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( nb->side()->element().idx() );
-		n_indices = feo->dh()->get_dof_indices(cell, indices);
+        auto dh_cell = feo->dh()->cell_accessor_from_element( nb->side()->element().idx() );
+        ElementAccessor<3> cell = dh_cell.elm();
+        n_indices = dh_cell.get_dof_indices(indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i+n_dofs[0]] = indices[i];
 		}
