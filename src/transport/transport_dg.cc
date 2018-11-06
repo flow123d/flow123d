@@ -941,8 +941,9 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
         for (int sid=0; sid<edg->n_sides; sid++)
         {
-            ElementAccessor<3> cell = Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
-            feo->dh()->get_dof_indices(cell, side_dof_indices[sid]);
+        	auto dh_cell = feo->dh()->cell_accessor_from_element( edg->side(sid)->element().idx() );
+            ElementAccessor<3> cell = dh_cell.elm(); //Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
+            dh_cell.get_dof_indices(side_dof_indices[sid]);
             fe_values[sid]->reinit(cell, edg->side(sid)->side_idx());
             fsv_rt.reinit(cell, edg->side(sid)->side_idx());
             calculate_velocity(cell, side_velocity[sid], fsv_rt);
