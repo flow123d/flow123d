@@ -5,6 +5,8 @@
 #include "mesh/mesh.h"
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
+#include "mesh/range_wrapper.hh"
 
 
 
@@ -157,3 +159,25 @@ TEST(DOFHandler, test_all) {
 }
 
 
+TEST(DHAccessors, dh_cell_accessors) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
+
+    FE_P<0> fe0(1);
+    FE_P<1> fe1(1);
+    FE_P<2> fe2(1);
+    FE_P<3> fe3(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    DOFHandlerMultiDim dh(*mesh);
+    dh.distribute_dofs(ds);
+    auto dh_seq = dh.sequential();
+    auto el_ds = mesh->get_el_ds();
+    unsigned int i_distr=0;
+
+    for( auto cell : dh_seq->own_range() ) {
+    	EXPECT_EQ( cell.elm_idx(), dh_seq->el_index(i_distr) );
+    	++i_distr;
+    }
+
+    delete mesh;
+}
