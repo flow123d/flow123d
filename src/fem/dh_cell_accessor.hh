@@ -20,7 +20,10 @@
 #define DH_CELL_ACCESSOR_HH_
 
 #include "mesh/accessors.hh"
+#include "mesh/sides.h"
 #include "fem/dofhandler.hh"
+
+class DHCellSideAccessor;
 
 /**
  * Cell accessor allow iterate over DOF handler cells.
@@ -98,6 +101,14 @@ public:
     	return dof_handler_->ds_->fe<dim>(elm_acc);
     }
 
+    /// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return dof_handler_ != NULL;
+    }
+
+    /// Returns range of cell sides
+    Range<DHCellSideAccessor> side_range() const;
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -113,8 +124,64 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+
+    friend class DHCellSideAccessor;
 };
 
+
+/**
+ * Side accessor allow iterate over sides of DOF handler cell.
+ */
+class DHCellSideAccessor {
+public:
+
+    /**
+     * Default invalid accessor.
+     *
+     * Create empty instance with invalid dh_cell_accessor_.
+     */
+	DHCellSideAccessor()
+    {}
+
+    /**
+     * DOF cell accessor.
+     */
+	DHCellSideAccessor(const DHCellAccessor &dh_cell_accessor, unsigned int side_idx)
+    : dh_cell_accessor_(dh_cell_accessor), side_idx_(side_idx)
+    {}
+
+	/// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return dh_cell_accessor_.is_valid();
+    }
+
+    /// Return Side of given cell and side_idx.
+    inline const Side * side() const {
+    	ASSERT( this->is_valid() );
+    	return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
+    }
+
+    /// Iterates to next local element.
+    inline void inc() {
+    	side_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const DHCellSideAccessor& other) {
+    	return (side_idx_ == other.side_idx_);
+    }
+
+private:
+    /// Appropriate DHCellAccessor.
+    DHCellAccessor dh_cell_accessor_;
+    /// Index of side.
+    unsigned int side_idx_;
+};
+
+
+/*************************************************************************************
+ * Implementation of inlined methods.
+ */
 
 inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) const
 {
@@ -171,6 +238,13 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
             return fe<3>()->dof(idof);
             break;
     }
+}
+
+
+inline Range<DHCellSideAccessor> DHCellAccessor::side_range() const {
+	auto bgn_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(*this, 0) );
+	auto end_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(*this, dim()+1) );
+	return Range<DHCellSideAccessor>(bgn_it, end_it);
 }
 
 
