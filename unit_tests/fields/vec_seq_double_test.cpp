@@ -2,7 +2,7 @@
 #define FEAL_OVERRIDE_ASSERTS
 
 #include <flow_gtest_mpi.hh>
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 
 
 /*TEST(VecSeqDouble, vec_data) {

@@ -19,7 +19,7 @@
 #include <limits>
 
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/field_instances.hh"	// for instantiation macros
 #include "fields/fe_value_handler.hh"
 #include "input/input_type.hh"

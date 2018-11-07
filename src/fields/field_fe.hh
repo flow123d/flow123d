@@ -22,7 +22,7 @@
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
 #include "fields/fe_value_handler.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
