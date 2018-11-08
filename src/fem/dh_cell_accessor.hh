@@ -131,51 +131,76 @@ private:
 
 /**
  * Side accessor allow iterate over sides of DOF handler cell.
+ *
+ * TODO: complete description of iterate over different ranges
  */
 class DHCellSideAccessor {
 public:
 
     /**
      * Default invalid accessor.
-     *
-     * Create empty instance with invalid dh_cell_accessor_.
      */
 	DHCellSideAccessor()
-    {}
+	: dof_handler_(NULL), acc_type_(AccessorType::cell_side) {}
 
     /**
-     * DOF cell accessor.
+     * Valid accessor allows iterate over sides.
      */
 	DHCellSideAccessor(const DHCellAccessor &dh_cell_accessor, unsigned int side_idx)
-    : dh_cell_accessor_(dh_cell_accessor), side_idx_(side_idx)
+    : dof_handler_(dh_cell_accessor.dof_handler_), base_idx_(dh_cell_accessor.loc_ele_idx_),
+	  side_idx_(side_idx), acc_type_(AccessorType::cell_side)
     {}
 
 	/// Check validity of accessor (see default constructor)
     inline bool is_valid() const {
-        return dh_cell_accessor_.is_valid();
+        return (dof_handler_ != NULL);
     }
 
     /// Return Side of given cell and side_idx.
     inline const Side * side() const {
     	ASSERT( this->is_valid() );
-    	return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
+    	if (acc_type_ == AccessorType::cell_side)
+    		return new Side( const_cast<const Mesh*>(dof_handler_->mesh()), DHCellAccessor(dof_handler_, base_idx_).elm_idx(), side_idx_ );
+    	else
+    		// AccessorType::edge_side
+    		return &(*dof_handler_->mesh()->edges[base_idx_].side(side_idx_));
     }
+
+    /// Returns range of all sides looped over common Edge.
+    Range<DHCellSideAccessor> edge_sides() const;
 
     /// Iterates to next local element.
     inline void inc() {
-    	side_idx_++;
+        side_idx_++;
     }
 
     /// Comparison of accessors.
     bool operator==(const DHCellSideAccessor& other) {
-    	return (side_idx_ == other.side_idx_);
+    	return (base_idx_ == other.base_idx_) && (side_idx_ == other.side_idx_) && (acc_type_ == other.acc_type_);
     }
 
 private:
-    /// Appropriate DHCellAccessor.
-    DHCellAccessor dh_cell_accessor_;
+	/// Type of accessor allows iterate over different ranges
+	enum AccessorType {
+		cell_side,  //!< provides loop over sides of cell
+		edge_side   //!< provides loop over all sides appropriate to edge connected to the side
+	};
+
+	/**
+	 * Internal constructor define accessor of edge_side type
+	 */
+	DHCellSideAccessor(const DOFHandlerMultiDim * dof_handler, unsigned int edge_idx, unsigned int side_idx)
+    : dof_handler_(dof_handler), base_idx_(edge_idx), side_idx_(side_idx), acc_type_(AccessorType::edge_side)
+    {}
+
+    /// Pointer to the DOF handler owning the element.
+    const DOFHandlerMultiDim * dof_handler_;
+    /// Index of cell / edge (different for any AccessorTypes) through that is iterated.
+    unsigned int base_idx_;
     /// Index of side.
     unsigned int side_idx_;
+    /// Specify type of iteration
+    const AccessorType acc_type_;
 };
 
 
@@ -244,6 +269,14 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
 inline Range<DHCellSideAccessor> DHCellAccessor::side_range() const {
 	auto bgn_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(*this, 0) );
 	auto end_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(*this, dim()+1) );
+	return Range<DHCellSideAccessor>(bgn_it, end_it);
+}
+
+
+inline Range<DHCellSideAccessor> DHCellSideAccessor::edge_sides() const {
+	unsigned int edge_idx = DHCellAccessor(dof_handler_, base_idx_).elm()->edge_idx(side_idx_);
+	auto bgn_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(dof_handler_, edge_idx, 0) );
+	auto end_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(dof_handler_, edge_idx, dof_handler_->mesh()->edges[edge_idx].n_sides) );
 	return Range<DHCellSideAccessor>(bgn_it, end_it);
 }
 
