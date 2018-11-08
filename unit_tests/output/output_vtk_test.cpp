@@ -27,7 +27,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_p.hh"
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)

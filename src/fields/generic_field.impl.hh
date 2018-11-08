@@ -25,7 +25,7 @@
 
 #include "fields/generic_field.hh"
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
 
 #include "fem/mapping_p1.hh"
@@ -68,10 +68,11 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 	std::vector<LongIdx> indices(1);
 	VectorMPI *data_vec = new VectorMPI(mesh.n_elements());
 	ASSERT_EQ(dh->max_elem_dofs(), 1);
-	for(unsigned int i_ele=0; i_ele<mesh.n_elements(); ++i_ele) {
-		ElementAccessor<3> ele = mesh.element_accessor(i_ele);
-		dh->get_dof_indices(ele, indices);
+	unsigned int i_ele=0;
+	for (auto cell : dh->own_range()) {
+		cell.get_dof_indices(indices);
 		(*data_vec)[ indices[0] ] = (*field_subdomain_data)[i_ele];
+		++i_ele;
 	}
     std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
     field_ptr->set_fe_data(dh, data_vec);
