@@ -21,6 +21,7 @@
 
 #include "mesh/accessors.hh"
 #include "mesh/sides.h"
+#include "mesh/neighbours.h"
 #include "fem/dofhandler.hh"
 
 class DHCellSideAccessor;
@@ -43,7 +44,7 @@ public:
      * DOF cell accessor.
      */
 	DHCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx)
-    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx)
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), neighb_idx_(Mesh::undef_idx)
     {}
 
     /// Return local index to element (index of DOF handler).
@@ -52,11 +53,11 @@ public:
         return loc_ele_idx_;
     }
 
-    /// Return serial idx to element of loc_ele_idx_.
+    /// Return serial idx of appropriate element of DH cell accessor.
     inline unsigned int elm_idx() const {
-    	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
-        if (loc_ele_idx_<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
-        else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
+    	//different for loop over local cells and neighbour elements
+    	if (neighb_idx_==Mesh::undef_idx) return this->local_elm_idx();
+    	else return dof_handler_->mesh()->element_accessor( this->local_elm_idx() )->neigh_vb[neighb_idx_]->side()->element().idx();
     }
 
     /// Return ElementAccessor to element of loc_ele_idx_.
@@ -109,21 +110,41 @@ public:
     /// Returns range of cell sides
     Range<DHCellSideAccessor> side_range() const;
 
+    /// Returns range of neighbour cells of higher dimension
+    Range<DHCellAccessor> neighb_cells() const;
+
     /// Iterates to next local element.
     inline void inc() {
-        loc_ele_idx_++;
+    	if (neighb_idx_==Mesh::undef_idx) loc_ele_idx_++;
+    	else neighb_idx_++;
     }
 
     /// Comparison of accessors.
     bool operator==(const DHCellAccessor& other) {
-    	return (loc_ele_idx_ == other.loc_ele_idx_);
+    	return (loc_ele_idx_ == other.loc_ele_idx_) && (loc_ele_idx_ == other.loc_ele_idx_);
     }
 
 private:
+    /**
+     * DOF cell accessor allows iterate over neighbour cells of higher dimension.
+     */
+	DHCellAccessor(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx, unsigned int neighb_idx)
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), neighb_idx_(neighb_idx)
+    {}
+
+    /// Return serial idx to element of loc_ele_idx_.
+    inline unsigned int local_elm_idx() const {
+    	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
+        if (loc_ele_idx_<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
+        else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
+    }
+
     /// Pointer to the DOF handler owning the element.
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+    /// Index into neigh_vb array (data member is used only for iterate over neighbour cells of higher dimension)
+    unsigned int neighb_idx_;
 
     friend class DHCellSideAccessor;
 };
@@ -270,6 +291,13 @@ inline Range<DHCellSideAccessor> DHCellAccessor::side_range() const {
 	auto bgn_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(*this, 0) );
 	auto end_it = make_iter<DHCellSideAccessor>( DHCellSideAccessor(*this, dim()+1) );
 	return Range<DHCellSideAccessor>(bgn_it, end_it);
+}
+
+
+inline Range<DHCellAccessor> DHCellAccessor::neighb_cells() const {
+	auto bgn_it = make_iter<DHCellAccessor>( DHCellAccessor(dof_handler_, loc_ele_idx_, 0) );
+	auto end_it = make_iter<DHCellAccessor>( DHCellAccessor(dof_handler_, loc_ele_idx_, this->elm()->n_neighs_vb()) );
+	return Range<DHCellAccessor>(bgn_it, end_it);
 }
 
 
