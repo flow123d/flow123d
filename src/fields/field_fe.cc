@@ -367,6 +367,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
+	init_data.comp_index = 0;
 
 	// initialize value handler objects
 	value_handler0_.initialize(init_data);
