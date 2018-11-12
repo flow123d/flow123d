@@ -92,7 +92,7 @@ public:
      * @return                Data vector of dof values.
      */
     VectorMPI * set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-			VectorMPI *data = nullptr, unsigned int component_index = 0);
+    		unsigned int component_index = 0, VectorMPI *dof_values = nullptr);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -293,7 +293,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data(dh, VectorMPI::sequential(vec_seq.size()) );
+	field_ptr->set_fe_data(dh, 0, VectorMPI::sequential(vec_seq.size()) );
 	return field_ptr;
 }
 

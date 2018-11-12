@@ -304,7 +304,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_field_ptr->set_fe_data(feo->dh()->sequential(), &output_vec[sbi]);
+        output_field_ptr->set_fe_data(feo->dh()->sequential(), 0, &output_vec[sbi]);
         data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 

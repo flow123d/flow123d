@@ -125,7 +125,7 @@ public:
         for (unsigned int i=0; i<size; ++i) v[i] = step*i;
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, &v);
+		native_data_ptr->set_fe_data(dh, 0, &v);
 
 		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
 		field.output_type(OutputTime::NATIVE_DATA);

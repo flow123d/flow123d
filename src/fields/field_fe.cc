@@ -135,14 +135,14 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 template <int spacedim, class Value>
 VectorMPI * FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		VectorMPI *data, unsigned int component_index)
+		unsigned int component_index, VectorMPI *dof_values)
 {
     dh_ = dh;
-    if (data==nullptr) { //create data vector according to dof handler - Warning not tested yet
+    if (dof_values==nullptr) { //create data vector according to dof handler - Warning not tested yet
         data_vec_ = new VectorMPI(dh_->mesh()->n_elements());
         data_vec_->zero_entries();
     } else {
-        data_vec_ = data;
+        data_vec_ = dof_values;
     }
 
     unsigned int ndofs = dh_->max_elem_dofs();
