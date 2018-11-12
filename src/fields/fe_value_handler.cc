@@ -31,7 +31,8 @@
  * Helper class, allow to simplify computing value of FieldFE.
  *
  * Use correct method FEValues<...>::shape_xxx given with Value::rank_.
- * Practical use have only instances with rank template parameters 0 and 1 (Scalar and Vector Fields, see below).
+ * Is done by class partial specialization as, we were not able to do this using function overloading (since
+ * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
 template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
