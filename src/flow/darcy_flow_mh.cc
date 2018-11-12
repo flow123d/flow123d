@@ -60,7 +60,7 @@
 
 #include "coupling/balance.hh"
 
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 
 #include "darcy_flow_assembly.hh"
 

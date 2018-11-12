@@ -25,7 +25,7 @@
 
 #include "fields/generic_field.hh"
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
 
 #include "fem/mapping_p1.hh"

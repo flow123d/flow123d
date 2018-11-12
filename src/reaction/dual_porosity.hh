@@ -30,7 +30,7 @@
 #include "fields/field_values.hh"     // for FieldValue<>::Scalar, FieldValue
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "input/type_base.hh"         // for Array
 #include "input/type_generic.hh"      // for Instance
