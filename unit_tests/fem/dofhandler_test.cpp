@@ -44,6 +44,8 @@ TEST(DOFHandler, test_all) {
     
     EXPECT_EQ( 8, dh.n_global_dofs() );
     
+    dh.print();
+    
     auto dh_seq = dh.sequential();
     
     std::vector<int> indices[5];
@@ -111,6 +113,8 @@ TEST(DOFHandler, test_all) {
     dh.distribute_dofs(ds);
     
     EXPECT_EQ( 15, dh.n_global_dofs() );
+    
+    dh.print();
     
     auto dh_seq = dh.sequential();
     

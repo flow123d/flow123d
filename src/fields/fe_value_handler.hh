@@ -40,6 +40,8 @@ struct FEValueInitData
     unsigned int ndofs;
     /// number of components
     unsigned int n_comp;
+    /// index of component (of vector_value/tensor_value)
+    unsigned int comp_index;
 };
 
 /**
@@ -55,9 +57,10 @@ public:
 	FEValueHandler();
 
 	/// Initialize data members
-	void initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map = nullptr);
+	void initialize(FEValueInitData init_data);
 	/// Return mapping object
 	inline MappingP1<elemdim,3> *get_mapping() {
+		ASSERT_PTR(map_).error("Uninitialized FEValueHandler!\n");
 		return map_;
 	}
     /// Returns one value in one given point.
@@ -91,6 +94,8 @@ private:
     typename Value::return_type r_value_;
     /// Mapping object.
     MappingP1<elemdim,3> *map_;
+    /// Index of component (of vector_value/tensor_value)
+    unsigned int comp_index_;
 
     /**
      * Hold dofs of boundary elements.

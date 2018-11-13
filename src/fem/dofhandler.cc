@@ -227,7 +227,10 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                 unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
                     
                 if (node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] == INVALID_DOF)
+                {
                     node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] = dofs[dof_offset+idof];
+                    local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
+                }
                 
                 loc_node_dof_count[dof_nface_idx]++;
             }
@@ -274,7 +277,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
 
     init_cell_starts();
     init_node_dof_starts(node_dof_starts);
-    node_dofs.resize(node_dof_starts[node_dof_starts.size()-1]);
+    node_dofs.resize(node_dof_starts[node_dof_starts.size()-1], (LongIdx)INVALID_DOF);
     init_node_status(node_status);
     
     // Distribute dofs on local elements.
@@ -334,9 +337,13 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     // shift dof indices
     loffset_ = dof_ds_->get_starts_array()[dof_ds_->myp()];
     if (loffset_ > 0)
+    {
       for (unsigned int i=0; i<dof_indices.size(); i++)
         if (dof_indices[i] != INVALID_DOF)
           dof_indices[i] += loffset_;
+      for (auto &i : local_to_global_dof_idx_)
+          i += loffset_;
+    }
     
     // communicate dofs from ghost cells
     // first propagate from lower procs to higher procs and then vice versa
@@ -352,8 +359,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
                 // update dof_indices and node_dofs on ghost elements
                 update_local_dofs(proc, update_cells, dofs, node_dof_starts, node_dofs);
                 
-                for (auto dof : dofs)
-                    local_to_global_dof_idx_.push_back(dof);
             }
             else
                 send_ghost_dofs(proc);
@@ -524,6 +529,10 @@ void DOFHandlerMultiDim::make_elem_partitioning()
       if (node_is_local[nid])
         node_4_loc.push_back(nid);
     
+    // init global to local element map with locally owned elements (later add ghost elements)
+    for ( unsigned int iel = 0; iel < el_ds_->lsize(); iel++ )
+        global_to_local_el_idx_[el_4_loc[iel]] = iel;
+    
     // create array of local ghost cells
     for ( auto cell : mesh_->elements_range() )
     {
@@ -542,6 +551,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
             ghost_proc_el[cell.proc()].push_back(cell.idx());
+            global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
       }
     }
@@ -553,6 +563,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
             ghost_proc_el[cell.proc()].push_back(cell.idx());
+            global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
         cell = mesh_->vb_neighbours_[nb].side()->element();
         if (!el_is_local(cell.idx()) && find(ghost_4_loc.begin(), ghost_4_loc.end(), cell.idx()) == ghost_4_loc.end())
@@ -560,6 +571,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
             ghost_4_loc.push_back(cell.idx());
             ghost_proc.insert(cell.proc());
             ghost_proc_el[cell.proc()].push_back(cell.idx());
+            global_to_local_el_idx_[cell.idx()] = el_ds_->lsize() - 1 + ghost_4_loc.size();
         }
     }
 }
@@ -598,9 +610,61 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 
 
 DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
-	// TODO: We need replace ASSERT with if condition and return accessor of own element.
-	// In else case we create and return accessor of ghost element.
-	ASSERT( el_is_local(elm_idx) )(elm_idx);
-	return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
+	auto map_it = global_to_local_el_idx_.find((LongIdx)elm_idx); // find in global to local map
+	ASSERT( map_it != global_to_local_el_idx_.end() )(elm_idx).error("DH accessor can be create only for own or ghost elements!\n");
+	return DHCellAccessor(this, map_it->second);
 }
+
+
+void DOFHandlerMultiDim::print() const {
+    stringstream s;
+    std::vector<int> dofs(max_elem_dofs_);
+    
+    s << "DOFHandlerMultiDim structure:" << endl;
+    s << "- is parallel: " << (is_parallel_?"true":"false") << endl;
+    s << "- proc id: " << el_ds_->myp() << endl;
+    s << "- global number of dofs: " << n_global_dofs_ << endl;
+    s << "- number of locally owned cells: " << el_ds_->lsize() << endl;
+    s << "- number of ghost cells: " << ghost_4_loc.size() << endl;
+    s << "- dofs on locally owned cells:" << endl;
+    
+    for (auto cell : own_range())
+    {
+        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        s << "-- cell " << cell.elm().index() << ": ";
+        for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
+    }
+    s << "- dofs on ghost cells:" << endl;
+    for (auto cell : ghost_range())
+    {
+        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        s << "-- cell " << cell.elm().index() << ": ";
+        for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
+    }
+    s << "- locally owned dofs (" << lsize_ << "): ";
+    for (unsigned int i=0; i<lsize_; i++) s << local_to_global_dof_idx_[i] << " "; s << endl;
+    s << "- ghost dofs (" << local_to_global_dof_idx_.size() - lsize_ << "): ";
+    for (unsigned int i=lsize_; i<local_to_global_dof_idx_.size(); i++) s << local_to_global_dof_idx_[i] << " "; s << endl;
+    s << "- global-to-local-cell map:" << endl;
+    for (auto cell : global_to_local_el_idx_) s << "-- " << cell.first << " -> " << cell.second << " " << endl;
+    s << endl;
+    
+    printf("%s", s.str().c_str());
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
