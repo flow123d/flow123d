@@ -135,40 +135,15 @@ FieldFE<spacedim, Value>::FieldFE( unsigned int n_comp)
 
 template <int spacedim, class Value>
 VectorMPI * FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-		VectorMPI *data)
+		unsigned int component_index, VectorMPI *dof_values)
 {
-	static MappingP1<1,3> map1;
-	static MappingP1<2,3> map2;
-	static MappingP1<3,3> map3;
-
     dh_ = dh;
-    if (data==nullptr) { //create data vector according to dof handler - Warning not tested yet
+    if (dof_values==nullptr) { //create data vector according to dof handler - Warning not tested yet
         data_vec_ = new VectorMPI(dh_->mesh()->n_elements());
         data_vec_->zero_entries();
     } else {
-        data_vec_ = data;
+        data_vec_ = dof_values;
     }
-    reinit_fe_data(&map1, &map2, &map3);
-    return data_vec_;
-}
-
-
-
-template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh)
-{
-    dh_ = dh;
-    reinit_fe_data(nullptr, nullptr, nullptr);
-}
-
-
-
-template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::reinit_fe_data(MappingP1<1,3> *map1,
-		MappingP1<2,3> *map2,
-		MappingP1<3,3> *map3)
-{
-	//ASSERT_EQ(dh_->n_global_dofs(), data_vec_->size());
 
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
@@ -179,18 +154,20 @@ void FieldFE<spacedim, Value>::reinit_fe_data(MappingP1<1,3> *map1,
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
+	init_data.comp_index = component_index;
 
 	// initialize value handler objects
 	value_handler0_.initialize(init_data);
-	value_handler1_.initialize(init_data, map1);
-	value_handler2_.initialize(init_data, map2);
-	value_handler3_.initialize(init_data, map3);
+	value_handler1_.initialize(init_data);
+	value_handler2_.initialize(init_data);
+	value_handler3_.initialize(init_data);
 
 	// set discretization
 	discretization_ = OutputTime::DiscreteSpace::UNDEFINED;
 	interpolation_ = DataInterpolation::equivalent_msh;
-}
 
+	return data_vec_;
+}
 
 
 /**
@@ -390,6 +367,7 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
 	init_data.data_vec = data_vec_;
 	init_data.ndofs = ndofs;
 	init_data.n_comp = this->n_comp();
+	init_data.comp_index = 0;
 
 	// initialize value handler objects
 	value_handler0_.initialize(init_data);

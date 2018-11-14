@@ -304,7 +304,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_field_ptr->set_fe_data(feo->dh()->sequential(), &output_vec[sbi]);
+        output_field_ptr->set_fe_data(feo->dh()->sequential(), 0, &output_vec[sbi]);
         data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
@@ -941,8 +941,9 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
         for (int sid=0; sid<edg->n_sides; sid++)
         {
-            ElementAccessor<3> cell = Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
-            feo->dh()->get_dof_indices(cell, side_dof_indices[sid]);
+        	auto dh_cell = feo->dh()->cell_accessor_from_element( edg->side(sid)->element().idx() );
+            ElementAccessor<3> cell = dh_cell.elm(); //Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
+            dh_cell.get_dof_indices(side_dof_indices[sid]);
             fe_values[sid]->reinit(cell, edg->side(sid)->side_idx());
             fsv_rt.reinit(cell, edg->side(sid)->side_idx());
             calculate_velocity(cell, side_velocity[sid], fsv_rt);
@@ -1182,16 +1183,18 @@ void TransportDG<Model>::assemble_fluxes_element_side()
         // skip neighbours of different dimension
         if (nb->element()->dim() != dim-1) continue;
 
-        ElementAccessor<3> cell_sub = Model::mesh_->element_accessor( nb->element().idx() );
-		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
+        auto dh_cell_sub = feo->dh()->cell_accessor_from_element( nb->element().idx() );
+        ElementAccessor<3> cell_sub = dh_cell_sub.elm();
+        n_indices = dh_cell_sub.get_dof_indices(indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i] = indices[i];
 		}
         fe_values_vb.reinit(cell_sub);
         n_dofs[0] = fv_sb[0]->n_dofs();
 
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( nb->side()->element().idx() );
-		n_indices = feo->dh()->get_dof_indices(cell, indices);
+        auto dh_cell = feo->dh()->cell_accessor_from_element( nb->side()->element().idx() );
+        ElementAccessor<3> cell = dh_cell.elm();
+        n_indices = dh_cell.get_dof_indices(indices);
 		for(unsigned int i=0; i<n_indices; ++i) {
 			side_dof_indices[i+n_dofs[0]] = indices[i];
 		}

@@ -86,20 +86,13 @@ public:
 
     /**
      * Setter for the finite element data.
-     * @param dh   Dof handler.
-     * @param data Vector of dof values, optional (create own vector according to dofhandler).
-     * @return     Data vector of dof values.
+     * @param dh              Dof handler.
+     * @param data            Vector of dof values, optional (create own vector according to dofhandler).
+     * @param component_index Index of component (for vector_view/tensor_view)
+     * @return                Data vector of dof values.
      */
     VectorMPI * set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-			VectorMPI *data = nullptr);
-
-    /**
-     * Postponed setter of Dof handler.
-     *
-     * Allow to set native Dof handler after set_mesh.
-     * @param dh   Dof handler.
-     */
-    void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh) override;
+    		unsigned int component_index = 0, VectorMPI *dof_values = nullptr);
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -165,11 +158,6 @@ private:
 
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
-
-	/// Ensure data setting of methods set_fe_data and set_native_dh.
-	void reinit_fe_data(MappingP1<1,3> *map1,
-			MappingP1<2,3> *map2,
-			MappingP1<3,3> *map3);
 
 	/**
 	 * Fill data to boundary_dofs_ vector.
@@ -305,7 +293,7 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 
 	// Construct FieldFE
 	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
-	field_ptr->set_fe_data(dh, VectorMPI::sequential(vec_seq.size()) );
+	field_ptr->set_fe_data(dh, 0, VectorMPI::sequential(vec_seq.size()) );
 	return field_ptr;
 }
 
