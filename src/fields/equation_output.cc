@@ -254,7 +254,7 @@ void EquationOutput::make_output_mesh(bool parallel)
 
     // create output mesh identical with the computational one
 	discont |= (used_interpolations_.find(OutputTime::CORNER_DATA) != used_interpolations_.end());
-	discont |= parallel;
+	//discont |= parallel;
 	if (discont) {
 		output_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*mesh_);
 	} else {

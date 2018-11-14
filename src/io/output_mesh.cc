@@ -226,7 +226,67 @@ bool OutputMesh::refinement_criterion()
 
 void OutputMesh::create_sub_mesh()
 {
-    ASSERT(0).error("Not implemented yet.");
+	std::cout << "OutputMesh::create_sub_mesh()" << std::endl;
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+
+	DebugOut() << "Create output submesh containing only local elements.";
+
+	ElementAccessor<3> ele;
+	LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
+	Distribution *el_ds = orig_mesh_->get_el_ds();
+    const unsigned int n_local_elements = el_ds->lsize();
+
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
+
+    unsigned int ele_id = 0,
+    		     node_id = 0,
+				 node_idx = 0,  // index of NodeAccessor
+                 offset = 0,    // offset of node indices of element in node vector
+                 coord_id = 0,  // coordinate id in vector
+                 corner_id = 0, // corner index (discontinous node)
+                 li = 0;        // local node index
+    std::vector<unsigned int> local_nodes_map(orig_mesh_->n_nodes(), Mesh::undef_idx); // map local ids of nodes (see next inner loop)
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+        // increase offset by number of nodes of the simplicial element
+        offset += ele->dim() + 1;
+        offset_vec[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = el_4_loc[loc_el];
+        for (li=0; li<ele->n_nodes(); li++) {
+        	// set local id of node if it's found in first time
+        	node_idx = ele.node_accessor(li).idx();
+        	if (local_nodes_map[node_idx]==Mesh::undef_idx) {
+        		local_nodes_map[node_idx] = node_id++;
+        	}
+        }
+        ele_id++;
+	}
+
+    // count of local nodes is given by node_id
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, node_id);
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    NodeAccessor<3> node;
+    for(unsigned int i_node=0; i_node<local_nodes_map.size(); ++i_node) {
+    	if (local_nodes_map[i_node]==Mesh::undef_idx) continue; // skip element if it is not local
+    	node = orig_mesh_->node_accessor(i_node);
+    	coord_id = 3*local_nodes_map[i_node]; // id of first coordinates in node_vec
+        node_vec[coord_id++] = node->getX();
+        node_vec[coord_id++] = node->getY();
+        node_vec[coord_id] = node->getZ();
+    }
+
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, offset_vec[offset_vec.size()-1]);
+    auto &conn_vec = *( connectivity_->get_component_data(0).get() );
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+		for (li=0; li<ele->n_nodes(); li++) {
+            conn_vec[corner_id] = local_nodes_map[ ele.node_accessor(li).idx() ];
+            corner_id++;
+        }
+	}
 }
 
 
