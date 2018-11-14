@@ -185,6 +185,9 @@ public:
     /// Returns range of all sides looped over common Edge.
     Range<DHCellSide> edge_sides() const;
 
+    /// Returns range of neighbour cells of higher dimension
+    Range<DHCellSide> neighb_sides() const;
+
     /// Iterates to next local element.
     inline virtual void inc() {
         side_idx_++;
@@ -244,6 +247,50 @@ private:
     unsigned int edge_idx_;
     /// Index of side owned by Edge.
     unsigned int side_idx_;
+};
+
+
+/**
+ *
+ */
+class DHNeighbSide : public DHCellSide {
+public:
+    /**
+     * Default invalid accessor.
+     */
+	DHNeighbSide()
+	: dof_handler_(nullptr) {}
+
+    /**
+     * Valid accessor allows iterate over neighbor sides.
+     */
+	DHNeighbSide(const DOFHandlerMultiDim *dof_handler, unsigned int loc_idx, unsigned int neighb_idx)
+    : dof_handler_(dof_handler), loc_ele_idx_(loc_idx), neighb_idx_(neighb_idx)
+    {}
+
+	/// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return (dof_handler_ != nullptr);
+    }
+
+    /// Return Side of given cell and side_idx.
+    inline const Side * side() const {
+    	ASSERT( this->is_valid() );
+   		return &( *dof_handler_->mesh()->element_accessor( dof_handler_->el_index(loc_ele_idx_) )->neigh_vb[neighb_idx_]->side() );
+    }
+
+    /// Iterates to next edge side.
+    inline void inc() {
+    	neighb_idx_++;
+    }
+
+private:
+    /// Pointer to the DOF handler owning the element.
+    const DOFHandlerMultiDim * dof_handler_;
+    /// Index into DOFHandler::el_4_loc array.
+    unsigned int loc_ele_idx_;
+    /// Index into neigh_vb array
+    unsigned int neighb_idx_;
 };
 
 
@@ -329,6 +376,13 @@ inline Range<DHCellSide> DHCellSide::edge_sides() const {
 	auto dh = dh_cell_accessor_.dof_handler_;
 	return Range<DHCellSide>(make_iter<DHCellSide>( DHEdgeSide( dh, edge_idx, 0) ),
 	                         make_iter<DHCellSide>( DHEdgeSide( dh, edge_idx, dh->mesh()->edges[edge_idx].n_sides) ));
+}
+
+
+inline Range<DHCellSide> DHCellSide::neighb_sides() const {
+	auto bgn_it = make_iter<DHCellSide>( DHNeighbSide(dh_cell_accessor_.dof_handler_, dh_cell_accessor_.loc_ele_idx_, 0) );
+	auto end_it = make_iter<DHCellSide>( DHNeighbSide(dh_cell_accessor_.dof_handler_, dh_cell_accessor_.loc_ele_idx_, this->side()->element()->n_neighs_vb()) );
+	return Range<DHCellSide>(bgn_it, end_it);
 }
 
 
