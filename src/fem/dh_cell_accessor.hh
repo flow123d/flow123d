@@ -164,6 +164,16 @@ public:
    		return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
     }
 
+    /// Return ElementAccessor appropriate to the side.
+    inline const ElementAccessor<3> elm() const {
+    	return this->side()->element();
+    }
+
+    /// Return dimension of element appropriate to the side.
+    inline unsigned int dim() const {
+    	return elm().dim();
+    }
+
     /// Returns range of all sides looped over common Edge.
     Range<DHCellSide> edge_sides() const;
 
