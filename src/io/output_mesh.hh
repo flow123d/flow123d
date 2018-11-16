@@ -142,6 +142,8 @@ protected:
     std::shared_ptr<ElementDataCache<double>> nodes_;
     /// Vector maps the nodes to their coordinates in vector @p nodes_.
     std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
+    /// Vector maps local to global indexes of nodes. The order of nodes corresponds with @p connectivity_ vector.
+    std::shared_ptr<ElementDataCache<unsigned int>> global_connectivity_;
     /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
 

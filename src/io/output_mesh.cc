@@ -209,6 +209,8 @@ void OutputMesh::create_mesh()
         }
         
     }
+
+    global_connectivity_ = connectivity_; // local and global indices of nodes are same
 }
 
 void OutputMesh::create_refined_mesh()
@@ -226,7 +228,6 @@ bool OutputMesh::refinement_criterion()
 
 void OutputMesh::create_sub_mesh()
 {
-	std::cout << "OutputMesh::create_sub_mesh()" << std::endl;
 	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
 	DebugOut() << "Create output submesh containing only local elements.";
@@ -279,10 +280,14 @@ void OutputMesh::create_sub_mesh()
 
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
     		1, offset_vec[offset_vec.size()-1]);
+    global_connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("global_connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, offset_vec[offset_vec.size()-1]);
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
+    auto &global_conn_vec = *( global_connectivity_->get_component_data(0).get() );
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
 		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
 		for (li=0; li<ele->n_nodes(); li++) {
+			global_conn_vec[corner_id] = ele.node_accessor(li).idx();
             conn_vec[corner_id] = local_nodes_map[ ele.node_accessor(li).idx() ];
             corner_id++;
         }
@@ -363,6 +368,7 @@ void OutputMeshDiscontinuous::create_mesh()
     }
 
     mesh_type_ = MeshType::discont;
+    global_connectivity_ = connectivity_; // local and global indices of nodes are same
 }
 
 
@@ -462,6 +468,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
 //     connectivity_->print_all(cout);
 //     cout << "\n\n";
 //     offsets_->print_all(cout);
+    global_connectivity_ = connectivity_; // local and global indices of nodes are same
 }
 
 template<int dim>
@@ -656,6 +663,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
             corner_id++;
         }
 	}
+	// TODO fix fill of global_connectivity_ cache
 }
 
 
