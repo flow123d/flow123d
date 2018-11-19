@@ -55,9 +55,6 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 
 template <int spacedim>
 auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
-    static MappingP1<1,3> map1;
-    static MappingP1<2,3> map2;
-    static MappingP1<3,3> map3;
 	static FE_P_disc<0> fe0(0);
 	static FE_P_disc<1> fe1(0);
 	static FE_P_disc<2> fe2(0);
@@ -78,7 +75,7 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 		++i_ele;
 	}
     std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
-    field_ptr->set_fe_data(dh, &map1, &map2, &map3, data_vec);
+    field_ptr->set_fe_data(dh);
 
 	IndexField subdomain;
 	subdomain.name("subdomain");

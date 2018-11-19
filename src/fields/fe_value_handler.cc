@@ -38,7 +38,7 @@ template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
 public:
 
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
+	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		ASSERT(false).error("Unsupported format of FieldFE!\n");
 		typename Value::return_type ret;
@@ -53,7 +53,7 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<0, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
+	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
 		return fe_val.shape_value(i_dof, i_qp);
 	}
@@ -64,9 +64,9 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<1, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
+	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
-		return fe_val.vector_view(0).value(i_dof, i_qp);
+		return fe_val.vector_view(comp_index).value(i_dof, i_qp);
 	}
 };
 
@@ -75,9 +75,9 @@ public:
 template<int elemdim, int spacedim, class Value>
 class FEShapeHandler<2, elemdim, spacedim, Value> {
 public:
-	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp)
+	inline static typename Value::return_type fe_value(FEValues<elemdim,3> &fe_val, unsigned int i_dof, unsigned int i_qp, unsigned int comp_index)
 	{
-		return fe_val.tensor_view(0).value(i_dof, i_qp);
+		return fe_val.tensor_view(comp_index).value(i_dof, i_qp);
 	}
 };
 
@@ -91,7 +91,7 @@ FEValueHandler<elemdim, spacedim, Value>::FEValueHandler()
 
 
 template <int elemdim, int spacedim, class Value>
-void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map)
+void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_data)
 {
 	if (dof_indices.size() > 0)
 		WarningOut() << "Multiple initialization of FEValueHandler!";
@@ -100,13 +100,10 @@ void FEValueHandler<elemdim, spacedim, Value>::initialize(FEValueInitData init_d
 	data_vec_ = init_data.data_vec;
     dof_indices.resize(init_data.ndofs);
     value_.set_n_comp(init_data.n_comp);
+    comp_index_ = init_data.comp_index;
 
-    if (map == nullptr) {
-		// temporary solution - these objects will be set through FieldCommon
-		map_ = new MappingP1<elemdim,3>();
-    } else {
-    	map_ = map;
-    }
+	// temporary solution - these objects will be set through FieldCommon
+	map_ = new MappingP1<elemdim,3>();
 }
 
 
@@ -146,7 +143,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		envelope.zeros();
 		for (unsigned int i=0; i<dh_->fe<elemdim>(cell)->n_dofs(); i++) {
 			value_list[k] += (*data_vec_)[dof_indices[i]]
-										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0);
+										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
 	}
 }
