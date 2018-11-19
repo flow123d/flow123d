@@ -166,6 +166,7 @@ TEST(DOFHandler, test_all) {
 TEST(DHAccessors, dh_cell_accessors) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
+    //Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}"); //variant mesh file
 
     FE_P<0> fe0(1);
     FE_P<1> fe1(1);
@@ -178,8 +179,14 @@ TEST(DHAccessors, dh_cell_accessors) {
     auto el_ds = mesh->get_el_ds();
     unsigned int i_distr=0;
 
-    for( auto cell : dh_seq->own_range() ) {
+    for( DHCellAccessor cell : dh_seq->own_range() ) {
     	EXPECT_EQ( cell.elm_idx(), dh_seq->el_index(i_distr) );
+        for( DHCellSide cell_side : cell.side_range() ) {
+        	EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
+        }
+        for( DHCellSide neighb_side : cell.neighb_sides() ) {
+            EXPECT_EQ( cell.elm_idx(), neighb_side.side()->elem_idx() );
+        }
     	++i_distr;
     }
 
