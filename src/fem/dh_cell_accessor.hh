@@ -110,6 +110,9 @@ public:
     /// Returns range of cell sides
     Range<DHCellSide> side_range() const;
 
+    /// Returns range of neighbour cells of higher dimension
+    Range<DHCellSide> neighb_sides() const;
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
@@ -176,9 +179,6 @@ public:
 
     /// Returns range of all sides looped over common Edge.
     Range<DHCellSide> edge_sides() const;
-
-    /// Returns range of neighbour cells of higher dimension
-    Range<DHCellSide> neighb_sides() const;
 
     /// Iterates to next local element.
     inline virtual void inc() {
@@ -360,18 +360,18 @@ inline Range<DHCellSide> DHCellAccessor::side_range() const {
 }
 
 
+inline Range<DHCellSide> DHCellAccessor::neighb_sides() const {
+	auto bgn_it = make_iter<DHCellSide>( DHNeighbSide(this->dof_handler_, this->loc_ele_idx_, 0) );
+	auto end_it = make_iter<DHCellSide>( DHNeighbSide(this->dof_handler_, this->loc_ele_idx_, this->elm()->n_neighs_vb()) );
+	return Range<DHCellSide>(bgn_it, end_it);
+}
+
+
 inline Range<DHCellSide> DHCellSide::edge_sides() const {
 	unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
 	auto dh = dh_cell_accessor_.dof_handler_;
 	return Range<DHCellSide>(make_iter<DHCellSide>( DHEdgeSide( dh, edge_idx, 0) ),
 	                         make_iter<DHCellSide>( DHEdgeSide( dh, edge_idx, dh->mesh()->edges[edge_idx].n_sides) ));
-}
-
-
-inline Range<DHCellSide> DHCellSide::neighb_sides() const {
-	auto bgn_it = make_iter<DHCellSide>( DHNeighbSide(dh_cell_accessor_.dof_handler_, dh_cell_accessor_.loc_ele_idx_, 0) );
-	auto end_it = make_iter<DHCellSide>( DHNeighbSide(dh_cell_accessor_.dof_handler_, dh_cell_accessor_.loc_ele_idx_, this->side()->element()->n_neighs_vb()) );
-	return Range<DHCellSide>(bgn_it, end_it);
 }
 
 
