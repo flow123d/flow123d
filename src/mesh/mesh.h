@@ -475,13 +475,6 @@ protected:
     void output_internal_ngh_data();
     
     /**
-     * Make distribution of mesh nodes (fill node_distribution_vec) by element distribution.
-     *
-     * TODO: maybe move method
-     */
-    void make_node_distr();
-
-    /**
      * Database of regions (both bulk and boundary) of the mesh. Regions are logical parts of the
      * domain that allows setting of different data and boundary conditions on them.
      */
@@ -533,9 +526,6 @@ protected:
 
     /// Maps node ids to indexes into vector node_vec_
     BidirectionalMap<int> node_ids_;
-
-    /// Contains distribution of nodes on processors
-    vector<unsigned int> node_distribution_vec_;
 
 
 

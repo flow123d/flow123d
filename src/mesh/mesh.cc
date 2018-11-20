@@ -310,7 +310,6 @@ void Mesh::setup_topology() {
     delete[] id_4_old;
     
     output_internal_ngh_data();
-    make_node_distr(); //temporary solution
 }
 
 
@@ -1187,22 +1186,6 @@ void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> perm
 BCMesh *Mesh::get_bc_mesh() {
 	if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
 	return bc_mesh_;
-}
-
-
-void Mesh::make_node_distr() {
-	if (node_distribution_vec_.size()>0) return; // make distribution only once
-
-	unsigned int i, n_idx;
-	node_distribution_vec_.resize(node_vec_.size());
-	std::fill(node_distribution_vec_.begin(), node_distribution_vec_.end(), Mesh::undef_idx);
-
-	for( auto elm : this->elements_range() ) {
-		for (i=0; i<elm->n_nodes(); ++i) {
-			n_idx = elm->node_idx(i);
-			if (node_distribution_vec_[n_idx]==Mesh::undef_idx) node_distribution_vec_[n_idx] = elm.proc();
-		}
-	}
 }
 
 //-----------------------------------------------------------------------------
