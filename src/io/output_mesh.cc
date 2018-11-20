@@ -140,6 +140,49 @@ bool OutputMeshBase::is_created()
 }
 
 
+void OutputMeshBase::distribute_nodes()
+{
+    if ( orig_mesh_->get_el_ds()->np() == 1 ) { // serial case
+        min_node_proc_ = std::make_shared< ElementDataCache<unsigned int> >("min_node_proc", (unsigned int)1, 1, this->n_nodes());
+        auto &min_node_proc_vec = *( min_node_proc_->get_component_data(0).get() );
+        std::fill(min_node_proc_vec.begin(), min_node_proc_vec.end(), 0);
+        global_node_id_ = node_ids_;
+        return;
+    }
+
+    unsigned int i_proc, i_node, elm_node;
+    ElementAccessor<3> elm;
+
+    min_node_proc_ = std::make_shared< ElementDataCache<unsigned int> >("min_node_proc", (unsigned int)1, 1, this->n_nodes());
+    auto &min_node_proc_vec = *( min_node_proc_->get_component_data(0).get() );
+    std::fill(min_node_proc_vec.begin(), min_node_proc_vec.end(), Mesh::undef_idx);
+    for ( elm : orig_mesh_->elements_range() ) {
+        i_proc = elm.proc();
+        for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
+            i_node = elm->node_idx(elm_node);
+            if ( (min_node_proc_vec[i_node]==Mesh::undef_idx) || (min_node_proc_vec[i_node]>i_node) )
+                min_node_proc_vec[i_node] = i_proc;
+        }
+    }
+
+    global_node_id_ = std::make_shared< ElementDataCache<unsigned int> >("global_node_id", (unsigned int)1, 1, this->n_nodes());
+    auto &global_node_id_vec = *( global_node_id_->get_component_data(0).get() );
+    std::fill(global_node_id_vec.begin(), global_node_id_vec.end(), Mesh::undef_idx);
+    LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
+    unsigned int my_proc_id = orig_mesh_->get_el_ds()->myp();
+    unsigned int node_idx = 0; // local index of nodes
+    for (unsigned int loc_el = 0; loc_el < orig_mesh_->get_el_ds()->lsize(); loc_el++) {
+        elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+        for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
+        	i_node = elm->node_idx(elm_node);
+        	if ( (global_node_id_vec[i_node] == Mesh::undef_idx) && (min_node_proc_vec[i_node] == my_proc_id) )
+        		global_node_id_vec[i_node] = node_idx++;
+        }
+    }
+
+}
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
