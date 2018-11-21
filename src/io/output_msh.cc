@@ -287,7 +287,7 @@ int OutputMSH::write_data(void)
 {
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
-        if(this->rank == 0) {
+        if(this->rank_ == 0) {
             this->fix_main_file_extension(".msh");
             try {
                 this->_base_filename.open_stream( this->_base_file );

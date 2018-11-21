@@ -92,7 +92,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, const Input::R
     this->parallel_ = format_rec.val<bool>("parallel");
     this->fix_main_file_extension(".pvd");
 
-    if(this->rank == 0) {
+    if(this->rank_ == 0) {
         try {
             this->_base_filename.open_stream( this->_base_file );
             this->set_stream_precision(this->_base_file);
@@ -135,7 +135,7 @@ int OutputVTK::write_data(void)
     ASSERT_PTR(this->nodes_).error();
 
     /* Output of serial format is implemented only in the first process */
-    if ( (this->rank != 0) && (!parallel_) ) {
+    if ( (this->rank_ != 0) && (!parallel_) ) {
         return 0;
     }
 
@@ -147,7 +147,7 @@ int OutputVTK::write_data(void)
      */
 
     /* Write DataSets to the PVD file only in the first process */
-    if (this->rank == 0) {
+    if (this->rank_ == 0) {
         ASSERT(this->_base_file.is_open())(this->_base_filename).error();
 
         /* Set floating point precision to max */
@@ -158,7 +158,7 @@ int OutputVTK::write_data(void)
         double corrected_time = (isfinite(this->time)?this->time:0);
         corrected_time /= UnitSI().s().convert_unit_from(this->unit_string_);
         if (parallel_) {
-        	for (int i_rank=0; i_rank<n_proc; ++i_rank) {
+        	for (int i_rank=0; i_rank<n_proc_; ++i_rank) {
                 string file = this->form_vtu_filename_(main_output_basename_, current_step, i_rank);
                 this->_base_file << pvd_dataset_line(corrected_time, i_rank, file);
         	}
@@ -171,7 +171,7 @@ int OutputVTK::write_data(void)
     /* write VTU file */
     {
         /* Open VTU file */
-        std::string frame_file_name = this->form_vtu_filename_(main_output_basename_, current_step, this->rank);
+        std::string frame_file_name = this->form_vtu_filename_(main_output_basename_, current_step, this->rank_);
         FilePath frame_file_path({main_output_dir_, frame_file_name}, FilePath::output_file);
         try {
             frame_file_path.open_stream(_data_file);
@@ -179,7 +179,7 @@ int OutputVTK::write_data(void)
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << __func__ << ": Writing output (frame: " << this->current_step
-                 << ", rank: " << this->rank
+                 << ", rank: " << this->rank_
                  << ") file: " << frame_file_name << " ... ";
 
         this->write_vtk_vtu();
@@ -205,7 +205,7 @@ void OutputVTK::make_subdirectory()
 	main_output_dir_ = this->_base_filename.parent_path();
 	main_output_basename_ = this->_base_filename.stem();
 
-	if(this->rank == 0) {
+	if(this->rank_ == 0) {
 	    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
 	    FilePath fp(sub_path, FilePath::output_file);
 	    fp.create_output_dir();
@@ -576,7 +576,7 @@ void OutputVTK::write_vtk_vtu(void)
 int OutputVTK::write_head(void)
 {
     /* Output to PVD file is implemented only in the first process */
-    if(this->rank != 0) {
+    if(this->rank_ != 0) {
         return 0;
     }
 
@@ -595,7 +595,7 @@ int OutputVTK::write_head(void)
 int OutputVTK::write_tail(void)
 {
     /* Output to PVD file is implemented only in the first process */
-    if(this->rank != 0) {
+    if(this->rank_ != 0) {
         return 0;
     }
 

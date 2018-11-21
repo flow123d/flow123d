@@ -75,8 +75,8 @@ OutputTime::OutputTime()
   write_time(-1.0),
   parallel_(false)
 {
-    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank_);
+    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc_);
 }
 
 
@@ -107,7 +107,7 @@ void OutputTime::set_stream_precision(std::ofstream &stream)
 OutputTime::~OutputTime(void)
 {
     /* It's possible now to do output to the file only in the first process */
-     //if(rank != 0) {
+     //if(rank_ != 0) {
      //    /* TODO: do something, when support for Parallel VTK is added */
      //    return;
     // }
@@ -202,7 +202,7 @@ void OutputTime::write_time_frame()
     if (observe_)
         observe_->output_time_frame(time);
 
-    if (this->rank == 0 || this->parallel_) {
+    if (this->rank_ == 0 || this->parallel_) {
 
     	// Write data to output stream, when data registered to this output
 		// streams were changed
@@ -247,7 +247,7 @@ void OutputTime::clear_data(void)
 
 int OutputTime::get_parallel_current_step()
 {
-	if (parallel_) return n_proc*current_step+rank;
+	if (parallel_) return n_proc_*current_step+rank_;
 	else return current_step;
 }
 

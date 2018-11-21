@@ -191,12 +191,7 @@ void EquationOutput::output(TimeStep step)
     // make observe points if not already done
 	auto observe_ptr = stream_->observe(mesh_);
 
-    int rank; bool parallel;
-    stream_->get_output_params(parallel, rank);
-
-    if ( (rank == 0) || parallel ) {
-        this->make_output_mesh(parallel);
-    }
+    this->make_output_mesh( stream_->is_parallel() );
 
     for(FieldCommon * field : this->field_list) {
 
@@ -260,8 +255,8 @@ void EquationOutput::make_output_mesh(bool parallel)
 	} else {
 		output_mesh_ = std::make_shared<OutputMesh>(*mesh_);
 	}
-	if (parallel) output_mesh_->create_sub_mesh();
-	else output_mesh_->create_mesh();
+	if ( stream_->n_proc() > 1) output_mesh_->create_sub_mesh();
+	else output_mesh_->create_mesh(); // serial case
 	stream_->set_output_data_caches(output_mesh_);
 }
 

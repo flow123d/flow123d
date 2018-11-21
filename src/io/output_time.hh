@@ -199,11 +199,24 @@ public:
     ElementDataCache<T> & prepare_compute_data(std::string field_name, DiscreteSpace space_type, unsigned int n_rows, unsigned int n_cols);
 
     /**
-     * Return base output parameters (rank and parallel) which determine if the output is performed
+     * Return if output is serial or parallel
      */
-    inline void get_output_params(bool &parallel, int &rank) {
-        parallel = this->parallel_;
-        rank = this->rank;
+    inline bool is_parallel() const {
+        return this->parallel_;
+    }
+
+    /**
+     * Return rank of actual process
+     */
+    inline int rank() const {
+        return this->rank_;
+    }
+
+    /**
+     * Return number of processes
+     */
+    inline int n_proc() const {
+        return this->n_proc_;
     }
 
     /// Complete information about dummy fields, method has effect only for GMSH output.
@@ -236,12 +249,12 @@ protected:
     /**
      * Cached MPI rank of process (is tested in methods)
      */
-    int rank;
+    int rank_;
 
     /**
      * Cached MPI number of processes (is tested in methods)
      */
-    int n_proc;
+    int n_proc_;
 
     /**
      * Registered output data. Single map for every value of DiscreteSpace
