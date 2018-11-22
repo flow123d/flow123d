@@ -275,6 +275,102 @@ void OutputMesh::create_sub_mesh()
 
 	DebugOut() << "Create output submesh containing only local elements.";
 
+    unsigned int i_proc, i_node, elm_node;
+    unsigned int ele_id = 0,
+                 node_idx = 0,  // local index of nodes
+                 offset = 0,    // offset of node indices of element in node vector
+                 coord_id = 0,  // coordinate id in node vector
+                 conn_id = 0,   // index to connectivity vector
+                 li = 0;        // local node index
+    unsigned int my_proc_id = orig_mesh_->get_el_ds()->myp(); // number of actual process
+    ElementAccessor<3> elm;
+    LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
+    const unsigned int n_local_elements = orig_mesh_->get_el_ds()->lsize();
+
+    min_node_proc_ = std::make_shared< ElementDataCache<unsigned int> >("min_node_proc", (unsigned int)1, 1, orig_mesh_->n_nodes());
+    auto &min_node_proc_vec = *( min_node_proc_->get_component_data(0).get() );
+    std::fill(min_node_proc_vec.begin(), min_node_proc_vec.end(), Mesh::undef_idx);
+    for ( elm : orig_mesh_->elements_range() ) {
+        i_proc = elm.proc();
+        for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
+            i_node = elm->node_idx(elm_node);
+            if ( (min_node_proc_vec[i_node]==Mesh::undef_idx) || (min_node_proc_vec[i_node]>i_node) )
+                min_node_proc_vec[i_node] = i_proc;
+        }
+    }
+
+    global_node_id_ = std::make_shared< ElementDataCache<unsigned int> >("global_node_id", (unsigned int)1, 1, orig_mesh_->n_nodes());
+    auto &global_node_id_vec = *( global_node_id_->get_component_data(0).get() );
+    std::fill(global_node_id_vec.begin(), global_node_id_vec.end(), Mesh::undef_idx);
+    for (unsigned int loc_el = 0; loc_el < orig_mesh_->get_el_ds()->lsize(); loc_el++) {
+        elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+        for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
+        	i_node = elm->node_idx(elm_node);
+        	if ( (global_node_id_vec[i_node] == Mesh::undef_idx) && (min_node_proc_vec[i_node] == my_proc_id) )
+        		global_node_id_vec[i_node] = node_idx++;
+        }
+    }
+
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+
+    std::vector<unsigned int> local_nodes_map(orig_mesh_->n_nodes(), Mesh::undef_idx); // map local ids of nodes (see next inner loop)
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+        // increase offset by number of nodes of the simplicial element
+        offset += elm->dim() + 1;
+        offset_vec[ele_id] = offset;
+        (*orig_element_indices_)[ele_id] = el_4_loc[loc_el];
+        ele_id++;
+	}
+
+    // set coords of nodes
+    // count of local nodes is given by node_idx
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, node_idx);
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    NodeAccessor<3> node;
+    for (i_node = 0; i_node<global_node_id_vec.size(); ++i_node) {
+        if (global_node_id_vec[i_node] == Mesh::undef_idx) continue; // skip non-local nodes
+        node = orig_mesh_->node_accessor(i_node);
+        node_vec[coord_id++] = node->getX();
+        node_vec[coord_id++] = node->getY();
+        node_vec[coord_id++] = node->getZ();
+    }
+
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, offset_vec[offset_vec.size()-1]);
+    auto &conn_vec = *( connectivity_->get_component_data(0).get() );
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+		for (li=0; li<elm->n_nodes(); li++) {
+			conn_vec[conn_id++] = elm.node_accessor(li).idx();
+        }
+	}
+    /*connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+    		1, 5*n_local_elements);
+    auto &conn_vec = *( connectivity_->get_component_data(0).get() );
+    std::fill(conn_vec.begin(), conn_vec.end(), Mesh::undef_idx);
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+		conn_id = 5*loc_el;
+		conn_vec[conn_id++] = el_4_loc[loc_el];
+		for (li=0; li<elm->n_nodes(); li++) {
+			node_idx = elm.node_accessor(li).idx();
+			if (min_node_proc_vec[node_idx] == my_proc_id)
+                conn_vec[conn_id++] = global_node_id_vec[node_idx];
+        }
+	}*/
+}
+
+
+
+void OutputMesh::create_full_sub_mesh()
+{
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+
+	DebugOut() << "Create output submesh containing only local elements.";
+
 	ElementAccessor<3> ele;
 	LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
 	Distribution *el_ds = orig_mesh_->get_el_ds();
@@ -337,6 +433,62 @@ void OutputMesh::create_sub_mesh()
 	}
 }
 
+
+
+std::shared_ptr<OutputMeshBase> OutputMesh::make_serial_master_mesh(int rank, int n_proc)
+{
+	std::shared_ptr<OutputMeshBase> serial_mesh; // returned mesh
+
+	int local_nodes[1];       // local size of node_ cache (coordinates)
+    int all_nodes[n_proc];    // local sizes of node_ caches over all processes (store in process 0), collective values of previous
+    int rec_starts[n_proc];   // displacement of first value that is received from each process
+    int rec_counts[n_proc];   // number of values that are received from each process
+    double *rec_nodes;        // collective values of node_ caches (coordinates)
+
+    // collects sizes of node_ vectors on each process
+    local_nodes[0] = nodes_->get_component_data(0)->size();
+    if (rank==0)
+        for (int i=0; i<n_proc; ++i) {
+        	rec_starts[i] = i;
+        	rec_counts[i] = 1;
+        }
+    MPI_Gatherv( local_nodes, 1, MPI_INT, all_nodes, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // collects values of node_ vectors on each process
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    if (rank==0) {
+    	rec_starts[0] = 0;
+    	rec_counts[0] = all_nodes[0];
+    	for (int i=1; i<n_proc; ++i) {
+    		rec_starts[i] = rec_starts[i-1] + all_nodes[i-1];
+    		rec_counts[i] = all_nodes[i];
+    	}
+        rec_nodes = new double [ rec_starts[n_proc-1] + all_nodes[n_proc-1] ];
+    }
+    MPI_Gatherv( &node_vec[0], node_vec.size(), MPI_DOUBLE, rec_nodes, rec_counts, rec_starts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    // create serial cache and fill nodes_ cache (coordinates)
+    if (rank==0) {
+        unsigned int proc;
+        int i_orig_coord[n_proc]; // counters over local parts of rec_nodes array
+        int i_global_coord = 0;   // counter over serial_mesh->nodes_ cache
+        for (unsigned int i=0; i<n_proc; ++i) i_orig_coord[i] = rec_starts[i];
+        serial_mesh = std::make_shared<OutputMesh>(*orig_mesh_); //fill nodes_, orig_element_indices_, offsets_, connectivity_
+        serial_mesh->nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, orig_mesh_->n_nodes());
+        auto &min_node_proc_vec = *( min_node_proc_->get_component_data(0).get() );
+        auto &node_vec = *( serial_mesh->nodes_->get_component_data(0).get() );
+        for (unsigned int i=0; i<min_node_proc_vec.size(); ++i) {
+            proc = min_node_proc_vec[i];
+            for (unsigned int j=0; j<3; ++j) { //loop over coords
+            	node_vec[ i_global_coord++ ] = rec_nodes[ i_orig_coord[proc]++ ];
+            }
+        }
+    }
+
+	ASSERT(0).error("Not implemented yet.");
+
+	/*if (rank>0)*/ return serial_mesh;
+}
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -709,6 +861,11 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	// TODO fix fill of global_connectivity_ cache
 }
 
+void OutputMeshDiscontinuous::create_full_sub_mesh()
+{
+	this->create_sub_mesh();
+}
+
 
 template void OutputMeshDiscontinuous::refine_aux_element<1>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);
 template void OutputMeshDiscontinuous::refine_aux_element<2>(const OutputMeshDiscontinuous::AuxElement&,std::vector< OutputMeshDiscontinuous::AuxElement >&, const ElementAccessor<spacedim> &);
@@ -768,4 +925,12 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 //     DebugOut().fmt("diff: {}  {}  {}\n", diff, average_val, val_list[0]);
     return ( diff > refinement_error_tolerance_);
 
+}
+
+std::shared_ptr<OutputMeshBase> OutputMeshDiscontinuous::make_serial_master_mesh(int rank, int n_proc)
+{
+	ASSERT(0).error("Not implemented yet.");
+	std::shared_ptr<OutputMeshBase> serial_mesh;
+
+	/*if (rank>0)*/ return serial_mesh;
 }

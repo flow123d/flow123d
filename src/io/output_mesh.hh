@@ -27,6 +27,8 @@
 
 class Mesh;
 class OutputElement;
+class OutputMesh;
+class OutputMeshDiscontinuous;
 namespace Input { namespace Type { class Record; } }
 template<class T> class ElementDataCache;
 template<int> class ElementAccessor;
@@ -90,8 +92,11 @@ public:
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
-    /// Creates sub mesh containing only local elements.
+    /// Creates sub mesh containing only local elements and local nodes. Every node is assigned to one process only.
     virtual void create_sub_mesh()=0;
+
+    /// Creates sub mesh containing only local elements and their appropriate nodes. Nodes in boundary of processes are assigned to all these processes.
+    virtual void create_full_sub_mesh()=0;
 
     /// Selects the error control field computing function of output field set according to input record.
     void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
@@ -107,6 +112,19 @@ public:
 	/// Create nodes and elements data caches
 	void create_id_caches();
 
+	/**
+	 * Distribute nodes to processes and set local indices to nodes owned of actual process.
+	 *
+	 *  - every nodes is owned with one process (it's held in \p min_node_proc_)
+	 *  - if nodes belongs to elements of one process, this process owns node
+	 *  - in other case process with minimal index owns node
+	 *  - local indices are stored in \p global_node_id_
+	 */
+	void distribute_nodes();
+
+	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
+	virtual std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc)=0;
+
 protected:
 	/**
 	 * Possible types of OutputMesh.
@@ -117,17 +135,6 @@ protected:
 		refined,  //!< refined mesh
 		discont   //!< discontinuous mesh
 	};
-
-
-	/**
-	 * Distribute nodes to processes and set local indices to nodes owned of actual process.
-	 *
-	 *  - every nodes is owned with one process (it's held in \p min_node_proc_)
-	 *  - if nodes belongs to elements of one process, this process owns node
-	 *  - in other case process with minimal index owns node
-	 *  - local indices are stored in \p global_node_id_
-	 */
-	void distribute_nodes();
 
 
 	/// Input record for output mesh.
@@ -176,6 +183,8 @@ protected:
     friend class OutputTime;
     friend class OutputMSH;
     friend class OutputVTK;
+    friend class OutputMesh;
+    friend class OutputMeshDiscontinuous;
 };
 
 
@@ -195,6 +204,12 @@ public:
     
     /// Creates sub mesh.
     void create_sub_mesh() override;
+
+    /// Creates sub mesh.
+    void create_full_sub_mesh() override;
+
+    /// Implements OutputMeshBase::make_serial_master_mesh
+    std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc) override;
 
 protected:
     bool refinement_criterion();
@@ -220,6 +235,12 @@ public:
     
     /// Creates sub mesh.
     void create_sub_mesh() override;
+
+    /// Creates sub mesh.
+    void create_full_sub_mesh() override;
+
+    /// Implements OutputMeshBase::make_serial_master_mesh
+    std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc) override;
 
 protected:
     ///Auxiliary structure defining element of refined output mesh.
