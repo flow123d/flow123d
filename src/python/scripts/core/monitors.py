@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
+import enum
+# ----------------------------------------------
 from scripts.core.base import Printer, IO
 from utils.counter import ProgressTime
 # ----------------------------------------------
@@ -103,11 +105,19 @@ class ProgressMonitor(ThreadMonitor):
         # set priority so that output is right after is finished and overrides
         # previous progress bar line
         self.pypy.on_process_complete.set_priority(self.on_complete, 5)
-        self.timer = ProgressTime('Running | elapsed time {}')
 
-        if pypy.limit_monitor and pypy.limit_monitor.active:
-            self.timer.format_args['memory_usage'] = pypy.limit_monitor.memory_usage
-            self.timer.format = 'Running | elapsed time {}, memory usage {memory_usage:1.2f}MB'
+        if Printer.console.is_muted():
+            self.timer = ProgressTime('Running | elapsed time {}\n', dynamic=False, printer=Printer.batched)
+
+            if pypy.limit_monitor and pypy.limit_monitor.active:
+                self.timer.format_args['memory_usage'] = pypy.limit_monitor.memory_usage
+                self.timer.format = 'Running | elapsed time {}, memory usage {memory_usage:1.2f}MB\n'
+        else:
+            self.timer = ProgressTime('Running | elapsed time {}')
+
+            if pypy.limit_monitor and pypy.limit_monitor.active:
+                self.timer.format_args['memory_usage'] = pypy.limit_monitor.memory_usage
+                self.timer.format = 'Running | elapsed time {}, memory usage {memory_usage:1.2f}MB'
 
     @ensure_active
     def on_update(self, pypy=None):
@@ -248,16 +258,19 @@ class ErrorMonitor(ThreadMonitor):
                     Printer.all.out('{self.pypy.escaped_command}'.format(**locals()))
 
 
+class OutputMonitorPolicy(enum.Enum):
+    ALWAYS = 'always'
+    ON_ERROR = 'on-error'
+
+
 class OutputMonitor(ThreadMonitor):
-    POLICY_ALWAYS = 1
-    POLICY_BATCH_OR_ERROR = 2
-    POLICY_ERROR_ONLY = 3
+    DEFAULT_POLICY = OutputMonitorPolicy.ON_ERROR
 
     def __init__(self, pypy):
         super(OutputMonitor, self).__init__(pypy)
         self.log_file = None
         self._content = None
-        self.policy = self.POLICY_BATCH_OR_ERROR
+        self.policy = self.DEFAULT_POLICY
 
     @property
     def content(self):
@@ -274,11 +287,9 @@ class OutputMonitor(ThreadMonitor):
             IO.write(self.log_file, self.content)
 
         enabled = False
-        if self.policy == self.POLICY_ALWAYS:
+        if self.policy is OutputMonitorPolicy.ALWAYS:
             enabled = True
-        elif self.policy == self.POLICY_BATCH_OR_ERROR:
-            enabled = pypy.with_error() or (not Printer.batched.is_muted())
-        elif self.policy == self.POLICY_ERROR_ONLY:
+        elif self.policy is OutputMonitorPolicy.ON_ERROR:
             enabled = pypy.with_error()
 
         if enabled:

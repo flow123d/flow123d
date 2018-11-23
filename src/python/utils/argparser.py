@@ -2,10 +2,13 @@
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
 # ----------------------------------------------
+import sys
 import argparse
 # ----------------------------------------------
 from scripts.core.base import System
 from utils.events import Event
+from scripts.core.monitors import OutputMonitorPolicy, OutputMonitor
+# ----------------------------------------------
 
 
 def try_split(lst, sep='--'):
@@ -150,6 +153,7 @@ class RuntestArgs(ParserArgs):
      :type batch             : bool
      :type include           : list
      :type exclude           : list
+     :type show-output       : scripts.core.monitors.OutputMonitorPolicy
 
      :type cpu               : list[int]
      :type queue             : bool|str
@@ -187,6 +191,7 @@ class RuntestArgs(ParserArgs):
         self.batch = None
         self.include = None
         self.exclude = None
+        self.show_output = None
 
         self.cpu = None
         self.queue = None
@@ -218,6 +223,23 @@ class RuntestArgs(ParserArgs):
         self.random_output_dir = System.rnd8 if self.random_output_dir is None else self.random_output_dir
         self.cpu = [x for y in self.cpu for x in y] if self.cpu else self.cpu
 
+        if self.batch is None:
+            try:
+                self.batch = not bool(sys.stdout.isatty())
+            except:
+                # ok, never mind the error
+                pass
+
+        if self.show_output in (None, 'auto'):
+            if self.batch:
+                self.show_output = OutputMonitorPolicy.ALWAYS
+            else:
+                self.show_output = OutputMonitorPolicy.ON_ERROR
+        else:
+            self.show_output = OutputMonitorPolicy(self.show_output)
+
+        OutputMonitor.DEFAULT_POLICY = self.show_output
+
 
 class SmartFormatter(argparse.HelpFormatter):
     """
@@ -228,6 +250,25 @@ class SmartFormatter(argparse.HelpFormatter):
     def _split_lines(self, text, width):
         if text.startswith('R|'):
             return [l.lstrip() for l in text[2:].lstrip().splitlines()]
+        # this is the RawTextHelpFormatter._split_lines
+        return argparse.HelpFormatter._split_lines(self, text, width)
+
+
+class RawFormatter(argparse.HelpFormatter):
+    """
+    Class SmartFormatter prints help messages without any formatting
+        or unwanted line breaks, acivated when help starts with R|
+    """
+
+    def _split_lines(self, text, width):
+        if text.startswith('R|\n'):
+            text = text[3:].rstrip()
+            lines = text.splitlines()
+            first_indent = len(lines[0]) - len(lines[0].lstrip())
+            return [l[first_indent:] for l in lines]
+        elif text.startswith('R|'):
+            return [l.lstrip() for l in text[2:].strip().splitlines()]
+
         # this is the RawTextHelpFormatter._split_lines
         return argparse.HelpFormatter._split_lines(self, text, width)
 
@@ -249,7 +290,7 @@ class Parser(object):
 
     @classmethod
     def create(cls, *args, **kwargs):
-        return argparse.ArgumentParser(*args, formatter_class=SmartFormatter, **kwargs)
+        return argparse.ArgumentParser(*args, formatter_class=RawFormatter, **kwargs)
 
     @classmethod
     def add(cls, parser, name, action=NONE, nargs=NONE,

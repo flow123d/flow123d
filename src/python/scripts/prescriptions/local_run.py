@@ -92,7 +92,6 @@ class LocalRun(AbstractRun):
                     pm.end_monitor.deactivate()
                     pm.progress_monitor.deactivate()
                     pm.limit_monitor.deactivate()  # TODO: maybe some time limit would be useful
-                    pm.output_monitor.policy = pm.output_monitor.POLICY_BATCH_OR_ERROR
 
                     pm.error_monitor.message = 'Comparison using method {} failed!'.format(method)
                     pm.error_monitor.indent = 1

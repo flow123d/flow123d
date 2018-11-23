@@ -642,7 +642,7 @@ class DynamicSleep(object):
     beginning of an operation.
     """
 
-    def __init__(self, min=100, max=5000, steps=13):
+    def __init__(self, min=500, max=15000, steps=13):
         # -c * Math.cos(t/d * (Math.PI/2)) + c + b;
         # t: current time, b: begInnIng value, c: change In value, d: duration
         c = float(max - min)

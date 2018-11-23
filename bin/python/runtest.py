@@ -34,9 +34,22 @@ def create_parser():
         Run at most N jobs in parallel.
         In PBS mode this arguments is ignored.
     """)
-    argparser.Parser.add(group, '--batch', action=argparser.Parser.STORE_TRUE, help="""R|
+    argparser.Parser.add(group, '--batch', default=None, dest='batch', action=argparser.Parser.STORE_TRUE, help="""R|
         Make output of this script more for an off-line reading
         In batch mode, stdout and stderr from executed processes will be printed, not saved
+    """)
+    argparser.Parser.add(group, '--tty', default=None, dest='batch', action=argparser.Parser.STORE_FALSE, help="""R|
+        Forces tty mode, by default it is automatically detected by sys.stdout.isatty() call.
+        This mode is aimed at human rather than machines. 
+    """)
+    argparser.Parser.add(group, '--show-output', choices=['always', 'on-error', 'auto'], default='auto', help="""R|
+        Changes when the output of the process is displayed.
+         - always:
+            always display output (only preview in tty mode)
+         - on-error:
+            if process returns non-zero code, displays output  (only preview in tty mode)
+         - auto:
+            if in tty mode, on-error, otherwise on-error
     """)
     argparser.Parser.add(group, '--include', nargs='*', metavar='TAG', help="""R|
         By default all tags are processed but if --include is set
@@ -51,7 +64,8 @@ def create_parser():
     """)
 
     group = parser.add_argument_group('run_parallel arguments', 'Passable arguments to run_parallel.py')
-    argparser.Parser.add(group, '--cpu, -n', type=parsers.parse_int_list, action=argparser.Parser.APPEND, help="""R|
+    argparser.Parser.add(group, '--cpu, -n, -np, --np', dest='cpu', type=parsers.parse_int_list,
+                         action=argparser.Parser.APPEND, help="""R|
         Run for every number of processes in the <proc set>
           The <proc set> can be set as:
              - single number (can be defined multiple times)
@@ -131,6 +145,7 @@ def create_parser():
         additional information which cannot be obtained from profiler file
     """)
     return parser
+
 
 if __name__ == '__main__':
     from utils.globals import check_modules
