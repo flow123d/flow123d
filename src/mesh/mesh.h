@@ -47,6 +47,8 @@ class Partitioning;
 class MixedMeshIntersections;
 class Neighbour;
 class SideIter;
+class BCMesh;
+class DuplicateNodes;
 template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
@@ -126,9 +128,9 @@ public:
     void reinit(Input::Record in_record);
 
     /// Destructor.
-    ~Mesh();
+    virtual ~Mesh();
 
-    inline unsigned int n_nodes() const {
+    virtual inline unsigned int n_nodes() const {
         return node_vec_.size();
     }
 
@@ -159,7 +161,9 @@ public:
     /**
      * Returns pointer to partitioning object. Partitioning is created during setup_topology.
      */
-    Partitioning *get_part();
+    virtual Partitioning *get_part();
+
+    virtual const LongIdx *get_local_part();
 
     Distribution *get_el_ds() const
     { return el_ds; }
@@ -211,8 +215,13 @@ public:
      */
     void elements_id_maps( vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id) const;
 
+    /*
+     * Check if nodes and elements are compatible with \p mesh.
+     */
+    virtual bool check_compatible_mesh( Mesh & mesh, vector<LongIdx> & bulk_elements_id, vector<LongIdx> & boundary_elements_id );
+
     /// Create and return ElementAccessor to element of given idx
-    ElementAccessor<3> element_accessor(unsigned int idx) const;
+    virtual ElementAccessor<3> element_accessor(unsigned int idx) const;
 
     /// Create and return NodeAccessor to node of given idx
     NodeAccessor<3> node_accessor(unsigned int idx) const;
@@ -255,6 +264,8 @@ public:
      * This is necessary for true mortar.
      */
     vector<vector<unsigned int> >  master_elements;
+    
+    DuplicateNodes *tree;
 
     /**
      * Vector of compatible neighbourings.
@@ -326,21 +337,18 @@ public:
     void init_node_vector(unsigned int size);
 
     /// Returns range of bulk elements
-    Range<ElementAccessor<3>> bulk_elements_range() const;
-
-    /// Returns range of boundary elements
-    Range<ElementAccessor<3>> boundary_elements_range() const;
+    virtual Range<ElementAccessor<3>> elements_range() const;
 
     /// Returns range of nodes
     Range<NodeAccessor<3>> node_range() const;
 
     /// Returns count of boundary or bulk elements
-    inline unsigned int n_elements(bool boundary=false) const {
+    virtual unsigned int n_elements(bool boundary=false) const {
     	if (boundary) return element_ids_.size()-bulk_size_;
     	else return bulk_size_;
     }
 
-    // For each node the vector contains a list of elements that use this node
+    /// For each node the vector contains a list of elements that use this node
     vector<vector<unsigned int> > node_elements_;
 
     /// For element of given elem_id returns index in element_vec_ or (-1) if element doesn't exist.
@@ -378,6 +386,9 @@ public:
 
     /// Permute nodes of 2D elements of given elm_idx
     void permute_triangle(unsigned int elm_idx, std::vector<unsigned int> permutation_vec);
+
+    /// Create boundary mesh if doesn't exist and return it.
+    BCMesh *get_bc_mesh();
 
 protected:
 
@@ -502,6 +513,9 @@ protected:
     /// Count of bulk elements
     unsigned int bulk_size_;
 
+    /// Count of boundary elements loaded from mesh file
+    unsigned int boundary_loaded_size_;
+
     /// Maps element ids to indexes into vector element_vec_
     BidirectionalMap<int> element_ids_;
 
@@ -520,6 +534,7 @@ protected:
     friend class Element;
     friend class BIHTree;
     friend class Boundary;
+    friend class BCMesh;
     template <int spacedim> friend class ElementAccessor;
     template <int spacedim> friend class NodeAccessor;
 
@@ -533,6 +548,8 @@ private:
     LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+	/// Boundary mesh, object is created only if it's necessary
+	BCMesh *bc_mesh_;
         
     ofstream raw_ngh_output_file;
 };

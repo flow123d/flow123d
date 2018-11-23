@@ -47,7 +47,7 @@ public:
     /**
 	 * Constructor
 	 *
-	 * Set class members and call functions which create tree
+	 * Set vertices of main_box_ to NaN values
 	 * @param soft_leaf_size_limit - Maximal number of elements stored in a leaf node of BIH tree.
 	 */
 	BIHTree(unsigned int soft_leaf_size_limit = BIHTree::default_leaf_size_limit);

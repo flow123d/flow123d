@@ -134,7 +134,7 @@ function setup_ps1() {
 
   cat >> /etc/bash.bashrc << EOL
 export PS1="$PS1_DOCKER"
-# clear the terminal  
+# clear the terminal
 printf '\033[2J'
 echo " ___ _            _ ___ ____    _  "
 echo "| __| |_____ __ _/ |_  )__ / __| |"

@@ -135,18 +135,19 @@ else(FLOW_CC_FLAGS)
     flow_define(DEBUG)
   elseif(FLOW_BUILD_TYPE STREQUAL "coverage")
     # Coverage mode creates instrumented binary
-    SET(CMAKE_CXX_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_C_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
-    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 -fprofile-arcs -ftest-coverage")
+    SET(CMAKE_CXX_FLAGS "-g -O0 --coverage")
+    SET(CMAKE_C_FLAGS "-g -O0 --coverage")
+    SET(CMAKE_EXE_LINKER_FLAGS "-g -O0 --coverage")
     set(CMAKE_BUILD_TYPE Debug)
     
     # set external libs flags
     SET(EXTERNAL_LIBS_CXX_FLAGS "-g -O0")
     SET(EXTERNAL_LIBS_C_FLAGS "-g -O0")
+    
     flow_define(DEBUG)
-    INCLUDE(CodeCoverage)
+    # INCLUDE(CodeCoverage)
     # add custom target to collect coverage into xml file
-    COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
+    # COVERAGE_SETUP_COBERTURA_COLLECTION (cobertura-collect-coverage coverage.xml)
   else()
   endif()
 endif(FLOW_CC_FLAGS)
@@ -907,7 +908,7 @@ message(STATUS "===========================================")
 # Cache PLATFORM_NAME
 # set(CMAKE_INSTALL_MESSAGE ALWAYS)
 set(PLATFORM_NAME ${PLATFORM_NAME} CACHE INTERNAL "Platform name used by prepare_to_publish script.")
-set(CMAKE_INSTALL_PREFIX "$ENV{HOME}/local/flow123d")
+set(CMAKE_INSTALL_PREFIX "$ENV{FLOW123D_HOME}") # install prefix is taken from sys env variable FLOW123D_HOME
 set(_CPACK_INSTALL_ROOT ${CMAKE_BINARY_DIR}/_CPack_Packages/Linux/TGZ/Flow123d-2.0.0_rc-Linux)  
 
 
@@ -938,8 +939,12 @@ install(FILES     doc/petsc_options_help    DESTINATION doc/)
 install(FILES     doc/LICENSE               DESTINATION doc/)
 install(FILES     doc/GPL3                  DESTINATION doc/)
 install(FILES     doc/README                DESTINATION doc/)
-install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf DESTINATION doc/)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DESTINATION doc/htmldoc)
+# PDF and htmldoc are marked as OPTIONAL so this version can be installed on a system where 
+# latex and pandoc are not available and where container solution could be dangerou (such as HPC resource)
+# TODO perhaps by default, PDF and HTML should be required and only if specified in the config.cmake
+#      should they be OPTIONAL
+install(FILES     ${CMAKE_BINARY_DIR}/doc/reference_manual/flow123d_doc.pdf DESTINATION doc/ OPTIONAL)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/htmldoc/html/src/                     DESTINATION doc/htmldoc OPTIONAL)
 
 
 # install tests dir

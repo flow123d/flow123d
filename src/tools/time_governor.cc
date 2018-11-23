@@ -66,7 +66,8 @@ const Record & TimeGovernor::get_input_type() {
             .close();
 
     return Record("TimeGovernor",
-            "Setting of the simulation time (can be specific to one equation).\n"
+            "Time axis settings of the simulation.\n"
+            "The settings is specific to a particular equation.\n"
     		"TimeGovernor allows to:\n"
     		" - define start time and end time of simulation\n"
     		" - define lower and upper limits of time steps\n"
@@ -86,41 +87,44 @@ const Record & TimeGovernor::get_input_type() {
 		.declare_key("start_time", TimeGovernor::get_input_time_type(), Default("0.0"),
 					"Start time of the simulation.")
 		.declare_key("end_time", TimeGovernor::get_input_time_type(), Default(MAX_END_TIME_STR),
-					"End time of the simulation. Default value is more then age of universe in seconds.")
+				"End time of the simulation.\n"
+				"The default value is higher than the age of the Universe (given in seconds).")
 		.declare_key("init_dt", TimeGovernor::get_input_time_type(0.0), Default("0.0"),
 				"Initial guess for the time step.\n"
-				"Only useful for equations that use adaptive time stepping."
-				"If set to 0.0, the time step is determined in fully autonomous"
-				" way if the equation supports it.")
+				"It applies to equations that use an adaptive time stepping. "
+				"If set to 0.0, the time step is determined in fully autonomous "
+				"way, assuming the equation supports it.")
 		.declare_key("min_dt", TimeGovernor::get_input_time_type(0.0),
 				Default::read_time("Machine precision."),
-				"Soft lower limit for the time step. Equation using adaptive time stepping can not"
-				"suggest smaller time step, but actual time step could be smaller in order to match "
-				"prescribed input or output times.")
+				"Soft lower limit for the time step.\n"
+				"Equation using an adaptive time stepping cannot suggest smaller time step. "
+				"The actual time step can only decrease below the limit in order to match "
+				"the prescribed input or output times.")
 		.declare_key("max_dt", TimeGovernor::get_input_time_type(0.0),
 				Default::read_time("Whole time of the simulation if specified, infinity else."),
-				"Hard upper limit for the time step. Actual length of the time step is also limited"
-				"by input and output times.")
+				"Hard upper limit for the time step.\n"
+				"The actual time step can only increase above the limit in order to match "
+				"the prescribed input or output times.")
 		.declare_key("dt_limits", Array(dt_step), Default::optional(),
-				"Allow to set a time dependent changes in min_dt and max_dt limits. This list is processed "
-				"at individual times overwriting previous setting of min_dt/max_dt. Limits equal to 0 are "
-				"ignored and replaced with min_dt/max_dt values.")
-		.declare_key("add_dt_limits_time_marks", Bool(), Default("false"), "Add all times defined in 'dt_limits' "
-			    "table to list of fixed TimeMarks.")
+				"Allow to set a time dependent changes in ``min_dt`` and ``max_dt`` limits. This list is processed "
+				"at individual times overwriting previous values of ``min_dt``/``max_dt``. Limits equal to 0 are "
+				"ignored and replaced with ``min_dt``/``max_dt`` values.")
+		.declare_key("add_dt_limits_time_marks", Bool(), Default("false"), "Add all times defined in ``dt_limits`` "
+			    "table to the list of fixed TimeMarks.")
 		.declare_key("write_used_timesteps", FileName::output(), Default::optional(),
-				"Write used time steps to given file in YAML format corresponding with format of 'dt_limits'.")
+				"Write used time steps to the given file in YAML format corresponding with the format of ``dt_limits``.")
 		.declare_key("common_time_unit", String(), Default("\"s\""),
-				"Common time unit of equation. This unit will be used for all time inputs and outputs "
-				"within the equation. On inputs can be overwrite for every time definition.\n"
-				"Time units are used in following cases:\n"
+				"Common time unit of the equation.\nThis unit will be used for all time inputs and outputs "
+				"within the equation. Individually, the common time unit can be overwritten for every declared time.\n"
+				"Time units are used in the following cases:\n"
 				"1) Time units of time value keys in: TimeGovernor, FieldDescriptors.\n"
-				"   Global definition of unit can be overwrite for every declared time.\n"
+				"   The common time unit can be overwritten for every declared time.\n"
 				"2) Time units in: \n"
-				"   a) input fields: FieldElementwise, FieldInterpolatedP0, FieldFE and FieldTimeFunction\n"
+				"   a) input fields: FieldFE and FieldTimeFunction\n"
 				"   b) time steps definition of OutputTimeSet\n"
-				"   Global definition can be overwrite by one unit value for every whole mesh data file or time function.\n"
-				"3) Time units in output files: Observe times, balance times, frame times of VTK and GMSH\n"
-				"   Global definition can't be overwritten.\n"
+				"   Common time unit can be overwritten by one unit value for every whole mesh data file or time function.\n"
+				"3) Time units in output files: observation times, balance times, frame times of VTK and GMSH\n"
+				"   Common time unit cannot be overwritten in these cases."
 				)
 		.close();
 }

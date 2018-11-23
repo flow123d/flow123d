@@ -30,11 +30,11 @@
 namespace IT=Input::Type;
 
 const IT::Record & OutputMeshBase::get_input_type() {
-    return IT::Record("OutputMesh", "Parameters of the refined output mesh.")
+    return IT::Record("OutputMesh", "Parameters of the refined output mesh. [Not impemented]")
         .declare_key("max_level", IT::Integer(1,20),IT::Default("3"),
             "Maximal level of refinement of the output mesh.")
         .declare_key("refine_by_error", IT::Bool(), IT::Default("false"),
-            "Set true for using error_control_field. Set false for global uniform refinement to max_level.")
+            "Set true for using ``error_control_field``. Set false for global uniform refinement to max_level.")
         .declare_key("error_control_field",IT::String(), IT::Default::optional(),
             "Name of an output field, according to which the output mesh will be refined. The field must be a SCALAR one.")
         .declare_key("refinement_error_tolerance",IT::Double(0.0), IT::Default("0.01"),
@@ -190,7 +190,7 @@ void OutputMesh::create_mesh()
                  offset = 0,    // offset of node indices of element in node vector
                  li;            // local node index
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
-    for (auto ele : orig_mesh_->bulk_elements_range()) {
+    for (auto ele : orig_mesh_->elements_range()) {
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -202,7 +202,7 @@ void OutputMesh::create_mesh()
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
     		1, n_connectivities);
     auto &connect_vec = *( connectivity_->get_component_data(0).get() );
-    for (auto ele : orig_mesh_->bulk_elements_range()) {
+    for (auto ele : orig_mesh_->elements_range()) {
     	for (li=0; li<ele->n_nodes(); li++) {
             connect_vec[connect_id] = ele.node_accessor(li)->aux;
             connect_id++;
@@ -271,7 +271,7 @@ void OutputMeshDiscontinuous::create_mesh()
                  li = 0;        // local node index
 
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
-    for (auto ele : orig_mesh_->bulk_elements_range()) {
+    for (auto ele : orig_mesh_->elements_range()) {
         // increase offset by number of nodes of the simplicial element
         offset += ele->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -289,7 +289,7 @@ void OutputMeshDiscontinuous::create_mesh()
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
     NodeAccessor<3> node;
-    for (auto ele : orig_mesh_->bulk_elements_range()) {
+    for (auto ele : orig_mesh_->elements_range()) {
     	for (li=0; li<ele->n_nodes(); li++)
         {
             node = ele.node_accessor(li);
@@ -327,7 +327,7 @@ void OutputMeshDiscontinuous::create_refined_mesh()
     offset_vec.reserve(4*orig_mesh_->n_elements());
     
 //     DebugOut() << "start refinement\n";
-    for (auto ele : orig_mesh_->bulk_elements_range()) {
+    for (auto ele : orig_mesh_->elements_range()) {
         const unsigned int
             dim = ele->dim(),
             ele_idx = ele.idx();

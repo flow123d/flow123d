@@ -480,13 +480,13 @@ OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num
 std::string OutputJSONMachine::escape_description(std::string desc) {
 	static std::vector< std::pair<std::regex, std::string> > rewrite_rules = {
 	        // replace single slash with two slashes
-			{std::regex("\\\\"), "\\\\\\\\"},
+			{std::regex("\\\\"), "\\\\"},
 	        // replace quote with slash quote
-			{std::regex("\\\""), "\\\\\""},
+			{std::regex("\\\""), "\\\""},
 	        // replace special chars with escaped slash + special chars
-			{std::regex("\\n"), "\\\\n"},
-			{std::regex("\\t"), "\\\\t"},
-			{std::regex("\\r"), "\\\\r"}
+			{std::regex("\\n"), "\\n"},
+			{std::regex("\\t"), "\\t"},
+			{std::regex("\\r"), "\\r"}
 	};
 
 

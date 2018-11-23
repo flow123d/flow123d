@@ -31,10 +31,10 @@ TEST(GenericField, all) {
 
     region_id = GenericField<3>::region_id(*mesh);
     region_id.set_time(TimeGovernor().step(), LimitSide::right);
-    for (auto ele : mesh->bulk_elements_range())
+    for (auto ele : mesh->elements_range())
     	EXPECT_EQ( ele.region().id(),
     			   region_id.value(ele.centre(), ele)
     			   );
 
-    delete mesh;
+    //delete mesh;
 }

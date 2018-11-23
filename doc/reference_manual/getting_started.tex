@@ -1,0 +1,438 @@
+% Copyright (C) 2007 Technical University of Liberec.  All rights reserved.
+%
+% Please make a following reference to Flow123d on your project site if you use the program for any purpose,
+% especially for academic research:
+% Flow123d, Research Centre: Advanced Remedial Technologies, Technical University of Liberec, Czech Republic
+%
+% This program is free software; you can redistribute it and/or modify it under the terms
+% of the GNU General Public License version 3 as published by the Free Software Foundation.
+%
+% This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+% without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+% See the GNU General Public License for more details.
+%
+% You should have received a copy of the GNU General Public License along with this program; if not,
+% write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 021110-1307, USA.
+%
+
+
+\section{Introduction}
+Flow123d is a~software for simulation of water flow, reactionary solute transport and heat transfer in a~heterogeneous 
+porous and fractured medium. In particular it is suited for simulation of underground processes in a~granite rock.
+The program is able to describe explicitly processes in 3D medium, 2D fractures, and 1D channels and exchange between 
+domains of different dimensions. The computational mesh is therefore a~collection of tetrahedra, triangles and line segments.
+
+Two water flow models are available: The water flow model for a~saturated medium based on the Darcy law 
+and the model for partially saturated medium described by the Richards' equation. 
+Both models use the mixed-hybrid finite element method for the space discretization and the implicit Euler method for the time discretization. 
+Both models can also switch between a~transient case and a~sequence of the steady states within a~single simulation. The model for unsaturated medium use 
+a lumped variant of the mixed-hybrid method in order to guarantee stability for short time steps which is connected with the satisfaction of the maximum principle.
+
+In the present version,  only the model for the unsaturated media can be sequentially coupled  with the transport models including 
+two models for the solute transport and one model for the heat transfer.
+
+The first solute transport model can deal only with a~pure advection of several substances without any diffusion-dispersion term. It uses 
+the explicit Euler method for time discretization and the finite volume method for space discretization.
+The second solute transport model describes a~general advection with hydrodynamic dispersion for several substances. 
+It uses the implicit Euler method for time discretization and the discontinuous Galerkin method of
+the first, second or third order for the discretization in space.
+The operator splitting method can be used to couple any of these two solute transport models with  
+ various processes described by the reaction term.  The reaction term can treat any meaningful combination of the dual porosity, 
+equilibrium sorptions, decays and linear reactions. 
+
+The heat transfer model assumes equilibrium between temperature of the rock and the fluid phase. It uses the same numerical scheme as the second transport model, 
+that is implicit DG method.
+
+The program supports output of all input and output fields into two file formats. You can use file format of GMSH mesh generator and post-processor 
+or you can use output into widely supported VTK format. In particular we recommend Paraview software for visualization and post-processing of the VTK data.
+
+The program is implemented in C/C++ using essentially PETSc library for linear algebra. All models can run in parallel using MPI environment, however, 
+the scalability of the whole program is limited due to serial mesh data structures and serial outputs.
+
+
+The program is distributed under GNU GPL v. 3 license and is available on the project web page:
+\url{http://flow123d.github.io}
+
+with sources on the GitHub:
+\url{https://github.com/flow123d/flow123d}.
+
+
+\section{Reading Documentation}
+The Flow123d documentation has two main parts. The chapters \ref{chapter:getting_started} up to \ref{chapter:tutorials} 
+form a~user guide while the last chapter \ref{chapter:input-tree-reference} provides an input reference.
+The user manual starts with Chapter \ref{chapter:getting_started} providing instructions for installation and execution of the program.
+The Chapter \ref{chapter:mathematical_models} provides detailed description of the implemented mathematical models.
+The Chapter \ref{chapter:numerical} presents used numerical methods. The input and output file formats are documented by the Chapter 
+\ref{chapter:file-formats}. Finally, the Chapter \ref{chapter:tutorials}  consists of tutorial problems.
+
+The reference guide, consisting only of the chapter \ref{chapter:input-tree-reference}, is automatically
+generated. It mirrors directly the code and describes whole structure of the main input file. Description
+of input records, their structure and default values are supplied there and bidirectional links to the user 
+guide are provided.
+
+The document is interactive. The blue text marks the links in the document. The magenta text marks the web links.
+
+\section{Installing Flow123d}
+Software Flow123d requires tool \href{https://www.docker.com}{Docker}. 
+Docker is an open-source project that automates the deployment of Linux applications inside software containers. 
+Entire Flow123d software is wrapped in a~docker image that contains also necessary libraries and crucial components 
+of the Linux operating system.
+
+The installation process imports docker image into your machine and personalize the docker image. The installation 
+instructions for the Linux and the Windows operating systems are provided in the next two sections.
+
+\subsection{Installing Flow123d on Linux}
+The installation is done under regular user, who must be in the group 'docker'.
+Download the Linux installation package archive \verb'Flow123d-<version>-linux-install.tar.gz' and extract it to any folder:
+\begin{verbatim}
+  > tar -xzf flow123d_<version>_linux_install.tar.gz 
+\end{verbatim}
+This will create a~directory \verb'Flow123d-<version>'. In next step, navigate to \verb'Flow123d-<version>' directory
+and execute the \verb'install.sh' script:
+\begin{verbatim}
+  > cd flow123d_2.1.0
+  > ./install.sh
+  Importing docker image 'flow123d/v2.1.0'
+  Modifying docker image 'flow123d/v2.1.0'
+  ...
+\end{verbatim}
+Install script will first import image into your system and then personalize this image for the current user. The script will also print
+additional information during personalization process. Whole process may take several minutes (depending on your machine performance).
+
+
+\subsection{Installing Flow123d on Windows}
+On the Windows systems we require PowerShell. Windows PowerShell needs to be installed on Windows Server 2008 and Windows Vista only.
+It is already installed on Windows Server 2008 R2 and Windows 7 and higher. To install PowerShell follow instructions at
+\href{https://msdn.microsoft.com/en-us/powershell/scripting/setup/installing-windows-powershell}{Microsoft pages}.
+
+Make sure \verb'powershell' command is in the system PATH. 
+\href{http://www.powershelladmin.com/wiki/PowerShell_Executables_File_System_Locations}{PowerShell executable location}
+ is specific to the particular Windows version, but usual location is:
+ \begin{verbatim}
+    %SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe  
+ \end{verbatim}
+ To add this location to the system PATH variable follow the instructions at
+ \href{https://msdn.microsoft.com/en-us/library/office/ee537574(v=office.14).aspx}{Microsoft pages}.
+
+Other requirement is to have virtualization enabled. Typically, virtualization is enabled by default but in some
+cases you need to enable virtualization in BIOS or UEFI. For more detail see 
+\href{https://docs.docker.com/docker-for-windows/troubleshoot/#virtualization-must-be-enabled}{Virtualization must be enabled} in Docker manual.
+
+To install Flow123d on Windows, first download the Windows installation package archive \verb'flow123d_2.1.0_windows_install.zip' and extract it to any folder.
+The directory \verb'flow123d_2.1.0' will be created. You can rename it or move it elsewhere before you start installation, but not later. 
+This directory will become the root directory of the Flow123d installation. 
+
+Navigate to the Flow123d root directory and execute \verb'install.bat'. Depending on your system settings you may be asked to allow 
+execution of the installation script by pressing \verb'R'. This starts the installation consisting of following two steps:
+\begin{enumerate}
+	\item Installation of the \href{https://www.docker.com/products/docker-toolbox}{Docker toolbox} is performed unless it is installed already. 
+	First you have to agree with execution of the setup 'DockerToolbox-1.12.2.exe' and then
+	confirm installation of the Docker with the 'next' button. You can confirm or modify destination location of the Docker Toolbox in the next dialog.
+        Then you are asked about Docker components to install. Docker Toolbox system uses virtual environment software 
+        \href{https://www.virtualbox.org/}{VirtualBox} which is installed along with Docker Toolbox as well as other necessary components.
+        Default configuration of components is acceptable, however you can uncheck 
+        \emph{'Docker Compose for Windows'} and \emph{'Kinematic for Windows'}, while keeping \emph{'VirtualBox'} and \emph{'Git for Windows'} that are essential,
+        see the dialog in Figure \ref{fig:DockerComponents} (left). Next dialog selects additional tasks, you can uncheck \emph{'Create a~desktop shortcut'} as 
+        depicted in Figure \ref{fig:DockerComponents} (right)
+        \begin{figure}
+          \center  
+          \includegraphics[width=0.45\textwidth]{\fig/DockerComponents.png}%
+          \hspace{2ex}
+          \includegraphics[width=0.45\textwidth]{\fig/DockerTasks.png}
+          \caption{{\bf Left:} The minimal set of Docker components to select during the install.\\
+                   {\bf Right:} Possible choice of additional Docker tasks.} 
+          \label{fig:DockerComponents}
+        \end{figure}
+	After installation of the Docker Toolbox you need to run \verb'install.bat' (since system path variable was modified new shell is required). 
+	\item Second step is customization of the Docker environment. The downloaded Flow123d image is imported into your docker environment 
+	and further modified to provide better integration with your system.
+	You will be asked several times to allow changes to the \emph{'VirtualBox Interface'}, do not hesitate to confirm any dialog containing 'Oracle'.
+		
+	Since flow123d run in the Docker container we must set a~mapping of the Windows directories to the directories in the Docker container. 
+	By default we setup such mapping for the home directory \verb'C:/Users' which is mapped to \verb'/c/Users'. 
+	
+	At the end of the second phase you are asked if you \dots \emph{'wish to add other mounts.'} Answering 'y' you can specify other disk for mapping 
+	(recursively). The question is repeated allowing to add more custom mappings one by one. To mount other disks please enter only letter 
+	of a~disk you want to mount such as \verb'd'.
+	If you agree to mount disk, virtual machine will be stopped 
+	(this may take several seconds). Example of adding two disks can be following:
+	\begin{verbatim}
+		Do you wish to add other mounts? [y/N] y
+		
+		Stopping default to perform changes in virtual machine
+		Enter letter of disk you want to mount (e.g. d): f
+		Mounting path "f:" -> "/f/"
+		Do you wish to add other mounts? [y/N] y
+		
+		Enter letter of disk you want to mount (e.g. d): g
+		Mounting path "g:\" -> "/g/"
+		Do you wish to add other mounts? [y/N] n
+	\end{verbatim}
+	
+	\textbf{Note:}
+	\textit{Mounting process does not copy or move any files. This process only grants permission to the virtual machine to work with files under mounted location.}
+\end{enumerate}
+
+In order to uninstall Flow123d you can run the \verb'uninstall.bat' script. This script removes Flow123d 
+and uninstall Docker Toolbox (after confirmation), but keep Git and VirtualBox installed. These can be uninstalled manually. 
+Moreover the configuration directories \verb'.docker' and \verb'VirtualBox' in your home directory are preserved. These can be deleted manually as well. 
+
+
+
+
+\subsection{Reinstalling Flow123d}
+\label{duplicit-image}
+If you are installing same version of Flow123d again, you will be prompted whether to remove previous version or not. 
+It is recommended to confirm deletion for both images \verb'flow123d/v<version>' and \verb'flow123d/v<version>:user'.
+
+
+\section{Running Flow123d}
+
+\subsection{Running Flow123d on Linux}
+\label{subsec:running-flow123d-on-linux}
+All necessary scripts for Flow123d are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-linux-install'.
+Docker container by default cannot easily interact with host file system. But using scripts in \verb'bin' will make things easier.
+Directory \verb'bin' contains:
+\begin{itemize}
+	\item \verb'fterm.sh' \\
+	 Script will invoke shell inside docker container and mount your home directory.
+	 In this shell you have access to system where Flow123d is installed. By default command \verb'flow123d' is in the \verb'PATH' variable.
+	 
+	\textbf{Note:} On some systems, shell's font is extremely small, you can change this behavior by right-clicking on window bar and selecting 
+	\verb'default' or (\verb'vychozi' in Czech) see \autoref{fig:TerminalFont}.
+	 \begin{figure}
+		 \center
+		 \includegraphics[width=1\textwidth]{\fig/TerminalFont.png}
+		 \caption{Changing default font family and font size}
+		 \label{fig:TerminalFont}
+	 \end{figure}
+
+	\item \verb'flow123d.sh' \\
+	 Script will run Flow123d inside docker container and mount your home  directory.
+	 All arguments passed to this script will be passed to \verb'flow123d' binary file inside docker.
+
+	\item \verb'runtest.sh' \\
+	 Script will run Flow123d tests inside docker container and mount your home  directory.
+	 All arguments passed to this script will be passed to \verb'runtest.py' binary file inside docker.
+	 
+	\item \verb'configure' \\
+	 Script is part of installation process and it modifies imported image for current active user. It will create user inside docker
+	 with same name, user id and group id as current user.	 	 
+\end{itemize}
+
+\textbf{Note:}
+\textit{Using above} \verb'.sh' \textit{scripts will mount your your home  directory to docker container under the same name.}
+\textit{Also your current working directory will be the same. Example below shows behavior of the scripts:}
+\begin{verbatim}
+$> pwd
+/home/jan-hybs/install-folder
+
+$> ls
+bin  data  doc	install.sh  tests
+
+$> bin/fterm.sh
+Home directory mounted to '/home/jan-hybs'
+
+jan-hybs@v2.0.0:/home/jan-hybs/install-folder$ ls
+bin  data  doc	install.sh  tests
+\end{verbatim}
+
+
+\subsection{Running Flow123d on Windows}
+On system Windows \verb'bat' files are located in the \verb'bin' directory of installation directory \verb'Flow123d-<version>-windows'.
+Docker container by default cannot easily interact with host file system. But using scripts in \verb'bin' will make things easier.
+Directory \verb'bin' contains two \verb'bat' files:
+\begin{itemize}
+	\item \verb'fterm.sh' see section \ref{subsec:running-flow123d-on-linux}
+	
+	\item \verb'fterm.bat' \\
+	File serves as wrapper for script \verb'fterm.sh'. Executing this file will open up docker container shell.
+
+	\item \verb'flow123d.sh' see section \ref{subsec:running-flow123d-on-linux}	
+	
+	\item \verb'flow123d.bat' \\
+	File serves as wrapper for script \verb'flow123d.sh'. Executing this file will open up docker container shell and execute 
+	Flow123d with given arguments. After execution \verb'bat' file exit itself. To see Flow123d output use file \verb'fterm.bat'
+	and manually enter the command:
+	\begin{verbatim}
+		> fterm.bat
+		me@v2.0.0 $ flow123d --help
+	\end{verbatim}
+
+	\item \verb'runtest.sh' see section \ref{subsec:running-flow123d-on-linux}	
+	
+	\item \verb'runtest.bat' \\
+	File serves as wrapper for script \verb'runtest.sh'. Executing this file will open up docker container shell and execute 
+	runtest script with given arguments.
+\end{itemize}
+
+\textbf{Note:}
+\textit{Docker Engine daemon has only limited access to your Windows file system. Docker Machine tries to auto-share your}
+\verb'C:\Users' \textit{directory. Directories outside this directory will not be automatically mounted.} 
+
+\subsubsection{Running from other batch file}
+The Windows system calls the batch files in the different way then the binaries. In particular the calling batch file is not processed further after the child batch 
+file is done. In order to do so, one have to use the \verb'CALL' command. This is especially necessary for various calibration tools. The correct calling batch file 
+may look like:
+\begin{verbatim}
+    echo "Starting Flow123d ..."
+    call flow123d.bat a_simulation.yaml 
+    echo "... simulation done."
+\end{verbatim}
+
+
+\subsection{Setting memory of virtual machine}
+The virtual machine (VM) used for running the Docker with Flow123d inside claims predefined portion of the RAM 
+of the host system to be used as the RAM of the guest Docker system. Unfortunately the default size of this memory is
+quite small, e.g. 1GB on a~4GB machine. About 500MB is taken by the Docker kernel leaving just 500MB for Flow123d.
+This is may be enough just for the small problems with thousands of elements. In order to treat realistic problems one have to 
+enlarge the RAM size of the guest system. This can be easily done as follows:
+
+\subsection{Issues with Windows 10}
+Beginning with Windows 10, Microsoft apply all updates incrementally including major upgrades. As the Virtual Box deals with very internals of the system
+any such update may broke it. The solution is to install manually the latest available version of the VirtualBox. In the case of fresh installation 
+one also cannot use automatic installation of the Virtual Box by the Flow123d installer. An up-to-date version of Virtual Box has to be installed followed by 
+installation of the Flow123d.
+
+In particular for the "Creator's update" update, version 1703, you have to install at least version 5.2 
+of the VirtualBox. Yet, starting the virtual machine it ends up with error \verb'NtCreateFile(\Device\VBoxDrvStub) failed: Unknown Status -626 ...}'. The workaround is:
+uninstall VirtualBox, {\bf reboot}, install VirtualBox 5.2.  
+
+ 
+\begin{enumerate}
+ \item Start \verb'Oracle VM VirtualBox' either by a~shortcut on your desktop or through the start menu. 
+ A medium size window appears with the list of existing virtual machines 
+ on the left. The docker VM is named 'default'.
+ \item Next step is to power off the VM \verb'default' if it is running. 
+ Following the left Figure \ref{fig:vm_ram_setup}, use the right-click on the VM and select \verb'Close' (Zav\v r\' it) and 
+ \verb'Power Off' (Vypnout). Confirm the turn off of the VM machine. 
+ \item Final step is setting the size of RAM of the VM. Follow the right Figure \ref{fig:vm_ram_setup}. 
+ Select the VM \verb'default', click on \verb'Settings' (Nastave\' i) and select \verb'System' in the left column.
+ On the tab \verb'Motherboard' (Z\' akladn\' i deska) you find a~slide to select the size of the RAM. You can select sizes  
+ in the orange or even red range since the memory is only reserved not actually used, however setting it to close to the 
+ whole RAM size of the host allows the applications, i.e. Flow123d, running on the VM to compete for RAM with applications on the host system.
+ \item The VM is restarted automatically at the next start of the Flow123d or the fterm.
+\end{enumerate}
+
+
+\begin{figure}
+    \center  
+    \includegraphics[width=0.45\textwidth]{\fig/VBMachineTurnOff.png}
+    \hspace{2ex}
+    \includegraphics[width=0.45\textwidth]{\fig/VBMachineSetMem.png}
+    \caption{{\bf Left:} Power off the virtual machine.
+             {\bf Right:} Setting RAM size of the virtual machine.} 
+    \label{fig:vm_ram_setup}
+\end{figure}
+
+\subsection{Flow123d arguments}
+When you are inside docker container, you have access to entire file system. Flow123d is installed in 
+\verb'/opt/flow123d' directory. Folder \verb'/bin' contains binary files and is automatically 
+added to \verb'PATH' variable, meaning every executable in this folder can be called from anywhere.
+
+Main Flow123d binary is located in \verb'bin/flow123d' and accepts following arguments:
+
+
+\begin{description}
+ \item[{\tt --help}] \hfill\\
+        Help for parameters interpreted by Flow123d. Remaining parameters are passed to PETSC.
+ \item[ {\tt -s, --solve} ] \verb'<file>' \hfill\\
+ 	 Set principal input file. Can be in YAML (or  JSON) file format. All relative paths of the input 
+ 	 files are relative to the location of the principal input file.
+ \item[{\tt -i, --input\_dir}] \verb'<directory>' \hfill\\
+ 	The placeholder \verb"${INPUT}" %$
+  	used in the path of an input file will be replaced by the \verb'<directory>'. Default value is \verb'input'.
+ \item[{\tt -o, --output\_dir}] \verb'<directory>' \hfill\\
+ 	All paths for output files will be relative to this \verb'<directory>'. Default value is \verb'output'.
+ \item[{\tt -l, --log}] \verb'<file_name>' \hfill\\
+ 	Set base name of log files. Default value is \verb'flow123d'. The log files are individual for every MPI process, placed in the output directory. 
+ 	The MPI rank of the process and the \verb'log' suffix are appended to the base name.
+ \item[{\tt --no\_log}] \hfill\\
+        Turn off logging.
+ \item[{\tt --no\_profiler}] \hfill\\
+        Turn off profiler output.
+ \item[{\tt --petsc\_redirect <file>}] \hfill\\
+        Redirect all PETSc stdout and stderr to given file.       
+ \item[{\tt --input\_format}] \hfill\\ 
+        Prints a~description of the main input file in JSON format. Is used by GeoMop model editor and by python scripts for 
+        generating reference documentation in Latex or HTML format.
+ \item[{\tt --yaml\_balance}] \hfill\\
+        Generate balance file also in machine readable YAML format. Will be default in future, used by GeoMop.
+ \item[{\tt --no\_signal\_handler}] \hfill\\
+        For debugging purpose.
+        
+\end{description}
+All other parameters will be passed to the PETSC library. An advanced user can influence lot of parameters of linear solvers. In order to get list of supported options 
+use parameter \verb'-help' together with some valid input. Options for various PETSC modules are displayed when the module is used for the first time.
+
+Alternatively, you can use python script \verb'exec_parallel' located in \verb'bin/python' to start parallel jobs or limit resources used by the program.
+
+After double dash specify which \verb'mpiexec' binary will be used (\verb'MPI-EXECUTABLE') and then specify what should be run. 
+The script does not need to run solely \verb'flow123d'.
+
+If we want to run command \verb'whoami' in parallel we can do:
+\begin{verbatim}
+	bin $> exec_parallel -n 4 -- ./mpiexec whoami
+\end{verbatim}
+
+To execute Flow123d in parallel we can do:
+\begin{verbatim}
+	bin $> exec_parallel -n 4 -- ./mpiexec ./flow123d --help
+\end{verbatim}
+
+
+\begin{verbatim}
+  exec_parallel [OPTIONS] -- [MPI-EXECUTABLE] [PARAMS]
+\end{verbatim}
+
+The script has following options:
+
+\begin{description}
+  \item[{\tt -h, --help}] \hfill\\
+  	Usage overview.
+  \item[{\tt --host}] \verb'<hostname>' \hfill\\
+  		Valid only when option \verb'--queue' is set.
+        Default value is the host name obtained by python \verb'platform.node()' call, this argument can be used to override it. 
+        Resulting value is used to select a~correct PBS module from lookup table \verb'config/host_table.yaml'.
+  \item[{\tt -n}] \verb'<number of processes>' \hfill\\
+  	Specify number of MPI parallel processes for calculation.
+  \item[{\tt -t, --limit-time}] \verb'<timeout>' \hfill\\
+  	Upper estimate for real running time of the calculation. Kill calculation after {\it timeout} seconds. 
+  	Value can also be \verb'float' number. When in PBS mode, value can also affect PBS queue. 
+  \item[{\tt -m, --limit-memory}] \verb'<memory limit>' \hfill\\
+  	Limits total available memory to \verb'<memory limit>' MB in total.
+  \item[{\tt -q, --queue}] \verb'<queue>' \hfill\\
+  		If set activates PBS mode. If argument \verb'queue' is also set selects particular job queue
+  		on PBS systems otherwise default PBS queue is used. Default PBS queue automatically
+  		choose valid queue based on resources.
+\end{description}
+
+
+Another script which runs Flow123d is \verb'runtest.sh'. This script will run tests specified as arguments. Script accepts both folders
+and yaml files. To see full details run \verb'runtest.sh --help'. The script will run yaml tests and then compare results with reference
+output. Example usage of the script:
+
+\begin{verbatim}
+$> bin/runtest.sh -n 1 tests/10_darcy/01_source.yaml 
+...
+Case 01 of 02
+Running: 1 x 10_darcy/01_source
+Done    | elapsed time 0:00:00:898                                              
+    Comparison: 01 of 03 | 10_darcy: 01_source/flow.pvd (0.22kB)
+    Comparison: 02 of 03 | 10_darcy: 01_source/flow/flow-000000.vtu (0.63MB)
+    Comparison: 03 of 03 | 10_darcy: 01_source/water_balance.txt (0.32kB)
+------------------------------------------------------------
+Case 02 of 02
+Running: 2 x 10_darcy/01_source
+Done    | elapsed time 0:00:00:900                                              
+    Comparison: 01 of 03 | 10_darcy: 01_source/flow.pvd (0.22kB)
+    Comparison: 02 of 03 | 10_darcy: 01_source/flow/flow-000000.vtu (0.63MB)
+    Comparison: 03 of 03 | 10_darcy: 01_source/water_balance.txt (0.32kB)
+------------------------------------------------------------
+Summary: 
+    [ PASSED ]  | 1 x 10_darcy/01_source                        [ 1.40 sec] 
+    [ PASSED ]  | 2 x 10_darcy/01_source                        [ 1.41 sec] 
+    ------------------------------------------------------------
+    [ PASSED ]  | passed=2, failed=0, skipped=0 in [ 2.81 sec]
+
+\end{verbatim}

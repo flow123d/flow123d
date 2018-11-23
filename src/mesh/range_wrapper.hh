@@ -18,38 +18,37 @@
 #ifndef RANGE_WRAPPER_HH_
 #define RANGE_WRAPPER_HH_
 
-#include "mesh/mesh.h"
 #include "tools/general_iterator.hh"
 
 /**
  * @brief Range helper class.
  *
- * Allow iterate in bounds given by begin and end range. Class can be used for iterable accessor classes.
+ * Allow iterate in bounds given by begin and end iterator. Class can be used for iterable accessor classes.
+ *
+ * Template argument:
+ *  - Object Type over its instances is iterated,
  */
 template<class Object>
 class Range
 {
 public:
-	Range(const Mesh * mesh, unsigned int begin, unsigned int end)
-	: mesh_(mesh), begin_(begin), end_(end) {
-		ASSERT_LE(begin, end).error("Invalid range, begin is greater than end!");
-	}
+	/// Constructor.
+	Range(Iter<Object> begin, Iter<Object> end)
+	: begin_(begin), end_(end) {}
 
+	/// Iterator to begin item of range.
 	Iter<Object> begin() {
-		return make_iter<Object>( Object(mesh_, begin_) );
+		return begin_;
 	}
 
+	/// Iterator to end item of range.
 	Iter<Object> end() {
-		return make_iter<Object>( Object(mesh_, end_) );
+		return end_;
 	}
 
-	inline unsigned int size() const {
-		return end_ - begin_;
-	}
 private:
-	const Mesh * mesh_;
-	unsigned int begin_;
-	unsigned int end_;
+	Iter<Object> begin_;
+	Iter<Object> end_;
 };
 
 #endif // RANGE_WRAPPER_HH_

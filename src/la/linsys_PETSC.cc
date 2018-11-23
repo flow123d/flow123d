@@ -30,23 +30,27 @@
 namespace it = Input::Type;
 
 const it::Record & LinSys_PETSC::get_input_type() {
-	return it::Record("Petsc", "Interface to PETSc solvers. Convergence criteria is:\n"
+	return it::Record("Petsc", "PETSc solver settings.\n It provides interface to various PETSc solvers. The convergence criteria is:\n"
 	        "```\n"
-	        "norm( res_n )  < max( norm( res_0 ) * r_tol, a_tol )\n"
+	        "norm( res_i )  < max( norm( res_0 ) * r_tol, a_tol )\n"
 	        "```\n"
-	        "where res_i is the residuum vector after i-th iteration of the solver and res_0 is an estimate of the norm of initial residual. "
+	        "where ```res_i``` is the residuum vector after i-th iteration of the solver and ```res_0``` is the estimate of the norm of the initial residual. "
 	        "If the initial guess of the solution is provided (usually only for transient equations) the residual of this estimate is used, "
 	        "otherwise the norm of preconditioned RHS is used. "
-	        "The default norm is L2 norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key. "
+	        "The default norm is (($L_2$)) norm of preconditioned residual: (($ P^{-1}(Ax-b)$)), usage of other norm may be prescribed using the 'option' key. "
 	        "See also PETSc documentation for KSPSetNormType.")
 		.derive_from(LinSys::get_input_type())
-		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-7."),
-					"Relative residual tolerance,  (to initial error).")
-		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1.0e-11."),
+		.declare_key("r_tol", it::Double(0.0, 1.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1.0e-7."),
+					"Residual tolerance relative to the initial error.")
+		.declare_key("a_tol", it::Double(0.0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1.0e-11."),
 		            "Absolute residual tolerance.")
-        .declare_key("max_it", it::Integer(0), it::Default::read_time("Defalut value set by nonlinear solver or equation. If not we use value 1000."),
+        .declare_key("max_it", it::Integer(0), it::Default::read_time("Default value is set by the nonlinear solver or the equation. "
+                        "If not, we use the value 1000."),
                     "Maximum number of outer iterations of the linear solver.")
-		.declare_key("options", it::String(), it::Default("\"\""),  "Options passed to PETSC before creating KSP instead of default setting.")
+		.declare_key("options", it::String(), it::Default("\"\""),  "This options is passed to PETSC to create a particular KSP (Krylov space method).\n"
+                                                                    "If the string is left empty (by default), the internal default options is used.")
 		.close();
 }
 

@@ -27,6 +27,8 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_p.hh"
 #include "fields/field_fe.hh"
+#include "la/vector_mpi.hh"
+#include "fields/fe_value_handler.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 
@@ -112,17 +114,18 @@ public:
 		field.units(UnitSI::one());
 
 		std::shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>( *(this->_mesh) );
+		FE_P_disc<0> fe0(0);
 		FE_P_disc<1> fe1(0);
 		FE_P_disc<2> fe2(0);
 		FE_P_disc<3> fe3(0);
-		dh->distribute_dofs(fe1, fe2, fe3);
+        std::shared_ptr<::DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(this->_mesh, &fe0, &fe1, &fe2, &fe3);
+		dh->distribute_dofs(ds);
 
-		VectorSeqDouble v;
-        v.resize(size);
+		VectorMPI v(size);
         for (unsigned int i=0; i<size; ++i) v[i] = step*i;
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, &map1, &map2, &map3, &v);
+		native_data_ptr->set_fe_data(dh, 0, &v);
 
 		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
 		field.output_type(OutputTime::NATIVE_DATA);
@@ -164,9 +167,6 @@ public:
 	}
 
 	std::vector<string> component_names;
-	MappingP1<1,3> map1;
-	MappingP1<2,3> map2;
-	MappingP1<3,3> map3;
 	Mesh *_mesh;
 	std::shared_ptr<OutputMeshBase> output_mesh_;
 };

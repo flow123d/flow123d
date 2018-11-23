@@ -33,10 +33,10 @@ const IT::Selection & Partitioning::get_graph_type_sel() {
 	return IT::Selection("GraphType",
             "Different algorithms to make the sparse graph with weighted edges\n"
             "from the multidimensional mesh. Main difference is dealing with \n"
-            "neighborings of elements of different dimension.")
-		.add_value(any_neighboring, "any_neighboring", "Add edge for any pair of neighboring elements.")
-		.add_value(any_weight_lower_dim_cuts, "any_wight_lower_dim_cuts",  "Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.")
-		.add_value(same_dimension_neighboring, "same_dimension_neghboring", "Add edge for any pair of neighboring elements of same dimension (bad for matrix multiply).")
+            "neighboring of elements of different dimension.")
+		.add_value(any_neighboring, "any_neighboring", "Add an edge for any pair of neighboring elements.")
+		.add_value(any_weight_lower_dim_cuts, "any_weight_lower_dim_cuts",  "Same as before and assign higher weight to cuts of lower dimension in order to make them stick to one face.")
+		.add_value(same_dimension_neighboring, "same_dimension_neighboring", "Add an edge for any pair of neighboring elements of the same dimension (bad for matrix multiply).")
 		.close();
 }
 
@@ -102,7 +102,7 @@ void Partitioning::make_element_connection_graph() {
     // Add nigbouring edges only for "any_*" graph types
     bool neigh_on = ( in_.val<PartitionGraphType>("graph_type") != same_dimension_neighboring );
 
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
         // skip non-local elements
         if ( !edistr.is_local( ele.idx() ) )
             continue;
