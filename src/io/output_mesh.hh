@@ -112,16 +112,6 @@ public:
 	/// Create nodes and elements data caches
 	void create_id_caches();
 
-	/**
-	 * Distribute nodes to processes and set local indices to nodes owned of actual process.
-	 *
-	 *  - every nodes is owned with one process (it's held in \p min_node_proc_)
-	 *  - if nodes belongs to elements of one process, this process owns node
-	 *  - in other case process with minimal index owns node
-	 *  - local indices are stored in \p global_node_id_
-	 */
-	void distribute_nodes();
-
 	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
 	virtual std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc)=0;
 
@@ -160,8 +150,6 @@ protected:
     std::shared_ptr<ElementDataCache<double>> nodes_;
     /// Vector maps the nodes to their coordinates in vector @p nodes_.
     std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
-    /// Vector maps local to global indexes of nodes. The order of nodes corresponds with @p connectivity_ vector.
-    std::shared_ptr<ElementDataCache<unsigned int>> global_connectivity_;
     /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
     /// Vector hold minimal index of process that owned node. It ensures that every node is assigned to one process.
