@@ -50,7 +50,7 @@ class HTMLSelection(HTMLItemFormatter):
     """
 
     def __init__(self):
-        super(HTMLSelection, self).__init__(cls='main-section s')
+        super(HTMLSelection, self).__init__(cls='s')
 
     def format_as_child(self, self_selection, record_key, record):
         """
@@ -123,7 +123,7 @@ class HTMLRecord(HTMLItemFormatter):
     """
 
     def __init__(self):
-        super(HTMLRecord, self).__init__(cls='main-section r')
+        super(HTMLRecord, self).__init__(cls='r')
 
     def format_as_child(self, self_record, record_key, record):
         """
@@ -359,7 +359,7 @@ class HTMLRecord(HTMLItemFormatter):
 class HTMLTuple(HTMLRecord):
 
     def __init__(self):
-        super(HTMLRecord, self).__init__(cls='main-section t')
+        super(HTMLRecord, self).__init__(cls='t')
 
 
 class HTMLAbstractRecord(HTMLItemFormatter):
@@ -368,7 +368,7 @@ class HTMLAbstractRecord(HTMLItemFormatter):
     """
 
     def __init__(self):
-        super(HTMLAbstractRecord, self).__init__(cls='main-section a')
+        super(HTMLAbstractRecord, self).__init__(cls='a')
 
     def format_as_child(self, abstract_record, record_key, record):
         """
@@ -437,7 +437,7 @@ class HTMLAbstractRecord(HTMLItemFormatter):
                         with self.openc('div', 'item-header'):
                             with self.open('h3'):
                                 self.link_to_main(reference)
-                        self.span(reference.description)
+                        self.description(reference.description)
 
         if abstract_record.attributes.generic_parameters:
             self.spanc('section-list', 'Generic parameters')
@@ -761,20 +761,20 @@ class HTMLFormatter(object):
         :param items: all items
         :return: html div object
         """
-        html = htmltree('div', 'card navigation')
+        html = htmltree('div', 'menu-items')
         import functools
         sorted_items = sorted(items, key=functools.cmp_to_key(HTMLFormatter.__cmp))
 
-        html.h3('Records ')
+        html.h3('Records')
         HTMLFormatter._add_items(sorted_items, html, 'Record', reverse=False, cls='r')
 
-        html.h3('Tuples ')
+        html.h3('Tuples')
         HTMLFormatter._add_items(sorted_items, html, 'Tuple', reverse=False, cls='t')
 
-        html.h3('Abstract records ')
+        html.h3('Abstract records')
         HTMLFormatter._add_items(sorted_items, html, 'Abstract', reverse=False, cls='a')
 
-        html.h3('Selections ')
+        html.h3('Selections')
         HTMLFormatter._add_items(sorted_items, html, 'Selection', reverse=False, cls='s')
 
         return html
