@@ -18,6 +18,9 @@ class TypeReference(Parsable):
     ]
 
     def parse(self, json_data={}):
+        # TODO: this should not like this
+        if str(json_data) == 'ffffffffffffffff':
+            return None
         self.reference = json_data
         return self
 

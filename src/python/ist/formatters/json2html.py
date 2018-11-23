@@ -731,10 +731,10 @@ class HTMLFormatter(object):
                 break
             # do no format certain objects
             if not item.include_in_format():
-                Logger.instance().info(' - item skipped: %s' % str(item))
+                Logger.instance().info('[SKIP] %s skipped\n' % str(item))
                 continue
 
-            Logger.instance().info(' - formatting item: %s' % str(item))
+            Logger.instance().info('[ OK ] formatting item %s\n' % str(item))
             fmt = HTMLFormatter.get_formatter_for(item)
 
             fmt.format(item)
