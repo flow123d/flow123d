@@ -542,12 +542,19 @@ protected:
 
 private:
 
+    /// Fill array node_4_loc_ and create object node_ds_ according to element distribution.
+    void distribute_nodes();
+
     /// Index set assigning to global element index the local index used in parallel vectors.
     LongIdx *row_4_el;
 	/// Index set assigning to local element index its global index.
     LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+	/// Index set assigning to local node index its global index.
+    LongIdx *node_4_loc_;
+    /// Parallel distribution of nodes. Depends on elements distribution.
+    Distribution *node_ds_;
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
         
