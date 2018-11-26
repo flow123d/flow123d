@@ -174,6 +174,12 @@ public:
     LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
+    Distribution *get_node_ds() const
+    { return node_ds_; }
+
+    LongIdx *get_node_4_loc() const
+    { return node_4_loc_; }
+
     /**
      * Returns MPI communicator of the mesh.
      */
