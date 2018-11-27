@@ -1226,6 +1226,7 @@ void Mesh::distribute_nodes() {
 
     // Construct node distribution object
     node_ds_ = new Distribution(n_nodes, PETSC_COMM_WORLD);
+    node_ds_->get_lsizes_array(); // need to initialize lsizes data member
 }
 
 //-----------------------------------------------------------------------------

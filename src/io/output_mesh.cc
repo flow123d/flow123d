@@ -232,7 +232,6 @@ void OutputMesh::create_sub_mesh()
 
     unsigned int i_proc, i_node, elm_node;
     unsigned int ele_id = 0,
-                 node_idx = 0,  // local index of nodes
                  offset = 0,    // offset of node indices of element in node vector
                  coord_id = 0,  // coordinate id in node vector
                  conn_id = 0,   // index to connectivity vector
@@ -269,8 +268,7 @@ void OutputMesh::create_sub_mesh()
 	}
 
     // set coords of nodes
-    // count of local nodes is given by node_idx
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, node_idx);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, orig_mesh_->get_node_ds()->lsize());
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     LongIdx * node_4_loc = orig_mesh_->get_node_4_loc();
     NodeAccessor<3> node;
