@@ -154,8 +154,6 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
     /// Vector hold minimal index of process that owned node. It ensures that every node is assigned to one process.
     std::shared_ptr<ElementDataCache<unsigned int>> min_node_proc_;
-    /// Vector store local node ids or (-1) if node is not owned of actual process. Size is equal to number of global nodes.
-    std::shared_ptr<ElementDataCache<unsigned int>> global_node_id_;
 
     /// Vector gets ids of nodes. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;

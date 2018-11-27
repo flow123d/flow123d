@@ -254,18 +254,6 @@ void OutputMesh::create_sub_mesh()
         }
     }
 
-    global_node_id_ = std::make_shared< ElementDataCache<unsigned int> >("global_node_id", (unsigned int)1, 1, orig_mesh_->n_nodes());
-    auto &global_node_id_vec = *( global_node_id_->get_component_data(0).get() );
-    std::fill(global_node_id_vec.begin(), global_node_id_vec.end(), Mesh::undef_idx);
-    for (unsigned int loc_el = 0; loc_el < orig_mesh_->get_el_ds()->lsize(); loc_el++) {
-        elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
-        for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
-        	i_node = elm->node_idx(elm_node);
-        	if ( (global_node_id_vec[i_node] == Mesh::undef_idx) && (min_node_proc_vec[i_node] == my_proc_id) )
-        		global_node_id_vec[i_node] = node_idx++;
-        }
-    }
-
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
     offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
@@ -284,10 +272,10 @@ void OutputMesh::create_sub_mesh()
     // count of local nodes is given by node_idx
     nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, node_idx);
     auto &node_vec = *( nodes_->get_component_data(0).get() );
+    LongIdx * node_4_loc = orig_mesh_->get_node_4_loc();
     NodeAccessor<3> node;
-    for (i_node = 0; i_node<global_node_id_vec.size(); ++i_node) {
-        if (global_node_id_vec[i_node] == Mesh::undef_idx) continue; // skip non-local nodes
-        node = orig_mesh_->node_accessor(i_node);
+    for (i_node = 0; i_node<orig_mesh_->get_node_ds()->lsize(); ++i_node) {
+        node = orig_mesh_->node_accessor(node_4_loc[i_node]);
         node_vec[coord_id++] = node->getX();
         node_vec[coord_id++] = node->getY();
         node_vec[coord_id++] = node->getZ();
@@ -305,7 +293,7 @@ void OutputMesh::create_sub_mesh()
             conn_vec[conn_id++] = elm.node_accessor(li).idx();
             //node_idx = elm.node_accessor(li).idx();
             //if (min_node_proc_vec[node_idx] == my_proc_id)
-            //    conn_vec[conn_id++] = global_node_id_vec[node_idx];
+            //    conn_vec[conn_id++] = global_node_id_vec[node_idx]; // use counter over orig_mesh_->get_node_ds()->lsize()
         }
     }
 }
