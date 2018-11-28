@@ -440,20 +440,20 @@ std::shared_ptr<OutputMeshBase> OutputMesh::make_serial_master_mesh(int rank, in
                 1, orig_mesh_->n_elements());
         std::vector<unsigned int> tmp_conn( 4*orig_mesh_->n_elements(), Mesh::undef_idx);
         auto &offsets_vec = *( serial_mesh->offsets_->get_component_data(0).get() );
-        unsigned int i_old_conn, i_new_conn, n_vals;
-        unsigned int offset = 0;
+        std::fill(offsets_vec.begin(), offsets_vec.end(), 0);
+        unsigned int i_old_conn, i_new_conn, n_vals, elm_idx;
         for (unsigned int i=0; i<orig_mesh_->n_elements(); ++i) {
             (*serial_mesh->orig_element_indices_)[i] = i;
             n_vals = 0;
             i_old_conn = 5*i;
-            i_new_conn = 4*rec_conn[i_old_conn++]; // = 4*elm.idx()
+            elm_idx = rec_conn[i_old_conn++];
+            i_new_conn = 4*elm_idx;
             while (rec_conn[i_old_conn]!=Mesh::undef_idx && n_vals<4) {
             	tmp_conn[i_new_conn++] = rec_conn[i_old_conn++];
-            	n_vals++;
+            	offsets_vec[elm_idx]++;
             }
-            offset += n_vals;
-            offsets_vec[i] = offset;
         }
+        for (unsigned int i=1; i<offsets_vec.size(); ++i) offsets_vec[i] += offsets_vec[i-1];
 
         serial_mesh->connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
                 1, offsets_vec[offsets_vec.size()-1]);
