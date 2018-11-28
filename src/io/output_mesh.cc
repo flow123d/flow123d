@@ -469,7 +469,7 @@ std::shared_ptr<OutputMeshBase> OutputMesh::make_serial_master_mesh(int rank, in
         delete[] rec_conn;
     }
 
-	ASSERT(0).error("Not implemented yet.");
+	//ASSERT(0).error("Not implemented yet.");
 
 	return serial_mesh;
 }

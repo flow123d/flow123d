@@ -129,10 +129,12 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 
 
 void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-	this->nodes_ = mesh_ptr->nodes_;
-	this->connectivity_ = mesh_ptr->connectivity_;
-	this->offsets_ = mesh_ptr->offsets_;
-	output_mesh_ = mesh_ptr;
+    if (mesh_ptr) {
+        this->nodes_ = mesh_ptr->nodes_;
+        this->connectivity_ = mesh_ptr->connectivity_;
+        this->offsets_ = mesh_ptr->offsets_;
+    }
+    output_mesh_ = mesh_ptr;
 }
 
 
