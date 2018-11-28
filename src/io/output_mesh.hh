@@ -152,8 +152,8 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
     /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
-    /// Vector hold minimal index of process that owned node. It ensures that every node is assigned to one process.
-    std::shared_ptr<ElementDataCache<unsigned int>> min_node_proc_;
+    /// Vector hold local to global mapping nodes. See usage in method \p OutputMesh::create_sub_mesh.
+    std::shared_ptr<ElementDataCache<unsigned int>> global_connections_;
 
     /// Vector gets ids of nodes. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
