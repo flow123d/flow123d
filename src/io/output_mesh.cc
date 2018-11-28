@@ -450,6 +450,7 @@ std::shared_ptr<OutputMeshBase> OutputMesh::make_serial_master_mesh(int rank, in
             i_new_conn = 4*elm_idx;
             while (rec_conn[i_old_conn]!=Mesh::undef_idx && n_vals<4) {
             	tmp_conn[i_new_conn++] = rec_conn[i_old_conn++];
+            	n_vals++;
             	offsets_vec[elm_idx]++;
             }
         }
