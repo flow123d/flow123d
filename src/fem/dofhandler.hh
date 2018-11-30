@@ -296,6 +296,7 @@ public:
     
     
     friend class DHCellAccessor;
+    friend class DHCellSide;
 
 private:
 
