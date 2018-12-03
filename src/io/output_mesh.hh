@@ -92,11 +92,19 @@ public:
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
-    /// Creates sub mesh containing only local elements and local nodes. Every node is assigned to one process only.
-    virtual void create_sub_mesh()=0;
+    /**
+     * Creates sub mesh containing only local elements and local nodes.
+     *
+     * Every node is assigned to one process only. This method is used for serial output of parallel computed problems.
+     */
+    virtual void create_serial_sub_mesh()=0;
 
-    /// Creates sub mesh containing only local elements and their appropriate nodes. Nodes in boundary of processes are assigned to all these processes.
-    virtual void create_full_sub_mesh()=0;
+    /**
+     * Creates sub mesh containing only local elements and their appropriate nodes.
+     *
+     * Nodes in boundary of processes are assigned to all these processes. This method is used for parallel VTK output.
+     */
+    virtual void create_parallel_sub_mesh()=0;
 
     /// Selects the error control field computing function of output field set according to input record.
     void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
@@ -187,10 +195,10 @@ public:
     void create_refined_mesh() override;
     
     /// Creates sub mesh.
-    void create_sub_mesh() override;
+    void create_serial_sub_mesh() override;
 
     /// Creates sub mesh.
-    void create_full_sub_mesh() override;
+    void create_parallel_sub_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_master_mesh
     std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc) override;
@@ -218,10 +226,10 @@ public:
     void create_refined_mesh() override;
     
     /// Creates sub mesh.
-    void create_sub_mesh() override;
+    void create_serial_sub_mesh() override;
 
     /// Creates sub mesh.
-    void create_full_sub_mesh() override;
+    void create_parallel_sub_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_master_mesh
     std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc) override;

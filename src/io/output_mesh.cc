@@ -224,7 +224,7 @@ bool OutputMesh::refinement_criterion()
 }
 
 
-void OutputMesh::create_sub_mesh()
+void OutputMesh::create_serial_sub_mesh()
 {
 	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
@@ -294,7 +294,7 @@ void OutputMesh::create_sub_mesh()
 
 
 
-void OutputMesh::create_full_sub_mesh()
+void OutputMesh::create_parallel_sub_mesh()
 {
 	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
@@ -798,7 +798,7 @@ void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::
     }
 }
 
-void OutputMeshDiscontinuous::create_sub_mesh()
+void OutputMeshDiscontinuous::create_serial_sub_mesh()
 {
 	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
@@ -836,7 +836,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	}
 }
 
-void OutputMeshDiscontinuous::create_full_sub_mesh()
+void OutputMeshDiscontinuous::create_parallel_sub_mesh()
 {
 	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
 
