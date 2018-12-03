@@ -26,8 +26,10 @@
 #include <armadillo>
 #include "io/element_data_cache_base.hh"      // for ElementDataCacheBase
 #include "system/exceptions.hh"               // for ExcStream, operator<<
+#include "mesh/long_idx.hh"
 class Tokenizer;
-struct MeshDataHeader;  // lines 32-32
+class Distribution;
+struct MeshDataHeader;
 
 
 /// Return type of method that checked data stored in ElementDataCache (NaN values, limits)
@@ -160,6 +162,18 @@ public:
      */
     void scale_data(double coef);
 
+    /**
+     * Method for gathering parallel data to serial cache.
+     *
+     * Gather data of individual processes to serial cache that is created only on zero process.
+     * Other processes return uninitialized shared pointer.
+     *
+     * @param distr Collective distribution
+     * @param rank Actual process
+     * @param n_proc Number of processes
+     */
+    std::shared_ptr< ElementDataCache<T> > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc);
+
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);
 
@@ -182,6 +196,10 @@ protected:
 	    scale      ///< Data is scaled.
 	};
 
+
+	/// Return MPI data type corresponding with template parameter of cache. Needs template specialization.
+    MPI_Datatype mpi_data_type();
+
 	/// Sign, if data in cache is checked and scale.
 	CheckScaleData check_scale_data_;
 
@@ -193,5 +211,6 @@ protected:
 	CacheData data_;
     
 };
+
 
 #endif /* ELEMENT_DATA_CACHE_HH_ */
