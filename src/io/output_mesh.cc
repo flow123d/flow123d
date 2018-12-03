@@ -396,7 +396,7 @@ std::shared_ptr<OutputMeshBase> OutputMesh::make_serial_master_mesh(int rank, in
 
     // create serial mesh and fill nodes_ cache (coordinates)
     if (rank==0) {
-        serial_mesh = std::make_shared<OutputMesh>(*orig_mesh_); //fill nodes_, orig_element_indices_, offsets_, connectivity_
+        serial_mesh = std::make_shared<OutputMesh>(*orig_mesh_);
         serial_mesh->nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_global_nodes);
         auto &node_vec = *( serial_mesh->nodes_->get_component_data(0).get() );
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
@@ -805,6 +805,44 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	DebugOut() << "Create output submesh containing only local elements.";
 
 	ElementAccessor<3> ele;
+	NodeAccessor<3> node;
+	LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
+	Distribution *el_ds = orig_mesh_->get_el_ds();
+    const unsigned int n_local_elements = el_ds->lsize();
+
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
+
+    unsigned int ele_id = 0,
+                 coord_id,   // coordinate id in vector
+                 li = 0;     // local node index
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+        (*orig_element_indices_)[ele_id++] = el_4_loc[loc_el];
+	}
+
+    // nodes = for every element reserve 12 values (4 nodes maximal * 3 coords)
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 4*n_local_elements);
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    std::fill(node_vec.begin(), node_vec.end(), 0.0);
+	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+		coord_id = 4*ElementDataCacheBase::N_VECTOR*loc_el;
+		ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+		for (li=0; li<ele->n_nodes(); li++)
+        {
+            node = ele.node_accessor(li);
+            node_vec[coord_id++] = node->getX();
+            node_vec[coord_id++] = node->getY();
+            node_vec[coord_id++] = node->getZ();
+        }
+	}
+}
+
+void OutputMeshDiscontinuous::create_full_sub_mesh()
+{
+	ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+
+	DebugOut() << "Create output submesh containing only local elements.";
+
+	ElementAccessor<3> ele;
 	LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
 	Distribution *el_ds = orig_mesh_->get_el_ds();
     const unsigned int n_local_elements = el_ds->lsize();
@@ -850,11 +888,6 @@ void OutputMeshDiscontinuous::create_sub_mesh()
             corner_id++;
         }
 	}
-}
-
-void OutputMeshDiscontinuous::create_full_sub_mesh()
-{
-	this->create_sub_mesh();
 }
 
 
@@ -920,8 +953,85 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 
 std::shared_ptr<OutputMeshBase> OutputMeshDiscontinuous::make_serial_master_mesh(int rank, int n_proc)
 {
-	ASSERT(0).error("Not implemented yet.");
-	std::shared_ptr<OutputMeshBase> serial_mesh;
+    std::shared_ptr<OutputMeshBase> serial_mesh; // returned mesh
+    unsigned int n_global_elems;                 // global number of nodes
 
-	/*if (rank>0)*/ return serial_mesh;
+    int rec_starts[n_proc];   // displacement of first value that is received from each process
+    int rec_counts[n_proc];   // number of values that are received from each process
+    int *rec_orig_elem_ids;   // collective values of orig_element_indices vectors
+    double *rec_nodes;        // collective values of node_ caches (coordinates)
+
+    Distribution ds(orig_element_indices_->size(), PETSC_COMM_WORLD);
+    ds.get_lsizes_array(); // need to initialize lsizes data member
+
+    // collects values of nodes_ and orig_element_indices_
+    if (rank==0) {
+    	for (int i=0; i<n_proc; ++i) {
+    		rec_starts[i] = ds.begin(i);
+    		rec_counts[i] = ds.lsize(i);
+    	}
+    	n_global_elems = ds.begin(n_proc-1) + ds.lsize(n_proc-1);
+    	rec_orig_elem_ids = new int [ n_global_elems ];
+    }
+    MPI_Gatherv( &((*orig_element_indices_)[0]), ds.lsize(), MPI_INT, rec_orig_elem_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    if (rank==0) {
+    	for (int i=0; i<n_proc; ++i) {
+    		rec_starts[i] = 4*ElementDataCacheBase::N_VECTOR*rec_starts[i];
+    		rec_counts[i] = 4*ElementDataCacheBase::N_VECTOR*rec_counts[i];
+    	}
+        rec_nodes = new double [ 4 * ElementDataCacheBase::N_VECTOR * n_global_elems ];
+    }
+    MPI_Gatherv( &node_vec[0], node_vec.size(), MPI_DOUBLE, rec_nodes, rec_counts, rec_starts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+    // create and fill serial output mesh
+    if (rank==0) {
+        serial_mesh = std::make_shared<OutputMesh>(*orig_mesh_);
+        serial_mesh->orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_global_elems);
+        std::vector<double> tmp_node(4*ElementDataCacheBase::N_VECTOR*n_global_elems, 0.0);
+        unsigned int n_global_nodes = 0; // global number of discontinuous nodes
+        unsigned int elm_idx, node_i_old, node_i_new, li;
+        ElementAccessor<3> elm;
+
+        // sort node data to correct order by global element indices, fill orig_element_indices_ vector
+        for (unsigned int i=0; i<n_global_elems; ++i) {
+        	elm_idx = rec_orig_elem_ids[i];
+        	(*serial_mesh->orig_element_indices_)[elm_idx] = elm_idx;
+        	node_i_old = 4 * ElementDataCacheBase::N_VECTOR * i;
+        	node_i_new = 4 * ElementDataCacheBase::N_VECTOR * elm_idx;
+            elm = orig_mesh_->element_accessor(elm_idx);
+            n_global_nodes += (elm.dim()+1);
+        	for (li=0; li<ElementDataCacheBase::N_VECTOR*(elm.dim()+1); li++)
+        		tmp_node[node_i_new+li] = rec_nodes[node_i_old+li];
+        }
+
+        // create and fill connectivity cache
+        serial_mesh->connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+                1, n_global_nodes);
+        auto &conn_vec = *( serial_mesh->connectivity_->get_component_data(0).get() );
+        for (unsigned int i=0; i<n_global_nodes; ++i) conn_vec[i] = i;
+
+        // create and fill offsets and nodes cache
+        serial_mesh->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR,
+                1, n_global_elems);
+        serial_mesh->nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_global_nodes);
+        unsigned int offset = 0;
+        auto &offsets_vec = *( serial_mesh->offsets_->get_component_data(0).get() );
+        auto &node_vec = *( serial_mesh->nodes_->get_component_data(0).get() );
+        node_i_new = 0;
+        for (unsigned int i=0; i<n_global_elems; ++i) {
+            node_i_old = 4 * ElementDataCacheBase::N_VECTOR * i;
+            elm = orig_mesh_->element_accessor(i);
+            for (li=0; li<ElementDataCacheBase::N_VECTOR*(elm.dim()+1); li++)
+            	node_vec[node_i_new++] = tmp_node[node_i_old+li];
+            offset += (elm.dim()+1);
+            offsets_vec[i] = offset;
+        }
+
+        delete[] rec_orig_elem_ids;
+        delete[] rec_nodes;
+    }
+    ASSERT(0).error("Not implemented yet.");
+
+    return serial_mesh;
 }
