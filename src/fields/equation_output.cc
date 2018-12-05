@@ -257,17 +257,16 @@ void EquationOutput::make_output_mesh(bool parallel)
 	}
 	if ( stream_->n_proc() == 1) { // serial case
 		output_mesh_->create_mesh();
-		stream_->set_output_data_caches(output_mesh_);
 	}
 	else {
 		if (parallel) {
 			output_mesh_->create_parallel_sub_mesh();
-			stream_->set_output_data_caches(output_mesh_);
 		} else {
 			output_mesh_->create_serial_sub_mesh();
-			stream_->set_output_data_caches(output_mesh_->make_serial_master_mesh(stream_->rank(), stream_->n_proc()));
+			output_mesh_->make_serial_master_mesh(stream_->rank(), stream_->n_proc());
 		}
 	}
+	stream_->set_output_data_caches(output_mesh_);
 }
 
 

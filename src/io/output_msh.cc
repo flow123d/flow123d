@@ -288,15 +288,37 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(void)
 {
+    /* for serial output call gather of all data sets */
+    if ( (this->n_proc_ > 1) && (!parallel_) ) {
+    	auto &node_data_map = this->output_data_vec_[NODE_DATA];
+    	for(unsigned int i=0; i<node_data_map.size(); ++i) {
+    	    auto serial_data = node_data_map[i]->gather(output_mesh_->orig_mesh_->get_node_ds(), output_mesh_->orig_mesh_->get_node_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) node_data_map[i] = serial_data;
+    	}
+    	auto &corner_data_map = this->output_data_vec_[CORNER_DATA];
+    	for(unsigned int i=0; i<corner_data_map.size(); ++i) {
+    	    auto serial_data = corner_data_map[i]->gather(output_mesh_->orig_mesh_->get_node_ds(), output_mesh_->orig_mesh_->get_node_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) corner_data_map[i] = serial_data;
+    	}
+    	auto &elm_data_map = this->output_data_vec_[ELEM_DATA];
+    	for(unsigned int i=0; i<elm_data_map.size(); ++i) {
+    	    auto serial_data = elm_data_map[i]->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) elm_data_map[i] = serial_data;
+    	}
+    }
+
+    /* Output of serial format is implemented only in the first process */
+    if (this->rank_ != 0) {
+        return 0;
+    }
+
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
-        if(this->rank_ == 0) {
-            this->fix_main_file_extension(".msh");
-            try {
-                this->_base_filename.open_stream( this->_base_file );
-                this->set_stream_precision(this->_base_file);
-            } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
-        }
+        this->fix_main_file_extension(".msh");
+        try {
+            this->_base_filename.open_stream( this->_base_file );
+            this->set_stream_precision(this->_base_file);
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         this->write_head();
         this->header_written = true;
@@ -365,7 +387,13 @@ void OutputMSH::add_dummy_fields()
 void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
     OutputTime::set_output_data_caches(mesh_ptr);
 
-    if (mesh_ptr) {
+    if (mesh_ptr->get_serial_master_mesh()) {
+        mesh_ptr->get_serial_master_mesh()->create_id_caches();
+        this->node_ids_ = mesh_ptr->get_serial_master_mesh()->node_ids_;
+        this->elem_ids_ = mesh_ptr->get_serial_master_mesh()->elem_ids_;
+        this->region_ids_ = mesh_ptr->get_serial_master_mesh()->region_ids_;
+        this->partitions_ = mesh_ptr->get_serial_master_mesh()->partitions_;
+    } else if (this->n_proc_ == 1) {
         mesh_ptr->create_id_caches();
         this->node_ids_ = mesh_ptr->node_ids_;
         this->elem_ids_ = mesh_ptr->elem_ids_;

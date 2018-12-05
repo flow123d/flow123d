@@ -129,7 +129,11 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 
 
 void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-    if (mesh_ptr) {
+    if (mesh_ptr->get_serial_master_mesh()) {
+        this->nodes_ = mesh_ptr->get_serial_master_mesh()->nodes_;
+        this->connectivity_ = mesh_ptr->get_serial_master_mesh()->connectivity_;
+        this->offsets_ = mesh_ptr->get_serial_master_mesh()->offsets_;
+    } else {
         this->nodes_ = mesh_ptr->nodes_;
         this->connectivity_ = mesh_ptr->connectivity_;
         this->offsets_ = mesh_ptr->offsets_;
@@ -204,27 +208,26 @@ void OutputTime::write_time_frame()
     if (observe_)
         observe_->output_time_frame(time);
 
-    if (this->rank_ == 0 || this->parallel_) {
+    // Write data to output stream, when data registered to this output
+    // streams were changed
+    if(write_time < time) {
 
-    	// Write data to output stream, when data registered to this output
-		// streams were changed
-		if(write_time < time) {
-
-			LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
-			write_data();
-			// Remember the last time of writing to output stream
-			write_time = time;
-			current_step++;
+    	if (this->rank_ == 0 || this->parallel_)
+    	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
+        write_data();
+        // Remember the last time of writing to output stream
+        write_time = time;
+        current_step++;
             
-			// invalidate output data caches after the time frame written
-			// TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
-			/*output_mesh_.reset();
-			this->nodes_.reset();
-			this->connectivity_.reset();
-			this->offsets_.reset();*/
-		} else {
-			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
-		}
+        // invalidate output data caches after the time frame written
+        // TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
+        /*output_mesh_.reset();
+        this->nodes_.reset();
+        this->connectivity_.reset();
+        this->offsets_.reset();*/
+    } else {
+    	if (this->rank_ == 0 || this->parallel_)
+    	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
     }
     clear_data();
 }

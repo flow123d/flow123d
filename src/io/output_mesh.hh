@@ -121,7 +121,11 @@ public:
 	void create_id_caches();
 
 	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
-	virtual std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc)=0;
+	virtual void make_serial_master_mesh(int rank, int n_proc)=0;
+
+	inline std::shared_ptr<OutputMeshBase> get_serial_master_mesh() const {
+		return serial_mesh_;
+	};
 
 protected:
 	/**
@@ -160,6 +164,8 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
     /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
+    /// Vector of global connectivity for communication between parallel processes. Allow gathering in make_serial_master_mesh.
+    std::shared_ptr<ElementDataCache<unsigned int>> global_conn_;
 
     /// Vector gets ids of nodes. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
@@ -169,6 +175,9 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> region_ids_;
     /// Vector gets partitions of elements. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<int>> partitions_;
+
+    /// Serial (collective) OutputMesh, is constructed on zero process and allow to produce serial output of parallel computation
+    std::shared_ptr<OutputMeshBase> serial_mesh_;
 
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
@@ -201,7 +210,7 @@ public:
     void create_parallel_sub_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_master_mesh
-    std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc) override;
+    void make_serial_master_mesh(int rank, int n_proc) override;
 
 protected:
     bool refinement_criterion();
@@ -232,7 +241,7 @@ public:
     void create_parallel_sub_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_master_mesh
-    std::shared_ptr<OutputMeshBase> make_serial_master_mesh(int rank, int n_proc) override;
+    void make_serial_master_mesh(int rank, int n_proc) override;
 
 protected:
     ///Auxiliary structure defining element of refined output mesh.

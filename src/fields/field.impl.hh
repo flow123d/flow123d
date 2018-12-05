@@ -594,10 +594,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
 
-    if ( !output_mesh ) {
-        // Output mesh is not constructed for serial output and rank > 0
-        return;
-    }
+    ASSERT(output_mesh);
 
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);

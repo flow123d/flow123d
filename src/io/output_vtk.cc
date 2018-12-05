@@ -19,6 +19,7 @@
 #include "element_data_cache_base.hh"
 #include "element_data_cache.hh"
 #include "output_mesh.hh"
+#include "mesh/mesh.h"
 
 #include <limits.h>
 #include "input/factory.hh"
@@ -133,6 +134,30 @@ string pvd_dataset_line(double step, int rank, string file) {
 int OutputVTK::write_data(void)
 {
     ASSERT_PTR(this->nodes_).error();
+
+    /* for serial output call gather of all data sets */
+    if ( (this->n_proc_ > 1) && (!parallel_) ) {
+    	auto &node_data_map = this->output_data_vec_[NODE_DATA];
+    	for(unsigned int i=0; i<node_data_map.size(); ++i) {
+    	    auto serial_data = node_data_map[i]->gather(output_mesh_->orig_mesh_->get_node_ds(), output_mesh_->orig_mesh_->get_node_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) node_data_map[i] = serial_data;
+    	}
+    	auto &corner_data_map = this->output_data_vec_[CORNER_DATA];
+    	for(unsigned int i=0; i<corner_data_map.size(); ++i) {
+    	    auto serial_data = corner_data_map[i]->gather(output_mesh_->orig_mesh_->get_node_ds(), output_mesh_->orig_mesh_->get_node_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) corner_data_map[i] = serial_data;
+    	}
+    	auto &elm_data_map = this->output_data_vec_[ELEM_DATA];
+    	for(unsigned int i=0; i<elm_data_map.size(); ++i) {
+    	    auto serial_data = elm_data_map[i]->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) elm_data_map[i] = serial_data;
+    	}
+    	auto &native_data_map = this->output_data_vec_[NATIVE_DATA];
+    	for(unsigned int i=0; i<native_data_map.size(); ++i) {
+    	    auto serial_data = native_data_map[i]->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) native_data_map[i] = serial_data;
+    	}
+    }
 
     /* Output of serial format is implemented only in the first process */
     if ( (this->rank_ != 0) && (!parallel_) ) {
