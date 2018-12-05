@@ -24,8 +24,10 @@
 #include <string>
 #include <istream>
 #include "system/system.hh"
+#include "mesh/long_idx.hh"
 
 class Tokenizer;
+class Distribution;
 
 
 class ElementDataCacheBase {
@@ -155,6 +157,11 @@ public:
     inline void set_dof_handler_hash(std::size_t hash) {
     	this->dof_handler_hash_ = hash;
     }
+
+    /**
+     * Method for gathering parallel data to serial cache.
+     */
+    virtual std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc)=0;
 
 protected:
     template <class T>

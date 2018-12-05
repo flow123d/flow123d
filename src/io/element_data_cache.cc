@@ -320,7 +320,7 @@ void ElementDataCache<T>::scale_data(double coef) {
 
 
 template <typename T>
-std::shared_ptr< ElementDataCache<T> > ElementDataCache<T>::gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) {
+std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) {
     std::shared_ptr< ElementDataCache<T> > gather_cache;
     unsigned int n_global_data;   // global number of data
     int rec_starts[n_proc];       // displacement of first value that is received from each process
@@ -350,7 +350,7 @@ std::shared_ptr< ElementDataCache<T> > ElementDataCache<T>::gather(Distribution 
 
     // create and fill serial cache
     if (rank==0) {
-        gather_cache = std::make_shared<ElementDataCache<T>>("", (unsigned int)this->n_elem(), 1, n_global_data);
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_elem(), 1, n_global_data);
         auto &gather_vec = *( gather_cache->get_component_data(0).get() );
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
         for (unsigned int i=0; i<n_global_data; ++i) {

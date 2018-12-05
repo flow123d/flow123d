@@ -172,7 +172,7 @@ public:
      * @param rank Actual process
      * @param n_proc Number of processes
      */
-    std::shared_ptr< ElementDataCache<T> > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc);
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) override;
 
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);

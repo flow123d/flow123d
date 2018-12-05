@@ -74,6 +74,9 @@ public:
 
     void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override
     {}
+
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) override
+    {}
 };
 
 
