@@ -45,15 +45,15 @@ public:
 
     /// Return local index to element (index of DOF handler).
     inline unsigned int local_idx() const {
-    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()).error("Method 'local_idx()' can't be used for ghost cells!\n");
+    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()+dof_handler_->ghost_4_loc.size()).error("Local element index is out of range!\n");
         return loc_ele_idx_;
     }
 
     /// Return serial idx to element of loc_ele_idx_.
     inline unsigned int elm_idx() const {
     	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
-        if (loc_ele_idx_<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
-        else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
+        if (local_idx()<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
+        return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
     }
 
     /// Return ElementAccessor to element of loc_ele_idx_.
@@ -118,12 +118,11 @@ private:
 
 inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) const
 {
-  unsigned int elem_idx = this->elm_idx();
-  ASSERT_LT( dof_handler_->global_to_local_el_idx_.at(elem_idx)+1, dof_handler_->cell_starts.size() )(dof_handler_->global_to_local_el_idx_.at(elem_idx))(dof_handler_->cell_starts.size());
+  ASSERT_LT( loc_ele_idx_+1, dof_handler_->cell_starts.size() )(loc_ele_idx_)(dof_handler_->cell_starts.size());
   unsigned int ndofs = 0;
-  ndofs = dof_handler_->cell_starts[dof_handler_->global_to_local_el_idx_.at(elem_idx)+1]-dof_handler_->cell_starts[dof_handler_->global_to_local_el_idx_.at(elem_idx)];
+  ndofs = dof_handler_->cell_starts[loc_ele_idx_+1]-dof_handler_->cell_starts[loc_ele_idx_];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[dof_handler_->global_to_local_el_idx_.at(elem_idx)]+k];
+    indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[loc_ele_idx_]+k];
 
   return ndofs;
 }
@@ -131,11 +130,10 @@ inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) c
 
 inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &indices) const
 {
-  unsigned int elem_idx = this->elm_idx();
   unsigned int ndofs = 0;
-  ndofs = dof_handler_->cell_starts[dof_handler_->global_to_local_el_idx_.at(elem_idx)+1]-dof_handler_->cell_starts[dof_handler_->global_to_local_el_idx_.at(elem_idx)];
+  ndofs = dof_handler_->cell_starts[loc_ele_idx_+1]-dof_handler_->cell_starts[loc_ele_idx_];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_handler_->cell_starts[dof_handler_->global_to_local_el_idx_.at(elem_idx)]+k;
+    indices[k] = dof_handler_->cell_starts[loc_ele_idx_]+k;
 
   return ndofs;
 }
