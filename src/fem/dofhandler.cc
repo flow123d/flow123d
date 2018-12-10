@@ -606,10 +606,9 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 
 
 DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
-	// TODO: We need replace ASSERT with if condition and return accessor of own element.
-	// In else case we create and return accessor of ghost element.
-	ASSERT( el_is_local(elm_idx) )(elm_idx);
-	return DHCellAccessor(this, mesh_->get_row_4_el()[elm_idx]-mesh_->get_el_ds()->begin());
+	auto map_it = global_to_local_el_idx_.find((LongIdx)elm_idx); // find in global to local map
+	ASSERT( map_it != global_to_local_el_idx_.end() )(elm_idx).error("DH accessor can be create only for own or ghost elements!\n");
+	return DHCellAccessor(this, map_it->second);
 }
 
 
