@@ -45,8 +45,6 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 	  is_parallel_(true),
 	  dh_seq_(nullptr),
 	  scatter_to_seq_(nullptr),
-	  row_4_el(nullptr),
-	  el_4_loc(nullptr),
 	  el_ds_(nullptr)
 {
 	if (make_elem_part) make_elem_partitioning();
@@ -398,7 +396,7 @@ void DOFHandlerMultiDim::create_sequential()
     MPI_MAX,
     MPI_COMM_WORLD);
 
-  for (unsigned int i=0; i<mesh_->n_elements(); i++) dh_seq_->global_to_local_el_idx_[i] = row_4_el[i];
+  for (unsigned int i=0; i<mesh_->n_elements(); i++) dh_seq_->global_to_local_el_idx_[i] = mesh_->get_row_4_el()[i];
   
   // Auxiliary vectors cell_starts_loc and dof_indices_loc contain
   // only local element data (without ghost elements).
@@ -409,7 +407,7 @@ void DOFHandlerMultiDim::create_sequential()
   // construct cell_starts_loc
   for (auto cell : this->own_range())
   {
-    cell_starts_loc[row_4_el[cell.elm_idx()]+1] = cell.n_dofs();
+    cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]+1] = cell.n_dofs();
   }
   for (unsigned int i=0; i<mesh_->n_elements(); ++i)
     cell_starts_loc[i+1] += cell_starts_loc[i];
@@ -419,7 +417,7 @@ void DOFHandlerMultiDim::create_sequential()
   for (auto cell : this->own_range())
   {
     for (unsigned int idof=0; idof<cell.n_dofs(); idof++)
-        dof_indices_loc[cell_starts_loc[row_4_el[cell.elm_idx()]]+idof] = dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof];
+        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof];
   }
   
   Distribution distr(dof_indices_loc.size(), PETSC_COMM_WORLD);
@@ -493,8 +491,6 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 {
 	// create local arrays of elements
     el_ds_ = mesh_->get_el_ds();
-    el_4_loc = mesh_->get_el_4_loc();
-    row_4_el = mesh_->get_row_4_el();
 
     // create local array of edges
     for (unsigned int iedg=0; iedg<mesh_->n_edges(); iedg++)
@@ -528,13 +524,10 @@ void DOFHandlerMultiDim::make_elem_partitioning()
       for (unsigned int nid=0; nid<cell.elm()->n_nodes(); nid++)
         node_is_local[mesh_->tree->objects(cell.dim())[obj_idx].nodes[nid]] = true;
     }
-    for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
-      if (node_is_local[nid])
-        node_4_loc.push_back(nid);
     
     // init global to local element map with locally owned elements (later add ghost elements)
     for ( unsigned int iel = 0; iel < el_ds_->lsize(); iel++ )
-        global_to_local_el_idx_[el_4_loc[iel]] = iel;
+        global_to_local_el_idx_[mesh_->get_el_4_loc()[iel]] = iel;
     
     // create array of local ghost cells
     for ( auto cell : mesh_->elements_range() )
@@ -582,7 +575,7 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 
 bool DOFHandlerMultiDim::el_is_local(int index) const
 {
-	return el_ds_->is_local(row_4_el[index]);
+	return el_ds_->is_local(mesh_->get_row_4_el()[index]);
 }
 
 
@@ -616,7 +609,7 @@ DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_i
 	// TODO: We need replace ASSERT with if condition and return accessor of own element.
 	// In else case we create and return accessor of ghost element.
 	ASSERT( el_is_local(elm_idx) )(elm_idx);
-	return DHCellAccessor(this, row_4_el[elm_idx]-mesh_->get_el_ds()->begin());
+	return DHCellAccessor(this, mesh_->get_row_4_el()[elm_idx]-mesh_->get_el_ds()->begin());
 }
 
 
