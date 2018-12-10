@@ -180,6 +180,9 @@ public:
     LongIdx *get_node_4_loc() const
     { return node_4_loc_; }
 
+    unsigned int n_local_nodes() const
+	{ return n_local_nodes_; }
+
     /**
      * Returns MPI communicator of the mesh.
      */
@@ -561,6 +564,8 @@ private:
     LongIdx *node_4_loc_;
     /// Parallel distribution of nodes. Depends on elements distribution.
     Distribution *node_ds_;
+    /// Hold number of local nodes (own + ghost), value is equal with size of node_4_loc array.
+    unsigned int n_local_nodes_;
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
         
