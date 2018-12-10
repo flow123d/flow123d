@@ -100,13 +100,13 @@ std::shared_ptr<VecScatter> DOFHandlerMultiDim::sequential_scatter()
 void DOFHandlerMultiDim::init_cell_starts()
 {
     // get number of dofs per element and then set up cell_starts
-    cell_starts = std::vector<LongIdx>(global_to_local_el_idx_.size()+1, 0);
+    cell_starts = std::vector<LongIdx>(el_ds_->lsize()+ghost_4_loc.size()+1, 0);
     for (auto cell : this->local_range())
     {
-        cell_starts[global_to_local_el_idx_[cell.elm_idx()]+1] = cell.n_dofs();
+        cell_starts[cell.local_idx()+1] = cell.n_dofs();
         max_elem_dofs_ = max( (int)max_elem_dofs_, (int)cell.n_dofs() );
     }
-    for (unsigned int i=0; i<global_to_local_el_idx_.size(); ++i)
+    for (unsigned int i=0; i<cell_starts.size()-1; ++i)
         cell_starts[i+1] += cell_starts[i];
 }
 
@@ -188,13 +188,20 @@ void DOFHandlerMultiDim::send_ghost_dofs(unsigned int proc)
     
     // send numbers of dofs on required elements
     vector<unsigned int> n_dofs;
-    for (LongIdx el : elems) n_dofs.push_back(cell_starts[global_to_local_el_idx_[el]+1] - cell_starts[global_to_local_el_idx_[el]]);
+    for (LongIdx el : elems)
+    {
+        auto cell = this->cell_accessor_from_element(el);
+        n_dofs.push_back(cell_starts[cell.local_idx()+1] - cell_starts[cell.local_idx()]);
+    }
     MPI_Send(&(n_dofs[0]), n_elems, MPI_UNSIGNED, proc, 2, MPI_COMM_WORLD);
     
     // send dofs on the required elements
     vector<LongIdx> dofs;
     for (LongIdx el : elems)
-        dofs.insert(dofs.end(), dof_indices.begin()+cell_starts[global_to_local_el_idx_[el]], dof_indices.begin()+cell_starts[global_to_local_el_idx_[el]+1]);
+    {
+        auto cell = this->cell_accessor_from_element(el);
+        dofs.insert(dofs.end(), dof_indices.begin()+cell_starts[cell.local_idx()], dof_indices.begin()+cell_starts[cell.local_idx()+1]);
+    }
     MPI_Send(&(dofs[0]), dofs.size(), MPI_LONG_IDX, proc, 3, MPI_COMM_WORLD);
 }
 
@@ -211,10 +218,10 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
     for (unsigned int gid=0; gid<ghost_proc_el[proc].size(); gid++)
     {
         auto cell = mesh_->element_accessor(ghost_proc_el[proc][gid]);
-        //auto dh_cell = this->cell_accessor_from_element( cell.idx() );
+        auto dh_cell = this->cell_accessor_from_element( cell.idx() );
         
         for (unsigned dof=0; dof<n_dofs(cell); dof++)
-            dof_indices[cell_starts[global_to_local_el_idx_[cell.idx()]]+dof] = dofs[dof_offset+dof];
+            dof_indices[cell_starts[dh_cell.local_idx()]+dof] = dofs[dof_offset+dof];
         
         vector<unsigned int> loc_node_dof_count(cell->n_nodes(), 0);
         for (unsigned int idof = 0; idof<n_dofs(cell); ++idof)
@@ -249,10 +256,10 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             if (cell.cell_dof(idof).dim == 0)
             {
                 unsigned int dof_nface_idx = cell.cell_dof(idof).n_face_idx;
-                if (dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof] == INVALID_DOF)
+                if (dof_indices[cell_starts[cell.local_idx()]+idof] == INVALID_DOF)
                 {   // update nodal dof
                     unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[dof_nface_idx];
-                    dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof] = node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]];
+                    dof_indices[cell_starts[cell.local_idx()]+idof] = node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]];
                 }
                 loc_node_dof_count[dof_nface_idx]++;
             }
@@ -311,14 +318,14 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
                 update_cells[cell.local_idx()] = true;
                 break;
             }
-            dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof] = node_dofs[node_dof_idx];
+            dof_indices[cell_starts[cell.local_idx()]+idof] = node_dofs[node_dof_idx];
             loc_node_dof_count[dof_nface_idx]++;
         }
         else if (dof_dim == cell.dim())
         {
             // add dofs owned only by the element
             local_to_global_dof_idx_.push_back(next_free_dof);
-            dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof] = next_free_dof++;
+            dof_indices[cell_starts[cell.local_idx()]+idof] = next_free_dof++;
         }
         else
             ASSERT(false).error("Unsupported dof n_face.");
@@ -417,7 +424,7 @@ void DOFHandlerMultiDim::create_sequential()
   for (auto cell : this->own_range())
   {
     for (unsigned int idof=0; idof<cell.n_dofs(); idof++)
-        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = dof_indices[cell_starts[global_to_local_el_idx_[cell.elm_idx()]]+idof];
+        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = dof_indices[cell_starts[cell.local_idx()]+idof];
   }
   
   Distribution distr(dof_indices_loc.size(), PETSC_COMM_WORLD);
