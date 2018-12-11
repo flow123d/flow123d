@@ -239,14 +239,15 @@ void OutputMesh::create_serial_sub_mesh()
     ElementAccessor<3> elm;
     LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
     const unsigned int n_local_elements = orig_mesh_->get_el_ds()->lsize();
+    std::vector<unsigned int> local_nodes_map(orig_mesh_->n_nodes(), Mesh::undef_idx); // map global to local ids of nodes
+    for (unsigned int i=0; i<orig_mesh_->n_local_nodes(); ++i) local_nodes_map[ orig_mesh_->get_node_4_loc()[i] ] = i;
 
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
     offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
 
-    std::vector<unsigned int> local_nodes_map(orig_mesh_->n_nodes(), Mesh::undef_idx); // map local ids of nodes (see next inner loop)
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
-		elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+        elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
         // increase offset by number of nodes of the simplicial element
         offset += elm->dim() + 1;
         offset_vec[ele_id] = offset;
@@ -260,27 +261,31 @@ void OutputMesh::create_serial_sub_mesh()
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
         elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
         for (li=0; li<elm->n_nodes(); li++) {
-        	connectivity_vec[conn_id++] = elm.node_accessor(li).idx();
+        	ASSERT_DBG(local_nodes_map[ elm.node_accessor(li).idx() ] != Mesh::undef_idx)(elm.node_accessor(li).idx()).error("Undefined global to local node index!");
+        	connectivity_vec[conn_id++] = local_nodes_map[ elm.node_accessor(li).idx() ];
         }
     }
 
     // set coords of nodes
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, orig_mesh_->get_node_ds()->lsize());
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, orig_mesh_->n_local_nodes());
     auto &node_vec = *( nodes_->get_component_data(0).get() );
-    LongIdx * node_4_loc = orig_mesh_->get_node_4_loc();
     NodeAccessor<3> node;
-    for (i_node = 0; i_node<orig_mesh_->get_node_ds()->lsize(); ++i_node) {
-        node = orig_mesh_->node_accessor(node_4_loc[i_node]);
+    for(unsigned int i_node=0; i_node<local_nodes_map.size(); ++i_node) {
+        if (local_nodes_map[i_node]==Mesh::undef_idx) continue; // skip element if it is not local
+        node = orig_mesh_->node_accessor(i_node);
+        coord_id = 3*local_nodes_map[i_node]; // id of first coordinates in node_vec
         node_vec[coord_id++] = node->getX();
         node_vec[coord_id++] = node->getY();
-        node_vec[coord_id++] = node->getZ();
+        node_vec[coord_id] = node->getZ();
     }
 
+    /* TEMPORARY PART will be removed */
     // fill map of global node ids to local ids
     std::vector<unsigned int> global_to_local_node_ids(orig_mesh_->n_nodes(), Mesh::undef_idx);
+    LongIdx * node_4_loc = orig_mesh_->get_node_4_loc();
     unsigned int local_id=0;
     for (unsigned int i=0; i<orig_mesh_->get_node_ds()->lsize(); ++i)
-    	global_to_local_node_ids[ node_4_loc[i] ] = local_id++;
+        global_to_local_node_ids[ node_4_loc[i] ] = local_id++;
 
     /* Set global connectivity cache.
      * For every local element store 5 values. First value is global element idx followed by local node indexes. If element has
@@ -291,13 +296,13 @@ void OutputMesh::create_serial_sub_mesh()
     auto &conn_vec = *( global_conn_->get_component_data(0).get() );
     std::fill(conn_vec.begin(), conn_vec.end(), Mesh::undef_idx);
     for (elm : orig_mesh_->elements_range()) {
-    	elm_idx = elm.idx();
+        elm_idx = elm.idx();
         conn_id = 5*elm_idx;
         conn_vec[conn_id++] = elm_idx;
         for (li=0; li<elm->n_nodes(); li++) {
-        	if (global_to_local_node_ids[ elm.node_accessor(li).idx() ]==Mesh::undef_idx) conn_vec[conn_id] = Mesh::undef_idx;
-        	else conn_vec[conn_id] = node_4_loc[ global_to_local_node_ids[elm.node_accessor(li).idx()] ];
-        	conn_id++;
+            if (global_to_local_node_ids[ elm.node_accessor(li).idx() ]==Mesh::undef_idx) conn_vec[conn_id] = Mesh::undef_idx;
+            else conn_vec[conn_id] = node_4_loc[ global_to_local_node_ids[elm.node_accessor(li).idx()] ];
+            conn_id++;
         }
     }
 }
