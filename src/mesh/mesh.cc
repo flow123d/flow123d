@@ -1215,7 +1215,7 @@ void Mesh::distribute_nodes() {
                 if (i_proc==my_proc) n_own_nodes++;
                 else if (min_node_proc[i_node]==my_proc) { n_own_nodes--; n_ghost_nodes++; ghost_node_flag[i_node] = true; }
                 min_node_proc[i_node] = i_proc;
-            } else if ( !ghost_node_flag[i_node] && (i_proc==my_proc) ) {
+            } else if ( !ghost_node_flag[i_node] && (i_proc==my_proc) && (min_node_proc[i_node]!=my_proc) ) {
                 n_ghost_nodes++;
                 ghost_node_flag[i_node] = true;
             }
