@@ -93,18 +93,9 @@ public:
     virtual void create_refined_mesh()=0;
 
     /**
-     * Creates sub mesh containing only local elements and local nodes.
-     *
-     * Every node is assigned to one process only. This method is used for serial output of parallel computed problems.
+     * Creates sub mesh containing only local part of original (computation) mesh.
      */
-    virtual void create_serial_sub_mesh()=0;
-
-    /**
-     * Creates sub mesh containing only local elements and their appropriate nodes.
-     *
-     * Nodes in boundary of processes are assigned to all these processes. This method is used for parallel VTK output.
-     */
-    virtual void create_parallel_sub_mesh()=0;
+    virtual void create_sub_mesh()=0;
 
     /// Selects the error control field computing function of output field set according to input record.
     void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
@@ -164,8 +155,6 @@ protected:
     std::shared_ptr<ElementDataCache<unsigned int>> connectivity_;
     /// Vector of offsets of node indices of elements. Maps elements to their nodes in connectivity_.
     std::shared_ptr<ElementDataCache<unsigned int>> offsets_;
-    /// Vector of global connectivity for communication between parallel processes. Allow gathering in make_serial_master_mesh.
-    std::shared_ptr<ElementDataCache<unsigned int>> global_conn_;
 
     /// Vector gets ids of nodes. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<unsigned int>> node_ids_;
@@ -204,10 +193,7 @@ public:
     void create_refined_mesh() override;
     
     /// Creates sub mesh.
-    void create_serial_sub_mesh() override;
-
-    /// Creates sub mesh.
-    void create_parallel_sub_mesh() override;
+    void create_sub_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_master_mesh
     void make_serial_master_mesh(int rank, int n_proc) override;
@@ -235,10 +221,7 @@ public:
     void create_refined_mesh() override;
     
     /// Creates sub mesh.
-    void create_serial_sub_mesh() override;
-
-    /// Creates sub mesh.
-    void create_parallel_sub_mesh() override;
+    void create_sub_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_master_mesh
     void make_serial_master_mesh(int rank, int n_proc) override;

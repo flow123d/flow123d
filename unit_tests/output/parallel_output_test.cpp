@@ -151,7 +151,7 @@ TEST_F(TestParallelOutput, continuous_mesh)
 
     /* Construct OutputMesh */
     std::shared_ptr<OutputMeshBase> output_mesh = std::make_shared<OutputMesh>(*my_mesh);
-    output_mesh->create_serial_sub_mesh();
+    output_mesh->create_sub_mesh();
     output_mesh->make_serial_master_mesh(rank, my_mesh->get_el_ds()->np());
     stream->set_output_data_caches(output_mesh);
 

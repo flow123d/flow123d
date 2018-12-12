@@ -259,10 +259,8 @@ void EquationOutput::make_output_mesh(bool parallel)
 		output_mesh_->create_mesh();
 	}
 	else {
-		if (parallel) {
-			output_mesh_->create_parallel_sub_mesh();
-		} else {
-			output_mesh_->create_serial_sub_mesh();
+		output_mesh_->create_sub_mesh();
+		if (!parallel) {
 			output_mesh_->make_serial_master_mesh(stream_->rank(), stream_->n_proc());
 		}
 	}
