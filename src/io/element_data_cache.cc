@@ -59,10 +59,12 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
             this->n_elem_ = N_SCALAR;
         } else {
             if (n_rows > 1) {
-                if (n_rows > 3) {
+                if (n_rows > 4) {
                     xprintf(PrgErr,
                             "Do not support output of vectors with fixed size >3. Field: %s\n",
                             this->field_input_name_.c_str());
+                } else if (n_rows == 4) { //special case of output connectivity cache
+                    this->n_elem_ = N_CONNECT;
                 } else {
                     this->n_elem_ = N_VECTOR;
                 }

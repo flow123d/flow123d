@@ -39,6 +39,7 @@ public:
 	enum NumCompValueType {
 		N_SCALAR = 1,
 		N_VECTOR = 3,
+		N_CONNECT = 4, ///< Special case for creating output connectivity cache
 		N_TENSOR = 9
 	};
 
