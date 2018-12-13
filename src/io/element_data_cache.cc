@@ -370,6 +370,63 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
 }
 
 
+template <typename T>
+std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size) {
+    std::shared_ptr< ElementDataCache<T> > gather_cache;
+    unsigned int n_global_data;   // global number of data
+    int rec_starts[n_proc];       // displacement of first value that is received from each process
+    int rec_counts[n_proc];       // number of values that are received from each process
+    int *rec_indices_ids;         // collective values of local to global indexes map of data
+    T *rec_data;                  // collective values of data
+
+    // collects values of data vectors and local to global indexes map on each process
+    if (rank==0) {
+        for (int i=0; i<n_proc; ++i) {
+            rec_starts[i] = distr->begin(i);
+            rec_counts[i] = distr->lsize(i);
+        }
+        n_global_data = distr->begin(n_proc-1) + distr->lsize(n_proc-1);
+        rec_indices_ids = new int [ n_global_data ];
+    }
+    MPI_Gatherv( local_to_global, distr->lsize(), MPI_INT, rec_indices_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
+    if (rank==0) {
+        for (int i=0; i<n_proc; ++i) {
+            rec_starts[i] = this->n_elem()*rec_starts[i];
+            rec_counts[i] = this->n_elem()*rec_counts[i];
+        }
+        rec_data = new T [ this->n_elem() * n_global_data ];
+    }
+    auto &local_cache_vec = *( this->get_component_data(0).get() );
+    MPI_Gatherv( &local_cache_vec[0], local_cache_vec.size(), this->mpi_data_type(), rec_data, rec_counts, rec_starts, this->mpi_data_type(), 0, MPI_COMM_WORLD);
+
+    // create and fill serial cache
+    if (rank==0) {
+        // set data to zero
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_elem(), 1, size);
+        std::vector<unsigned int> count(gather_cache->n_values(), 0);
+        for(unsigned int idx=0; idx < gather_cache->n_values(); idx++)
+        	gather_cache->zero(idx);
+        auto &gather_vec = *( gather_cache->get_component_data(0).get() );
+        unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
+        for (unsigned int i=0; i<n_global_data; ++i) {
+        	count[ rec_indices_ids[i] ]++;
+            i_global_coord = this->n_elem() * rec_indices_ids[i];
+            for (unsigned int j=0; j<this->n_elem(); ++j) { //loop over coords
+                gather_vec[ i_global_coord+j ] += rec_data[ this->n_elem()*i+j ];
+            }
+        }
+        // Compute mean values at nodes
+        for(unsigned int idx=0; idx < gather_cache->n_values(); idx++)
+        	gather_cache->normalize(idx, count[idx]);
+
+        delete[] rec_indices_ids;
+        delete[] rec_data;
+    }
+
+    return gather_cache;
+}
+
+
 template<>
 MPI_Datatype ElementDataCache<double>::mpi_data_type() {
     return MPI_DOUBLE;

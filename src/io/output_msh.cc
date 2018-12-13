@@ -77,6 +77,9 @@ public:
 
     std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) override
     {}
+
+    std::shared_ptr< ElementDataCacheBase > gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size) override
+    {}
 };
 
 
