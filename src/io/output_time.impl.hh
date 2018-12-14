@@ -103,7 +103,7 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
             [&field_name](OutputDataPtr ptr) { return (ptr->field_input_name() == field_name); });
     if ( it == od_vec.end() ) {
-        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, size) );
+        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size) );
         it=--od_vec.end();
     }
     return dynamic_cast<ElementDataCache<T> &>(*(*it));

@@ -45,7 +45,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, double time, unsig
 
 
 template <typename T>
-ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size)
+ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size)
 : check_scale_data_(CheckScaleData::none)
 {
 	this->set_vtk_type<T>();
@@ -53,27 +53,10 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
     this->field_input_name_ = this->field_name_;
 
     this->n_values_ = size;
-
-    if (n_cols == 1) {
-        if (n_rows == 1) {
-            this->n_comp_ = N_SCALAR;
-        } else {
-            if (n_rows > 1) {
-                if (n_rows > 4) {
-                    xprintf(PrgErr,
-                            "Do not support output of vectors with fixed size >3. Field: %s\n",
-                            this->field_input_name_.c_str());
-                } else if (n_rows == 4) { //special case of output connectivity cache
-                    this->n_comp_ = 4;
-                } else {
-                    this->n_comp_ = N_VECTOR;
-                }
-            } else {
-                THROW(ExcOutputVariableVector() << EI_FieldName(this->field_input_name_));
-            }
-        }
+    if (n_comp > 0) {
+        this->n_comp_ = n_comp;
     } else {
-        this->n_comp_ = N_TENSOR;
+    	THROW(ExcOutputVariableVector() << EI_FieldName(this->field_input_name_));
     }
 
     this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_comp_);
@@ -352,7 +335,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
 
     // create and fill serial cache
     if (rank==0) {
-        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), 1, n_global_data);
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), n_global_data);
         auto &gather_vec = *( gather_cache->get_component_data(0).get() );
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
         for (unsigned int i=0; i<n_global_data; ++i) {
@@ -402,7 +385,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather_cumulative(D
     // create and fill serial cache
     if (rank==0) {
         // set data to zero
-        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), 1, size);
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), size);
         std::vector<unsigned int> count(gather_cache->n_values(), 0);
         for(unsigned int idx=0; idx < gather_cache->n_values(); idx++)
         	gather_cache->zero(idx);

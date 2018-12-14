@@ -108,10 +108,10 @@ void OutputMeshBase::create_id_caches()
 	unsigned int node_idx[1];
 	unsigned int region_idx[1];
 	int partition[1];
-	elem_ids_ = std::make_shared< ElementDataCache<unsigned int> >("elements_ids", (unsigned int)1, 1, this->n_elements());
-	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, 1, this->n_nodes());
-	region_ids_ = std::make_shared< ElementDataCache<unsigned int> >("region_ids", (unsigned int)1, 1, this->n_elements());
-	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, 1, this->n_elements());
+	elem_ids_ = std::make_shared< ElementDataCache<unsigned int> >("elements_ids", (unsigned int)1, this->n_elements());
+	node_ids_ = std::make_shared< ElementDataCache<unsigned int> >("node_ids", (unsigned int)1, this->n_nodes());
+	region_ids_ = std::make_shared< ElementDataCache<unsigned int> >("region_ids", (unsigned int)1, this->n_elements());
+	partitions_ = std::make_shared< ElementDataCache<int> >("partitions", (unsigned int)1, this->n_elements());
 	OutputElementIterator it = this->begin();
 	for (unsigned int i = 0; i < this->n_elements(); ++i, ++it) {
 		if (mesh_type_ == MeshType::orig) elm_idx[0] = orig_mesh_->find_elem_id(it->idx());
@@ -168,7 +168,7 @@ void OutputMesh::create_mesh()
     const unsigned int n_elements = orig_mesh_->n_elements(),
                        n_nodes = orig_mesh_->n_nodes();
 
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_nodes);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, n_nodes);
     unsigned int coord_id = 0,  // coordinate id in vector
                  node_id = 0;   // node id
     auto &node_vec = *( nodes_->get_component_data(0).get() );
@@ -184,7 +184,7 @@ void OutputMesh::create_mesh()
     
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
 
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, n_elements);
     unsigned int ele_id = 0,
                  connect_id = 0,
                  offset = 0,    // offset of node indices of element in node vector
@@ -200,7 +200,7 @@ void OutputMesh::create_mesh()
 
     const unsigned int n_connectivities = offset_vec[offset_vec.size()-1];
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-    		1, n_connectivities);
+    		n_connectivities);
     auto &connect_vec = *( connectivity_->get_component_data(0).get() );
     for (auto ele : orig_mesh_->elements_range()) {
     	for (li=0; li<ele->n_nodes(); li++) {
@@ -241,7 +241,7 @@ void OutputMesh::create_sub_mesh()
     for (unsigned int i=0; i<orig_mesh_->n_local_nodes(); ++i) local_nodes_map[ orig_mesh_->get_node_4_loc()[i] ] = i;
 
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, n_local_elements);
     auto &offset_vec = *( offsets_->get_component_data(0).get() );
 
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
@@ -254,7 +254,7 @@ void OutputMesh::create_sub_mesh()
     }
 
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-            1, offset_vec[offset_vec.size()-1]);
+            offset_vec[offset_vec.size()-1]);
     auto &connectivity_vec = *( connectivity_->get_component_data(0).get() );
     for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
         elm = orig_mesh_->element_accessor( el_4_loc[loc_el] );
@@ -265,7 +265,7 @@ void OutputMesh::create_sub_mesh()
     }
 
     // set coords of nodes
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, orig_mesh_->n_local_nodes());
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, orig_mesh_->n_local_nodes());
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     NodeAccessor<3> node;
     for(unsigned int i_node=0; i_node<local_nodes_map.size(); ++i_node) {
@@ -290,7 +290,7 @@ void OutputMesh::make_serial_master_mesh(int rank, int n_proc)
     }
 
     // re-number connectivity indices from local to global, use 4 connectivities for every element (maximal number of connectivities)
-    ElementDataCache<unsigned int> global_conn("global_conn", (unsigned int)4, 1, orig_mesh_->get_el_ds()->lsize());
+    ElementDataCache<unsigned int> global_conn("global_conn", (unsigned int)4, orig_mesh_->get_el_ds()->lsize());
     auto &global_conn_vec = *( global_conn.get_component_data(0).get() );
     std::fill(global_conn_vec.begin(), global_conn_vec.end(), Mesh::undef_idx);
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
@@ -310,7 +310,7 @@ void OutputMesh::make_serial_master_mesh(int rank, int n_proc)
 
         serial_mesh_->orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(orig_mesh_->n_elements());
         serial_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                1, orig_mesh_->n_elements());
+                orig_mesh_->n_elements());
         auto &offsets_vec = *( serial_mesh_->offsets_->get_component_data(0).get() );
         unsigned int offset = 0, i=0;
         for (auto elm : orig_mesh_->elements_range()) {
@@ -321,7 +321,7 @@ void OutputMesh::make_serial_master_mesh(int rank, int n_proc)
         }
 
         serial_mesh_->connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                1, offsets_vec[offsets_vec.size()-1]);
+                offsets_vec[offsets_vec.size()-1]);
         auto &conn_vec = *( serial_mesh_->connectivity_->get_component_data(0).get() );
         unsigned int i_old_conn, n_vals, elm_idx;
         unsigned int i_conn = 0;
@@ -368,7 +368,7 @@ void OutputMeshDiscontinuous::create_mesh()
     const unsigned int n_elements = orig_mesh_->n_elements();
 
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elements);
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, n_elements);
 
     unsigned int ele_id = 0,
                  offset = 0,    // offset of node indices of element in node vector
@@ -388,9 +388,9 @@ void OutputMeshDiscontinuous::create_mesh()
     // connectivity = for every element list the nodes => its length corresponds to discontinuous data
     const unsigned int n_corners = offset_vec[offset_vec.size()-1];
 
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_corners);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, n_corners);
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-    		1, n_corners);
+    		n_corners);
 
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
@@ -416,9 +416,9 @@ void OutputMeshDiscontinuous::create_refined_mesh()
 {
     DebugOut() << "Create refined discontinuous outputmesh.\n";
     // initial guess of size: n_elements
-    nodes_ = std::make_shared<ElementDataCache<double>>("",(unsigned int)ElementDataCacheBase::N_VECTOR,1,0);
-    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity",(unsigned int)ElementDataCacheBase::N_SCALAR,1,0);
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets",(unsigned int)ElementDataCacheBase::N_SCALAR,1,0);
+    nodes_ = std::make_shared<ElementDataCache<double>>("",(unsigned int)ElementDataCacheBase::N_VECTOR,0);
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity",(unsigned int)ElementDataCacheBase::N_SCALAR,0);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets",(unsigned int)ElementDataCacheBase::N_SCALAR,0);
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>();
     
     // index of last node added; set at the end of original ones
@@ -672,7 +672,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
 	}
 
     // nodes = for every element reserve 12 values (4 nodes maximal * 3 coords)
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, 4*n_local_elements);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 4*n_local_elements);
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     std::fill(node_vec.begin(), node_vec.end(), 0.0);
 	for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
@@ -700,7 +700,7 @@ void OutputMeshDiscontinuous::create_sub_mesh()
     const unsigned int n_local_elements = el_ds->lsize();
 
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_local_elements);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR, n_local_elements);
 
     unsigned int ele_id = 0,
                  offset = 0,    // offset of node indices of element in node vector
@@ -720,9 +720,9 @@ void OutputMeshDiscontinuous::create_sub_mesh()
     // connectivity = for every element list the nodes => its length corresponds to discontinuous data
     const unsigned int n_corners = offset_vec[offset_vec.size()-1];
 
-    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_corners);
+    nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, n_corners);
     connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-    		1, n_corners);
+    		n_corners);
 
     auto &node_vec = *( nodes_->get_component_data(0).get() );
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
@@ -858,14 +858,14 @@ void OutputMeshDiscontinuous::make_serial_master_mesh(int rank, int n_proc)
 
         // create and fill connectivity cache
         serial_mesh_->connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                1, n_global_nodes);
+                n_global_nodes);
         auto &conn_vec = *( serial_mesh_->connectivity_->get_component_data(0).get() );
         for (unsigned int i=0; i<n_global_nodes; ++i) conn_vec[i] = i;
 
         // create and fill offsets and nodes cache
         serial_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                1, n_global_elems);
-        serial_mesh_->nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, 1, n_global_nodes);
+                n_global_elems);
+        serial_mesh_->nodes_ = std::make_shared<ElementDataCache<double>>("", (unsigned int)ElementDataCacheBase::N_VECTOR, n_global_nodes);
         unsigned int offset = 0;
         auto &offsets_vec = *( serial_mesh_->offsets_->get_component_data(0).get() );
         auto &node_vec = *( serial_mesh_->nodes_->get_component_data(0).get() );

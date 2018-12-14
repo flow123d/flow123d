@@ -214,6 +214,7 @@ void OutputTime::write_time_frame()
 
     	if (this->rank_ == 0 || this->parallel_)
     	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
+    	gather_output_data();
         write_data();
         // Remember the last time of writing to output stream
         write_time = time;
@@ -259,6 +260,47 @@ int OutputTime::get_parallel_current_step()
 
 void OutputTime::add_dummy_fields()
 {}
+
+
+void OutputTime::gather_output_data(void)
+{
+    /* for serial output call gather of all data sets */
+    if ( !parallel_ ) {
+        auto &node_data_map = this->output_data_vec_[NODE_DATA];
+        if (node_data_map.size() > 0) {
+            auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
+            Distribution *node_ghost_ds = new Distribution(offset_vec[offset_vec.size()-1], PETSC_COMM_WORLD);
+            node_ghost_ds->get_lsizes_array(); // need to initialize lsizes data member
+            auto &conn_vec = *( output_mesh_->connectivity_->get_component_data(0).get() );
+            auto *node_4_loc = output_mesh_->orig_mesh_->get_node_4_loc();
+            std::vector<LongIdx> global_connectivity(conn_vec.size());
+            for (unsigned int i=0; i<conn_vec.size(); ++i) {
+            	global_connectivity[i] = node_4_loc[ conn_vec[i] ];
+            }
+
+            for(unsigned int i=0; i<node_data_map.size(); ++i) {
+                auto serial_data = node_data_map[i]->gather_cumulative(node_ghost_ds, &(global_connectivity[0]), rank_, n_proc_, output_mesh_->orig_mesh_->n_nodes());
+                if (rank_==0) node_data_map[i] = serial_data;
+            }
+            delete node_ghost_ds;
+        }
+    	auto &corner_data_map = this->output_data_vec_[CORNER_DATA];
+    	for(unsigned int i=0; i<corner_data_map.size(); ++i) {
+    	    auto serial_data = corner_data_map[i]->gather(output_mesh_->orig_mesh_->get_node_ds(), output_mesh_->orig_mesh_->get_node_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) corner_data_map[i] = serial_data;
+    	}
+    	auto &elm_data_map = this->output_data_vec_[ELEM_DATA];
+    	for(unsigned int i=0; i<elm_data_map.size(); ++i) {
+    	    auto serial_data = elm_data_map[i]->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) elm_data_map[i] = serial_data;
+    	}
+    	auto &native_data_map = this->output_data_vec_[NATIVE_DATA];
+    	for(unsigned int i=0; i<native_data_map.size(); ++i) {
+    	    auto serial_data = native_data_map[i]->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
+    	    if (rank_==0) native_data_map[i] = serial_data;
+    	}
+    }
+}
 
 
 

@@ -247,6 +247,11 @@ protected:
     virtual int write_data(void) = 0;
 
     /**
+     * \brief Collect data of individual processes to serial data on master (0th) process
+     */
+    void gather_output_data(void);
+
+    /**
      * Cached MPI rank of process (is tested in methods)
      */
     int rank_;

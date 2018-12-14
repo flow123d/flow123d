@@ -67,11 +67,10 @@ public:
      * Has fix size of cache.
      *
      * @param field_name Field name is written as parameter to output stream
-     * @param n_rows     Given from shape of field
-     * @param n_cols     Given from shape of field
+     * @param n_comp     Given from shape of field
      * @param size       Count of rows of data cache
      */
-	ElementDataCache(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size);
+	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size);
 
     /**
      * \brief Destructor of ElementDataCache
