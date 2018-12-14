@@ -82,14 +82,11 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     unsigned int size;
     switch (space_type) {
         case NODE_DATA:
-        	/* We need special case for serial output of parallel computation.
-        	 * See Field::compute_field_data method.
-        	 */
-            if ( (n_proc()>1) && (!is_parallel()) ) {
-                auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
-                size = offset_vec[offset_vec.size()-1];
-                break;
-            }
+        {
+            auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
+            size = offset_vec[offset_vec.size()-1];
+            break;
+        }
         case CORNER_DATA:
             size = output_mesh_->nodes_->n_values();
             break;

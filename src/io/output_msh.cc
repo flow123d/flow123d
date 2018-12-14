@@ -292,7 +292,7 @@ int OutputMSH::write_head(void)
 int OutputMSH::write_data(void)
 {
     /* for serial output call gather of all data sets */
-    if ( (this->n_proc_ > 1) && (!parallel_) ) {
+    if ( !parallel_ ) {
         auto &node_data_map = this->output_data_vec_[NODE_DATA];
         if (node_data_map.size() > 0) {
             auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );

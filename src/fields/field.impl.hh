@@ -603,7 +603,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     switch(space_type) {
     case OutputTime::NODE_DATA:
         // Complete computation of NODE_DATA output for serial run-case (num_of_proc is 1) or parallel VTK output
-        if ( (stream->n_proc()==1) || (stream->is_parallel()) ) {
+        /*if ( (stream->n_proc()==1) || (stream->is_parallel()) ) {
             // set output data to zero
             vector<unsigned int> count(output_data.n_values(), 0);
             for(unsigned int idx=0; idx < output_data.n_values(); idx++)
@@ -629,7 +629,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
             for(unsigned int idx=0; idx < output_data.n_values(); idx++)
                 output_data.normalize(idx, count[idx]);
             break;
-        }
+        }*/
         // Algorithm of CORNER_DATA is used for serial output of NODE_DATA parallel computation.
         // Resulting values on nodes are computing on master process after collecting of data.
     case OutputTime::CORNER_DATA: {
