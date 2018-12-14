@@ -56,7 +56,7 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
 
     if (n_cols == 1) {
         if (n_rows == 1) {
-            this->n_elem_ = N_SCALAR;
+            this->n_comp_ = N_SCALAR;
         } else {
             if (n_rows > 1) {
                 if (n_rows > 4) {
@@ -64,19 +64,19 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_row
                             "Do not support output of vectors with fixed size >3. Field: %s\n",
                             this->field_input_name_.c_str());
                 } else if (n_rows == 4) { //special case of output connectivity cache
-                    this->n_elem_ = N_CONNECT;
+                    this->n_comp_ = 4;
                 } else {
-                    this->n_elem_ = N_VECTOR;
+                    this->n_comp_ = N_VECTOR;
                 }
             } else {
                 THROW(ExcOutputVariableVector() << EI_FieldName(this->field_input_name_));
             }
         }
     } else {
-        this->n_elem_ = N_TENSOR;
+        this->n_comp_ = N_TENSOR;
     }
 
-    this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_elem_);
+    this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_comp_);
 }
 
 
@@ -142,7 +142,7 @@ void ElementDataCache<T>::print_ascii(ostream &out_stream, unsigned int idx)
 {
 	ASSERT_LT(idx, this->n_values_).error();
 	std::vector<T> &vec = *( this->data_[0].get() );
-	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
+	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
 		out_stream << vec[i] << " ";
 }
 
@@ -158,7 +158,7 @@ void ElementDataCache<T>::print_ascii_all(ostream &out_stream)
 {
     std::vector<T> &vec = *( this->data_[0].get() );
 	for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-    	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
+    	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream << vec[i] << " ";
     }
 }
@@ -170,13 +170,13 @@ void ElementDataCache<T>::print_binary_all(ostream &out_stream, bool print_data_
 {
 	if (print_data_size) {
 		// write size of data
-		unsigned long long int data_byte_size = this->n_values_ * n_elem_ * sizeof(T);
+		unsigned long long int data_byte_size = this->n_values_ * n_comp_ * sizeof(T);
 		out_stream.write(reinterpret_cast<const char*>(&data_byte_size), sizeof(unsigned long long int));
 	}
     // write data
 	std::vector<T> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-    	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i )
+    	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i )
     		out_stream.write(reinterpret_cast<const char*>(&(vec[i])), sizeof(T));
     }
 }
@@ -189,8 +189,8 @@ void ElementDataCache<T>::print_all_yaml(ostream &out_stream, unsigned int preci
 	std::vector<T> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values_; idx++) {
         if (idx != 0) out_stream << " , ";
-        unsigned int vec_pos = n_elem_ * idx; // position of element value in data cache
-        switch (this->n_elem_) {
+        unsigned int vec_pos = n_comp_ * idx; // position of element value in data cache
+        switch (this->n_comp_) {
             case NumCompValueType::N_SCALAR: {
                 out_stream << field_value_to_yaml( vec[vec_pos], precision );
                 break;
@@ -223,7 +223,7 @@ void ElementDataCache<T>::get_min_max_range(double &min, double &max)
 	max = std::numeric_limits<double>::min();
 	std::vector<T> &vec = *( this->data_[0].get() );
     for(unsigned int idx = 0; idx < this->n_values_; idx++) {
-    	for(unsigned int i = n_elem_*idx; i < n_elem_*(idx+1); ++i ) {
+    	for(unsigned int i = n_comp_*idx; i < n_comp_*(idx+1); ++i ) {
     		if (vec[i] < min) min = vec[i];
     		if (vec[i] > max) max = vec[i];
     	}
@@ -238,8 +238,8 @@ template <typename T>
 void ElementDataCache<T>::store_value(unsigned int idx, const T * value) {
     ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
-    unsigned int vec_idx = idx*this->n_elem_;
-    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    unsigned int vec_idx = idx*this->n_comp_;
+    for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] = value[i];
     }
 };
@@ -251,8 +251,8 @@ template <typename T>
 void ElementDataCache<T>::add(unsigned int idx, const T * value) {
     ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
-    unsigned int vec_idx = idx*this->n_elem_;
-    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    unsigned int vec_idx = idx*this->n_comp_;
+    for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] += value[i];
     }
 };
@@ -264,8 +264,8 @@ template <typename T>
 void ElementDataCache<T>::zero(unsigned int idx) {
     ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
-    unsigned int vec_idx = idx*this->n_elem_;
-    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    unsigned int vec_idx = idx*this->n_comp_;
+    for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] = 0;
     }
 };
@@ -277,8 +277,8 @@ template <typename T>
 void ElementDataCache<T>::normalize(unsigned int idx, unsigned int divisor) {
     ASSERT_LT_DBG(idx, this->n_values_);
     std::vector<T> &vec = *( this->data_[0].get() );
-    unsigned int vec_idx = idx*this->n_elem_;
-    for(unsigned int i = 0; i < this->n_elem_; i++, vec_idx++) {
+    unsigned int vec_idx = idx*this->n_comp_;
+    for(unsigned int i = 0; i < this->n_comp_; i++, vec_idx++) {
     	vec[vec_idx] /= divisor;
     }
 };
@@ -342,23 +342,23 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
     MPI_Gatherv( local_to_global, distr->lsize(), MPI_INT, rec_indices_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
     if (rank==0) {
         for (int i=0; i<n_proc; ++i) {
-            rec_starts[i] = this->n_elem()*rec_starts[i];
-            rec_counts[i] = this->n_elem()*rec_counts[i];
+            rec_starts[i] = this->n_comp()*rec_starts[i];
+            rec_counts[i] = this->n_comp()*rec_counts[i];
         }
-        rec_data = new T [ this->n_elem() * n_global_data ];
+        rec_data = new T [ this->n_comp() * n_global_data ];
     }
     auto &local_cache_vec = *( this->get_component_data(0).get() );
     MPI_Gatherv( &local_cache_vec[0], local_cache_vec.size(), this->mpi_data_type(), rec_data, rec_counts, rec_starts, this->mpi_data_type(), 0, MPI_COMM_WORLD);
 
     // create and fill serial cache
     if (rank==0) {
-        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_elem(), 1, n_global_data);
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), 1, n_global_data);
         auto &gather_vec = *( gather_cache->get_component_data(0).get() );
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
         for (unsigned int i=0; i<n_global_data; ++i) {
-            i_global_coord = this->n_elem() * rec_indices_ids[i];
-            for (unsigned int j=0; j<this->n_elem(); ++j) { //loop over coords
-                gather_vec[ i_global_coord+j ] = rec_data[ this->n_elem()*i+j ];
+            i_global_coord = this->n_comp() * rec_indices_ids[i];
+            for (unsigned int j=0; j<this->n_comp(); ++j) { //loop over coords
+                gather_vec[ i_global_coord+j ] = rec_data[ this->n_comp()*i+j ];
             }
         }
 
@@ -391,10 +391,10 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather_cumulative(D
     MPI_Gatherv( local_to_global, distr->lsize(), MPI_INT, rec_indices_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
     if (rank==0) {
         for (int i=0; i<n_proc; ++i) {
-            rec_starts[i] = this->n_elem()*rec_starts[i];
-            rec_counts[i] = this->n_elem()*rec_counts[i];
+            rec_starts[i] = this->n_comp()*rec_starts[i];
+            rec_counts[i] = this->n_comp()*rec_counts[i];
         }
-        rec_data = new T [ this->n_elem() * n_global_data ];
+        rec_data = new T [ this->n_comp() * n_global_data ];
     }
     auto &local_cache_vec = *( this->get_component_data(0).get() );
     MPI_Gatherv( &local_cache_vec[0], local_cache_vec.size(), this->mpi_data_type(), rec_data, rec_counts, rec_starts, this->mpi_data_type(), 0, MPI_COMM_WORLD);
@@ -402,7 +402,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather_cumulative(D
     // create and fill serial cache
     if (rank==0) {
         // set data to zero
-        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_elem(), 1, size);
+        gather_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, (unsigned int)this->n_comp(), 1, size);
         std::vector<unsigned int> count(gather_cache->n_values(), 0);
         for(unsigned int idx=0; idx < gather_cache->n_values(); idx++)
         	gather_cache->zero(idx);
@@ -410,9 +410,9 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather_cumulative(D
         unsigned int i_global_coord; // counter over serial_mesh->nodes_ cache
         for (unsigned int i=0; i<n_global_data; ++i) {
         	count[ rec_indices_ids[i] ]++;
-            i_global_coord = this->n_elem() * rec_indices_ids[i];
-            for (unsigned int j=0; j<this->n_elem(); ++j) { //loop over coords
-                gather_vec[ i_global_coord+j ] += rec_data[ this->n_elem()*i+j ];
+            i_global_coord = this->n_comp() * rec_indices_ids[i];
+            for (unsigned int j=0; j<this->n_comp(); ++j) { //loop over coords
+                gather_vec[ i_global_coord+j ] += rec_data[ this->n_comp()*i+j ];
             }
         }
         // Compute mean values at nodes

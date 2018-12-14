@@ -330,10 +330,10 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     if( ! output_data->field_input_name().empty())
         file << "Name=\"" << output_data->field_input_name() <<"\" ";
     // write number of components
-    if (output_data->n_elem() > 1)
+    if (output_data->n_comp() > 1)
     {
         file
-            << "NumberOfComponents=\"" << output_data->n_elem() << "\" ";
+            << "NumberOfComponents=\"" << output_data->n_comp() << "\" ";
     }
     file    << "format=\"" << formats[this->variant_type_] << "\"";
 
@@ -444,17 +444,17 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 
     file << "Scalars=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
 	file << "\"";
 }
 
@@ -524,7 +524,7 @@ void OutputVTK::write_vtk_native_data(void)
         file  << "Name=\"" << output_data->field_input_name() <<"\" ";
         file  << "format=\"" << formats[this->variant_type_] << "\" ";
         file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
-        file  << "n_dofs_per_element=\"" << output_data->n_elem() << "\"";
+        file  << "n_dofs_per_element=\"" << output_data->n_comp() << "\"";
 
         if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
         	// ascii output

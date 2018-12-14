@@ -290,7 +290,7 @@ void OutputMesh::make_serial_master_mesh(int rank, int n_proc)
     }
 
     // re-number connectivity indices from local to global, use 4 connectivities for every element (maximal number of connectivities)
-    ElementDataCache<unsigned int> global_conn("global_conn", (unsigned int)ElementDataCacheBase::N_CONNECT, 1, orig_mesh_->get_el_ds()->lsize());
+    ElementDataCache<unsigned int> global_conn("global_conn", (unsigned int)4, 1, orig_mesh_->get_el_ds()->lsize());
     auto &global_conn_vec = *( global_conn.get_component_data(0).get() );
     std::fill(global_conn_vec.begin(), global_conn_vec.end(), Mesh::undef_idx);
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );

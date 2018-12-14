@@ -359,7 +359,7 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
                         Value( const_cast<typename Value::return_type &>(
                                 this->value(o_point.global_coords(),
                                         ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
-        ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
+        ASSERT_EQ(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
     }
@@ -644,7 +644,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
                         		this->value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
                              );
-                ASSERT_EQ(output_data.n_elem(), node_value.n_rows()*node_value.n_cols()).error();
+                ASSERT_EQ(output_data.n_comp(), node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
             }
         }
@@ -660,7 +660,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
                                                                         )
                              );
-            ASSERT_EQ(output_data.n_elem(), ele_value.n_rows()*ele_value.n_cols()).error();
+            ASSERT_EQ(output_data.n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
             output_data.store_value(ele_index, ele_value.mem_ptr() );
         }
     }

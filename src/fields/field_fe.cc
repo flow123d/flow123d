@@ -669,16 +669,16 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 template <int spacedim, class Value>
 void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &output_data_cache) {
-	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_elem(), dh_->n_global_dofs()).error();
-	ASSERT_EQ(output_data_cache.n_elem(), dof_indices_.size()).error();
-	double loc_values[output_data_cache.n_elem()];
+	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_comp(), dh_->n_global_dofs()).error();
+	ASSERT_EQ(output_data_cache.n_comp(), dof_indices_.size()).error();
+	double loc_values[output_data_cache.n_comp()];
 	unsigned int i, dof_filled_size;
 
 	VectorMPI::VectorDataPtr data_vec = data_vec_->data_ptr();
 	for (auto ele : dh_->mesh()->elements_range()) {
 		dof_filled_size = dh_->get_dof_indices( ele, dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
-		for ( ; i<output_data_cache.n_elem(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
+		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( ele.idx(), loc_values );
 	}
 

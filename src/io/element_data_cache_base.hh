@@ -39,7 +39,6 @@ public:
 	enum NumCompValueType {
 		N_SCALAR = 1,
 		N_VECTOR = 3,
-		N_CONNECT = 4, ///< Special case for creating output connectivity cache
 		N_TENSOR = 9
 	};
 
@@ -136,8 +135,8 @@ public:
     /**
      * Get number of data elements per data value.
      */
-    inline NumCompValueType n_elem() {
-    	return this->n_elem_;
+    inline unsigned int n_comp() {
+    	return this->n_comp_;
     }
 
     /// Get type of stored data
@@ -207,7 +206,7 @@ protected:
     /**
      * Number of data elements per data value.
      */
-    NumCompValueType n_elem_;
+    unsigned int n_comp_;
 
     /// Type of stored data
     VTKValueType vtk_type_;
