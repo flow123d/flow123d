@@ -602,36 +602,6 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     /* Copy data to array */
     switch(space_type) {
     case OutputTime::NODE_DATA:
-        // Complete computation of NODE_DATA output for serial run-case (num_of_proc is 1) or parallel VTK output
-        /*if ( (stream->n_proc()==1) || (stream->is_parallel()) ) {
-            // set output data to zero
-            vector<unsigned int> count(output_data.n_values(), 0);
-            for(unsigned int idx=0; idx < output_data.n_values(); idx++)
-                output_data.zero(idx);
-
-            for(const auto & ele : *output_mesh )
-            {
-                std::vector<Space<3>::Point> vertices = ele.vertex_list();
-                for(unsigned int i=0; i < ele.n_nodes(); i++)
-                {
-                    unsigned int node_index = ele.node_index(i);
-                    const Value &node_value =
-                            Value( const_cast<typename Value::return_type &>(
-                                    this->value(vertices[i],
-                                                ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
-                                 );
-                    output_data.add(node_index, node_value.mem_ptr() );
-                    count[node_index]++;
-                }
-            }
-
-            // Compute mean values at nodes
-            for(unsigned int idx=0; idx < output_data.n_values(); idx++)
-                output_data.normalize(idx, count[idx]);
-            break;
-        }*/
-        // Algorithm of CORNER_DATA is used for serial output of NODE_DATA parallel computation.
-        // Resulting values on nodes are computing on master process after collecting of data.
     case OutputTime::CORNER_DATA: {
         for(const auto & ele : *output_mesh )
         {
