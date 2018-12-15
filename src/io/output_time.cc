@@ -297,7 +297,11 @@ void OutputTime::gather_output_data(void)
     	auto &native_data_map = this->output_data_vec_[NATIVE_DATA];
     	for(unsigned int i=0; i<native_data_map.size(); ++i) {
     	    auto serial_data = native_data_map[i]->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
-    	    if (rank_==0) native_data_map[i] = serial_data;
+    	    if (rank_==0) {
+    	    	auto hash = native_data_map[i]->dof_handler_hash();
+    	        native_data_map[i] = serial_data;
+    	        (native_data_map[i])->set_dof_handler_hash(hash);
+    	    }
     	}
     }
 }
