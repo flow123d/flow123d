@@ -603,12 +603,12 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
     switch(space_type) {
     case OutputTime::NODE_DATA:
     case OutputTime::CORNER_DATA: {
+    	unsigned int node_index = 0;
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
-                unsigned int node_index = ele.node_index(i, true);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                         		this->value(vertices[i],
@@ -616,6 +616,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
                              );
                 ASSERT_EQ(output_data.n_comp(), node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
+                ++node_index;
             }
         }
     }

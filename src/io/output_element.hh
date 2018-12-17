@@ -53,7 +53,7 @@ public:
     unsigned int dim() const;                       ///< Returns dim of the output element.
     
     /// Returns global index of the node.
-    unsigned int node_index(unsigned int loc_idx, bool corner=false) const;
+    unsigned int node_index(unsigned int loc_idx) const;
     /// Returns global indices of the nodes.
     std::vector<unsigned int> node_list() const;
     Point vertex(unsigned int loc_idx) const;  ///< Returns coordinates of node @p loc_idx.
@@ -135,13 +135,12 @@ inline unsigned int OutputElement::dim() const
 }
 
 
-inline unsigned int OutputElement::node_index(unsigned int loc_idx, bool corner) const
+inline unsigned int OutputElement::node_index(unsigned int loc_idx) const
 {
     unsigned int n = n_nodes();
     ASSERT_DBG(loc_idx < n);
     unsigned int con_off = (*output_mesh_->offsets_)[ele_idx_];
-    if (corner) return (con_off - n + loc_idx);
-    else return (* output_mesh_->connectivity_)[con_off - n + loc_idx];
+    return (* output_mesh_->connectivity_)[con_off - n + loc_idx];
 }
 
 
