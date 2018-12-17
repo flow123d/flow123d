@@ -95,7 +95,7 @@ public:
     /**
      * Creates sub mesh containing only local part of original (computation) mesh.
      */
-    virtual void create_sub_mesh()=0;
+    void create_sub_mesh();
 
     /// Selects the error control field computing function of output field set according to input record.
     void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
@@ -192,9 +192,6 @@ public:
     /// Creates refined mesh.
     void create_refined_mesh() override;
     
-    /// Creates sub mesh.
-    void create_sub_mesh() override;
-
     /// Implements OutputMeshBase::make_serial_master_mesh
     void make_serial_master_mesh(int rank, int n_proc) override;
 
@@ -220,9 +217,6 @@ public:
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
     
-    /// Creates sub mesh.
-    void create_sub_mesh() override;
-
     /// Implements OutputMeshBase::make_serial_master_mesh
     void make_serial_master_mesh(int rank, int n_proc) override;
 
