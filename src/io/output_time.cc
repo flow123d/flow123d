@@ -267,24 +267,21 @@ void OutputTime::gather_output_data(void)
     /* for serial output call gather of all data sets */
     if ( !parallel_ ) {
         auto &node_data_map = this->output_data_vec_[NODE_DATA];
-        if (node_data_map.size() > 0) {
-            auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
-            Distribution *node_ghost_ds = new Distribution(offset_vec[offset_vec.size()-1], PETSC_COMM_WORLD);
-            node_ghost_ds->get_lsizes_array(); // need to initialize lsizes data member
-            auto &conn_vec = *( output_mesh_->connectivity_->get_component_data(0).get() );
-            auto *node_4_loc = output_mesh_->orig_mesh_->get_node_4_loc();
-            std::vector<LongIdx> global_connectivity(conn_vec.size());
-            for (unsigned int i=0; i<conn_vec.size(); ++i) {
-            	global_connectivity[i] = node_4_loc[ conn_vec[i] ];
+        auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
+        for(unsigned int i=0; i<node_data_map.size(); ++i) {
+            auto elem_node_cache = node_data_map[i]->element_node_cache_fixed_size(offset_vec);
+            auto serial_fix_data_cache = elem_node_cache->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
+            if (rank_==0) {
+            	auto &master_offset_vec = *( this->offsets_->get_component_data(0).get() );
+            	auto serial_data_cache = serial_fix_data_cache->element_node_cache_optimize_size(master_offset_vec);
+            	auto &master_conn_vec = *( this->connectivity_->get_component_data(0).get() );
+            	ASSERT_EQ(master_conn_vec.size(), serial_data_cache->n_values());
+            	std::cout << serial_data_cache->field_input_name() << ": " << master_conn_vec.size() << ", " << this->nodes_->n_values() << std::endl;
+            	node_data_map[i] = serial_data_cache->compute_node_data(master_conn_vec, this->nodes_->n_values());
             }
-
-            for(unsigned int i=0; i<node_data_map.size(); ++i) {
-                auto serial_data = node_data_map[i]->gather_cumulative(node_ghost_ds, &(global_connectivity[0]), rank_, n_proc_, output_mesh_->orig_mesh_->n_nodes());
-                if (rank_==0) node_data_map[i] = serial_data;
-            }
-            delete node_ghost_ds;
         }
-    	auto &corner_data_map = this->output_data_vec_[CORNER_DATA];
+
+    	auto &corner_data_map = this->output_data_vec_[CORNER_DATA]; //TODO need fix of discontinuous output
     	for(unsigned int i=0; i<corner_data_map.size(); ++i) {
     	    auto serial_data = corner_data_map[i]->gather(output_mesh_->orig_mesh_->get_node_ds(), output_mesh_->orig_mesh_->get_node_4_loc(), rank_, n_proc_);
     	    if (rank_==0) corner_data_map[i] = serial_data;
