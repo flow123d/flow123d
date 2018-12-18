@@ -354,6 +354,76 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
 
 
 template <typename T>
+std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) {
+    unsigned int n_elem = offset_vec.size();
+    std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, 4*this->n_comp(), n_elem);
+    auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
+    std::fill( data_out_vec.begin(), data_out_vec.end(), (T)0 );
+    auto &data_in_vec = *( this->get_component_data(0).get() );
+
+    unsigned int i_node, i_old, i_new;
+    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size(); i_el++) {
+        for(i_node=4*i_el; i_conn<offset_vec[i_el]; i_conn++, i_node++) {
+        	i_old = i_conn*this->n_comp_;
+        	i_new = i_node*this->n_comp_;
+            for(unsigned int i = 0; i < this->n_comp_; i++) {
+            	data_out_vec[i_new+i] = data_in_vec[i_old+i];
+            }
+        }
+    }
+
+    return elem_node_cache;
+}
+
+
+template <typename T>
+std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) {
+    std::shared_ptr< ElementDataCache<T> > elem_node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_,
+            this->n_comp()/4, offset_vec[offset_vec.size()-1]);
+    auto &data_out_vec = *( elem_node_cache->get_component_data(0).get() );
+    auto &data_in_vec = *( this->get_component_data(0).get() );
+
+    unsigned int i_node, i_old, i_new;
+    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size(); i_el++) {
+        for(i_node=4*i_el; i_conn<offset_vec[i_el]; i_conn++, i_node++) {
+        	i_old = i_node*elem_node_cache->n_comp_;
+        	i_new = i_conn*elem_node_cache->n_comp_;
+            for(unsigned int i = 0; i < elem_node_cache->n_comp_; i++) {
+            	ASSERT_LT(i_new+i, data_out_vec.size());
+            	data_out_vec[i_new+i] = data_in_vec[i_old+i];
+            }
+        }
+    }
+    return elem_node_cache;
+}
+
+
+template <typename T>
+std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) {
+    ASSERT_EQ(conn_vec.size(), this->n_values());
+    unsigned int idx;
+
+    // set output data to zero
+    std::shared_ptr< ElementDataCache<T> > node_cache = std::make_shared<ElementDataCache<T>>(this->field_input_name_, this->n_comp(), data_size);
+    std::vector<unsigned int> count(data_size, 0);
+    for (idx=0; idx < node_cache->n_values(); idx++)
+        node_cache->zero(idx);
+
+    auto &data_in_vec = *( this->get_component_data(0).get() );
+    for (idx=0; idx < conn_vec.size(); idx++) {
+    	node_cache->add( conn_vec[idx], &(data_in_vec[this->n_comp() * idx]) );
+    	count[ conn_vec[idx] ]++;
+    }
+
+    // Compute mean values at nodes
+    for(idx=0; idx < node_cache->n_values(); idx++)
+    	node_cache->normalize(idx, count[idx]);
+
+    return node_cache;
+}
+
+
+template <typename T>
 std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size) {
     std::shared_ptr< ElementDataCache<T> > gather_cache;
     unsigned int n_global_data;   // global number of data
