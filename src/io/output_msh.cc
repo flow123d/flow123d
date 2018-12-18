@@ -78,6 +78,15 @@ public:
     std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) override
     {}
 
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override
+    {}
+
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override
+    {}
+
+    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
+    {}
+
     std::shared_ptr< ElementDataCacheBase > gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size) override
     {}
 };
