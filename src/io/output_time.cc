@@ -275,8 +275,6 @@ void OutputTime::gather_output_data(void)
             	auto &master_offset_vec = *( this->offsets_->get_component_data(0).get() );
             	auto serial_data_cache = serial_fix_data_cache->element_node_cache_optimize_size(master_offset_vec);
             	auto &master_conn_vec = *( this->connectivity_->get_component_data(0).get() );
-            	ASSERT_EQ(master_conn_vec.size(), serial_data_cache->n_values());
-            	std::cout << serial_data_cache->field_input_name() << ": " << master_conn_vec.size() << ", " << this->nodes_->n_values() << std::endl;
             	node_data_map[i] = serial_data_cache->compute_node_data(master_conn_vec, this->nodes_->n_values());
             }
         }
