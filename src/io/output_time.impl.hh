@@ -82,14 +82,12 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     unsigned int size;
     switch (space_type) {
         case NODE_DATA:
+        case CORNER_DATA:
         {
             auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
             size = offset_vec[offset_vec.size()-1];
             break;
         }
-        case CORNER_DATA:
-            size = output_mesh_->nodes_->n_values();
-            break;
         case ELEM_DATA:
         case NATIVE_DATA:
             size = output_mesh_->offsets_->n_values();
