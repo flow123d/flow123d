@@ -198,13 +198,6 @@ public:
      */
     virtual std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size)=0;
 
-    /**
-     * Method for gathering parallel data to serial cache.
-     *
-     * Value of item can be defined by more than one value. Method stores average of these values to cache.
-     */
-    virtual std::shared_ptr< ElementDataCacheBase > gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size)=0;
-
 protected:
     template <class T>
     void set_vtk_type() {

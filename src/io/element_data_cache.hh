@@ -173,22 +173,6 @@ public:
     /// Implements ElementDataCacheBase::compute_node_data.
     std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override;
 
-    /**
-     * Method for gathering parallel data to serial cache.
-     *
-     * Same as previous but every item can be defined by more than one value on more than one process.
-     * Method stores average of these values to cache.
-     *
-     * Gather data of individual processes to serial cache that is created only on zero process.
-     * Other processes return uninitialized shared pointer.
-     *
-     * @param distr Collective distribution
-     * @param rank Actual process
-     * @param n_proc Number of processes
-     * @param size size of returned cache
-     */
-    std::shared_ptr< ElementDataCacheBase > gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size) override;
-
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);
 

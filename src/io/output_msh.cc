@@ -87,8 +87,6 @@ public:
     std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
     {}
 
-    std::shared_ptr< ElementDataCacheBase > gather_cumulative(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc, unsigned int size) override
-    {}
 };
 
 
