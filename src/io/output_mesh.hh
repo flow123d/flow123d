@@ -51,13 +51,17 @@ typedef Iter<OutputElement> OutputElementIterator;
 
     // Construct mesh with continuous elements
     std::make_shared<OutputMesh> output_mesh = std::make_shared<OutputMesh>(*my_mesh);
-    // Creates the mesh identical to the computational one.
-    output_mesh->create_mesh();
+    // Creates the sub meshes on all processes identical to the computational one.
+    output_mesh->create_sub_mesh();
+    // Creates mesh on zero process identical to the computational one.
+    std::make_shared<OutputMesh> serial_output_mesh = output_mesh->make_serial_master_mesh(my_proc, n_proc);
 
     // Construct mesh with discontinuous elements
     std::make_shared<OutputMeshDiscontinuous> output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
-    // Creates mesh from the original my_mesh.
-    output_mesh_discont->create_mesh();
+    // Creates sub meshes on all processes mesh from the original my_mesh.
+    output_mesh_discont->create_sub_mesh();
+    // Creates mesh on zero process from the original my_mesh.
+    std::make_shared<OutputMeshDiscontinuous> serial_output_mesh = output_mesh->make_serial_master_mesh(my_proc, n_proc);
 @endcode
  */
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
@@ -86,9 +90,6 @@ public:
     /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
-    /// Creates the output mesh identical to the orig mesh.
-    virtual void create_mesh()=0;
-
     /// Creates refined mesh.
     virtual void create_refined_mesh()=0;
 
@@ -186,9 +187,6 @@ public:
     OutputMesh(Mesh &mesh, const Input::Record &in_rec);
     ~OutputMesh();
     
-    /// Creates the output mesh identical to the orig mesh.
-    void create_mesh() override;
-    
     /// Creates refined mesh.
     void create_refined_mesh() override;
     
@@ -210,9 +208,6 @@ public:
     OutputMeshDiscontinuous(Mesh &mesh);
     OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec);
     ~OutputMeshDiscontinuous();
-    
-    /// Creates the output mesh identical to the orig mesh.
-    void create_mesh() override;
     
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
