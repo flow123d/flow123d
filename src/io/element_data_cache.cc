@@ -341,6 +341,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
         for (unsigned int i=0; i<n_global_data; ++i) {
             i_global_coord = this->n_comp() * rec_indices_ids[i];
             for (unsigned int j=0; j<this->n_comp(); ++j) { //loop over coords
+            	ASSERT_LT(i_global_coord+j, gather_vec.size());
                 gather_vec[ i_global_coord+j ] = rec_data[ this->n_comp()*i+j ];
             }
         }
@@ -367,6 +368,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
         	i_old = i_conn*this->n_comp_;
         	i_new = i_node*this->n_comp_;
             for(unsigned int i = 0; i < this->n_comp_; i++) {
+            	ASSERT_LT(i_new+i, data_out_vec.size());
             	data_out_vec[i_new+i] = data_in_vec[i_old+i];
             }
         }
@@ -411,6 +413,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
 
     auto &data_in_vec = *( this->get_component_data(0).get() );
     for (idx=0; idx < conn_vec.size(); idx++) {
+    	ASSERT_LT(conn_vec[idx], node_cache->n_values());
     	node_cache->add( conn_vec[idx], &(data_in_vec[this->n_comp() * idx]) );
     	count[ conn_vec[idx] ]++;
     }

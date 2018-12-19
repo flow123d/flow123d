@@ -280,7 +280,7 @@ void OutputTime::gather_output_data(void)
             }
         }
 
-        auto &corner_data_map = this->output_data_vec_[CORNER_DATA]; //TODO need fix of discontinuous output
+        auto &corner_data_map = this->output_data_vec_[CORNER_DATA];
         for(unsigned int i=0; i<corner_data_map.size(); ++i) {
             auto elem_node_cache = corner_data_map[i]->element_node_cache_fixed_size(offset_vec);
             auto serial_fix_data_cache = elem_node_cache->gather(output_mesh_->orig_mesh_->get_el_ds(), output_mesh_->orig_mesh_->get_el_4_loc(), rank_, n_proc_);
