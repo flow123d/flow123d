@@ -53,7 +53,8 @@ TEST(OutputMesh, create_identical)
     Mesh *mesh = mesh_full_constructor("{mesh_file=\"" + (string)mesh_file + "\"}");
     
     auto output_mesh = std::make_shared<OutputMeshTest>(*mesh);
-    output_mesh->create_mesh();
+    output_mesh->create_sub_mesh();
+    output_mesh->make_serial_master_mesh(mesh->get_el_ds()->myp(), mesh->get_el_ds()->np());
     output_mesh->print_and_check_sizes(mesh);
     
     for(const auto &ele : *output_mesh)
@@ -76,7 +77,8 @@ TEST(OutputMesh, create_identical)
     }
     
     auto output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*mesh);
-    output_mesh_discont->create_mesh();
+    output_mesh_discont->create_sub_mesh();
+    output_mesh_discont->make_serial_master_mesh(mesh->get_el_ds()->myp(), mesh->get_el_ds()->np());
     
     MessageOut() << "DISCONTINUOUS\n";
     for(const auto &ele : *output_mesh_discont)

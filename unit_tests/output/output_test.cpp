@@ -257,7 +257,8 @@ public:
         this->set_output_data_caches(output_mesh);
         
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
-        //this->output_mesh_discont_->create_mesh();
+        //this->output_mesh_discont_->create_sub_mesh();
+        //this->output_mesh_discont_->make_serial_master_mesh(my_mesh->get_el_ds()->myp(), my_mesh->get_el_ds()->np());
         
 		{
         	field.compute_field_data(ELEM_DATA, shared_from_this());
