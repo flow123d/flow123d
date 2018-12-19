@@ -759,5 +759,7 @@ void OutputMeshDiscontinuous::make_serial_master_mesh(int rank, int n_proc)
 
         // create final node cache
         serial_mesh_->nodes_ = std::dynamic_pointer_cast< ElementDataCache<double> >(collect_fix_size_node_cache->element_node_cache_optimize_size(offsets_vec));
+
+        serial_mesh_->mesh_type_ = MeshType::discont;
     }
 }
