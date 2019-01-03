@@ -221,6 +221,12 @@ void OutputMesh::create_refined_mesh()
 }
 
 
+void OutputMesh::create_refined_sub_mesh()
+{
+    ASSERT(0).error("Not implemented yet.");
+}
+
+
 bool OutputMesh::refinement_criterion()
 {
     ASSERT(0).error("Not implemented yet.");
@@ -653,4 +659,92 @@ void OutputMeshDiscontinuous::make_serial_master_mesh(int rank, int n_proc)
 
         serial_mesh_->mesh_type_ = MeshType::discont;
     }
+}
+
+
+void OutputMeshDiscontinuous::create_refined_sub_mesh()
+{
+    ASSERT( !is_created() ).error("Multiple initialization of OutputMesh!\n");
+
+    DebugOut() << "Create refined discontinuous submesh containing only local elements.";
+    // initial guess of size: n_elements
+    nodes_ = std::make_shared<ElementDataCache<double>>("",(unsigned int)ElementDataCacheBase::N_VECTOR,0);
+    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity",(unsigned int)ElementDataCacheBase::N_SCALAR,0);
+    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets",(unsigned int)ElementDataCacheBase::N_SCALAR,0);
+    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>();
+
+    // index of last node added; set at the end of original ones
+    unsigned int last_offset = 0;
+
+    auto &node_vec = *( nodes_->get_component_data(0).get() );
+    auto &conn_vec = *( connectivity_->get_component_data(0).get() );
+    auto &offset_vec = *( offsets_->get_component_data(0).get() );
+
+    node_vec.reserve(4*orig_mesh_->n_nodes());
+    conn_vec.reserve(4*4*orig_mesh_->n_elements());
+    offset_vec.reserve(4*orig_mesh_->n_elements());
+
+    LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
+    const unsigned int n_local_elements = orig_mesh_->get_el_ds()->lsize();
+
+    for (unsigned int loc_el = 0; loc_el < n_local_elements; loc_el++) {
+    	auto ele = orig_mesh_->element_accessor( el_4_loc[loc_el] );
+    	const unsigned int
+            dim = ele->dim(),
+            ele_idx = ele.idx();
+
+        AuxElement aux_ele;
+        aux_ele.nodes.resize(ele->n_nodes());
+        aux_ele.level = 0;
+
+        unsigned int li;
+        for (li=0; li<ele->n_nodes(); li++) {
+            aux_ele.nodes[li] = ele.node_accessor(li)->point();
+        }
+
+        std::vector<AuxElement> refinement;
+
+        switch(dim){
+            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele); break;
+            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele); break;
+            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele); break;
+            default: ASSERT(0 < dim && dim < 4);
+        }
+
+        //skip unrefined element
+//         if(refinement.size() < 2) continue;
+        unsigned int node_offset = node_vec.size(),
+                     con_offset = conn_vec.size();
+        node_vec.resize(node_vec.size() + (refinement.size() * (dim+1))*spacedim);
+        conn_vec.resize(conn_vec.size() + refinement.size()*(dim+1));
+//         orig_element_indices_->resize(orig_element_indices_->size() + refinement.size()*(dim+1));
+
+//         DebugOut() << "ref size = " << refinement.size() << "\n";
+        //gather coords and connectivity (in a continous way inside element)
+        for(unsigned int i=0; i < refinement.size(); i++)
+        {
+            last_offset += dim+1;
+            offset_vec.push_back(last_offset);
+            (*orig_element_indices_).push_back(ele_idx);
+            for(unsigned int j=0; j < dim+1; j++)
+            {
+                unsigned int con = i*(dim+1) + j;
+                conn_vec[con_offset + con] = con_offset + con;
+
+                for(unsigned int k=0; k < spacedim; k++) {
+                    node_vec[node_offset + con*spacedim + k] = refinement[i].nodes[j][k];
+                }
+            }
+        }
+    }
+
+    conn_vec.shrink_to_fit();
+    node_vec.shrink_to_fit();
+    offset_vec.shrink_to_fit();
+
+    connectivity_->set_n_values(conn_vec.size());
+    nodes_->set_n_values(node_vec.size() / spacedim);
+    offsets_->set_n_values(offset_vec.size());
+
+    mesh_type_ = MeshType::refined;
 }

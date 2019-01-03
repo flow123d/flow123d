@@ -90,13 +90,22 @@ public:
     /// Gives iterator to the LAST element of the output mesh.
     OutputElementIterator end();
     
-    /// Creates refined mesh.
+    /**
+     * Creates refined mesh.
+     *
+     * OBSOLETE method
+     */
     virtual void create_refined_mesh()=0;
 
     /**
      * Creates sub mesh containing only local part of original (computation) mesh.
      */
     void create_sub_mesh();
+
+    /**
+     * Creates refined sub mesh containing only local part of original (computation) mesh.
+     */
+    virtual void create_refined_sub_mesh()=0;
 
     /// Selects the error control field computing function of output field set according to input record.
     void set_error_control_field(ErrorControlFieldFunc error_control_field_func);
@@ -193,6 +202,9 @@ public:
     /// Implements OutputMeshBase::make_serial_master_mesh
     void make_serial_master_mesh(int rank, int n_proc) override;
 
+    /// Implements OutputMeshBase::create_refined_sub_mesh
+    void create_refined_sub_mesh() override;
+
 protected:
     bool refinement_criterion();
     
@@ -215,13 +227,16 @@ public:
     /// Implements OutputMeshBase::make_serial_master_mesh
     void make_serial_master_mesh(int rank, int n_proc) override;
 
+    /// Implements OutputMeshBase::create_refined_sub_mesh
+    void create_refined_sub_mesh() override;
+
 protected:
     ///Auxiliary structure defining element of refined output mesh.
     struct AuxElement{
         std::vector<Space<spacedim>::Point> nodes;
         unsigned int level;
     };
-    
+
     ///Performs the actual refinement of AuxElement. Recurrent.
     template<int dim>
     void refine_aux_element(const AuxElement& aux_element,
