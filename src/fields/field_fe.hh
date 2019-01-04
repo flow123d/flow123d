@@ -314,13 +314,13 @@ void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Val
 	std::vector<LongIdx> indices(ndofs);
 
 	/*for (auto cell : dh->own_range()) {
-		cell.get_dof_indices(indices);
+		cell.get_loc_dof_indices(indices);
 		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*cell.elm_idx()+idof ];
 	}*/
 
 	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
 	for (auto ele : dh->mesh()->elements_range()) {
-		dh->get_dof_indices(ele, indices);
+		dh->get_loc_dof_indices(ele, indices);
 		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
 	}
 }

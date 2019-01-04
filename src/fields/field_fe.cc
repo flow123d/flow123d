@@ -139,7 +139,7 @@ VectorMPI * FieldFE<spacedim, Value>::set_fe_data(std::shared_ptr<DOFHandlerMult
 {
     dh_ = dh;
     if (dof_values==nullptr) { //create data vector according to dof handler - Warning not tested yet
-        data_vec_ = new VectorMPI(dh_->mesh()->n_elements());
+        data_vec_ = new VectorMPI(dh_->lsize());
         data_vec_->zero_entries();
     } else {
         data_vec_ = dof_values;
@@ -513,7 +513,7 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		}
 
 		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
-		else dh_->get_dof_indices( ele, dof_indices_);
+		else dh_->get_loc_dof_indices( ele, dof_indices_);
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT_DBG( dof_indices_[i], (int)data_vec_->size());
 			(*data_vec_)[dof_indices_[i]] = elem_value[i] * this->unit_conversion_coefficient_;
@@ -614,7 +614,7 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		if (total_measure > epsilon) {
 			VectorMPI::VectorDataPtr data_vector = data_vec_->data_ptr();
 			if (this->boundary_domain_) value_handler1_.get_dof_indices( elm, dof_indices_ );
-			else dh_->get_dof_indices( elm, dof_indices_ );
+			else dh_->get_loc_dof_indices( elm, dof_indices_ );
 			for (unsigned int i=0; i < value.size(); i++) {
 				(*data_vector)[ dof_indices_[i] ] = value[i] / total_measure;
 			}
@@ -642,7 +642,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	else mesh = dh_->mesh();
 	for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 		if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
-		else dof_size = dh_->get_dof_indices( ele, dof_indices_ );
+		else dof_size = dh_->get_loc_dof_indices( ele, dof_indices_ );
 		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
@@ -652,7 +652,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 	// iterate through cells, assembly global vector and count number of writes - prepared solution for further development
 	/*for (auto cell : dh_->own_range()) {
-		dof_size = cell.get_dof_indices(dof_indices_);
+		dof_size = cell.get_loc_dof_indices(dof_indices_);
 		data_vec_i = cell.elm_idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
