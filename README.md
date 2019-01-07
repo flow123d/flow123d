@@ -1,4 +1,4 @@
-# Flow123d #
+# Flow123d &middot; [![Jenkins release](https://img.shields.io/jenkins/s/http/ciflow.nti.tul.cz:8080/Flow123d-ci2runner-release-multijob.svg?style=flat-square&label=release)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) [![Jenkins debug](https://img.shields.io/jenkins/s/http/ciflow.nti.tul.cz:8080/Flow123d-ci2runner-debug-multijob.svg?style=flat-square&label=debug)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/) [![Coveralls master](https://img.shields.io/coveralls/github/flow123d/flow123d.svg?style=flat-square&label=coverage)](https://coveralls.io/github/flow123d/flow123d) [![Docker hub](https://img.shields.io/badge/docker-hub-blue.svg?colorA=2271b8&colorB=dc750d&logo=docker&style=flat-square)](https://hub.docker.com/u/flow123d/) [![CI-HPC](https://img.shields.io/badge/ci--hpc-performace-green.svg?style=flat-square&logo=google%20analytics&logoColor=white)](http://flowdb.nti.tul.cz/ci-hpc/)
 
 Flow123d is a simulator of underground water flow and transport processes in fractured
 porous media. Novelty of this software is support of computations on complex
@@ -7,9 +7,11 @@ we can combine continuum models and discrete fracture network models.
 For more information see the project pages:
 [flow123d.github.com](http://flow123d.github.com).
 
-Release [![Build Status](http://ciflow.nti.tul.cz:8080/buildStatus/icon?job=Flow123d-ci2runner-release-multijob)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/) |
- Debug [![Build Status](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/badge/icon)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/)
- 
+
+[![Jenkins release](https://img.shields.io/jenkins/s/http/ciflow.nti.tul.cz:8080/Flow123d-ci2runner-release-multijob.svg?style=flat-square&label=Jenkins-release)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-release-multijob/)
+
+[![Jenkins debug](https://img.shields.io/jenkins/s/http/ciflow.nti.tul.cz:8080/Flow123d-ci2runner-debug-multijob.svg?style=flat-square&label=Jenkins-debug)](http://ciflow.nti.tul.cz:8080/view/multijob-list/job/Flow123d-ci2runner-debug-multijob/)
+
 ## Docker
 
 Link to docker images: https://hub.docker.com/u/flow123d/
