@@ -22,8 +22,9 @@
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+// #include "fields/vec_seq_double.hh"
 #include "la/linsys.hh"
+#include "la/vector_mpi.hh"
 #include "flow/mh_dofhandler.hh"
 #include "fields/equation_output.hh"
 #include "fem/mapping_p1.hh"
@@ -72,6 +73,7 @@ public:
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
+    FiniteElement<0> *fe0_;
 	FiniteElement<1> *fe1_;
 	FiniteElement<2> *fe2_;
 	FiniteElement<3> *fe3_;
@@ -162,8 +164,8 @@ public:
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
-        Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+        Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
         
         Field<3, FieldValue<3>::VectorFixed> output_field;
 
@@ -404,7 +406,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	VectorSeqDouble output_vec;
+	VectorMPI output_vec;
     
     std::shared_ptr<OutputTime> output_stream_;
 
@@ -454,4 +456,4 @@ private:
 
 
 
-#endif /* TRANSPORT_DG_HH_ */
+#endif /* ELASTICITY_HH_ */
