@@ -110,6 +110,13 @@ protected:
                 .close();
     }
 
+    void check_distributions() {
+        std::vector<int> expected_n_elems = {1, 1}; // expected numbers of elements for individual processes
+        std::vector<int> expected_n_nodes = {3, 1}; // expected numbers of nodes for individual processes
+        EXPECT_EQ(this->my_mesh->get_el_ds()->lsize(), expected_n_elems[rank]);
+        EXPECT_EQ(this->my_mesh->get_node_ds()->lsize(), expected_n_nodes[rank]);
+    }
+
     void read_input(const string &input) {
         // read input string
         Input::ReaderToStorage reader( input, get_input_type(), Input::FileFormat::format_YAML );
@@ -130,7 +137,14 @@ protected:
         data.set_time(tg.step(), LimitSide::right);
     }
 
+    void make_output_mesh() {
+        output_mesh->create_sub_mesh();
+        output_mesh->make_serial_master_mesh(rank, my_mesh->get_el_ds()->np());
+        stream->set_output_data_caches(output_mesh);
+    }
+
 	Mesh * my_mesh;
+	std::shared_ptr<OutputMeshBase> output_mesh;
     EqData data;
     std::vector<string> component_names;
     std::shared_ptr<OutputVTKTest> stream;
@@ -141,24 +155,10 @@ protected:
 
 TEST_F(TestParallelOutput, continuous_mesh)
 {
-    /* Test of distributions */
-    std::vector<int> expected_n_elems = {1, 1}; // expected numbers of elements for individual processes
-    std::vector<int> expected_n_nodes = {3, 1}; // expected numbers of nodes for individual processes
-    EXPECT_EQ(this->my_mesh->get_el_ds()->lsize(), expected_n_elems[rank]);
-    EXPECT_EQ(this->my_mesh->get_node_ds()->lsize(), expected_n_nodes[rank]);
-
+    check_distributions();
     read_input(eq_data_input);
-
-    /* Construct OutputMesh */
-    std::shared_ptr<OutputMeshBase> output_mesh = std::make_shared<OutputMesh>(*my_mesh);
-    output_mesh->create_sub_mesh();
-    output_mesh->make_serial_master_mesh(rank, my_mesh->get_el_ds()->np());
-    stream->set_output_data_caches(output_mesh);
-
-    /* Simulate field output */
-    data.init_scalar.field_output(stream);
-    data.init_vector.field_output(stream);
-    stream->gather_data(my_mesh);
+    output_mesh = std::make_shared<OutputMesh>(*my_mesh);
+    make_output_mesh();
 
     /* Tests of output data */
     if (rank == 0) {
@@ -187,6 +187,40 @@ TEST_F(TestParallelOutput, continuous_mesh)
 }
 
 
-//TEST_F(TestParallelOutput, discontinuous_mesh)
-//{
-//}
+TEST_F(TestParallelOutput, discontinuous_mesh)
+{
+    check_distributions();
+    read_input(eq_data_input);
+    output_mesh = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
+    make_output_mesh();
+
+    /* Simulate field output */
+    data.init_scalar.field_output(stream);
+    data.init_vector.field_output(stream);
+    stream->gather_data(my_mesh);
+
+    /* Tests of output data */
+    if (rank == 0) {
+        std::vector<double> expected_nodes = { -3, 3, 0, -3, -3, 0, 3, -3, 0, -3, 3, 0, 3, -3, 0, 3, 3, 0 };
+        std::vector<unsigned int> expected_connectivities = { 0, 1, 2, 3, 4, 5 };
+        std::vector<unsigned int> expected_offsets = { 3, 6 };
+        auto &node_vec = *( stream->nodes_cache()->get_component_data(0).get() );
+        for (unsigned int i=0; i<node_vec.size(); ++i) EXPECT_DOUBLE_EQ( node_vec[i], expected_nodes[i]);
+        auto &conn_vec = *( stream->connectivity_cache()->get_component_data(0).get() );
+        for (unsigned int i=0; i<conn_vec.size(); ++i) EXPECT_EQ( conn_vec[i], expected_connectivities[i]);
+        auto &offs_vec = *( stream->offsets_cache()->get_component_data(0).get() );
+        for (unsigned int i=0; i<offs_vec.size(); ++i) EXPECT_EQ( offs_vec[i], expected_offsets[i]);
+
+        std::map<string, std::vector<double>> expected_field_data;
+        expected_field_data["init_scalar"] = { -1, 1 };
+        expected_field_data["init_vector"] = { 1, -2, 0, 1, 2, 0 };
+        auto elem_cache_map = stream->output_data_vec(OutputTime::DiscreteSpace::ELEM_DATA);
+        for (unsigned int i=0; i<elem_cache_map.size(); ++i) {
+            std::shared_ptr< ElementDataCache<double> > current_cache = dynamic_pointer_cast<ElementDataCache<double> >(elem_cache_map[i]);
+            string field_name = current_cache->field_input_name();
+            auto &current_vec = *( current_cache->get_component_data(0).get() );
+            EXPECT_EQ( expected_field_data[field_name].size(), current_vec.size() );
+            for (unsigned int i=0; i<current_vec.size(); ++i) EXPECT_DOUBLE_EQ( expected_field_data[field_name][i], current_vec[i] );
+        }
+    }
+}
