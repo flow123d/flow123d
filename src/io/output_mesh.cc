@@ -153,7 +153,8 @@ void OutputMeshBase::create_sub_mesh()
     ElementAccessor<3> elm;
     LongIdx *el_4_loc = orig_mesh_->get_el_4_loc();
     const unsigned int n_local_elements = orig_mesh_->get_el_ds()->lsize();
-    std::vector<unsigned int> local_nodes_map(orig_mesh_->n_nodes(), Mesh::undef_idx); // map global to local ids of nodes
+    unsigned int n_nodes = orig_mesh_->get_node_ds()->end( orig_mesh_->get_node_ds()->np()-1 );
+    std::vector<unsigned int> local_nodes_map(n_nodes, Mesh::undef_idx); // map global to local ids of nodes
     for (unsigned int i=0; i<orig_mesh_->n_local_nodes(); ++i) local_nodes_map[ orig_mesh_->get_node_4_loc()[i] ] = i;
 
     orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_local_elements);
@@ -196,6 +197,60 @@ void OutputMeshBase::create_sub_mesh()
 
 
 
+void OutputMeshBase::make_serial_master_mesh(int rank, int n_proc)
+{
+    std::shared_ptr<ElementDataCache<unsigned int>> global_offsets; // needs for creating serial nodes and connectivity caches on zero process
+    auto elems_n_nodes = get_elems_n_nodes(rank, n_proc); // collects number of nodes on each elements (for fill serial_mesh_->offsets_)
+
+    if (rank==0) {
+    	// create serial output mesh, fill offsets cache and orig_element_indices vector
+    	unsigned int n_elems = orig_mesh_->get_el_ds()->end( orig_mesh_->get_el_ds()->np()-1 );
+    	serial_mesh_ = this->construct_mesh();
+    	serial_mesh_->orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(n_elems);
+        serial_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", ElementDataCacheBase::N_SCALAR, n_elems);
+        auto &offsets_vec = *( serial_mesh_->offsets_->get_component_data(0).get() );
+        auto &elems_n_nodes_vec = *( elems_n_nodes->get_component_data(0).get() );
+        unsigned int offset=0;
+        for (unsigned int i=0; i<n_elems; ++i) {
+            offset += elems_n_nodes_vec[i];
+            offsets_vec[i] = offset;
+            (*serial_mesh_->orig_element_indices_)[i] = i;
+        }
+        global_offsets = serial_mesh_->offsets_;
+    }
+
+    // collects serial caches
+    std::shared_ptr<ElementDataCache<double>> serial_nodes_cache = make_serial_nodes_cache(global_offsets, rank, n_proc);
+    std::shared_ptr<ElementDataCache<unsigned int>> serial_connectivity_cache = make_serial_connectivity_cache(global_offsets, rank, n_proc);
+
+    if (rank==0) {
+        // set serial output mesh caches
+        serial_mesh_->connectivity_ = serial_connectivity_cache;
+        serial_mesh_->nodes_ = serial_nodes_cache;
+
+        serial_mesh_->mesh_type_ = this->mesh_type_;
+    }
+}
+
+
+std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_elems_n_nodes(int rank, int n_proc)
+{
+	// Compute (locally) number of nodes of each elements
+	ElementDataCache<unsigned int> local_elems_n_nodes("elems_n_nodes", ElementDataCacheBase::N_SCALAR, offsets_->n_values());
+	auto &local_elems_n_nodes_vec = *( local_elems_n_nodes.get_component_data(0).get() );
+	auto &offset_vec = *( offsets_->get_component_data(0).get() );
+	for (unsigned int i=offset_vec.size()-1; i>0; --i) local_elems_n_nodes_vec[i] = offset_vec[i] - offset_vec[i-1];
+	local_elems_n_nodes_vec[0] = offset_vec[0];
+
+	// Collect data, set on zero process
+	std::shared_ptr<ElementDataCache<unsigned int>> global_elems_n_nodes;
+	auto gather_cache = local_elems_n_nodes.gather(orig_mesh_->get_el_ds(), orig_mesh_->get_el_4_loc(), rank, n_proc);
+	if (rank==0) global_elems_n_nodes = std::dynamic_pointer_cast< ElementDataCache<unsigned int> >(gather_cache);
+	return global_elems_n_nodes;
+}
+
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -234,60 +289,47 @@ bool OutputMesh::refinement_criterion()
 }
 
 
-void OutputMesh::make_serial_master_mesh(int rank, int n_proc)
+std::shared_ptr<OutputMeshBase> OutputMesh::construct_mesh()
 {
+    return std::make_shared<OutputMesh>(*orig_mesh_);
+}
+
+
+std::shared_ptr<ElementDataCache<double>> OutputMesh::make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc)
+{
+	std::shared_ptr<ElementDataCache<double>> serial_nodes_cache;
+
     // collects nodes_ data (coordinates)
     auto serial_nodes = nodes_->gather(orig_mesh_->get_node_ds(), orig_mesh_->get_node_4_loc(), rank, n_proc);
-    if (rank==0) {
-    	serial_mesh_ = std::make_shared<OutputMesh>(*orig_mesh_);
-        serial_mesh_->nodes_ = std::dynamic_pointer_cast< ElementDataCache<double> >(serial_nodes);
-    }
 
-    // re-number connectivity indices from local to global, use 4 connectivities for every element (maximal number of connectivities)
-    ElementDataCache<unsigned int> global_conn("global_conn", (unsigned int)4, orig_mesh_->get_el_ds()->lsize());
-    auto &global_conn_vec = *( global_conn.get_component_data(0).get() );
-    std::fill(global_conn_vec.begin(), global_conn_vec.end(), Mesh::undef_idx);
+    if (rank==0) serial_nodes_cache = std::dynamic_pointer_cast< ElementDataCache<double> >(serial_nodes);
+    return serial_nodes_cache;
+}
+
+
+std::shared_ptr<ElementDataCache<unsigned int>> OutputMesh::make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets,
+		int rank, int n_proc)
+{
+	std::shared_ptr<ElementDataCache<unsigned int>> serial_connectivity_cache;
+
+    // re-number connectivity indices from local to global
     auto &conn_vec = *( connectivity_->get_component_data(0).get() );
-    auto &offset_vec = *( offsets_->get_component_data(0).get() );
-    unsigned int i_node;
-    for (unsigned int i_el=0, i_conn=0; i_el<offset_vec.size(); i_el++) {
-        for(i_node=4*i_el; i_conn<offset_vec[i_el]; i_conn++, i_node++) {
-        	global_conn_vec[i_node] = orig_mesh_->get_node_4_loc()[ conn_vec[i_conn] ];
-        }
+    ElementDataCache<unsigned int> global_conn("connectivity", (unsigned int)1, conn_vec.size()); // holds global indices of nodes
+    auto &global_conn_vec = *( global_conn.get_component_data(0).get() );
+    for(unsigned int i=0; i<conn_vec.size(); i++) {
+        global_conn_vec[i] = orig_mesh_->get_node_4_loc()[ conn_vec[i] ];
     }
 
-    // collects global connectivities, create orig_element_indices vector, connectivity and offset caches of serial mesh
-    auto collective_conn = global_conn.gather(orig_mesh_->get_el_ds(), orig_mesh_->get_el_4_loc(), rank, n_proc);
+    // collects global connectivities
+    auto &local_offset_vec = *( offsets_->get_component_data(0).get() );
+    auto global_fix_size_conn = global_conn.element_node_cache_fixed_size(local_offset_vec);
+    auto collective_conn = global_fix_size_conn->gather(orig_mesh_->get_el_ds(), orig_mesh_->get_el_4_loc(), rank, n_proc);
+
     if (rank==0) {
-    	std::shared_ptr< ElementDataCache<unsigned int> > collective_connectivity = std::dynamic_pointer_cast< ElementDataCache<unsigned int> >(collective_conn);
-    	auto &collective_conn_vec = *( collective_connectivity->get_component_data(0).get() );
-
-        serial_mesh_->orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(orig_mesh_->n_elements());
-        serial_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                orig_mesh_->n_elements());
-        auto &offsets_vec = *( serial_mesh_->offsets_->get_component_data(0).get() );
-        unsigned int offset = 0, i=0;
-        for (auto elm : orig_mesh_->elements_range()) {
-            offset += elm.dim()+1;
-            offsets_vec[elm.idx()] = offset;
-            (*serial_mesh_->orig_element_indices_)[i] = i;
-            i++;
-        }
-
-        serial_mesh_->connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                offsets_vec[offsets_vec.size()-1]);
-        auto &conn_vec = *( serial_mesh_->connectivity_->get_component_data(0).get() );
-        unsigned int i_old_conn, n_vals, elm_idx;
-        unsigned int i_conn = 0;
-        for (auto elm : orig_mesh_->elements_range()) {
-        	elm_idx = elm.idx();
-            i_old_conn = 4*elm_idx;
-        	for (n_vals=0; n_vals<elm.dim()+1; n_vals++) {
-        		ASSERT_DBG(collective_conn_vec[i_old_conn+n_vals] != Mesh::undef_idx);
-        		conn_vec[i_conn++] = collective_conn_vec[i_old_conn+n_vals];
-        	}
-        }
+    	auto &offset_vec = *( global_offsets->get_component_data(0).get() );
+    	serial_connectivity_cache = std::dynamic_pointer_cast< ElementDataCache<unsigned int> >( collective_conn->element_node_cache_optimize_size(offset_vec) );
     }
+    return serial_connectivity_cache;
 }
 
 
@@ -609,56 +651,58 @@ bool OutputMeshDiscontinuous::refinement_criterion_error(const OutputMeshDiscont
 
 }
 
-void OutputMeshDiscontinuous::make_serial_master_mesh(int rank, int n_proc)
+
+std::shared_ptr<OutputMeshBase> OutputMeshDiscontinuous::construct_mesh()
 {
-    // Create helper cache of discontinuous node data ordering by elements (with constant data size for each elements)
-    std::shared_ptr< ElementDataCache<double> > fix_size_node_cache = std::make_shared<ElementDataCache<double>>("",
-            4*ElementDataCacheBase::N_VECTOR, this->offsets_->n_values());
-	auto &local_conn_vec = *( this->connectivity_->get_component_data(0).get() );
-	auto &local_offset_vec = *( this->offsets_->get_component_data(0).get() );
-	auto &local_nodes_vec = *( this->nodes_->get_component_data(0).get() );
-	auto &fix_size_nodes_vec = *( fix_size_node_cache->get_component_data(0).get() );
-	std::fill( fix_size_nodes_vec.begin(), fix_size_nodes_vec.end(), -1 );
-    unsigned int i_node, i_old, i_new;
-    for (unsigned int i_el=0, i_conn=0; i_el<this->offsets_->n_values(); ++i_el) {
-        for(i_node=4*i_el; i_conn<local_offset_vec[i_el]; i_conn++, i_node++) {
-            i_old = local_conn_vec[i_conn] * ElementDataCacheBase::N_VECTOR;
-            i_new = i_node * ElementDataCacheBase::N_VECTOR;
-            for(unsigned int i = 0; i < ElementDataCacheBase::N_VECTOR; i++) {
-                fix_size_nodes_vec[i_new+i] = local_nodes_vec[i_old+i];
-            }
+    return std::make_shared<OutputMeshDiscontinuous>(*orig_mesh_);
+}
+
+
+std::shared_ptr<ElementDataCache<double>> OutputMeshDiscontinuous::make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets,
+		int rank, int n_proc)
+{
+	std::shared_ptr<ElementDataCache<double>> serial_nodes_cache;
+
+    // Create helper cache of discontinuous node data ordering by elements
+    std::shared_ptr< ElementDataCache<double> > discont_node_cache = std::make_shared<ElementDataCache<double>>("",
+                ElementDataCacheBase::N_VECTOR, this->connectivity_->n_values());
+    auto &discont_node_vec = *( discont_node_cache->get_component_data(0).get() );
+    auto &local_nodes_vec = *( this->nodes_->get_component_data(0).get() );
+    auto &local_conn_vec = *( this->connectivity_->get_component_data(0).get() );
+    auto &local_offset_vec = *( this->offsets_->get_component_data(0).get() );
+    unsigned int i_old, i_new;
+    for (unsigned int i_conn=0; i_conn<this->connectivity_->n_values(); ++i_conn) {
+    	i_old = local_conn_vec[i_conn] * ElementDataCacheBase::N_VECTOR;
+    	i_new = i_conn * ElementDataCacheBase::N_VECTOR;
+        for(unsigned int i = 0; i < ElementDataCacheBase::N_VECTOR; i++) {
+        	discont_node_vec[i_new+i] = local_nodes_vec[i_old+i];
         }
     }
-
     // Collects node data
+    auto fix_size_node_cache = discont_node_cache->element_node_cache_fixed_size(local_offset_vec);
     auto collect_fix_size_node_cache = fix_size_node_cache->gather(orig_mesh_->get_el_ds(), orig_mesh_->get_el_4_loc(), rank, n_proc);
 
     if (rank==0) {
-    	// create serial output mesh, fill offsets cache and orig_element_indices vector
-    	serial_mesh_ = std::make_shared<OutputMeshDiscontinuous>(*orig_mesh_);
-    	serial_mesh_->orig_element_indices_ = std::make_shared<std::vector<unsigned int>>(orig_mesh_->n_elements());
-        serial_mesh_->offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                orig_mesh_->n_elements());
-        auto &offsets_vec = *( serial_mesh_->offsets_->get_component_data(0).get() );
-        unsigned int offset=0, i=0;
-        for (auto elm : orig_mesh_->elements_range()) {
-            offset += elm.dim()+1;
-            offsets_vec[elm.idx()] = offset;
-            (*serial_mesh_->orig_element_indices_)[i] = i;
-            i++;
-        }
-
-        // fill connectivity cache
-        serial_mesh_->connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
-                offsets_vec[offsets_vec.size()-1]);
-        auto &conn_vec = *( serial_mesh_->connectivity_->get_component_data(0).get() );
-        for (unsigned int i=0; i<conn_vec.size(); ++i) conn_vec[i] = i;
-
-        // create final node cache
-        serial_mesh_->nodes_ = std::dynamic_pointer_cast< ElementDataCache<double> >(collect_fix_size_node_cache->element_node_cache_optimize_size(offsets_vec));
-
-        serial_mesh_->mesh_type_ = MeshType::discont;
+    	auto &offset_vec = *( global_offsets->get_component_data(0).get() );
+        serial_nodes_cache = std::dynamic_pointer_cast< ElementDataCache<double> >(collect_fix_size_node_cache->element_node_cache_optimize_size(offset_vec));
     }
+    return serial_nodes_cache;
+}
+
+
+std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshDiscontinuous::make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets,
+		int rank, int n_proc)
+{
+	std::shared_ptr<ElementDataCache<unsigned int>> serial_connectivity_cache;
+
+    if (rank==0) {
+    	auto &offset_vec = *( global_offsets->get_component_data(0).get() );
+    	serial_connectivity_cache = std::make_shared<ElementDataCache<unsigned int>>("connectivity", (unsigned int)ElementDataCacheBase::N_SCALAR,
+                offset_vec[offset_vec.size()-1]);
+        auto &conn_vec = *( serial_connectivity_cache->get_component_data(0).get() );
+        for (unsigned int i=0; i<conn_vec.size(); ++i) conn_vec[i] = i;
+    }
+    return serial_connectivity_cache;
 }
 
 

@@ -122,7 +122,7 @@ public:
 	void create_id_caches();
 
 	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
-	virtual void make_serial_master_mesh(int rank, int n_proc)=0;
+	void make_serial_master_mesh(int rank, int n_proc);
 
 	inline std::shared_ptr<OutputMeshBase> get_serial_master_mesh() const {
 		return serial_mesh_;
@@ -139,6 +139,22 @@ protected:
 		discont   //!< discontinuous mesh
 	};
 
+	/**
+	 * Construct empty output mesh.
+	 *
+	 * Use in make_serial_master_mesh method and create mesh of same type as this object (continuous / discontinuos)
+	 */
+	virtual std::shared_ptr<OutputMeshBase> construct_mesh()=0;
+
+	/// Create serial (collective) nodes cache on zero process
+	virtual std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc)=0;
+
+	/// Create serial (collective) connectivity cache on zero process
+	virtual std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank,
+	        int n_proc)=0;
+
+	/// Compute and return number of nodes for each elements (compute from offsets)
+	std::shared_ptr<ElementDataCache<unsigned int>> get_elems_n_nodes(int rank, int n_proc);
 
 	/// Input record for output mesh.
     Input::Record input_record_;
@@ -199,16 +215,23 @@ public:
     /// Creates refined mesh.
     void create_refined_mesh() override;
     
-    /// Implements OutputMeshBase::make_serial_master_mesh
-    void make_serial_master_mesh(int rank, int n_proc) override;
-
     /// Implements OutputMeshBase::create_refined_sub_mesh
     void create_refined_sub_mesh() override;
 
 protected:
     bool refinement_criterion();
     
-    /// Friend provides access to vectors for discontinous output mesh.
+    /// Implements OutputMeshBase::construct_mesh
+    std::shared_ptr<OutputMeshBase> construct_mesh() override;
+
+    /// Implements OutputMeshBase::make_serial_nodes_cache
+    std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc) override;
+
+    /// Implements OutputMeshBase::make_serial_connectivity_cache
+	std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank,
+	        int n_proc) override;
+
+	/// Friend provides access to vectors for discontinous output mesh.
     friend class OutputMeshDiscontinuous;
 };
 
@@ -224,9 +247,6 @@ public:
     /// Creates discontinuous refined mesh.
     void create_refined_mesh() override;
     
-    /// Implements OutputMeshBase::make_serial_master_mesh
-    void make_serial_master_mesh(int rank, int n_proc) override;
-
     /// Implements OutputMeshBase::create_refined_sub_mesh
     void create_refined_sub_mesh() override;
 
@@ -256,6 +276,16 @@ protected:
                                     const Space<spacedim>::Point &centre,
                                     const ElementAccessor<spacedim> &ele_acc
                                    );
+
+    /// Implements OutputMeshBase::construct_mesh
+    std::shared_ptr<OutputMeshBase> construct_mesh() override;
+
+    /// Implements OutputMeshBase::make_serial_nodes_cache
+    std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc) override;
+
+    /// Implements OutputMeshBase::make_serial_connectivity_cache
+	std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank,
+	        int n_proc) override;
 };
 
 #endif  // OUTPUT_MESH_HH_
