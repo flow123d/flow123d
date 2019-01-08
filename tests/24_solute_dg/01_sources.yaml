@@ -43,13 +43,13 @@ problem: !Coupling_Sequential
           disp_l: 0.01
           disp_t: 0.01
           dg_penalty: 10.0
-          sources_density: !FieldElementwise
+          sources_density: !FieldFE
             mesh_data_file: 01_input_sources.msh
             field_name: density
-          sources_sigma: !FieldElementwise
+          sources_sigma: !FieldFE
             mesh_data_file: 01_input_sources.msh
             field_name: sigma
-          sources_conc: !FieldElementwise
+          sources_conc: !FieldFE
             mesh_data_file: 01_input_sources.msh
             field_name: concentration
       solver: !Petsc

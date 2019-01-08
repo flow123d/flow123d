@@ -32,20 +32,25 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh.msh\"}");
     
+    FE_P<0> fe0(1);
     FE_P<1> fe1(1);
     FE_P<2> fe2(1);
     FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds, true);
+    dh.distribute_dofs(ds);
     
     EXPECT_EQ( 8, dh.n_global_dofs() );
+    
+    dh.print();
+    
+    auto dh_seq = dh.sequential();
     
     std::vector<int> indices[5];
     for (unsigned int i=0; i<5; i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      dh.get_dof_indices(mesh->element_accessor(i), indices[i]);
+      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is shared by elements 2, 3
@@ -97,20 +102,25 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
+    FE_P<0> fe0(1);
     FE_P<1> fe1(1);
     FE_P<2> fe2(1);
     FE_P<3> fe3(1);
-    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe1, &fe2, &fe3);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
-    dh.distribute_dofs(ds, true);
+    dh.distribute_dofs(ds);
     
     EXPECT_EQ( 15, dh.n_global_dofs() );
+    
+    dh.print();
+    
+    auto dh_seq = dh.sequential();
     
     std::vector<int> indices[mesh->n_elements()];
     for (unsigned int i=0; i<mesh->n_elements(); i++)
     {
       indices[i].resize(dh.max_elem_dofs());
-      dh.get_dof_indices(mesh->element_accessor(i), indices[i]);
+      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
     }
     
     // dof at node 1 is not shared by elements 1, 4, 5

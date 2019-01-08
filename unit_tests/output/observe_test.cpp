@@ -109,7 +109,7 @@ public:
 class TestObserve : public Observe {
 public:
     TestObserve(Mesh &mesh, Input::Array in_array)
-    : Observe("test_eq", mesh, in_array, 5, "s")
+    : Observe("test_eq", mesh, in_array, 6, "s")
     {
         for(auto &point: this->points_) my_points.push_back(TestObservePoint(point));
     }
@@ -196,13 +196,11 @@ public:
                      .add_value(1, "one")
                      .close();
 
-
-        ADD_FIELD(scalar_field, "").units(UnitSI::one());
-        ADD_FIELD(enum_field, "")
-            .units(UnitSI::one())
-            .input_selection(selection);
-        ADD_FIELD(vector_field, "").units(UnitSI::one());
-        ADD_FIELD(tensor_field, "").units(UnitSI::one());
+    
+        *this += scalar_field.name("scalar_field").units(UnitSI::one());
+        *this += vector_field.name("vector_field").units(UnitSI::one());
+        *this += tensor_field.name("tensor_field").units(UnitSI::one());
+        *this += enum_field.name("enum_field").units(UnitSI::one()).input_selection(selection);
     }
 
     ScalarField scalar_field;

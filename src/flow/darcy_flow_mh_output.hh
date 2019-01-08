@@ -37,7 +37,7 @@
 #include "fields/field_set.hh"           // for FieldSet
 #include "fields/field_values.hh"        // for FieldValue<>::Scalar, FieldV...
 #include "fields/field_python.hh"
-#include "fields/vec_seq_double.hh"      // for VectorSeqDouble
+#include "la/vector_mpi.hh"              // for VectorMPI
 #include "input/type_base.hh"            // for Array
 #include "input/type_generic.hh"         // for Instance
 #include "petscvec.h"                    // for Vec, _p_Vec
@@ -55,7 +55,7 @@ namespace Input {
 }
 
 template<unsigned int dim, unsigned int spacedim> class FEValues;
-
+template <int spacedim, class Value> class FieldFE;
 
 /**
  * Actually this class only collect former code from postprocess.*
@@ -85,8 +85,8 @@ public:
 	    Field<3, FieldValue<3>::Scalar> field_node_pressure;
 	    Field<3, FieldValue<3>::Scalar> field_ele_piezo_head;
 	    Field<3, FieldValue<3>::VectorFixed> field_ele_flux;
-	    Field<3, FieldValue<3>::Integer> subdomain;
-	    Field<3, FieldValue<3>::Integer> region_id;
+	    Field<3, FieldValue<3>::Scalar> subdomain;
+	    Field<3, FieldValue<3>::Scalar> region_id;
 	};
 
     /// Specific quantities for output in DarcyFlowMH - error estimates etc.
@@ -164,16 +164,22 @@ protected:
     
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
-    VectorSeqDouble corner_pressure;
+    VectorMPI corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    VectorSeqDouble ele_pressure;
+    VectorMPI ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    VectorSeqDouble ele_piezo_head;
+    VectorMPI ele_piezo_head;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    VectorSeqDouble ele_flux;
+    VectorMPI ele_flux;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
 
     // A vector of all element indexes
     std::vector<unsigned int> all_element_idx_;
@@ -182,6 +188,7 @@ protected:
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
+    FE_P_disc<0> fe0; //TODO temporary solution - add support of FEData<0>
     std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
@@ -197,9 +204,15 @@ protected:
     struct DiffData {
         double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
-        VectorSeqDouble pressure_diff;
-        VectorSeqDouble velocity_diff;
-        VectorSeqDouble div_diff;
+        VectorMPI pressure_diff;
+        VectorMPI velocity_diff;
+        VectorMPI div_diff;
+
+        // Temporary objects holding pointers to appropriate FieldFE
+        // TODO remove after final fix of equations
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> pressure_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> vel_diff_ptr;
+        std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> div_diff_ptr;
 
         double * solution;
         const MH_DofHandler * dh;

@@ -37,6 +37,7 @@
 
 class ElementDataCacheBase;
 class Mesh;
+class ReaderCache;
 
 
 
@@ -188,6 +189,8 @@ public:
 
     /**
      * Check if nodes and elements of reader mesh is compatible with \p mesh.
+     *
+     * OBSOLETE method - will be replace with Mesh::check_compatible_mesh after merge fields!
      */
     virtual void check_compatible_mesh(Mesh &mesh)=0;
 
@@ -258,6 +261,8 @@ protected:
 
     /// Header of actual loaded data.
     MeshDataHeader actual_header_;
+
+    friend class ReaderCache;
 };
 
 #endif	/* MSH_BASE_READER_HH */

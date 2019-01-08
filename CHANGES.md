@@ -4,6 +4,8 @@ List of all changes in user interface and major internal changes.
 
 #Flow123d version 3.1.0
 * Rename placeholder '${INPUT}' to '$INPUT_DIR$'.
+* Improved YAML converter
+* FieldElementwise replaced by FieldFE
 
 #Flow123d version 3.0.0
 (2017-12-30)

@@ -31,7 +31,7 @@
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "la/linsys.hh"
 #include "input/accessors.hh"                  // for ExcAccessorForNullStorage
@@ -92,6 +92,7 @@ public:
 private:
 
 	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<0> *fe0_;
 	FiniteElement<1> *fe1_;
 	FiniteElement<2> *fe2_;
 	FiniteElement<3> *fe3_;
@@ -166,8 +167,8 @@ public:
 
 		MultiField<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures (for each substance).
 		MultiField<3, FieldValue<3>::Scalar> dg_penalty;        ///< Penalty enforcing inter-element continuity of solution (for each substance).
-        Field<3, FieldValue<3>::Integer> region_id;
-        Field<3, FieldValue<3>::Integer> subdomain;
+        Field<3, FieldValue<3>::Scalar> region_id;
+        Field<3, FieldValue<3>::Scalar> subdomain;
 
         EquationOutput output_fields;
 
@@ -490,7 +491,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<VectorSeqDouble> output_vec;
+	vector<VectorMPI> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

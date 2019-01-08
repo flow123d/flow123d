@@ -20,14 +20,18 @@
 #define DOFHANDLER_HH_
 
 #include <vector>              // for vector
+#include <unordered_map>       // for unordered_map
 #include "mesh/side_impl.hh"
 #include "mesh/mesh.h"
 #include "mesh/accessors.hh"
 #include "mesh/long_idx.hh"    // for LongIdx
+#include "mesh/range_wrapper.hh"
+#include "tools/general_iterator.hh"
 #include "fem/discrete_space.hh" // for DiscreteSpace
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
+class DHCellAccessor;
 class Mesh;
 class Distribution;
 class Dof;
@@ -47,7 +51,7 @@ public:
      * @param _mesh The mesh.
      */
     DOFHandlerBase(Mesh &_mesh)
-    : n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {};
+    : n_global_dofs_(0), lsize_(0), loffset_(0), max_elem_dofs_(0), mesh_(&_mesh), dof_ds_(0) {}
 
     /**
      * @brief Getter for the number of all mesh dofs required by the given
@@ -70,7 +74,7 @@ public:
      */
     const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
 
-    Distribution *distr() const { return dof_ds_; }
+    std::shared_ptr<Distribution> distr() const { return dof_ds_; }
 
     /**
      * @brief Returns the mesh.
@@ -129,7 +133,7 @@ protected:
     /**
      * @brief Distribution of dofs associated to local process.
      */
-     Distribution *dof_ds_;
+     std::shared_ptr<Distribution> dof_ds_;
 
 };
 
@@ -155,8 +159,9 @@ public:
     /**
      * @brief Constructor.
      * @param _mesh The mesh.
+     * @param make_elem_part Allow switch off make_element_partitioning, necessary for boundary DOF handler.
      */
-    DOFHandlerMultiDim(Mesh &_mesh);
+    DOFHandlerMultiDim(Mesh &_mesh, bool make_elem_part = true);
 
 
     /**
@@ -171,9 +176,22 @@ public:
      * @param ds         The discrete space consisting of finite elements for each mesh element.
      * @param sequential If true then each processor will have information about all dofs.
      */
-    void distribute_dofs(std::shared_ptr<DiscreteSpace> ds,
-                         bool sequential = false);
+    void distribute_dofs(std::shared_ptr<DiscreteSpace> ds);
 
+    /** @brief Returns sequential version of the current dof handler.
+     * 
+     * Collective on all processors.
+     */
+    std::shared_ptr<DOFHandlerMultiDim> sequential();
+    
+    /**
+     * @brief Returns scatter context from parallel to sequential vectors.
+     * 
+     * For sequential dof handler it returns null pointer.
+     * Collective on all processors.
+     */
+    std::shared_ptr<VecScatter> sequential_scatter();
+    
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.
      *
@@ -215,7 +233,7 @@ public:
 	
     /**
      * @brief Return number of dofs on given cell.
-     * 
+     *
      * @param cell Cell accessor.
      */
     unsigned int n_dofs(ElementAccessor<3> cell) const;
@@ -251,17 +269,33 @@ public:
      */
     const Dof &cell_dof(ElementAccessor<3> cell,
                         unsigned int idof) const;
+    
+    /// Output structure of dof handler.
+    void print() const;
 
     /**
      * Implements @p DOFHandlerBase::hash.
      */
     std::size_t hash() const override;
 
+    /// Returns range of DOF handler cells (only range of own without ghost cells)
+    Range<DHCellAccessor> own_range() const;
+
+    /// Returns range over own and ghost cells of DOF handler
+    Range<DHCellAccessor> local_range() const;
+
+    /// Returns range over ghosts DOF handler cells
+    Range<DHCellAccessor> ghost_range() const;
+
+    /// Return DHCellAccessor appropriate to ElementAccessor of given idx
+    DHCellAccessor cell_accessor_from_element(unsigned int elm_idx) const;
+
     /// Destructor.
     ~DOFHandlerMultiDim() override;
     
     
     
+    friend class DHCellAccessor;
 
 private:
 
@@ -324,7 +358,9 @@ private:
                           );
     
     /**
-     * @brief Communicate local dof indices to all processors.
+     * @brief Communicate local dof indices to all processors and create new sequential dof handler.
+     *
+     * Collective on all processors.
      */
     void create_sequential();
 
@@ -340,12 +376,21 @@ private:
     
     /// Pointer to the discrete space for which the handler distributes dofs.
     std::shared_ptr<DiscreteSpace> ds_;
+    
+    /// Indicator for parallel/sequential dof handler.
+    bool is_parallel_;
+    
+    /// Sequential dof handler associated to the current (parallel) one.
+    std::shared_ptr<DOFHandlerMultiDim> dh_seq_;
+    
+    /// Scatter context for parallel to sequential vectors.
+    std::shared_ptr<VecScatter> scatter_to_seq_;
 
     /**
-     * @brief Starting indices for element dofs (parallel version).
+     * @brief Starting indices for element dofs.
      * 
      * E.g. dof_indices[cell_starts[idx]] = dof number for first dof on the
-     * cell with index idx within the paralle structure. To use with element
+     * cell with index idx within the parallel structure. To use with element
      * accessor use the following:
      * 
      *   ElementAccessor<3> cell;
@@ -353,12 +398,13 @@ private:
      *   // i-th dof number on the cell
      *   dof_indices[cell_starts[row_4_el[cell.idx()]]+i] = ...
      * 
-     * Only local and ghost elements are stored, but the vector has size mesh_->n_elements()+1.
+     * For parallel dof handler, only local and ghost elements are stored,
+     * but the vector has size mesh_->n_elements()+1.
      */
     std::vector<LongIdx> cell_starts;
     
     /**
-     * @brief Dof numbers on local and ghost elements (parallel version).
+     * @brief Dof numbers on local and ghost elements.
      * 
      * Dofs are ordered accordingly with cell_starts and local dof order
      * given by the finite element. See cell_starts for more description.
@@ -366,22 +412,18 @@ private:
     std::vector<LongIdx> dof_indices;
     
     /**
-     * @brief Starting indices for element dofs (sequential version).
+     * @brief Maps local and ghost dof indices to global ones.
      * 
-     * This vector stores information about all mesh elements.
-     * See cell_starts for paralle version.
+     * First lsize_ entries correspond to dofs owned by local processor,
+     * the remaining entries are ghost dofs sorted by neighbouring processor id.
      */
-    std::vector<LongIdx> cell_starts_seq;
+    std::vector<LongIdx> local_to_global_dof_idx_;
     
     /**
-     * @brief Dof numbers on mesh elements (sequential version).
-     * 
-     * This vector stores information about all mesh elements.
-     * See dof_indices for paralle version.
+     * @brief Maps global element index into local/ghost index (obsolete).
      */
-    std::vector<LongIdx> dof_indices_seq;
-
-
+    std::unordered_map<LongIdx,LongIdx> global_to_local_el_idx_;
+    
 	/// Global element index -> index according to partitioning
     LongIdx *row_4_el;
     

@@ -62,7 +62,7 @@ void compute_intersection(Mesh *mesh)
 //     }
 //     cout << "----------------------------------------------------------------" << endl;
     
-//     for (auto ele : mesh->bulk_elements_range()) {
+//     for (auto ele : mesh->elements_range()) {
 //         if(ele->dim() == 2){
 //             int ele_idx = ele.index();
 //             auto vec = ie.intersection_map_[ele_idx];

@@ -30,7 +30,7 @@
 #include "fields/field_values.hh"     // for FieldValue<>::Scalar, FieldValue
 #include "fields/field_set.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "input/type_base.hh"         // for Array
 #include "input/type_generic.hh"      // for Instance
@@ -44,6 +44,7 @@ namespace Input {
 		class Record;
 	}
 }
+template <int spacedim, class Value> class FieldFE;
 
 
 /// Class representing dual porosity model in transport.
@@ -138,8 +139,6 @@ protected:
    */
   EqData data_;
 
-  //Input::Array output_array;
-
   /**
    * Input data set - fields in this set are read from the input file.
    */
@@ -158,9 +157,14 @@ protected:
   //@{
   VecScatter vconc_out_scatter; ///< Output vector scatter.
   Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
-  std::vector<VectorSeqDouble> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
+  std::vector<VectorMPI> conc_immobile_out; ///< concentration array output for immobile phase (gathered - sequential)
   //@}
   
+  // Temporary objects holding pointers to appropriate FieldFE
+  // TODO remove after final fix of equations
+  /// Fields correspond with \p conc_immobile_out.
+  std::vector< std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> > output_field_ptr;
+
 private:
   /// Registrar of class to factory
   static const int registrar;

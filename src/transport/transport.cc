@@ -45,7 +45,8 @@
 
 #include "fields/field_algo_base.hh"
 #include "fields/field_values.hh"
-#include "fields/field_elementwise.hh" 
+#include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
 #include "reaction/isotherm.hh" // SorptionType enum
@@ -65,7 +66,7 @@ const int ConvectionTransport::registrar =
 
 const IT::Record &ConvectionTransport::get_input_type()
 {
-	return IT::Record(_equation_name, "Explicit in time finite volume method for advection only solute transport.")
+	return IT::Record(_equation_name, "Finite volume method, explicit in time, for advection only solute transport.")
 			.derive_from(ConcentrationTransportBase::get_input_type())
 			.declare_key("input_fields", IT::Array(
 			        EqData().make_field_descriptor_type(_equation_name)),
@@ -74,28 +75,36 @@ const IT::Record &ConvectionTransport::get_input_type()
             .declare_key("output",
                     EqData().output_fields.make_output_type(_equation_name, ""),
                     IT::Default("{ \"fields\": [ \"conc\" ] }"),
-                    "Setting of the fields output.")
+                    "Specification of output fields and output times.")
 			.close();
 }
 
 
 ConvectionTransport::EqData::EqData() : TransportEqData()
 {
-	ADD_FIELD(bc_conc, "Boundary conditions for concentrations.", "0.0");
-    	bc_conc.units( UnitSI().kg().m(-3) );
-	ADD_FIELD(init_conc, "Initial concentrations.", "0.0");
-    	init_conc.units( UnitSI().kg().m(-3) );
+    *this += bc_conc.name("bc_conc")
+            .description("Boundary condition for concentration of substances.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
+
+    *this += init_conc.name("init_conc")
+            .description("Initial values for concentration of substances.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) );
 
     output_fields += *this;
     output_fields += conc_mobile.name("conc")
             .units( UnitSI().kg().m(-3) )
-            .flags(FieldFlag::equation_result);
+            .flags(FieldFlag::equation_result)
+            .description("Concentration solution.");
 	output_fields += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
-	        .flags(FieldFlag::equation_external_output);
+	        .flags(FieldFlag::equation_external_output)
+            .description("Region ids.");
     output_fields += subdomain.name("subdomain")
             .units( UnitSI::dimensionless() )
-            .flags(FieldFlag::equation_external_output);
+            .flags(FieldFlag::equation_external_output)
+            .description("Subdomain ids of the domain decomposition.");
 }
 
 
@@ -139,9 +148,9 @@ void ConvectionTransport::initialize()
     data_.subdomain = GenericField<3>::subdomain(*mesh_);
 	for (unsigned int sbi=0; sbi<n_substances(); sbi++)
 	{
-		// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
-		auto output_field_ptr = out_conc[sbi].create_field<3, FieldValue<3>::Scalar>(n_substances());
-		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+		// create shared pointer to a FieldFE and push this Field to output_field on all regions
+		output_field_ptr[sbi] = create_field<3, FieldValue<3>::Scalar>(out_conc[sbi], *mesh_, 1);
+		data_.conc_mobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
 	}
 	//output_stream_->add_admissible_field_names(input_rec.val<Input::Array>("output_fields"));
     //output_stream_->mark_output_times(*time_);
@@ -162,7 +171,7 @@ void ConvectionTransport::make_transport_partitioning() {
 
 //    int * id_4_old = new int[mesh_->n_elements()];
 //    int i = 0;
-//    for (auto ele : mesh_->bulk_elements_range()) id_4_old[i++] = ele.index();
+//    for (auto ele : mesh_->elements_range()) id_4_old[i++] = ele.index();
 //    mesh_->get_part()->id_maps(mesh_->n_elements(), id_4_old, el_ds, el_4_loc, row_4_el);
 //    delete[] id_4_old;
 	el_ds = mesh_->get_el_ds();
@@ -177,7 +186,7 @@ void ConvectionTransport::make_transport_partitioning() {
     // - possibility to have different ref_output for different num of proc.
     // - or do not test such kind of output
     //
-    //for (auto ele : mesh_->bulk_elements_range()) {
+    //for (auto ele : mesh_->elements_range()) {
     //    ele->pid()=el_ds->get_proc(row_4_el[ele.index()]);
     //}
 
@@ -237,7 +246,7 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-	for (auto elem : mesh_->bulk_elements_range()) {
+	for (auto elem : mesh_->elements_range()) {
     	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
 
     	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
@@ -269,6 +278,8 @@ void ConvectionTransport::alloc_transport_vectors() {
     conc = new double*[n_subst];
     out_conc.clear();
     out_conc.resize(n_subst);
+    output_field_ptr.clear();
+    output_field_ptr.resize(n_subst);
     for (sbi = 0; sbi < n_subst; sbi++) {
         conc[sbi] = new double[el_ds->lsize()];
         out_conc[sbi].resize( el_ds->size() );
@@ -322,7 +333,7 @@ void ConvectionTransport::alloc_transport_structs_mpi() {
                 tm_diag[sbi],&v_tm_diag[sbi]);
 
         VecZeroEntries(vcumulative_corr[sbi]);
-        VecZeroEntries(out_conc[sbi].get_data_petsc());
+        VecZeroEntries(out_conc[sbi].petsc_vec());
     }
 
 
@@ -814,10 +825,10 @@ void ConvectionTransport::output_vector_gather() {
     IS is;
 
     ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc[0], is, out_conc[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
+    VecScatterCreate(vconc[0], is, out_conc[0].petsc_vec(), PETSC_NULL, &vconc_out_scatter);
     for (sbi = 0; sbi < n_substances(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc[sbi], out_conc[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterBegin(vconc_out_scatter, vconc[sbi], out_conc[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
+        VecScatterEnd(vconc_out_scatter, vconc[sbi], out_conc[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
     }
     chkerr(VecScatterDestroy(&(vconc_out_scatter)));
     chkerr(ISDestroy(&(is)));
@@ -850,6 +861,10 @@ void ConvectionTransport::output_data() {
     //if ( data_.output_fields.is_field_output_time(data_.conc_mobile, time().step()) ) {
     output_vector_gather();
     //}
+
+    for (unsigned int sbi = 0; sbi < n_substances(); sbi++) {
+    	fill_output_data(out_conc[sbi], output_field_ptr[sbi]);
+    }
 
 	data_.output_fields.output(time().step());
     

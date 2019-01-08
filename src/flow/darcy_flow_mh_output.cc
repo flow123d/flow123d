@@ -40,6 +40,7 @@
 #include "fem/fe_values_views.hh"
 #include "quadrature/quadrature_lib.hh"
 #include "fields/field_fe.hh"
+#include "fields/fe_value_handler.hh"
 #include "fields/generic_field.hh"
 
 #include "mesh/long_idx.hh"
@@ -69,7 +70,7 @@ const it::Instance & DarcyFlowMHOutput::get_input_type_specific() {
     static it::Record& rec = it::Record("Output_DarcyMHSpecific", "Specific Darcy flow MH output.")
         .copy_keys(OutputSpecificFields::get_input_type())
         .declare_key("compute_errors", it::Bool(), it::Default("false"),
-                        "SPECIAL PURPOSE. Computing errors pro non-compatible coupling.")
+                        "SPECIAL PURPOSE. Computes error norms of the solution, particulary suited for non-compatible coupling models.")
         .declare_key("raw_flow_output", it::FileName::output(), it::Default::optional(),
                         "Output file with raw data from MH module.")
         .close();
@@ -85,31 +86,48 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 : EquationOutput()
 {
 
-    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m());
-    *this += field_node_pressure.name("pressure_p1").units(UnitSI().m());
-	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m());
-	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1));
+    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P0 interpolation.");
+    *this += field_node_pressure.name("pressure_p1").units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P1 interpolation.");
+	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Piezo head solution - P0 interpolation.");
+	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Velocity solution - P0 interpolation.");
 	*this += subdomain.name("subdomain")
 					  .units( UnitSI::dimensionless() )
-					  .flags(FieldFlag::equation_external_output);
+					  .flags(FieldFlag::equation_external_output)
+                      .description("Subdomain ids of the domain decomposition.");
 	*this += region_id.name("region_id")
 	        .units( UnitSI::dimensionless())
-	        .flags(FieldFlag::equation_external_output);
+	        .flags(FieldFlag::equation_external_output)
+            .description("Region ids.");
 }
 
 
 DarcyFlowMHOutput::OutputSpecificFields::OutputSpecificFields()
 : EquationOutput()
 {
-    *this += pressure_diff.name("pressure_diff").units(UnitSI().m());
-    *this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1));
-    *this += div_diff.name("div_diff").units(UnitSI().s(-1));
+    *this += pressure_diff.name("pressure_diff").units(UnitSI().m())
+             .flags(FieldFlag::equation_result) 
+             .description("Error norm of the pressure solution. [Experimental]");
+    *this += velocity_diff.name("velocity_diff").units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Error norm of the velocity solution. [Experimental]");
+    *this += div_diff.name("div_diff").units(UnitSI().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Error norm of the divergence of the velocity solution. [Experimental]");
 }
 
 DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec)
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
+  fe0(1),
   is_output_specific_fields(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
@@ -154,28 +172,29 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
         all_element_idx_.resize(mesh_->n_elements());
 	for(unsigned int i=0; i<all_element_idx_.size(); i++) all_element_idx_[i] = i;
 
-	// create shared pointer to a FieldElementwise and push this Field to output_field on all regions
+	// create shared pointer to a FieldFE and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
-	auto ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(1);
+	ele_pressure_ptr=create_field<3, FieldValue<3>::Scalar>(ele_pressure, *mesh_, 1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
-        ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
-	dh_ = make_shared<DOFHandlerMultiDim>(*mesh_);
-	dh_->distribute_dofs(ds, true);
+	ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe0, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
+	DOFHandlerMultiDim dh_par(*mesh_);
+	dh_par.distribute_dofs(ds);
+        dh_ = dh_par.sequential();
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh_, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, &corner_pressure);
+	corner_ptr->set_fe_data(dh_, 0, &corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
 	ele_piezo_head.resize(mesh_->n_elements());
-	auto ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(1);
+	ele_piezo_head_ptr=create_field<3, FieldValue<3>::Scalar>(ele_piezo_head, *mesh_, 1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
-	auto ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(3);
+	ele_flux_ptr=create_field<3, FieldValue<3>::VectorFixed>(ele_flux, *mesh_, 3);
 	output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 	output_fields.subdomain = GenericField<3>::subdomain(*mesh_);
@@ -205,12 +224,12 @@ void DarcyFlowMHOutput::prepare_specific_output(Input::Record in_rec)
     
     output_specific_fields.set_mesh(*mesh_);
 
-    auto vel_diff_ptr =	diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), vel_diff_ptr, 0);
-    auto pressure_diff_ptr = diff_data.pressure_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), pressure_diff_ptr, 0);
-    auto div_diff_ptr =	diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(1);
-    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), div_diff_ptr, 0);
+    diff_data.vel_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.velocity_diff, *mesh_, 1);
+    output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.vel_diff_ptr, 0);
+    diff_data.pressure_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.pressure_diff, *mesh_, 1);
+    output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.pressure_diff_ptr, 0);
+    diff_data.div_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.div_diff, *mesh_, 1);
+    output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.div_diff_ptr, 0);
 
     output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
     output_specific_fields.initialize(output_stream, mesh_, in_rec, darcy_flow->time() );
@@ -254,6 +273,10 @@ void DarcyFlowMHOutput::output()
         //else
         //        make_node_scalar_param(observed_elements);
 
+        fill_output_data(ele_pressure, ele_pressure_ptr);
+        fill_output_data(ele_piezo_head, ele_piezo_head_ptr);
+        fill_output_data(ele_flux, ele_flux_ptr);
+
         // Internal output only if both ele_pressure and ele_flux are output.
         if (output_fields.is_field_output_time(output_fields.field_ele_flux,darcy_flow->time().step()) &&
             output_fields.is_field_output_time(output_fields.field_ele_pressure,darcy_flow->time().step()) )
@@ -277,6 +300,9 @@ void DarcyFlowMHOutput::output()
     {
         START_TIMER("evaluate output fields");
         output_specific_fields.set_time(darcy_flow->time().step(), LimitSide::right);
+        fill_output_data(diff_data.velocity_diff, diff_data.vel_diff_ptr);
+        fill_output_data(diff_data.pressure_diff, diff_data.pressure_diff_ptr);
+        fill_output_data(diff_data.div_diff, diff_data.div_diff_ptr);
         output_specific_fields.output(darcy_flow->time().step());
     }
 
@@ -339,7 +365,7 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 	unsigned int ndofs = dh_->max_elem_dofs();
 	std::vector<LongIdx> indices(ndofs);
 	unsigned int i_node;
-	for (auto ele : mesh_->bulk_elements_range()) {
+	for (auto ele : mesh_->elements_range()) {
 		dh_->get_dof_indices(ele, indices);
 		for (i_node=0; i_node<ele->n_nodes(); i_node++)
 		{
@@ -400,7 +426,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**first pass - calculate sums (weights)*/
     if (count_elements){
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele.node_accessor(li); //!< get NodeAccessor from element */
                 node_index = node.idx(); //!< get nod index from mesh */
@@ -415,7 +441,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
             }
     }
     if (count_sides){
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
                     node = side->node(li);//!< get NodeAccessor from element */
@@ -434,7 +460,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 
     /**second pass - calculate scalar  */
     if (count_elements){
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for (unsigned int li = 0; li < ele->n_nodes(); li++) {
                 node = ele.node_accessor(li);//!< get NodeAccessor from element */
                 node_index = ele.node_accessor(li).idx(); //!< get nod index from mesh */
@@ -451,7 +477,7 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
             }
     }
     if (count_sides) {
-    	for (auto ele : mesh_->bulk_elements_range())
+    	for (auto ele : mesh_->elements_range())
             for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
                 for (unsigned int li = 0; li < side->n_nodes(); li++) {
                     node = side->node(li);//!< get NodeAccessor from element */
@@ -499,10 +525,10 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
     int cit = 0;
-    for (auto ele : mesh_->bulk_elements_range()) {
-        raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
+    for (auto ele : mesh_->elements_range()) {
+    	raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
         for (unsigned int i = 0; i < 3; i++)
-            raw_output_file << ele_flux[3*cit+i] << " ";
+        	raw_output_file << ele_flux[3*cit+i] << " ";
 
         raw_output_file << ele->n_sides() << " ";
 
@@ -668,7 +694,7 @@ void DarcyFlowMHOutput::compute_l2_difference() {
     darcy_flow->get_solution_vector(diff_data.solution, solution_size);
 
 
-    for (auto ele : mesh_->bulk_elements_range()) {
+    for (auto ele : mesh_->elements_range()) {
 
     	switch (ele->dim()) {
         case 1:

@@ -19,7 +19,7 @@
 #include "fields/field_constant.hh"
 #include "fields/field_formula.hh"
 #include "fields/field_python.hh"
-#include "fields/field_elementwise.hh"
+#include "fields/field_fe.hh"
 #include "fields/field.hh"
 #include "fields/field_set.hh"
 #include "fields/field_values.hh"
@@ -40,7 +40,7 @@
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
 FLOW123D_FORCE_LINK_IN_PARENT(field_formula)
 FLOW123D_FORCE_LINK_IN_PARENT(field_python)
-FLOW123D_FORCE_LINK_IN_PARENT(field_elementwise)
+FLOW123D_FORCE_LINK_IN_PARENT(field_fe)
 
 using namespace std;
 
@@ -72,8 +72,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.75, 3.75, 5.75 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        fe_scalar={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        fe_vector_fixed={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     },
     {
         region="set_2",
@@ -96,8 +96,8 @@ string field_input = R"JSON(
         python_scalar={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, )" },
         python_vector_fixed={ TYPE="FieldPython", function="func_const", script_string="def func_const(x,y,z): return ( 1.25, 3.25, 5.25 )" },
 
-        elementwise_scalar={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
-        elementwise_vector_fixed={ TYPE="FieldElementwise", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
+        fe_scalar={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="scalar" },
+        fe_vector_fixed={ TYPE="FieldFE", mesh_data_file="fields/simplest_cube_data.msh", field_name="vector_fixed" }
     }
 ]
 )JSON";
@@ -131,14 +131,14 @@ public:
 	void TearDown() {
 		Profiler::uninitialize();
 
-		delete mesh_;
+		//delete mesh_;
 	}
 
 	ReturnType call_test() {
 
 		START_TIMER("single_value");
 		for (int i=0; i<list_size*loop_call_count; i++)
-			for (auto elm : this->mesh_->bulk_elements_range()) {
+			for (auto elm : this->mesh_->elements_range()) {
 				test_result_sum_ += field_.value( this->point_, elm);
 			}
 		END_TIMER("single_value");
@@ -146,14 +146,14 @@ public:
 		START_TIMER("all_values");
 		for (int i=0; i<loop_call_count; i++)
 			for (int j=0; j<list_size; j++)
-				for (auto elm : this->mesh_->bulk_elements_range()) {
+				for (auto elm : this->mesh_->elements_range()) {
 					test_result_sum_ += field_.value( this->point_list_[j], elm);
 				}
 		END_TIMER("all_values");
 
 		START_TIMER("value_list");
 		for (int i=0; i<loop_call_count; i++)
-			for (auto elm : this->mesh_->bulk_elements_range()) {
+			for (auto elm : this->mesh_->elements_range()) {
 				field_.value_list( this->point_list_, elm, value_list);
 				test_result_sum_ += value_list[0];
 			}
@@ -203,7 +203,7 @@ public:
     	expect_formula_simple_val_ = 9;
     	expect_formula_full_val_ = 268;
     	expect_formula_depth_val_ = 9;
-    	expect_elementwise_val_ = 4.5;
+    	expect_fe_val_ = 4.5;
     	test_result_sum_ = 0.0;
     	input_type_name_ = "scalar";
     	value_list= std::vector<ReturnType>(list_size);
@@ -216,7 +216,7 @@ public:
 		expect_formula_simple_val_ = arma::vec3("9 52 153");
 		expect_formula_full_val_ = arma::vec3("241 259 250");
 		expect_formula_depth_val_ = arma::vec3("13 13 13");
-		expect_elementwise_val_ = arma::vec3("9 18 27");
+		expect_fe_val_ = arma::vec3("9 18 27");
 		test_result_sum_ = arma::vec3("0.0 0.0 0.0");
 		input_type_name_ = "vector_fixed";
 		value_list= std::vector<ReturnType>(list_size);
@@ -265,7 +265,7 @@ public:
     ReturnType expect_formula_simple_val_;
     ReturnType expect_formula_full_val_;
     ReturnType expect_formula_depth_val_;
-    ReturnType expect_elementwise_val_;
+    ReturnType expect_fe_val_;
     std::vector<ReturnType> value_list;
     FieldSet set_of_field_;
     Field<3, T> field_;
@@ -291,7 +291,7 @@ TYPED_TEST(FieldSpeed, array) {
     START_TIMER("array");
 	START_TIMER("single_value");
 	for (int i=0; i<list_size*loop_call_count; i++)
-		for (auto elm : this->mesh_->bulk_elements_range()) {
+		for (auto elm : this->mesh_->elements_range()) {
 			this->test_result_sum_ += this->data_[elm.region_idx().idx()];
 		}
 	END_TIMER("single_value");
@@ -307,7 +307,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	START_TIMER("virtual_function");
 	START_TIMER("single_value");
 	for (int i=0; i<list_size*loop_call_count; i++)
-		for (auto elm : this->mesh_->bulk_elements_range()) {
+		for (auto elm : this->mesh_->elements_range()) {
 			this->test_result_sum_ += this->value( this->point_, elm);
 		}
 	END_TIMER("single_value");
@@ -315,7 +315,7 @@ TYPED_TEST(FieldSpeed, virtual_function) {
 	START_TIMER("all_values");
 	for (int i=0; i<loop_call_count; i++)
 		for (int j=0; j<list_size; j++)
-			for (auto elm : this->mesh_->bulk_elements_range()) {
+			for (auto elm : this->mesh_->elements_range()) {
 				this->test_result_sum_ += this->value( this->point_list_[j], elm);
 			}
 	END_TIMER("all_values");
@@ -413,16 +413,16 @@ TYPED_TEST(FieldSpeed, field_python) {
 #endif // FLOW123D_HAVE_PYTHON
 
 
-TYPED_TEST(FieldSpeed, field_elementwise) {
+TYPED_TEST(FieldSpeed, field_fe) {
 	this->set_values();
-	string key_name = "elementwise_" + this->input_type_name_;
+	string key_name = "fe_" + this->input_type_name_;
 	this->read_input(key_name);
 
-    START_TIMER("field_elementwise");
+    START_TIMER("field_fe");
 	this->call_test();
-	END_TIMER("field_elementwise");
+	END_TIMER("field_fe");
 
-	this->test_result( this->expect_elementwise_val_, 21 );
+	this->test_result( this->expect_fe_val_, 21 );
 	this->profiler_output();
 }
 
