@@ -28,6 +28,7 @@
 #include "mesh/range_wrapper.hh"
 #include "tools/general_iterator.hh"
 #include "fem/discrete_space.hh" // for DiscreteSpace
+#include "la/vector_mpi.hh"       // for VectorMPI
 #include "petscvec.h"          // for Vec
 
 template<unsigned int dim> class FiniteElement;
@@ -191,6 +192,11 @@ public:
      * Collective on all processors.
      */
     std::shared_ptr<VecScatter> sequential_scatter();
+    
+    /**
+     * @brief Allocates PETSc vector according to the dof distribution.
+     */
+    VectorMPI create_vector();
     
     /**
      * @brief Returns the global indices of dofs associated to the @p cell.

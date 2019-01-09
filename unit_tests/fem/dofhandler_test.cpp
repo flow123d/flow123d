@@ -5,6 +5,7 @@
 #include "mesh/mesh.h"
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
+#include "fem/dh_cell_accessor.hh"
 
 
 
@@ -113,6 +114,15 @@ TEST(DOFHandler, test_all) {
     EXPECT_EQ( 15, dh.n_global_dofs() );
     
     dh.print();
+    
+    auto vec = dh.create_vector();
+    std::vector<LongIdx> dof_indices(dh.max_elem_dofs());
+    std::vector<double> dof_values(dh.max_elem_dofs(), 1.);
+    for (auto elem : dh.local_range())
+    {
+        elem.get_dof_indices(dof_indices);
+        VecSetValues(vec.petsc_vec(), dof_indices.size(), dof_indices.data(), dof_values.data(), ADD_VALUES);
+    }
     
     auto dh_seq = dh.sequential();
     
