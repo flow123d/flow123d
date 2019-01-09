@@ -48,7 +48,6 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 : 
 	orig_mesh_(&mesh),
     max_level_(0),
-	mesh_type_(MeshType::orig),
     refine_by_error_(false),
     refinement_error_tolerance_(0.0)
 {
@@ -60,7 +59,6 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
     input_record_(in_rec), 
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level")),
-	mesh_type_(MeshType::orig),
     refine_by_error_(input_record_.val<bool>("refine_by_error")),
     refinement_error_tolerance_(input_record_.val<double>("refinement_error_tolerance"))
 {
@@ -257,11 +255,13 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputMeshBase::get_elems_n_node
 OutputMesh::OutputMesh(Mesh  &mesh)
 : OutputMeshBase(mesh)
 {
+    this->mesh_type_ = MeshType::orig;
 }
 
 OutputMesh::OutputMesh(Mesh &mesh, const Input::Record& in_rec)
 : OutputMeshBase(mesh, in_rec)
 {
+    this->mesh_type_ = MeshType::orig;
 }
 
 
@@ -338,11 +338,13 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputMesh::make_serial_connecti
 OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh &mesh)
 : OutputMeshBase(mesh)
 {
+    this->mesh_type_ = MeshType::discont;
 }
 
 OutputMeshDiscontinuous::OutputMeshDiscontinuous(Mesh &mesh, const Input::Record& in_rec)
 : OutputMeshBase(mesh, in_rec)
 {
+    this->mesh_type_ = MeshType::discont;
 }
 
 
