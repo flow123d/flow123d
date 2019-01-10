@@ -513,7 +513,10 @@ void FieldFE<spacedim, Value>::interpolate_gauss(ElementDataCache<double>::Compo
 		}
 
 		if (this->boundary_domain_) value_handler1_.get_dof_indices( ele, dof_indices_);
-		else dh_->get_dof_indices( ele, dof_indices_);
+		else {
+		    DHCellAccessor cell = dh_->cell_accessor_from_element(ele.idx());
+		    cell.get_dof_indices(dof_indices_);
+		}
 		for (unsigned int i=0; i < elem_value.size(); i++) {
 			ASSERT_LT_DBG( dof_indices_[i], (int)data_vec_->size());
 			(*data_vec_)[dof_indices_[i]] = elem_value[i] * this->unit_conversion_coefficient_;
@@ -614,7 +617,10 @@ void FieldFE<spacedim, Value>::interpolate_intersection(ElementDataCache<double>
 		if (total_measure > epsilon) {
 			VectorMPI::VectorDataPtr data_vector = data_vec_->data_ptr();
 			if (this->boundary_domain_) value_handler1_.get_dof_indices( elm, dof_indices_ );
-			else dh_->get_dof_indices( elm, dof_indices_ );
+			else {
+			    DHCellAccessor cell = dh_->cell_accessor_from_element(elm.idx());
+			    cell.get_dof_indices( dof_indices_ );
+			}
 			for (unsigned int i=0; i < value.size(); i++) {
 				(*data_vector)[ dof_indices_[i] ] = value[i] / total_measure;
 			}
