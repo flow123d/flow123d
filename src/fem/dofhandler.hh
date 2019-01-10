@@ -67,7 +67,7 @@ public:
     /**
      * @brief Returns the offset of the local part of dofs.
      */
-    const unsigned int loffset() const { return loffset_; }
+    //const unsigned int loffset() const { return loffset_; }
     
     /**
      * @brief Returns max. number of dofs on one element.
@@ -211,14 +211,6 @@ public:
                                      std::vector<LongIdx> &indices) const override;
 
     /**
-     * @brief Returns the global index of local element.
-     * TODO: Should work also for ghost elements.
-     *
-     * @param loc_el Local index of element.
-     */
-    inline int el_index(int loc_el) const { return mesh_->get_el_4_loc()[loc_el]; }
-
-    /**
      * @brief Returns the global index of local edge.
      *
      * @param loc_edg Local index of edge.
@@ -232,13 +224,6 @@ public:
 	 */
 	inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 	
-	/**
-     * @brief Return number of dofs on given cell.
-     *
-     * @param cell Cell accessor.
-     */
-	unsigned int n_dofs(ElementAccessor<3> cell) const;
-
 	/**
 	 * @brief Returns number of local edges.
 	 */
@@ -262,14 +247,6 @@ public:
      */
     template<unsigned int dim>
     FiniteElement<dim> *fe(const ElementAccessor<3> &cell) const { return ds_->fe<dim>(cell); }
-    
-    /**
-     * @brief Return dof on a given cell.
-     * @param cell Mesh cell.
-     * @param idof Number of dof on the cell.
-     */
-    const Dof &cell_dof(ElementAccessor<3> cell,
-                        unsigned int idof) const;
     
     /// Output structure of dof handler.
     void print() const;
@@ -297,6 +274,30 @@ public:
     
     
     friend class DHCellAccessor;
+
+protected:
+    /**
+     * @brief Returns the global index of local element.
+     * TODO: Should work also for ghost elements.
+     *
+     * @param loc_el Local index of element.
+     */
+    inline int el_index(int loc_el) const { return mesh_->get_el_4_loc()[loc_el]; }
+
+	/**
+     * @brief Return number of dofs on given cell.
+     *
+     * @param cell Cell accessor.
+     */
+	unsigned int n_dofs(ElementAccessor<3> cell) const;
+
+    /**
+     * @brief Return dof on a given cell.
+     * @param cell Mesh cell.
+     * @param idof Number of dof on the cell.
+     */
+    const Dof &cell_dof(ElementAccessor<3> cell,
+                        unsigned int idof) const;
 
 private:
 
