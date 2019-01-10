@@ -51,34 +51,36 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 }
 
 
-unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
+unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> elm) const
 {
-    switch (cell->dim()) {
+    auto cell = this->cell_accessor_from_element( elm.idx() );
+    switch (elm->dim()) {
         case 1:
-            return fe<1>(cell)->n_dofs();
+            return cell.fe<1>()->n_dofs();
             break;
         case 2:
-            return fe<2>(cell)->n_dofs();
+            return cell.fe<2>()->n_dofs();
             break;
         case 3:
-            return fe<3>(cell)->n_dofs();
+            return cell.fe<3>()->n_dofs();
             break;
     }
 }
 
 
-const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> cell, unsigned int idof) const
+const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> elm, unsigned int idof) const
 {
-    switch (cell.dim())
+	auto cell = this->cell_accessor_from_element( elm.idx() );
+	switch (elm.dim())
     {
         case 1:
-            return fe<1>(cell)->dof(idof);
+            return cell.fe<1>()->dof(idof);
             break;
         case 2:
-            return fe<2>(cell)->dof(idof);
+            return cell.fe<2>()->dof(idof);
             break;
         case 3:
-            return fe<3>(cell)->dof(idof);
+            return cell.fe<3>()->dof(idof);
             break;
     }
 }
@@ -612,7 +614,7 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 }
 
 
-DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
+const DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
 	auto map_it = global_to_local_el_idx_.find((LongIdx)elm_idx); // find in global to local map
 	ASSERT( map_it != global_to_local_el_idx_.end() )(elm_idx).error("DH accessor can be create only for own or ghost elements!\n");
 	return DHCellAccessor(this, map_it->second);
@@ -633,14 +635,14 @@ void DOFHandlerMultiDim::print() const {
     
     for (auto cell : own_range())
     {
-        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        auto ndofs = cell.get_dof_indices(dofs);
         s << "-- cell " << cell.elm().index() << ": ";
         for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
     }
     s << "- dofs on ghost cells:" << endl;
     for (auto cell : ghost_range())
     {
-        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        auto ndofs = cell.get_dof_indices(dofs);
         s << "-- cell " << cell.elm().index() << ": ";
         for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
     }

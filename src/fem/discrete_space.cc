@@ -18,6 +18,7 @@
 
 #include "fem/discrete_space.hh"
 #include "fem/finite_element.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "mesh/mesh.h"
 #include "mesh/duplicate_nodes.h"
 
@@ -85,10 +86,10 @@ unsigned int EqualOrderDiscreteSpace::n_node_dofs(unsigned int nid) const
 
 
 
-template<> FiniteElement<0> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe0d(cell); }
-template<> FiniteElement<1> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe1d(cell); }
-template<> FiniteElement<2> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe2d(cell); }
-template<> FiniteElement<3> *DiscreteSpace::fe(const ElementAccessor<3> &cell) const { return fe3d(cell); }
+template<> FiniteElement<0> *DiscreteSpace::fe(const DHCellAccessor &cell) const { return fe0d(cell); }
+template<> FiniteElement<1> *DiscreteSpace::fe(const DHCellAccessor &cell) const { return fe1d(cell); }
+template<> FiniteElement<2> *DiscreteSpace::fe(const DHCellAccessor &cell) const { return fe2d(cell); }
+template<> FiniteElement<3> *DiscreteSpace::fe(const DHCellAccessor &cell) const { return fe3d(cell); }
 
 
 

@@ -240,14 +240,6 @@ public:
      */
     bool el_is_local(int index) const;
 
-    /**
-     * @brief Returns finite element object for given space dimension.
-     * 
-     * @param cell Cell accessor.
-     */
-    template<unsigned int dim>
-    FiniteElement<dim> *fe(const ElementAccessor<3> &cell) const { return ds_->fe<dim>(cell); }
-    
     /// Output structure of dof handler.
     void print() const;
 
@@ -266,7 +258,7 @@ public:
     Range<DHCellAccessor> ghost_range() const;
 
     /// Return DHCellAccessor appropriate to ElementAccessor of given idx
-    DHCellAccessor cell_accessor_from_element(unsigned int elm_idx) const;
+    const DHCellAccessor cell_accessor_from_element(unsigned int elm_idx) const;
 
     /// Destructor.
     ~DOFHandlerMultiDim() override;
