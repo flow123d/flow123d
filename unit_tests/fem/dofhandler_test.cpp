@@ -102,6 +102,17 @@ TEST(DOFHandler, test_all) {
     FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
     Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
     
+    std::map<int, std::vector<int>> expect_vals{
+    	{ 0, {4, 5} },
+    	{ 1, {5, 6} },
+    	{ 2, {5, 10} },
+    	{ 3, {0, 1, 2} },
+    	{ 4, {7, 8, 9} },
+    	{ 5, {2, 1, 3} },
+    	{ 6, {11, 12, 13} },
+    	{ 7, {2, 3, 14} }
+    };
+
     FE_P<0> fe0(1);
     FE_P<1> fe1(1);
     FE_P<2> fe2(1);
@@ -114,14 +125,17 @@ TEST(DOFHandler, test_all) {
     
     dh.print();
     
-    std::vector<int> indices[8];
+    std::vector<int> indices;
+    indices.resize(dh.max_elem_dofs());
     for ( DHCellAccessor cell : dh.local_range() )
     {
     	auto elem_idx = cell.elm_idx();
-    	indices[elem_idx].resize(dh.max_elem_dofs());
-    	cell.get_dof_indices(indices[elem_idx]);
+    	auto n_vals = cell.get_dof_indices(indices);
+    	for (unsigned int i=0; i<n_vals; ++i)
+    		EXPECT_EQ( expect_vals[elem_idx][i], indices[i]);
     }
     
+    /*
     // dof at node 1 is not shared by elements 1, 4, 5
     EXPECT_NE( indices[0][0], indices[3][0] );
     EXPECT_NE( indices[4][0], indices[3][0] );
@@ -140,18 +154,18 @@ TEST(DOFHandler, test_all) {
     // dof at node 3 is NOT shared by elements 1, 4, 5, 7
     EXPECT_NE( indices[0][1], indices[3][2] );
     EXPECT_NE( indices[3][2], indices[4][1] );
-    //EXPECT_NE( indices[4][1], indices[6][0] );
+    EXPECT_NE( indices[4][1], indices[6][0] );
     
     // dof at node 4 is shared by elements 6, 8
     EXPECT_EQ( indices[5][2], indices[7][1] );
     
     // dof at node 5 is NOT shared by elements 2, 5, 7
     EXPECT_NE( indices[1][1], indices[4][2] );
-    //EXPECT_NE( indices[4][2], indices[6][2] );
+    EXPECT_NE( indices[4][2], indices[6][2] );
     
     // dof at node 6 is NOT shared by elements 3, 7, 8
-    EXPECT_NE( indices[2][1], indices[7][2] );
-    //EXPECT_NE( indices[6][1], indices[7][2] );
+    EXPECT_NE( indices[2][1], indices[6][1] );
+    EXPECT_NE( indices[6][1], indices[7][2] ); */
     
     delete mesh;
 
