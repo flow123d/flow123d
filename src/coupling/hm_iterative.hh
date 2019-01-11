@@ -33,21 +33,24 @@ class RichardsLMH;
 
 
 /**
- * @brief Class for solution of fully coupled flow and mechanics, solution by fixed-stress iterative splitting.
- *
+ * @brief Class for solution of fully coupled flow and mechanics using fixed-stress iterative splitting.
+ * 
+ * Flow and mechanics are solved separately and within each iteration the coupling terms are updated.
+ * Here we use the fixed-stress splitting [see Mikelic&Wheeler, Comput. Geosci. 17(3), 2013] which uses
+ * a tuning parameter "beta" to speed up the convergence.
  */
 class HM_Iterative : public DarcyFlowInterface {
 public:
+    /// Define input record.
     static const Input::Type::Record & get_input_type();
 
     HM_Iterative(Mesh &mesh, Input::Record in_record);
     void zero_time_step() override;
     void update_solution() override;
-    const MH_DofHandler & get_mh_dofhandler() override {};
+    const MH_DofHandler & get_mh_dofhandler() override;
     ~HM_Iterative();
 
 private:
-
 
     static const int registrar;
 
@@ -56,15 +59,20 @@ private:
 
     /// solute transport with chemistry through operator splitting
     std::shared_ptr<EquationBase> mechanics_;
-    
+
+    /// Tuning parameter for iterative splitting.
     double beta_;
     
+    /// Minimal number of iterations to perform.
     unsigned int min_it_;
     
+    /// Maximal number of iterations.
     unsigned int max_it_;
     
+    /// Absolute tolerance for difference between two succeeding iterations.
     double a_tol_;
     
+    /// Relative tolerance for difference between two succeeding iterations.
     double r_tol_;
 
 };

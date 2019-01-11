@@ -116,6 +116,12 @@ void HM_Iterative::update_solution()
 }
 
 
+const MH_DofHandler & HM_Iterative::get_mh_dofhandler()
+{ 
+    return flow_->get_mh_dofhandler(); 
+}
+
+
 HM_Iterative::~HM_Iterative() {
 	flow_.reset();
     mechanics_.reset();
