@@ -22,6 +22,7 @@
 #include <memory>
 #include "system/system.hh"
 #include "system/global_defs.h"
+#include "mesh/long_idx.hh"
 
 #include <petscvec.h>
 
