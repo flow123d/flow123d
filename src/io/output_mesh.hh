@@ -124,6 +124,9 @@ public:
 	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
 	void make_serial_master_mesh(int rank, int n_proc);
 
+	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process. Special method of refined mesh.
+	virtual void make_serial_master_refined_mesh(int rank, int n_proc)=0;
+
 	inline std::shared_ptr<OutputMeshBase> get_serial_master_mesh() const {
 		return serial_mesh_;
 	};
@@ -218,6 +221,9 @@ public:
     /// Implements OutputMeshBase::create_refined_sub_mesh
     void create_refined_sub_mesh() override;
 
+    /// Implements OutputMeshBase::make_serial_master_refined_mesh
+	void make_serial_master_refined_mesh(int rank, int n_proc) override;
+
 protected:
     bool refinement_criterion();
     
@@ -249,6 +255,9 @@ public:
     
     /// Implements OutputMeshBase::create_refined_sub_mesh
     void create_refined_sub_mesh() override;
+
+    /// Implements OutputMeshBase::make_serial_master_refined_mesh
+	void make_serial_master_refined_mesh(int rank, int n_proc) override;
 
 protected:
     ///Auxiliary structure defining element of refined output mesh.

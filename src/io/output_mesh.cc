@@ -281,6 +281,11 @@ void OutputMesh::create_refined_sub_mesh()
     ASSERT(0).error("Not implemented yet.");
 }
 
+void OutputMesh::make_serial_master_refined_mesh(int rank, int n_proc)
+{
+    ASSERT(0).error("Not implemented yet.");
+}
+
 
 bool OutputMesh::refinement_criterion()
 {
@@ -793,4 +798,10 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
     offsets_->set_n_values(offset_vec.size());
 
     mesh_type_ = MeshType::refined;
+}
+
+
+void OutputMeshDiscontinuous::make_serial_master_refined_mesh(int rank, int n_proc)
+{
+    ASSERT(0).error("Not implemented yet.");
 }
