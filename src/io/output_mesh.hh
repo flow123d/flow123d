@@ -197,6 +197,13 @@ protected:
     /// Serial (collective) OutputMesh, is constructed on zero process and allow to produce serial output of parallel computation
     std::shared_ptr<OutputMeshBase> serial_mesh_;
 
+    /// Next variables hold distributions of elements and nodes. They differ for mesh types.
+    LongIdx *el_4_loc_;           ///< Index set assigning to local element index its global index.
+    Distribution *el_ds_;         ///< Parallel distribution of elements.
+    LongIdx *node_4_loc_;         ///< Index set assigning to local node index its global index.
+    Distribution *node_ds_;       ///< Parallel distribution of nodes. Depends on elements distribution.
+    unsigned int n_local_nodes_;  ///< Hold number of local nodes (own + ghost), value is equal with size of node_4_loc array.
+
     /// Friend provides access to vectors for element accessor class.
     friend class OutputElement;
     friend class OutputTime;
