@@ -65,11 +65,6 @@ public:
     const unsigned int lsize() const { return lsize_; }
 
     /**
-     * @brief Returns the offset of the local part of dofs.
-     */
-    //const unsigned int loffset() const { return loffset_; }
-    
-    /**
      * @brief Returns max. number of dofs on one element.
      */
     const unsigned int max_elem_dofs() const { return max_elem_dofs_; }
