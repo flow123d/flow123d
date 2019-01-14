@@ -212,10 +212,11 @@ public:
 
     /**
      * @brief Returns the global index of local element.
+     * TODO: Should work also for ghost elements.
      *
      * @param loc_el Local index of element.
      */
-    inline int el_index(int loc_el) const { return el_4_loc[loc_el]; }
+    inline int el_index(int loc_el) const { return mesh_->get_el_4_loc()[loc_el]; }
 
     /**
      * @brief Returns the global index of local edge.
@@ -396,7 +397,7 @@ private:
      *   ElementAccessor<3> cell;
      *   ...
      *   // i-th dof number on the cell
-     *   dof_indices[cell_starts[row_4_el[cell.idx()]]+i] = ...
+     *   dof_indices[cell_starts[mesh_->get_row_4_el()[cell.idx()]]+i] = ...
      * 
      * For parallel dof handler, only local and ghost elements are stored,
      * but the vector has size mesh_->n_elements()+1.
@@ -424,12 +425,6 @@ private:
      */
     std::unordered_map<LongIdx,LongIdx> global_to_local_el_idx_;
     
-	/// Global element index -> index according to partitioning
-    LongIdx *row_4_el;
-    
-    /// Local element index -> global element index
-    LongIdx *el_4_loc;
-    
     /// Distribution of elements
     Distribution *el_ds_;
 
@@ -438,9 +433,6 @@ private:
 
     /// Local neighbour index -> global neighbour index
     vector<LongIdx> nb_4_loc;
-    
-    /// Indices of local nodes in mesh tree.
-    vector<LongIdx> node_4_loc;
     
     /// Indices of ghost cells (neighbouring with local elements).
     vector<LongIdx> ghost_4_loc;

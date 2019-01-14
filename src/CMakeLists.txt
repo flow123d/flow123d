@@ -360,6 +360,7 @@ add_library(flow123d_lib
     mechanics/elasticity.cc
 
     coupling/hc_explicit_sequential.cc
+    coupling/hm_iterative.cc
 )    
     
 target_link_libraries(flow123d_lib 
