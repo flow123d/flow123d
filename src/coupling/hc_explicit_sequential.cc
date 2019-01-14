@@ -28,7 +28,6 @@
 #include "transport/transport_operator_splitting.hh"
 #include "fields/field_common.hh"
 #include "transport/heat_model.hh"
-#include "mechanics/elasticity.hh"
 
 #include "fields/field_set.hh"
 #include "mesh/mesh.h"
@@ -73,9 +72,6 @@ const it::Record & HC_ExplicitSequential::get_input_type() {
 				"Transport of soluted substances, depends on the velocity field from a Flow equation.")
 		.declare_key("heat_equation", AdvectionProcessBase::get_input_type(),
 		        "Heat transfer, depends on the velocity field from a Flow equation.")
-        .declare_key("mechanics_equation", Elasticity::get_input_type(),
-                "Linear elasticity")
-
 		.close();
 }
 
@@ -163,13 +159,6 @@ HC_ExplicitSequential::HC_ExplicitSequential(Input::Record in_record)
 
     processes_.push_back(AdvectionData(make_advection_process("solute_equation")));
     processes_.push_back(AdvectionData(make_advection_process("heat_equation")));
-    
-    Record mech_eq = *in_record.find<Record>("mechanics_equation");
-    mechanics = make_shared<Elasticity>(*mesh, mech_eq);
-    mechanics->data()["cross_section"]
-                .copy_from(water->data()["cross_section"]);
-    mechanics->initialize();
-
 }
 
 void HC_ExplicitSequential::advection_process_step(AdvectionData &pdata)
@@ -218,7 +207,6 @@ void HC_ExplicitSequential::run_simulation()
 
     {
         START_TIMER("HC water zero time step");
-        //water->set_volume_change(mechanics->get_volume_change());
         water->zero_time_step();
     }
 
@@ -282,15 +270,6 @@ void HC_ExplicitSequential::run_simulation()
         }
         advection_process_step(processes_[0]); // solute
         advection_process_step(processes_[1]); // heat
-        
-        mechanics->set_time_upper_constraint(water_dt, "Flow time step");
-        mechanics->set_velocity_field( water->get_mh_dofhandler() );
-        if ( mechanics->time().step().le(min(TimeGovernor::inf_time, theta * mechanics->planned_time() + (1-theta) * mechanics->solved_time())) ) {
-          if (mechanics->time().tlevel() == 0) mechanics->zero_time_step();
-          mechanics->update_solution();
-          mechanics->output_data();
-          if (!mechanics->time().is_end()) is_end_all_ = false;
-        }
     }
     //MessageOut().fmt("End of simulation at time: {}\n", max(solute->solved_time(), heat->solved_time()));
 }
@@ -299,7 +278,6 @@ void HC_ExplicitSequential::run_simulation()
 HC_ExplicitSequential::~HC_ExplicitSequential() {
 	water.reset();
 	for(auto &pdata : processes_) pdata.process.reset();
-    mechanics.reset();
     delete mesh;
 }
 
