@@ -51,40 +51,6 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 }
 
 
-unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> elm) const
-{
-    auto cell = this->cell_accessor_from_element( elm.idx() );
-    switch (elm->dim()) {
-        case 1:
-            return cell.fe<1>()->n_dofs();
-            break;
-        case 2:
-            return cell.fe<2>()->n_dofs();
-            break;
-        case 3:
-            return cell.fe<3>()->n_dofs();
-            break;
-    }
-}
-
-
-const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> elm, unsigned int idof) const
-{
-	auto cell = this->cell_accessor_from_element( elm.idx() );
-	switch (elm.dim())
-    {
-        case 1:
-            return cell.fe<1>()->dof(idof);
-            break;
-        case 2:
-            return cell.fe<2>()->dof(idof);
-            break;
-        case 3:
-            return cell.fe<3>()->dof(idof);
-            break;
-    }
-}
-
 std::shared_ptr<DOFHandlerMultiDim> DOFHandlerMultiDim::sequential()
 {
     create_sequential();

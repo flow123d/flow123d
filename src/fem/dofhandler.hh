@@ -266,30 +266,6 @@ public:
     
     friend class DHCellAccessor;
 
-protected:
-    /**
-     * @brief Returns the global index of local element.
-     * TODO: Should work also for ghost elements.
-     *
-     * @param loc_el Local index of element.
-     */
-    inline int el_index(int loc_el) const { return mesh_->get_el_4_loc()[loc_el]; }
-
-	/**
-     * @brief Return number of dofs on given cell.
-     *
-     * @param cell Cell accessor.
-     */
-	unsigned int n_dofs(ElementAccessor<3> cell) const;
-
-    /**
-     * @brief Return dof on a given cell.
-     * @param cell Mesh cell.
-     * @param idof Number of dof on the cell.
-     */
-    const Dof &cell_dof(ElementAccessor<3> cell,
-                        unsigned int idof) const;
-
 private:
 
     /**
