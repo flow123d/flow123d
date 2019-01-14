@@ -1,8 +1,9 @@
+flow123d_version: 3.1.0
 common_config:
   proc: [1, 2]
   memory_limit: 1000
 
 test_cases:
-- files:
-  - 01_frac.yaml
-  - 02_fast_frac_flow_slow_diff.yaml
+  - files:
+      - 01_frac.yaml
+      - 02_fast_frac_flow_slow_diff.yaml

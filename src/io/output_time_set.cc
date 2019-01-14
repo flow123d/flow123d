@@ -23,7 +23,7 @@ const IT::Array OutputTimeSet::get_input_type()
             		IT::Default::read_time("The initial time of the associated equation."),
                     "The start time of the grid.")
             .declare_key("step", IT::Double(0.0), IT::Default::optional(),
-                    "The step of the grid. If not specified, the grid consists only of the start time.")
+                    "The step of the grid. If not specified, the grid consists of the single time given by the `begin` key.")
             .declare_key("end", IT::Double(0.0),
             		IT::Default::read_time("The end time of the simulation."),
                     "The time greater or equal to the last time in the grid.")

@@ -480,13 +480,13 @@ OutputJSONMachine::OutputJSONMachine(const Record &root_type, RevNumData rev_num
 std::string OutputJSONMachine::escape_description(std::string desc) {
 	static std::vector< std::pair<std::regex, std::string> > rewrite_rules = {
 	        // replace single slash with two slashes
-			{std::regex("\\\\"), "\\\\\\\\"},
+			{std::regex("\\\\"), "\\\\"},
 	        // replace quote with slash quote
-			{std::regex("\\\""), "\\\\\""},
+			{std::regex("\\\""), "\\\""},
 	        // replace special chars with escaped slash + special chars
-			{std::regex("\\n"), "\\\\n"},
-			{std::regex("\\t"), "\\\\t"},
-			{std::regex("\\r"), "\\\\r"}
+			{std::regex("\\n"), "\\n"},
+			{std::regex("\\t"), "\\t"},
+			{std::regex("\\r"), "\\r"}
 	};
 
 
@@ -559,7 +559,7 @@ void OutputJSONMachine::print_type_header(ostream &stream, const TypeBase *type)
     TypeBase::json_string parameter_map_to_json;
     get_attr_and_param_data(type, attr_map, generic_type_hash, parameter_map_to_json);
 	// print hash of generic type and parameters into separate keys
-	if (generic_type_hash) { // print hash of generic type into separate keys
+	if (generic_type_hash != TypeBase::none_hash) { // print hash of generic type into separate keys
 		stream << "\"generic_type\" : " << TypeBase::hash_str(generic_type_hash) << "," << endl;
 	}
 	if (parameter_map_to_json.size()) { // parameters into separate keys

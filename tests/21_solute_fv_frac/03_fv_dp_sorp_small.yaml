@@ -13,12 +13,7 @@ problem: !Coupling_Sequential
           - 1d_left_branch
   # mesh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
-    # primary equation
+  # primary equation
     input_fields:
       - region: 1d_domain
         conductivity: 1.0e-06
@@ -30,18 +25,29 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x+y
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     output:
       fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
-  # primary equation
     output_stream:
       file: flow.pvd
       format: !vtk
         variant: ascii
+    balance:
+  # primary equation
   solute_equation: !Coupling_OperatorSplitting
+    substances:
+      - name: age
+        molar_mass: 0.018
+      # water age
+      - name: U235
+        molar_mass: 0.235
+      # uranium 235
     transport: !Solute_Advection_FV
       input_fields:
         - region: ALL
@@ -55,13 +61,6 @@ problem: !Coupling_Sequential
           bc_conc:
             - 0.0
             - 1.0
-    substances:
-      - name: age
-        molar_mass: 0.018
-      # water age
-      - name: U235
-        molar_mass: 0.235
-      # uranium 235
     time:
       end_time: 1000000.0
     balance:

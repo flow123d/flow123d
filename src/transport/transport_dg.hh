@@ -31,7 +31,7 @@
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "la/linsys.hh"
 #include "input/accessors.hh"                  // for ExcAccessorForNullStorage
@@ -491,7 +491,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<VectorSeqDouble> output_vec;
+	vector<VectorMPI> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

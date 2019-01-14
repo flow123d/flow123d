@@ -14,7 +14,7 @@
 
 
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
 #include "tools/unit_si.hh"
 #include "input/input_type.hh"
@@ -85,11 +85,7 @@ public:
     Mesh *mesh;
     std::shared_ptr<DOFHandlerMultiDim> dh;
     double dof_values[3];
-    VectorSeqDouble v;
-
-	MappingP1<1,3> map1;
-	MappingP1<2,3> map2;
-	MappingP1<3,3> map3;
+    VectorMPI v;
 
 };
 
@@ -107,7 +103,7 @@ TEST_F(FieldFETest, scalar) {
     ScalarField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, &map1, &map2, &map3, &v);
+    field.set_fe_data(dh, 0, &v);
     field.set_time(0.0);
 
     vector<double> values(3);
@@ -135,7 +131,7 @@ TEST_F(FieldFETest, vector) {
     VecField field;
 
     dh->distribute_dofs(ds);
-    field.set_fe_data(dh, &map1, &map2, &map3, &v);
+    field.set_fe_data(dh, 0, &v);
     field.set_time(0.0);
 
     // The Raviart-Thomas function given by the following dofs

@@ -37,7 +37,7 @@
 #include "fields/field_set.hh"           // for FieldSet
 #include "fields/field_values.hh"        // for FieldValue<>::Scalar, FieldV...
 #include "fields/field_python.hh"
-#include "fields/vec_seq_double.hh"      // for VectorSeqDouble
+#include "la/vector_mpi.hh"              // for VectorMPI
 #include "input/type_base.hh"            // for Array
 #include "input/type_generic.hh"         // for Instance
 #include "petscvec.h"                    // for Vec, _p_Vec
@@ -164,16 +164,16 @@ protected:
     
 
     /** Pressure head (in [m]) interpolated into nodes. Provides P1 approximation. Indexed by element-node numbering.*/
-    VectorSeqDouble corner_pressure;
+    VectorMPI corner_pressure;
     /** Pressure head (in [m]) in barycenters of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    VectorSeqDouble ele_pressure;
+    VectorMPI ele_pressure;
     /** Piezo-metric head (in [m]) in barycenter of elements (or equivalently mean pressure over every element). Indexed by element indexes in the mesh.*/
-    VectorSeqDouble ele_piezo_head;
+    VectorMPI ele_piezo_head;
 
     /** Average flux in barycenter of every element. Indexed as elements in the mesh. */
     // TODO: Definitely we need more general (templated) implementation of Output that accept arbitrary containers. So
     // that we can pass there directly vector< arma:: vec3 >
-    VectorSeqDouble ele_flux;
+    VectorMPI ele_flux;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
@@ -204,9 +204,9 @@ protected:
     struct DiffData {
         double pressure_error[3], velocity_error[3], div_error[3];
         double mask_vel_error;
-        VectorSeqDouble pressure_diff;
-        VectorSeqDouble velocity_diff;
-        VectorSeqDouble div_diff;
+        VectorMPI pressure_diff;
+        VectorMPI velocity_diff;
+        VectorMPI div_diff;
 
         // Temporary objects holding pointers to appropriate FieldFE
         // TODO remove after final fix of equations

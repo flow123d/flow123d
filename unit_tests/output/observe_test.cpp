@@ -196,13 +196,11 @@ public:
                      .add_value(1, "one")
                      .close();
 
-
-        ADD_FIELD(scalar_field, "").units(UnitSI::one());
-        ADD_FIELD(enum_field, "")
-            .units(UnitSI::one())
-            .input_selection(selection);
-        ADD_FIELD(vector_field, "").units(UnitSI::one());
-        ADD_FIELD(tensor_field, "").units(UnitSI::one());
+    
+        *this += scalar_field.name("scalar_field").units(UnitSI::one());
+        *this += vector_field.name("vector_field").units(UnitSI::one());
+        *this += tensor_field.name("tensor_field").units(UnitSI::one());
+        *this += enum_field.name("enum_field").units(UnitSI::one()).input_selection(selection);
     }
 
     ScalarField scalar_field;

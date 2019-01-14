@@ -43,7 +43,7 @@ We then transform the above inequation into the following condition which is tes
   \max(|c_m(0) - c_a(0)|, |c_i(0) - c_a(0)|) \leq 
   2 c_a \left(\frac{\vartheta_m \vartheta_i}{D_{dp} \Delta t (\vartheta_m + \vartheta_i)}\right)^2 tol. \\
 \end{equation}
-In addition, the explicit Euler method \eqref{eq:dp_expl_euler} requires the satisfaction of a CFL condition of the form
+In addition, the explicit Euler method \eqref{eq:dp_expl_euler} requires the satisfaction of a~CFL condition of the form
 \begin{equation}
 \label{eq:dp_cfl}
 \Delta t \le \frac1{D_{dp}} \frac{\th_m \th_i}{\th_m+\th_i}.
@@ -58,7 +58,7 @@ solution is used.
 Let us now describe the actual computation of the sorption model.
 To solve \eqref{eq:nonlin_sorption} iteratively, it is very important to define the interval where 
 to look for the solution (unknown $c_l$), see Figure \ref{fig:sorpce}. The lower bound is $0$ (concentration can not reach negative values). 
-The upper bound is derived using a simple mapping. Let us suppose limited 
+The upper bound is derived using a~simple mapping. Let us suppose limited 
 \hyperA{Sorption::solubility}{solubility} of the selected transported substance and let us denote the 
 limit $\bar{c}_l$. We keep the maximal "total mass" 
 $\bar{c}_T= \mu_l\cdot \bar{c}_l + \mu_s\cdot f(\bar{c}_l)$, but we dissolve all the mass to get 
@@ -102,7 +102,7 @@ an independent variable. This is done by multiplication of precomputed points us
 \end{equation}
 
 The values $c_l^{R,j}$ are equidistantly distributed and there is no reason to save them, but the values 
-$c_s^{R,j}$ are stored in onedimensional interpolation table.
+$c_s^{R,j}$ are stored in one-dimensional interpolation table.
 
 Once we have the interpolation table, we can use it for projecting the transport results ${[c_l,c_s]}$ on the 
 isotherm under consideration. Following steps must be taken.
@@ -139,7 +139,7 @@ Let us denote the ODE system
   \partial_t \vc c(t) = \mathbf{A}(t) \vc{c}(t) + \vc{b}(t).
 \]
 
-For the moment the only implemented method to solve the system is usage of Pad\'e approximant which corresponds to a family
+For the moment the only implemented method to solve the system is usage of Pad\'e approximant which corresponds to a~family
 of implicit R-K methods.
 
 % \paragraph{Semi-analytic solution.}
@@ -162,7 +162,7 @@ of implicit R-K methods.
 % The expressions $b_{ji} \frac{M_j}{M_i}$ are then obtained from the system matrix by dividing 
 % $-\frac{a_{ji}}{a_{ii}}$. See the system matrix entries in \eqref{eqn:reaction_system_entries}.
 % 
-% The assumption (equations independence) is adequate when a very small time step is applied. This will then lead 
+% The assumption (equations independence) is adequate when a~very small time step is applied. This will then lead 
 % to huge amount of evaluations of the exponential functions which can be expensive, so other numerical methods 
 % might be more appropriate. When the time step is large then the assumption is inadequate.
 % 
@@ -171,8 +171,8 @@ of implicit R-K methods.
 
 
 \paragraph{Pad{\' e} approximant.}
-For homogenous systems with constant matrix $\mathbf{A}$, we can use \hyperA{IT::PadeApproximant}{Pad{\' e} approximation} 
-to find the solution. This method finds a rational function whose power series agrees with a power series expansion of 
+For homogeneous systems with constant matrix $\mathbf{A}$, we can use \hyperA{IT::PadeApproximant}{Pad{\' e} approximation} 
+to find the solution. This method finds a~rational function whose power series agrees with a~power series expansion of 
 a given function to the highest possible order (e.g. in \cite{press_numerical_1992}).
 Let
 \[
@@ -197,9 +197,9 @@ of the approximation is $O(t^{m+n+1})$. By convention, the denominator is normal
 Theoretical results show that for $m=n-1$ and $m=n-2$ the Pad\'e approximant corresponds to an implicit Runge-Kutta method
 which is A-stable and L-stable (see \cite{ehle1973}).
 
-Now, we consider the solution of our ODE system in a form $\vc{c}(t)=e^{\mathbf{A}t}\vc{c}(0)$. We shall 
-approximate the matrix exponential function using a matrix form of \eqref{eqn:pade_approximant}. 
-For exponential functions, there are known coeffficients of the nominator and denominator:
+Now, we consider the solution of our ODE system in a~form $\vc{c}(t)=e^{\mathbf{A}t}\vc{c}(0)$. We shall 
+approximate the matrix exponential function using a~matrix form of \eqref{eqn:pade_approximant}. 
+For exponential functions, there are known coefficients of the nominator and denominator:
 % http://mathoverflow.net/questions/41226/pade-approximant-to-exponential-function
 % http://www.math.vanderbilt.edu/~esaff/texts/144.pdf
 % https://www-sop.inria.fr/apics/anap03/PadeTalk.pdf
@@ -214,5 +214,5 @@ Finally, we can write the solution at time $t+\Delta t$
 \end{equation}
 
 If the time step $\Delta t$ is constant, we do not need to compute the matrix $\mathbf{R}_{mn}$ repeatedly and we get
-the solution cheaply just by matrix multiplication. In the oposite case, we avoid evaluating the exponential
+the solution cheaply just by matrix multiplication. In the opposite case, we avoid evaluating the exponential
 function and still get the solution quite fast (comparing to computing semi-analytic solution).
