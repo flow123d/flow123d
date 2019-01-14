@@ -7,7 +7,9 @@ test_cases:
   - 10_include_csv.yaml
   - 11_time_unit_conversion.yaml
   - 12_time_unit_nested_equation.yaml
-
+  proc: [1]
+  
+  
 - files: 04_interpolated.yaml
   proc: [1, 2, 3]
   memory_limit: 2000

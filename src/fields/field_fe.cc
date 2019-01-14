@@ -404,7 +404,7 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 			n_entities = ReaderCache::get_mesh(reader_file_)->n_elements();
 			boundary = false;
 		}
-		auto data_vec = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
+		auto input_data_cache = ReaderCache::get_reader(reader_file_)->template get_element_data<double>(n_entities, n_components,
 				boundary, this->component_idx_);
 		CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
 				this->unit_conversion_coefficient_, default_value_);
@@ -415,11 +415,11 @@ bool FieldFE<spacedim, Value>::set_time(const TimeStep &time) {
 	    }
 
 		if (is_native || this->interpolation_==DataInterpolation::identic_msh || this->interpolation_==DataInterpolation::equivalent_msh) {
-			this->calculate_native_values(data_vec);
+			this->calculate_native_values(input_data_cache);
 		} else if (this->interpolation_==DataInterpolation::gauss_p0) {
-			this->interpolate_gauss(data_vec);
+			this->interpolate_gauss(input_data_cache);
 		} else { // DataInterpolation::interp_p0
-			this->interpolate_intersection(data_vec);
+			this->interpolate_intersection(input_data_cache);
 		}
 
 		return true;
@@ -674,7 +674,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 
 
 template <int spacedim, class Value>
-void FieldFE<spacedim, Value>::fill_data_to_cache(ElementDataCache<double> &output_data_cache) {
+void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &output_data_cache) {
 	ASSERT_EQ(output_data_cache.n_values() * output_data_cache.n_elem(), dh_->n_global_dofs()).error();
 	ASSERT_EQ(output_data_cache.n_elem(), dof_indices_.size()).error();
 	double loc_values[output_data_cache.n_elem()];
