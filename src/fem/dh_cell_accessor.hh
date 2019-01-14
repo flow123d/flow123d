@@ -94,7 +94,8 @@ public:
      */
     template<unsigned int dim>
     FiniteElement<dim> *fe() const {
-    	return dof_handler_->ds_->fe<dim>(*this);
+        ElementAccessor<3> elm_acc = this->elm();
+        return dof_handler_->ds_->fe<dim>(elm_acc);
     }
 
     /// Iterates to next local element.

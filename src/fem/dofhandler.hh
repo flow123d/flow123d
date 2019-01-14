@@ -255,6 +255,10 @@ public:
     /// Return DHCellAccessor appropriate to ElementAccessor of given idx
     const DHCellAccessor cell_accessor_from_element(unsigned int elm_idx) const;
 
+    /// Return pointer to discrete space for which the handler distributes dofs.
+    std::shared_ptr<DiscreteSpace> ds() const { return ds_; }
+
+
     /// Destructor.
     ~DOFHandlerMultiDim() override;
     
