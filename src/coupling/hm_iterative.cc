@@ -39,7 +39,8 @@ const it::Record & HM_Iterative::get_input_type() {
 // 		.declare_key("mechanics_equation", Mechanics::get_input_type(),
 // 				"Mechanics, provides the displacement field.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
-                "Tuning parameter for iterative splitting." )
+                "Tuning parameter for iterative splitting. Its default value"
+                "corresponds to a theoretically optimal value with fastest convergence." )
         .declare_key( "max_it", it::Integer(0), it::Default("100"),
                 "Maximal count of HM iterations." )
         .declare_key( "min_it", it::Integer(0), it::Default("1"),
