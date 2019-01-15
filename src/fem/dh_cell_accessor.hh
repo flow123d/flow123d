@@ -52,8 +52,8 @@ public:
     /// Return serial idx to element of loc_ele_idx_.
     inline unsigned int elm_idx() const {
     	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
-        if (local_idx()<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
-        return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
+        if (local_idx()<ds_lsize) return dof_handler_->mesh()->get_el_4_loc()[loc_ele_idx_]; //own elements
+        else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
     }
 
     /// Return ElementAccessor to element of loc_ele_idx_.
@@ -94,8 +94,8 @@ public:
      */
     template<unsigned int dim>
     FiniteElement<dim> *fe() const {
-    	ElementAccessor<3> elm_acc = this->elm();
-    	return dof_handler_->ds_->fe<dim>(elm_acc);
+        ElementAccessor<3> elm_acc = this->elm();
+        return dof_handler_->ds_->fe<dim>(elm_acc);
     }
 
     /// Iterates to next local element.
