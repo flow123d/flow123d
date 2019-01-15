@@ -49,7 +49,9 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh)
 	orig_mesh_(&mesh),
     max_level_(0),
     refine_by_error_(false),
-    refinement_error_tolerance_(0.0)
+    refinement_error_tolerance_(0.0),
+	el_ds_(nullptr),
+	node_ds_(nullptr)
 {
 }
 
@@ -60,13 +62,20 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
     orig_mesh_(&mesh),
     max_level_(input_record_.val<int>("max_level")),
     refine_by_error_(input_record_.val<bool>("refine_by_error")),
-    refinement_error_tolerance_(input_record_.val<double>("refinement_error_tolerance"))
+    refinement_error_tolerance_(input_record_.val<double>("refinement_error_tolerance")),
+	el_ds_(nullptr),
+	node_ds_(nullptr)
 {
 }
 
 OutputMeshBase::~OutputMeshBase()
 {
-    //TODO call destructor of el_4_loc_, ... data members for refined mesh
+    if ( (el_ds_!=nullptr) && (mesh_type_ == MeshType::refined)) {
+    	delete[] el_4_loc_;
+    	delete[] node_4_loc_;
+    	delete el_ds_;
+    	delete node_ds_;
+    }
 }
 
 OutputElementIterator OutputMeshBase::begin()
@@ -277,22 +286,10 @@ OutputMesh::~OutputMesh()
 }
 
 
-void OutputMesh::create_refined_mesh()
-{
-    ASSERT(0).error("Not implemented yet.");
-}
-
-
 void OutputMesh::create_refined_sub_mesh()
 {
     ASSERT(0).error("Not implemented yet.");
 }
-
-void OutputMesh::make_serial_master_refined_mesh(int rank, int n_proc)
-{
-    ASSERT(0).error("Not implemented yet.");
-}
-
 
 bool OutputMesh::refinement_criterion()
 {
@@ -364,104 +361,6 @@ OutputMeshDiscontinuous::~OutputMeshDiscontinuous()
 {
 }
 
-
-void OutputMeshDiscontinuous::create_refined_mesh()
-{
-    DebugOut() << "Create refined discontinuous outputmesh.\n";
-    // initial guess of size: n_elements
-    nodes_ = std::make_shared<ElementDataCache<double>>("",(unsigned int)ElementDataCacheBase::N_VECTOR,0);
-    connectivity_ = std::make_shared<ElementDataCache<unsigned int>>("connectivity",(unsigned int)ElementDataCacheBase::N_SCALAR,0);
-    offsets_ = std::make_shared<ElementDataCache<unsigned int>>("offsets",(unsigned int)ElementDataCacheBase::N_SCALAR,0);
-    orig_element_indices_ = std::make_shared<std::vector<unsigned int>>();
-    
-    // index of last node added; set at the end of original ones
-    unsigned int last_offset = 0;
-    
-    auto &node_vec = *( nodes_->get_component_data(0).get() );
-    auto &conn_vec = *( connectivity_->get_component_data(0).get() );
-    auto &offset_vec = *( offsets_->get_component_data(0).get() );
-    
-    node_vec.reserve(4*orig_mesh_->n_nodes());
-    conn_vec.reserve(4*4*orig_mesh_->n_elements());
-    offset_vec.reserve(4*orig_mesh_->n_elements());
-    
-//     DebugOut() << "start refinement\n";
-    for (auto ele : orig_mesh_->elements_range()) {
-        const unsigned int
-            dim = ele->dim(),
-            ele_idx = ele.idx();
-//         DebugOut() << "ele index " << ele_idx << "\n";
-        
-        AuxElement aux_ele;
-        aux_ele.nodes.resize(ele->n_nodes());
-        aux_ele.level = 0;
-        
-        unsigned int li;
-        for (li=0; li<ele->n_nodes(); li++) {
-            aux_ele.nodes[li] = ele.node_accessor(li)->point();
-        }
-        
-        std::vector<AuxElement> refinement;
-        
-        switch(dim){
-            case 1: this->refine_aux_element<1>(aux_ele, refinement, ele); break;
-            case 2: this->refine_aux_element<2>(aux_ele, refinement, ele); break;
-            case 3: this->refine_aux_element<3>(aux_ele, refinement, ele); break;
-            default: ASSERT(0 < dim && dim < 4);
-        }
-        
-        //skip unrefined element
-//         if(refinement.size() < 2) continue;
-        unsigned int node_offset = node_vec.size(),
-                     con_offset = conn_vec.size();
-        node_vec.resize(node_vec.size() + (refinement.size() * (dim+1))*spacedim);
-        conn_vec.resize(conn_vec.size() + refinement.size()*(dim+1));
-//         orig_element_indices_->resize(orig_element_indices_->size() + refinement.size()*(dim+1));
-        
-//         DebugOut() << "ref size = " << refinement.size() << "\n";
-        //gather coords and connectivity (in a continous way inside element)
-        for(unsigned int i=0; i < refinement.size(); i++)
-        {
-            last_offset += dim+1;
-            offset_vec.push_back(last_offset);
-            (*orig_element_indices_).push_back(ele_idx);
-            for(unsigned int j=0; j < dim+1; j++)
-            {
-                unsigned int con = i*(dim+1) + j;
-                conn_vec[con_offset + con] = con_offset + con;
-                
-                for(unsigned int k=0; k < spacedim; k++) {
-                    node_vec[node_offset + con*spacedim + k] = refinement[i].nodes[j][k];
-                }
-            }
-        }
-    }
-    
-    conn_vec.shrink_to_fit();
-    node_vec.shrink_to_fit();
-    offset_vec.shrink_to_fit();
-    
-    connectivity_->set_n_values(conn_vec.size());
-    nodes_->set_n_values(node_vec.size() / spacedim);
-    offsets_->set_n_values(offset_vec.size());
-    
-    mesh_type_ = MeshType::refined;
-//     for(unsigned int i=0; i< nodes_->n_values; i++)
-//     {
-//         cout << i << "  ";
-//         for(unsigned int k=0; k<spacedim; k++){
-//             nodes_->print(cout, i*spacedim+k);
-//             cout << " ";
-//         }
-//         cout << endl;
-//     }
-//     cout << "\n\n";
-// //     nodes_->print_all(cout);
-// //     cout << "\n\n";
-//     connectivity_->print_all(cout);
-//     cout << "\n\n";
-//     offsets_->print_all(cout);
-}
 
 template<int dim>
 void OutputMeshDiscontinuous::refine_aux_element(const OutputMeshDiscontinuous::AuxElement& aux_element,
@@ -804,11 +703,20 @@ void OutputMeshDiscontinuous::create_refined_sub_mesh()
     nodes_->set_n_values(node_vec.size() / spacedim);
     offsets_->set_n_values(offset_vec.size());
 
-    mesh_type_ = MeshType::refined;
-}
+    // Create special distributions and arrays of local to global indexes of refined mesh
+	el_ds_ = new Distribution(offset_vec.size(), PETSC_COMM_WORLD);
+	node_ds_ = new Distribution(offset_vec[offset_vec.size()-1], PETSC_COMM_WORLD);
+	n_local_nodes_ = node_ds_->lsize();
+	el_4_loc_ = new LongIdx [ el_ds_->lsize() ];
+	LongIdx global_el_idx = el_ds_->begin();
+	for (unsigned int i=0; i<el_ds_->lsize(); ++i, ++global_el_idx) {
+	    el_4_loc_[i] = global_el_idx;
+	}
+	node_4_loc_ = new LongIdx [ node_ds_->lsize() ];
+	LongIdx global_node_idx = node_ds_->begin();
+	for (unsigned int i=0; i<node_ds_->lsize(); ++i, ++global_node_idx) {
+		node_4_loc_[i] = global_node_idx;
+	}
 
-
-void OutputMeshDiscontinuous::make_serial_master_refined_mesh(int rank, int n_proc)
-{
-    ASSERT(0).error("Not implemented yet.");
+	mesh_type_ = MeshType::refined;
 }
