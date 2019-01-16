@@ -129,10 +129,10 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 
 
 void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-    if (mesh_ptr->get_serial_master_mesh()) {
-        this->nodes_ = mesh_ptr->get_serial_master_mesh()->nodes_;
-        this->connectivity_ = mesh_ptr->get_serial_master_mesh()->connectivity_;
-        this->offsets_ = mesh_ptr->get_serial_master_mesh()->offsets_;
+    if (mesh_ptr->get_master_mesh()) {
+        this->nodes_ = mesh_ptr->get_master_mesh()->nodes_;
+        this->connectivity_ = mesh_ptr->get_master_mesh()->connectivity_;
+        this->offsets_ = mesh_ptr->get_master_mesh()->offsets_;
     } else {
         this->nodes_ = mesh_ptr->nodes_;
         this->connectivity_ = mesh_ptr->connectivity_;
@@ -303,6 +303,13 @@ void OutputTime::gather_output_data(void)
     	        native_data_map[i] = serial_data;
     	        (native_data_map[i])->set_dof_handler_hash(hash);
     	    }
+    	}
+    } else {
+        /* Parallel output needs compute node data (average values) */
+    	auto &conn_vec = *( output_mesh_->connectivity_->get_component_data(0).get() );
+    	auto &node_data_map = this->output_data_vec_[NODE_DATA];
+    	for(unsigned int i=0; i<node_data_map.size(); ++i) {
+    		node_data_map[i] = node_data_map[i]->compute_node_data(conn_vec, this->nodes_->n_values());
     	}
     }
 }

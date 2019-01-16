@@ -117,8 +117,13 @@ public:
 	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
 	void make_serial_master_mesh(int rank, int n_proc);
 
-	inline std::shared_ptr<OutputMeshBase> get_serial_master_mesh() const {
-		return serial_mesh_;
+	/// Create output mesh of parallel output (implemented only for discontinuous mesh)
+	virtual void make_parallel_master_mesh()
+	{};
+
+	/// Return master output mesh.
+	inline std::shared_ptr<OutputMeshBase> get_master_mesh() const {
+		return master_mesh_;
 	};
 
 protected:
@@ -184,8 +189,13 @@ protected:
     /// Vector gets partitions of elements. Data is used in GMSH output.
     std::shared_ptr<ElementDataCache<int>> partitions_;
 
-    /// Serial (collective) OutputMesh, is constructed on zero process and allow to produce serial output of parallel computation
-    std::shared_ptr<OutputMeshBase> serial_mesh_;
+    /**
+     * Master OutputMesh.
+     *
+     *  - serial output: is constructed on zero process (collective) and allow to produce serial output of parallel computation
+     *  - parallel output: is constructed on each process only for discontinuous mesh
+     */
+    std::shared_ptr<OutputMeshBase> master_mesh_;
 
     /// Next variables hold distributions of elements and nodes. They differ for mesh types.
     LongIdx *el_4_loc_;           ///< Index set assigning to local element index its global index.
@@ -243,6 +253,9 @@ public:
     
     /// Implements OutputMeshBase::create_refined_sub_mesh
     void create_refined_sub_mesh() override;
+
+    /// Overrides OutputMeshBase::make_parallel_master_mesh
+    void make_parallel_master_mesh() override;
 
 protected:
     ///Auxiliary structure defining element of refined output mesh.
