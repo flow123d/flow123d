@@ -365,6 +365,13 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 	unsigned int ndofs = dh_->max_elem_dofs();
 	std::vector<LongIdx> indices(ndofs);
 	unsigned int i_node;
+	/*for (DHCellAccessor cell : dh_->local_range()) {
+		cell.get_dof_indices(indices);
+		for (i_node=0; i_node<cell.elm()->n_nodes(); i_node++)
+		{
+			corner_pressure[indices[i_node]] = node_scalar[ cell.elm().node_accessor(i_node).idx() ];
+		}
+	}*/
 	for (auto ele : mesh_->elements_range()) {
 		dh_->get_dof_indices(ele, indices);
 		for (i_node=0; i_node<ele->n_nodes(); i_node++)
