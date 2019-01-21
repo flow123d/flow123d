@@ -319,7 +319,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
             rec_starts[i] = distr->begin(i);
             rec_counts[i] = distr->lsize(i);
         }
-        n_global_data = distr->begin(n_proc-1) + distr->lsize(n_proc-1);
+        n_global_data = distr->size();
         rec_indices_ids = new int [ n_global_data ];
     }
     MPI_Gatherv( local_to_global, distr->lsize(), MPI_INT, rec_indices_ids, rec_counts, rec_starts, MPI_INT, 0, MPI_COMM_WORLD);
@@ -331,7 +331,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution
         rec_data = new T [ this->n_comp() * n_global_data ];
     }
     auto &local_cache_vec = *( this->get_component_data(0).get() );
-    MPI_Gatherv( &local_cache_vec[0], local_cache_vec.size(), this->mpi_data_type(), rec_data, rec_counts, rec_starts, this->mpi_data_type(), 0, MPI_COMM_WORLD);
+    MPI_Gatherv( &local_cache_vec[0], this->n_comp()*distr->lsize(), this->mpi_data_type(), rec_data, rec_counts, rec_starts, this->mpi_data_type(), 0, MPI_COMM_WORLD) ;
 
     // create and fill serial cache
     if (rank==0) {
@@ -369,6 +369,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
         	i_new = i_node*this->n_comp_;
             for(unsigned int i = 0; i < this->n_comp_; i++) {
             	ASSERT_LT(i_new+i, data_out_vec.size());
+            	ASSERT_LT(i_old+i, data_in_vec.size());
             	data_out_vec[i_new+i] = data_in_vec[i_old+i];
             }
         }
@@ -392,6 +393,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::element_node_cache_
         	i_new = i_conn*elem_node_cache->n_comp_;
             for(unsigned int i = 0; i < elem_node_cache->n_comp_; i++) {
             	ASSERT_LT(i_new+i, data_out_vec.size());
+            	ASSERT_LT(i_old+i, data_in_vec.size());
             	data_out_vec[i_new+i] = data_in_vec[i_old+i];
             }
         }
@@ -414,6 +416,7 @@ std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::compute_node_data(s
     auto &data_in_vec = *( this->get_component_data(0).get() );
     for (idx=0; idx < conn_vec.size(); idx++) {
     	ASSERT_LT(conn_vec[idx], node_cache->n_values());
+    	ASSERT_LT(this->n_comp()*idx, data_in_vec.size());
     	node_cache->add( conn_vec[idx], &(data_in_vec[this->n_comp() * idx]) );
     	count[ conn_vec[idx] ]++;
     }
