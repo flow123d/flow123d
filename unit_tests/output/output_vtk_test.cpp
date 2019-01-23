@@ -75,7 +75,7 @@ public:
         // create output mesh identical to computational mesh
         auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
         output_mesh->create_sub_mesh();
-        output_mesh->make_serial_master_mesh(_mesh->get_el_ds()->myp(), _mesh->get_el_ds()->np());
+        output_mesh->make_serial_master_mesh();
         this->set_output_data_caches(output_mesh);
 
     }
@@ -96,12 +96,12 @@ public:
         // create output mesh identical to computational mesh
 		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
 		output_mesh_->create_sub_mesh();
-		output_mesh_->make_serial_master_mesh(_mesh->get_el_ds()->myp(), _mesh->get_el_ds()->np());
+		output_mesh_->make_serial_master_mesh();
         this->set_output_data_caches(output_mesh_);
 
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
         //this->output_mesh_discont_->create_sub_mesh();
-        //this->output_mesh_discont_->make_serial_master_mesh(_mesh->get_el_ds()->myp(), _mesh->get_el_ds()->np());
+        //this->output_mesh_discont_->make_serial_master_mesh();
 
 		field.compute_field_data(ELEM_DATA, shared_from_this());
 	}

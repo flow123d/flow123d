@@ -236,7 +236,7 @@ void EquationOutput::make_output_mesh(bool parallel)
 
             // actually compute refined mesh
             output_mesh_->create_refined_sub_mesh();
-            output_mesh_->make_serial_master_mesh(stream_->rank(), stream_->n_proc());
+            output_mesh_->make_serial_master_mesh();
 
             stream_->set_output_data_caches(output_mesh_);
             return;
@@ -258,7 +258,7 @@ void EquationOutput::make_output_mesh(bool parallel)
 	}
 	output_mesh_->create_sub_mesh();
 	if (!parallel) {
-		output_mesh_->make_serial_master_mesh(stream_->rank(), stream_->n_proc());
+		output_mesh_->make_serial_master_mesh();
 	} else {
 		output_mesh_->make_parallel_master_mesh();
 	}

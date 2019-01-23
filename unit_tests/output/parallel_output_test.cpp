@@ -73,7 +73,7 @@ protected:
         void gather_data(Mesh* mesh) {
             auto &elm_data_map = this->output_data_vec_[ELEM_DATA];
             for(unsigned int i=0; i<elm_data_map.size(); ++i) {
-                auto serial_data = elm_data_map[i]->gather(mesh->get_el_ds(), mesh->get_el_4_loc(), rank_, n_proc_);
+                auto serial_data = elm_data_map[i]->gather(mesh->get_el_ds(), mesh->get_el_4_loc());
                 if (this->rank_==0) elm_data_map[i] = serial_data;
             }
         }
@@ -139,7 +139,7 @@ protected:
 
     void make_output_mesh() {
         output_mesh->create_sub_mesh();
-        output_mesh->make_serial_master_mesh(rank, my_mesh->get_el_ds()->np());
+        output_mesh->make_serial_master_mesh();
         stream->set_output_data_caches(output_mesh);
     }
 

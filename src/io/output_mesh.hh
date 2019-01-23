@@ -54,14 +54,14 @@ typedef Iter<OutputElement> OutputElementIterator;
     // Creates the sub meshes on all processes identical to the computational one.
     output_mesh->create_sub_mesh();
     // Creates mesh on zero process identical to the computational one.
-    std::make_shared<OutputMesh> serial_output_mesh = output_mesh->make_serial_master_mesh(my_proc, n_proc);
+    std::make_shared<OutputMesh> serial_output_mesh = output_mesh->make_serial_master_mesh();
 
     // Construct mesh with discontinuous elements
     std::make_shared<OutputMeshDiscontinuous> output_mesh_discont = std::make_shared<OutputMeshDiscontinuous>(*my_mesh);
     // Creates sub meshes on all processes mesh from the original my_mesh.
     output_mesh_discont->create_sub_mesh();
     // Creates mesh on zero process from the original my_mesh.
-    std::make_shared<OutputMeshDiscontinuous> serial_output_mesh = output_mesh->make_serial_master_mesh(my_proc, n_proc);
+    std::make_shared<OutputMeshDiscontinuous> serial_output_mesh = output_mesh->make_serial_master_mesh();
 @endcode
  */
 class OutputMeshBase : public std::enable_shared_from_this<OutputMeshBase>
@@ -115,7 +115,7 @@ public:
 	void create_id_caches();
 
 	/// Synchronize parallel data and create serial COLECTIVE output mesh on zero process.
-	void make_serial_master_mesh(int rank, int n_proc);
+	void make_serial_master_mesh();
 
 	/// Create output mesh of parallel output (implemented only for discontinuous mesh)
 	virtual void make_parallel_master_mesh()
@@ -145,14 +145,13 @@ protected:
 	virtual std::shared_ptr<OutputMeshBase> construct_mesh()=0;
 
 	/// Create serial (collective) nodes cache on zero process
-	virtual std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc)=0;
+	virtual std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)=0;
 
 	/// Create serial (collective) connectivity cache on zero process
-	virtual std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank,
-	        int n_proc)=0;
+	virtual std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)=0;
 
 	/// Compute and return number of nodes for each elements (compute from offsets)
-	std::shared_ptr<ElementDataCache<unsigned int>> get_elems_n_nodes(int rank, int n_proc);
+	std::shared_ptr<ElementDataCache<unsigned int>> get_elems_n_nodes();
 
 	/// Input record for output mesh.
     Input::Record input_record_;
@@ -232,11 +231,10 @@ protected:
     std::shared_ptr<OutputMeshBase> construct_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_nodes_cache
-    std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc) override;
+    std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets) override;
 
     /// Implements OutputMeshBase::make_serial_connectivity_cache
-	std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank,
-	        int n_proc) override;
+	std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets) override;
 
 	/// Friend provides access to vectors for discontinous output mesh.
     friend class OutputMeshDiscontinuous;
@@ -288,11 +286,10 @@ protected:
     std::shared_ptr<OutputMeshBase> construct_mesh() override;
 
     /// Implements OutputMeshBase::make_serial_nodes_cache
-    std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank, int n_proc) override;
+    std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets) override;
 
     /// Implements OutputMeshBase::make_serial_connectivity_cache
-	std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets, int rank,
-	        int n_proc) override;
+	std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets) override;
 };
 
 #endif  // OUTPUT_MESH_HH_

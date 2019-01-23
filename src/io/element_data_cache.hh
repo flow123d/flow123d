@@ -162,7 +162,7 @@ public:
     void scale_data(double coef);
 
     /// Implements ElementDataCacheBase::gather.
-    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) override;
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override;
 
     /// Implements ElementDataCacheBase::element_node_cache_fixed_size.
     std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override;

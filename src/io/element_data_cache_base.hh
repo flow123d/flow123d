@@ -166,10 +166,8 @@ public:
      *
      * @param distr Collective distribution
      * @param local_to_global Maps local indices to global
-     * @param rank Actual process
-     * @param n_proc Number of processes
      */
-    virtual std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc)=0;
+    virtual std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global)=0;
 
     /**
      * Create node data cache of constant data size for each elements.

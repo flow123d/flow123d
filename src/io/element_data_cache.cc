@@ -305,8 +305,11 @@ void ElementDataCache<T>::scale_data(double coef) {
 
 
 template <typename T>
-std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) {
+std::shared_ptr< ElementDataCacheBase > ElementDataCache<T>::gather(Distribution *distr, LongIdx *local_to_global) {
     std::shared_ptr< ElementDataCache<T> > gather_cache;
+    int rank = distr->myp();
+    int n_proc = distr->np();
+
     unsigned int n_global_data;   // global number of data
     int rec_starts[n_proc];       // displacement of first value that is received from each process
     int rec_counts[n_proc];       // number of values that are received from each process
