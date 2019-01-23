@@ -76,16 +76,24 @@ public:
     {}
 
     std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global, int rank, int n_proc) override
-    {}
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
 
     std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override
-    {}
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
 
     std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override
-    {}
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
 
     std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
-    {}
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
 
 };
 
