@@ -254,8 +254,6 @@ private:
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
-	void set_output_vector();
-
 	void preallocate();
 
 	/**

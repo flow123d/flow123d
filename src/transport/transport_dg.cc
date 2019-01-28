@@ -332,7 +332,10 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
         ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        ls[sbi]->set_solution(NULL); //TODO add FieldFE vector
+        double *out_array;
+        VecGetArray(output_vec[sbi]->petsc_vec(), &out_array);
+        ls[sbi]->set_solution(out_array);
+        VecRestoreArray(output_vec[sbi]->petsc_vec(), &out_array);
 
         ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
@@ -387,17 +390,6 @@ TransportDG<Model>::~TransportDG()
     }
 
 }
-
-
-template<class Model>
-void TransportDG<Model>::set_output_vector()
-{
-	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-	{
-		VecCopy(ls[sbi]->get_solution(), output_vec[sbi]->petsc_vec());
-	}
-}
-
 
 
 template<class Model>
@@ -647,7 +639,6 @@ void TransportDG<Model>::output_data()
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-    set_output_vector();
     data_.output_fields.output(this->time().step());
 
     Model::output_data();
