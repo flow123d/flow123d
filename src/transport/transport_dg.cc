@@ -285,16 +285,6 @@ void TransportDG<Model>::initialize()
     }
 
     output_vec.resize(Model::n_substances());
-    //output_solution.resize(Model::n_substances());
-    /*int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-    {
-        // for each substance we allocate output array and vector
-        //output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-		output_vec[sbi].resize(output_vector_size);
-    }*/
     data_.output_field.set_components(Model::substances_.names());
     data_.output_field.set_mesh(*Model::mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
@@ -304,7 +294,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_vec[sbi] = output_field_ptr->set_fe_data(feo->dh()); //->sequential(), 0, &output_vec[sbi]);
+        output_vec[sbi] = output_field_ptr->set_fe_data(feo->dh());
         data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
