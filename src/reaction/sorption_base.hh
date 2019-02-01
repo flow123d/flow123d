@@ -162,12 +162,6 @@ protected:
   ///Reads and sets initial condition for concentration in solid.
   void set_initial_condition();
     
-    /// Allocates petsc vectors, prepares them for output and creates vector scatter.
-  void allocate_output_mpi(void);
-  
-  /// Gathers all the parallel vectors to enable them to be output.
-  void output_vector_gather(void) override;
-  
   /**
    * For simulation of sorption in just one element either inside of MOBILE or IMMOBILE pores.
    */
@@ -246,10 +240,9 @@ protected:
                   
   ///@name members used in output routines
   //@{
-  VecScatter vconc_out_scatter; ///< Output vector scatter.
   // TODO: replace vconc_solid + conc_solid by VecSeqDouble, use the same principle as in 'conc_solid_out'
   Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
-  std::vector<VectorMPI> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
+  std::vector<VectorMPI *> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
   
   // Temporary objects holding pointers to appropriate FieldFE

@@ -136,7 +136,6 @@ SorptionBase::~SorptionBase(void)
 {
   if (data_ != nullptr) delete data_;
 
-  chkerr(VecScatterDestroy(&(vconc_out_scatter)));
   if (vconc_solid != NULL) {
 
 
@@ -206,18 +205,13 @@ void SorptionBase::initialize()
   conc_solid = new double* [substances_.size()];
   conc_solid_out.clear();
   conc_solid_out.resize( substances_.size() );
-  output_field_ptr.clear();
-  output_field_ptr.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_solid[sbi] = new double [distribution_->lsize()];
-    conc_solid_out[sbi].resize( distribution_->size() );
     //zero initialization of solid concentration for all substances
     for(unsigned int i=0; i < distribution_->lsize(); i++)
       conc_solid[sbi][i] = 0;
   }
-
-  allocate_output_mpi();
   
   initialize_fields();
   
@@ -349,17 +343,33 @@ void SorptionBase::initialize_fields()
   
   data_->set_mesh(*mesh_);
 
+  //initialization of DOF handler
+  static FE_P_disc<0> fe0(0);
+  static FE_P_disc<1> fe1(0);
+  static FE_P_disc<2> fe2(0);
+  static FE_P_disc<3> fe3(0);
+  shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>(*mesh_);
+  shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+  dh->distribute_dofs(ds);
+
   //initialization of output
   //output_array = input_record_.val<Input::Array>("output_fields");
   data_->conc_solid.set_components(substances_.names());
   data_->output_fields.set_mesh(*mesh_);
   data_->output_fields.output_type(OutputTime::ELEM_DATA);
   data_->conc_solid.setup_components();
+  vconc_solid = new Vec [substances_.size()];
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	  output_field_ptr[sbi] = create_field<3, FieldValue<3>::Scalar>(conc_solid_out[sbi], *mesh_, 1);
-      data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
+      std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+      conc_solid_out[sbi] = output_field_ptr->set_fe_data(dh);
+      data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+      double *out_array;
+      VecGetArray(conc_solid_out[sbi]->petsc_vec(), &out_array);
+      conc_solid[sbi] = out_array;
+      VecCreateMPIWithArray( PETSC_COMM_WORLD, 1, distribution_->lsize(), PETSC_DECIDE, conc_solid[sbi], &vconc_solid[sbi] );
+      VecRestoreArray(conc_solid_out[sbi]->petsc_vec(), &out_array);
   }
   //output_stream_->add_admissible_field_names(output_array);
   data_->output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"), time());
@@ -384,7 +394,6 @@ void SorptionBase::zero_time_step()
   make_tables();
     
   // write initial condition
-  //output_vector_gather();
   //data_->output_fields.set_time(time_->step(), LimitSide::right);
   //data_->output_fields.output(output_stream_);
   
@@ -609,51 +618,9 @@ double **SorptionBase::compute_reaction(double **concentrations, int loc_el)
 
 /**************************************** OUTPUT ***************************************************/
 
-void SorptionBase::allocate_output_mpi(void )
-{
-    int sbi, n_subst;
-    n_subst = substances_.size();
-
-    vconc_solid = new Vec [n_subst];
-
-    for (sbi = 0; sbi < n_subst; sbi++) {
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_solid[sbi],
-                &vconc_solid[sbi]);
-        VecZeroEntries(vconc_solid[sbi]);
-
-        VecZeroEntries(conc_solid_out[sbi].petsc_vec());
-    }
-    
-    // creating output vector scatter
-    IS is;
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_solid[0], is, conc_solid_out[0].petsc_vec(), PETSC_NULL, &vconc_out_scatter);
-    ISDestroy(&(is));
-}
-
-
-void SorptionBase::output_vector_gather() 
-{
-    unsigned int sbi;
-
-    for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_solid[sbi], conc_solid_out[sbi].petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-    }
-}
-
-
 void SorptionBase::output_data(void )
 {
     data_->output_fields.set_time(time().step(), LimitSide::right);
-    if ( data_->output_fields.is_field_output_time(data_->conc_solid, time().step()) ) {
-        output_vector_gather();
-    }
-
-    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++) {
-    	fill_output_data(conc_solid_out[sbi], output_field_ptr[sbi]);
-    }
-
     // Register fresh output data
     data_->output_fields.output(time().step());
 }

@@ -108,11 +108,6 @@ public:
 
 protected:
   /**
-   * Communicate parallel concentration vectors into sequential output vector.
-   */
-  virtual void output_vector_gather(void){};
-
-  /**
    * Computation of reaction term on a single element.
    * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
    */
