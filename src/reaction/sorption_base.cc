@@ -179,10 +179,10 @@ void SorptionBase::make_reactions()
 
 void SorptionBase::initialize()
 {
-  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  OLD_ASSERT(output_stream_,"Null output stream.");
-  OLD_ASSERT_LESS(0, substances_.size());
+  ASSERT_PTR(distribution_).error("Distribution has not been set yet.\n");
+  ASSERT_PTR(time_).error("Time governor has not been set yet.\n");
+  ASSERT(output_stream_).error("Null output stream.");
+  ASSERT_LT(0, substances_.size());
   
   initialize_substance_ids(); //computes present substances and sets indices
   initialize_from_input();          //reads non-field data from input
@@ -329,7 +329,7 @@ void SorptionBase::initialize_from_input()
 
 void SorptionBase::initialize_fields()
 {
-  OLD_ASSERT(n_substances_ > 0, "Number of substances is wrong, they might have not been set yet.\n");
+  ASSERT_GT(n_substances_, 0).error("Number of substances is wrong, they might have not been set yet.\n");
 
   // create vector of substances that are involved in sorption
   // and initialize data_ with their names
@@ -378,10 +378,10 @@ void SorptionBase::initialize_fields()
 
 void SorptionBase::zero_time_step()
 {
-  OLD_ASSERT(distribution_ != nullptr, "Distribution has not been set yet.\n");
-  OLD_ASSERT(time_ != nullptr, "Time governor has not been set yet.\n");
-  OLD_ASSERT(output_stream_,"Null output stream.");
-  OLD_ASSERT_LESS(0, substances_.size());
+  ASSERT_PTR(distribution_).error("Distribution has not been set yet.\n");
+  ASSERT_PTR(time_).error("Time governor has not been set yet.\n");
+  ASSERT(output_stream_).error("Null output stream.");
+  ASSERT_LT(0, substances_.size());
   
   data_->set_time(time_->step(), LimitSide::right);
   std::stringstream ss; // print warning message with table of uninitialized fields
@@ -480,12 +480,12 @@ void SorptionBase::isotherm_reinit_all(const ElementAccessor<3> &elem)
 
 void SorptionBase::clear_max_conc()
 {
-    unsigned int reg_idx, i_subst, subst_id;
+    unsigned int reg_idx, i_subst;
     
     // clear max concetrations array
     unsigned int nr_of_regions = mesh_->region_db().bulk_size();
     for(reg_idx = 0; reg_idx < nr_of_regions; reg_idx++)
-        for(unsigned int i_subst = 0; i_subst < n_substances_; i_subst++)
+        for(i_subst = 0; i_subst < n_substances_; i_subst++)
             max_conc[reg_idx][i_subst] = 0.0;
 }
 
