@@ -45,35 +45,36 @@ TEST(DOFHandler, test_all) {
     
     dh.print();
     
-    auto dh_seq = dh.sequential();
-    
     std::vector<int> indices[5];
-    for (unsigned int i=0; i<5; i++)
+    std::vector<bool> own_elem(5, false); // hold if cell is own or ghost on process and can be evaluated (see tests)
+    for ( DHCellAccessor cell : dh.local_range() )
     {
-      indices[i].resize(dh.max_elem_dofs());
-      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
+        auto elem_idx = cell.elm_idx();
+        own_elem[elem_idx] = true;
+        indices[elem_idx].resize(dh.max_elem_dofs());
+    	cell.get_dof_indices(indices[elem_idx]);
     }
-    
+
     // dof at node 1 is shared by elements 2, 3
-    EXPECT_EQ( indices[1][0], indices[2][0] );
+    if (own_elem[1] & own_elem[2]) EXPECT_EQ( indices[1][0], indices[2][0] );
     
     // dof at node 2 is shared by elements 2, 4
-    EXPECT_EQ( indices[1][1], indices[3][1] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][1], indices[3][1] );
     
     // dof at node 3 is shared by elements 2, 3, 4, 5
-    EXPECT_EQ( indices[4][0], indices[2][1] );
-    EXPECT_EQ( indices[2][1], indices[1][2] );
-    EXPECT_EQ( indices[1][2], indices[3][0] );
+    if (own_elem[4] & own_elem[2]) EXPECT_EQ( indices[4][0], indices[2][1] );
+    if (own_elem[2] & own_elem[1]) EXPECT_EQ( indices[2][1], indices[1][2] );
+    if (own_elem[1] & own_elem[3]) EXPECT_EQ( indices[1][2], indices[3][0] );
     
     // dof at node 3 is NOT shared by elements 1 and 5
-    EXPECT_NE( indices[0][0], indices[4][0] );
+    if (own_elem[0] & own_elem[4]) EXPECT_NE( indices[0][0], indices[4][0] );
     
     // dof at node 4 is shared by elements 3, 5
-    EXPECT_EQ( indices[2][2], indices[4][2] );
+    if (own_elem[2] & own_elem[4]) EXPECT_EQ( indices[2][2], indices[4][2] );
     
     // dof at node 5 is NOT shared by elements 1, 4 and 5
-    EXPECT_NE( indices[4][1], indices[0][1] );
-    EXPECT_NE( indices[4][1], indices[3][2] );
+    if (own_elem[4] & own_elem[0]) EXPECT_NE( indices[4][1], indices[0][1] );
+    if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][1], indices[3][2] );
     
     delete mesh;
 
@@ -115,54 +116,46 @@ TEST(DOFHandler, test_all) {
     
     dh.print();
     
-    auto vec = dh.create_vector();
-    std::vector<LongIdx> dof_indices(dh.max_elem_dofs());
-    std::vector<double> dof_values(dh.max_elem_dofs(), 1.);
-    for (auto elem : dh.local_range())
+    std::vector<int> indices[8];
+    std::vector<bool> own_elem(8, false); // hold if cell is own or ghost on process and can be evaluated (see tests)
+    for ( DHCellAccessor cell : dh.local_range() )
     {
-        elem.get_dof_indices(dof_indices);
-        VecSetValues(vec.petsc_vec(), dof_indices.size(), dof_indices.data(), dof_values.data(), ADD_VALUES);
-    }
-    
-    auto dh_seq = dh.sequential();
-    
-    std::vector<int> indices[mesh->n_elements()];
-    for (unsigned int i=0; i<mesh->n_elements(); i++)
-    {
-      indices[i].resize(dh.max_elem_dofs());
-      dh_seq->get_dof_indices(mesh->element_accessor(i), indices[i]);
+        auto elem_idx = cell.elm_idx();
+        own_elem[elem_idx] = true;
+        indices[elem_idx].resize(dh.max_elem_dofs());
+        cell.get_dof_indices(indices[elem_idx]);
     }
     
     // dof at node 1 is not shared by elements 1, 4, 5
-    EXPECT_NE( indices[0][0], indices[3][0] );
-    EXPECT_NE( indices[4][0], indices[3][0] );
+    if (own_elem[0] & own_elem[3]) EXPECT_NE( indices[0][0], indices[3][0] );
+    if (own_elem[4] & own_elem[3]) EXPECT_NE( indices[4][0], indices[3][0] );
     
     // dof at node 2 is shared by elements 4, 6
-    EXPECT_EQ( indices[3][1], indices[5][1] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][1], indices[5][1] );
     
     // dof at node 3 is shared by elements 4, 6, 8
-    EXPECT_EQ( indices[3][2], indices[5][0] );
-    EXPECT_EQ( indices[3][2], indices[7][0] );
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
+    if (own_elem[3] & own_elem[7]) EXPECT_EQ( indices[3][2], indices[7][0] );
     
     // dof at node 3 is shared by elements 1, 2, 3
-    EXPECT_EQ( indices[0][1], indices[1][0] );
-    EXPECT_EQ( indices[1][0], indices[2][0] );
+    if (own_elem[0] & own_elem[1]) EXPECT_EQ( indices[0][1], indices[1][0] );
+    if (own_elem[1] & own_elem[2]) EXPECT_EQ( indices[1][0], indices[2][0] );
     
     // dof at node 3 is NOT shared by elements 1, 4, 5, 7
-    EXPECT_NE( indices[0][1], indices[3][2] );
-    EXPECT_NE( indices[3][2], indices[4][1] );
-    EXPECT_NE( indices[4][1], indices[6][0] );
+    if (own_elem[0] & own_elem[3]) EXPECT_NE( indices[0][1], indices[3][2] );
+    if (own_elem[3] & own_elem[4]) EXPECT_NE( indices[3][2], indices[4][1] );
+    if (own_elem[4] & own_elem[6]) EXPECT_NE( indices[4][1], indices[6][0] );
     
     // dof at node 4 is shared by elements 6, 8
-    EXPECT_EQ( indices[5][2], indices[7][1] );
+    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][2], indices[7][1] );
     
     // dof at node 5 is NOT shared by elements 2, 5, 7
-    EXPECT_NE( indices[1][1], indices[4][2] );
-    EXPECT_NE( indices[4][2], indices[6][2] );
+    if (own_elem[1] & own_elem[4]) EXPECT_NE( indices[1][1], indices[4][2] );
+    if (own_elem[4] & own_elem[6]) EXPECT_NE( indices[4][2], indices[6][2] );
     
     // dof at node 6 is NOT shared by elements 3, 7, 8
-    EXPECT_NE( indices[2][1], indices[6][1] );
-    EXPECT_NE( indices[6][1], indices[7][2] );
+    if (own_elem[2] & own_elem[6]) EXPECT_NE( indices[2][1], indices[6][1] );
+    if (own_elem[6] & own_elem[7]) EXPECT_NE( indices[6][1], indices[7][2] );
     
     delete mesh;
 
@@ -171,3 +164,34 @@ TEST(DOFHandler, test_all) {
 }
 
 
+TEST(DHAccessors, dh_cell_accessors) {
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"mesh/simplest_cube.msh\"}");
+
+    FE_P<0> fe0(1);
+    FE_P<1> fe1(1);
+    FE_P<2> fe2(1);
+    FE_P<3> fe3(1);
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    DOFHandlerMultiDim dh(*mesh);
+    dh.distribute_dofs(ds);
+    auto dh_seq = dh.sequential();
+    auto el_ds = mesh->get_el_ds();
+    unsigned int i_distr=0;
+
+    for( DHCellAccessor cell : dh_seq->own_range() ) {
+    	EXPECT_EQ( cell.elm_idx(), dh_seq->mesh()->get_el_4_loc()[i_distr] );
+        for( DHCellSide cell_side : cell.side_range() ) {
+        	EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
+        	for( DHEdgeSide edge_side : cell_side.edge_sides() ) {
+        		EXPECT_EQ( cell.elm_idx(), edge_side.cell_side().side()->elem_idx() );
+        	}
+        }
+        for( DHNeighbSide neighb_side : cell.neighb_sides() ) {
+            EXPECT_EQ( cell.elm_idx(), neighb_side.cell_side().side()->elem_idx() );
+        }
+    	++i_distr;
+    }
+
+    delete mesh;
+}
