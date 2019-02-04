@@ -154,6 +154,26 @@ public:
         ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
         chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
+    
+    /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
+    void local_to_ghost_begin() {
+        VecGhostUpdateBegin(data_petsc_, INSERT_VALUES, SCATTER_FORWARD);
+    }
+    
+    /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
+    void local_to_ghost_end() {
+        VecGhostUpdateEnd(data_petsc_, INSERT_VALUES, SCATTER_FORWARD);
+    }
+    
+    /// ghost_to_local_{begin,end} updates the local values by adding ghost values from neighbouring processors
+    void ghost_to_local_begin() {
+        VecGhostUpdateBegin(data_petsc_, ADD_VALUES, SCATTER_REVERSE);
+    }
+    
+    /// ghost_to_local_{begin,end} updates the local values by adding ghost values from neighbouring processors
+    void ghost_to_local_end() {
+        VecGhostUpdateEnd(data_petsc_, ADD_VALUES, SCATTER_REVERSE);
+    }
 
 	/// Return size of output data.
 	unsigned int size()
