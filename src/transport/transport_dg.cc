@@ -322,10 +322,7 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
         ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        double *out_array;
-        VecGetArray(output_vec[sbi]->petsc_vec(), &out_array);
-        ls[sbi]->set_solution(out_array);
-        VecRestoreArray(output_vec[sbi]->petsc_vec(), &out_array);
+        ls[sbi]->set_solution(output_vec[sbi]->petsc_vec());
 
         ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
