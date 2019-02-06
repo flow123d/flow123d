@@ -285,17 +285,33 @@ public:
     }
 
     /**
+     * Set PETSc solution
+     */
+    void set_solution(Vec sol_vec) {
+    	solution_ = sol_vec;
+        own_solution_ = false;
+        double *out_array;
+        VecGetArray( solution_, &out_array );
+        v_solution_ = out_array;
+        VecRestoreArray( solution_, &out_array );
+    }
+
+    /**
      * Create PETSc solution
      */
     void set_solution(double *sol_array) {
-        if (sol_array == NULL) {
-            v_solution_   = new double[ rows_ds_->lsize() + 1 ];
-            own_solution_ = true;
-        }
-        else {
-            v_solution_ = sol_array;
-            own_solution_ = false;
-        }
+        v_solution_ = sol_array;
+        own_solution_ = false;
+        PetscErrorCode ierr;
+        ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
+    }
+
+    /**
+     * Create PETSc solution
+     */
+    void set_solution() {
+        v_solution_   = new double[ rows_ds_->lsize() + 1 ];
+        own_solution_ = true;
         PetscErrorCode ierr;
         ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
     }
