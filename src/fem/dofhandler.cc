@@ -51,38 +51,6 @@ DOFHandlerMultiDim::DOFHandlerMultiDim(Mesh& _mesh, bool make_elem_part)
 }
 
 
-unsigned int DOFHandlerMultiDim::n_dofs(ElementAccessor<3> cell) const
-{
-    switch (cell->dim()) {
-        case 1:
-            return fe<1>(cell)->n_dofs();
-            break;
-        case 2:
-            return fe<2>(cell)->n_dofs();
-            break;
-        case 3:
-            return fe<3>(cell)->n_dofs();
-            break;
-    }
-}
-
-
-const Dof &DOFHandlerMultiDim::cell_dof(ElementAccessor<3> cell, unsigned int idof) const
-{
-    switch (cell.dim())
-    {
-        case 1:
-            return fe<1>(cell)->dof(idof);
-            break;
-        case 2:
-            return fe<2>(cell)->dof(idof);
-            break;
-        case 3:
-            return fe<3>(cell)->dof(idof);
-            break;
-    }
-}
-
 std::shared_ptr<DOFHandlerMultiDim> DOFHandlerMultiDim::sequential()
 {
     create_sequential();
@@ -217,19 +185,18 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
     unsigned int dof_offset=0;
     for (unsigned int gid=0; gid<ghost_proc_el[proc].size(); gid++)
     {
-        auto cell = mesh_->element_accessor(ghost_proc_el[proc][gid]);
-        auto dh_cell = this->cell_accessor_from_element( cell.idx() );
+        DHCellAccessor dh_cell = this->cell_accessor_from_element( ghost_proc_el[proc][gid] );
         
-        for (unsigned dof=0; dof<n_dofs(cell); dof++)
+        for (unsigned dof=0; dof<dh_cell.n_dofs(); dof++)
             dof_indices[cell_starts[dh_cell.local_idx()]+dof] = dofs[dof_offset+dof];
         
-        vector<unsigned int> loc_node_dof_count(cell->n_nodes(), 0);
-        for (unsigned int idof = 0; idof<n_dofs(cell); ++idof)
+        vector<unsigned int> loc_node_dof_count(dh_cell.elm()->n_nodes(), 0);
+        for (unsigned int idof = 0; idof<dh_cell.n_dofs(); ++idof)
         {
-            if (cell_dof(cell, idof).dim == 0)
+            if (dh_cell.cell_dof(idof).dim == 0)
             {   // update nodal dof
-                unsigned int dof_nface_idx = cell_dof(cell, idof).n_face_idx;
-                unsigned int nid = mesh_->tree->objects(cell->dim())[mesh_->tree->obj_4_el()[cell.idx()]].nodes[dof_nface_idx];
+                unsigned int dof_nface_idx = dh_cell.cell_dof(idof).n_face_idx;
+                unsigned int nid = mesh_->tree->objects(dh_cell.dim())[mesh_->tree->obj_4_el()[dh_cell.elm_idx()]].nodes[dof_nface_idx];
                     
                 if (node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] == INVALID_DOF)
                 {
@@ -241,7 +208,7 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             }
         }
         
-        dof_offset += n_dofs(cell);
+        dof_offset += dh_cell.n_dofs();
     }
     
     // update dof_indices on local elements
@@ -612,7 +579,7 @@ Range<DHCellAccessor> DOFHandlerMultiDim::ghost_range() const {
 }
 
 
-DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
+const DHCellAccessor DOFHandlerMultiDim::cell_accessor_from_element(unsigned int elm_idx) const {
 	auto map_it = global_to_local_el_idx_.find((LongIdx)elm_idx); // find in global to local map
 	ASSERT( map_it != global_to_local_el_idx_.end() )(elm_idx).error("DH accessor can be create only for own or ghost elements!\n");
 	return DHCellAccessor(this, map_it->second);
@@ -633,14 +600,14 @@ void DOFHandlerMultiDim::print() const {
     
     for (auto cell : own_range())
     {
-        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        auto ndofs = cell.get_dof_indices(dofs);
         s << "-- cell " << cell.elm().index() << ": ";
         for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
     }
     s << "- dofs on ghost cells:" << endl;
     for (auto cell : ghost_range())
     {
-        auto ndofs = get_dof_indices(cell.elm(), dofs);
+        auto ndofs = cell.get_dof_indices(dofs);
         s << "-- cell " << cell.elm().index() << ": ";
         for (unsigned int idof=0; idof<ndofs; idof++) s << dofs[idof] << " "; s << endl;
     }
