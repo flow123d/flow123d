@@ -92,6 +92,8 @@ public:
     
     /**
      * Creates sub mesh containing only local part of original (computation) mesh.
+     *
+     * TODO: should be replaced by local part of future parallel computational mesh.
      */
     void create_sub_mesh();
 
@@ -144,10 +146,18 @@ protected:
 	 */
 	virtual std::shared_ptr<OutputMeshBase> construct_mesh()=0;
 
-	/// Create serial (collective) nodes cache on zero process
+	/**
+	 * Create serial (collective) nodes cache on zero process.
+	 *
+	 * Implements part of \p make_serial_master_mesh that are specific for continuous and discontinuous case.
+	 */
 	virtual std::shared_ptr<ElementDataCache<double>> make_serial_nodes_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)=0;
 
-	/// Create serial (collective) connectivity cache on zero process
+	/**
+	 * Create serial (collective) connectivity cache on zero process.
+	 *
+	 * Implements part of \p make_serial_master_mesh that are specific for continuous and discontinuous case.
+	 */
 	virtual std::shared_ptr<ElementDataCache<unsigned int>> make_serial_connectivity_cache(std::shared_ptr<ElementDataCache<unsigned int>> global_offsets)=0;
 
 	/// Compute and return number of nodes for each elements (compute from offsets)
@@ -196,7 +206,11 @@ protected:
      */
     std::shared_ptr<OutputMeshBase> master_mesh_;
 
-    /// Next variables hold distributions of elements and nodes. They differ for mesh types.
+    /**
+     * Next variables hold distributions of elements and nodes. They differ for mesh types
+     *  - continuous and discontinuous mesh shared objects with computational (orig) mesh
+     *  - refined mesh creates own objects
+     */
     LongIdx *el_4_loc_;           ///< Index set assigning to local element index its global index.
     Distribution *el_ds_;         ///< Parallel distribution of elements.
     LongIdx *node_4_loc_;         ///< Index set assigning to local node index its global index.
