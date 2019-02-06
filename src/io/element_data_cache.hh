@@ -176,17 +176,6 @@ public:
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);
 
-    /**
-     * Declaration of new exception info used in following exception
-     */
-    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
-
-    /**
-     * Declaration of exception
-     */
-    DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
-            << " returning variable size vectors. Try convert to MultiField.\n");
-
 protected:
     /// Allow to hold sign, if data in cache is checked and scale (both can be executed only once)
 	enum CheckScaleData {

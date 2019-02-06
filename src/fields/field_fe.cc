@@ -682,8 +682,8 @@ void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &ou
 
 	VectorMPI::VectorDataPtr data_vec = data_vec_->data_ptr();
 	for (auto dh_cell : dh_->own_range()) {
-		dof_filled_size = dh_->get_dof_indices(dh_cell.elm(), dof_indices_);
-		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[0] ];
+		dof_filled_size = dh_->get_loc_dof_indices(dh_cell.elm(), dof_indices_);
+		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[i] ];
 		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
 	}

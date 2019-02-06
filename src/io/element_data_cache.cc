@@ -53,11 +53,8 @@ ElementDataCache<T>::ElementDataCache(std::string field_name, unsigned int n_com
     this->field_input_name_ = this->field_name_;
 
     this->n_values_ = size;
-    if (n_comp > 0) {
-        this->n_comp_ = n_comp;
-    } else {
-    	THROW(ExcOutputVariableVector() << EI_FieldName(this->field_input_name_));
-    }
+    ASSERT_GT(n_comp, 0)(field_name).error("Output field returning variable size vectors. Try convert to MultiField.");
+    this->n_comp_ = n_comp;
 
     this->data_ = ElementDataCache<T>::create_data_cache(1, this->n_values_ * this->n_comp_);
 }

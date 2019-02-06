@@ -386,18 +386,10 @@ void OutputMSH::add_dummy_fields()
 void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
     OutputTime::set_output_data_caches(mesh_ptr);
 
-    if (mesh_ptr->get_master_mesh()) {
-        mesh_ptr->get_master_mesh()->create_id_caches();
-        this->node_ids_ = mesh_ptr->get_master_mesh()->node_ids_;
-        this->elem_ids_ = mesh_ptr->get_master_mesh()->elem_ids_;
-        this->region_ids_ = mesh_ptr->get_master_mesh()->region_ids_;
-        this->partitions_ = mesh_ptr->get_master_mesh()->partitions_;
-    } else if (this->n_proc_ == 1) {
-        mesh_ptr->create_id_caches();
-        this->node_ids_ = mesh_ptr->node_ids_;
-        this->elem_ids_ = mesh_ptr->elem_ids_;
-        this->region_ids_ = mesh_ptr->region_ids_;
-        this->partitions_ = mesh_ptr->partitions_;
-    }
+    mesh_ptr->get_master_mesh()->create_id_caches();
+    this->node_ids_ = mesh_ptr->get_master_mesh()->node_ids_;
+    this->elem_ids_ = mesh_ptr->get_master_mesh()->elem_ids_;
+    this->region_ids_ = mesh_ptr->get_master_mesh()->region_ids_;
+    this->partitions_ = mesh_ptr->get_master_mesh()->partitions_;
 }
 
