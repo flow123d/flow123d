@@ -36,8 +36,8 @@ const it::Record & HM_Iterative::get_input_type() {
 		.declare_key("flow_equation", RichardsLMH::get_input_type(),
 		        it::Default::obligatory(),
 				"Flow equation, provides the velocity field as a result.")
-// 		.declare_key("mechanics_equation", Mechanics::get_input_type(),
-// 				"Mechanics, provides the displacement field.")
+		.declare_key("mechanics_equation", Elasticity::get_input_type(),
+				"Mechanics, provides the displacement field.")
         .declare_key( "iteration_parameter", it::Double(), it::Default("1"),
                 "Tuning parameter for iterative splitting. Its default value"
                 "corresponds to a theoretically optimal value with fastest convergence." )
@@ -65,9 +65,9 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     using namespace Input;
 
     // setup flow equation
-    Record prim_eq = in_record.val<Record>("flow_equation");
+    Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
-    flow_ = std::make_shared<RichardsLMH>(*mesh_, prim_eq);
+    flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec);
     flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "HM iterative") ) {
@@ -75,8 +75,11 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     }
     
     // setup mechanics
-    // TODO: supply real equation
-    mechanics_ = std::make_shared<EquationBase>();
+    Record mech_rec = in_record.val<Record>("mechanics_equation");
+    mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec);
+    mechanics_->data()["cross_section"].copy_from(flow_->data()["cross_section"]);
+//     mechanics_->set_time_governor(flow_->time());
+    mechanics_->initialize();
     
     // read parameters controlling the iteration
     beta_ = in_record.val<double>("iteration_parameter");
@@ -90,9 +93,18 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 }
 
 
+void HM_Iterative::initialize()
+{
+//     flow_->initialize();
+//     mechanics_->initialize();
+}
+
+
 void HM_Iterative::zero_time_step()
 {
     flow_->zero_time_step();
+    mechanics_->set_velocity_field( flow_->get_mh_dofhandler() );
+    mechanics_->zero_time_step();
 }
 
 
@@ -108,10 +120,10 @@ void HM_Iterative::update_solution()
     {
         it++;
         
-        mechanics_->update_solution();
-        // TODO: pass displacement (divergence) to flow
         flow_->update_solution();
         // TODO: pass pressure to mechanics
+        mechanics_->update_solution();
+        // TODO: pass displacement (divergence) to flow
         // TODO: compute difference of iterates
     }
 }

@@ -26,6 +26,7 @@
 #include "input/accessors_forward.hh"
 #include "coupling/equation.hh"
 #include "flow/darcy_flow_interface.hh"
+#include "mechanics/elasticity.hh"
 
 class Mesh;
 class FieldCommon;
@@ -49,6 +50,7 @@ public:
     static const Input::Type::Record & get_input_type();
 
     HM_Iterative(Mesh &mesh, Input::Record in_record);
+    void initialize() override;
     void zero_time_step() override;
     void update_solution() override;
     const MH_DofHandler & get_mh_dofhandler() override;
@@ -62,7 +64,7 @@ private:
     std::shared_ptr<RichardsLMH> flow_;
 
     /// solute transport with chemistry through operator splitting
-    std::shared_ptr<EquationBase> mechanics_;
+    std::shared_ptr<Elasticity> mechanics_;
 
     /// Tuning parameter for iterative splitting.
     double beta_;

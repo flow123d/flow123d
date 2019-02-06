@@ -300,7 +300,6 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
 
 	this->eq_data_ = &data_;
     time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
-    output_stream_ = OutputTime::create_output_stream("mechanics", in_rec.val<Input::Record>("output_stream"), time().get_unit_string());
 
 
     // Set up physical parameters.
@@ -308,13 +307,6 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
     data_.region_id = GenericField<3>::region_id(*mesh_);
     data_.subdomain = GenericField<3>::subdomain(*mesh_);
     
-    balance_ = std::make_shared<Balance>("mechanics", mesh_);
-    balance_->init_from_input(in_rec.val<Input::Record>("balance"), *time_);
-    // initialization of balance object
-    subst_idx = {balance_->add_quantity("momentum?")};
-//     balance_->units(UnitSI().m(2).kg().s(-2));
-
-
     // create finite element structures and distribute DOFs
     feo = new Mechanics::FEObjects(mesh_, 1);
     DebugOut().fmt("Mechanics: solution size {}\n", feo->dh()->n_global_dofs());
@@ -326,8 +318,16 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
 
 void Elasticity::initialize()
 {
+    output_stream_ = OutputTime::create_output_stream("mechanics", input_rec.val<Input::Record>("output_stream"), time().get_unit_string());
+    
     data_.set_components({"displacement"});
     data_.set_input_list( input_rec.val<Input::Array>("input_fields"), time() );
+    
+    balance_ = std::make_shared<Balance>("mechanics", mesh_);
+    balance_->init_from_input(input_rec.val<Input::Record>("balance"), *time_);
+    // initialization of balance object
+    subst_idx = {balance_->add_quantity("momentum?")};
+//     balance_->units(UnitSI().m(2).kg().s(-2));
 
     // Resize coefficient arrays
     int qsize = max(feo->q<0>()->size(), max(feo->q<1>()->size(), max(feo->q<2>()->size(), feo->q<3>()->size())));
@@ -352,16 +352,14 @@ void Elasticity::initialize()
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>);
     output_field_ptr->set_fe_data(feo->dh(), 0, &output_vec);
     data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0.);
+    data_.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
     data_.output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
 
     // equation default PETSc solver options
     std::string petsc_default_opts;
-    if (feo->dh()->distr()->np() == 1)
-      petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
-    else
-      petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
+    petsc_default_opts = "-ksp_type cg -pc_type hypre -pc_hypre_type boomeramg";
     
     // allocate matrix and vector structures
     ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
@@ -380,7 +378,7 @@ void Elasticity::initialize()
 
 Elasticity::~Elasticity()
 {
-    delete time_;
+//     delete time_;
 
     MatDestroy(&stiffness_matrix);
     MatDestroy(&mass_matrix);
@@ -460,7 +458,7 @@ void Elasticity::update_solution()
 	START_TIMER("DG-ONE STEP");
 
 	time_->next_time();
-	time_->view("TDG");
+	time_->view("MECH");
     
     START_TIMER("data reinit");
     data_.set_time(time_->step(), LimitSide::left);
@@ -512,6 +510,8 @@ void Elasticity::update_solution()
 
     calculate_cumulative_balance();
     update_volume_change();
+    
+    output_data();
 
     END_TIMER("DG-ONE STEP");
 }
@@ -545,18 +545,6 @@ void Elasticity::calculate_cumulative_balance()
     if (balance_->cumulative())
     {
         balance_->calculate_cumulative(subst_idx, ls->get_solution());
-
-//     		// add sources due to sorption
-//     		vector<double> masses(mesh_->region_db().bulk_size());
-//     		double mass = 0;
-//     		balance_->calculate_mass(subst_idx, ls->get_solution(), masses);
-//     		for (auto reg_mass : masses)
-//     			mass += reg_mass;
-//     		double total_mass = 0;
-//     		VecSum(mass_vec, &total_mass);
-
-//     		balance_->add_cumulative_source(subst_idx, mass-total_mass-sorption_sources[sbi]);
-//     		sorption_sources[sbi] = mass - total_mass;
     }
 }
 
@@ -608,20 +596,20 @@ void Elasticity::assemble_volume_integrals()
     auto vec = fe_values.vector_view(0);
 
 	// assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->own_range())
     {
-    	ElementAccessor<3> cell = mesh_->element_accessor(feo->dh()->el_index(i_cell));
-        if (cell->dim() != dim) continue;
+        if (cell.dim() != dim) continue;
+        ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(cell);
+        fe_values.reinit(elm_acc);
 //         fv_rt.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        cell.get_dof_indices(dof_indices);
 
 //         calculate_velocity(cell, velocity, fv_rt);
         
-        data_.cross_section.value_list(fe_values.point_list(), cell, csection);
-        data_.young_modulus.value_list(fe_values.point_list(), cell, young);
-        data_.poisson_ratio.value_list(fe_values.point_list(), cell, poisson);
+        data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
+        data_.young_modulus.value_list(fe_values.point_list(), elm_acc, young);
+        data_.poisson_ratio.value_list(fe_values.point_list(), elm_acc, poisson);
         
         // assemble the local stiffness matrix
         for (unsigned int i=0; i<ndofs; i++)
@@ -673,29 +661,29 @@ void Elasticity::set_sources()
     auto vec = fe_values.vector_view(0);
 
 	// assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->own_range())
     {
-    	ElementAccessor<3> cell = mesh_->element_accessor(feo->dh()->el_index(i_cell));
-        if (cell->dim() != dim) continue;
+        if (cell.dim() != dim) continue;
+        ElementAccessor<3> elm_acc = cell.elm();
 
-        fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        fe_values.reinit(elm_acc);
+        cell.get_dof_indices(dof_indices);
 
         // assemble the local stiffness matrix
         fill_n(local_rhs, ndofs, 0);
         local_source_balance_vector.assign(ndofs, 0);
         local_source_balance_rhs.assign(ndofs, 0);
         
-        data_.cross_section.value_list(fe_values.point_list(), cell, csection);
-        data_.load.value_list(fe_values.point_list(), cell, load);
-        data_.biot_alpha.value_list(fe_values.point_list(), cell, alpha);
+        data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
+        data_.load.value_list(fe_values.point_list(), elm_acc, load);
+        data_.biot_alpha.value_list(fe_values.point_list(), elm_acc, alpha);
 
         // compute sources
         for (unsigned int k=0; k<qsize; k++)
         {
             for (unsigned int i=0; i<ndofs; i++)
                 local_rhs[i] += (arma::dot(load[k], vec.value(i,k))
-                                 +alpha[k]*mh_dh->element_scalar(cell)*vec.divergence(i,k)
+                                 +alpha[k]*mh_dh->element_scalar(elm_acc)*vec.divergence(i,k)
                                 )*csection[k]*fe_values.JxW(k);
         }
         ls->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
@@ -707,8 +695,8 @@ void Elasticity::set_sources()
 
             local_source_balance_rhs[i] += local_rhs[i];
         }
-        balance_->add_source_matrix_values(subst_idx, cell.region().bulk_idx(), dof_indices, local_source_balance_vector);
-        balance_->add_source_vec_values(subst_idx, cell.region().bulk_idx(), dof_indices, local_source_balance_rhs);
+        balance_->add_source_matrix_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_vector);
+        balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_rhs);
     }
 }
 
@@ -787,20 +775,23 @@ void Elasticity::assemble_fluxes_element_side()
 //        		update_values);
 // 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs();    // number of local dofs
+    const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
+    const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
-    vector<vector<int> > side_dof_indices(2, vector<int>(ndofs));
-    vector<unsigned int> n_dofs(2);
+    vector<vector<int> > side_dof_indices(2);
+    vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
 // 	vector<arma::vec3> velocity_higher, velocity_lower;
-// 	vector<double> frac_sigma(qsize);
+	vector<double> frac_sigma(qsize);
 	vector<double> csection_lower(qsize), csection_higher(qsize), young(qsize), poisson(qsize), alpha(qsize);
-    PetscScalar local_matrix[2][2][ndofs*ndofs];
-    PetscScalar local_rhs[2][ndofs];
+    PetscScalar local_matrix[2][2][(ndofs_side)*(ndofs_side)];
+    PetscScalar local_rhs[2][ndofs_side];
     auto vec_side = fe_values_side.vector_view(0);
     auto vec_sub = fe_values_sub.vector_view(0);
 
     // index 0 = element with lower dimension,
     // index 1 = side of element with higher dimension
+    side_dof_indices[0].resize(ndofs_sub);
+    side_dof_indices[1].resize(ndofs_side);
     fv_sb[0] = &fe_values_sub;
     fv_sb[1] = &fe_values_side;
 
@@ -814,12 +805,10 @@ void Elasticity::assemble_fluxes_element_side()
 		ElementAccessor<3> cell_sub = nb->element();
 		feo->dh()->get_dof_indices(cell_sub, side_dof_indices[0]);
 		fe_values_sub.reinit(cell_sub);
-		n_dofs[0] = fv_sb[0]->n_dofs();
 
 		ElementAccessor<3> cell = nb->side()->element();
 		feo->dh()->get_dof_indices(cell, side_dof_indices[1]);
 		fe_values_side.reinit(cell, nb->side()->side_idx());
-		n_dofs[1] = fv_sb[1]->n_dofs();
 
 		// Element id's for testing if they belong to local partition.
 		int element_id[2];
@@ -832,19 +821,19 @@ void Elasticity::assemble_fluxes_element_side()
 // 		calculate_velocity(cell_sub, velocity_lower, fv_rt);
 		data_.cross_section.value_list(fe_values_sub.point_list(), cell_sub, csection_lower);
 		data_.cross_section.value_list(fe_values_sub.point_list(), cell, csection_higher);
-// 		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
+ 		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
         data_.young_modulus.value_list(fe_values_sub.point_list(), cell_sub, young);
         data_.poisson_ratio.value_list(fe_values_sub.point_list(), cell_sub, poisson);
         data_.biot_alpha.value_list(fe_values_sub.point_list(), cell_sub, alpha);
         
         for (unsigned int n=0; n<2; ++n)
         {
-            for (unsigned int i=0; i<n_dofs[n]; i++)
+            for (unsigned int i=0; i<ndofs_side; i++)
             {
                 for (unsigned int m=0; m<2; ++m)
                 {
-                    for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
-                        local_matrix[n][m][i*(n_dofs[0]+n_dofs[1])+j] = 0;
+                    for (unsigned int j=0; j<ndofs_side; j++)
+                        local_matrix[n][m][i*(ndofs_side)+j] = 0;
                 }
                 local_rhs[n][i] = 0;
             }
@@ -865,28 +854,28 @@ void Elasticity::assemble_fluxes_element_side()
                 {
                     arma::vec3 vi = (n==0)?arma::zeros(3):vec_side.value(i,k);
                     arma::vec3 vf = (n==1)?arma::zeros(3):vec_sub.value(i,k);
-                    arma::mat33 sgvf = (n==0)?mat_t(vec_sub.sym_grad(i,k),nv):arma::zeros(3,3);
+                    arma::mat33 gvf = (n==0)?mat_t(vec_sub.grad(i,k),nv):arma::zeros(3,3);
                     double divvf = (n==0)?arma::trace(mat_t(vec_sub.grad(i,k),nv)):0;
                     
                     for (int m=0; m<2; m++)
                         for (unsigned int j=0; j<n_dofs[m]; j++) {
                             arma::vec3 ui = (m==0)?arma::zeros(3):vec_side.value(j,k);
                             arma::vec3 uf = (m==1)?arma::zeros(3):vec_sub.value(j,k);
-                            arma::mat33 sguf = (m==0)?mat_t(vec_sub.sym_grad(j,k),nv):arma::zeros(3,3);
-                            double divuf = (m==0)?arma::trace(mat_t(vec_sub.grad(j,k),nv)):0;
+                            arma::mat33 gui = (m==1)?vec_side.grad(j,k):arma::zeros(3,3);
+                            double divui = (m==1)?arma::trace(mat_t(vec_side.grad(j,k),nv)):0;
                             
-                            local_matrix[n][m][i*n_dofs[m] + j] -=
-                                    (arma::dot(vi-vf,
-                                      mu*sguf*nv+lambda*divuf*nv
-                                      -2.*pow(csection_higher[k]/csection_lower[k],2)*(mu*(ui-uf)+lambda*(arma::dot(ui-uf,nv)*nv))
+                            local_matrix[n][m][i*n_dofs[m] + j] +=
+                                    frac_sigma[k]*(arma::dot(vf-vi,
+                                      2/csection_lower[k]*(mu*(uf-ui)+(mu+lambda)*(arma::dot(uf-ui,nv)*nv))
+                                      + mu*(arma::trans(gui)*nv - arma::dot(gui*nv,nv)*nv)
+                                      + lambda*divui*nv
                                      )
-                                     +
-                                     arma::dot(ui-uf,mu*sgvf*nv + lambda*divvf*nv)
+                                     + arma::dot(gvf, mu*arma::kron(ui,nv.t()) - lambda*arma::dot(ui,nv))
                                     )*fv_sb[0]->JxW(k);
                         }
                     
                     local_rhs[n][i] -=
-                                    arma::dot(vi-vf,
+                                    frac_sigma[k]*arma::dot(vi-vf,
                                        alpha[k]*mh_dh->element_scalar(cell_sub)*nv
                                     )*fv_sb[0]->JxW(k);
                 }
@@ -895,9 +884,9 @@ void Elasticity::assemble_fluxes_element_side()
         for (unsigned int n=0; n<2; ++n)
         {
             for (unsigned int m=0; m<2; ++m)
-                ls->mat_set_values(n_dofs[n], &(side_dof_indices[n][0]), n_dofs[m], &(side_dof_indices[m][0]), local_matrix[n][m]);
+                ls->mat_set_values(n_dofs[n], side_dof_indices[n].data(), n_dofs[m], side_dof_indices[m].data(), local_matrix[n][m]);
             
-            ls->rhs_set_values(n_dofs[n], &(side_dof_indices[n][0]), local_rhs[n]);
+            ls->rhs_set_values(n_dofs[n], side_dof_indices[n].data(), local_rhs[n]);
         }
     }
 }
