@@ -123,9 +123,10 @@ public:
 	virtual void make_parallel_master_mesh()
 	{};
 
-	/// Return master output mesh.
-	inline std::shared_ptr<OutputMeshBase> get_master_mesh() const {
-		return master_mesh_;
+	/// Return master output mesh if exists or shared_ptr of this object.
+	inline std::shared_ptr<OutputMeshBase> get_master_mesh() {
+		if (master_mesh_) return master_mesh_;
+		else return shared_from_this();
 	};
 
 protected:
