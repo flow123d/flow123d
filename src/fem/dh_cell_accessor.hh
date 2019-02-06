@@ -112,7 +112,7 @@ public:
     /// Returns range of cell sides
     Range<DHCellSide> side_range() const;
 
-    /// Returns range of neighbour cells of higher dimension
+    /// Returns range of neighbour cell of lower dimension corresponding to cell of higher dimension
     Range<DHNeighbSide> neighb_sides() const;
 
     /// Iterates to next local element.
@@ -137,10 +137,6 @@ private:
 
 /**
  * Side accessor allows to iterate over sides of DOF handler cell.
- *
- * Descendants of class allow to iterate over different ranges trough methods:
- *  - edge_sides: iterate over all Cells (of same dim) connected to the side
- *  - neighb_sides: iterate over all sides of the cells of higher dimension
  */
 class DHCellSide {
 public:
@@ -255,8 +251,6 @@ private:
 
 /**
  * Class allows to iterate over sides of neighbour.
- *
- * Iterator provides same behavior as parent class through side() method.
  */
 class DHNeighbSide {
 public:
@@ -267,6 +261,9 @@ public:
 
     /**
      * Valid accessor allows iterate over neighbor sides.
+     *
+     * @param dh_cell    Element of lower dim.
+     * @param neighb_idx Index of neighbour.
      */
 	DHNeighbSide(const DHCellAccessor &dh_cell, unsigned int neighb_idx)
     : dh_cell_(dh_cell), neighb_idx_(neighb_idx)
@@ -279,9 +276,14 @@ public:
 
     /// Return DHCellSide according to this object.
     inline DHCellSide cell_side() const {
-    	ASSERT( this->is_valid() );
-    	unsigned int side_idx = dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->side_idx();
+    	unsigned int side_idx = neighbour()->side()->side_idx();
     	return DHCellSide(dh_cell_, side_idx);
+    }
+
+    /// Return Neighbour object according to this object.
+    inline Neighbour * neighbour() const {
+    	ASSERT( this->is_valid() );
+    	return dh_cell_.elm()->neigh_vb[neighb_idx_];
     }
 
     /// Iterates to next edge side.
