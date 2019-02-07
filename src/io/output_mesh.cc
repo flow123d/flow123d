@@ -70,6 +70,7 @@ OutputMeshBase::OutputMeshBase(Mesh &mesh, const Input::Record &in_rec)
 
 OutputMeshBase::~OutputMeshBase()
 {
+	// Refined mesh creates own special distributions and local to global maps and needs destroy these objects.
     if ( (el_ds_!=nullptr) && (mesh_type_ == MeshType::refined)) {
     	delete[] el_4_loc_;
     	delete[] node_4_loc_;

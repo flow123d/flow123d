@@ -129,15 +129,9 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 
 
 void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-    if (mesh_ptr->get_master_mesh()) {
-        this->nodes_ = mesh_ptr->get_master_mesh()->nodes_;
-        this->connectivity_ = mesh_ptr->get_master_mesh()->connectivity_;
-        this->offsets_ = mesh_ptr->get_master_mesh()->offsets_;
-    } else {
-        this->nodes_ = mesh_ptr->nodes_;
-        this->connectivity_ = mesh_ptr->connectivity_;
-        this->offsets_ = mesh_ptr->offsets_;
-    }
+    this->nodes_ = mesh_ptr->get_master_mesh()->nodes_;
+    this->connectivity_ = mesh_ptr->get_master_mesh()->connectivity_;
+    this->offsets_ = mesh_ptr->get_master_mesh()->offsets_;
     output_mesh_ = mesh_ptr;
 }
 
@@ -212,7 +206,7 @@ void OutputTime::write_time_frame()
     // streams were changed
     if(write_time < time) {
 
-    	if (this->rank_ == 0 || this->parallel_)
+    	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
     	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
     	gather_output_data();
         write_data();
@@ -227,7 +221,7 @@ void OutputTime::write_time_frame()
         this->connectivity_.reset();
         this->offsets_.reset();*/
     } else {
-    	if (this->rank_ == 0 || this->parallel_)
+    	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
     	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
     }
     clear_data();
