@@ -134,20 +134,14 @@ SorptionBase::SorptionBase(Mesh &init_mesh, Input::Record in_rec)//
 
 SorptionBase::~SorptionBase(void)
 {
-  if (data_ != nullptr) delete data_;
+    if (data_ != nullptr) delete data_;
 
-  if (vconc_solid != NULL) {
-
-
-	  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
-	  {
-		//no mpi vectors
-		chkerr(VecDestroy( &(vconc_solid[sbi]) ));
-		delete [] conc_solid[sbi];
-	  }
-	  delete [] vconc_solid;
-	  delete [] conc_solid;
-  }
+    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+    {
+	    //no mpi vectors
+	    delete [] conc_solid[sbi];
+    }
+    delete [] conc_solid;
 }
 
 void SorptionBase::make_reactions()
@@ -358,7 +352,6 @@ void SorptionBase::initialize_fields()
   data_->output_fields.set_mesh(*mesh_);
   data_->output_fields.output_type(OutputTime::ELEM_DATA);
   data_->conc_solid.setup_components();
-  vconc_solid = new Vec [substances_.size()];
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
@@ -368,7 +361,6 @@ void SorptionBase::initialize_fields()
       double *out_array;
       VecGetArray(conc_solid_out[sbi]->petsc_vec(), &out_array);
       conc_solid[sbi] = out_array;
-      VecCreateMPIWithArray( PETSC_COMM_WORLD, 1, distribution_->lsize(), PETSC_DECIDE, conc_solid[sbi], &vconc_solid[sbi] );
       VecRestoreArray(conc_solid_out[sbi]->petsc_vec(), &out_array);
   }
   //output_stream_->add_admissible_field_names(output_array);

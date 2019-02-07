@@ -240,8 +240,6 @@ protected:
                   
   ///@name members used in output routines
   //@{
-  // TODO: replace vconc_solid + conc_solid by VecSeqDouble, use the same principle as in 'conc_solid_out'
-  Vec *vconc_solid; ///< PETSC sorbed concentration vector (parallel).
   std::vector<VectorMPI *> conc_solid_out; ///< sorbed concentration array output (gathered - sequential)
   //@}
   

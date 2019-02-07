@@ -122,13 +122,10 @@ DualPorosity::~DualPorosity(void)
 {
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
-
       //no mpi vectors
-	  chkerr(VecDestroy( &vconc_immobile[sbi] ));
       delete [] conc_immobile[sbi];
   }
 
-  delete [] vconc_immobile;
   delete [] conc_immobile;
 }
 
@@ -220,7 +217,6 @@ void DualPorosity::initialize_fields()
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
   data_.conc_immobile.setup_components();
-  vconc_immobile = new Vec [substances_.size()];
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldFE and push this Field to output_field on all regions
@@ -230,7 +226,6 @@ void DualPorosity::initialize_fields()
     double *out_array;
     VecGetArray(conc_immobile_out[sbi]->petsc_vec(), &out_array);
     conc_immobile[sbi] = out_array;
-    VecCreateMPIWithArray( PETSC_COMM_WORLD, 1, distribution_->lsize(), PETSC_DECIDE, conc_immobile[sbi], &vconc_immobile[sbi] );
     VecRestoreArray(conc_immobile_out[sbi]->petsc_vec(), &out_array);
   }
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());

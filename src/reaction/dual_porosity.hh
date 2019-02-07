@@ -150,7 +150,6 @@ protected:
   
   ///@name members used in output routines
   //@{
-  Vec *vconc_immobile; ///< PETSC concentration vector for immobile phase (parallel).
   std::vector<VectorMPI *> conc_immobile_out; ///< concentration array output for immobile phase (parallel, shared with FieldFE)
   //@}
   
