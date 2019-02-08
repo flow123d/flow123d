@@ -213,6 +213,7 @@ void SorptionBase::initialize()
   {
     reaction_liquid->substances(substances_)
       .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
+	  .set_dh(this->dof_handler_)
       .set_time_governor(*time_);
     reaction_liquid->initialize();
   }
@@ -220,6 +221,7 @@ void SorptionBase::initialize()
   {
     reaction_solid->substances(substances_)
       .concentration_matrix(conc_solid, distribution_, el_4_loc_, row_4_el_)
+	  .set_dh(this->dof_handler_)
       .set_time_governor(*time_);
     reaction_solid->initialize();
   }
@@ -337,15 +339,6 @@ void SorptionBase::initialize_fields()
   
   data_->set_mesh(*mesh_);
 
-  //initialization of DOF handler
-  static FE_P_disc<0> fe0(0);
-  static FE_P_disc<1> fe1(0);
-  static FE_P_disc<2> fe2(0);
-  static FE_P_disc<3> fe3(0);
-  shared_ptr<DOFHandlerMultiDim> dh = make_shared<DOFHandlerMultiDim>(*mesh_);
-  shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
-  dh->distribute_dofs(ds);
-
   //initialization of output
   //output_array = input_record_.val<Input::Array>("output_fields");
   data_->conc_solid.set_components(substances_.names());
@@ -356,7 +349,7 @@ void SorptionBase::initialize_fields()
   {
       // create shared pointer to a FieldFE and push this Field to output_field on all regions
       std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-      conc_solid_out[sbi] = output_field_ptr->set_fe_data(dh);
+      conc_solid_out[sbi] = output_field_ptr->set_fe_data(this->dof_handler_);
       data_->conc_solid[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
       double *out_array;
       VecGetArray(conc_solid_out[sbi]->petsc_vec(), &out_array);
