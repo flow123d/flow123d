@@ -88,7 +88,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     a_tol_ = in_record.val<double>("a_tol");
     r_tol_ = in_record.val<double>("r_tol");
     
-    this->eq_data_ = std::make_shared<FieldSet>().get();
+    this->eq_data_ = &flow_->data();
+    
     this->time_ = &flow_->time();
 }
 
