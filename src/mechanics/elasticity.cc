@@ -931,9 +931,9 @@ void Elasticity::set_boundary_conditions()
 	vector<arma::vec3> velocity;
     auto vec = fe_values_side.vector_view(0);
 
-    for (unsigned int loc_el = 0; loc_el < mesh_->get_el_ds()->lsize(); loc_el++)
+    for (auto cell : feo->dh()->own_range())
     {
-        ElementAccessor<3> elm = mesh_->element_accessor(feo->dh()->el_index(loc_el));
+        ElementAccessor<3> elm = cell.elm();
         if (elm->boundary_idx_ == nullptr) continue;
 
         for (unsigned int si=0; si<elm->n_sides(); ++si)
@@ -1122,12 +1122,12 @@ void Elasticity::prepare_initial_condition()
     std::vector<arma::vec3> init_values(qsize, arma::vec3({0., 0., 0.}));
     auto vec = fe_values.vector_view(0);
 
-    for (unsigned int i_cell=0; i_cell<mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->own_range())
     {
-    	ElementAccessor<3> elem = mesh_->element_accessor(feo->dh()->el_index(i_cell));
+    	ElementAccessor<3> elem = cell.elm();
     	if (elem->dim() != dim) continue;
 
-    	feo->dh()->get_dof_indices(elem, dof_indices);
+    	cell.get_dof_indices(dof_indices);
     	fe_values.reinit(elem);
 
 //    		compute_init_cond(fe_values.point_list(), elem, init_values);
@@ -1175,19 +1175,19 @@ void Elasticity::update_volume_change(vector<double> &divergence)
     auto vec = fe_values.vector_view(0);
 
     // assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto dh_cell : feo->dh()->own_range())
     {
-        ElementAccessor<3> cell = mesh_->element_accessor(feo->dh()->el_index(i_cell));
-        if (cell->dim() != dim) continue;
+        ElementAccessor<3> cell = dh_cell.elm();
+        if (dh_cell.dim() != dim) continue;
 
         fe_values.reinit(cell);
-        feo->dh()->get_loc_dof_indices(cell, dof_indices);
+        dh_cell.get_loc_dof_indices(dof_indices);
         
         double alpha = data_.biot_alpha.value(cell.centre(), cell);
         
         // assemble the local stiffness matrix
         for (unsigned int i=0; i<ndofs; i++)
-          divergence[i_cell] -= alpha*ls->get_solution_array()[dof_indices[i]]*vec.divergence(i,0);
+          divergence[dh_cell.local_idx()] -= alpha*ls->get_solution_array()[dof_indices[i]]*vec.divergence(i,0);
     }
 }
 
