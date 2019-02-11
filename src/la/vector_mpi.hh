@@ -22,6 +22,7 @@
 #include <memory>
 #include "system/system.hh"
 #include "system/global_defs.h"
+#include "mesh/long_idx.hh"
 
 #include <petscvec.h>
 
@@ -50,6 +51,12 @@ public:
     VectorMPI(unsigned int local_size, MPI_Comm comm = PETSC_COMM_WORLD)
     : communicator_(comm) {
         resize(local_size);
+    }
+    
+    /// Create PETSc vector with ghost values whose indices are specified in @p ghost_idx.
+    VectorMPI(unsigned int local_size, std::vector<LongIdx> &ghost_idx)
+    : communicator_(PETSC_COMM_WORLD) {
+        resize(local_size, ghost_idx);
     }
 
     /**
@@ -80,6 +87,22 @@ public:
         	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1, local_size, PETSC_DECIDE, &((*data_ptr_)[0]), &data_petsc_));
         chkerr(VecZeroEntries( data_petsc_ ));
     }
+    
+    /**
+     * Resize the vector to given local size with ghost values. Indices of ghost values are in ghost_idx.
+     */
+    void resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx) {
+        ASSERT_DBG(ghost_idx.size() > 0 && communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
+        if (data_ptr_.use_count() ==0) {
+            data_ptr_ = std::make_shared< std::vector<double> >(local_size + ghost_idx.size());
+        } else {
+            ASSERT_DBG( data_ptr_.use_count() ==  1 ) ( data_ptr_.use_count() ).error("Object referenced by other pointer. Can not resize.");
+            chkerr(VecDestroy(&data_petsc_));
+            data_ptr_->resize(local_size + ghost_idx.size());
+        }
+        chkerr(VecCreateGhostWithArray(PETSC_COMM_WORLD, local_size, PETSC_DECIDE, ghost_idx.size(), ghost_idx.data(), data_ptr_->data(), &data_petsc_));
+        chkerr(VecZeroEntries( data_petsc_ ));
+    }
 
     /// Return new vector with same parallel structure.
     void duplicate(VectorMPI other) {
@@ -108,6 +131,12 @@ public:
         ASSERT_DBG(data_ptr_);
         return *data_ptr_;
     }
+    
+    const VectorData &data() const
+    {
+        ASSERT_DBG(data_ptr_);
+        return *data_ptr_;
+    }
 
     void swap(VectorMPI &other) {
     	ASSERT_EQ(this->communicator_, other.communicator_);
@@ -132,12 +161,26 @@ public:
         chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
     
-    const VectorData &data() const
-    {
-        ASSERT_DBG(data_ptr_);
-        return *data_ptr_;
-    }
 
+    /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
+    void local_to_ghost_begin() {
+        VecGhostUpdateBegin(data_petsc_, INSERT_VALUES, SCATTER_FORWARD);
+    }
+    
+    /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
+    void local_to_ghost_end() {
+        VecGhostUpdateEnd(data_petsc_, INSERT_VALUES, SCATTER_FORWARD);
+    }
+    
+    /// ghost_to_local_{begin,end} updates the local values by adding ghost values from neighbouring processors
+    void ghost_to_local_begin() {
+        VecGhostUpdateBegin(data_petsc_, ADD_VALUES, SCATTER_REVERSE);
+    }
+    
+    /// ghost_to_local_{begin,end} updates the local values by adding ghost values from neighbouring processors
+    void ghost_to_local_end() {
+        VecGhostUpdateEnd(data_petsc_, ADD_VALUES, SCATTER_REVERSE);
+    }
 
 	/// Return size of output data.
 	unsigned int size()
