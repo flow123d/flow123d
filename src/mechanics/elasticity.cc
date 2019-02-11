@@ -471,6 +471,7 @@ void Elasticity::update_solution()
     {
         // new fluxes can change the location of Neumann boundary,
         // thus stiffness matrix must be reassembled
+        preallocate(); // this must be called when type of boundary condition changes, because it affects the nonzero pattern
         ls->start_add_assembly();
         ls->mat_zero_entries();
         assemble_stiffness_matrix();
