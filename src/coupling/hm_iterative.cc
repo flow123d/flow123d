@@ -104,7 +104,7 @@ void HM_Iterative::initialize()
 void HM_Iterative::zero_time_step()
 {
     flow_->zero_time_step();
-    mechanics_->set_velocity_field( flow_->get_mh_dofhandler() );
+//     mechanics_->set_velocity_field( flow_->get_mh_dofhandler() );
     mechanics_->zero_time_step();
 }
 

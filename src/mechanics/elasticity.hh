@@ -22,7 +22,6 @@
 #include "fields/bc_field.hh"
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-// #include "fields/vec_seq_double.hh"
 #include "la/linsys.hh"
 #include "la/vector_mpi.hh"
 #include "flow/mh_dofhandler.hh"
@@ -58,9 +57,6 @@ public:
 	inline FiniteElement<dim> *fe();
 
 	template<unsigned int dim>
-	inline FiniteElement<dim> *fe_rt();
-
-	template<unsigned int dim>
 	inline Quadrature<dim> *q();
 
 	template<unsigned int dim>
@@ -78,11 +74,6 @@ private:
 	FiniteElement<2> *fe2_;
 	FiniteElement<3> *fe3_;
 
-	/// Finite elements for the water velocity field.
-	FiniteElement<1> *fe_rt1_;
-	FiniteElement<2> *fe_rt2_;
-	FiniteElement<3> *fe_rt3_;
-
 	/// Quadratures used in assembling methods.
 	Quadrature<0> *q0_;
 	Quadrature<1> *q1_;
@@ -99,29 +90,6 @@ private:
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
 };
-
-
-class VolumeChange
-{
-public:
-  
-  void init(Mesh *mesh);
-  
-  double value(const ElementAccessor<3> &elem) const;
-
-protected:
-  
-  void set_values(const vector<double> &new_values, double new_time);
-  
-  VectorMPI values_;
-  VectorMPI old_values_;
-  Mesh *mesh_;
-  double time_;
-  double old_time_;
-  
-  friend class ::Elasticity;
-};
-
 
 
 } // namespace Mechanics
@@ -159,7 +127,6 @@ public:
         Field<3, FieldValue<3>::VectorFixed> load;
         Field<3, FieldValue<3>::Scalar> young_modulus;
         Field<3, FieldValue<3>::Scalar> poisson_ratio;
-        Field<3, FieldValue<3>::Scalar> biot_alpha;
 		Field<3, FieldValue<3>::Scalar> fracture_sigma;    ///< Transition parameter for diffusive transfer on fractures.
 		
 		/// Pointer to DarcyFlow field cross_section
@@ -217,19 +184,7 @@ public:
 	const Vec &get_solution()
 	{ return ls->get_solution(); }
 
-    void get_par_info(int * &el_4_loc, Distribution * &el_ds);
-
-    int *get_row_4_el();
-    
     inline EqData &data() { return data_; }
-    
-    inline void set_velocity_field(const MH_DofHandler &dh)
-    {
-        mh_dh = &dh;
-        flux_changed = true;
-    }
-    
-    const Mechanics::VolumeChange &get_volume_change() { return volume_change; }
     
     
     typedef Elasticity FactoryBaseType;
@@ -244,20 +199,6 @@ private:
 	void output_vector_gather();
 
 	void preallocate();
-
-	/**
-	 * @brief Assembles the mass matrix.
-	 *
-	 * The routine just calls templated method assemble_mass_matrix() for each
-	 * space dimension.
-	 */
-// 	void assemble_mass_matrix();
-
-	/**
-	 * @brief Assembles the mass matrix for the given dimension.
-	 */
-// 	template<unsigned int dim>
-// 	void assemble_mass_matrix();
 
 	/**
 	 * @brief Assembles the stiffness matrix.
@@ -315,17 +256,6 @@ private:
 	void set_boundary_conditions();
 
 	/**
-	 * @brief Calculates the velocity field on a given @p dim dimensional cell.
-	 *
-	 * @param cell     The cell.
-	 * @param velocity The computed velocity field (at quadrature points).
-	 * @param fv       The FEValues class providing the quadrature points
-	 *                 and the shape functions for velocity.
-	 */
-	template<unsigned int dim>
-	void calculate_velocity(const ElementAccessor<3> &cell, std::vector<arma::vec3> &velocity, FEValuesBase<dim,3> &fv);
-
-	/**
 	 * @brief Sets the initial condition.
 	 */
 	void set_initial_condition();
@@ -338,11 +268,6 @@ private:
 	void prepare_initial_condition();
     
     
-    void update_volume_change();
-    
-    template<unsigned int dim>
-    void update_volume_change(vector<double> &divergence);
-
 
 
 	/// @name Physical parameters
@@ -351,15 +276,6 @@ private:
 	/// Field data for model parameters.
 	EqData data_;
     
-        /**
-     * Temporary solution how to pass velocity field form the flow model.
-     * TODO: introduce FieldDiscrete -containing true DOFHandler and data vector and pass such object together with other
-     * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
-     */
-    const MH_DofHandler *mh_dh;
-    
-    Mechanics::VolumeChange volume_change;
-
 	// @}
 
 
@@ -369,8 +285,6 @@ private:
 	/// Finite element objects
 	Mechanics::FEObjects *feo;
     
-    const double gamma = 1e3;
-
 	// @}
 
 
@@ -384,26 +298,14 @@ private:
 	/// The stiffness matrix.
 	Mat stiffness_matrix;
 
-	/// The mass matrix.
-	Mat mass_matrix;
-	
-	/// Mass from previous time instant (necessary when coefficients of mass matrix change in time).
-// 	Vec mass_vec;
-
 	/// Linear algebra system for the transport equation.
 	LinSys *ls;
-
-	/// Linear algebra system for the time derivative (actually it is used only for handling the matrix structures).
-	LinSys *ls_dt;
 
 	// @}
 
 
 	/// @name Output to file
 	// @{
-
-	/// Array for storing the output solution data.
-	//vector<double*> output_solution;
 
 	/// Vector of solution data.
 	VectorMPI output_vec;
@@ -417,23 +319,6 @@ private:
 	// @}
 
 
-	/// @name Auxiliary fields used during assembly
-	// @{
-
-	/// Mass matrix coefficients.
-// 	vector<double> mm_coef;
-	/// Advection coefficients.
-	vector<arma::vec3> ad_coef;
-	/// Diffusion coefficients.
-	vector<arma::mat33> dif_coef;
-	/// Advection coefficients on edges.
-	vector<vector<arma::vec3> > ad_coef_edg;
-	/// Diffusion coefficients on edges.
-	vector<vector<arma::mat33> > dif_coef_edg;
-
-	// @}
-
-
 
 
 	/// @name Other
@@ -441,9 +326,6 @@ private:
 
     /// Indicates whether matrices have been preallocated.
     bool allocation_done;
-    
-    /// Index used to call balance methods for a set of quantities.
-    unsigned int subst_idx;
     
     /// Indicator of change in advection vector field.
     bool flux_changed;

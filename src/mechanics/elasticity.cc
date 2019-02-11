@@ -94,10 +94,6 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 		break;
 	}
 
-	fe_rt1_ = new FE_RT0<1>;
-	fe_rt2_ = new FE_RT0<2>;
-	fe_rt3_ = new FE_RT0<3>;
-    
 	q0_ = new QGauss<0>(q_order);
 	q1_ = new QGauss<1>(q_order);
 	q2_ = new QGauss<2>(q_order);
@@ -119,9 +115,6 @@ FEObjects::~FEObjects()
 	delete fe1_;
 	delete fe2_;
 	delete fe3_;
-	delete fe_rt1_;
-	delete fe_rt2_;
-	delete fe_rt3_;
 	delete q0_;
 	delete q1_;
 	delete q2_;
@@ -136,11 +129,6 @@ template<> FiniteElement<1> *FEObjects::fe<1>() { return fe1_; }
 template<> FiniteElement<2> *FEObjects::fe<2>() { return fe2_; }
 template<> FiniteElement<3> *FEObjects::fe<3>() { return fe3_; }
 
-template<> FiniteElement<0> *FEObjects::fe_rt<0>() { return 0; }
-template<> FiniteElement<1> *FEObjects::fe_rt<1>() { return fe_rt1_; }
-template<> FiniteElement<2> *FEObjects::fe_rt<2>() { return fe_rt2_; }
-template<> FiniteElement<3> *FEObjects::fe_rt<3>() { return fe_rt3_; }
-
 template<> Quadrature<0> *FEObjects::q<0>() { return q0_; }
 template<> Quadrature<1> *FEObjects::q<1>() { return q1_; }
 template<> Quadrature<2> *FEObjects::q<2>() { return q2_; }
@@ -151,38 +139,6 @@ template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
-
-
-
-void VolumeChange::init(Mesh *mesh)
-{
-  mesh_ = mesh;
-  values_.resize(mesh->get_el_ds()->lsize());
-  old_values_.resize(mesh->get_el_ds()->lsize());
-  time_ = 0;
-  old_time_ = 0;
-}
-
-double VolumeChange::value(const ElementAccessor<3> &elem) const
-{ 
-  return (time_>old_time_)?
-          (values_.data()[mesh_->get_row_4_el()[elem.index()] - mesh_->get_el_ds()->begin()]
-          -old_values_.data()[mesh_->get_row_4_el()[elem.index()] - mesh_->get_el_ds()->begin()])
-          /(time_-old_time_)
-         :0;
-}
-
-
-void VolumeChange::set_values(const vector<double> &new_values, double new_time)
-{
-  for (unsigned int i=0; i<values_.data().size(); i++)
-  {
-    old_values_.data()[i] = values_.data()[i];
-    values_.data()[i] = new_values[i];
-  }
-  old_time_ = time_;
-  time_ = new_time;
-}
 
 
 
@@ -250,13 +206,6 @@ Elasticity::EqData::EqData()
          .input_default("0.0")
         .flags_add(in_rhs);
         
-    *this+=biot_alpha
-        .name("biot_alpha")
-        .description("Biot coefficient.")
-        .units( UnitSI().dimensionless() )
-         .input_default("0.0")
-        .flags_add(in_rhs);
-  
     *this+=fracture_sigma
             .name("fracture_sigma")
             .description(
@@ -311,8 +260,6 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
     feo = new Mechanics::FEObjects(mesh_, 1);
     DebugOut().fmt("Mechanics: solution size {}\n", feo->dh()->n_global_dofs());
     
-    volume_change.init(mesh_);
-
 }
 
 
@@ -323,24 +270,11 @@ void Elasticity::initialize()
     data_.set_components({"displacement"});
     data_.set_input_list( input_rec.val<Input::Array>("input_fields"), time() );
     
-    balance_ = std::make_shared<Balance>("mechanics", mesh_);
-    balance_->init_from_input(input_rec.val<Input::Record>("balance"), *time_);
+//     balance_ = std::make_shared<Balance>("mechanics", mesh_);
+//     balance_->init_from_input(input_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    subst_idx = {balance_->add_quantity("momentum?")};
+//     balance_->add_quantity("load");
 //     balance_->units(UnitSI().m(2).kg().s(-2));
-
-    // Resize coefficient arrays
-    int qsize = max(feo->q<0>()->size(), max(feo->q<1>()->size(), max(feo->q<2>()->size(), feo->q<3>()->size())));
-    int max_edg_sides = max(mesh_->max_edge_sides(1), max(mesh_->max_edge_sides(2), mesh_->max_edge_sides(3)));
-    ad_coef.resize(qsize);
-    dif_coef.resize(qsize);
-    ad_coef_edg.resize(max_edg_sides);
-    dif_coef_edg.resize(max_edg_sides);
-    for (int sd=0; sd<max_edg_sides; sd++)
-    {
-        ad_coef_edg[sd].resize(qsize);
-        dif_coef_edg[sd].resize(qsize);
-    }
 
 	int rank;
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -366,12 +300,9 @@ void Elasticity::initialize()
     ( (LinSys_PETSC *)ls )->set_from_input( input_rec.val<Input::Record>("solver") );
     ls->set_solution(NULL);
 
-    ls_dt = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
-    ( (LinSys_PETSC *)ls_dt )->set_from_input( input_rec.val<Input::Record>("solver") );
-
     // initialization of balance object
-    balance_->allocate(feo->dh()->distr()->lsize(),
-            max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
+//     balance_->allocate(feo->dh()->distr()->lsize(),
+//             max(feo->fe<1>()->n_dofs(), max(feo->fe<2>()->n_dofs(), feo->fe<3>()->n_dofs())));
 
 }
 
@@ -381,10 +312,8 @@ Elasticity::~Elasticity()
 //     delete time_;
 
     MatDestroy(&stiffness_matrix);
-    MatDestroy(&mass_matrix);
     VecDestroy(&rhs);
     delete ls;
-    delete ls_dt;
     delete feo;
 
 }
@@ -427,7 +356,7 @@ void Elasticity::zero_time_step()
 
     output_data();
     
-    update_volume_change();
+//     update_volume_change();
 }
 
 
@@ -441,8 +370,6 @@ void Elasticity::preallocate()
     rhs = NULL;
 
     // preallocate mass matrix
-    ls_dt->start_allocation();
-    mass_matrix = NULL;
 	assemble_stiffness_matrix();
 	set_sources();
 	set_boundary_conditions();
@@ -510,7 +437,7 @@ void Elasticity::update_solution()
     END_TIMER("solve");
 
     calculate_cumulative_balance();
-    update_volume_change();
+//     update_volume_change();
     
     output_data();
 
@@ -543,10 +470,10 @@ void Elasticity::output_data()
 
 void Elasticity::calculate_cumulative_balance()
 {
-    if (balance_->cumulative())
-    {
-        balance_->calculate_cumulative(subst_idx, ls->get_solution());
-    }
+//     if (balance_->cumulative())
+//     {
+//         balance_->calculate_cumulative(subst_idx, ls->get_solution());
+//     }
 }
 
 
@@ -585,8 +512,6 @@ void Elasticity::assemble_stiffness_matrix()
 template<unsigned int dim>
 void Elasticity::assemble_volume_integrals()
 {
-//     FEValues<dim,3> fv_rt(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe_rt<dim>(),
-//     		update_values | update_gradients);
     FEValues<dim,3> fe_values(*feo->mapping<dim>(), *feo->q<dim>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
@@ -603,11 +528,8 @@ void Elasticity::assemble_volume_integrals()
         ElementAccessor<3> elm_acc = cell.elm();
 
         fe_values.reinit(elm_acc);
-//         fv_rt.reinit(cell);
         cell.get_dof_indices(dof_indices);
 
-//         calculate_velocity(cell, velocity, fv_rt);
-        
         data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
         data_.young_modulus.value_list(fe_values.point_list(), elm_acc, young);
         data_.poisson_ratio.value_list(fe_values.point_list(), elm_acc, poisson);
@@ -639,11 +561,11 @@ void Elasticity::assemble_volume_integrals()
 void Elasticity::set_sources()
 {
   START_TIMER("assemble_sources");
-    balance_->start_source_assembly(subst_idx);
+//     balance_->start_source_assembly(subst_idx);
 	set_sources<1>();
 	set_sources<2>();
 	set_sources<3>();
-	balance_->finish_source_assembly(subst_idx);
+// 	balance_->finish_source_assembly(subst_idx);
   END_TIMER("assemble_sources");
 }
 
@@ -655,7 +577,7 @@ void Elasticity::set_sources()
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec3> load(qsize);
-    vector<double> alpha(qsize), csection(qsize);
+    vector<double> csection(qsize);
     vector<int> dof_indices(ndofs);
     PetscScalar local_rhs[ndofs];
     vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
@@ -677,27 +599,24 @@ void Elasticity::set_sources()
         
         data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
         data_.load.value_list(fe_values.point_list(), elm_acc, load);
-        data_.biot_alpha.value_list(fe_values.point_list(), elm_acc, alpha);
 
         // compute sources
         for (unsigned int k=0; k<qsize; k++)
         {
             for (unsigned int i=0; i<ndofs; i++)
-                local_rhs[i] += (arma::dot(load[k], vec.value(i,k))
-                                 +alpha[k]*mh_dh->element_scalar(elm_acc)*vec.divergence(i,k)
-                                )*csection[k]*fe_values.JxW(k);
+                local_rhs[i] += arma::dot(load[k], vec.value(i,k))*csection[k]*fe_values.JxW(k);
         }
         ls->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
 
-        for (unsigned int i=0; i<ndofs; i++)
-        {
-            for (unsigned int k=0; k<qsize; k++)
-                local_source_balance_vector[i] -= 0;//sources_sigma[k]*fe_values[vec].value(i,k)*fe_values.JxW(k);
-
-            local_source_balance_rhs[i] += local_rhs[i];
-        }
-        balance_->add_source_matrix_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_vector);
-        balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_rhs);
+//         for (unsigned int i=0; i<ndofs; i++)
+//         {
+//             for (unsigned int k=0; k<qsize; k++)
+//                 local_source_balance_vector[i] -= 0;//sources_sigma[k]*fe_values[vec].value(i,k)*fe_values.JxW(k);
+// 
+//             local_source_balance_rhs[i] += local_rhs[i];
+//         }
+//         balance_->add_source_matrix_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_vector);
+//         balance_->add_source_vec_values(subst_idx, elm_acc.region().bulk_idx(), dof_indices, local_source_balance_rhs);
     }
 }
 
@@ -712,18 +631,10 @@ void Elasticity::assemble_fluxes_boundary()
 {
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-//     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-//     		update_values);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
+    const unsigned int ndofs = feo->fe<dim>()->n_dofs();
     vector<int> side_dof_indices(ndofs);
     PetscScalar local_matrix[ndofs*ndofs];
-    auto vec = fe_values_side.vector_view(0);
-//     vector<arma::vec3> side_velocity;
-//     vector<double> robin_sigma(qsize);
-//     vector<double> csection(qsize);
-//     arma::vec dg_penalty;
-//     double gamma_l;
-// 
+
     // assemble boundary integral
     for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
     {
@@ -738,14 +649,8 @@ void Elasticity::assemble_fluxes_boundary()
         ElementAccessor<3> cell = side->element();
         feo->dh()->get_dof_indices(cell, side_dof_indices);
         fe_values_side.reinit(cell, side->side_idx());
-//         fsv_rt.reinit(cell, side->el_idx());
-// 
-//         calculate_velocity(cell, side_velocity, fsv_rt);
-//         Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, ele_acc, ad_coef, dif_coef);
-//         dg_penalty = data_.dg_penalty.value(cell->centre(), ele_acc);
-        unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
-//         data_.cross_section.value_list(fe_values_side.point_list(), ele_acc, csection);
-// 
+//         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
+ 
         	for (unsigned int i=0; i<ndofs; i++)
         		for (unsigned int j=0; j<ndofs; j++)
         			local_matrix[i*ndofs+j] = 0;
@@ -770,18 +675,13 @@ void Elasticity::assemble_fluxes_element_side()
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
-//     FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-//        		update_values);
-//     FEValues<dim-1,3> fv_rt(*feo->mapping<dim-1>(), *feo->q<dim-1>(), *feo->fe_rt<dim-1>(),
-//        		update_values);
-// 
+ 
     vector<FEValuesSpaceBase<3>*> fv_sb(2);
     const unsigned int ndofs_side = feo->fe<dim>()->n_dofs();    // number of local dofs
     const unsigned int ndofs_sub  = feo->fe<dim-1>()->n_dofs();
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     vector<vector<int> > side_dof_indices(2);
     vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
-// 	vector<arma::vec3> velocity_higher, velocity_lower;
 	vector<double> frac_sigma(qsize);
 	vector<double> csection_lower(qsize), csection_higher(qsize), young(qsize), poisson(qsize), alpha(qsize);
     PetscScalar local_matrix[2][2][(ndofs_side)*(ndofs_side)];
@@ -816,16 +716,11 @@ void Elasticity::assemble_fluxes_element_side()
 		element_id[0] = cell_sub.index();
 		element_id[1] = cell.index();
         
-// 		fsv_rt.reinit(cell, nb->side()->el_idx());
-// 		fv_rt.reinit(cell_sub);
-// 		calculate_velocity(cell, velocity_higher, fsv_rt);
-// 		calculate_velocity(cell_sub, velocity_lower, fv_rt);
 		data_.cross_section.value_list(fe_values_sub.point_list(), cell_sub, csection_lower);
 		data_.cross_section.value_list(fe_values_sub.point_list(), cell, csection_higher);
  		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
         data_.young_modulus.value_list(fe_values_sub.point_list(), cell_sub, young);
         data_.poisson_ratio.value_list(fe_values_sub.point_list(), cell_sub, poisson);
-        data_.biot_alpha.value_list(fe_values_sub.point_list(), cell_sub, alpha);
         
         for (unsigned int n=0; n<2; ++n)
         {
@@ -874,11 +769,6 @@ void Elasticity::assemble_fluxes_element_side()
                                      + arma::dot(gvf, mu*arma::kron(ui,nv.t()) - lambda*arma::dot(ui,nv))
                                     )*fv_sb[0]->JxW(k);
                         }
-                    
-                    local_rhs[n][i] -=
-                                    frac_sigma[k]*arma::dot(vi-vf,
-                                       alpha[k]*mh_dh->element_scalar(cell_sub)*nv
-                                    )*fv_sb[0]->JxW(k);
                 }
             }
         }
@@ -901,11 +791,11 @@ void Elasticity::assemble_fluxes_element_side()
 void Elasticity::set_boundary_conditions()
 {
   START_TIMER("assemble_bc");
-    balance_->start_flux_assembly(subst_idx);
+//     balance_->start_flux_assembly(subst_idx);
 	set_boundary_conditions<1>();
 	set_boundary_conditions<2>();
 	set_boundary_conditions<3>();
-	balance_->finish_flux_assembly(subst_idx);
+// 	balance_->finish_flux_assembly(subst_idx);
   END_TIMER("assemble_bc");
 }
 
@@ -916,20 +806,14 @@ void Elasticity::set_boundary_conditions()
 {
     FESideValues<dim,3> fe_values_side(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
     		update_values | update_gradients | update_normal_vectors | update_side_JxW_values | update_quadrature_points);
-    FESideValues<dim,3> fsv_rt(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe_rt<dim>(),
-           		update_values);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim-1>()->size();
     vector<int> side_dof_indices(ndofs);
     unsigned int loc_b=0;
     double local_rhs[ndofs];
     vector<PetscScalar> local_flux_balance_vector(ndofs);
     PetscScalar local_flux_balance_rhs;
-    vector<double> bc_values(qsize);
-    vector<double> bc_fluxes(qsize),
-			bc_sigma(qsize),
-			bc_ref_values(qsize);
+    vector<arma::vec3> bc_values(qsize), bc_traction(qsize);
     vector<double> csection(qsize);
-	vector<arma::vec3> velocity;
     auto vec = fe_values_side.vector_view(0);
 
     for (auto cell : feo->dh()->own_range())
@@ -957,14 +841,12 @@ void Elasticity::set_boundary_conditions()
  			unsigned int bc_type = data_.bc_type.value(side->centre(), bc_cell);
 
 			fe_values_side.reinit(cell, side->side_idx());
-// 			fsv_rt.reinit(cell, side->el_idx());
-// 			calculate_velocity(cell, velocity, fsv_rt);
 
-// 			compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, cell, ad_coef, dif_coef);
 			data_.cross_section.value_list(fe_values_side.point_list(), cell, csection);
 			// The b.c. data are fetched for all possible b.c. types since we allow
 			// different bc_type for each substance.
-// 			data_.bc_dirichlet_value.value_list(fe_values_side.point_list(), bc_cell, bc_values);
+			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
+            data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
 
 			feo->dh()->get_dof_indices(cell, side_dof_indices);
 
@@ -972,20 +854,18 @@ void Elasticity::set_boundary_conditions()
             local_flux_balance_vector.assign(ndofs, 0);
             local_flux_balance_rhs = 0;
 
-//             double side_flux = 0;
-//             for (unsigned int k=0; k<qsize; k++)
-//                 side_flux += arma::dot(ad_coef[k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-//             double transport_flux = side_flux/side->measure();
-
             if (bc_type == EqData::bc_type_displacement)
             {
+                // We solve a local problem to determine which local dof 
+                // to assign the boundary value to.
+                // TODO: Should be possibly optimized by inverting the matrix only once within reference element.
                 arma::mat d_mat(ndofs,ndofs);
                 arma::vec d_vec(ndofs);
                 for (unsigned int i=0; i<ndofs; i++)
                 {
                     d_vec(i) = 0;
                     for (unsigned int k=0; k<qsize; k++)
-                        d_vec(i) += arma::dot(vec.value(i,k),data_.bc_displacement.value(fe_values_side.point(k), bc_cell))*fe_values_side.JxW(k);
+                        d_vec(i) += arma::dot(vec.value(i,k),bc_values[k])*fe_values_side.JxW(k);
                     for (unsigned int j=i; j<ndofs; j++)
                     {
                         d_mat(i,j) = 0;
@@ -1005,87 +885,19 @@ void Elasticity::set_boundary_conditions()
               for (unsigned int k=0; k<qsize; k++)
               {
                 for (unsigned int i=0; i<ndofs; i++)
-                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),data_.bc_traction.value(fe_values_side.point(k), bc_cell))*fe_values_side.JxW(k);
+                  local_rhs[i] += csection[k]*arma::dot(vec.value(i,k),bc_traction[k])*fe_values_side.JxW(k);
               }
             }
-//             else if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
-//             {
-//                 Model::get_flux_bc_data(sbi, fe_values_side.point_list(), ele_acc, bc_fluxes, bc_sigma, bc_ref_values);
-//                 for (unsigned int k=0; k<qsize; k++)
-//                 {
-//                     double bc_term = csection[k]*(bc_sigma[k]*bc_ref_values[k]+bc_fluxes[k])*fe_values_side.JxW(k);
-//                     for (unsigned int i=0; i<ndofs; i++)
-//                         local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
-//                 }
-// 
-//                 for (unsigned int i=0; i<ndofs; i++)
-//                 {
-//                     for (unsigned int k=0; k<qsize; k++)
-//                         local_flux_balance_vector[i] += csection[k]*bc_sigma[k]*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-//                     local_flux_balance_rhs -= local_rhs[i];
-//                 }
-//             }
-//             else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
-//             {
-//                 Model::get_flux_bc_data(sbi, fe_values_side.point_list(), ele_acc, bc_fluxes, bc_sigma, bc_ref_values);
-//                 for (unsigned int k=0; k<qsize; k++)
-//                 {
-//                     double bc_term = csection[k]*(bc_sigma[k]*bc_ref_values[k]+bc_fluxes[k])*fe_values_side.JxW(k);
-//                     for (unsigned int i=0; i<ndofs; i++)
-//                         local_rhs[i] += bc_term*fe_values_side.shape_value(i,k);
-//                 }
-// 
-//                 for (unsigned int i=0; i<ndofs; i++)
-//                 {
-//                     for (unsigned int k=0; k<qsize; k++)
-//                         local_flux_balance_vector[i] += csection[k]*(arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k)) + bc_sigma[k])*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-//                     local_flux_balance_rhs -= local_rhs[i];
-//                 }
-//             }
-//             else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux >= 0)
-//             {
-//                 for (unsigned int k=0; k<qsize; k++)
-//                 {
-//                     for (unsigned int i=0; i<ndofs; i++)
-//                         local_flux_balance_vector[i] += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k)*fe_values_side.shape_value(i,k);
-//                 }
-//             }
             ls->rhs_set_values(ndofs, &(side_dof_indices[0]), local_rhs);
 
 
             
-            balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
-            balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
+//             balance_->add_flux_matrix_values(subst_idx, loc_b, side_dof_indices, local_flux_balance_vector);
+//             balance_->add_flux_vec_value(subst_idx, loc_b, local_flux_balance_rhs);
 			++loc_b;
         }
     }
 }
-
-
-
-
-template<unsigned int dim>
-void Elasticity::calculate_velocity(const ElementAccessor<3> &cell, 
-                                            vector<arma::vec3> &velocity, 
-                                            FEValuesBase<dim,3> &fv)
-{
-	OLD_ASSERT(cell->dim() == dim, "Element dimension mismatch!");
-
-    velocity.resize(fv.n_points());
-
-    for (unsigned int k=0; k<fv.n_points(); k++)
-    {
-        velocity[k].zeros();
-        for (unsigned int sid=0; sid<cell->n_sides(); sid++)
-          for (unsigned int c=0; c<3; ++c)
-            velocity[k][c] += fv.shape_value_component(sid,k,c) * mh_dh->side_flux( *(cell.side(sid)) );
-    }
-}
-
-
-
-
-
 
 
 
@@ -1156,41 +968,6 @@ void Elasticity::prepare_initial_condition()
     }
 }
 
-
-void Elasticity::update_volume_change()
-{
-  vector<double> divergence(mesh_->get_el_ds()->lsize(), 0.);
-  update_volume_change<1>(divergence);
-  update_volume_change<2>(divergence);
-  update_volume_change<3>(divergence);
-  volume_change.set_values(divergence, time_->t());
-}
-
-template<unsigned int dim>
-void Elasticity::update_volume_change(vector<double> &divergence)
-{
-    QGauss<dim> q(1);
-    FEValues<dim,3> fe_values(*feo->mapping<dim>(), q, *feo->fe<dim>(), update_values | update_gradients);
-    const unsigned int ndofs = feo->fe<dim>()->n_dofs();
-    vector<int> dof_indices(ndofs);
-    auto vec = fe_values.vector_view(0);
-
-    // assemble integral over elements
-    for (auto dh_cell : feo->dh()->own_range())
-    {
-        ElementAccessor<3> cell = dh_cell.elm();
-        if (dh_cell.dim() != dim) continue;
-
-        fe_values.reinit(cell);
-        dh_cell.get_loc_dof_indices(dof_indices);
-        
-        double alpha = data_.biot_alpha.value(cell.centre(), cell);
-        
-        // assemble the local stiffness matrix
-        for (unsigned int i=0; i<ndofs; i++)
-          divergence[dh_cell.local_idx()] -= alpha*ls->get_solution_array()[dof_indices[i]]*vec.divergence(i,0);
-    }
-}
 
 
 
