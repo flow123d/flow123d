@@ -167,14 +167,17 @@ class Parsable(object):
         name = getattr(self, 'name', '')
 
         if not (input_type == InputType.MAIN_TYPE):
-            Logger.instance().info('  - item is not main type ')
+            Logger.instance().info('[SKIP] not main type %s' % self)
             return False
 
         if self.has_generic_link():
-            Logger.instance().info('  - item contains generic link')
+            Logger.instance().info('[SKIP] has generic link \n%s \npoints to \n    %s' % (self, self.get_generic_root()))
             return False
-
-        return name != 'EmptyRecord'
+        
+        if name == 'EmptyRecord':
+            Logger.instance().info('[SKIP] name is EmptyRecord %s' % self)
+            return False
+        return True
 
     def has_generic_link(self):
         return getattr(self, 'generic_type', None) is not None
