@@ -92,7 +92,7 @@ public:
      * Resize the vector to given local size with ghost values. Indices of ghost values are in ghost_idx.
      */
     void resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx) {
-        ASSERT_DBG(ghost_idx.size() > 0 && communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
+        ASSERT_DBG(communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
         if (data_ptr_.use_count() ==0) {
             data_ptr_ = std::make_shared< std::vector<double> >(local_size + ghost_idx.size());
         } else {

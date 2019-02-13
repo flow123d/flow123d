@@ -206,6 +206,10 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                 
                 loc_node_dof_count[dof_nface_idx]++;
             }
+            else if (dh_cell.cell_dof(idof).dim == dh_cell.dim())
+            {
+                local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
+            }
         }
         
         dof_offset += dh_cell.n_dofs();
