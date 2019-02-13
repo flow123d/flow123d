@@ -186,7 +186,8 @@ public:
     /// Destructor.
     ~VectorMPI()
     {
-        if (data_ptr_.use_count() == 1) chkerr(VecDestroy(&data_petsc_));
+        if (data_ptr_.use_count() == 1)
+            if (data_petsc_) chkerr(VecDestroy(&data_petsc_));
     }
 
     /**
