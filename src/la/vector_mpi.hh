@@ -64,9 +64,9 @@ public:
      *
      * Method is used for better readability of code.
      */
-    static VectorMPI * sequential(unsigned int size)
+    static VectorMPI sequential(unsigned int size)
     {
-    	return new VectorMPI(size, PETSC_COMM_SELF);
+    	return VectorMPI(size, PETSC_COMM_SELF);
     }
 
     /**
@@ -176,7 +176,7 @@ public:
     }
 
 	/// Return size of output data.
-	unsigned int size()
+	unsigned int size() const
 	{
 		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
 		return data_ptr_->size();

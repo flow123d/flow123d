@@ -394,7 +394,7 @@ void TransportDG<Model>::set_output_vector()
 {
 	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
 	{
-		VecCopy(ls[sbi]->get_solution(), output_vec[sbi]->petsc_vec());
+		VecCopy(ls[sbi]->get_solution(), output_vec[sbi].petsc_vec());
 	}
 }
 
