@@ -120,11 +120,11 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 
 DualPorosity::~DualPorosity(void)
 {
-  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
-  {
-      //no mpi vectors
-      delete [] conc_immobile[sbi];
-  }
+  //for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+  //{
+  //    //no mpi vectors
+  //    delete [] conc_immobile[sbi];
+  //}
 
   delete [] conc_immobile;
 }
@@ -217,9 +217,9 @@ void DualPorosity::initialize_fields()
     conc_immobile_out[sbi] = output_field_ptr->set_fe_data(this->dof_handler_);
     data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     double *out_array;
-    VecGetArray(conc_immobile_out[sbi]->petsc_vec(), &out_array);
+    VecGetArray(conc_immobile_out[sbi].petsc_vec(), &out_array);
     conc_immobile[sbi] = out_array;
-    VecRestoreArray(conc_immobile_out[sbi]->petsc_vec(), &out_array);
+    VecRestoreArray(conc_immobile_out[sbi].petsc_vec(), &out_array);
   }
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
 }

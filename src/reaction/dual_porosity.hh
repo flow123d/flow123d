@@ -150,7 +150,7 @@ protected:
   
   ///@name members used in output routines
   //@{
-  std::vector<VectorMPI *> conc_immobile_out; ///< concentration array output for immobile phase (parallel, shared with FieldFE)
+  std::vector<VectorMPI> conc_immobile_out; ///< concentration array output for immobile phase (parallel, shared with FieldFE)
   //@}
   
 private:
