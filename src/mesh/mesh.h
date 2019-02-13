@@ -174,6 +174,15 @@ public:
     LongIdx *get_el_4_loc() const
     { return el_4_loc; }
 
+    Distribution *get_node_ds() const
+    { return node_ds_; }
+
+    LongIdx *get_node_4_loc() const
+    { return node_4_loc_; }
+
+    unsigned int n_local_nodes() const
+	{ return n_local_nodes_; }
+
     /**
      * Returns MPI communicator of the mesh.
      */
@@ -542,12 +551,21 @@ protected:
 
 private:
 
+    /// Fill array node_4_loc_ and create object node_ds_ according to element distribution.
+    void distribute_nodes();
+
     /// Index set assigning to global element index the local index used in parallel vectors.
     LongIdx *row_4_el;
 	/// Index set assigning to local element index its global index.
     LongIdx *el_4_loc;
 	/// Parallel distribution of elements.
 	Distribution *el_ds;
+	/// Index set assigning to local node index its global index.
+    LongIdx *node_4_loc_;
+    /// Parallel distribution of nodes. Depends on elements distribution.
+    Distribution *node_ds_;
+    /// Hold number of local nodes (own + ghost), value is equal with size of node_4_loc array.
+    unsigned int n_local_nodes_;
 	/// Boundary mesh, object is created only if it's necessary
 	BCMesh *bc_mesh_;
         

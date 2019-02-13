@@ -286,7 +286,7 @@ void TransportDG<Model>::initialize()
 
     output_vec.resize(Model::n_substances());
     //output_solution.resize(Model::n_substances());
-    int rank;
+    /*int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -294,7 +294,7 @@ void TransportDG<Model>::initialize()
         // for each substance we allocate output array and vector
         //output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
 		output_vec[sbi].resize(output_vector_size);
-    }
+    }*/
     data_.output_field.set_components(Model::substances_.names());
     data_.output_field.set_mesh(*Model::mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
@@ -304,7 +304,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_field_ptr->set_fe_data(feo->dh()->sequential(), 0, &output_vec[sbi]);
+        output_vec[sbi] = output_field_ptr->set_fe_data(feo->dh()); //->sequential(), 0, &output_vec[sbi]);
         data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
@@ -332,7 +332,7 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
         ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        ls[sbi]->set_solution(NULL);
+        ls[sbi]->set_solution(NULL); //TODO add FieldFE vector
 
         ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
@@ -390,18 +390,12 @@ TransportDG<Model>::~TransportDG()
 
 
 template<class Model>
-void TransportDG<Model>::output_vector_gather()
+void TransportDG<Model>::set_output_vector()
 {
-    VecScatter output_scatter;
-    VecScatterCreateToZero(ls[0]->get_solution(), &output_scatter, PETSC_NULL);
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-    {
-        // gather solution to output_vec[sbi]
-    	VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-    	VecScatterEnd(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-    }
-    chkerr(VecScatterDestroy(&(output_scatter)));
-
+	for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+	{
+		VecCopy(ls[sbi]->get_solution(), output_vec[sbi].petsc_vec());
+	}
 }
 
 
@@ -653,7 +647,7 @@ void TransportDG<Model>::output_data()
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-    output_vector_gather();
+    set_output_vector();
     data_.output_fields.output(this->time().step());
 
     Model::output_data();

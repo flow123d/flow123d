@@ -14,11 +14,8 @@ test_cases:
     - 08_fv_balance_times.yaml
     - 09_observe_output.yaml
     - 12_file_names.yaml
-    - 15_darcy-fv_output_mesh_1d.yaml
-    - 16_darcy-fv_output_mesh_2d.yaml
-    - 17_darcy-fv_output_mesh_3d.yaml
-    - 18_gmsh_cont_output.yaml
-    - 19_gmsh_discont_output.yaml
+    - 21_gmsh_cont_output.yaml
+    - 22_gmsh_discont_output.yaml
     - 31_serial_vtk_node_interp.yaml
     - 32_serial_vtk_elem_interp.yaml
     - 33_serial_vtk_corn_interp.yaml
@@ -37,3 +34,19 @@ test_cases:
 - files:
     - 37_serial_vtk_binary.yaml
   proc: [1]
+
+# serial refined tests
+- files:
+    - 23_gmsh_refined_serial_output.yaml
+    - 51_darcy_fv_output_mesh_1d_serial.yaml
+    - 53_darcy_fv_output_mesh_2d_serial.yaml
+    - 55_darcy_fv_output_mesh_3d_serial.yaml
+  proc: [1]
+
+# parallel refined tests
+- files:
+    - 24_gmsh_refined_parallel_output.yaml
+    - 52_darcy_fv_output_mesh_1d_parallel.yaml
+    - 54_darcy_fv_output_mesh_2d_parallel.yaml
+    - 56_darcy_fv_output_mesh_3d_parallel.yaml
+  proc: [2]

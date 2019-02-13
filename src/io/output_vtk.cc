@@ -19,12 +19,14 @@
 #include "element_data_cache_base.hh"
 #include "element_data_cache.hh"
 #include "output_mesh.hh"
+#include "mesh/mesh.h"
 
 #include <limits.h>
 #include "input/factory.hh"
 #include "input/accessors_forward.hh"
 #include "system/file_path.hh"
 #include "tools/unit_si.hh"
+#include "la/distribution.hh"
 
 #include "config.h"
 #include <zlib.h>
@@ -92,7 +94,7 @@ void OutputVTK::init_from_input(const std::string &equation_name, const Input::R
     this->parallel_ = format_rec.val<bool>("parallel");
     this->fix_main_file_extension(".pvd");
 
-    if(this->rank == 0) {
+    if(this->rank_ == 0) {
         try {
             this->_base_filename.open_stream( this->_base_file );
             this->set_stream_precision(this->_base_file);
@@ -135,7 +137,7 @@ int OutputVTK::write_data(void)
     ASSERT_PTR(this->nodes_).error();
 
     /* Output of serial format is implemented only in the first process */
-    if ( (this->rank != 0) && (!parallel_) ) {
+    if ( (this->rank_ != 0) && (!parallel_) ) {
         return 0;
     }
 
@@ -147,7 +149,7 @@ int OutputVTK::write_data(void)
      */
 
     /* Write DataSets to the PVD file only in the first process */
-    if (this->rank == 0) {
+    if (this->rank_ == 0) {
         ASSERT(this->_base_file.is_open())(this->_base_filename).error();
 
         /* Set floating point precision to max */
@@ -158,7 +160,7 @@ int OutputVTK::write_data(void)
         double corrected_time = (isfinite(this->time)?this->time:0);
         corrected_time /= UnitSI().s().convert_unit_from(this->unit_string_);
         if (parallel_) {
-        	for (int i_rank=0; i_rank<n_proc; ++i_rank) {
+        	for (int i_rank=0; i_rank<n_proc_; ++i_rank) {
                 string file = this->form_vtu_filename_(main_output_basename_, current_step, i_rank);
                 this->_base_file << pvd_dataset_line(corrected_time, i_rank, file);
         	}
@@ -171,7 +173,7 @@ int OutputVTK::write_data(void)
     /* write VTU file */
     {
         /* Open VTU file */
-        std::string frame_file_name = this->form_vtu_filename_(main_output_basename_, current_step, this->rank);
+        std::string frame_file_name = this->form_vtu_filename_(main_output_basename_, current_step, this->rank_);
         FilePath frame_file_path({main_output_dir_, frame_file_name}, FilePath::output_file);
         try {
             frame_file_path.open_stream(_data_file);
@@ -179,7 +181,7 @@ int OutputVTK::write_data(void)
         } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         LogOut() << __func__ << ": Writing output (frame: " << this->current_step
-                 << ", rank: " << this->rank
+                 << ", rank: " << this->rank_
                  << ") file: " << frame_file_name << " ... ";
 
         this->write_vtk_vtu();
@@ -205,7 +207,7 @@ void OutputVTK::make_subdirectory()
 	main_output_dir_ = this->_base_filename.parent_path();
 	main_output_basename_ = this->_base_filename.stem();
 
-	if(this->rank == 0) {
+	if(this->rank_ == 0) {
 	    vector<string> sub_path = { main_output_dir_, main_output_basename_, "__tmp__" };
 	    FilePath fp(sub_path, FilePath::output_file);
 	    fp.create_output_dir();
@@ -240,7 +242,7 @@ std::shared_ptr<ElementDataCache<unsigned int>> OutputVTK::fill_element_types_da
     auto &offsets = *( this->offsets_->get_component_data(0).get() );
     unsigned int n_elements = offsets.size();
     
-    auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, 1, n_elements);
+    auto types = std::make_shared<ElementDataCache<unsigned int>>("types", (unsigned int)ElementDataCacheBase::N_SCALAR, n_elements);
     std::vector< unsigned int >& data = *( types->get_component_data(0).get() );
     int n_nodes;
     
@@ -291,10 +293,10 @@ void OutputVTK::write_vtk_data(OutputTime::OutputDataPtr output_data)
     if( ! output_data->field_input_name().empty())
         file << "Name=\"" << output_data->field_input_name() <<"\" ";
     // write number of components
-    if (output_data->n_elem() > 1)
+    if (output_data->n_comp() > 1)
     {
         file
-            << "NumberOfComponents=\"" << output_data->n_elem() << "\" ";
+            << "NumberOfComponents=\"" << output_data->n_comp() << "\" ";
     }
     file    << "format=\"" << formats[this->variant_type_] << "\"";
 
@@ -405,17 +407,17 @@ void OutputVTK::write_vtk_data_names(ofstream &file,
 
     file << "Scalars=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_SCALAR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Vectors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_VECTOR) file << data->field_input_name() << ",";
 	file << "\" ";
 
     file << "Tensors=\"";
     for(OutputDataPtr data :  output_data_vec )
-		if (data->n_elem() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
+		if (data->n_comp() == ElementDataCacheBase::N_TENSOR) file << data->field_input_name() << ",";
 	file << "\"";
 }
 
@@ -485,7 +487,7 @@ void OutputVTK::write_vtk_native_data(void)
         file  << "Name=\"" << output_data->field_input_name() <<"\" ";
         file  << "format=\"" << formats[this->variant_type_] << "\" ";
         file  << "dof_handler_hash=\"" << output_data->dof_handler_hash() << "\" ";
-        file  << "n_dofs_per_element=\"" << output_data->n_elem() << "\"";
+        file  << "n_dofs_per_element=\"" << output_data->n_comp() << "\"";
 
         if ( this->variant_type_ == VTKVariant::VARIANT_ASCII ) {
         	// ascii output
@@ -576,7 +578,7 @@ void OutputVTK::write_vtk_vtu(void)
 int OutputVTK::write_head(void)
 {
     /* Output to PVD file is implemented only in the first process */
-    if(this->rank != 0) {
+    if(this->rank_ != 0) {
         return 0;
     }
 
@@ -595,7 +597,7 @@ int OutputVTK::write_head(void)
 int OutputVTK::write_tail(void)
 {
     /* Output to PVD file is implemented only in the first process */
-    if(this->rank != 0) {
+    if(this->rank_ != 0) {
         return 0;
     }
 

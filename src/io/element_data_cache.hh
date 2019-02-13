@@ -26,8 +26,10 @@
 #include <armadillo>
 #include "io/element_data_cache_base.hh"      // for ElementDataCacheBase
 #include "system/exceptions.hh"               // for ExcStream, operator<<
+#include "mesh/long_idx.hh"
 class Tokenizer;
-struct MeshDataHeader;  // lines 32-32
+class Distribution;
+struct MeshDataHeader;
 
 
 /// Return type of method that checked data stored in ElementDataCache (NaN values, limits)
@@ -65,11 +67,10 @@ public:
      * Has fix size of cache.
      *
      * @param field_name Field name is written as parameter to output stream
-     * @param n_rows     Given from shape of field
-     * @param n_cols     Given from shape of field
+     * @param n_comp     Given from shape of field
      * @param size       Count of rows of data cache
      */
-	ElementDataCache(std::string field_name, unsigned int n_rows, unsigned int n_cols, unsigned int size);
+	ElementDataCache(std::string field_name, unsigned int n_comp, unsigned int size);
 
     /**
      * \brief Destructor of ElementDataCache
@@ -160,19 +161,20 @@ public:
      */
     void scale_data(double coef);
 
+    /// Implements ElementDataCacheBase::gather.
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override;
+
+    /// Implements ElementDataCacheBase::element_node_cache_fixed_size.
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override;
+
+    /// Implements ElementDataCacheBase::element_node_cache_optimize_size.
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override;
+
+    /// Implements ElementDataCacheBase::compute_node_data.
+    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override;
+
     /// Access i-th element in the data vector of 0th component.
     T& operator[](unsigned int i);
-
-    /**
-     * Declaration of new exception info used in following exception
-     */
-    TYPEDEF_ERR_INFO(EI_FieldName, std::string);
-
-    /**
-     * Declaration of exception
-     */
-    DECLARE_EXCEPTION(ExcOutputVariableVector, << "Can not output field " << EI_FieldName::qval
-            << " returning variable size vectors. Try convert to MultiField.\n");
 
 protected:
     /// Allow to hold sign, if data in cache is checked and scale (both can be executed only once)
@@ -181,6 +183,10 @@ protected:
 		check,     ///< Data is only checked.
 	    scale      ///< Data is scaled.
 	};
+
+
+	/// Return MPI data type corresponding with template parameter of cache. Needs template specialization.
+    MPI_Datatype mpi_data_type();
 
 	/// Sign, if data in cache is checked and scale.
 	CheckScaleData check_scale_data_;
@@ -193,5 +199,6 @@ protected:
 	CacheData data_;
     
 };
+
 
 #endif /* ELEMENT_DATA_CACHE_HH_ */

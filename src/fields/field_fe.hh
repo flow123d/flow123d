@@ -91,8 +91,8 @@ public:
      * @param component_index Index of component (for vector_view/tensor_view)
      * @return                Data vector of dof values.
      */
-    VectorMPI * set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-    		unsigned int component_index = 0, VectorMPI *dof_values = nullptr);
+    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
+    		unsigned int component_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -138,7 +138,7 @@ public:
     	return dh_;
     }
 
-    inline VectorMPI *get_data_vec() const {
+    inline VectorMPI get_data_vec() const {
     	return data_vec_;
     }
 
@@ -170,7 +170,7 @@ private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorMPI *data_vec_;
+    VectorMPI data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices_;
 
@@ -314,14 +314,14 @@ void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Val
 	std::vector<LongIdx> indices(ndofs);
 
 	/*for (auto cell : dh->own_range()) {
-		cell.get_dof_indices(indices);
-		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*cell.elm_idx()+idof ];
+		cell.get_loc_dof_indices(indices);
+		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*cell.elm_idx()+idof ];
 	}*/
 
 	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
 	for (auto ele : dh->mesh()->elements_range()) {
-		dh->get_dof_indices(ele, indices);
-		for(idof=0; idof<ndofs; idof++) (*field_ptr->get_data_vec())[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
+		dh->get_loc_dof_indices(ele, indices);
+		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
 	}
 }
 
