@@ -115,7 +115,7 @@ TEST(schur, complement) {
 
     // volat s lokalni velkosti = pocet radku na lokalnim proc.
 	SchurComplementTest * schurComplement = new SchurComplementTest(set, &all_ds);
-	schurComplement->set_solution(NULL);
+	schurComplement->set_solution();
 	schurComplement->set_positive_definite();
 	schurComplement->start_allocation();
 	schurComplement->fill_matrix( rank, ds, block_ds); // preallocate matrix

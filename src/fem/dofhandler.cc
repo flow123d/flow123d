@@ -206,6 +206,10 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                 
                 loc_node_dof_count[dof_nface_idx]++;
             }
+            else if (dh_cell.cell_dof(idof).dim == dh_cell.dim())
+            {
+                local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
+            }
         }
         
         dof_offset += dh_cell.n_dofs();
@@ -429,6 +433,19 @@ void DOFHandlerMultiDim::create_sequential()
   VecDestroy(&v_seq);
 }
 
+
+VectorMPI DOFHandlerMultiDim::create_vector()
+{
+    if (is_parallel_ && el_ds_->np() > 1)
+    {   // for parallel DH create vector with ghost values
+        std::vector<LongIdx> ghost_dofs(local_to_global_dof_idx_.begin() + lsize_, local_to_global_dof_idx_.end());
+        VectorMPI vec(lsize_, ghost_dofs);
+        return vec;
+    } else {
+        VectorMPI vec(lsize_, PETSC_COMM_SELF);
+        return vec;
+    }
+}
 
 
 unsigned int DOFHandlerMultiDim::get_dof_indices(const ElementAccessor<3> &cell, std::vector<int> &indices) const

@@ -867,7 +867,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution( NULL );
+            ls->set_solution();
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -896,7 +896,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution( NULL );
+                ls->set_solution();
                 schur0=ls;
             } else {
                 IS is;
@@ -925,7 +925,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution( NULL );
+                ls->set_solution();
                 schur0=ls;
             }
 

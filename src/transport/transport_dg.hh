@@ -254,8 +254,6 @@ private:
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
-	void set_output_vector();
-
 	void preallocate();
 
 	/**
@@ -491,7 +489,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<VectorMPI *> output_vec;
+	vector<VectorMPI> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;
