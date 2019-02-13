@@ -280,7 +280,6 @@ void FieldFE<spacedim, Value>::set_mesh(const Mesh *mesh, bool boundary_domain) 
 				break;
 			}
 		}
-		if (boundary_domain) fill_boundary_dofs(); // temporary solution for boundary mesh
 	}
 }
 
@@ -357,8 +356,8 @@ void FieldFE<spacedim, Value>::make_dof_handler(const Mesh *mesh) {
     unsigned int ndofs = dh_->max_elem_dofs();
     dof_indices_.resize(ndofs);
 
-    // allocate data_vec_
-	data_vec_ = VectorMPI::sequential( dh_->n_global_dofs() );
+	if (this->boundary_domain_) fill_boundary_dofs(); // temporary solution for boundary mesh
+	else data_vec_ = VectorMPI::sequential( dh_->n_global_dofs() ); // allocate data_vec_
 
 	// initialization data of value handlers
 	FEValueInitData init_data;
