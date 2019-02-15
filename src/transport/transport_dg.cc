@@ -1164,7 +1164,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     double gamma_l;
 
     // assemble boundary integral
-    for (auto cell : feo->dh()->local_range() )
+    for (auto cell : feo->dh()->own_range() )
         for( DHCellSide cell_side : cell.side_range() )
         {
             const Side *side = cell_side.side();
