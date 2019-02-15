@@ -1,5 +1,11 @@
 #!/bin/bash
 # This script can download flow123d images (adding user/group, adding keys, setting up git is made on thy fly)
+#
+# to further tweak the behaviour of the fterm, take a look at the config/docker.template.cfg file
+# you can for example change to different theme:
+# 
+#   theme=dark bin/fterm
+#
 # usage ./fterm [options] [dbg|rel] [action] [arguments]
 #   options:
 #     -v|--verbose    turn on debug mode
@@ -208,23 +214,6 @@ function image_exist() {
   fi
 }
 
-# Will configure single file and makes it executabůe
-function configure_file() {
-  sed -e "s/@gid@/$gid/g" \
-      -e "s/@uid@/$uid/g" \
-      -e "s/@uname@/$uname/g" \
-      -e "s/@image_tag@/$image_tag/g" \
-      -e "s/@docker_image@/$docker_image/g" \
-      -e "s/@image_version@/$image_version/g" \
-      -e "s/@git_email@/$git_email/g" \
-      -e "s/@git_uname@/$git_uname/g" \
-      -e "s/@light_theme@/$light_theme/g" \
-      "$1" > "$2"
-  chmod +x $2
-}
-
-
-
 
 # Will pull all the images to newest
 function update_images() {
@@ -308,7 +297,12 @@ fi
 # grab user's id
 gid=$(id -g)
 uid=$(id -u)
-uname=flow # not using $(whoami) so there are no collisions with $HOME
+
+# not using $(whoami) so there are no collisions with $HOME
+uname=flow
+autopull=${autopull:-1}
+theme=${theme:-light}
+flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 # source config, that way we know what to mount, etc.
 if [[ -f "$CFG/docker.cfg" ]]; then
@@ -387,10 +381,8 @@ while [[ $# -gt 0 ]]
 done
 
 
-
 # determine image names
 base_image=flow123d/flow-libs-dev-$image_version:$image_tag
-flow123d_images="flow-libs-dev-dbg flow-libs-dev-rel"
 
 
 dbg "base_image     = $base_image"
@@ -399,10 +391,11 @@ dbg "image_version  = $image_version"
 dbg "action         = $action"
 dbg "mount dir      = $work"
 dbg "user           = $uname($uid:$gid)"
+dbg "theme          = $theme"
 dbg "container name = $contname"
 
 # env variables which will be passed as well
-envarg="-euid=$uid -egid=$gid -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
+envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
 
 # perform action based on variable action
 case $action in
@@ -419,14 +412,26 @@ case $action in
     docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
   flow123d)
+    if [[ $autopull == "1" ]]; then
+      update_images
+    fi
+    
     dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
     docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
   ;;
   runtest)
+    if [[ $autopull == "1" ]]; then
+      update_images
+    fi
+    
     dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
     docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
   ;;
   run)
+    if [[ $autopull == "1" ]]; then
+      update_images
+    fi
+    
     if [[ "$#" -eq 0 ]]; then
       dbgc "docker run --rm -it
           -w \"$OLD_PWD\"
@@ -450,6 +455,10 @@ case $action in
     fi
   ;;
   make)
+    if [[ $autopull == "1" ]]; then
+      update_images
+    fi
+    
     dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
     docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
   ;;

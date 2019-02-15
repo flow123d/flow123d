@@ -126,7 +126,7 @@ public:
     /**
      * Copy data vector to given output ElementDataCache
      */
-    void fill_data_to_cache(ElementDataCache<double> &output_data_cache);
+    void native_data_to_cache(ElementDataCache<double> &output_data_cache);
 
 
     /**

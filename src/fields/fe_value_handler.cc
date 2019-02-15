@@ -127,21 +127,21 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
     ASSERT_PTR(map_).error();
     ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-    ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() ); // non-const ElementAccessor
+    const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
     if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-    else dh_->get_dof_indices( cell, dof_indices );
+    else cell.get_dof_indices( dof_indices );
 
     arma::mat map_mat = map_->element_map(elm);
     for (unsigned int k=0; k<point_list.size(); k++) {
 		Quadrature<elemdim> quad(1);
         quad.set_point(0, RefElement<elemdim>::bary_to_local(map_->project_real_to_unit(point_list[k], map_mat)));
 
-		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->fe<elemdim>(cell), update_values);
+		FEValues<elemdim,3> fe_values(*this->get_mapping(), quad, *dh_->ds()->fe<elemdim>(elm), update_values);
 		fe_values.reinit( const_cast<ElementAccessor<spacedim> &>(elm) );
 
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<elemdim>(cell)->n_dofs(); i++) {
+		for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
 			value_list[k] += (*data_vec_)[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
@@ -197,14 +197,14 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 {
 	ASSERT_EQ( point_list.size(), value_list.size() ).error();
 
-	ElementAccessor<3> cell = dh_->mesh()->element_accessor( elm.mesh_idx() ); // non-const ElementAccessor
+	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
 	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-	else dh_->get_dof_indices( cell, dof_indices );
+	else cell.get_dof_indices( dof_indices );
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
-		for (unsigned int i=0; i<dh_->fe<0>(cell)->n_dofs(); i++) {
+		for (unsigned int i=0; i<dh_->ds()->fe<0>(elm)->n_dofs(); i++) {
 			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += (*data_vec_)[dof_indices[i]];
 		}
 	}

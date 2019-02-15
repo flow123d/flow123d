@@ -20,7 +20,13 @@
 #define DH_CELL_ACCESSOR_HH_
 
 #include "mesh/accessors.hh"
+#include "mesh/sides.h"
+#include "mesh/neighbours.h"
 #include "fem/dofhandler.hh"
+
+class DHCellSide;
+class DHNeighbSide;
+class DHEdgeSide;
 
 /**
  * Cell accessor allow iterate over DOF handler cells.
@@ -45,14 +51,14 @@ public:
 
     /// Return local index to element (index of DOF handler).
     inline unsigned int local_idx() const {
-    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()).error("Method 'local_idx()' can't be used for ghost cells!\n");
+    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()+dof_handler_->ghost_4_loc.size()).error("Local element index is out of range!\n");
         return loc_ele_idx_;
     }
 
     /// Return serial idx to element of loc_ele_idx_.
     inline unsigned int elm_idx() const {
-    	unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
-        if (loc_ele_idx_<ds_lsize) return dof_handler_->el_index(loc_ele_idx_); //own elements
+        unsigned int ds_lsize = dof_handler_->el_ds_->lsize();
+        if (local_idx()<ds_lsize) return dof_handler_->mesh()->get_el_4_loc()[loc_ele_idx_]; //own elements
         else return dof_handler_->ghost_4_loc[loc_ele_idx_-ds_lsize]; //ghost elements
     }
 
@@ -94,9 +100,20 @@ public:
      */
     template<unsigned int dim>
     FiniteElement<dim> *fe() const {
-    	ElementAccessor<3> elm_acc = this->elm();
-    	return dof_handler_->ds_->fe<dim>(elm_acc);
+        ElementAccessor<3> elm_acc = this->elm();
+        return dof_handler_->ds_->fe<dim>(elm_acc);
     }
+
+    /// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return dof_handler_ != NULL;
+    }
+
+    /// Returns range of cell sides
+    Range<DHCellSide> side_range() const;
+
+    /// Returns range of neighbour cells of higher dimension
+    Range<DHNeighbSide> neighb_sides() const;
 
     /// Iterates to next local element.
     inline void inc() {
@@ -113,17 +130,189 @@ private:
     const DOFHandlerMultiDim * dof_handler_;
     /// Index into DOFHandler::el_4_loc array.
     unsigned int loc_ele_idx_;
+
+    friend class DHCellSide;
 };
 
 
+/**
+ * Side accessor allows to iterate over sides of DOF handler cell.
+ *
+ * Descendants of class allow to iterate over different ranges trough methods:
+ *  - edge_sides: iterate over all Cells (of same dim) connected to the side
+ *  - neighb_sides: iterate over all sides of the cells of higher dimension
+ */
+class DHCellSide {
+public:
+
+    /**
+     * Default invalid accessor.
+     *
+     * Create invalid \p dh_cell_accessor_.
+     */
+	DHCellSide() {}
+
+    /**
+     * DOF cell side accessor.
+     */
+	DHCellSide(const DHCellAccessor &dh_cell_accessor, unsigned int side_idx)
+    : dh_cell_accessor_(dh_cell_accessor), side_idx_(side_idx) {}
+
+	/// Check validity of accessor (see default constructor)
+    inline virtual bool is_valid() const {
+        return dh_cell_accessor_.is_valid();
+    }
+
+    /// Return Side of given cell and side_idx.
+    inline virtual const Side * side() const {
+    	ASSERT( this->is_valid() );
+   		return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
+    }
+
+    /// Return DHCellAccessor appropriate to the side.
+    inline const DHCellAccessor cell() const {
+    	auto cell = dh_cell_accessor_.dof_handler_->cell_accessor_from_element( this->side()->elem_idx() );
+    	unsigned int loc_idx = cell.local_idx();
+    	return DHCellAccessor(dh_cell_accessor_.dof_handler_, loc_idx);
+    }
+
+    /// Return dimension of element appropriate to the side.
+    inline unsigned int dim() const {
+    	return cell().dim();
+    }
+
+    /// Returns range of all sides looped over common Edge.
+    Range<DHEdgeSide> edge_sides() const;
+
+    /// Iterates to next local element.
+    inline virtual void inc() {
+        side_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const DHCellSide& other) {
+    	return (side_idx_ == other.side_idx_);
+    }
+
+private:
+    /// Appropriate DHCellAccessor.
+    DHCellAccessor dh_cell_accessor_;
+    /// Index of side.
+    unsigned int side_idx_;
+};
+
+
+/**
+ * Class allows to iterate over sides of edge.
+ *
+ * Iterator provides same behavior as parent class through side() method.
+ */
+class DHEdgeSide {
+public:
+    /**
+     * Default invalid accessor.
+     */
+	DHEdgeSide() {}
+
+    /**
+     * Valid accessor allows iterate over sides.
+     */
+	DHEdgeSide(const DHCellSide &cell_side, unsigned int side_idx)
+    : cell_side_(cell_side), side_idx_(side_idx)
+    {}
+
+	/// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return cell_side_.is_valid();
+    }
+
+    /// Return DHCellSide according to this object.
+    inline DHCellSide cell_side() const {
+    	return cell_side_;
+    }
+
+    /// Iterates to next edge side.
+    inline void inc() {
+        side_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const DHEdgeSide& other) {
+    	return (side_idx_ == other.side_idx_);
+    }
+
+    inline unsigned int side_idx() { return side_idx_; }
+
+private:
+    /// Appropriate side accessor.
+    DHCellSide cell_side_;
+    /// Pointer to the DOF handler owning the element.
+    unsigned int edge_idx_;
+    /// Index of side owned by Edge.
+    unsigned int side_idx_;
+};
+
+
+/**
+ * Class allows to iterate over sides of neighbour.
+ *
+ * Iterator provides same behavior as parent class through side() method.
+ */
+class DHNeighbSide {
+public:
+    /**
+     * Default invalid accessor.
+     */
+	DHNeighbSide() {}
+
+    /**
+     * Valid accessor allows iterate over neighbor sides.
+     */
+	DHNeighbSide(const DHCellAccessor &dh_cell, unsigned int neighb_idx)
+    : dh_cell_(dh_cell), neighb_idx_(neighb_idx)
+    {}
+
+	/// Check validity of accessor (see default constructor)
+    inline bool is_valid() const {
+        return dh_cell_.is_valid();
+    }
+
+    /// Return DHCellSide according to this object.
+    inline DHCellSide cell_side() const {
+    	ASSERT( this->is_valid() );
+    	unsigned int side_idx = dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->side_idx();
+    	return DHCellSide(dh_cell_, side_idx);
+    }
+
+    /// Iterates to next edge side.
+    inline void inc() {
+    	neighb_idx_++;
+    }
+
+    /// Comparison of accessors.
+    bool operator==(const DHNeighbSide& other) {
+    	return (neighb_idx_ == other.neighb_idx_);
+    }
+
+private:
+    /// Appropriate cell accessor.
+    DHCellAccessor dh_cell_;
+    /// Index into neigh_vb array
+    unsigned int neighb_idx_;
+};
+
+
+/*************************************************************************************
+ * Implementation of inlined methods.
+ */
+
 inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) const
 {
-  unsigned int elem_idx = this->elm_idx();
-  ASSERT_LT( dof_handler_->row_4_el[elem_idx]+1, dof_handler_->cell_starts.size() )(dof_handler_->row_4_el[elem_idx])(dof_handler_->cell_starts.size());
+  ASSERT_LT( loc_ele_idx_+1, dof_handler_->cell_starts.size() )(loc_ele_idx_)(dof_handler_->cell_starts.size());
   unsigned int ndofs = 0;
-  ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
+  ndofs = dof_handler_->cell_starts[loc_ele_idx_+1]-dof_handler_->cell_starts[loc_ele_idx_];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k];
+    indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[loc_ele_idx_]+k];
 
   return ndofs;
 }
@@ -131,11 +320,10 @@ inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) c
 
 inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &indices) const
 {
-  unsigned int elem_idx = this->elm_idx();
   unsigned int ndofs = 0;
-  ndofs = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]+1]-dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]];
+  ndofs = dof_handler_->cell_starts[loc_ele_idx_+1]-dof_handler_->cell_starts[loc_ele_idx_];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_handler_->cell_starts[dof_handler_->row_4_el[elem_idx]]+k;
+    indices[k] = dof_handler_->cell_starts[loc_ele_idx_]+k;
 
   return ndofs;
 }
@@ -154,6 +342,7 @@ inline unsigned int DHCellAccessor::n_dofs() const
             return fe<3>()->n_dofs();
             break;
     }
+    return 0; // only fix compiler warning
 }
 
 
@@ -171,6 +360,27 @@ inline const Dof &DHCellAccessor::cell_dof(unsigned int idof) const
             return fe<3>()->dof(idof);
             break;
     }
+}
+
+
+inline Range<DHCellSide> DHCellAccessor::side_range() const {
+	auto bgn_it = make_iter<DHCellSide>( DHCellSide(*this, 0) );
+	auto end_it = make_iter<DHCellSide>( DHCellSide(*this, dim()+1) );
+	return Range<DHCellSide>(bgn_it, end_it);
+}
+
+
+inline Range<DHNeighbSide> DHCellAccessor::neighb_sides() const {
+	auto bgn_it = make_iter<DHNeighbSide>( DHNeighbSide(*this, 0) );
+	auto end_it = make_iter<DHNeighbSide>( DHNeighbSide(*this, this->elm()->n_neighs_vb()) );
+	return Range<DHNeighbSide>(bgn_it, end_it);
+}
+
+
+inline Range<DHEdgeSide> DHCellSide::edge_sides() const {
+	unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
+	return Range<DHEdgeSide>(make_iter<DHEdgeSide>( DHEdgeSide( *this, 0) ),
+	                         make_iter<DHEdgeSide>( DHEdgeSide( *this, dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx].n_sides) ));
 }
 
 
