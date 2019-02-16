@@ -138,7 +138,7 @@
          properties-file: prop.file
      - shell: |
          docker rm -f cont{build-type} || echo "container not running"
-         docker run --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git flow123d/flow-libs-dev-dbg:user
+         flow123d/bin/fterm -v dbg -- --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git
          echo "FLOW=/opt/flow123d/flow123d" >> prop.file
 
 # ---------------------------------------------------------------------------- #
@@ -153,7 +153,7 @@
           properties-file: prop.file
       - shell: |
           docker rm -f cont{build-type} || echo "container not running"
-          docker run --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git flow123d/flow-libs-dev-rel:user
+          flow123d/bin/fterm -v rel -- --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git
           echo "FLOW=/opt/flow123d/flow123d"                >> prop.file
           echo "PACK_NAME=Flow123d-2.0.0-Linux.tar.gz"      >> prop.file
           echo "PACK_PATH=./Flow123d-2.0.0-Linux.tar.gz"    >> prop.file
@@ -402,24 +402,25 @@
       - inject:
           properties-file: prop.file
       - shell: |
-          rm -rf publish
-          mkdir -p publish
-          docker exec cont{build-type} make -C ${{FLOW}} clean-tests
-          
-          make -C flow123d/bin/docker/package \
-                CID=cont{build-type} \
-                DESTINATION=$(pwd)/publish \
-                DOCKER_TOOLBOX_PATH=/home/builder/jenkins/static/DockerToolbox-1.12.2.exe \
-                FLOW_GIT_HASH=${{GIT_COMMIT:0:6}} \
-                create-packages
-          make -C flow123d/bin/docker/package \
-                CID=cont{build-type} \
-                DESTINATION=$(pwd)/publish \
-                remove-unwanted
-          # copy out docs, now done in makefile script in docker-config repo
-          # docker cp cont{build-type}:${{FLOW}}/build_tree/doc/reference_manual/flow123d_doc.pdf publish/
-          # docker cp cont{build-type}:${{FLOW}}/build_tree/doc/online-doc/flow123d publish/doxygen
-          # docker cp cont{build-type}:${{FLOW}}/build_tree/htmldoc/html/src publish/htmldoc
+          destination=$(pwd)/publish
+
+          rm -rf publish && mkdir -p publish
+          rm -rf flow123d-package
+          git clone https://github.com/flow123d/flow123d-package.git
+
+          make -C flow123d-package \
+                  destination=$destination \
+                  all
+
+          make -C flow123d-package \
+                  destination=$destination \
+                  remove-unwanted
+
+          make -C flow123d-package \
+                  push-to-hub
+
+          ls -la $destination
+
     publishers:
       - cifs: 
           site: 'flow123d@intec'

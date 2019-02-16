@@ -371,6 +371,11 @@ while [[ $# -gt 0 ]]
       usage
       exit 1
     ;;
+    -i|--images)
+      shift
+      flow123d_images=$1
+      shift
+    ;;
     *)
       echo -e "${bred}ERROR:$reset ${red} Invalid argument '$1'!$reset"
       usage
