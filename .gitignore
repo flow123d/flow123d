@@ -59,7 +59,6 @@ doc/reference_manual/input_reference.json.tex
 bin/pythonenv.sh
 
 /config/jenkins.ini
-/config/jenkins-job/jobs/*.yaml
 /config/jenkins-job/jenkins.ini
 
 
