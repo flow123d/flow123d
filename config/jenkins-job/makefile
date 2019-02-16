@@ -6,6 +6,11 @@
 # ${CMAKE_COMMAND} -DINPUT=jenkins_jobs_template.yaml -DOUTPUT=${JENKINS_JOBS_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/expand_placeholders.cmake
 
 # default configuration for jenkins-jobs-builder
+# By default, jenkins-jobs looks for
+# 	1) ~/.config/jenkins_jobs/jenkins_jobs.ini
+# 	2) <script directory>/jenkins_jobs.ini
+# 	3) /etc/jenkins_jobs/jenkins_jobs.ini
+# (in that order), but you may specify an alternative location
 ifdef CONFIG
 CONFIG_ARG=--conf $(CONFIG)
 endif
