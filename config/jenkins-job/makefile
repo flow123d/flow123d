@@ -15,6 +15,10 @@ ifdef CONFIG
 CONFIG_ARG=--conf $(CONFIG)
 endif
 
+main_yaml ?= tmp/jobs/main.yaml
+jenkins_jobs ?= jenkins-jobs
+
+
 # target which replaces placeholders in all *.yaml files in jobs dir
 # located in jobs dir
 .PHONY: jobs/**/*.yaml jobs/*.yaml
@@ -31,24 +35,24 @@ expand: jobs/**/*.yaml jobs/*.yaml
 .PHONY: test
 test: expand
 	@echo "-----------------------------------------------"
-	@echo "Using configuration scripts $(CONFIG)"
+	@echo "Using configuration scripts '$(CONFIG)'"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG_ARG) test tmp/jobs/main.yaml
+	$(jenkins_jobs) $(CONFIG_ARG) test $(main_yaml)
 
 
 # target which runs "test" on jenkins-jobs
 .PHONY: upload
 upload: expand
 	@echo "-----------------------------------------------"
-	@echo "Using configuration scripts $(CONFIG)"
+	@echo "Using configuration scripts '$(CONFIG)'"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG_ARG) --ignore-cache update tmp/jobs/main.yaml
+	$(jenkins_jobs) $(CONFIG_ARG) --ignore-cache update $(main_yaml)
 
 
 # target which uploads configuration via jenkins-jobs to server
 .PHONY: delete
 delete: #which
-	jenkins-jobs $(CONFIG_ARG) --ignore-cache delete-all
+	$(jenkins_jobs) $(CONFIG_ARG) --ignore-cache delete-all
 
 
 #.PHONY: which
