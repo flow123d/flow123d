@@ -9,11 +9,19 @@ builders:
   - inject:
       properties-file: prop.file
   # Following is a hack how to run just serial tests in a branch which contains file 'tests/run_serial_only'.
-  - shell: |
-      echo  ${{RUN_INTEGRATION_TESTS}}
-      if -f ${{FLOW}}/tests/run_serial_only
-      then
-            $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
-      else
-            $(exit ${{RUN_INTEGRATION_TESTS}}) || docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
-      fi
+  - shell:
+      unstable-return: 42
+      command: |
+        echo "SKIP_INT_TESTS = $SKIP_INT_TESTS"
+
+        if [ "$SKIP_UNIT_TESTS" = true ] ; then
+          echo "Skipping integration tests"
+          exit 42
+        fi
+
+        if -f ${{FLOW}}/tests/run_serial_only
+        then
+              docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
+        else
+              docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+        fi

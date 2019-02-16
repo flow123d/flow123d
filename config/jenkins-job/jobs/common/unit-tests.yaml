@@ -8,6 +8,14 @@ disabled: false
 builders:
   - inject:
       properties-file: prop.file
-  - shell: |
-      echo  ${{RUN_UNIT_TESTS}}
-      $(exit ${{RUN_UNIT_TESTS}}) || docker exec cont{build-type} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test
+  - shell:
+      unstable-return: 42
+      command: |
+        echo "SKIP_UNIT_TESTS = $SKIP_UNIT_TESTS"
+
+        if [ "$SKIP_UNIT_TESTS" = true ] ; then
+          echo "Skipping unit tests"
+          exit 42
+        fi
+
+        docker exec cont{build-type} make -C ${{FLOW}}/build_tree/unit_tests/{unit-dir} -k all-test

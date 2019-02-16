@@ -5,28 +5,19 @@ name: "Flow123d-{platform}-debug-multijob"
 display-name: "debug / Flow123d multijob"
 project-type: multijob
 defaults: flow123d-build
-properties:
-  - raw:
-      xml: |
-        <hudson.model.ParametersDefinitionProperty>
-          <parameterDefinitions>
-            <hudson.model.StringParameterDefinition>
-              <name>BRANCH_NAME</name>
-              <description>Specify branch name you want to build. Default value will build master branch.</description>
-              <defaultValue>$GIT_BRANCH</defaultValue>
-            </hudson.model.StringParameterDefinition>
-            <hudson.model.StringParameterDefinition>
-              <name>RUN_UNIT_TESTS</name>
-              <description>If set to '0' will not run any unit-test.</description>
-              <defaultValue>1</defaultValue>
-            </hudson.model.StringParameterDefinition>
-            <hudson.model.StringParameterDefinition>
-              <name>RUN_INTEGRATION_TESTS</name>
-              <description>If set to '0' will not run any integration tests.</description>
-              <defaultValue>1</defaultValue>
-            </hudson.model.StringParameterDefinition>
-          </parameterDefinitions>
-        </hudson.model.ParametersDefinitionProperty>
+parameters:
+  - string:
+      name: BRANCH_NAME
+      default: $GIT_BRANCH
+      description: Specify the branch name you want to build. Default value will build master branch.
+  - bool:
+      name: SKIP_UNIT_TESTS
+      default: false
+      description: "If true, will not run any unit-test"
+  - bool:
+      name: SKIP_INT_TESTS
+      default: false
+      description: "If true, will not run any int-test"
 block-downstream: yes
 scm:
   - git:
@@ -60,39 +51,44 @@ builders:
       condition: SUCCESSFUL
       projects:
         - name: "Flow123d-{platform}-debug-start-image"
+          current-parameters: true
   # ---------- START IMAGE ----------------------------------------------- #
   - multijob:
       name: "Configure flow123d Phase"
       condition: SUCCESSFUL
       projects:
         - name: "Flow123d-{platform}-debug-configure"
+          current-parameters: true
 
   - multijob:
       name: "Build flow123d Phase"
       condition: SUCCESSFUL
       projects:
         - name: "Flow123d-{platform}-debug-build"
+          current-parameters: true
 
   - multijob:
       name: "Unit tests"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$"
+        - {name: "Flow123d-{platform}-debug-unit-test-$PLACEHOLDER_unit_list$", current-parameters: true}
 
   - multijob:
       name: "Integration tests"
       condition: COMPLETED
       projects:
-        - name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$"
-          kill-phase-on: NEVER
+        - {name: "Flow123d-{platform}-debug-test-$PLACEHOLDER_test_list$", current-parameters: true}
+
   - multijob:
       name: "Make doc"
       condition: COMPLETED
       projects:
         - name: "Flow123d-{platform}-debug-make-doc"
+          current-parameters: true
   # ---------- STOP IMAGE ------------------------------------------------ #
   - multijob:
       name: "Stop image"
       condition: SUCCESSFUL
       projects:
         - name: "Flow123d-{platform}-debug-stop-image"
+          current-parameters: true
