@@ -1,0 +1,106 @@
+# ---------------------------------------------------------------------------- #
+# ---------- MULTIJOB -------------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+name: "Flow123d-{platform}-release-multijob"
+display-name: "release / Flow123d multijob"
+project-type: multijob
+defaults: flow123d-build
+properties:
+  - raw:
+      xml: |
+        <hudson.model.ParametersDefinitionProperty>
+          <parameterDefinitions>
+            <hudson.model.StringParameterDefinition>
+              <name>BRANCH_NAME</name>
+              <description>Specify branch name you want to build. Default value will build master branch.</description>
+              <defaultValue>$GIT_BRANCH</defaultValue>
+            </hudson.model.StringParameterDefinition>
+            <hudson.model.StringParameterDefinition>
+              <name>RUN_UNIT_TESTS</name>
+              <description>If set to '0' will not run any unit-test.</description>
+              <defaultValue>1</defaultValue>
+            </hudson.model.StringParameterDefinition>
+            <hudson.model.StringParameterDefinition>
+              <name>RUN_INTEGRATION_TESTS</name>
+              <description>If set to '0' will not run any integration tests.</description>
+              <defaultValue>1</defaultValue>
+            </hudson.model.StringParameterDefinition>
+          </parameterDefinitions>
+        </hudson.model.ParametersDefinitionProperty>
+block-downstream: yes
+scm:
+  - git:
+      url: https://github.com/flow123d/flow123d.git
+      reference-repo: /home/builder/git-cache/flow123d.git
+      branches:
+          - master
+          - 2.1.0
+          - 2.1.2
+          - 2.2.1
+          - 2.2.0
+          - 3.0.0_dev
+          - 3.0.1
+      basedir: flow123d
+      browser: githubweb
+      browser-url: https://github.com/flow123d/flow123d/
+      skip-tag: true
+
+wrappers:
+  - inject:
+      script-content: |
+        rm -f prop.file && touch prop.file
+        echo "RUN_UNIT_TESTS=1" >> prop.file
+        echo "RUN_INTEGRATION_TESTS=1" >> prop.file
+        echo "BUILD_NAME=${{BRANCH_NAME#origin/}}@${{GIT_COMMIT:0:6}}"          >> prop.file
+        echo "DOCKER_IMAGE_NAME=${{BRANCH_NAME#origin/}}-${{GIT_COMMIT:0:6}}"   >> prop.file
+        echo "_GIT_BRANCH=${{BRANCH_NAME#origin/}}"                             >> prop.file
+
+  - build-name:
+      name:  "${{PROPFILE,file=\"prop.file\",property=\"_GIT_BRANCH\"}}@${{GIT_REVISION, length=6}} #${{BUILD_NUMBER}}"
+
+triggers:
+  - github
+
+builders:
+  - multijob:
+      name: "Start image"
+      condition: SUCCESSFUL
+      projects:
+        - name: "Flow123d-{platform}-release-start-image"
+  - multijob:
+      name: "Configure flow123d Phase"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-configure"
+
+  - multijob:
+      name: "Build flow123d Phase"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-build"
+  - multijob:
+      name: "Unit tests"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-unit-test-$PLACEHOLDER_unit_list$"
+  - multijob:
+      name: "Integration tests"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-test-$PLACEHOLDER_test_list$"
+          kill-phase-on: NEVER
+  - multijob:
+      name: "Make doc"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-make-doc"
+  - multijob:
+      name: "Package"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-package"
+  - multijob:
+      name: "Stop image"
+      condition: COMPLETED
+      projects:
+        - name: "Flow123d-{platform}-release-stop-image"

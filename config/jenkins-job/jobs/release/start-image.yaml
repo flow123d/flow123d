@@ -1,0 +1,15 @@
+# ---------------------------------------------------------------------------- #
+# ---------- START IMAGE ----------------------------------------------------- #
+# ---------------------------------------------------------------------------- #
+name: "Flow123d-{platform}-release-start-image"
+display-name: "{build-type} / Flow123d start image"
+defaults: flow123d-build
+builders:
+  - inject:
+      properties-file: prop.file
+  - shell: |
+      docker rm -f cont{build-type} || echo "container not running"
+      flow123d/bin/fterm -v rel -- --privileged -di --name cont{build-type} -v /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git
+      echo "FLOW=/opt/flow123d/flow123d"                >> prop.file
+      echo "PACK_NAME=Flow123d-2.0.0-Linux.tar.gz"      >> prop.file
+      echo "PACK_PATH=./Flow123d-2.0.0-Linux.tar.gz"    >> prop.file

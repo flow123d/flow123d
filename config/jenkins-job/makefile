@@ -1,4 +1,4 @@
-# Makefile for uploading configuration via jenkins-jobs-builder 
+# Makefile for uploading configuration via jenkins-jobs-builder
 # author: Jan Hybs
 
 
@@ -10,16 +10,16 @@ ifdef CONFIG
 CONFIG_ARG=--conf $(CONFIG)
 endif
 
-# target which replaces placeholders in all *.yaml.template files
+# target which replaces placeholders in all *.yaml files in jobs dir
 # located in jobs dir
-.PHONY: *.template.yaml
-*.template.yaml:
-	cmake -DINPUT=$@ -DOUTPUT=jobs/$(@:%.template.yaml=%.yaml) -P expand_placeholders.cmake
+.PHONY: jobs/**/*.yaml jobs/*.yaml
+jobs/**/*.yaml jobs/*.yaml:
+	cmake -DINPUT=$@ -DOUTPUT=tmp/$@ -P expand_placeholders.cmake
 
 
-# target which call replacement on all yaml.template files
+# target which call replacement on all *.yaml files in jobs dir
 .PHONY: expand
-expand: *.template.yaml
+expand: jobs/**/*.yaml jobs/*.yaml
 
 
 # target which runs "test" on jenkins-jobs
@@ -28,7 +28,7 @@ test: expand
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG_ARG) test jobs/main.yaml
+	jenkins-jobs $(CONFIG_ARG) test tmp/jobs/main.yaml
 
 
 # target which runs "test" on jenkins-jobs
@@ -37,7 +37,7 @@ upload: expand
 	@echo "-----------------------------------------------"
 	@echo "Using configuration scripts $(CONFIG)"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG_ARG) --ignore-cache update jobs/main.yaml
+	jenkins-jobs $(CONFIG_ARG) --ignore-cache update tmp/jobs/main.yaml
 
 
 # target which uploads configuration via jenkins-jobs to server
@@ -75,4 +75,3 @@ help:
 	@echo "              this action cannot be undone"
 	@echo ""
 	@echo "    - help:   print this message"
-	
