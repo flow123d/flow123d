@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+#
+# This script downloads and installs the Flow123d
+# inspired by https://get.fenicsproject.org/
+
+# Setup
+RED="\033[1;31m"
+BLUE="\033[1;34m"
+GREEN="\033[1;32m"
+NORMAL="\033[0m"
+
+DEST_DIR="$HOME/.local/bin"
+DEST=$DEST_DIR/flow123d
+mkdir -p $DEST_DIR
+
+# Check if we have Docker
+TMP=$(docker -v 2>/dev/null)
+if [ ! $? -eq 0 ]; then
+  echo -e "It appears that ${RED}Docker is not installed${NORMAL} on your system."
+  echo "Follow these instructions to install Docker, then come back and try again:"
+  echo ""
+  echo "  https://docs.docker.com/get-started/"
+  echo ""
+  exit 1
+else
+  echo -e "You have docker version ${GREEN}$TMP${NORMAL} on your system."
+fi
+
+# download simple version of flow123d
+curl -s https://flow.nti.tul.cz/flow123d > $DEST
+chmod a+rx $DEST
+
+
+# quick start info
+echo -e "flow123d script installed into ${BLUE}$DEST${NORMAL}"
+echo -e "To get started, simple run the command"
+echo -e ""
+echo -e "  ${BLUE}flow123d${NORMAL}"
+echo -e ""
+echo -e "For more information, see ${BLUE}flow123d help${NORMAL}."
+echo -e ""
