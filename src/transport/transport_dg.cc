@@ -796,8 +796,9 @@ void TransportDG<Model>::assemble_volume_integrals()
     PetscScalar local_matrix[ndofs*ndofs];
 
     // assemble integral over elements
-    for (auto cell : feo->dh()->own_range() )
+    for (auto cell : feo->dh()->local_range() )
     {
+        if (!cell.is_own()) continue;
         if (cell.dim() != dim) continue;
         ElementAccessor<3> elm = cell.elm();
 
@@ -1164,7 +1165,9 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     double gamma_l;
 
     // assemble boundary integral
-    for (auto cell : feo->dh()->own_range() )
+    for (auto cell : feo->dh()->local_range() )
+    {
+    	if (!cell.is_own()) continue;
         for( DHCellSide cell_side : cell.side_range() )
         {
             const Side *side = cell_side.side();
@@ -1244,6 +1247,7 @@ void TransportDG<Model>::assemble_fluxes_boundary()
 		    	ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
             }
         }
+    }
 }
 
 

@@ -115,6 +115,11 @@ public:
     /// Returns range of neighbour cell of lower dimension corresponding to cell of higher dimension
     Range<DHNeighbSide> neighb_sides() const;
 
+    /// Return true if accessor represents own element (false for ghost element)
+    inline bool is_own() {
+    	return (loc_ele_idx_ < dof_handler_->el_ds_->lsize());
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
