@@ -33,9 +33,14 @@ chmod a+rx $DEST
 
 # quick start info
 echo -e "flow123d script installed into ${BLUE}$DEST${NORMAL}"
-echo -e "To get started, simple run the command"
+echo -e "If you have ${BLUE}\$HOME/.local/bin${NORMAL} in your ${GREEN}\$PATH${NORMAL} variable"
+echo -e "you can simply run:"
 echo -e ""
 echo -e "  ${BLUE}flow123d${NORMAL}"
+echo -e ""
+echo -e "otherwise you will have to use an absolute path:"
+echo -e ""
+echo -e "  ${BLUE}$DEST${NORMAL}"
 echo -e ""
 echo -e "For more information, see ${BLUE}flow123d help${NORMAL}."
 echo -e ""
