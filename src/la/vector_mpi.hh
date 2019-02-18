@@ -64,9 +64,9 @@ public:
      *
      * Method is used for better readability of code.
      */
-    static VectorMPI * sequential(unsigned int size)
+    static VectorMPI sequential(unsigned int size)
     {
-    	return new VectorMPI(size, PETSC_COMM_SELF);
+    	return VectorMPI(size, PETSC_COMM_SELF);
     }
 
     /**
@@ -92,7 +92,7 @@ public:
      * Resize the vector to given local size with ghost values. Indices of ghost values are in ghost_idx.
      */
     void resize(unsigned int local_size, std::vector<LongIdx> &ghost_idx) {
-        ASSERT_DBG(ghost_idx.size() > 0 && communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
+        ASSERT_DBG(communicator_ == PETSC_COMM_WORLD).error("Cannot allocate ghost values in sequential vector.");
         if (data_ptr_.use_count() ==0) {
             data_ptr_ = std::make_shared< std::vector<double> >(local_size + ghost_idx.size());
         } else {
@@ -176,7 +176,7 @@ public:
     }
 
 	/// Return size of output data.
-	unsigned int size()
+	unsigned int size() const
 	{
 		ASSERT_PTR(data_ptr_).error("Uninitialized data vector.\n");
 		return data_ptr_->size();
@@ -186,7 +186,8 @@ public:
     /// Destructor.
     ~VectorMPI()
     {
-        if (data_ptr_.use_count() == 1) chkerr(VecDestroy(&data_petsc_));
+        if (data_ptr_.use_count() == 1)
+            if (data_petsc_) chkerr(VecDestroy(&data_petsc_));
     }
 
     /**

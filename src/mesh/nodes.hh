@@ -87,10 +87,6 @@ public:
         return norm(*this - n2, 2);
     }
 
-
-    // Misc
-    mutable int aux; // Auxiliary flag
-    // TODO fix in OutputMesh::create_mesh() and remove this class member
 };
 
 #endif

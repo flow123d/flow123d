@@ -24,8 +24,10 @@
 #include <string>
 #include <istream>
 #include "system/system.hh"
+#include "mesh/long_idx.hh"
 
 class Tokenizer;
+class Distribution;
 
 
 class ElementDataCacheBase {
@@ -119,26 +121,26 @@ public:
     /**
      * Get string representation of SI units.
      */
-    inline std::string field_units() {
+    inline std::string field_units() const {
     	return this->field_units_;
     }
 
     /**
      * Get number of data values.
      */
-    inline unsigned int n_values() {
+    inline unsigned int n_values() const {
     	return this->n_values_;
     }
 
     /**
      * Get number of data elements per data value.
      */
-    inline NumCompValueType n_elem() {
-    	return this->n_elem_;
+    inline unsigned int n_comp() const {
+    	return this->n_comp_;
     }
 
     /// Get type of stored data
-    inline VTKValueType vtk_type() {
+    inline VTKValueType vtk_type() const {
     	return this->vtk_type_;
     }
 
@@ -155,6 +157,50 @@ public:
     inline void set_dof_handler_hash(std::size_t hash) {
     	this->dof_handler_hash_ = hash;
     }
+
+    /**
+     * Method for gathering parallel data to serial cache.
+     *
+     * Gather data of individual processes to serial cache that is created only on zero process.
+     * Other processes return uninitialized shared pointer.
+     *
+     * @param distr Collective distribution
+     * @param local_to_global Maps local indices to global
+     */
+    virtual std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global)=0;
+
+    /**
+     * Create node data cache of constant data size for each elements.
+     *
+     * Method must be call on node data cache.
+     *
+     * Every element is represented of 4 nodes maximal. Method returns cache with size = 4*n_elements*n_components.
+     * If dimension of element is less than 3, part of data is not used. This construction of node data cache allow
+     * call gather of node data for continuous and discontinuous output meshes.
+     *
+     * @param offset_vec vector of appropriate offsets (number of nodes) of each elements
+     */
+    virtual std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec)=0;
+
+    /**
+     * Inverse method to previous.
+     *
+     * Must be call on node cache with constant data size for each elements. Return data cache, that corresponds with
+     * offset vector.
+     *
+     * @param offset_vec vector of appropriate offsets (number of nodes) of each elements
+     */
+    virtual std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec)=0;
+
+    /**
+     * Create final node data cache.
+     *
+     * Compute average value of each nodes.
+     *
+     * @param conn_vec Vector of connectivities, holds node indices to values of this cache
+     * @param data_size number of nodes
+     */
+    virtual std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size)=0;
 
 protected:
     template <class T>
@@ -190,7 +236,7 @@ protected:
     /**
      * Number of data elements per data value.
      */
-    NumCompValueType n_elem_;
+    unsigned int n_comp_;
 
     /// Type of stored data
     VTKValueType vtk_type_;

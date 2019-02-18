@@ -129,7 +129,7 @@ public:
       : comm_( rows_ds->get_comm() ), status_( NONE ), lsize_( rows_ds->lsize() ), rows_ds_(rows_ds),
         symmetric_( false ), positive_definite_( false ), negative_definite_( false ),
         spd_via_symmetric_general_( false ), solution_(NULL), v_solution_(NULL),
-        own_solution_(false)
+        own_vec_(false), own_solution_(false)
     { 
         int lsizeInt = static_cast<int>( rows_ds->lsize() );
         int sizeInt;
@@ -285,17 +285,36 @@ public:
     }
 
     /**
+     * Set PETSc solution
+     */
+    void set_solution(Vec sol_vec) {
+    	solution_ = sol_vec;
+    	own_vec_ = false;
+        own_solution_ = false;
+        double *out_array;
+        VecGetArray( solution_, &out_array );
+        v_solution_ = out_array;
+        VecRestoreArray( solution_, &out_array );
+    }
+
+    /**
      * Create PETSc solution
      */
     void set_solution(double *sol_array) {
-        if (sol_array == NULL) {
-            v_solution_   = new double[ rows_ds_->lsize() + 1 ];
-            own_solution_ = true;
-        }
-        else {
-            v_solution_ = sol_array;
-            own_solution_ = false;
-        }
+        v_solution_ = sol_array;
+        own_vec_ = true;
+        own_solution_ = false;
+        PetscErrorCode ierr;
+        ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
+    }
+
+    /**
+     * Create PETSc solution
+     */
+    void set_solution() {
+        v_solution_   = new double[ rows_ds_->lsize() + 1 ];
+        own_vec_ = true;
+        own_solution_ = true;
         PetscErrorCode ierr;
         ierr = VecCreateMPIWithArray( comm_,1, rows_ds_->lsize(), PETSC_DECIDE, v_solution_, &solution_ ); CHKERRV( ierr );
     }
@@ -612,7 +631,7 @@ public:
 
     virtual ~LinSys()
     { 
-       if ( solution_ ) { chkerr(VecDestroy(&solution_)); }
+       if ( own_vec_ && solution_ ) { chkerr(VecDestroy(&solution_)); }
        if ( own_solution_ ) delete[] v_solution_;
     }
 
@@ -644,6 +663,7 @@ protected:
 
     Vec      solution_;          //!< PETSc vector constructed with vb array.
     double  *v_solution_;        //!< local solution array pointing into Vec solution_
+    bool     own_vec_;           //!< Indicates if the solution vector has been allocated by this class
     bool     own_solution_;      //!< Indicates if the solution array has been allocated by this class
 
     double  residual_norm_;      //!< local solution array pointing into Vec solution_

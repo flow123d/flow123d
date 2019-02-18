@@ -129,7 +129,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 
     const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
     if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-    else cell.get_dof_indices( dof_indices );
+    else cell.get_loc_dof_indices( dof_indices );
 
     arma::mat map_mat = map_->element_map(elm);
     for (unsigned int k=0; k<point_list.size(); k++) {
@@ -142,7 +142,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
-			value_list[k] += (*data_vec_)[dof_indices[i]]
+			value_list[k] += data_vec_[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
 	}
@@ -199,13 +199,13 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 
 	const DHCellAccessor cell = dh_->cell_accessor_from_element( elm.idx() );
 	if (boundary_dofs_) this->get_dof_indices( elm, dof_indices);
-	else cell.get_dof_indices( dof_indices );
+	else cell.get_loc_dof_indices( dof_indices );
 
 	for (unsigned int k=0; k<point_list.size(); k++) {
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<dh_->ds()->fe<0>(elm)->n_dofs(); i++) {
-			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += (*data_vec_)[dof_indices[i]];
+			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[dof_indices[i]];
 		}
 	}
 }

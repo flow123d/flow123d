@@ -359,7 +359,7 @@ void Field<spacedim, Value>::observe_output(std::shared_ptr<Observe> observe)
                         Value( const_cast<typename Value::return_type &>(
                                 this->value(o_point.global_coords(),
                                         ElementAccessor<spacedim>(this->mesh(), ele_index)) ));
-        ASSERT_EQ(output_data.n_elem(), obs_value.n_rows()*obs_value.n_cols()).error();
+        ASSERT_EQ(output_data.n_comp(), obs_value.n_rows()*obs_value.n_cols()).error();
         output_data.store_value(i_data,  obs_value.mem_ptr());
         i_data++;
     }
@@ -594,57 +594,29 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
 
 	std::shared_ptr<OutputMeshBase> output_mesh = stream->get_output_mesh_ptr();
 
-    if ( !output_mesh ) {
-        // Output mesh is not constructed for serial output and rank > 0
-        return;
-    }
+    ASSERT(output_mesh);
 
     ElementDataCache<ElemType> &output_data = stream->prepare_compute_data<ElemType>(this->name(), space_type,
     		(unsigned int)Value::NRows_, (unsigned int)Value::NCols_);
 
     /* Copy data to array */
     switch(space_type) {
-    case OutputTime::NODE_DATA: {
-        // set output data to zero
-        vector<unsigned int> count(output_data.n_values(), 0);
-        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
-            output_data.zero(idx);
-
-        for(const auto & ele : *output_mesh )
-        {
-            std::vector<Space<3>::Point> vertices = ele.vertex_list();
-            for(unsigned int i=0; i < ele.n_nodes(); i++)
-            {
-                unsigned int node_index = ele.node_index(i);
-                const Value &node_value =
-                        Value( const_cast<typename Value::return_type &>(
-                                this->value(vertices[i],
-                                            ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
-                             );
-                output_data.add(node_index, node_value.mem_ptr() );
-                count[node_index]++;
-            }
-        }
-
-        // Compute mean values at nodes
-        for(unsigned int idx=0; idx < output_data.n_values(); idx++)
-            output_data.normalize(idx, count[idx]);
-    }
-    break;
+    case OutputTime::NODE_DATA:
     case OutputTime::CORNER_DATA: {
+    	unsigned int node_index = 0;
         for(const auto & ele : *output_mesh )
         {
             std::vector<Space<3>::Point> vertices = ele.vertex_list();
             for(unsigned int i=0; i < ele.n_nodes(); i++)
             {
-                unsigned int node_index = ele.node_index(i);
                 const Value &node_value =
                         Value( const_cast<typename Value::return_type &>(
                         		this->value(vertices[i],
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()) ))
                              );
-                ASSERT_EQ(output_data.n_elem(), node_value.n_rows()*node_value.n_cols()).error();
+                ASSERT_EQ(output_data.n_comp(), node_value.n_rows()*node_value.n_cols()).error();
                 output_data.store_value(node_index, node_value.mem_ptr() );
+                ++node_index;
             }
         }
     }
@@ -659,7 +631,7 @@ void Field<spacedim,Value>::compute_field_data(OutputTime::DiscreteSpace space_t
                                             ElementAccessor<spacedim>(ele.orig_mesh(), ele.orig_element_idx()))
                                                                         )
                              );
-            ASSERT_EQ(output_data.n_elem(), ele_value.n_rows()*ele_value.n_cols()).error();
+            ASSERT_EQ(output_data.n_comp(), ele_value.n_rows()*ele_value.n_cols()).error();
             output_data.store_value(ele_index, ele_value.mem_ptr() );
         }
     }
