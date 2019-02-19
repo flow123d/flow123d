@@ -116,7 +116,7 @@ public:
     Range<DHNeighbSide> neighb_sides() const;
 
     /// Return true if accessor represents own element (false for ghost element)
-    inline bool is_own() {
+    inline bool is_own() const {
     	return (loc_ele_idx_ < dof_handler_->el_ds_->lsize());
     }
 

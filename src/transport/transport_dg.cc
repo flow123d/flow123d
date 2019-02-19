@@ -940,7 +940,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     	    sid=0;
         	for( DHEdgeSide edge_side : cell_side.edge_sides() )
             {
-        	    auto dh_edge_cell = feo->dh()->cell_accessor_from_element( edge_side.side()->elem_idx() ); //rename dh_cell
+        	    auto dh_edge_cell = feo->dh()->cell_accessor_from_element( edge_side.side()->elem_idx() );
                 ElementAccessor<3> cell = dh_edge_cell.elm();
                 dh_edge_cell.get_dof_indices(side_dof_indices[sid]);
                 fe_values[sid]->reinit(cell, edge_side.side()->side_idx());
@@ -1311,10 +1311,10 @@ void TransportDG<Model>::assemble_fluxes_element_side()
             fe_values_side.reinit(elm_lower_dim, nb->side()->side_idx());
             n_dofs[1] = fv_sb[1]->n_dofs();
 
-            // Element id's for testing if they belong to local partition.
-            int element_id[2];
-            element_id[0] = elm_higher_dim.idx();
-            element_id[1] = elm_lower_dim.idx();
+            // Testing element if they belong to local partition.
+            bool own_element_id[2];
+            own_element_id[0] = cell_higher_dim.is_own();
+            own_element_id[1] = cell_lower_dim.is_own();
 
             fsv_rt.reinit(elm_lower_dim, nb->side()->side_idx());
             fv_rt.reinit(elm_higher_dim);
@@ -1356,7 +1356,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
 
                     for (int n=0; n<2; n++)
                     {
-                        if (!feo->dh()->el_is_local(element_id[n])) continue;
+                        if (!own_element_id[n]) continue;
 
                         for (unsigned int i=0; i<n_dofs[n]; i++)
                             for (int m=0; m<2; m++)
