@@ -63,9 +63,6 @@ template <int spacedim> class NodeAccessor;
  */
 #define MESH_CRITICAL_VOLUME 1.0E-12
 
-typedef Iter<ElementAccessor<3>> ElementIter;
-typedef Iter<NodeAccessor<3>> NodeIter;
-
 class BoundarySegment {
 public:
     static Input::Type::Record input_type;
@@ -247,11 +244,6 @@ public:
      * Returns nodes_elements vector, if doesn't exist creates its.
      */
     vector<vector<unsigned int> > const & node_elements();
-
-//    /// Vector of nodes of the mesh.
-//    NodeVector node_vector;
-//    /// Vector of elements of the mesh.
-//    ElementVector element;
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.
