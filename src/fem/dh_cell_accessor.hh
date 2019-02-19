@@ -252,7 +252,7 @@ private:
     /// Pointer to the DOF handler owning the element.
     const DOFHandlerMultiDim * dof_handler_;
     /// Global index of Edge.
-    const unsigned int edge_idx_;
+    unsigned int edge_idx_;
     /// Index of side owned by Edge.
     unsigned int side_idx_;
 };

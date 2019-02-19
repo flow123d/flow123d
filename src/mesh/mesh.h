@@ -49,7 +49,6 @@ class Neighbour;
 class SideIter;
 class BCMesh;
 class DuplicateNodes;
-template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
 
