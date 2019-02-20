@@ -53,7 +53,7 @@ public:
 private:
     /// Output element of the output mesh.
     ObjectIn object_;
-    ObjectOut out_;
+    mutable ObjectOut out_;
 };
 
 
@@ -89,7 +89,7 @@ IterConvert<ObjectIn, ObjectOut> make_iter(ObjectIn obj) {
 
 template<class ObjectIn, class ObjectOut>
 inline IterConvert<ObjectIn, ObjectOut>::IterConvert(const ObjectIn& object)
-: object_(object), out_( (ObjectOut)object_ )
+: object_(object)
 {}
 
 template<class ObjectIn, class ObjectOut>
@@ -107,12 +107,14 @@ inline bool IterConvert<ObjectIn, ObjectOut>::operator!=(const IterConvert& othe
 template<class ObjectIn, class ObjectOut>
 inline const ObjectOut& IterConvert<ObjectIn, ObjectOut>::operator*() const
 {
+    out_ = (ObjectOut)object_;
     return out_;
 }
 
 template<class ObjectIn, class ObjectOut>
 inline const ObjectOut* IterConvert<ObjectIn, ObjectOut>::operator->() const
 {
+    out_ = (ObjectOut)object_;
     return &out_;
 }
 
@@ -120,7 +122,6 @@ template<class ObjectIn, class ObjectOut>
 inline IterConvert<ObjectIn, ObjectOut>& IterConvert<ObjectIn, ObjectOut>::operator++()
 {
     object_.inc();
-    out_ = (ObjectOut)object_;
     return (*this);
 }
 
