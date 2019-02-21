@@ -507,6 +507,16 @@ void Elasticity::assemble_stiffness_matrix()
 }
 
 
+double lame_mu(double young, double poisson)
+{
+    return young*0.5/(poisson+1.);
+}
+
+
+double lame_lambda(double young, double poisson)
+{
+    return young*poisson/((poisson+1.)*(1.-2.*poisson));
+}
 
 
 template<unsigned int dim>
@@ -739,8 +749,8 @@ void Elasticity::assemble_fluxes_element_side()
         for (unsigned int k=0; k<qsize; k++)
         {
             arma::vec3 nv = fe_values_side.normal_vector(k);
-            double mu = young[k]*0.5/(poisson[k]+1.);
-            double lambda = young[k]*poisson[k]/((poisson[k]+1.)*(1.-2*poisson[k]));
+            double mu = lame_mu(young[k], poisson[k]);
+            double lambda = lame_lambda(young[k], poisson[k]);
             
             for (int n=0; n<2; n++)
             {
@@ -750,23 +760,23 @@ void Elasticity::assemble_fluxes_element_side()
                 {
                     arma::vec3 vi = (n==0)?arma::zeros(3):vec_side.value(i,k);
                     arma::vec3 vf = (n==1)?arma::zeros(3):vec_sub.value(i,k);
-                    arma::mat33 gvf = (n==0)?mat_t(vec_sub.grad(i,k),nv):arma::zeros(3,3);
-                    double divvf = (n==0)?arma::trace(mat_t(vec_sub.grad(i,k),nv)):0;
+                    arma::mat33 gvft = (n==0)?mat_t(vec_sub.grad(i,k),nv):arma::zeros(3,3);
+//                     double divvf = (n==0)?arma::trace(mat_t(vec_sub.grad(i,k),nv)):0;
                     
                     for (int m=0; m<2; m++)
                         for (unsigned int j=0; j<n_dofs[m]; j++) {
                             arma::vec3 ui = (m==0)?arma::zeros(3):vec_side.value(j,k);
                             arma::vec3 uf = (m==1)?arma::zeros(3):vec_sub.value(j,k);
-                            arma::mat33 gui = (m==1)?vec_side.grad(j,k):arma::zeros(3,3);
-                            double divui = (m==1)?arma::trace(mat_t(vec_side.grad(j,k),nv)):0;
+                            arma::mat33 guit = (m==1)?mat_t(vec_side.grad(j,k),nv):arma::zeros(3,3);
+                            double divuit = (m==1)?arma::trace(guit):0;
                             
                             local_matrix[n][m][i*n_dofs[m] + j] +=
                                     frac_sigma[k]*(arma::dot(vf-vi,
                                       2/csection_lower[k]*(mu*(uf-ui)+(mu+lambda)*(arma::dot(uf-ui,nv)*nv))
-                                      + mu*(arma::trans(gui)*nv - arma::dot(gui*nv,nv)*nv)
-                                      + lambda*divui*nv
+                                      + mu*arma::trans(guit)*nv
+                                      + lambda*divuit*nv
                                      )
-                                     + arma::dot(gvf, mu*arma::kron(ui,nv.t()) - lambda*arma::dot(ui,nv))
+                                     - arma::dot(gvft, mu*arma::kron(nv.t(),ui) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fv_sb[0]->JxW(k);
                         }
                 }
