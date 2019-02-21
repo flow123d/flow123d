@@ -938,7 +938,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
             bool unique_edge = (edg->side(0)->element().idx() != dh_cell.elm_idx());
     	    if ( (edg->n_sides < 2) || (edg->side(0)->element()->dim() != dim) || unique_edge ) continue;
     	    sid=0;
-        	for( DHEdgeSide edge_side : cell_side.edge_sides() )
+        	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
         	    auto dh_edge_cell = feo->dh()->cell_accessor_from_element( edge_side.side()->elem_idx() );
                 ElementAccessor<3> cell = dh_edge_cell.elm();
@@ -958,7 +958,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
             {
                 vector<double> fluxes(edg->n_sides);
                 sid=0;
-                for( DHEdgeSide edge_side : cell_side.edge_sides() )
+                for( DHCellSide edge_side : cell_side.edge_sides() )
                 {
                     fluxes[sid] = 0;
                     for (unsigned int k=0; k<qsize; k++)
@@ -968,10 +968,10 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 }
 
                 s1=0;
-                for( DHEdgeSide edge_side1 : cell_side.edge_sides() )
+                for( DHCellSide edge_side1 : cell_side.edge_sides() )
                 {
                 	s2=-1; // need increment at begin of loop (see conditionally 'continue' directions)
-                	for( DHEdgeSide edge_side2 : cell_side.edge_sides() )
+                	for( DHCellSide edge_side2 : cell_side.edge_sides() )
                     {
                 		s2++;
                 		if (s2<=s1) continue;

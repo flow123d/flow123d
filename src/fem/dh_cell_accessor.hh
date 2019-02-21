@@ -166,16 +166,14 @@ public:
     }
 
     /// Return Side of given cell and side_idx.
-    inline virtual const Side * side() const {
+    inline const Side * side() const {
     	ASSERT( this->is_valid() );
    		return new Side( const_cast<const Mesh*>(dh_cell_accessor_.dof_handler_->mesh()), dh_cell_accessor_.elm_idx(), side_idx_ );
     }
 
     /// Return DHCellAccessor appropriate to the side.
     inline const DHCellAccessor cell() const {
-    	auto cell = dh_cell_accessor_.dof_handler_->cell_accessor_from_element( this->side()->elem_idx() );
-    	unsigned int loc_idx = cell.local_idx();
-    	return DHCellAccessor(dh_cell_accessor_.dof_handler_, loc_idx);
+    	return dh_cell_accessor_;
     }
 
     /// Return dimension of element appropriate to the side.
@@ -184,7 +182,7 @@ public:
     }
 
     /// Returns range of all sides looped over common Edge.
-    Range<DHEdgeSide> edge_sides() const;
+    RangeConvert<DHEdgeSide, DHCellSide> edge_sides() const;
 
     /// Iterates to next local element.
     inline virtual void inc() {
@@ -233,11 +231,6 @@ public:
         return (dof_handler_!=nullptr);
     }
 
-    /// Return SideIter according to Edge and its side_idx.
-    inline SideIter side() const {
-    	return dof_handler_->mesh()->edges[edge_idx_].side(side_idx_);
-    }
-
     /// Iterates to next edge side.
     inline void inc() {
         side_idx_++;
@@ -246,6 +239,13 @@ public:
     /// Comparison of accessors.
     bool operator==(const DHEdgeSide& other) {
     	return (edge_idx_ == other.edge_idx_) && (side_idx_ == other.side_idx_);
+    }
+
+    /// This class is implicitly convertible to DHCellSide.
+    operator DHCellSide() const {
+    	SideIter side = dof_handler_->mesh()->edges[edge_idx_].side(side_idx_);
+    	DHCellAccessor cell = dof_handler_->cell_accessor_from_element( side->elem_idx() );
+        return DHCellSide(cell, side->side_idx());
     }
 
 private:
@@ -388,7 +388,7 @@ inline Range<DHNeighbSide> DHCellAccessor::neighb_sides() const {
 }
 
 
-inline Range<DHEdgeSide> DHCellSide::edge_sides() const {
+inline RangeConvert<DHEdgeSide, DHCellSide> DHCellSide::edge_sides() const {
 	unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
 	Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
 	unsigned int upper_bound = 0; // return empty range if no element connected to Edge is local
@@ -399,8 +399,8 @@ inline Range<DHEdgeSide> DHCellSide::edge_sides() const {
 	    	break;
 	    }
 
-	return Range<DHEdgeSide>(make_iter<DHEdgeSide>( DHEdgeSide( *this, 0) ),
-	                         make_iter<DHEdgeSide>( DHEdgeSide( *this, upper_bound) ));
+	return RangeConvert<DHEdgeSide, DHCellSide>(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide( *this, 0) ),
+	                                            make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide( *this, upper_bound) ));
 }
 
 

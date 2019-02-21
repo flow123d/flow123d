@@ -176,17 +176,16 @@ TEST(DHAccessors, dh_cell_accessors) {
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
-    auto dh_seq = dh.sequential();
     auto el_ds = mesh->get_el_ds();
     unsigned int i_distr=0;
 
     std::vector<unsigned int> side_elm_idx;
-    for( DHCellAccessor cell : dh_seq->own_range() ) {
-    	EXPECT_EQ( cell.elm_idx(), dh_seq->mesh()->get_el_4_loc()[i_distr] );
+    for( DHCellAccessor cell : dh.own_range() ) {
+    	EXPECT_EQ( cell.elm_idx(), dh.mesh()->get_el_4_loc()[i_distr] );
         for( DHCellSide cell_side : cell.side_range() ) {
             EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
         	side_elm_idx.clear();
-        	for( DHEdgeSide edge_side : cell_side.edge_sides() ) {
+        	for( DHCellSide edge_side : cell_side.edge_sides() ) {
         		side_elm_idx.push_back( edge_side.side()->elem_idx() );
         	}
             const Edge *edg = cell_side.side()->edge();
