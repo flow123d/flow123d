@@ -113,7 +113,7 @@ public:
     Range<DHCellSide> side_range() const;
 
     /// Returns range of neighbour cell of lower dimension corresponding to cell of higher dimension
-    Range<DHNeighbSide> neighb_sides() const;
+    RangeConvert<DHNeighbSide, DHCellSide> neighb_sides() const;
 
     /// Return true if accessor represents own element (false for ghost element)
     inline bool is_own() const {
@@ -138,6 +138,7 @@ private:
 
     friend class DHCellSide;
     friend class DHEdgeSide;
+    friend class DHNeighbSide;
 };
 
 
@@ -273,31 +274,29 @@ public:
      *
      * @param dh_cell    Element of lower dim.
      * @param neighb_idx Index of neighbour.
+     * @param max_idx    Maximal index of neighbour, method inc() doesn't set neighb_idx_ on higher value.
      */
-	DHNeighbSide(const DHCellAccessor &dh_cell, unsigned int neighb_idx)
-    : dh_cell_(dh_cell), neighb_idx_(neighb_idx)
-    {}
+	DHNeighbSide(const DHCellAccessor &dh_cell, unsigned int neighb_idx, unsigned int max_idx=0)
+    : dh_cell_(dh_cell), neighb_idx_(neighb_idx), max_idx_(max_idx)
+    {
+        while ( (neighb_idx_<max_idx_) && (dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
+            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx())) ) {
+        	neighb_idx_++;
+        }
+    }
 
 	/// Check validity of accessor (see default constructor)
     inline bool is_valid() const {
         return dh_cell_.is_valid();
     }
 
-    /// Return DHCellSide according to this object.
-    inline DHCellSide cell_side() const {
-    	unsigned int side_idx = neighbour()->side()->side_idx();
-    	return DHCellSide(dh_cell_, side_idx);
-    }
-
-    /// Return Neighbour object according to this object.
-    inline Neighbour * neighbour() const {
-    	ASSERT( this->is_valid() );
-    	return dh_cell_.elm()->neigh_vb[neighb_idx_];
-    }
-
     /// Iterates to next edge side.
     inline void inc() {
-    	neighb_idx_++;
+        do {
+            neighb_idx_++;
+        	if (neighb_idx_>=max_idx_) break;
+        } while ( dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
+            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx()) );
     }
 
     /// Comparison of accessors.
@@ -305,11 +304,20 @@ public:
     	return (neighb_idx_ == other.neighb_idx_);
     }
 
+    /// This class is implicitly convertible to DHCellSide.
+    operator DHCellSide() const {
+        SideIter side = dh_cell_.elm()->neigh_vb[neighb_idx_]->side();
+        DHCellAccessor cell = dh_cell_.dof_handler_->cell_accessor_from_element( side->elem_idx() );
+        return DHCellSide(cell, side->side_idx());
+    }
+
 private:
     /// Appropriate cell accessor.
     DHCellAccessor dh_cell_;
     /// Index into neigh_vb array
     unsigned int neighb_idx_;
+    /// Maximal index into neigh_vb array
+    unsigned int max_idx_;
 };
 
 
@@ -381,10 +389,12 @@ inline Range<DHCellSide> DHCellAccessor::side_range() const {
 }
 
 
-inline Range<DHNeighbSide> DHCellAccessor::neighb_sides() const {
-	auto bgn_it = make_iter<DHNeighbSide>( DHNeighbSide(*this, 0) );
-	auto end_it = make_iter<DHNeighbSide>( DHNeighbSide(*this, this->elm()->n_neighs_vb()) );
-	return Range<DHNeighbSide>(bgn_it, end_it);
+inline RangeConvert<DHNeighbSide, DHCellSide> DHCellAccessor::neighb_sides() const {
+	unsigned int upper_bound = this->elm()->n_neighs_vb();
+	DebugOut().every_proc() << "DHCellAccessor::neighb_sides " << upper_bound;
+	auto bgn_it = make_iter<DHNeighbSide, DHCellSide>( DHNeighbSide(*this, 0, upper_bound) );
+	auto end_it = make_iter<DHNeighbSide, DHCellSide>( DHNeighbSide(*this, upper_bound, upper_bound) );
+	return RangeConvert<DHNeighbSide, DHCellSide>(bgn_it, end_it);
 }
 
 

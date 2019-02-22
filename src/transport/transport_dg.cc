@@ -1186,45 +1186,42 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
-    for (DHCellAccessor cell_higher_dim : feo->dh()->local_range() )
-        for( DHNeighbSide neighb_side : cell_higher_dim.neighb_sides() )
+    for (DHCellAccessor cell_lower_dim : feo->dh()->local_range() )
+        for( DHCellSide neighb_side : cell_lower_dim.neighb_sides() )
         {
-        	Neighbour *nb = neighb_side.neighbour();
             // skip neighbours of different dimension
-            if (nb->element()->dim() != dim-1) continue;
+            if (cell_lower_dim.elm().dim() != dim-1) continue;
 
-            ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
-            if ( (nb->side()->element().proc()!=feo->dh()->distr()->myp()) &&
-                 (elm_higher_dim.proc()!=feo->dh()->distr()->myp()) ) continue;
-            n_indices = cell_higher_dim.get_dof_indices(indices);
-    		for(unsigned int i=0; i<n_indices; ++i) {
-    			side_dof_indices[i] = indices[i];
-    		}
-            fe_values_vb.reinit(elm_higher_dim);
-            n_dofs[0] = fv_sb[0]->n_dofs();
-
-            DHCellAccessor cell_lower_dim = feo->dh()->cell_accessor_from_element( nb->side()->element().idx() );
             ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
             n_indices = cell_lower_dim.get_dof_indices(indices);
     		for(unsigned int i=0; i<n_indices; ++i) {
+    			side_dof_indices[i] = indices[i];
+    		}
+            fe_values_vb.reinit(elm_lower_dim);
+            n_dofs[0] = fv_sb[0]->n_dofs();
+
+            DHCellAccessor cell_higher_dim = feo->dh()->cell_accessor_from_element( neighb_side.side()->element().idx() );
+            ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
+            n_indices = cell_higher_dim.get_dof_indices(indices);
+    		for(unsigned int i=0; i<n_indices; ++i) {
     			side_dof_indices[i+n_dofs[0]] = indices[i];
     		}
-            fe_values_side.reinit(elm_lower_dim, nb->side()->side_idx());
+            fe_values_side.reinit(elm_higher_dim, neighb_side.side()->side_idx());
             n_dofs[1] = fv_sb[1]->n_dofs();
 
             // Testing element if they belong to local partition.
             bool own_element_id[2];
-            own_element_id[0] = cell_higher_dim.is_own();
-            own_element_id[1] = cell_lower_dim.is_own();
+            own_element_id[0] = cell_lower_dim.is_own();
+            own_element_id[1] = cell_higher_dim.is_own();
 
-            fsv_rt.reinit(elm_lower_dim, nb->side()->side_idx());
-            fv_rt.reinit(elm_higher_dim);
-            calculate_velocity(elm_lower_dim, velocity_higher, fsv_rt);
-            calculate_velocity(elm_higher_dim, velocity_lower, fv_rt);
-            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, elm_higher_dim, ad_coef_edg[0], dif_coef_edg[0]);
-            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, elm_lower_dim, ad_coef_edg[1], dif_coef_edg[1]);
-            data_.cross_section.value_list(fe_values_vb.point_list(), elm_higher_dim, csection_lower);
-            data_.cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_higher);
+            fsv_rt.reinit(elm_higher_dim, neighb_side.side()->side_idx());
+            fv_rt.reinit(elm_lower_dim);
+            calculate_velocity(elm_higher_dim, velocity_higher, fsv_rt);
+            calculate_velocity(elm_lower_dim, velocity_lower, fv_rt);
+            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, elm_lower_dim, ad_coef_edg[0], dif_coef_edg[0]);
+            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, elm_higher_dim, ad_coef_edg[1], dif_coef_edg[1]);
+            data_.cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_lower);
+            data_.cross_section.value_list(fe_values_vb.point_list(), elm_higher_dim, csection_higher);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
             {
@@ -1232,7 +1229,7 @@ void TransportDG<Model>::assemble_fluxes_element_side()
                     for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
                         local_matrix[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
-                data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), elm_higher_dim, frac_sigma);
+                data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), elm_lower_dim, frac_sigma);
 
                 // set transmission conditions
                 for (unsigned int k=0; k<qsize; k++)
