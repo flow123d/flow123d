@@ -928,7 +928,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
     }
 
-    //* NEW CODE
     // assemble integral over sides
     int sid, s1, s2;
     for ( DHCellAccessor dh_cell : feo->dh()->local_range() )
@@ -976,17 +975,15 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 		s2++;
                 		if (s2<=s1) continue;
                         ASSERT(edge_side1.side()->valid()).error("Invalid side of edge.");
-                        if (!feo->dh()->el_is_local( edge_side1.side()->element().idx() )
-                                && !feo->dh()->el_is_local( edge_side2.side()->element().idx() )) continue;
 
                         arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
                         // set up the parameters for DG method
                         set_DG_parameters_edge(*edg, s1, s2, qsize, dif_coef_edg[s1][sbi], dif_coef_edg[s2][sbi], fluxes, fe_values[0]->normal_vector(0), dg_penalty[s1][sbi], dg_penalty[s2][sbi], gamma_l, omega, transport_flux);
 
-                        int sd[2];
-                        sd[0] = s1;
-                        sd[1] = s2;
+                        int sd[2]; bool is_side_own[2];
+                        sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
+                        sd[1] = s2; is_side_own[1] = edge_side2.cell().is_own();
 
 #define AVERAGE(i,k,side_id)  (fe_values[sd[side_id]]->shape_value(i,k)*0.5)
 #define WAVERAGE(i,k,side_id) (arma::dot(dif_coef_edg[sd[side_id]][sbi][k]*fe_values[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
@@ -995,7 +992,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                         // For selected pair of elements:
                         for (int n=0; n<2; n++)
                         {
-                            if (!feo->dh()->el_is_local( edg->side(sd[n])->element().idx() )) continue;
+                            if (!is_side_own[n]) continue;
 
                             for (int m=0; m<2; m++)
                             {

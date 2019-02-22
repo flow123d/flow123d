@@ -229,12 +229,6 @@ public:
      */
     inline unsigned int n_loc_nb() const { return nb_4_loc.size(); }
 
-    /**
-     * Returns true if element is on local process.
-     * @param index Global element index.
-     */
-    bool el_is_local(int index) const;
-
     /// Output structure of dof handler.
     void print() const;
 
@@ -269,6 +263,12 @@ public:
     friend class DHNeighbSide;
 
 private:
+
+    /**
+     * Returns true if element is on local process.
+     * @param index Global element index.
+     */
+    bool el_is_local(int index) const;
 
     /**
      * @brief Prepare parallel distribution of elements, edges and neighbours.
