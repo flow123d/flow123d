@@ -29,15 +29,17 @@ class DHNeighbSide;
 class DHEdgeSide;
 
 /**
- * Cell accessor allow iterate over DOF handler cells.
+ * @brief Cell accessor allow iterate over DOF handler cells.
  *
  * Iterating is possible over different ranges of local and ghost elements.
+ *
+ * Iterator is defined by:
+ *  - DOF handler
+ *  - local index of DOF cell (iterated value)
  */
 class DHCellAccessor {
 public:
-    /**
-     * Default invalid accessor.
-     */
+    /// Default invalid accessor.
 	DHCellAccessor()
     : dof_handler_(NULL)
     {}
@@ -143,13 +145,17 @@ private:
 
 
 /**
- * Side accessor allows to iterate over sides of DOF handler cell.
+ * @brief Side accessor allows to iterate over sides of DOF handler cell.
+ *
+ * Iterator is defined by:
+ *  - DOF handler cell
+ *  - index of Side in DOF cell (iterated value)
  */
 class DHCellSide {
 public:
 
     /**
-     * Default invalid accessor.
+     * @brief Default invalid accessor.
      *
      * Create invalid \p dh_cell_accessor_.
      */
@@ -206,25 +212,28 @@ private:
 
 
 /**
- * Class allows to iterate over sides of edge.
+ * @brief Class allows to iterate over sides of edge.
  *
  * Iterator is defined by:
  *  - DOF handler
  *  - global index of Edge (constant value)
  *  - index of Side in Edge (iterated value)
+ *
+ * Note: Class is used only internally. Appropriate range method (DHCellSide::edge_sides) uses convertible iterators
+ * and returns corresponding DHCellSide.
  */
 class DHEdgeSide {
 public:
-    /**
-     * Default invalid accessor.
-     */
+    /// Default invalid accessor.
 	DHEdgeSide() : dof_handler_(nullptr), edge_idx_(0) {}
 
     /**
      * Valid accessor allows iterate over sides.
      */
 	DHEdgeSide(const DHCellSide &cell_side, unsigned int side_idx)
-    : dof_handler_(cell_side.dh_cell_accessor_.dof_handler_), edge_idx_(cell_side.dh_cell_accessor_.elm()->edge_idx(cell_side.side_idx_)), side_idx_(side_idx)
+    : dof_handler_(cell_side.dh_cell_accessor_.dof_handler_),
+	  edge_idx_(cell_side.dh_cell_accessor_.elm()->edge_idx(cell_side.side_idx_)),
+	  side_idx_(side_idx)
     {}
 
 	/// Check validity of accessor (see default constructor)
@@ -260,41 +269,51 @@ private:
 
 
 /**
- * Class allows to iterate over sides of neighbour.
+ * @brief Class allows to iterate over sides of neighbour.
+ *
+ * Class returns only local cells (owns + ghosts), non-local cells are skipped.
+ *
+ * Iterator is defined by:
+ *  - DOF handler cell accessor
+ *  - index of Neighbour on cell (iterated value)
+ *  - maximal index of Neighbour (allow to skip non-local cells)
+ *
+ * Note: Class is used only internally. Appropriate range method (DHCellAccessor::neighb_sides) uses convertible
+ * iterators and returns corresponding DHCellSide.
  */
 class DHNeighbSide {
 public:
-    /**
-     * Default invalid accessor.
-     */
+    /// Default invalid accessor.
 	DHNeighbSide() {}
 
     /**
-     * Valid accessor allows iterate over neighbor sides.
+     * @brief Valid accessor allows iterate over neighbor sides.
      *
      * @param dh_cell    Element of lower dim.
      * @param neighb_idx Index of neighbour.
      * @param max_idx    Maximal index of neighbour, method inc() doesn't set neighb_idx_ on higher value.
      */
-	DHNeighbSide(const DHCellAccessor &dh_cell, unsigned int neighb_idx, unsigned int max_idx=0)
+	DHNeighbSide(const DHCellAccessor &dh_cell, unsigned int neighb_idx, unsigned int max_idx)
     : dh_cell_(dh_cell), neighb_idx_(neighb_idx), max_idx_(max_idx)
     {
-        while ( (neighb_idx_<max_idx_) && (dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
+	    // Skip non-local cells
+	    while ( (neighb_idx_<max_idx_) && (dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
             dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx())) ) {
         	neighb_idx_++;
         }
     }
 
-	/// Check validity of accessor (see default constructor)
+	/// Check validity of accessor (see default constructor of DHCellAccessor)
     inline bool is_valid() const {
         return dh_cell_.is_valid();
     }
 
-    /// Iterates to next edge side.
+    /// Iterates to next neighbour side.
     inline void inc() {
+    	// Skip non-local cells
         do {
             neighb_idx_++;
-        	if (neighb_idx_>=max_idx_) break;
+        	if (neighb_idx_>=max_idx_) break; //stop condition at the end item of range
         } while ( dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
             dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx()) );
     }
@@ -391,7 +410,6 @@ inline Range<DHCellSide> DHCellAccessor::side_range() const {
 
 inline RangeConvert<DHNeighbSide, DHCellSide> DHCellAccessor::neighb_sides() const {
 	unsigned int upper_bound = this->elm()->n_neighs_vb();
-	DebugOut().every_proc() << "DHCellAccessor::neighb_sides " << upper_bound;
 	auto bgn_it = make_iter<DHNeighbSide, DHCellSide>( DHNeighbSide(*this, 0, upper_bound) );
 	auto end_it = make_iter<DHNeighbSide, DHCellSide>( DHNeighbSide(*this, upper_bound, upper_bound) );
 	return RangeConvert<DHNeighbSide, DHCellSide>(bgn_it, end_it);
