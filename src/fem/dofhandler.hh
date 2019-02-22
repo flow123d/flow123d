@@ -286,21 +286,24 @@ private:
     void init_cell_starts();
     
     /**
-     * @brief Initialize auxiliary vector of starting indices of nodal dofs.
+     * @brief Initialize auxiliary vector of starting indices of nodal/edge dofs.
      * 
-     * @param node_dof_starts Vector of starting indices (output).
+     * @param node_dof_starts Vector of nodal starting indices (output).
+     * @param edge_dof_starts Vector of edge starting indices (output).
      */
-    void init_node_dof_starts(std::vector<LongIdx> &node_dof_starts);
+    void init_dof_starts(std::vector<LongIdx> &node_dof_starts,
+                         std::vector<LongIdx> &edge_dof_starts);
     
     /**
-     * @brief Initialize node_status.
+     * @brief Initialize node_status and edge_status.
      * 
-     * Set VALID_NODE for nodes owned by local elements and
-     * INVALID_NODE for nodes owned by ghost elements.
+     * Set VALID_NODE for nodes/edges owned by local elements and
+     * INVALID_NODE for nodes/edges owned by ghost elements.
      * 
      * @param node_status Vector of nodal status (output).
      */
-    void init_node_status(std::vector<short int> &node_status);
+    void init_status(std::vector<short int> &node_status,
+                     std::vector<short int> &edge_status);
     
     /**
      * @brief Obtain dof numbers on ghost elements from other processor.
@@ -330,8 +333,9 @@ private:
                            const std::vector<bool> &update_cells,
                            const std::vector<LongIdx> &dofs,
                            const std::vector<LongIdx> &node_dof_starts,
-                           std::vector<LongIdx> &node_dofs
-                          );
+                           std::vector<LongIdx> &node_dofs,
+                           const std::vector<LongIdx> &edge_dof_starts,
+                           std::vector<LongIdx> &edge_dofs);
     
     /**
      * @brief Communicate local dof indices to all processors and create new sequential dof handler.
@@ -344,9 +348,9 @@ private:
     /**
      * Flags used during distribution of dofs to mark node and dof status.
      */
-    static const int INVALID_NODE  = 1;
-    static const int VALID_NODE    = 2;
-    static const int ASSIGNED_NODE = 3;
+    static const int INVALID_NFACE  = 1;
+    static const int VALID_NFACE    = 2;
+    static const int ASSIGNED_NFACE = 3;
     static const int INVALID_DOF   = -1;
     
     
