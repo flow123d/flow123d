@@ -35,6 +35,9 @@ private:
 
 class TestAccessor {
 public:
+    TestAccessor()
+    : handler_(nullptr), pos_(0) {}
+
     TestAccessor(const TestHandler *handler, unsigned int pos)
     : handler_(handler), pos_(pos) {}
 

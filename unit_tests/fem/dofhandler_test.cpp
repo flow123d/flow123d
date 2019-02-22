@@ -179,10 +179,11 @@ TEST(DHAccessors, dh_cell_accessors) {
     auto el_ds = mesh->get_el_ds();
     unsigned int i_distr=0;
 
-    std::vector<unsigned int> side_elm_idx;
+    std::vector<unsigned int> side_elm_idx, neigh_elem_idx;
     for( DHCellAccessor cell : dh.own_range() ) {
     	EXPECT_EQ( cell.elm_idx(), dh.mesh()->get_el_4_loc()[i_distr] );
-        for( DHCellSide cell_side : cell.side_range() ) {
+
+    	for( DHCellSide cell_side : cell.side_range() ) {
             EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
         	side_elm_idx.clear();
         	for( DHCellSide edge_side : cell_side.edge_sides() ) {
@@ -194,9 +195,16 @@ TEST(DHAccessors, dh_cell_accessors) {
             	EXPECT_EQ( side_elm_idx[sid], edg->side(sid)->element().idx());
             }
         }
-        for( DHNeighbSide neighb_side : cell.neighb_sides() ) {
-            EXPECT_EQ( cell.elm_idx(), neighb_side.cell_side().side()->elem_idx() );
+
+        neigh_elem_idx.clear();
+        for( DHCellSide neighb_side : cell.neighb_sides() ) {
+        	neigh_elem_idx.push_back( neighb_side.side()->elem_idx() );
         }
+        EXPECT_EQ( neigh_elem_idx.size(), cell.elm()->n_neighs_vb());
+        for (int nid=0; nid<cell.elm()->n_neighs_vb(); nid++) {
+        	EXPECT_EQ( neigh_elem_idx[nid], cell.elm()->neigh_vb[nid]->side()->elem_idx() );
+        }
+
     	++i_distr;
     }
 
