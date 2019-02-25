@@ -226,21 +226,35 @@ TEST(DHAccessors, dh_cell_accessors) {
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
     DOFHandlerMultiDim dh(*mesh);
     dh.distribute_dofs(ds);
-    auto dh_seq = dh.sequential();
     auto el_ds = mesh->get_el_ds();
     unsigned int i_distr=0;
 
-    for( DHCellAccessor cell : dh_seq->own_range() ) {
-    	EXPECT_EQ( cell.elm_idx(), dh_seq->mesh()->get_el_4_loc()[i_distr] );
-        for( DHCellSide cell_side : cell.side_range() ) {
-        	EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
-        	for( DHEdgeSide edge_side : cell_side.edge_sides() ) {
-        		EXPECT_EQ( cell.elm_idx(), edge_side.cell_side().side()->elem_idx() );
+    std::vector<unsigned int> side_elm_idx, neigh_elem_idx;
+    for( DHCellAccessor cell : dh.own_range() ) {
+    	EXPECT_EQ( cell.elm_idx(), dh.mesh()->get_el_4_loc()[i_distr] );
+
+    	for( DHCellSide cell_side : cell.side_range() ) {
+            EXPECT_EQ( cell.elm_idx(), cell_side.side()->elem_idx() );
+        	side_elm_idx.clear();
+        	for( DHCellSide edge_side : cell_side.edge_sides() ) {
+        		side_elm_idx.push_back( edge_side.side()->elem_idx() );
         	}
+            const Edge *edg = cell_side.side()->edge();
+            EXPECT_EQ( side_elm_idx.size(), edg->n_sides);
+            for (int sid=0; sid<edg->n_sides; sid++) {
+            	EXPECT_EQ( side_elm_idx[sid], edg->side(sid)->element().idx());
+            }
         }
-        for( DHNeighbSide neighb_side : cell.neighb_sides() ) {
-            EXPECT_EQ( cell.elm_idx(), neighb_side.cell_side().side()->elem_idx() );
+
+        neigh_elem_idx.clear();
+        for( DHCellSide neighb_side : cell.neighb_sides() ) {
+        	neigh_elem_idx.push_back( neighb_side.side()->elem_idx() );
         }
+        EXPECT_EQ( neigh_elem_idx.size(), cell.elm()->n_neighs_vb());
+        for (int nid=0; nid<cell.elm()->n_neighs_vb(); nid++) {
+        	EXPECT_EQ( neigh_elem_idx[nid], cell.elm()->neigh_vb[nid]->side()->elem_idx() );
+        }
+
     	++i_distr;
     }
 

@@ -26,29 +26,43 @@
  * Allow iterate in bounds given by begin and end iterator. Class can be used for iterable accessor classes.
  *
  * Template argument:
- *  - Object Type over its instances is iterated,
+ *  - ObjectIn  Type over its instances is iterated,
+ *  - ObjectOut Operators '*' and '->' returns objects of this type.
+ *
+ * Require the template object to implement:
+ *  - ObjectIn must be implicitly convertible to ObjectOut type.
  */
-template<class Object>
-class Range
+template<class ObjectIn, class ObjectOut>
+class RangeConvert
 {
 public:
 	/// Constructor.
-	Range(Iter<Object> begin, Iter<Object> end)
+	RangeConvert(IterConvert<ObjectIn, ObjectOut> begin, IterConvert<ObjectIn, ObjectOut> end)
 	: begin_(begin), end_(end) {}
 
 	/// Iterator to begin item of range.
-	Iter<Object> begin() {
+	IterConvert<ObjectIn, ObjectOut> begin() {
 		return begin_;
 	}
 
 	/// Iterator to end item of range.
-	Iter<Object> end() {
+	IterConvert<ObjectIn, ObjectOut> end() {
 		return end_;
 	}
 
 private:
-	Iter<Object> begin_;
-	Iter<Object> end_;
+	IterConvert<ObjectIn, ObjectOut> begin_;
+	IterConvert<ObjectIn, ObjectOut> end_;
 };
+
+
+/**
+ * @brief Range helper class.
+ *
+ * Same as previous but doesn't provide specialization of operators '*' and '->'.
+ */
+template<class Object>
+using Range = RangeConvert<Object, Object>;
+
 
 #endif // RANGE_WRAPPER_HH_
