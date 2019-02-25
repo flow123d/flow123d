@@ -297,8 +297,7 @@ public:
     : dh_cell_(dh_cell), neighb_idx_(neighb_idx), max_idx_(max_idx)
     {
 	    // Skip non-local cells
-	    while ( (neighb_idx_<max_idx_) && (dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
-            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx())) ) {
+	    while ( (neighb_idx_<max_idx_) && not_local_cell() ) {
         	neighb_idx_++;
         }
     }
@@ -314,8 +313,7 @@ public:
         do {
             neighb_idx_++;
         	if (neighb_idx_>=max_idx_) break; //stop condition at the end item of range
-        } while ( dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
-            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx()) );
+        } while ( not_local_cell() );
     }
 
     /// Comparison of accessors.
@@ -331,6 +329,12 @@ public:
     }
 
 private:
+    /// Check if cell side of neighbour is not local (allow skip invalid accessors).
+    inline bool not_local_cell() {
+        return ( dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
+            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx()) );
+    }
+
     /// Appropriate cell accessor.
     DHCellAccessor dh_cell_;
     /// Index into neigh_vb array
