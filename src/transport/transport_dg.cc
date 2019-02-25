@@ -1493,10 +1493,10 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
             double &transport_flux)
 {
     double delta[2];
-    double h = 0;
     double local_alpha = 0;
 
-    OLD_ASSERT(edg.side(s1)->valid(), "Invalid side of an edge.");
+    ASSERT(s1!=s2)(s1)(s2);
+    ASSERT(edg.side(s1)->valid()).error("Invalid side of an edge.");
     SideIter s = edg.side(s1);
 
     double h = s->diameter(); // diameter
@@ -1520,8 +1520,6 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
         transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
     else if (fluxes[s2] < 0 && fluxes[s1] > 0 && s1 < s2)
         transport_flux = fluxes[s1]*fabs(fluxes[s2]/nflux);
-    else if (s1==s2)
-        transport_flux = fluxes[s1];
     else
         transport_flux = 0;
 
@@ -1531,42 +1529,27 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
     // determine local DG penalty
     local_alpha = max(alpha1, alpha2);
 
-    if (s1 == s2)
+    delta[0] = 0;
+    delta[1] = 0;
+    for (int k=0; k<K_size; k++)
     {
-        omega[0] = 1;
-
-        // delta is set to the average value of Kn.n on the side
-        delta[0] = 0;
-        for (int k=0; k<K_size; k++)
-            delta[0] += dot(K1[k]*normal_vector,normal_vector);
-        delta[0] /= K_size;
-
-        gamma += local_alpha/h*aniso1*aniso2*delta[0];
+        delta[0] += dot(K1[k]*normal_vector,normal_vector);
+        delta[1] += dot(K2[k]*normal_vector,normal_vector);
     }
-    else
-    {
-        delta[0] = 0;
-        delta[1] = 0;
-        for (int k=0; k<K_size; k++)
-        {
-            delta[0] += dot(K1[k]*normal_vector,normal_vector);
-            delta[1] += dot(K2[k]*normal_vector,normal_vector);
-        }
-        delta[0] /= K_size;
-        delta[1] /= K_size;
+    delta[0] /= K_size;
+    delta[1] /= K_size;
 
-        double delta_sum = delta[0] + delta[1];
+    double delta_sum = delta[0] + delta[1];
 
 //        if (delta_sum > numeric_limits<double>::epsilon())
-        if (fabs(delta_sum) > 0)
-        {
-            omega[0] = delta[1]/delta_sum;
-            omega[1] = delta[0]/delta_sum;
-            gamma += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
-        }
-        else
-            for (int i=0; i<2; i++) omega[i] = 0;
+    if (fabs(delta_sum) > 0)
+    {
+        omega[0] = delta[1]/delta_sum;
+        omega[1] = delta[0]/delta_sum;
+        gamma += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
     }
+    else
+        for (int i=0; i<2; i++) omega[i] = 0;
 }
 
 
