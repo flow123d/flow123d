@@ -933,9 +933,10 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     for ( DHCellAccessor dh_cell : feo->dh()->local_range() )
         for( DHCellSide cell_side : dh_cell.side_range() )
         {
+        	if (cell_side.n_edge_sides()==0) continue; // skip "no-own" sides
             const Edge *edg = cell_side.side()->edge();
-            bool unique_edge = (edg->side(0)->element().idx() != dh_cell.elm_idx());
-    	    if ( (edg->n_sides < 2) || (edg->side(0)->element()->dim() != dim) || unique_edge ) continue;
+            bool unique_edge = (cell_side.edge_sides().begin()->side()->element().idx() != dh_cell.elm_idx());
+    	    if ( (cell_side.n_edge_sides() < 2) || (cell_side.edge_sides().begin()->side()->element()->dim() != dim) || unique_edge ) continue;
     	    sid=0;
         	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
@@ -955,7 +956,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
             // fluxes and penalty
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
-                vector<double> fluxes(edg->n_sides);
+                vector<double> fluxes(cell_side.n_edge_sides());
                 sid=0;
                 for( DHCellSide edge_side : cell_side.edge_sides() )
                 {
