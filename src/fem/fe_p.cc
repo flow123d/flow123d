@@ -237,6 +237,45 @@ FE_P_disc<dim>::FE_P_disc(unsigned int degree)
 
 
 
+
+
+
+template<unsigned int dim>
+FE_CR<dim>::FE_CR()
+: FiniteElement<dim>()
+{
+    this->function_space_ = std::make_shared<PolynomialSpace>(1,dim);
+    
+    if (dim == 0)
+    {
+        this->dofs_.push_back(Dof(0, 0, { 1 }, { 1 }, Value));
+    }
+    else
+    {
+        arma::vec::fixed<dim> sp; // support point
+        for (unsigned int sid=0; sid<RefElement<dim>::n_sides; ++sid)
+        {
+            sp.fill(0);
+            for (unsigned int i=0; i<RefElement<dim>::n_nodes_per_side; ++i)
+                sp += RefElement<dim>::node_coords(RefElement<dim>::interact(Interaction<0,dim-1>(sid))[i]);
+            sp /= RefElement<dim>::n_nodes_per_side;
+            // barycentric coordinates
+            arma::vec::fixed<dim+1> bsp;
+            bsp.subvec(1,dim) = sp;
+            bsp[0] = 1. - arma::sum(sp);
+            this->dofs_.push_back(Dof(dim-1, sid, bsp, { 1 }, Value));
+        }
+    }
+
+    this->setup_components();
+    this->compute_node_matrix();
+}
+
+
+
+
+
+
 template class FE_P<0>;
 template class FE_P<1>;
 template class FE_P<2>;
@@ -247,3 +286,10 @@ template class FE_P_disc<0>;
 template class FE_P_disc<1>;
 template class FE_P_disc<2>;
 template class FE_P_disc<3>;
+
+
+template class FE_CR<0>;
+template class FE_CR<1>;
+template class FE_CR<2>;
+template class FE_CR<3>;
+

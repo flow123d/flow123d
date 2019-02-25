@@ -53,6 +53,37 @@ unsigned int EqualOrderDiscreteSpace::n_elem_dofs(const ElementAccessor<3> &cell
 }
 
 
+unsigned int EqualOrderDiscreteSpace::n_edge_dofs(const Edge &edge) const
+{
+    unsigned int n_dofs = 0;
+    unsigned int dim = edge.side(0)->dim();
+    switch (dim+1)
+    {
+        case 0:
+            for (unsigned int d=0; d<fe0_->n_dofs(); d++)
+                if (fe0_->dof(d).dim == dim && fe0_->dof(d).n_face_idx == 0)
+                    n_dofs++;
+            break;
+        case 1:
+            for (unsigned int d=0; d<fe1_->n_dofs(); d++)
+                if (fe1_->dof(d).dim == dim && fe1_->dof(d).n_face_idx == 0)
+                    n_dofs++;
+            break;
+        case 2:
+            for (unsigned int d=0; d<fe2_->n_dofs(); d++)
+                if (fe2_->dof(d).dim == dim && fe2_->dof(d).n_face_idx == 0)
+                    n_dofs++;
+            break;
+        case 3:
+            for (unsigned int d=0; d<fe3_->n_dofs(); d++)
+                if (fe3_->dof(d).dim == dim && fe3_->dof(d).n_face_idx == 0)
+                    n_dofs++;
+            break;
+    }
+    return n_dofs;
+}
+
+
 unsigned int EqualOrderDiscreteSpace::n_node_dofs(unsigned int nid) const
 {
     unsigned int n_dofs = 0;
