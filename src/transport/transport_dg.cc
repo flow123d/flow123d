@@ -1499,17 +1499,7 @@ void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
     OLD_ASSERT(edg.side(s1)->valid(), "Invalid side of an edge.");
     SideIter s = edg.side(s1);
 
-    // calculate the side diameter
-    if (s->dim() == 0)
-    {
-        h = 1;
-    }
-    else
-    {
-        for (unsigned int i=0; i<s->n_nodes(); i++)
-            for (unsigned int j=i+1; j<s->n_nodes(); j++)
-                h = max(h, s->node(i)->distance(*s->node(j).node()));
-    }
+    double h = s->diameter(); // diameter
     
     double aniso1 = elem_anisotropy(edg.side(s1)->element());
     double aniso2 = elem_anisotropy(edg.side(s2)->element());

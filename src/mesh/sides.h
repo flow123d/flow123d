@@ -42,10 +42,11 @@ public:
     : mesh_(NULL), elem_idx_(0), side_idx_(0)
     {}
 
-    inline Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum);
-    double measure() const;
-    arma::vec3 centre() const; // Centre of side
-    arma::vec3 normal() const; // Vector of (generalized) normal
+    inline Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum); ///< Constructor
+    double measure() const;    ///<
+    arma::vec3 centre() const; ///< Centre of side
+    arma::vec3 normal() const; ///< Vector of (generalized) normal
+    double diameter() const;   ///< Calculate the side diameter.
 
     /**
      * Returns number of nodes of the side.
