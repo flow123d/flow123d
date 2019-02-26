@@ -31,7 +31,8 @@
  * Helper class, allow to simplify computing value of FieldFE.
  *
  * Use correct method FEValues<...>::shape_xxx given with Value::rank_.
- * Practical use have only instances with rank template parameters 0 and 1 (Scalar and Vector Fields, see below).
+ * Is done by class partial specialization as, we were not able to do this using function overloading (since
+ * they differ only by return value) and partial specialization of the function templates is not supported  in C++.
  */
 template<int rank, int elemdim, int spacedim, class Value>
 class FEShapeHandler {
@@ -141,7 +142,7 @@ void FEValueHandler<elemdim, spacedim, Value>::value_list(const std::vector< Poi
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<dh_->ds()->fe<elemdim>(elm)->n_dofs(); i++) {
-			value_list[k] += (*data_vec_)[dof_indices[i]]
+			value_list[k] += data_vec_[dof_indices[i]]
 										  * FEShapeHandler<Value::rank_, elemdim, spacedim, Value>::fe_value(fe_values, i, 0, comp_index_);
 		}
 	}
@@ -204,7 +205,7 @@ void FEValueHandler<0, spacedim, Value>::value_list(const std::vector< Point >  
 		Value envelope(value_list[k]);
 		envelope.zeros();
 		for (unsigned int i=0; i<dh_->ds()->fe<0>(elm)->n_dofs(); i++) {
-			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += (*data_vec_)[dof_indices[i]];
+			envelope(i / envelope.n_cols(), i % envelope.n_rows()) += data_vec_[dof_indices[i]];
 		}
 	}
 }

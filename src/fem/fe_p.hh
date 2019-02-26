@@ -117,39 +117,18 @@ public:
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/**
+ * @brief Crouzeix-Raviart finite element on @p dim dimensional simplex.
+ * 
+ * Consists of linear functions with continuity at side barycenters.
+ */
+template<unsigned int dim>
+class FE_CR : public FiniteElement<dim>
+{
+public:
+    FE_CR();
+    
+};
 
 
 

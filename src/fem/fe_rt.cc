@@ -57,6 +57,9 @@ const arma::vec RT0_space::basis_grad(unsigned int basis_index,
 }
 
 
+template<> FE_RT0<0>::FE_RT0()
+{
+}
 
 
 
@@ -79,7 +82,7 @@ FE_RT0<dim>::FE_RT0()
         bsp.subvec(1,dim) = sp;
         bsp[0] = 1. - arma::sum(sp);
         // The dof (flux through side) is computed as scalar product of the value with normal vector times side measure.
-        this->dofs_.push_back(Dof(dim, 0, bsp, RefElement<dim>::normal_vector(sid)*RefElement<dim>::side_measure(sid), Value));
+        this->dofs_.push_back(Dof(dim-1, sid, bsp, RefElement<dim>::normal_vector(sid)*RefElement<dim>::side_measure(sid), Value));
     }
     this->component_indices_.clear();
     this->nonzero_components_.resize(this->dofs_.size(), std::vector<bool>(this->n_components(), true));
@@ -90,7 +93,7 @@ FE_RT0<dim>::FE_RT0()
 
 
 
-
+template class FE_RT0<0>;
 template class FE_RT0<1>;
 template class FE_RT0<2>;
 template class FE_RT0<3>;

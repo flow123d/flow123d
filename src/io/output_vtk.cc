@@ -29,7 +29,6 @@
 #include "la/distribution.hh"
 
 #include "config.h"
-#include <zlib.h>
 
 FLOW123D_FORCE_LINK_IN_CHILD(vtk)
 
@@ -330,19 +329,19 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 	static const size_t BUF_SIZE = 32 * 1024;
 
 	string uncompressed_string = uncompressed_stream.str();  // full uncompressed string
-	uLong uncompressed_size = uncompressed_string.size();    // size of uncompressed string
+	zlib_ulong uncompressed_size = uncompressed_string.size();    // size of uncompressed string
 	stringstream compressed_data;                            // helper stream stores blocks of compress data
 
-	uLong count_of_blocks = (uncompressed_size + BUF_SIZE - 1) / BUF_SIZE;
-	uLong last_block_size = (uncompressed_size % BUF_SIZE);
+	zlib_ulong count_of_blocks = (uncompressed_size + BUF_SIZE - 1) / BUF_SIZE;
+	zlib_ulong last_block_size = (uncompressed_size % BUF_SIZE);
 	compressed_stream.write(reinterpret_cast<const char*>(&count_of_blocks), sizeof(unsigned long long int));
 	compressed_stream.write(reinterpret_cast<const char*>(&BUF_SIZE), sizeof(unsigned long long int));
 	compressed_stream.write(reinterpret_cast<const char*>(&last_block_size), sizeof(unsigned long long int));
 
-	for (uLong i=0; i<count_of_blocks; ++i) {
+	for (zlib_ulong i=0; i<count_of_blocks; ++i) {
 		// get block of data for compression
 		std::string data_block = uncompressed_string.substr(i*BUF_SIZE, BUF_SIZE);
-		uLong data_block_size = data_block.size();
+		zlib_ulong data_block_size = data_block.size();
 
 		std::vector<uint8_t> buffer;
 		uint8_t temp_buffer[BUF_SIZE];
@@ -382,7 +381,7 @@ void OutputVTK::compress_data(stringstream &uncompressed_stream, stringstream &c
 
 		// store compress data and its size to streams
 		std::string str(buffer.begin(), buffer.end());
-		uLong compressed_data_size = str.size();
+		zlib_ulong compressed_data_size = str.size();
 		compressed_stream.write(reinterpret_cast<const char*>(&compressed_data_size), sizeof(unsigned long long int));
 		compressed_data << str;
 	}

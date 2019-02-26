@@ -2,11 +2,11 @@
 #include <flow_gtest_mpi.hh>
 #include <cmath>
 #include "fem/fe_p.hh"
+#include "fem/fe_rt.hh"
 #include "mesh/mesh.h"
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
 #include "fem/dh_cell_accessor.hh"
-#include "mesh/range_wrapper.hh"
 
 
 
@@ -163,6 +163,56 @@ TEST(DOFHandler, test_all) {
   }
 
 }
+
+
+
+// distribute dofs for continuous RT0 finite element.
+// The test checks that the dofs are
+// shared by adjacent elements
+// except for the dofs separated by line elements.
+TEST(DOFHandler, test_rt)
+{
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
+
+    FE_RT0<0> fe0;
+    FE_RT0<1> fe1;
+    FE_RT0<2> fe2;
+    FE_RT0<3> fe3;
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe0, &fe1, &fe2, &fe3);
+    DOFHandlerMultiDim dh(*mesh);
+    dh.distribute_dofs(ds);
+
+     EXPECT_EQ( 17, dh.n_global_dofs() );
+
+    dh.print();
+
+    std::vector<int> indices[8];
+    std::vector<bool> own_elem(8, false); // hold if cell is own or ghost on process and can be evaluated (see tests)
+    for ( DHCellAccessor cell : dh.local_range() )
+    {
+        auto elem_idx = cell.elm_idx();
+        own_elem[elem_idx] = true;
+        indices[elem_idx].resize(dh.max_elem_dofs());
+        cell.get_dof_indices(indices[elem_idx]);
+    }
+
+    // dof at el. 1 side 1 equals dof at el. 2 side 0
+    if (own_elem[0] & own_elem[1]) EXPECT_EQ( indices[0][1], indices[1][0] );
+    
+    // dof at el. 1 side 1 equals dof at el. 3 side 0
+    if (own_elem[0] & own_elem[2]) EXPECT_EQ( indices[0][1], indices[2][0] );
+    
+    // dof at el. 4 side 2 equals dof at el. 6 side 0
+    if (own_elem[3] & own_elem[5]) EXPECT_EQ( indices[3][2], indices[5][0] );
+    
+    // dof at el. 6 side 1 equals dof at el. 8 side 0
+    if (own_elem[5] & own_elem[7]) EXPECT_EQ( indices[5][1], indices[7][0] );
+
+    delete mesh;
+
+}
+
 
 
 TEST(DHAccessors, dh_cell_accessors) {
