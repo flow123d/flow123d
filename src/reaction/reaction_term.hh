@@ -28,6 +28,7 @@
 #include "input/input_exception.hh"  // for DECLARE_INPUT_EXCEPTION, Exception
 #include "system/exceptions.hh"      // for ExcStream, operator<<, EI, TYPED...
 #include "transport/substance.hh"    // for SubstanceList
+#include "fem/dofhandler.hh"         // for DOFHandlerMultiDim
 
 class Distribution;
 class Mesh;
@@ -106,12 +107,14 @@ public:
   /// Disable changes in TimeGovernor by empty method.
   void choose_next_time(void) override;
 
-protected:
-  /**
-   * Communicate parallel concentration vectors into sequential output vector.
-   */
-  virtual void output_vector_gather(void){};
+  /// Sets the pointer to DOF handler (shared through the reaction tree)
+  ReactionTerm &set_dh(std::shared_ptr<DOFHandlerMultiDim> dof_handler)
+  {
+	  dof_handler_ = dof_handler;
+	  return *this;
+  }
 
+protected:
   /**
    * Computation of reaction term on a single element.
    * Inputs should be loc_el and local copies of concentrations of the element, which is then returned.
@@ -139,6 +142,9 @@ protected:
 
   /// Pointer to a transport output stream.
   std::shared_ptr<OutputTime> output_stream_;
+
+  /// Pointer to DOF handler used through the reaction tree
+  std::shared_ptr<DOFHandlerMultiDim> dof_handler_;
 
 };
 

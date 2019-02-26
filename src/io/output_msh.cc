@@ -38,10 +38,10 @@ using namespace Input::Type;
 class DummyOutputData : public ElementDataCacheBase {
 public:
 
-    DummyOutputData(std::string field_name_in, ElementDataCacheBase::NumCompValueType n_elem_in)
+    DummyOutputData(std::string field_name_in, unsigned int n_comp_in)
    {
         this->field_input_name_ = field_name_in;
-        this->n_elem_ = n_elem_in;
+        this->n_comp_ = n_comp_in;
         this->n_values_ = 1;
     }
 
@@ -50,12 +50,12 @@ public:
 
     void print_ascii(ostream &out_stream, unsigned int idx) override
     {
-        for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
     void print_ascii_all(ostream &out_stream) override
     {
-        for(unsigned int i=0; i< n_elem_;i++) out_stream << 0 << " ";
+        for(unsigned int i=0; i< n_comp_;i++) out_stream << 0 << " ";
     }
 
     void print_binary_all(ostream &out_stream, bool print_data_size = true) override
@@ -74,6 +74,27 @@ public:
 
     void read_binary_data(std::istream &data_stream, unsigned int n_components, unsigned int i_row) override
     {}
+
+    std::shared_ptr< ElementDataCacheBase > gather(Distribution *distr, LongIdx *local_to_global) override
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
+
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_fixed_size(std::vector<unsigned int> &offset_vec) override
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
+
+    std::shared_ptr< ElementDataCacheBase > element_node_cache_optimize_size(std::vector<unsigned int> &offset_vec) override
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
+
+    std::shared_ptr< ElementDataCacheBase > compute_node_data(std::vector<unsigned int> &conn_vec, unsigned int data_size) override
+    {
+    	return std::make_shared<DummyOutputData>(this->field_input_name_, this->n_comp_);
+    }
+
 };
 
 
@@ -213,7 +234,7 @@ void OutputMSH::write_node_data(OutputDataPtr output_data)
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
-    file << output_data->n_elem() << endl;   // number of components
+    file << output_data->n_comp() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
     this->write_msh_ascii_data(this->node_ids_, output_data);
@@ -237,7 +258,7 @@ void OutputMSH::write_corner_data(OutputDataPtr output_data)
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
-    file << output_data->n_elem() << endl;   // number of components
+    file << output_data->n_comp() << endl;   // number of components
     file << this->offsets_->n_values() << endl; // number of values
 
     this->write_msh_ascii_data(this->elem_ids_, output_data, true);
@@ -260,7 +281,7 @@ void OutputMSH::write_elem_data(OutputDataPtr output_data)
 
     file << "3" << endl;     // 3 integer tags
     file << this->current_step << endl;    // step number (start = 0)
-    file << output_data->n_elem() << endl;   // number of components
+    file << output_data->n_comp() << endl;   // number of components
     file << output_data->n_values() << endl;  // number of values
 
     this->write_msh_ascii_data(this->elem_ids_, output_data);
@@ -285,15 +306,18 @@ int OutputMSH::write_head(void)
 
 int OutputMSH::write_data(void)
 {
+    /* Output of serial format is implemented only in the first process */
+    if (this->rank_ != 0) {
+        return 0;
+    }
+
     // Write header with mesh, when it hasn't been written to output file yet
     if(this->header_written == false) {
-        if(this->rank == 0) {
-            this->fix_main_file_extension(".msh");
-            try {
-                this->_base_filename.open_stream( this->_base_file );
-                this->set_stream_precision(this->_base_file);
-            } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
-        }
+        this->fix_main_file_extension(".msh");
+        try {
+            this->_base_filename.open_stream( this->_base_file );
+            this->set_stream_precision(this->_base_file);
+        } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, input_record_)
 
         this->write_head();
         this->header_written = true;
@@ -342,7 +366,7 @@ void OutputMSH::add_dummy_fields()
         // Collect all output fields
 		if (dummy_data_list.size() == 0)
 			for(auto out_ptr : data_list)
-				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_elem()));
+				dummy_data_list.push_back( std::make_shared<DummyOutputData>(out_ptr->field_input_name(), out_ptr->n_comp()));
 
 	    auto data_it = data_list.begin();
 	    for(auto dummy_it = dummy_data_list.begin(); dummy_it != dummy_data_list.end(); ++dummy_it) {
@@ -360,12 +384,12 @@ void OutputMSH::add_dummy_fields()
 
 
 void OutputMSH::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-	OutputTime::set_output_data_caches(mesh_ptr);
+    OutputTime::set_output_data_caches(mesh_ptr);
 
-	mesh_ptr->create_id_caches();
-	this->node_ids_ = mesh_ptr->node_ids_;
-	this->elem_ids_ = mesh_ptr->elem_ids_;
-	this->region_ids_ = mesh_ptr->region_ids_;
-	this->partitions_ = mesh_ptr->partitions_;
+    mesh_ptr->get_master_mesh()->create_id_caches();
+    this->node_ids_ = mesh_ptr->get_master_mesh()->node_ids_;
+    this->elem_ids_ = mesh_ptr->get_master_mesh()->elem_ids_;
+    this->region_ids_ = mesh_ptr->get_master_mesh()->region_ids_;
+    this->partitions_ = mesh_ptr->get_master_mesh()->partitions_;
 }
 

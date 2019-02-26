@@ -284,7 +284,7 @@ void Elasticity::initialize()
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>);
-    output_field_ptr->set_fe_data(feo->dh(), 0, &output_vec);
+    output_field_ptr->set_fe_data(feo->dh(), 0, output_vec);
     data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0.);
     data_.output_type(OutputTime::CORNER_DATA);
 
@@ -298,7 +298,7 @@ void Elasticity::initialize()
     // allocate matrix and vector structures
     ls = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
     ( (LinSys_PETSC *)ls )->set_from_input( input_rec.val<Input::Record>("solver") );
-    ls->set_solution(NULL);
+    ls->set_solution(output_vec.petsc_vec());
 
     // initialization of balance object
 //     balance_->allocate(feo->dh()->distr()->lsize(),
