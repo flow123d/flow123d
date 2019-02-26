@@ -56,7 +56,6 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
-class DHCellSide;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;

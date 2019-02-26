@@ -43,7 +43,7 @@ public:
     {}
 
     inline Side(const Mesh * mesh, unsigned int elem_idx, unsigned int set_lnum); ///< Constructor
-    double measure() const;    ///<
+    double measure() const;    ///< Calculate metrics of the side
     arma::vec3 centre() const; ///< Centre of side
     arma::vec3 normal() const; ///< Vector of (generalized) normal
     double diameter() const;   ///< Calculate the side diameter.
