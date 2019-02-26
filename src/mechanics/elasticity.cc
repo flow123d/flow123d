@@ -273,18 +273,16 @@ void Elasticity::initialize()
 //     balance_ = std::make_shared<Balance>("mechanics", mesh_);
 //     balance_->init_from_input(input_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-//     balance_->add_quantity("load");
-//     balance_->units(UnitSI().m(2).kg().s(-2));
-
-	int rank;
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
-    output_vec.resize(output_vector_size);
-    data_.output_type(OutputTime::NODE_DATA);
+    data_.balance_idx_ = {
+        balance_->add_quantity("force_x"),
+        balance_->add_quantity("force_y"),
+        balance_->add_quantity("force_z")
+    };
+    balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>);
-    output_field_ptr->set_fe_data(feo->dh(), 0, output_vec);
+    output_vec = output_field_ptr->set_fe_data(feo->dh());
     data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0.);
     data_.output_type(OutputTime::CORNER_DATA);
 

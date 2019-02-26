@@ -49,7 +49,6 @@ class Neighbour;
 class SideIter;
 class BCMesh;
 class DuplicateNodes;
-template <class Object> class Range;
 template <int spacedim> class ElementAccessor;
 template <int spacedim> class NodeAccessor;
 
@@ -62,9 +61,6 @@ template <int spacedim> class NodeAccessor;
  *  This parameter limits volume of elements from below.
  */
 #define MESH_CRITICAL_VOLUME 1.0E-12
-
-typedef Iter<ElementAccessor<3>> ElementIter;
-typedef Iter<NodeAccessor<3>> NodeIter;
 
 class BoundarySegment {
 public:
@@ -247,11 +243,6 @@ public:
      * Returns nodes_elements vector, if doesn't exist creates its.
      */
     vector<vector<unsigned int> > const & node_elements();
-
-//    /// Vector of nodes of the mesh.
-//    NodeVector node_vector;
-//    /// Vector of elements of the mesh.
-//    ElementVector element;
 
     /// Vector of boundary sides where is prescribed boundary condition.
     /// TODO: apply all boundary conditions in the main assembling cycle over elements and remove this Vector.

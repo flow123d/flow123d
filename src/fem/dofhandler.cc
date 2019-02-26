@@ -79,24 +79,35 @@ void DOFHandlerMultiDim::init_cell_starts()
 }
 
 
-void DOFHandlerMultiDim::init_node_dof_starts(std::vector<LongIdx> &node_dof_starts)
+void DOFHandlerMultiDim::init_dof_starts(
+    std::vector<LongIdx> &node_dof_starts,
+    std::vector<LongIdx> &edge_dof_starts)
 {
     // initialize dofs on nodes
     // We must separate dofs for dimensions because FE functions
     // may be discontinuous on nodes shared by different
     // dimensions.
     unsigned int n_node_dofs = 0;
-    
     for (unsigned int nid=0; nid<mesh_->tree->n_nodes(); nid++)
     {
       node_dof_starts.push_back(n_node_dofs);
       n_node_dofs += ds_->n_node_dofs(nid);
     }
     node_dof_starts.push_back(n_node_dofs);
+    
+    unsigned int n_edge_dofs = 0;
+    for (unsigned int i=0; i<mesh_->n_edges(); i++)
+    {
+        edge_dof_starts.push_back(n_edge_dofs);
+        n_edge_dofs += ds_->n_edge_dofs(mesh_->edges[i]);
+    }
+    edge_dof_starts.push_back(n_edge_dofs);
 }
 
 
-void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
+void DOFHandlerMultiDim::init_status(
+    std::vector<short int> &node_status,
+    std::vector<short int> &edge_status)
 {
     // mark local dofs
 	for (auto cell : this->own_range())
@@ -104,7 +115,7 @@ void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
       for (unsigned int n=0; n<cell.dim()+1; n++)
       {
         unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[n];
-        node_status[nid] = VALID_NODE;
+        node_status[nid] = VALID_NFACE;
       }
     }
     
@@ -116,7 +127,24 @@ void DOFHandlerMultiDim::init_node_status(std::vector<short int> &node_status)
         for (unsigned int n=0; n<cell.dim()+1; n++)
         {
           unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[n];
-          node_status[nid] = INVALID_NODE;
+          node_status[nid] = INVALID_NFACE;
+        }
+      }
+    }
+    
+    // mark local edges
+    for (auto eid : edg_4_loc)
+        edge_status[eid] = VALID_NFACE;
+    
+    // unmark dofs on ghost cells from lower procs
+	for (auto cell : this->ghost_range())
+    {
+      if (cell.elm().proc() < el_ds_->myp())
+      {
+        for (unsigned int n=0; n<cell.dim()+1; n++)
+        {
+          unsigned int eid = cell.elm().side(n)->edge_idx();
+          edge_status[eid] = INVALID_NFACE;
         }
       }
     }
@@ -178,8 +206,9 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                                            const std::vector<bool> &update_cells,
                                            const std::vector<LongIdx> &dofs, 
                                            const std::vector<LongIdx> &node_dof_starts,
-                                           std::vector<LongIdx> &node_dofs
-                                          )
+                                           std::vector<LongIdx> &node_dofs,
+                                           const std::vector<LongIdx> &edge_dof_starts,
+                                           std::vector<LongIdx> &edge_dofs)
 {
     // update dof_indices on ghost cells
     unsigned int dof_offset=0;
@@ -191,6 +220,7 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             dof_indices[cell_starts[dh_cell.local_idx()]+dof] = dofs[dof_offset+dof];
         
         vector<unsigned int> loc_node_dof_count(dh_cell.elm()->n_nodes(), 0);
+        vector<unsigned int> loc_edge_dof_count(dh_cell.elm()->n_sides(), 0);
         for (unsigned int idof = 0; idof<dh_cell.n_dofs(); ++idof)
         {
             if (dh_cell.cell_dof(idof).dim == 0)
@@ -205,6 +235,19 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
                 }
                 
                 loc_node_dof_count[dof_nface_idx]++;
+            }
+            else if (dh_cell.cell_dof(idof).dim == dh_cell.dim()-1)
+            {   // update edge dof
+                unsigned int dof_nface_idx = dh_cell.cell_dof(idof).n_face_idx;
+                unsigned int eid = dh_cell.elm().side(dof_nface_idx)->edge_idx();
+                    
+                if (edge_dofs[edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx]] == INVALID_DOF)
+                {
+                    edge_dofs[edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx]] = dofs[dof_offset+idof];
+                    local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
+                }
+                
+                loc_edge_dof_count[dof_nface_idx]++;
             }
             else if (dh_cell.cell_dof(idof).dim == dh_cell.dim())
             {
@@ -222,17 +265,26 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
         
         // loop over element dofs
         vector<unsigned int> loc_node_dof_count(cell.elm()->n_nodes(), 0);
+        vector<unsigned int> loc_edge_dof_count(cell.elm()->n_sides(), 0);
         for (unsigned int idof = 0; idof<cell.n_dofs(); ++idof)
         {
+            unsigned int dof_nface_idx = cell.cell_dof(idof).n_face_idx;
             if (cell.cell_dof(idof).dim == 0)
             {
-                unsigned int dof_nface_idx = cell.cell_dof(idof).n_face_idx;
                 if (dof_indices[cell_starts[cell.local_idx()]+idof] == INVALID_DOF)
                 {   // update nodal dof
                     unsigned int nid = mesh_->tree->objects(cell.dim())[mesh_->tree->obj_4_el()[cell.elm_idx()]].nodes[dof_nface_idx];
                     dof_indices[cell_starts[cell.local_idx()]+idof] = node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]];
                 }
                 loc_node_dof_count[dof_nface_idx]++;
+            } else if (cell.cell_dof(idof).dim == cell.dim()-1)
+            {
+                if (dof_indices[cell_starts[cell.local_idx()]+idof] == INVALID_DOF)
+                {   // update edge dof
+                    unsigned int eid = cell.elm().side(dof_nface_idx)->edge_idx();
+                    dof_indices[cell_starts[cell.local_idx()]+idof] = edge_dofs[edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx]];
+                }
+                loc_edge_dof_count[dof_nface_idx]++;
             }
         }
     }
@@ -246,15 +298,17 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     
     ds_ = ds;
 
-    std::vector<LongIdx> node_dofs, node_dof_starts;
-    std::vector<short int> node_status(mesh_->tree->n_nodes(), INVALID_NODE);
+    std::vector<LongIdx> node_dofs, node_dof_starts, edge_dofs, edge_dof_starts;
+    std::vector<short int> node_status(mesh_->tree->n_nodes(), INVALID_NFACE),
+                           edge_status(mesh_->n_edges(), INVALID_NFACE);
     std::vector<bool> update_cells(el_ds_->lsize(), false);
     unsigned int next_free_dof = 0;
 
     init_cell_starts();
-    init_node_dof_starts(node_dof_starts);
+    init_dof_starts(node_dof_starts, edge_dof_starts);
     node_dofs.resize(node_dof_starts[node_dof_starts.size()-1], (LongIdx)INVALID_DOF);
-    init_node_status(node_status);
+    edge_dofs.resize(edge_dof_starts[edge_dof_starts.size()-1], (LongIdx)INVALID_DOF);
+    init_status(node_status, edge_status);
     
     // Distribute dofs on local elements.
     dof_indices.resize(cell_starts[cell_starts.size()-1]);
@@ -264,6 +318,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
       
       // loop over element dofs
       vector<unsigned int> loc_node_dof_count(cell.elm()->n_nodes(), 0);
+      vector<unsigned int> loc_edge_dof_count(cell.elm()->dim()+1, 0);
       for (unsigned int idof = 0; idof<cell.n_dofs(); ++idof)
       {
         unsigned int dof_dim = cell.cell_dof(idof).dim;
@@ -276,15 +331,15 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
                 
             switch (node_status[nid])
             {
-            case VALID_NODE:
+            case VALID_NFACE:
                 for (int i=0; i<node_dof_starts[nid+1] - node_dof_starts[nid]; i++)
                 {
                     local_to_global_dof_idx_.push_back(next_free_dof);
                     node_dofs[node_dof_starts[nid]+i] = next_free_dof++;
                 }
-                node_status[nid] = ASSIGNED_NODE;
+                node_status[nid] = ASSIGNED_NFACE;
                 break;
-            case INVALID_NODE:
+            case INVALID_NFACE:
                 node_dofs[node_dof_idx] = INVALID_DOF;
                 update_cells[cell.local_idx()] = true;
                 break;
@@ -292,9 +347,30 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
             dof_indices[cell_starts[cell.local_idx()]+idof] = node_dofs[node_dof_idx];
             loc_node_dof_count[dof_nface_idx]++;
         }
+        else if (dof_dim == cell.dim()-1)
+        {   // add dofs shared by edges
+            unsigned int eid = cell.elm().side(dof_nface_idx)->edge_idx();
+            unsigned int edge_dof_idx = edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx];
+            switch (edge_status[eid])
+            {
+            case VALID_NFACE:
+                for (int i=0; i<edge_dof_starts[eid+1] - edge_dof_starts[eid]; i++)
+                {
+                    local_to_global_dof_idx_.push_back(next_free_dof);
+                    edge_dofs[edge_dof_starts[eid]+i] = next_free_dof++;
+                }
+                edge_status[eid] = ASSIGNED_NFACE;
+                break;
+            case INVALID_NFACE:
+                edge_dofs[edge_dof_idx] = INVALID_DOF;
+                update_cells[cell.local_idx()] = true;
+                break;
+            }
+            dof_indices[cell_starts[cell.local_idx()]+idof] = edge_dofs[edge_dof_idx];
+            loc_edge_dof_count[dof_nface_idx]++;
+        }
         else if (dof_dim == cell.dim())
-        {
-            // add dofs owned only by the element
+        {   // add dofs owned only by the element
             local_to_global_dof_idx_.push_back(next_free_dof);
             dof_indices[cell_starts[cell.local_idx()]+idof] = next_free_dof++;
         }
@@ -303,6 +379,7 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
       }
     }
     node_status.clear();
+    edge_status.clear();
     
     lsize_ = next_free_dof;
 
@@ -333,7 +410,14 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
                 receive_ghost_dofs(proc, dofs);
                 
                 // update dof_indices and node_dofs on ghost elements
-                update_local_dofs(proc, update_cells, dofs, node_dof_starts, node_dofs);
+                update_local_dofs(proc,
+                                  update_cells,
+                                  dofs,
+                                  node_dof_starts,
+                                  node_dofs,
+                                  edge_dof_starts,
+                                  edge_dofs
+                                 );
                 
             }
             else
@@ -343,6 +427,8 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     update_cells.clear();
     node_dofs.clear();
     node_dof_starts.clear();
+    edge_dofs.clear();
+    edge_dof_starts.clear();
 }
 
 
@@ -467,7 +553,7 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const ElementAccessor<3> &c
   LongIdx cell_idx = global_to_local_el_idx_.at(cell.idx());
   ndofs = cell_starts[cell_idx+1]-cell_starts[cell_idx];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = cell_starts[cell_idx]+k;
+    indices[k] = dof_indices[cell_starts[cell_idx]+k]-loffset_;
 
   return ndofs;
 }

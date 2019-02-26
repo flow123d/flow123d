@@ -22,6 +22,7 @@
 #include <ostream>         // for ofstream, stringstream, ostringstream
 #include <string>          // for string
 #include "output_time.hh"  // for OutputTime, OutputTime::OutputDataFieldVec
+#include <zlib.h>
 
 class Mesh;
 namespace Input {
@@ -43,6 +44,7 @@ class OutputVTK : public OutputTime {
 
 public:
 	typedef OutputTime FactoryBaseType;
+	typedef uLong zlib_ulong;
 
 
     /**
