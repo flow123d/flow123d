@@ -967,6 +967,16 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     ++sid;
                 }
 
+                // calculate the total in- and out-flux through the edge
+                double pflux = 0, nflux = 0;
+                for (int i=0; i<cell_side.n_edge_sides(); i++)
+                {
+                    if (fluxes[i] > 0)
+                        pflux += fluxes[i];
+                    else
+                        nflux += fluxes[i];
+                }
+
                 s1=0;
                 for( DHCellSide edge_side1 : cell_side.edge_sides() )
                 {
@@ -980,7 +990,8 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                         arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
                         // set up the parameters for DG method
-                        set_DG_parameters_edge(*edg, s1, s2, qsize, dif_coef_edg[s1][sbi], dif_coef_edg[s2][sbi], fluxes, fe_values[0]->normal_vector(0), dg_penalty[s1][sbi], dg_penalty[s2][sbi], gamma_l, omega, transport_flux);
+                        set_DG_parameters_edge(*edg, edge_side1, edge_side2, s1, s2, qsize, dif_coef_edg[s1][sbi], dif_coef_edg[s2][sbi], fluxes,
+                        		pflux, nflux, fe_values[0]->normal_vector(0), max(dg_penalty[s1][sbi], dg_penalty[s2][sbi]), gamma_l, omega, transport_flux);
 
                         int sd[2]; bool is_side_own[2];
                         sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
@@ -1480,55 +1491,41 @@ double elem_anisotropy(ElementAccessor<3> e)
 
 template<class Model>
 void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
+            DHCellSide cell_side1,
+			DHCellSide cell_side2,
             const int s1,
             const int s2,
             const int K_size,
             const vector<arma::mat33> &K1,
             const vector<arma::mat33> &K2,
             const vector<double> &fluxes,
+			double pflux,
+			double nflux,
             const arma::vec3 &normal_vector,
-            const double alpha1,
-            const double alpha2,
+            double local_alpha,
             double &gamma,
             double *omega,
             double &transport_flux)
 {
     double delta[2];
-    double local_alpha = 0;
 
-    ASSERT(s1!=s2)(s1)(s2);
-    ASSERT(edg.side(s1)->valid()).error("Invalid side of an edge.");
-    SideIter s = edg.side(s1);
+    ASSERT_LT(s1,s2);
 
-    double h = s->diameter(); // diameter
+    double h = cell_side1.side()->diameter(); // diameter
     
-    double aniso1 = elem_anisotropy(edg.side(s1)->element());
-    double aniso2 = elem_anisotropy(edg.side(s2)->element());
+    double aniso1 = elem_anisotropy(cell_side1.side()->element());
+    double aniso2 = elem_anisotropy(cell_side2.side()->element());
     
-
-    // calculate the total in- and out-flux through the edge
-    double pflux = 0, nflux = 0;
-    for (int i=0; i<edg.n_sides; i++)
-    {
-        if (fluxes[i] > 0)
-            pflux += fluxes[i];
-        else
-            nflux += fluxes[i];
-    }
 
     // calculate the flux from s1 to s2
-    if (fluxes[s2] > 0 && fluxes[s1] < 0 && s1 < s2)
+    if (fluxes[s2] > 0 && fluxes[s1] < 0)
         transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
-    else if (fluxes[s2] < 0 && fluxes[s1] > 0 && s1 < s2)
+    else if (fluxes[s2] < 0 && fluxes[s1] > 0)
         transport_flux = fluxes[s1]*fabs(fluxes[s2]/nflux);
     else
         transport_flux = 0;
 
     gamma = 0.5*fabs(transport_flux);
-
-
-    // determine local DG penalty
-    local_alpha = max(alpha1, alpha2);
 
     delta[0] = 0;
     delta[1] = 0;

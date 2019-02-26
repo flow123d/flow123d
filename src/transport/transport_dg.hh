@@ -56,6 +56,7 @@ class DiscreteSpace;
 class Distribution;
 class OutputTime;
 class DOFHandlerMultiDim;
+class DHCellSide;
 template<unsigned int dim, unsigned int spacedim> class FEValuesBase;
 template<unsigned int dim> class FiniteElement;
 template<unsigned int dim, unsigned int spacedim> class Mapping;
@@ -377,15 +378,18 @@ private:
 	 * @param transport_flux	Computed flux from side s1 to side s2.
 	 */
 	void set_DG_parameters_edge(const Edge &edg,
-	        const int s1,
+			DHCellSide cell_side1,
+			DHCellSide cell_side2,
+			const int s1,
 	        const int s2,
 	        const int K_size,
 	        const std::vector<arma::mat33> &K1,
 	        const std::vector<arma::mat33> &K2,
 	        const std::vector<double> &fluxes,
+            double pflux,
+            double nflux,
 	        const arma::vec3 &normal_vector,
-	        const double alpha1,
-	        const double alpha2,
+	        double local_alpha,
 	        double &gamma,
 	        double *omega,
 	        double &transport_flux);
