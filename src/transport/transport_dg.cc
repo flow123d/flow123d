@@ -921,7 +921,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
         fe_values.push_back(new FESideValues<dim,3>(*feo->mapping<dim>(), *feo->q<dim-1>(), *feo->fe<dim>(),
                 update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points));
     }
-    arma::vec3 normal_vector = fe_values[0]->normal_vector(0);
 
     // assemble integral over sides
     int sid, s1, s2;
@@ -946,6 +945,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell.centre(), cell);
                 ++sid;
             }
+            arma::vec3 normal_vector = fe_values[0]->normal_vector(0);
 
             // fluxes and penalty
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -979,9 +979,6 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                         arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
                         // set up the parameters for DG method
-                        aniso1 = elem_anisotropy(edge_side1.side()->element());
-                        aniso2 = elem_anisotropy(edge_side2.side()->element());
-
                         // calculate the flux from edge_side1 to edge_side2
                         if (fluxes[s2] > 0 && fluxes[s1] < 0)
                             transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
@@ -994,7 +991,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
                         delta[0] = 0;
                         delta[1] = 0;
-                        for (int k=0; k<qsize; k++)
+                        for (unsigned int k=0; k<qsize; k++)
                         {
                             delta[0] += dot(dif_coef_edg[s1][sbi][k]*normal_vector,normal_vector);
                             delta[1] += dot(dif_coef_edg[s2][sbi][k]*normal_vector,normal_vector);
@@ -1011,6 +1008,8 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                             omega[1] = delta[0]/delta_sum;
                             double local_alpha = max(dg_penalty[s1][sbi], dg_penalty[s2][sbi]);
                             double h = edge_side1.side()->diameter();
+                            aniso1 = elem_anisotropy(edge_side1.side()->element());
+                            aniso2 = elem_anisotropy(edge_side2.side()->element());
                             gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
                         }
                         else
