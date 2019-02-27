@@ -720,9 +720,9 @@ void Elasticity::assemble_fluxes_element_side()
 		fe_values_side.reinit(cell, nb->side()->side_idx());
 
 		// Element id's for testing if they belong to local partition.
-		int element_id[2];
-		element_id[0] = cell_sub.index();
-		element_id[1] = cell.index();
+		bool own_element_id[2];
+		own_element_id[0] = feo->dh()->cell_accessor_from_element(cell_sub.idx()).is_own();
+		own_element_id[1] = feo->dh()->cell_accessor_from_element(cell.idx()).is_own();
         
 		data_.cross_section.value_list(fe_values_sub.point_list(), cell_sub, csection_lower);
 		data_.cross_section.value_list(fe_values_sub.point_list(), cell, csection_higher);
@@ -752,14 +752,13 @@ void Elasticity::assemble_fluxes_element_side()
             
             for (int n=0; n<2; n++)
             {
-                if (!feo->dh()->el_is_local(element_id[n])) continue;
+                if (!own_element_id[n]) continue;
 
                 for (unsigned int i=0; i<n_dofs[n]; i++)
                 {
                     arma::vec3 vi = (n==0)?arma::zeros(3):vec_side.value(i,k);
                     arma::vec3 vf = (n==1)?arma::zeros(3):vec_sub.value(i,k);
-                    arma::mat33 gvft = (n==0)?mat_t(vec_sub.grad(i,k),nv):arma::zeros(3,3);
-//                     double divvf = (n==0)?arma::trace(mat_t(vec_sub.grad(i,k),nv)):0;
+                    arma::mat33 gvft = (n==0)?vec_sub.grad(i,k):arma::zeros(3,3);
                     
                     for (int m=0; m<2; m++)
                         for (unsigned int j=0; j<n_dofs[m]; j++) {
@@ -769,17 +768,19 @@ void Elasticity::assemble_fluxes_element_side()
                             double divuit = (m==1)?arma::trace(guit):0;
                             
                             local_matrix[n][m][i*n_dofs[m] + j] +=
-                                    frac_sigma[k]*(arma::dot(vf-vi,
+                                    (
+                                     frac_sigma[k]*arma::dot(vf-vi,
                                       2/csection_lower[k]*(mu*(uf-ui)+(mu+lambda)*(arma::dot(uf-ui,nv)*nv))
                                       + mu*arma::trans(guit)*nv
                                       + lambda*divuit*nv
                                      )
-                                     - arma::dot(gvft, mu*arma::kron(nv.t(),ui) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
+                                     - arma::dot(gvft, mu*arma::kron(nv,ui.t()) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fv_sb[0]->JxW(k);
                         }
                 }
             }
         }
+            
         for (unsigned int n=0; n<2; ++n)
         {
             for (unsigned int m=0; m<2; ++m)
