@@ -12,7 +12,7 @@ problem: !Coupling_Sequential
     output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
-        a_tol: 1.0e-07
+        options: -ksp_type preonly -pc_type lu
     n_schurs: 2
     input_fields:
       - region: 2d_fraction
