@@ -273,12 +273,12 @@ void Elasticity::initialize()
 //     balance_ = std::make_shared<Balance>("mechanics", mesh_);
 //     balance_->init_from_input(input_rec.val<Input::Record>("balance"), *time_);
     // initialization of balance object
-    data_.balance_idx_ = {
-        balance_->add_quantity("force_x"),
-        balance_->add_quantity("force_y"),
-        balance_->add_quantity("force_z")
-    };
-    balance_->units(UnitSI().kg().m().s(-2));
+//     data_.balance_idx_ = {
+//         balance_->add_quantity("force_x"),
+//         balance_->add_quantity("force_y"),
+//         balance_->add_quantity("force_z")
+//     };
+//     balance_->units(UnitSI().kg().m().s(-2));
 
     // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>);
@@ -559,7 +559,6 @@ void Elasticity::assemble_volume_integrals()
             }
         }
         ls->mat_set_values(ndofs, dof_indices.data(), ndofs, dof_indices.data(), local_matrix);
-        }
     }
 }
 

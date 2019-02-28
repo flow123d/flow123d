@@ -70,7 +70,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec);
     flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
-    if ( FieldCommon::print_message_table(ss, "HM iterative") ) {
+    if ( FieldCommon::print_message_table(ss, "flow") ) {
         WarningOut() << ss.str();
     }
     
@@ -78,7 +78,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     Record mech_rec = in_record.val<Record>("mechanics_equation");
     mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec);
     mechanics_->data()["cross_section"].copy_from(flow_->data()["cross_section"]);
-//     mechanics_->set_time_governor(flow_->time());
     mechanics_->initialize();
     
     // read parameters controlling the iteration
@@ -91,20 +90,23 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     this->eq_data_ = &flow_->data();
     
     this->time_ = &flow_->time();
+    
+    // synchronize time marks of flow and mechanics
+    for (auto mark = TimeGovernor::marks().begin(flow_->mark_type()); mark != TimeGovernor::marks().end(flow_->mark_type()); ++mark )
+        TimeGovernor::marks().add( TimeMark(mark->time(), mechanics_->time().equation_fixed_mark_type()) );
+    for (auto mark = TimeGovernor::marks().begin(mechanics_->mark_type()); mark != TimeGovernor::marks().end(mechanics_->mark_type()); ++mark )
+        TimeGovernor::marks().add( TimeMark(mark->time(), flow_->time().equation_fixed_mark_type()) );
 }
 
 
 void HM_Iterative::initialize()
 {
-//     flow_->initialize();
-//     mechanics_->initialize();
 }
 
 
 void HM_Iterative::zero_time_step()
 {
     flow_->zero_time_step();
-//     mechanics_->set_velocity_field( flow_->get_mh_dofhandler() );
     mechanics_->zero_time_step();
 }
 
