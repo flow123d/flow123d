@@ -74,7 +74,8 @@ public:
 
         // create output mesh identical to computational mesh
         auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
-        output_mesh->create_mesh();
+        output_mesh->create_sub_mesh();
+        output_mesh->make_serial_master_mesh();
         this->set_output_data_caches(output_mesh);
 
     }
@@ -94,11 +95,13 @@ public:
 
         // create output mesh identical to computational mesh
 		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-		output_mesh_->create_mesh();
+		output_mesh_->create_sub_mesh();
+		output_mesh_->make_serial_master_mesh();
         this->set_output_data_caches(output_mesh_);
 
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
-        //this->output_mesh_discont_->create_mesh();
+        //this->output_mesh_discont_->create_sub_mesh();
+        //this->output_mesh_discont_->make_serial_master_mesh();
 
 		field.compute_field_data(ELEM_DATA, shared_from_this());
 	}
@@ -125,7 +128,7 @@ public:
         for (unsigned int i=0; i<size; ++i) v[i] = step*i;
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, 0, &v);
+		native_data_ptr->set_fe_data(dh, 0, v);
 
 		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
 		field.output_type(OutputTime::NATIVE_DATA);

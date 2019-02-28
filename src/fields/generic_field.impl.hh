@@ -70,7 +70,7 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 	ASSERT_EQ(dh->max_elem_dofs(), 1);
 	unsigned int i_ele=0;
 	for (auto cell : dh->own_range()) {
-		cell.get_dof_indices(indices);
+		cell.get_loc_dof_indices(indices);
 		(*data_vec)[ indices[0] ] = (*field_subdomain_data)[i_ele];
 		++i_ele;
 	}

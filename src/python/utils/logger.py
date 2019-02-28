@@ -37,7 +37,7 @@ class Logger(object):
             log_level = getattr(logging, log_level.upper())
 
             # set global log level
-            fmt = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
+            fmt = logging.Formatter('%(asctime)s %(levelname)s: %(message)s', '%H:%M:%S')
             logging.root.setLevel(log_level)
             Logger._global_logger = Logger('ROOT', log_level, fmt)
 
@@ -80,9 +80,15 @@ class Logger(object):
     def _log_traceback(self, method):
         tb = [line.strip() for line in traceback.format_stack()]
         method('Traceback:\n' + '\n'.join(tb))
+    
+    def _get_msg(self, loc, msg):
+        loc, msg = str(loc), str(msg)
+        lloc, lmsg = len(loc), len(msg)
+        msg = msg.replace('\n', '\n' + ' ' * 61)
+        return ('{loc:45s} {msg:s}').format(loc=loc, msg=msg)
 
     def error(self, msg, *args, **kwargs):
-        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
+        msg = self._get_msg(self.__loc(), msg)
         self.logger.error(msg, *args, **kwargs)
         self._log_traceback(self.logger.error)
 
@@ -90,13 +96,13 @@ class Logger(object):
         self.logger.exception(msg, exc_info=exception, *args, **kwargs)
 
     def info(self, msg, *args, **kwargs):
-        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
+        msg = self._get_msg(self.__loc(), msg)
         self.logger.info(msg, *args, **kwargs)
 
     def debug(self, msg, *args, **kwargs):
-        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
+        msg = self._get_msg(self.__loc(), msg)
         self.logger.debug(msg, *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
-        msg = '{loc:60} {msg}'.format(loc=self.__loc(), msg=msg)
+        msg = self._get_msg(self.__loc(), msg)
         self.logger.warning(msg, *args, **kwargs)

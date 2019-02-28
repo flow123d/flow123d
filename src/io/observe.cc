@@ -368,7 +368,7 @@ ElementDataCache<T> & Observe::prepare_compute_data(std::string field_name, doub
     OutputDataFieldMap::iterator it=observe_field_values_.find(field_name);
     if (it == observe_field_values_.end()) {
         observe_field_values_[field_name]
-					= std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, points_.size());
+					= std::make_shared< ElementDataCache<T> >(field_name, n_rows * n_cols, points_.size());
         it=observe_field_values_.find(field_name);
     }
     return dynamic_cast<ElementDataCache<T> &>(*(it->second));

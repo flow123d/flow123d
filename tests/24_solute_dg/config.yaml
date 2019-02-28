@@ -8,3 +8,8 @@ test_cases:
 # long running test
   - files: 01_sources.yaml
     time_limit: 60
+
+# parallel test
+  - files: 03_dg_parallel_output.yaml
+    time_limit: 40
+    proc: [3]

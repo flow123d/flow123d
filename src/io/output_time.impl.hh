@@ -81,24 +81,27 @@ ElementDataCache<T> & OutputTime::prepare_compute_data(std::string field_name, D
     // get possibly existing data for the same field, check both name and type
     unsigned int size;
     switch (space_type) {
-    	case NODE_DATA:
-    	case CORNER_DATA:
-    		size = this->nodes_->n_values();
-    		break;
-    	case ELEM_DATA:
-    	case NATIVE_DATA:
-    		size = this->offsets_->n_values();
-    		break;
-    	default:
-    		ASSERT(false).error("Should not happen.");
-    		break;
+        case NODE_DATA:
+        case CORNER_DATA:
+        {
+            auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
+            size = offset_vec[offset_vec.size()-1];
+            break;
+        }
+        case ELEM_DATA:
+        case NATIVE_DATA:
+            size = output_mesh_->offsets_->n_values();
+            break;
+        default:
+            ASSERT(false).error("Should not happen.");
+            break;
     }
 
     auto &od_vec=this->output_data_vec_[space_type];
     auto it=std::find_if(od_vec.begin(), od_vec.end(),
             [&field_name](OutputDataPtr ptr) { return (ptr->field_input_name() == field_name); });
     if ( it == od_vec.end() ) {
-        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows, n_cols, size) );
+        od_vec.push_back( std::make_shared< ElementDataCache<T> >(field_name, n_rows*n_cols, size) );
         it=--od_vec.end();
     }
     return dynamic_cast<ElementDataCache<T> &>(*(*it));

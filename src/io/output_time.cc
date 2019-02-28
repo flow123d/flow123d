@@ -75,8 +75,8 @@ OutputTime::OutputTime()
   write_time(-1.0),
   parallel_(false)
 {
-    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc);
+    MPI_Comm_rank(MPI_COMM_WORLD, &this->rank_);
+    MPI_Comm_size(MPI_COMM_WORLD, &this->n_proc_);
 }
 
 
@@ -107,7 +107,7 @@ void OutputTime::set_stream_precision(std::ofstream &stream)
 OutputTime::~OutputTime(void)
 {
     /* It's possible now to do output to the file only in the first process */
-     //if(rank != 0) {
+     //if(rank_ != 0) {
      //    /* TODO: do something, when support for Parallel VTK is added */
      //    return;
     // }
@@ -129,10 +129,10 @@ Input::Iterator<Input::Record> OutputTime::get_output_mesh_record() {
 
 
 void OutputTime::set_output_data_caches(std::shared_ptr<OutputMeshBase> mesh_ptr) {
-	this->nodes_ = mesh_ptr->nodes_;
-	this->connectivity_ = mesh_ptr->connectivity_;
-	this->offsets_ = mesh_ptr->offsets_;
-	output_mesh_ = mesh_ptr;
+    this->nodes_ = mesh_ptr->get_master_mesh()->nodes_;
+    this->connectivity_ = mesh_ptr->get_master_mesh()->connectivity_;
+    this->offsets_ = mesh_ptr->get_master_mesh()->offsets_;
+    output_mesh_ = mesh_ptr;
 }
 
 
@@ -202,27 +202,27 @@ void OutputTime::write_time_frame()
     if (observe_)
         observe_->output_time_frame(time);
 
-    if (this->rank == 0 || this->parallel_) {
+    // Write data to output stream, when data registered to this output
+    // streams were changed
+    if(write_time < time) {
 
-    	// Write data to output stream, when data registered to this output
-		// streams were changed
-		if(write_time < time) {
-
-			LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
-			write_data();
-			// Remember the last time of writing to output stream
-			write_time = time;
-			current_step++;
+    	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
+    	    LogOut() << "Write output to output stream: " << this->_base_filename << " for time: " << time;
+    	gather_output_data();
+        write_data();
+        // Remember the last time of writing to output stream
+        write_time = time;
+        current_step++;
             
-			// invalidate output data caches after the time frame written
-			// TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
-			/*output_mesh_.reset();
-			this->nodes_.reset();
-			this->connectivity_.reset();
-			this->offsets_.reset();*/
-		} else {
-			LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
-		}
+        // invalidate output data caches after the time frame written
+        // TODO we need invalidate pointers only in special cases (e. g. refining of mesh)
+        /*output_mesh_.reset();
+        this->nodes_.reset();
+        this->connectivity_.reset();
+        this->offsets_.reset();*/
+    } else {
+    	if (this->rank_ == 0 || this->parallel_) // for serial output write log only one (same output file on all processes)
+    	    LogOut() << "Skipping output stream: " << this->_base_filename << " in time: " << time;
     }
     clear_data();
 }
@@ -247,13 +247,66 @@ void OutputTime::clear_data(void)
 
 int OutputTime::get_parallel_current_step()
 {
-	if (parallel_) return n_proc*current_step+rank;
+	if (parallel_) return n_proc_*current_step+rank_;
 	else return current_step;
 }
 
 
 void OutputTime::add_dummy_fields()
 {}
+
+
+void OutputTime::gather_output_data(void)
+{
+    /* for serial output call gather of all data sets */
+    if ( !parallel_ ) {
+    	auto &offset_vec = *( output_mesh_->offsets_->get_component_data(0).get() );
+
+    	auto &node_data_map = this->output_data_vec_[NODE_DATA];
+        for(unsigned int i=0; i<node_data_map.size(); ++i) {
+            auto elem_node_cache = node_data_map[i]->element_node_cache_fixed_size(offset_vec);
+            auto serial_fix_data_cache = elem_node_cache->gather(output_mesh_->el_ds_, output_mesh_->el_4_loc_);
+            if (rank_==0) {
+            	auto &master_offset_vec = *( this->offsets_->get_component_data(0).get() );
+            	auto serial_data_cache = serial_fix_data_cache->element_node_cache_optimize_size(master_offset_vec);
+            	auto &master_conn_vec = *( this->connectivity_->get_component_data(0).get() );
+            	node_data_map[i] = serial_data_cache->compute_node_data(master_conn_vec, this->nodes_->n_values());
+            }
+        }
+
+        auto &corner_data_map = this->output_data_vec_[CORNER_DATA];
+        for(unsigned int i=0; i<corner_data_map.size(); ++i) {
+            auto elem_node_cache = corner_data_map[i]->element_node_cache_fixed_size(offset_vec);
+            auto serial_fix_data_cache = elem_node_cache->gather(output_mesh_->el_ds_, output_mesh_->el_4_loc_);
+            if (rank_==0) {
+                auto &master_offset_vec = *( this->offsets_->get_component_data(0).get() );
+                corner_data_map[i] = serial_fix_data_cache->element_node_cache_optimize_size(master_offset_vec);
+            }
+        }
+
+    	auto &elm_data_map = this->output_data_vec_[ELEM_DATA];
+    	for(unsigned int i=0; i<elm_data_map.size(); ++i) {
+    	    auto serial_data = elm_data_map[i]->gather(output_mesh_->el_ds_, output_mesh_->el_4_loc_);
+    	    if (rank_==0) elm_data_map[i] = serial_data;
+    	}
+    	auto &native_data_map = this->output_data_vec_[NATIVE_DATA];
+    	for(unsigned int i=0; i<native_data_map.size(); ++i) {
+    	    auto serial_data = native_data_map[i]->gather(output_mesh_->el_ds_, output_mesh_->el_4_loc_);
+    	    if (rank_==0) {
+    	    	auto hash = native_data_map[i]->dof_handler_hash();
+    	        native_data_map[i] = serial_data;
+    	        (native_data_map[i])->set_dof_handler_hash(hash);
+    	    }
+    	}
+    } else {
+        /* Parallel output needs compute node data (average values) */
+    	auto &conn_vec = *( output_mesh_->connectivity_->get_component_data(0).get() );
+    	auto &node_data_map = this->output_data_vec_[NODE_DATA];
+    	for(unsigned int i=0; i<node_data_map.size(); ++i) {
+    		node_data_map[i] = node_data_map[i]->compute_node_data(conn_vec, this->nodes_->n_values());
+    	}
+    }
+}
 
 
 

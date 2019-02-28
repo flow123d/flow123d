@@ -40,6 +40,8 @@ define_mpi_test(local_to_global_map 2)
 define_mpi_test(local_to_global_map 3)
 
 define_mpi_test(vector_mpi 1)
+define_mpi_test(vector_mpi 2)
+define_mpi_test(vector_mpi 3)
 
 
 
