@@ -255,18 +255,6 @@ private:
 	template<unsigned int dim>
 	void set_boundary_conditions();
 
-	/**
-	 * @brief Sets the initial condition.
-	 */
-	void set_initial_condition();
-
-	/**
-	 * @brief Assembles the auxiliary linear system to calculate the initial solution
-	 * as L^2-projection of the prescribed initial condition.
-	 */
-	template<unsigned int dim>
-	void prepare_initial_condition();
-    
     
 
 
