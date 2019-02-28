@@ -182,6 +182,9 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
+        //Field<3, FieldValue<3>::VectorFixed > velocity;
+        std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > velocity;
+
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
          * to pressure head and vice versa.
@@ -238,6 +241,8 @@ public:
         mh_dh.set_solution(time_->last_t(), array, solution_precision());
        return mh_dh;
     }
+
+    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field() override;
 
     void init_eq_data();
     void initialize() override;

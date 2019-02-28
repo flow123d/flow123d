@@ -57,6 +57,7 @@
 #include "fields/field.hh"
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
+#include "fields/field_fe.hh"
 
 #include "coupling/balance.hh"
 
@@ -258,6 +259,12 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI().m(-1) );
 
+    //*this += velocity
+	//        .disable_where(bc_type, {none, dirichlet, seepage, total_flux, river} )
+	//        .name("velocity")
+    //        .description("Velocity solution.")
+    //        .units( UnitSI().m().s(-1) );
+
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
     //rhs_fields = this->subset({"water_source_density", "bc_pressure", "bc_flux"});
@@ -361,6 +368,23 @@ void DarcyMH::init_eq_data()
     }
 
     data_->mark_input_times(*time_);
+
+    { // init data_->velocity
+		//static FiniteElement<0> fe0 = FESystem<0>( std::make_shared<FE_P_disc<0>>(0), FEType::FEVector, 3 );
+		//static FiniteElement<1> fe1 = FESystem<1>( std::make_shared<FE_P_disc<1>>(0), FEType::FEVector, 3 );
+		//static FiniteElement<2> fe2 = FESystem<2>( std::make_shared<FE_P_disc<2>>(0), FEType::FEVector, 3 );
+		//static FiniteElement<3> fe3 = FESystem<3>( std::make_shared<FE_P_disc<3>>(0), FEType::FEVector, 3 );
+		static FiniteElement<0> fe0 = FE_P_disc<0>(0);
+		static FiniteElement<1> fe1 = FE_RT0<1>();
+		static FiniteElement<2> fe2 = FE_RT0<2>();
+		static FiniteElement<3> fe3 = FE_RT0<3>();
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+		DOFHandlerMultiDim dh(*mesh_);
+		dh.distribute_dofs(ds);
+
+		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
+		data_->velocity->set_fe_data(dh.sequential());
+    }
 }
 
 
@@ -1406,6 +1430,11 @@ void DarcyMH::modify_system() {
     schur0->set_rhs_changed();
 
     //VecSwap(previous_solution, schur0->get_solution());
+}
+
+
+std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
+    return data_->velocity;
 }
 
 
