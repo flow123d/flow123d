@@ -549,18 +549,19 @@ void Elasticity::assemble_volume_integrals()
 
         for (unsigned int k=0; k<qsize; k++)
         {
-          double mu = young[k]*0.5/(poisson[k]+1.);
-          double lambda = young[k]*poisson[k]/((poisson[k]+1.)*(1.-2.*poisson[k]));
-          
-          for (unsigned int i=0; i<ndofs; i++)
-          {
-              for (unsigned int j=0; j<ndofs; j++)
-                  local_matrix[i*ndofs+j] += csection[k]*(mu*arma::dot(vec.sym_grad(j,k), vec.sym_grad(i,k))
-                                              +lambda*vec.divergence(j,k)*vec.divergence(i,k)
-                                              )*fe_values.JxW(k);
-          }
+            double mu = lame_mu(young[k], poisson[k]);
+            double lambda = lame_lambda(young[k], poisson[k]);
+            for (unsigned int i=0; i<ndofs; i++)
+            {
+                for (unsigned int j=0; j<ndofs; j++)
+                    local_matrix[i*ndofs+j] += csection[k]*(
+                                                2*mu*arma::dot(vec.sym_grad(j,k), vec.sym_grad(i,k))
+                                                + lambda*vec.divergence(j,k)*vec.divergence(i,k)
+                                               )*fe_values.JxW(k);
+            }
         }
-        ls->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_matrix);
+        ls->mat_set_values(ndofs, dof_indices.data(), ndofs, dof_indices.data(), local_matrix);
+        }
     }
 }
 
