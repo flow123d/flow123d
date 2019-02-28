@@ -980,18 +980,6 @@ void Elasticity::prepare_initial_condition()
 
 
 
-void Elasticity::get_par_info(int * &el_4_loc, Distribution * &el_ds)
-{
-	el_4_loc = mesh_->get_el_4_loc();
-	el_ds = mesh_->get_el_ds();
-}
-
-
-
-int *Elasticity::get_row_4_el()
-{
-	return mesh_->get_row_4_el();
-}
 
 
 
