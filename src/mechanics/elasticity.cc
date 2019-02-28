@@ -204,7 +204,7 @@ Elasticity::EqData::EqData()
         .description("Poisson ratio.")
         .units( UnitSI().dimensionless() )
          .input_default("0.0")
-        .flags_add(in_rhs);
+        .flags_add(in_main_matrix);
         
     *this+=fracture_sigma
             .name("fracture_sigma")
@@ -335,39 +335,44 @@ void Elasticity::zero_time_step()
 {
 	START_TIMER(EqData::name());
 	data_.mark_input_times( *time_ );
-	data_.set_time(time_->step(), LimitSide::left);
+	data_.set_time(time_->step(), LimitSide::right);
 	std::stringstream ss; // print warning message with table of uninitialized fields
 	if ( FieldCommon::print_message_table(ss, "mechanics") ) {
 		WarningOut() << ss.str();
 	}
 
-
-    // set initial conditions
-    set_initial_condition();
     ( (LinSys_PETSC *)ls )->set_initial_guess_nonzero();
 
     // check first time assembly - needs preallocation
     if (!allocation_done) preallocate();
-
-    // after preallocation we assemble the matrices and vectors required for mass balance
-//     balance_->calculate_instant(subst_idx, ls->get_solution());
-
-    output_data();
     
-//     update_volume_change();
+
+    // after preallocation we assemble the matrices and vectors required for balance of forces
+//     for (auto subst_idx : data_.balance_idx_)
+//         balance_->calculate_instant(subst_idx, ls->get_solution());
+    
+//     update_solution();
+    ls->start_add_assembly();
+    MatSetOption(*ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+    ls->mat_zero_entries();
+    assemble_stiffness_matrix();
+	set_sources();
+	set_boundary_conditions();
+    ls->finish_assembly();
+    ls->apply_constrains(1.0);
+    ls->solve();
+    output_data();
 }
 
 
 
 void Elasticity::preallocate()
 {
-	// preallocate system matrix
     // preallocate system matrix
     ls->start_allocation();
     stiffness_matrix = NULL;
     rhs = NULL;
 
-    // preallocate mass matrix
 	assemble_stiffness_matrix();
 	set_sources();
 	set_boundary_conditions();
@@ -386,7 +391,7 @@ void Elasticity::update_solution()
 	time_->view("MECH");
     
     START_TIMER("data reinit");
-    data_.set_time(time_->step(), LimitSide::left);
+    data_.set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
     
 	// assemble stiffness matrix
@@ -394,14 +399,10 @@ void Elasticity::update_solution()
     		|| data_.subset(FieldFlag::in_main_matrix).changed()
     		|| flux_changed)
     {
-        // new fluxes can change the location of Neumann boundary,
-        // thus stiffness matrix must be reassembled
-        preallocate(); // this must be called when type of boundary condition changes, because it affects the nonzero pattern
         ls->start_add_assembly();
         ls->mat_zero_entries();
         assemble_stiffness_matrix();
         ls->finish_assembly();
-//         ls->apply_constrains(1);
 
         if (stiffness_matrix == NULL)
             MatConvert(*( ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
@@ -429,13 +430,10 @@ void Elasticity::update_solution()
 
 
     START_TIMER("solve");
-
     ls->solve();
-    
     END_TIMER("solve");
 
     calculate_cumulative_balance();
-//     update_volume_change();
     
     output_data();
 
@@ -660,11 +658,11 @@ void Elasticity::assemble_fluxes_boundary()
         fe_values_side.reinit(cell, side->side_idx());
 //         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
  
-        	for (unsigned int i=0; i<ndofs; i++)
-        		for (unsigned int j=0; j<ndofs; j++)
-        			local_matrix[i*ndofs+j] = 0;
-
-			ls->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
+//         for (unsigned int i=0; i<ndofs; i++)
+//             for (unsigned int j=0; j<ndofs; j++)
+//                 local_matrix[i*ndofs+j] = 0;
+//         
+//         ls->mat_set_values(ndofs, side_dof_indices.data(), ndofs, side_dof_indices.data(), local_matrix);
     }
 }
 
