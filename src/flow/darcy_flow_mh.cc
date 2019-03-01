@@ -368,23 +368,6 @@ void DarcyMH::init_eq_data()
     }
 
     data_->mark_input_times(*time_);
-
-    { // init data_->velocity
-		//static FiniteElement<0> fe0 = FESystem<0>( std::make_shared<FE_P_disc<0>>(0), FEType::FEVector, 3 );
-		//static FiniteElement<1> fe1 = FESystem<1>( std::make_shared<FE_P_disc<1>>(0), FEType::FEVector, 3 );
-		//static FiniteElement<2> fe2 = FESystem<2>( std::make_shared<FE_P_disc<2>>(0), FEType::FEVector, 3 );
-		//static FiniteElement<3> fe3 = FESystem<3>( std::make_shared<FE_P_disc<3>>(0), FEType::FEVector, 3 );
-		static FiniteElement<0> fe0 = FE_P_disc<0>(0);
-		static FiniteElement<1> fe1 = FE_RT0<1>();
-		static FiniteElement<2> fe2 = FE_RT0<2>();
-		static FiniteElement<3> fe3 = FE_RT0<3>();
-		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
-		DOFHandlerMultiDim dh(*mesh_);
-		dh.distribute_dofs(ds);
-
-		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
-		data_->velocity->set_fe_data(dh.sequential());
-    }
 }
 
 
@@ -395,6 +378,28 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
+
+    { // init data_->velocity
+		static FiniteElement<0> fe0 = FE_P_disc<0>(0); //TODO use FE_RT0 after merge
+		static FiniteElement<1> fe1 = FE_RT0<1>();
+		static FiniteElement<2> fe2 = FE_RT0<2>();
+		static FiniteElement<3> fe3 = FE_RT0<3>();
+		static std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
+		static std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
+		static std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
+		static std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
+		static FiniteElement<0> fe0_sys = FESystem<0>( fe0_disc, FEType::FEVector, 3 );
+		static FiniteElement<1> fe1_sys = FESystem<1>( fe1_disc, FEType::FEVector, 3 );
+		static FiniteElement<2> fe2_sys = FESystem<2>( fe2_disc, FEType::FEVector, 3 );
+		static FiniteElement<3> fe3_sys = FESystem<3>( fe3_disc, FEType::FEVector, 3 );
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+		DOFHandlerMultiDim dh(*mesh_);
+		dh.distribute_dofs(ds);
+
+		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
+		data_->velocity->set_fe_data(dh.sequential());
+    }
+
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
