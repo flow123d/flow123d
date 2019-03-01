@@ -401,7 +401,7 @@ private:
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
 	 */
-	void set_DG_parameters_boundary(const SideIter side,
+	void set_DG_parameters_boundary(const Side *side,
 			    const int K_size,
 	            const std::vector<arma::mat33> &K,
 	            const double flux,

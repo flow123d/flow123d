@@ -43,6 +43,9 @@ public:
     
     typedef Space<spacedim>::Point Point;
     
+    /// Default constructor.
+    OutputElement();
+
     /// Constructor.
     OutputElement(unsigned int ele_idx, std::shared_ptr<OutputMeshBase> output_mesh);
     
@@ -84,6 +87,8 @@ private:
 };
 
 // --------------------------------------------------- OutputElement INLINE implementation -------------------
+
+inline OutputElement::OutputElement() {}
 
 inline OutputElement::OutputElement(unsigned int ele_idx, std::shared_ptr<OutputMeshBase> output_mesh)
 : ele_idx_(ele_idx), output_mesh_(output_mesh)
