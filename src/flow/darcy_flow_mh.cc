@@ -380,19 +380,23 @@ void DarcyMH::initialize() {
     mh_dh.reinit(mesh_);
 
     { // init data_->velocity
-		static FiniteElement<0> fe0 = FE_P_disc<0>(0); //TODO use FE_RT0 after merge
-		static FiniteElement<1> fe1 = FE_RT0<1>();
-		static FiniteElement<2> fe2 = FE_RT0<2>();
-		static FiniteElement<3> fe3 = FE_RT0<3>();
+		static std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
+		static std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0<1>>();
+		static std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0<2>>();
+		static std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0<3>>();
 		static std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
 		static std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
 		static std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
 		static std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
-		static FiniteElement<0> fe0_sys = FESystem<0>( fe0_disc, FEType::FEVector, 3 );
+		static std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>(0);
+		static std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>(0);
+		static std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>(0);
+		static std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>(0);
+		static FiniteElement<0> fe0_sys = FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} );
 		static FiniteElement<1> fe1_sys = FESystem<1>( fe1_disc, FEType::FEVector, 3 );
 		static FiniteElement<2> fe2_sys = FESystem<2>( fe2_disc, FEType::FEVector, 3 );
 		static FiniteElement<3> fe3_sys = FESystem<3>( fe3_disc, FEType::FEVector, 3 );
-		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_rt, &fe1_rt, &fe2_rt, &fe3_rt);
 		DOFHandlerMultiDim dh(*mesh_);
 		dh.distribute_dofs(ds);
 
