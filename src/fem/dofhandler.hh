@@ -235,12 +235,6 @@ public:
      */
     inline unsigned int n_loc_nb() const { return nb_4_loc.size(); }
 
-    /**
-     * Returns true if element is on local process.
-     * @param index Global element index.
-     */
-    bool el_is_local(int index) const;
-
     /// Output structure of dof handler.
     void print() const;
 
@@ -272,8 +266,15 @@ public:
     
     friend class DHCellAccessor;
     friend class DHCellSide;
+    friend class DHNeighbSide;
 
 private:
+
+    /**
+     * Returns true if element is on local process.
+     * @param index Global element index.
+     */
+    bool el_is_local(int index) const;
 
     /**
      * @brief Prepare parallel distribution of elements, edges and neighbours.
@@ -286,21 +287,25 @@ private:
     void init_cell_starts();
     
     /**
-     * @brief Initialize auxiliary vector of starting indices of nodal dofs.
+     * @brief Initialize auxiliary vector of starting indices of nodal/edge dofs.
      * 
-     * @param node_dof_starts Vector of starting indices (output).
+     * @param node_dof_starts Vector of nodal starting indices (output).
+     * @param edge_dof_starts Vector of edge starting indices (output).
      */
-    void init_node_dof_starts(std::vector<LongIdx> &node_dof_starts);
+    void init_dof_starts(std::vector<LongIdx> &node_dof_starts,
+                         std::vector<LongIdx> &edge_dof_starts);
     
     /**
-     * @brief Initialize node_status.
+     * @brief Initialize node_status and edge_status.
      * 
-     * Set VALID_NODE for nodes owned by local elements and
-     * INVALID_NODE for nodes owned by ghost elements.
+     * Set VALID_NFACE for nodes/edges owned by local elements and
+     * INVALID_NFACE for nodes/edges owned by ghost elements.
      * 
      * @param node_status Vector of nodal status (output).
+     * @param edge_status Vector of edge status (output).
      */
-    void init_node_status(std::vector<short int> &node_status);
+    void init_status(std::vector<short int> &node_status,
+                     std::vector<short int> &edge_status);
     
     /**
      * @brief Obtain dof numbers on ghost elements from other processor.
@@ -325,13 +330,16 @@ private:
      * @param dofs            Vector of dof indices on ghost elements from processor @p proc.
      * @param node_dof_starts Vector of starting indices of nodal dofs.
      * @param node_dofs       Vector of nodal dof indices (output).
+     * @param edge_dof_starts Vector of starting indices of edge dofs.
+     * @param edge_dofs       Vector of edge dof indices (output).
      */
     void update_local_dofs(unsigned int proc,
                            const std::vector<bool> &update_cells,
                            const std::vector<LongIdx> &dofs,
                            const std::vector<LongIdx> &node_dof_starts,
-                           std::vector<LongIdx> &node_dofs
-                          );
+                           std::vector<LongIdx> &node_dofs,
+                           const std::vector<LongIdx> &edge_dof_starts,
+                           std::vector<LongIdx> &edge_dofs);
     
     /**
      * @brief Communicate local dof indices to all processors and create new sequential dof handler.
@@ -342,11 +350,19 @@ private:
 
     
     /**
-     * Flags used during distribution of dofs to mark node and dof status.
+     * Flags used during distribution of dofs to mark n-face and dof status.
+     * 
+     * INVALID_NFACE  means that on this node/edge/side/cell the current processor
+     *                will not distribute dofs.
+     * VALID_NFACE    means that on this node/edge/side/cell the current processor
+     *                will distribute dofs.
+     * ASSIGNED_NFACE means that dofs on this n-face are already distributed.
+     * 
+     * INVALID_DOF    marks dofs whose global number has to be set by neighbouring processor.
      */
-    static const int INVALID_NODE  = 1;
-    static const int VALID_NODE    = 2;
-    static const int ASSIGNED_NODE = 3;
+    static const int INVALID_NFACE  = 1;
+    static const int VALID_NFACE    = 2;
+    static const int ASSIGNED_NFACE = 3;
     static const int INVALID_DOF   = -1;
     
     
@@ -363,19 +379,19 @@ private:
     std::shared_ptr<VecScatter> scatter_to_seq_;
 
     /**
-     * @brief Starting indices for element dofs.
+     * @brief Starting indices for local (owned+ghost) element dofs.
      * 
      * E.g. dof_indices[cell_starts[idx]] = dof number for first dof on the
-     * cell with index idx within the parallel structure. To use with element
-     * accessor use the following:
+     * cell with local index idx within the parallel structure. To use with
+     * DHCellAccessor use the following:
      * 
-     *   ElementAccessor<3> cell;
+     *   DHCellAccessor<3> cell;
      *   ...
      *   // i-th dof number on the cell
-     *   dof_indices[cell_starts[mesh_->get_row_4_el()[cell.idx()]]+i] = ...
+     *   dof_indices[cell_starts[cell.local_idx()]+i] = ...
      * 
-     * For parallel dof handler, only local and ghost elements are stored,
-     * but the vector has size mesh_->n_elements()+1.
+     * For sequential dof handler, dofs from all elements are stored and
+     * elements are ordered as in mesh_->get_row_4_el().
      */
     std::vector<LongIdx> cell_starts;
     
