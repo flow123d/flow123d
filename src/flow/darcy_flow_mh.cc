@@ -68,6 +68,8 @@
 #include "intersection/mixed_mesh_intersections.hh"
 #include "intersection/intersection_local.hh"
 
+#include "fem/fe_p.hh"
+
 
 FLOW123D_FORCE_LINK_IN_CHILD(darcy_flow_mh);
 
@@ -375,7 +377,7 @@ void DarcyMH::init_eq_data()
 void DarcyMH::initialize() {
 
     init_eq_data();
-    multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -389,15 +391,15 @@ void DarcyMH::initialize() {
 		static std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
 		static std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
 		static std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
-		static std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>(0);
-		static std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>(0);
-		static std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>(0);
-		static std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>(0);
+		static std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>();
+		static std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>();
+		static std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
+		static std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
 		static FiniteElement<0> fe0_sys = FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} );
-		static FiniteElement<1> fe1_sys = FESystem<1>( fe1_disc, FEType::FEVector, 3 );
-		static FiniteElement<2> fe2_sys = FESystem<2>( fe2_disc, FEType::FEVector, 3 );
-		static FiniteElement<3> fe3_sys = FESystem<3>( fe3_disc, FEType::FEVector, 3 );
-		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_rt, &fe1_rt, &fe2_rt, &fe3_rt);
+		static FiniteElement<1> fe1_sys = FESystem<1>( {fe1_rt, fe1_disc, fe1_cr} );
+		static FiniteElement<2> fe2_sys = FESystem<2>( {fe2_rt, fe2_disc, fe2_cr} );
+		static FiniteElement<3> fe3_sys = FESystem<3>( {fe3_rt, fe3_disc, fe3_cr} );
+		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
 		DOFHandlerMultiDim dh(*mesh_);
 		dh.distribute_dofs(ds);
 
@@ -1007,7 +1009,7 @@ void DarcyMH::assembly_linear_system() {
         assembly_source_term();
         
 
-	    assembly_mh_matrix( multidim_assembler ); // fill matrix
+	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
 //         print_matlab_matrix("matrix");

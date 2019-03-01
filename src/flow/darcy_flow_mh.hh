@@ -194,7 +194,7 @@ public:
 
         // Mirroring the following members of DarcyMH:
         Mesh *mesh;
-        AssemblyBase::MultidimAssembly multidim_assembler;
+        MultidimAssembly multidim_assembler;
         MH_DofHandler *mh_dh;
 
 
