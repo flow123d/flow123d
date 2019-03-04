@@ -196,6 +196,7 @@ public:
         Mesh *mesh;
         MultidimAssembly multidim_assembler;
         MH_DofHandler *mh_dh;
+        std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 
         uint water_balance_idx;
@@ -347,6 +348,7 @@ protected:
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
+    std::shared_ptr<DOFHandlerMultiDim> dh_; ///< DOF handler corresponding to the distribution
 
 
     std::shared_ptr<Balance> balance_;

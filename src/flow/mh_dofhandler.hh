@@ -32,6 +32,7 @@
 #include "mesh/region.hh"                    // for Region
 #include "mesh/side_impl.hh"                 // for Side::edge_idx
 #include "mesh/sides.h"                      // for SideIter, Side
+#include "fem/dh_cell_accessor.hh"           // for DHCellAccessor
 
 class LocalToGlobalMap;
 template <int spacedim> class LocalElementAccessorBase;
@@ -67,8 +68,6 @@ public:
     double element_scalar( ElementAccessor<3> &ele ) const;
 
     inline double precision() const { return solution_precision; };
-
-    LocalElementAccessorBase<3> accessor(uint local_ele_idx);
 
 //protected:
     vector< vector<unsigned int> > elem_side_to_global;
@@ -111,12 +110,16 @@ template <int spacedim>
 class LocalElementAccessorBase {
 public:
 
-    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0)
-    : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) )
-    {}
+    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0, DHCellAccessor dh_cell=DHCellAccessor())
+    : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) ), dh_cell_(dh_cell)
+    {
+    	if (dh_cell_.is_valid())
+    		ASSERT_EQ(ele.idx(), dh_cell_.elm_idx());
+    }
 
     void reinit( uint loc_ele_idx)
     {
+    	dh_cell_=DHCellAccessor();
         local_ele_idx_=loc_ele_idx;
         ele=dh->mesh_->element_accessor(ele_global_idx());
     }
@@ -213,6 +216,7 @@ private:
     MH_DofHandler *dh;
     uint local_ele_idx_;
     ElementAccessor<3> ele;
+    DHCellAccessor dh_cell_;
 };
 
 /**

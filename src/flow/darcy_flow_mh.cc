@@ -400,11 +400,13 @@ void DarcyMH::initialize() {
 		static FiniteElement<2> fe2_sys = FESystem<2>( {fe2_rt, fe2_disc, fe2_cr} );
 		static FiniteElement<3> fe3_sys = FESystem<3>( {fe3_rt, fe3_disc, fe3_cr} );
 		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
-		DOFHandlerMultiDim dh(*mesh_);
-		dh.distribute_dofs(ds);
+		DOFHandlerMultiDim dh_par(*mesh_);
+		dh_par.distribute_dofs(ds);
+		dh_ = dh_par.sequential();
+		data_->dh_ = dh_;
 
 		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
-		data_->velocity->set_fe_data(dh.sequential());
+		data_->velocity->set_fe_data(dh_);
     }
 
     // Initialize bc_switch_dirichlet to size of global boundary.
@@ -651,8 +653,8 @@ void DarcyMH::postprocess()
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
         auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-        for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-            auto ele_ac = mh_dh.accessor(i_loc);
+        for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+            LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
             unsigned int dim = ele_ac.dim();
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
         }
@@ -743,8 +745,8 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
     data_->local_boundary_index=0;
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+    	LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
         unsigned int dim = ele_ac.dim();
         assembler[dim-1]->assemble(ele_ac);
     }    
@@ -776,8 +778,8 @@ void DarcyMH::allocate_mh_matrix()
     
     unsigned int nsides, loc_size;
 
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
         nsides = ele_ac.n_sides();
         
         //allocate at once matrix [sides,ele,edges]x[sides,ele,edges]
@@ -864,8 +866,8 @@ void DarcyMH::assembly_source_term()
     START_TIMER("assembly source term");
    	balance_->start_source_assembly(data_->water_balance_idx);
 
-    for (unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+   	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
 
         double cs = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
 
@@ -1124,8 +1126,8 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // maximal and minimal dimension of elements
     uint elDimMax = 1;
     uint elDimMin = 3;
-    for ( unsigned int i_loc = 0; i_loc < mh_dh.el_ds->lsize(); i_loc++ ) {
-        auto ele_ac = mh_dh.accessor(i_loc);
+    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
 
         elDimMax = std::max( elDimMax, ele_ac.dim() );
@@ -1374,8 +1376,8 @@ void DarcyMH::read_initial_condition()
 	// cycle over local element rows
 
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
-	for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
-		auto ele_ac = mh_dh.accessor(i_loc_el);
+	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+		LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
 		// set initial condition
 		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
 	}
@@ -1399,8 +1401,8 @@ void DarcyMH::setup_time_term() {
    	balance_->start_mass_assembly(data_->water_balance_idx);
 
     //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
-    for (unsigned int i_loc_el = 0; i_loc_el < mh_dh.el_ds->lsize(); i_loc_el++) {
-        auto ele_ac = mh_dh.accessor(i_loc_el);
+   	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
 
         // set new diagonal
         double diagonal_coeff = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor())

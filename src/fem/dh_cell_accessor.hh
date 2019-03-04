@@ -22,6 +22,7 @@
 #include "mesh/accessors.hh"
 #include "mesh/sides.h"
 #include "mesh/neighbours.h"
+#include "fem/finite_element.hh"
 #include "fem/dofhandler.hh"
 
 class DHCellSide;

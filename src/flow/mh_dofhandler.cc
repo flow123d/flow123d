@@ -284,8 +284,3 @@ double MH_DofHandler::side_scalar(const Side &side) const {
 double MH_DofHandler::element_scalar( ElementAccessor<3> &ele ) const {
     return mh_solution[ mesh_->n_sides() + ele.idx() ];
 }
-
-
-LocalElementAccessorBase<3> MH_DofHandler::accessor(uint local_ele_idx) {
-    return LocalElementAccessorBase<3>(this, local_ele_idx);
-}
