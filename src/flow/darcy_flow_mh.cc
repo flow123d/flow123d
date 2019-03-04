@@ -406,7 +406,6 @@ void DarcyMH::initialize() {
 		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		data_->velocity->set_fe_data(dh.sequential());
     }
-    std::cout << "AA 6" << std::endl;
 
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
