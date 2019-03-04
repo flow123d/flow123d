@@ -383,19 +383,19 @@ void DarcyMH::initialize() {
     mh_dh.reinit(mesh_);
 
     { // init data_->velocity
-		static std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
-		static std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0<1>>();
-		static std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0<2>>();
-		static std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0<3>>();
-		static std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
-		static std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
-		static std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
-		static std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
-		static std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>();
-		static std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>();
-		static std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
-		static std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
-		static FiniteElement<0> fe0_sys = FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} );
+		//std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
+		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0<1>>();
+		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0<2>>();
+		std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0<3>>();
+		//std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
+		std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
+		std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
+		std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
+		//std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>();
+		std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>();
+		std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
+		std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
+	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
 		static FiniteElement<1> fe1_sys = FESystem<1>( {fe1_rt, fe1_disc, fe1_cr} );
 		static FiniteElement<2> fe2_sys = FESystem<2>( {fe2_rt, fe2_disc, fe2_cr} );
 		static FiniteElement<3> fe3_sys = FESystem<3>( {fe3_rt, fe3_disc, fe3_cr} );
@@ -406,6 +406,7 @@ void DarcyMH::initialize() {
 		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		data_->velocity->set_fe_data(dh.sequential());
     }
+    std::cout << "AA 6" << std::endl;
 
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
