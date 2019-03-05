@@ -117,13 +117,6 @@ public:
     		ASSERT_EQ(ele.idx(), dh_cell_.elm_idx());
     }
 
-    void reinit( uint loc_ele_idx)
-    {
-    	dh_cell_=DHCellAccessor();
-        local_ele_idx_=loc_ele_idx;
-        ele=dh->mesh_->element_accessor(ele_global_idx());
-    }
-
     uint dim() {
         return ele->dim();
     }
