@@ -112,33 +112,30 @@ public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0, DHCellAccessor dh_cell=DHCellAccessor())
     : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) ), dh_cell_(dh_cell)
-    {
-    	if (dh_cell_.is_valid())
-    		ASSERT_EQ(ele.idx(), dh_cell_.elm_idx());
+    {}
+
+    uint dim() const {
+        return dh_cell_.dim();
     }
 
-    uint dim() {
-        return ele->dim();
+    uint n_sides() const {
+        return element_accessor()->n_sides();
     }
 
-    uint n_sides() {
-        return ele->n_sides();
-    }
-
-    ElementAccessor<3> element_accessor() {
-        return ele;
+    inline ElementAccessor<3> element_accessor() const {
+        return dh_cell_.elm();
     }
 
     const arma::vec3 centre() const {
-        return ele.centre();
+        return element_accessor().centre();
     }
 
     double measure() const {
-        return ele.measure();
+        return element_accessor().measure();
     }
 
     Region region() const {
-        return ele.region();
+        return element_accessor().region();
     }
 
     uint ele_global_idx() {
