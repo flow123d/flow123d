@@ -165,7 +165,7 @@ void RichardsLMH::read_initial_condition()
     double init_value;
 
     for ( DHCellAccessor dh_cell : dh_->own_range() ) {
-         LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
+         LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
 
          init_value = data_->init_pressure.value(ele_ac.centre(), ele_ac.element_accessor());
 
@@ -293,7 +293,7 @@ void RichardsLMH::postprocess() {
 
     //VecGetArray(previous_solution, &loc_prev_sol);
     for ( DHCellAccessor dh_cell : dh_->own_range() ) {
-      LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell.local_idx(), dh_cell);
+      LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
       multidim_assembler[ele_ac.dim()-1]->update_water_content(ele_ac);
 
       double ele_scale = ele_ac.measure() *

@@ -110,8 +110,8 @@ template <int spacedim>
 class LocalElementAccessorBase {
 public:
 
-    LocalElementAccessorBase(MH_DofHandler *dh, uint loc_ele_idx=0, DHCellAccessor dh_cell=DHCellAccessor())
-    : dh(dh), local_ele_idx_(loc_ele_idx), ele( dh->mesh_->element_accessor(ele_global_idx()) ), dh_cell_(dh_cell)
+    LocalElementAccessorBase(MH_DofHandler *dh, DHCellAccessor dh_cell)
+    : dh(dh), ele( dh_cell.elm() ), dh_cell_(dh_cell)
     {}
 
     uint dim() const {
@@ -139,11 +139,11 @@ public:
     }
 
     uint ele_global_idx() {
-        return dh->el_4_loc[local_ele_idx_];
+        return element_accessor().idx();
     }
 
-    uint ele_local_idx() {
-        return local_ele_idx_;
+    uint ele_local_idx() const {
+        return dh_cell_.local_idx();
     }
 
     uint ele_row() {
@@ -204,7 +204,6 @@ private:
     int side_rows_[4];
     int edge_rows_[4];
     MH_DofHandler *dh;
-    uint local_ele_idx_;
     ElementAccessor<3> ele;
     DHCellAccessor dh_cell_;
 };
