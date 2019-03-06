@@ -111,7 +111,7 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, DHCellAccessor dh_cell)
-    : dh(dh), ele( dh_cell.elm() ), dh_cell_(dh_cell)
+    : dh(dh), dh_cell_(dh_cell)
     {}
 
     uint dim() const {
@@ -155,7 +155,7 @@ public:
     }
 
     uint edge_global_idx(uint i) {
-        return ele.side(i)->edge_idx();
+        return element_accessor().side(i)->edge_idx();
     }
 
     uint edge_local_idx(uint i) {
@@ -171,11 +171,11 @@ public:
     }
 
     SideIter side(uint i) {
-        return ele.side(i);
+        return element_accessor().side(i);
     }
 
     uint side_global_idx(uint i) {
-        return dh->elem_side_to_global[ ele.idx() ][ i ];
+        return dh->elem_side_to_global[ ele_global_idx() ][ i ];
     }
 
     uint side_local_idx(uint i) {
@@ -192,7 +192,6 @@ public:
 
 private:
     MH_DofHandler *dh;
-    ElementAccessor<3> ele;
     DHCellAccessor dh_cell_;
 };
 
