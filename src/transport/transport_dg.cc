@@ -924,12 +924,13 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
     // assemble integral over sides
     int sid, s1, s2;
-    for ( DHCellAccessor dh_cell : feo->dh()->local_range() )
+    for ( DHCellAccessor dh_cell : feo->dh()->local_range() ) {
+    	if (dh_cell.dim() != dim) continue;
         for( DHCellSide cell_side : dh_cell.side_range() )
         {
-        	if (cell_side.n_edge_sides()==0) continue; // skip "no-own" sides
+        	if (cell_side.n_edge_sides() < 2) continue;
             bool unique_edge = (cell_side.edge_sides().begin()->side()->element().idx() != dh_cell.elm_idx());
-    	    if ( (cell_side.n_edge_sides() < 2) || (cell_side.edge_sides().begin()->side()->element()->dim() != dim) || unique_edge ) continue;
+    	    if ( unique_edge ) continue;
     	    sid=0;
         	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
@@ -1074,6 +1075,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 }
             }
         }
+    }
 
     for (unsigned int i=0; i<n_max_sides; i++)
     {
