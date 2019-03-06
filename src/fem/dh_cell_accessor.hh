@@ -191,6 +191,13 @@ public:
     /// Returns range of all sides looped over common Edge.
     RangeConvert<DHEdgeSide, DHCellSide> edge_sides() const;
 
+    /**
+     * Returns total number of sides appropriate to Edge that owns actual cell side.
+     *
+     * return empty range if no element connected to Edge is local
+     */
+    unsigned int n_edge_sides() const;
+
     /// Iterates to next local element.
     inline virtual void inc() {
         side_idx_++;
@@ -297,8 +304,7 @@ public:
     : dh_cell_(dh_cell), neighb_idx_(neighb_idx), max_idx_(max_idx)
     {
 	    // Skip non-local cells
-	    while ( (neighb_idx_<max_idx_) && (dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
-            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx())) ) {
+	    while ( (neighb_idx_<max_idx_) && not_local_cell() ) {
         	neighb_idx_++;
         }
     }
@@ -314,8 +320,7 @@ public:
         do {
             neighb_idx_++;
         	if (neighb_idx_>=max_idx_) break; //stop condition at the end item of range
-        } while ( dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
-            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx()) );
+        } while ( not_local_cell() );
     }
 
     /// Comparison of accessors.
@@ -331,6 +336,12 @@ public:
     }
 
 private:
+    /// Check if cell side of neighbour is not local (allow skip invalid accessors).
+    inline bool not_local_cell() {
+        return ( dh_cell_.dof_handler_->global_to_local_el_idx_.end() ==
+            dh_cell_.dof_handler_->global_to_local_el_idx_.find((LongIdx)dh_cell_.elm()->neigh_vb[neighb_idx_]->side()->elem_idx()) );
+    }
+
     /// Appropriate cell accessor.
     DHCellAccessor dh_cell_;
     /// Index into neigh_vb array
@@ -417,19 +428,19 @@ inline RangeConvert<DHNeighbSide, DHCellSide> DHCellAccessor::neighb_sides() con
 
 
 inline RangeConvert<DHEdgeSide, DHCellSide> DHCellSide::edge_sides() const {
-	unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
-	Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
-	unsigned int upper_bound = 0; // return empty range if no element connected to Edge is local
-	for (int sid=0; sid<edg->n_sides; sid++)
-	    if ( dh_cell_accessor_.dof_handler_->el_is_local(edg->side(sid)->element().idx()) )
-	    {
-	    	upper_bound = edg->n_sides;
-	    	break;
-	    }
-
 	return RangeConvert<DHEdgeSide, DHCellSide>(make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide( *this, 0) ),
-	                                            make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide( *this, upper_bound) ));
+	                                            make_iter<DHEdgeSide, DHCellSide>( DHEdgeSide( *this, n_edge_sides()) ));
 }
+
+
+inline unsigned int DHCellSide::n_edge_sides() const {
+    unsigned int edge_idx = dh_cell_accessor_.elm()->edge_idx(side_idx_);
+    Edge *edg = &dh_cell_accessor_.dof_handler_->mesh()->edges[edge_idx];
+    for (int sid=0; sid<edg->n_sides; sid++)
+        if ( dh_cell_accessor_.dof_handler_->el_is_local(edg->side(sid)->element().idx()) ) return edg->n_sides;
+    return 0;
+}
+
 
 
 #endif /* DH_CELL_ACCESSOR_HH_ */
