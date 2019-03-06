@@ -170,11 +170,6 @@ public:
         return edge_row(i) - dh->rows_ds->begin();
     }
 
-    int *edge_rows() {
-        for(uint i=0; i< dim(); i++) edge_rows_[i] = edge_row(i);
-        return edge_rows_;
-    }
-
     SideIter side(uint i) {
         return ele.side(i);
     }
@@ -195,14 +190,7 @@ public:
         return side_row(i) - dh->rows_ds->begin();
     }
 
-    int *side_rows() {
-        for(uint i=0; i< dim(); i++) side_rows_[i] = side_row(i);
-        return side_rows_;
-    }
-
 private:
-    int side_rows_[4];
-    int edge_rows_[4];
     MH_DofHandler *dh;
     ElementAccessor<3> ele;
     DHCellAccessor dh_cell_;
