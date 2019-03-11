@@ -46,7 +46,7 @@ problem: !Coupling_Sequential
         anisotropy: 1e-3
         #cross_section: 1.0
         water_source_density: !FieldFormula
-          value: 1e-3 * 200.0 * 1*1 * sin(1*x)
+          value: 1e-3 * 80.0 * 1*1 * sin(1*x)
       #- region: .aquifer
         #bc_type: dirichlet
         #bc_pressure: !FieldFormula
@@ -54,7 +54,7 @@ problem: !Coupling_Sequential
       - region: .aquifer
         bc_type: dirichlet
         bc_pressure: !FieldFormula
-          value: -39.1769083326577 * log(((x-3.33)^2+(y-3.33)^2)^0.5)   +   200 * sin(1*x) #problem with source
+          value: -31.3412307124964 * log(((x-3.33)^2+(y-3.33)^2)^0.5)   +   80 * sin(1*x) #problem with source
           
     balance: {}
     output:

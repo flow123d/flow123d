@@ -71,12 +71,13 @@ class Parameters :
     wells = []
      
     # source
-    U = 200.0
+    U = 80.0
     omg = 1
     
     def __init__(self):
         # wells
-        self.wells.append(Well(0.03, 10, 100, 3.33, 3.33, self.k2, -39.1769083326577)); # source (U,omg)
+        #self.wells.append(Well(0.03, 10, 100, 3.33, 3.33, self.k2, -39.1769083326577)); # source (U=200,omg)
+        self.wells.append(Well(0.03, 10, 100, 3.33, 3.33, self.k2, -31.3412307124964)); # source (U=80,omg)
         #self.wells.append(Well(0.03, 10, 100, 3.33, 3.33, self.k2, -28.4909113782955)); # no source
     
     
