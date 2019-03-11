@@ -182,8 +182,7 @@ public:
         Field<3, FieldValue<3>::Scalar > init_pressure;
         Field<3, FieldValue<3>::Scalar > storativity;
 
-        //Field<3, FieldValue<3>::VectorFixed > velocity;
-        std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > velocity;
+        Field<3, FieldValue<3>::VectorFixed > field_ele_flux;
 
         /**
          * Gravity vector and constant shift of pressure potential. Used to convert piezometric head
@@ -382,6 +381,12 @@ protected:
     Vec steady_rhs;
     Vec new_diagonal;
     Vec previous_solution;
+
+    // Temporary objects holding pointers to appropriate FieldFE
+    // TODO remove after final fix of equations
+    //std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
+    //std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;
 

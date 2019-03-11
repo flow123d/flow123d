@@ -261,11 +261,9 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI().m(-1) );
 
-    //*this += velocity
-	//        .disable_where(bc_type, {none, dirichlet, seepage, total_flux, river} )
-	//        .name("velocity")
-    //        .description("Velocity solution.")
-    //        .units( UnitSI().m().s(-1) );
+	*this += field_ele_flux.name("velocity").units(UnitSI().m().s(-1)) //TODO change name to velocity_p0
+             .flags(FieldFlag::equation_result)
+             .description("Velocity solution - P0 interpolation.");
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -382,7 +380,7 @@ void DarcyMH::initialize() {
 
     mh_dh.reinit(mesh_);
 
-    { // init data_->velocity
+    { // init data_->field_ele_flux
 		//std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
 		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0<1>>();
 		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0<2>>();
@@ -405,8 +403,10 @@ void DarcyMH::initialize() {
 		dh_ = dh_par.sequential();
 		data_->dh_ = dh_;
 
-		data_->velocity = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
-		data_->velocity->set_fe_data(dh_);
+		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
+		uint rt_component = 0;
+		ele_flux_ptr->set_fe_data(dh_, rt_component);
+		data_->field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
     }
 
     // Initialize bc_switch_dirichlet to size of global boundary.
@@ -905,7 +905,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
             ls->set_from_input(in_rec);
-            ls->set_solution();
+            ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
             // possible initialization particular to BDDC
             START_TIMER("BDDC set mesh data");
             set_mesh_data_for_bddc(ls);
@@ -934,7 +934,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
 
-                ls->set_solution();
+                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
                 schur0=ls;
             } else {
                 IS is;
@@ -1448,7 +1448,7 @@ void DarcyMH::modify_system() {
 
 
 std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
-    return data_->velocity;
+    return ele_flux_ptr;
 }
 
 
