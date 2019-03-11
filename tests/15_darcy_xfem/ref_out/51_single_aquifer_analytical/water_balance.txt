@@ -1,0 +1,18 @@
+"time [s]"	"region"	"quantity [m(3)]"	"flux"	"flux_in"	"flux_out"	"mass"	"source"	"source_in"	"source_out"	"flux_increment"	"source_increment"	"flux_cumulative"	"source_cumulative"	"error"
+0	"well_1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"well_2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"well_3"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"well_4"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"well_5"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
+0	"aquifer"	"water_volume"	0	0	0	0	1.48934	3.21414	-1.72479	0	0	0	0	0
+0	".well_1_top"	"water_volume"	28274.3	28274.3	0	0	0	0	0	0	0	0	0	0
+0	".well_2_top"	"water_volume"	28274.4	28274.4	0	0	0	0	0	0	0	0	0	0
+0	".well_3_top"	"water_volume"	28274.4	28274.4	0	0	0	0	0	0	0	0	0	0
+0	".well_4_top"	"water_volume"	28274.3	28274.3	0	0	0	0	0	0	0	0	0	0
+0	".well_5_top"	"water_volume"	28274.4	28274.4	0	0	0	0	0	0	0	0	0	0
+0	".well_1_bot"	"water_volume"	-28274.4	0	-28274.4	0	0	0	0	0	0	0	0	0
+0	".well_2_bot"	"water_volume"	-28274.2	0	-28274.2	0	0	0	0	0	0	0	0	0
+0	".well_3_bot"	"water_volume"	-28274.1	0	-28274.1	0	0	0	0	0	0	0	0	0
+0	".well_4_bot"	"water_volume"	-28274.4	0	-28274.4	0	0	0	0	0	0	0	0	0
+0	".well_5_bot"	"water_volume"	-28274.2	0	-28274.2	0	0	0	0	0	0	0	0	0
+0	".aquifer"	"water_volume"	-1.86346	0	-1.86346	0	0	0	0	0	0	0	0	0

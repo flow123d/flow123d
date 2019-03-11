@@ -27,7 +27,7 @@ problem: !Coupling_Sequential
   flow_equation: !Flow_Darcy_MH
     output_specific:
       compute_errors: true
-      python_solution: 51_analytical_module_5w.py
+      python_solution: 51_analytical_module_5w_source.py
       output_linear_system: true
       fields:
         - velocity_enr

@@ -71,16 +71,16 @@ class Parameters :
     wells = []
     
     # source
-    U = 80.0
+    U = 0.0
     omg = 1
     
     def __init__(self):
         # wells
-        self.wells.append(Well(0.03, 20, -150, 2.8, 2.5, self.k2,  18.49564648342761));
-        self.wells.append(Well(0.03, 10, -30, 4.9, 5.4, self.k2,  -24.33605607371134));
-        self.wells.append(Well(0.03, 10, 120, 2.9, 7.4, self.k2,  -37.19135529303921));
-        self.wells.append(Well(0.03, 10, -50, 7.3, 7.8, self.k2,    8.29534878593690));
-        self.wells.append(Well(0.03, 20, 100, 7.4, 2.8, self.k2,  -24.77310348746337));
+        self.wells.append(Well(0.03, 20, -150, 2.8, 2.5, self.k2,  28.92083334831106));
+        self.wells.append(Well(0.03, 10, -30, 4.9, 5.4, self.k2,    6.48430642953746));
+        self.wells.append(Well(0.03, 10, 120, 2.9, 7.4, self.k2,  -26.77980253604445));
+        self.wells.append(Well(0.03, 10, -50, 7.3, 7.8, self.k2,   10.66455773936804));
+        self.wells.append(Well(0.03, 20, 100, 7.4, 2.8, self.k2,  -22.85397319330899));
 
 
     def p2_fce_value(self, x, y):
