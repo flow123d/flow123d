@@ -76,8 +76,8 @@ class Parameters :
     
     def __init__(self):
         # wells
-        self.wells.append(Well(0.03, 100, 150, 4.1, 4.3, self.k2, -52.2453721919971));
-        self.wells.append(Well(0.03, 100, 100, 5.7, 5.9, self.k2, -40.6805832786121));
+        self.wells.append(Well(0.03, 100, 150, 4.1, 4.3, self.k2, -52.1896089516975));
+        self.wells.append(Well(0.03, 100, 100, 5.7, 5.9, self.k2, -40.6328391351135));
     
     
     def p2_fce_value(self, x, y):
