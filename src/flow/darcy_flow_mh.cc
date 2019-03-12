@@ -963,7 +963,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 }
                 ls->set_complement( schur1 );
                 ls->set_from_input(in_rec);
-                ls->set_solution();
+                ls->set_solution( ele_flux_ptr->get_data_vec().petsc_vec() );
                 schur0=ls;
             }
 
