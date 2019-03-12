@@ -98,6 +98,11 @@ public:
     	return elm().dim();
     }
 
+    /// Return DOF handler
+    inline const DOFHandlerMultiDim *dh() {
+        return dof_handler_;
+    }
+
     /**
      * @brief Returns finite element object for given space dimension.
      */

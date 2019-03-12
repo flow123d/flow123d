@@ -111,8 +111,10 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, DHCellAccessor dh_cell)
-    : dh(dh), dh_cell_(dh_cell)
-    {}
+    : dh(dh), dh_cell_(dh_cell), indices_(dh_cell_.dh()->max_elem_dofs())
+    {
+        n_indices_ = dh_cell_.get_loc_dof_indices(indices_);
+    }
 
     uint dim() const {
         return dh_cell_.dim();
@@ -147,11 +149,13 @@ public:
     }
 
     uint ele_row() {
-        return dh->row_4_el[ele_global_idx()];
+        //return dh->row_4_el[ele_global_idx()];
+        return ele_local_row() + dh_cell_.dh()->distr()->begin();
     }
 
     uint ele_local_row() {
-        return ele_row() - dh->rows_ds->begin(); //  i_loc_el + side_ds->lsize();
+        //return ele_row() - dh->rows_ds->begin(); //  i_loc_el + side_ds->lsize();
+        return indices_[n_indices_/2];
     }
 
     uint edge_global_idx(uint i) {
@@ -163,11 +167,13 @@ public:
     }
 
     uint edge_row(uint i) {
-        return dh->row_4_edge[edge_global_idx(i)];
+        return edge_local_row(i) + dh_cell_.dh()->distr()->begin();
+        //return dh->row_4_edge[edge_global_idx(i)];
     }
 
     uint edge_local_row( uint i) {
-        return edge_row(i) - dh->rows_ds->begin();
+        return indices_[(n_indices_+1)/2+i];
+        //return edge_row(i) - dh->rows_ds->begin();
     }
 
     SideIter side(uint i) {
@@ -183,16 +189,20 @@ public:
     }
 
     uint side_row(uint i) {
-        return dh->side_row_4_id[side_global_idx(i)];
+        //return dh->side_row_4_id[side_global_idx(i)];
+        return side_local_row(i) + dh_cell_.dh()->distr()->begin();
     }
 
     uint side_local_row( uint i) {
-        return side_row(i) - dh->rows_ds->begin();
+        //return side_row(i) - dh->rows_ds->begin();
+        return indices_[i];
     }
 
 private:
     MH_DofHandler *dh;
     DHCellAccessor dh_cell_;
+    std::vector<LongIdx> indices_;
+    uint n_indices_;
 };
 
 /**
