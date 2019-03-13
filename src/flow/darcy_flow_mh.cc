@@ -426,7 +426,7 @@ void DarcyMH::initialize() {
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD, mh_dh.rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecCreateMPI(PETSC_COMM_WORLD, dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
     VecDuplicate(steady_diagonal, &steady_rhs);
@@ -436,7 +436,7 @@ void DarcyMH::initialize() {
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     data_->water_balance_idx = balance_->add_quantity("water_volume");
-    balance_->allocate(mh_dh.rows_ds->lsize(), 1);
+    balance_->allocate(dh_->distr()->lsize(), 1);
     balance_->units(UnitSI().m(3));
 
 
@@ -804,7 +804,7 @@ void DarcyMH::allocate_mh_matrix()
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            int neigh_edge_row = mh_dh.row_4_edge[ ngh->edge_idx() ];
+            int neigh_edge_row = ele_ac.edge_row(ngh->edge_idx());
             tmp_rows.push_back(neigh_edge_row);
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
@@ -823,7 +823,7 @@ void DarcyMH::allocate_mh_matrix()
                 ElementAccessor<3> slave_ele = mesh_->element_accessor( local->bulk_ele_idx() );
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
                 for(unsigned int i_side=0; i_side < slave_ele->n_sides(); i_side++) {
-                    tmp_rows.push_back( mh_dh.row_4_edge[ slave_ele.side(i_side)->edge_idx() ] );
+                    tmp_rows.push_back( ele_ac.edge_row(slave_ele.side(i_side)->edge_idx()) );
                     //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
                 }
             }
@@ -900,7 +900,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
     		WarningOut() << "For BDDC no Schur complements are used.";
             mh_dh.prepare_parallel_bddc();
             n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*mh_dh.rows_ds),
+            LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*dh_->distr()),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
@@ -925,7 +925,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             LinSys_PETSC *schur1, *schur2;
 
             if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*mh_dh.rows_ds) );
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*dh_->distr()) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
@@ -938,10 +938,10 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 schur0=ls;
             } else {
                 IS is;
-                ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), mh_dh.rows_ds->begin(), 1, &is);
+                ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), dh_->distr()->begin(), 1, &is);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
-                SchurComplement *ls = new SchurComplement(is, &(*mh_dh.rows_ds));
+                SchurComplement *ls = new SchurComplement(is, &(*dh_->distr()));
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -950,7 +950,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     schur1->set_positive_definite();
                 } else {
                     IS is;
-                    ISCreateStride(PETSC_COMM_WORLD, mh_dh.el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    ISCreateStride(PETSC_COMM_WORLD, dh_->mesh()->get_el_ds()->lsize(), ls->get_distribution()->begin(), 1, &is);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
@@ -1165,7 +1165,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
         // insert dofs related to compatible connections
         for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
-            int edge_row = mh_dh.row_4_edge[ ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx()  ];
+            int edge_row = ele_ac.edge_row( ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx() );
             arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
 
             localDofMap.insert( std::make_pair( edge_row, coord ) );
