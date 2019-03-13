@@ -150,17 +150,35 @@ void MH_DofHandler::print_dofs_dbg()
             << "total_size " << total_size() << "\n"
     );
     
+//     for(unsigned int i=0; i<xfem_data_2d.size(); i++)
+//     {
+//         cout << i << "  " << xfem_data_2d[i].ele_global_idx() << endl;
+//     }
+//     
+//      for(unsigned int i=0; i<xfem_data_3d.size(); i++)
+//     {
+//         cout << i << "  " << xfem_data_3d[i].ele_global_idx() << endl;
+//     }
+//     
+//     for(unsigned int i=0; i<mesh_->n_elements(); i++)
+//     {
+//         cout << i << "  " << xdata_4_el[i] << endl;
+//     }
+    
     std::vector<int> dofs; dofs.reserve(50);
     for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
         auto ele_ac = accessor(i_loc);
-        int ndofs = ele_ac.get_dofs(dofs);
         
         DBGCOUT("### DOFS ele " << ele_ac.ele_global_idx() << "   ");
         cout << "[";
-        if(ele_ac.is_enriched()) cout << ele_ac.xfem_data_pointer()->n_enrichments();
+        if(ele_ac.is_enriched())
+        {
+            cout << ele_ac.xfem_data_pointer()->n_enrichments();
+        }
         else cout << "0";
         cout << "]  ";
         
+        int ndofs = ele_ac.get_dofs(dofs);
         for(int i =0; i < ndofs; i++){
             cout << dofs[i] << " ";
         }
@@ -398,8 +416,8 @@ template <int spacedim>
 XFEMElementDataBase* LocalElementAccessorBase<spacedim>::xfem_data_pointer()
 {
     switch(ele.dim()){
-        case 2: dh->get_xfem_sing_data<2>(ele.idx()); break;
-        case 3: dh->get_xfem_sing_data<3>(ele.idx()); break;
+        case 2: return dh->get_xfem_sing_data<2>(ele.idx()); break;
+        case 3: return dh->get_xfem_sing_data<3>(ele.idx()); break;
         default: return nullptr;
     }
 }
@@ -416,9 +434,9 @@ int LocalElementAccessorBase<spacedim>::get_dofs_vel(std::vector<int>& dofs)
     dofs.clear();
     uint i;
     for(i=0; i< n_sides(); i++) dofs.push_back(side_row(i));
-    
     if(is_enriched() && dh->enrich_velocity){
         XFEMElementDataBase* xd = xfem_data_pointer();
+        ASSERT_PTR_DBG(xd);
         for(uint w=0; w< xd->n_enrichments(); w++){
             if(dh->single_enr){
                 dofs.push_back(dh->row_4_vel_sing[xd->global_enrichment_index(w)]);
@@ -995,7 +1013,7 @@ void MH_DofHandler::distribute_enriched_dofs()
 //     unsigned int max_enr_per_node = 1;
     
     unsigned int enr_size = singularities_12d_.size() + singularities_13d_.size();
-    
+
     //distribute enriched dofs:
     temp_offset = offset_enr_velocity; // will return last dof + 1 (it means new available dof)
     if(enrich_velocity) {
@@ -1102,6 +1120,7 @@ void MH_DofHandler::distribute_enriched_dofs()
 template<>
 XFEMElementSingularData<1> * MH_DofHandler::get_xfem_sing_data(int ele_idx)
 {
+    ASSERT_DBG(0)("No xfem data on 1d element.");
     return nullptr;
 }
 
@@ -1110,7 +1129,7 @@ XFEMElementSingularData<2> * MH_DofHandler::get_xfem_sing_data(int ele_idx)
 {
     if(xdata_4_el[ele_idx] >= 0){
         ASSERT_LT_DBG(xdata_4_el[ele_idx], xfem_data_2d.size());
-        return & xfem_data_2d[xdata_4_el[ele_idx]];
+        return & (xfem_data_2d[xdata_4_el[ele_idx]]);
     }
     else
         return nullptr;
@@ -1120,7 +1139,7 @@ XFEMElementSingularData<3> * MH_DofHandler::get_xfem_sing_data(int ele_idx)
 {
     if(xdata_4_el[ele_idx] >= 0){
         ASSERT_LT_DBG(xdata_4_el[ele_idx], xfem_data_3d.size());
-        return & xfem_data_3d[xdata_4_el[ele_idx]];
+        return & (xfem_data_3d[xdata_4_el[ele_idx]]);
     }
     else
         return nullptr;
