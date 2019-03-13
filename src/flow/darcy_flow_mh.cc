@@ -415,7 +415,7 @@ void DarcyMH::initialize() {
                 
         // init dofhandler including enrichments
         mh_dh.reinit(mesh_, data_->cross_section, data_->sigma);
-        
+
 //         mh_dh.print_array(mh_dh.side_row_4_id, mesh_->n_sides(), "side dofs-velocity");
 //         mh_dh.print_array(mh_dh.row_4_el, mesh_->n_elements(), "ele dofs-pressure");
 //         mh_dh.print_array(mh_dh.row_4_edge, mesh_->n_edges(), "edge dofs-pressure lagrange");
@@ -820,7 +820,7 @@ void DarcyMH::allocate_mh_matrix()
                 }
             }
         }
-        
+
         // compatible neighborings rows
         unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
         for (unsigned int i = 0; i < n_neighs; i++) {
@@ -831,7 +831,6 @@ void DarcyMH::allocate_mh_matrix()
             tmp_rows.push_back(neigh_edge_row);
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
-
         
         ls->mat_set_values(1, &ele_row, n_neighs, tmp_rows.data(), zeros); // (edges, ele)  x (neigh edges)
         ls->mat_set_values(n_neighs, tmp_rows.data(), 1, &ele_row, zeros); // (neigh edges) x (edges, ele)
@@ -960,7 +959,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 else {
                     ls->LinSys::set_from_input(in_rec); // get only common options
                 }
-
                 ls->set_solution( NULL );
                 schur0=ls;
             } else {
@@ -1110,31 +1108,63 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
 //     }
     
     // compute h_min for different dimensions
-    double d_max = std::numeric_limits<double>::max();
+    double d_max = std::numeric_limits<double>::min();
     double h1 = d_max, h2 = d_max, h3 = d_max;
     double he2 = d_max, he3 = d_max;
+    
+    FILE * file;
+    file = fopen(output_file.c_str(),"a");
+    fprintf(file, "vector_ele = [\n");
     for (auto ele : mesh_->elements_range()) {
         switch(ele->dim()){
-            case 1: h1 = std::min(h1,ele.measure()); break;
-            case 2: h2 = std::min(h2,ele.measure()); break;
-            case 3: h3 = std::min(h3,ele.measure()); break;
+            case 1: h1 = std::max(h1,ele.measure()); break;
+            case 2: h2 = std::max(h2,ele.measure()); break;
+            case 3: h3 = std::max(h3,ele.measure()); break;
         }
+        fprintf(file, "%e\n", ele.measure());
         
         for (unsigned int j=0; j<ele->n_sides(); j++) {
             switch(ele->dim()){
-                case 2: he2 = std::min(he2, ele.side(j)->measure()); break;
-                case 3: he3 = std::min(he3, ele.side(j)->measure()); break;
-            }
+                    case 2: he2 = std::max(he2, ele.side(j)->measure()); break;
+                    case 3: he3 = std::max(he3, ele.side(j)->measure()); break;
+                }
         }
     }
+        
+//         switch(ele->dim()){
+//             case 2: 
+//                 {
+//                     for (unsigned int j=0; j<ele->n_sides(); j++)
+//                         he2 = std::max(he2, ele.side(j)->measure());
+//                 }
+//             case 3: 
+//                 {
+//                     he3 = std::max(he3, arma::norm(ele.node(0)->point() - ele.node(1)->point()));
+//                     he3 = std::max(he3, arma::norm(ele.node(0)->point() - ele.node(2)->point()));
+//                     he3 = std::max(he3, arma::norm(ele.node(0)->point() - ele.node(3)->point()));
+//                     he3 = std::max(he3, arma::norm(ele.node(1)->point() - ele.node(2)->point()));
+//                     he3 = std::max(he3, arma::norm(ele.node(1)->point() - ele.node(3)->point()));
+//                     he3 = std::max(he3, arma::norm(ele.node(2)->point() - ele.node(3)->point()));
+//                 }
+//         }
+    fprintf(file, "];\n");
+    fprintf(file, "vector_side = [\n");
+    for (auto edge : mesh_->edges) {
+        fprintf(file, "%e\n", edge.side(0)->measure());
+//         for (unsigned int j=0; j<ele->n_sides(); j++) {
+//             
+//             fprintf(file, "%e\n", ele.side(j)->measure());
+//         }
+    }
+    fprintf(file, "];\n");
+    
     if(h1 == d_max) h1 = 0;
     if(h2 == d_max) h2 = 0;
     if(h3 == d_max) h3 = 0;
     if(he2 == d_max) he2 = 0;
     if(he3 == d_max) he3 = 0;
     
-    FILE * file;
-    file = fopen(output_file.c_str(),"a");
+    
     fprintf(file, "nA = %d;\n", mh_dh.side_ds->size());
     fprintf(file, "nB = %d;\n", mh_dh.el_ds->size());
     fprintf(file, "nBF = %d;\n", mh_dh.edge_ds->size());

@@ -126,11 +126,11 @@ public:
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
         
-        if(ele_ac.is_enriched())
-        {
-            loc_system_.get_matrix().print(cout, "matrix");
-            loc_system_.get_rhs().print(cout, "rhs");
-        }
+//         if(ele_ac.is_enriched())
+//         {
+//             loc_system_.get_matrix().print(cout, "matrix");
+//             loc_system_.get_rhs().print(cout, "rhs");
+//         }
         
         ad_->lin_sys->set_local_system(loc_system_);
     }
