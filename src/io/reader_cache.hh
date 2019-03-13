@@ -52,9 +52,14 @@ public:
 	static std::shared_ptr<Mesh> get_mesh(const FilePath &file_path);
 
 	/**
-	 * Check if nodes and elements of reader mesh are compatible with \p mesh.
+	 * Check if nodes and elements of reader mesh are compatible with \p mesh and fill element id vectors of reader.
 	 */
 	static bool check_compatible_mesh(const FilePath &file_path, Mesh &mesh);
+
+	/**
+	 * Fill element id vectors of reader without checking compatibility.
+	 */
+	static void get_element_ids(const FilePath &file_path, const Mesh &mesh);
 
 private:
 	/// Returns singleton instance

@@ -18,38 +18,51 @@
 #ifndef RANGE_WRAPPER_HH_
 #define RANGE_WRAPPER_HH_
 
-#include "mesh/mesh.h"
 #include "tools/general_iterator.hh"
 
 /**
  * @brief Range helper class.
  *
- * Allow iterate in bounds given by begin and end range. Class can be used for iterable accessor classes.
+ * Allow iterate in bounds given by begin and end iterator. Class can be used for iterable accessor classes.
+ *
+ * Template argument:
+ *  - ObjectIn  Type over its instances is iterated,
+ *  - ObjectOut Operators '*' and '->' returns objects of this type.
+ *
+ * Require the template object to implement:
+ *  - ObjectIn must be implicitly convertible to ObjectOut type.
  */
-template<class Object>
-class Range
+template<class ObjectIn, class ObjectOut>
+class RangeConvert
 {
 public:
-	Range(const Mesh * mesh, unsigned int begin, unsigned int end)
-	: mesh_(mesh), begin_(begin), end_(end) {
-		ASSERT_LE(begin, end).error("Invalid range, begin is greater than end!");
+	/// Constructor.
+	RangeConvert(IterConvert<ObjectIn, ObjectOut> begin, IterConvert<ObjectIn, ObjectOut> end)
+	: begin_(begin), end_(end) {}
+
+	/// Iterator to begin item of range.
+	IterConvert<ObjectIn, ObjectOut> begin() {
+		return begin_;
 	}
 
-	Iter<Object> begin() {
-		return make_iter<Object>( Object(mesh_, begin_) );
+	/// Iterator to end item of range.
+	IterConvert<ObjectIn, ObjectOut> end() {
+		return end_;
 	}
 
-	Iter<Object> end() {
-		return make_iter<Object>( Object(mesh_, end_) );
-	}
-
-	inline unsigned int size() const {
-		return end_ - begin_;
-	}
 private:
-	const Mesh * mesh_;
-	unsigned int begin_;
-	unsigned int end_;
+	IterConvert<ObjectIn, ObjectOut> begin_;
+	IterConvert<ObjectIn, ObjectOut> end_;
 };
+
+
+/**
+ * @brief Range helper class.
+ *
+ * Same as previous but doesn't provide specialization of operators '*' and '->'.
+ */
+template<class Object>
+using Range = RangeConvert<Object, Object>;
+
 
 #endif // RANGE_WRAPPER_HH_

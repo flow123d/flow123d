@@ -41,19 +41,20 @@ class ISTFormatter(object):
             fp.write(latex_result)
 
     @staticmethod
-    def tree2html(element, try_pretty=0):
+    def tree2html(element, try_pretty=True):
         import xml.etree.ElementTree as ET
         html_string = ET.tostring(element.root, method='html').decode()
         if not try_pretty:
             return html_string
 
         try:
-            from BeautifulSoup import BeautifulSoup
-            soup = BeautifulSoup(html_string)
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(html_string, features="html.parser")
             Logger.instance().info('Prettifying html string')
             html_pretty = soup.prettify()
             return html_pretty
-        except:
+        except Exception as e:
+            print(e)
             pass
 
         return html_string

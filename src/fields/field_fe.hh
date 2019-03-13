@@ -21,20 +21,25 @@
 #include "petscmat.h"
 #include "system/system.hh"
 #include "fields/field_algo_base.hh"
+#include "fields/fe_value_handler.hh"
+#include "la/vector_mpi.hh"
 #include "mesh/mesh.h"
 #include "mesh/point.hh"
 #include "mesh/bih_tree.hh"
 #include "mesh/long_idx.hh"
+#include "mesh/range_wrapper.hh"
 #include "io/element_data_cache.hh"
 #include "io/msh_basereader.hh"
+#include "fem/fe_p.hh"
+#include "fem/mapping_p1.hh"
+#include "fem/fe_system.hh"
 #include "fem/dofhandler.hh"
+#include "fem/finite_element.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "input/factory.hh"
 
 #include <memory>
 
-class VectorSeqDouble;
-template<unsigned int dim, unsigned int spacedim> class MappingP1;
-template <int elemdim, int spacedim, class Value> class FEValueHandler;
 
 
 /**
@@ -47,6 +52,17 @@ class FieldFE : public FieldAlgorithmBase<spacedim, Value>
 public:
     typedef typename FieldAlgorithmBase<spacedim, Value>::Point Point;
     typedef FieldAlgorithmBase<spacedim, Value> FactoryBaseType;
+
+	/**
+	 * Possible interpolations of input data.
+	 */
+	enum DataInterpolation
+	{
+		identic_msh,    //!< identical mesh
+		equivalent_msh, //!< equivalent mesh (default value)
+		gauss_p0,       //!< P0 interpolation (with the use of Gaussian distribution)
+		interp_p0       //!< P0 interpolation (with the use of calculation of intersections)
+	};
 
     /**
      * Default constructor, optionally we need number of components @p n_comp in the case of Vector valued fields.
@@ -64,26 +80,19 @@ public:
     static const Input::Type::Selection & get_disc_selection_input_type();
 
     /**
-     * Setter for the finite element data. The mappings are required for computation of local coordinates.
-     * @param dh   Dof handler.
-     * @param map1 1D mapping.
-     * @param map2 2D mapping.
-     * @param map3 3D mapping.
-     * @param data Vector of dof values.
+     * Return Input selection that allow to set interpolation of input data.
      */
-    void set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
-    		MappingP1<1,3> *map1,
-    		MappingP1<2,3> *map2,
-    		MappingP1<3,3> *map3,
-			VectorSeqDouble *data);
+    static const Input::Type::Selection & get_interp_selection_input_type();
 
     /**
-     * Postponed setter of Dof handler.
-     *
-     * Allow to set native Dof handler after set_mesh.
-     * @param dh   Dof handler.
+     * Setter for the finite element data.
+     * @param dh              Dof handler.
+     * @param data            Vector of dof values, optional (create own vector according to dofhandler).
+     * @param component_index Index of component (for vector_view/tensor_view)
+     * @return                Data vector of dof values.
      */
-    void set_native_dh(std::shared_ptr<DOFHandlerMultiDim> dh) override;
+    VectorMPI set_fe_data(std::shared_ptr<DOFHandlerMultiDim> dh,
+    		unsigned int component_index = 0, VectorMPI dof_values = VectorMPI::sequential(0));
 
     /**
      * Returns one value in one given point. ResultType can be used to avoid some costly calculation if the result is trivial.
@@ -117,13 +126,21 @@ public:
     /**
      * Copy data vector to given output ElementDataCache
      */
-    void fill_data_to_cache(ElementDataCache<double> &output_data_cache);
+    void native_data_to_cache(ElementDataCache<double> &output_data_cache);
 
 
     /**
      * Return size of vector of data stored in Field
      */
     unsigned int data_size() const;
+
+    inline std::shared_ptr<DOFHandlerMultiDim> get_dofhandler() const {
+    	return dh_;
+    }
+
+    inline VectorMPI get_data_vec() const {
+    	return data_vec_;
+    }
 
 
     /// Destructor.
@@ -133,21 +150,27 @@ private:
 	/// Create DofHandler object
 	void make_dof_handler(const Mesh *mesh);
 
-	/// Interpolate data over all elements of target mesh.
-	void interpolate(ElementDataCache<double>::ComponentDataPtr data_vec);
+	/// Interpolate data (use Gaussian distribution) over all elements of target mesh.
+	void interpolate_gauss(ElementDataCache<double>::ComponentDataPtr data_vec);
+
+	/// Interpolate data (use intersection library) over all elements of target mesh.
+	void interpolate_intersection(ElementDataCache<double>::ComponentDataPtr data_vec);
 
 	/// Calculate native data over all elements of target mesh.
 	void calculate_native_values(ElementDataCache<double>::ComponentDataPtr data_cache);
 
-	/// Ensure data setting of methods set_fe_data and set_native_dh.
-	void reinit_fe_data(MappingP1<1,3> *map1,
-			MappingP1<2,3> *map2,
-			MappingP1<3,3> *map3);
+	/**
+	 * Fill data to boundary_dofs_ vector.
+	 *
+	 * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+	 */
+	void fill_boundary_dofs();
+
 
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorSeqDouble *data_vec_;
+    VectorMPI data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices_;
 
@@ -182,6 +205,9 @@ private:
 	/// Specify section where to find the field data in input mesh file
 	OutputTime::DiscreteSpace discretization_;
 
+	/// Specify type of FE data interpolation
+	DataInterpolation interpolation_;
+
 	/// Field flags.
 	FieldFlag::Flags flags_;
 
@@ -194,14 +220,110 @@ private:
     /// Is set in set_mesh method. Value true means, that we accept only boundary element accessors in the @p value method.
     bool boundary_domain_;
 
-    /// Flag that determines if source mesh and target mesh are compatible
-    bool has_compatible_mesh_;
+    /**
+     * Hold dofs of boundary elements.
+     *
+     * TODO: Temporary solution. Fix problem with merge new DOF handler and boundary Mesh. Will be removed in future.
+     */
+    std::shared_ptr< std::vector<LongIdx> > boundary_dofs_;
 
     /// Registrar of class to factory
     static const int registrar;
-
-    friend class VectorSeqDouble;
 };
+
+
+
+/**
+ * Method creates FieldFE of existing VectorMPI that represents elementwise field.
+ *
+ * It's necessary to create new VectorMPI of FieldFE, because DOF handler has generally
+ * a different ordering than mesh.
+ * Then is need to call fill_output_data method.
+ *
+ * Temporary solution that will be remove after solving issue 995.
+ */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mesh & mesh, unsigned int n_comp)
+{
+	std::shared_ptr<DOFHandlerMultiDim> dh; // DOF handler object allow create FieldFE
+	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
+	FiniteElement<1> *fe1;
+	FiniteElement<2> *fe2;
+	FiniteElement<3> *fe3;
+
+	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
+		case 1: { // scalar
+			fe0 = new FE_P_disc<0>(0);
+			fe1 = new FE_P_disc<1>(0);
+			fe2 = new FE_P_disc<2>(0);
+			fe3 = new FE_P_disc<3>(0);
+			break;
+		}
+		case 3: { // vector
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
+			break;
+		}
+		case 9: { // tensor
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
+			break;
+		}
+		default:
+			ASSERT(false).error("Should not happen!\n");
+	}
+
+	// Prepare DOF handler
+	DOFHandlerMultiDim dh_par(mesh);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
+	dh_par.distribute_dofs(ds);
+    dh = dh_par.sequential();
+
+	// Construct FieldFE
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+	field_ptr->set_fe_data(dh, 0, VectorMPI::sequential(vec_seq.size()) );
+	return field_ptr;
+}
+
+
+/**
+ * Fill data to VecSeqDouble in order corresponding with element DOFs.
+ *
+ * Set data to data vector of field in correct order according to values of DOF handler indices.
+ *
+ * Temporary solution that will be remove after solving issue 995.
+ */
+template <int spacedim, class Value>
+void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Value> > field_ptr)
+{
+	auto dh = field_ptr->get_dofhandler();
+	unsigned int ndofs = dh->max_elem_dofs();
+	unsigned int idof; // iterate over indices
+	std::vector<LongIdx> indices(ndofs);
+
+	/*for (auto cell : dh->own_range()) {
+		cell.get_loc_dof_indices(indices);
+		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*cell.elm_idx()+idof ];
+	}*/
+
+	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
+	for (auto ele : dh->mesh()->elements_range()) {
+		dh->get_loc_dof_indices(ele, indices);
+		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
+	}
+}
 
 
 #endif /* FIELD_FE_HH_ */

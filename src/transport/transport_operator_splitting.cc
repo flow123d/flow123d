@@ -43,6 +43,7 @@
 #include "input/accessors.hh"
 #include "input/factory.hh"
 #include "input/flow_attribute_lib.hh"
+#include "fem/fe_p.hh"
 
 FLOW123D_FORCE_LINK_IN_CHILD(transportOperatorSplitting);
 
@@ -73,16 +74,16 @@ const Record & TransportOperatorSplitting::get_input_type() {
 		.derive_from(AdvectionProcessBase::get_input_type())
 		.add_attribute( FlowAttribute::subfields_address(), "\"/problem/solute_equation/substances/*/name\"")
 		.declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
-				"Time governor setting for the secondary equation.")
+				"Time governor settings for the transport equation.")
 		.declare_key("balance", Balance::get_input_type(), Default("{}"),
-				"Settings for computing balance.")
+				"Settings for computing mass balance.")
 		.declare_key("output_stream", OutputTime::get_input_type(), Default("{}"),
-				"Parameters of output stream.")
+				"Output stream settings.\n Specify file format, precision etc.")
 		.declare_key("substances", Array( Substance::get_input_type(), 1), Default::obligatory(),
 				"Specification of transported substances.")
 				// input data
 		.declare_key("transport", ConcentrationTransportBase::get_input_type(), Default::obligatory(),
-				"Type of numerical method for solute transport.")
+				"Type of the numerical method for the transport equation.")
 		.declare_key("reaction_term", ReactionTerm::it_abstract_term(), Default::optional(),
 					"Reaction model involved in transport.")
 /*
@@ -105,30 +106,38 @@ const int TransportOperatorSplitting::registrar =
 
 TransportEqData::TransportEqData()
 {
+    *this += porosity.name("porosity")
+            .description("Porosity of the mobile phase.")
+            .input_default("1.0")
+            .units( UnitSI::dimensionless() )
+            .flags_add(in_main_matrix & in_rhs);
 
-	ADD_FIELD(porosity, "Mobile porosity", "1.0");
-	porosity
-	.units( UnitSI::dimensionless() )
-	.flags_add(in_main_matrix & in_rhs);
+    *this += water_content.name("water_content")
+            .description("INTERNAL. Water content passed from unsaturated Darcy flow model.")
+            .units( UnitSI::dimensionless() )
+            .flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
 
-	add_field(&water_content, "water_content", "INTERNAL - water content passed from unsaturated Darcy", "")
-	.units( UnitSI::dimensionless() )
-	.flags_add(input_copy & in_time_term & in_main_matrix & in_rhs);
+    *this += cross_section.name("cross_section")
+               .flags( FieldFlag::input_copy )
+               .flags_add(in_time_term & in_main_matrix & in_rhs);
 
-	ADD_FIELD(cross_section, "");
-	cross_section.flags( FieldFlag::input_copy ).flags_add(in_time_term & in_main_matrix & in_rhs);
+    *this += sources_density.name("sources_density")
+            .description("Density of concentration sources.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3).s(-1) )
+            .flags_add(in_rhs);
 
-	ADD_FIELD(sources_density, "Density of concentration sources.", "0");
-	sources_density.units( UnitSI().kg().m(-3).s(-1) )
-			.flags_add(in_rhs);
+    *this += sources_sigma.name("sources_sigma")
+            .description("Concentration flux.")
+            .input_default("0.0")
+            .units( UnitSI().s(-1) )
+            .flags_add(in_main_matrix & in_rhs);
 
-	ADD_FIELD(sources_sigma, "Concentration flux.", "0");
-	sources_sigma.units( UnitSI().s(-1) )
-			.flags_add(in_main_matrix & in_rhs);
-
-	ADD_FIELD(sources_conc, "Concentration sources threshold.", "0");
-	sources_conc.units( UnitSI().kg().m(-3) )
-			.flags_add(in_rhs);
+    *this += sources_conc.name("sources_conc")
+            .description("Concentration sources threshold.")
+            .input_default("0.0")
+            .units( UnitSI().kg().m(-3) )
+            .flags_add(in_rhs);
 }
 
 
@@ -189,10 +198,20 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		// FirstOrderReaction, RadioactiveDecay, SorptionSimple and DualPorosity
 		reaction = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(init_mesh, *reactions_it);
 
-		reaction->substances(convection->substances())
+        //initialization of DOF handler
+        static FE_P_disc<0> fe0(0);
+        static FE_P_disc<1> fe1(0);
+        static FE_P_disc<2> fe2(0);
+        static FE_P_disc<3> fe3(0);
+        shared_ptr<DOFHandlerMultiDim> dof_handler = make_shared<DOFHandlerMultiDim>(*mesh_);
+        shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
+        dof_handler->distribute_dofs(ds);
+
+        reaction->substances(convection->substances())
                     .concentration_matrix(convection->get_concentration_matrix(),
 						el_distribution, el_4_loc, convection->get_row_4_el())
 				.output_stream(convection->output_stream())
+				.set_dh(dof_handler)
 				.set_time_governor((TimeGovernor &)convection->time());
 
 		reaction->initialize();

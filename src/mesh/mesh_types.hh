@@ -26,8 +26,8 @@
 class Node;
 
 // Preparation for next development
-typedef flow::VectorId<Node> NodeVector;
+//typedef flow::VectorId<Node> NodeVector;
 //typedef NodeVector::Iter NodeIter;
-typedef NodeVector::FullIter NodeFullIter;
+//typedef NodeVector::FullIter NodeFullIter;
 
 #endif /* MESH_TYPES_HH_ */

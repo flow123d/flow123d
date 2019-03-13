@@ -92,6 +92,7 @@ DualPorosity::EqData::EqData()
   //creating field for porosity that is set later from the governing equation (transport)
   *this +=porosity
         .name("porosity")
+        .description("Concentration solution in the mobile phase.")
         .units( UnitSI::dimensionless() )
         .flags( FieldFlag::input_copy )
 		.set_limits(0.0);
@@ -119,18 +120,12 @@ DualPorosity::DualPorosity(Mesh &init_mesh, Input::Record in_rec)
 
 DualPorosity::~DualPorosity(void)
 {
-	chkerr(VecScatterDestroy(&(vconc_out_scatter)));
+  //for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
+  //{
+  //    //no mpi vectors
+  //    delete [] conc_immobile[sbi];
+  //}
 
-
-  for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
-  {
-
-      //no mpi vectors
-	  chkerr(VecDestroy( &vconc_immobile[sbi] ));
-      delete [] conc_immobile[sbi];
-  }
-
-  delete [] vconc_immobile;
   delete [] conc_immobile;
 }
 
@@ -171,14 +166,10 @@ void DualPorosity::initialize()
   conc_immobile = new double* [substances_.size()];
   conc_immobile_out.clear();
   conc_immobile_out.resize( substances_.size() );
-  output_field_ptr.clear();
-  output_field_ptr.resize( substances_.size() );
   for (unsigned int sbi = 0; sbi < substances_.size(); sbi++)
   {
     conc_immobile[sbi] = new double [distribution_->lsize()];
-    conc_immobile_out[sbi].resize( distribution_->size() );
   }
-  allocate_output_mpi();
   
   initialize_fields();
 
@@ -187,6 +178,7 @@ void DualPorosity::initialize()
     reaction_mobile->substances(substances_)
                 .output_stream(output_stream_)
                 .concentration_matrix(concentration_matrix_, distribution_, el_4_loc_, row_4_el_)
+				.set_dh(this->dof_handler_)
                 .set_time_governor(*time_);
     reaction_mobile->initialize();
   }
@@ -196,6 +188,7 @@ void DualPorosity::initialize()
     reaction_immobile->substances(substances_)
                 .output_stream(output_stream_)
                 .concentration_matrix(conc_immobile, distribution_, el_4_loc_, row_4_el_)
+				.set_dh(this->dof_handler_)
                 .set_time_governor(*time_);
     reaction_immobile->initialize();
   }
@@ -213,7 +206,6 @@ void DualPorosity::initialize_fields()
   data_.set_mesh(*mesh_);
   
   //initialization of output
-  //output_array = input_record_.val<Input::Array>("output_fields");
   data_.output_fields.set_components(substances_.names());
   data_.output_fields.set_mesh(*mesh_);
   data_.output_fields.output_type(OutputTime::ELEM_DATA);
@@ -221,10 +213,14 @@ void DualPorosity::initialize_fields()
   for (unsigned int sbi=0; sbi<substances_.size(); sbi++)
   {
     // create shared pointer to a FieldFE and push this Field to output_field on all regions
-	output_field_ptr[sbi] = conc_immobile_out[sbi].create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
-    data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr[sbi], 0);
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+    conc_immobile_out[sbi] = output_field_ptr->set_fe_data(this->dof_handler_);
+    data_.conc_immobile[sbi].set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
+    double *out_array;
+    VecGetArray(conc_immobile_out[sbi].petsc_vec(), &out_array);
+    conc_immobile[sbi] = out_array;
+    VecRestoreArray(conc_immobile_out[sbi].petsc_vec(), &out_array);
   }
-  //output_stream_->add_admissible_field_names(output_array);
   data_.output_fields.initialize(output_stream_, mesh_, input_record_.val<Input::Record>("output"),time());
 }
 
@@ -256,11 +252,6 @@ void DualPorosity::zero_time_step()
       WarningOut() << ss.str();
   }
   set_initial_condition();
-  
-  // write initial condition
-  //output_vector_gather();
-  //data_.output_fields.set_time(time_->step(0), LimitSide::right);
-  //data_.output_fields.output(output_stream_);
 
   output_data();
   
@@ -371,52 +362,9 @@ double **DualPorosity::compute_reaction(double **concentrations, int loc_el)
 }
 
 
-void DualPorosity::allocate_output_mpi(void )
-{
-    int sbi, n_subst;
-    n_subst = substances_.size();
-
-    vconc_immobile = new Vec [n_subst];
-
-
-    for (sbi = 0; sbi < n_subst; sbi++) {
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1, distribution_->lsize(), mesh_->n_elements(), conc_immobile[sbi],
-                &vconc_immobile[sbi]);
-        VecZeroEntries(vconc_immobile[sbi]);
-
-        //  if(rank == 0)
-        VecZeroEntries(conc_immobile_out[sbi].get_data_petsc());
-    }
-    
-    // create output vector scatter
-    IS is;
-    ISCreateGeneral(PETSC_COMM_SELF, mesh_->n_elements(), row_4_el_, PETSC_COPY_VALUES, &is); //WithArray
-    VecScatterCreate(vconc_immobile[0], is, conc_immobile_out[0].get_data_petsc(), PETSC_NULL, &vconc_out_scatter);
-    ISDestroy(&(is));
-}
-
-
-void DualPorosity::output_vector_gather() 
-{
-    unsigned int sbi;
-
-    for (sbi = 0; sbi < substances_.size(); sbi++) {
-        VecScatterBegin(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-        VecScatterEnd(vconc_out_scatter, vconc_immobile[sbi], conc_immobile_out[sbi].get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-    }
-}
-
-
 void DualPorosity::output_data(void )
 {
     data_.output_fields.set_time(time_->step(), LimitSide::right);
-    if ( data_.output_fields.is_field_output_time(data_.conc_immobile, time().step()) ) {
-        output_vector_gather();
-    }
-
-    for (unsigned int sbi = 0; sbi < substances_.size(); sbi++) {
-    	conc_immobile_out[sbi].fill_output_data(output_field_ptr[sbi]);
-    }
 
     // Register fresh output data
     data_.output_fields.output(time_->step());

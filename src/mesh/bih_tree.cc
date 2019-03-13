@@ -41,6 +41,10 @@ BIHTree::~BIHTree() {
 
 
 void BIHTree::add_boxes(const std::vector<BoundingBox> &boxes) {
+	if (elements_.size()==0) {
+		// For first call of method set vertices of main_box_ to valid value (default values set in constructor are NaNs)
+		main_box_ = BoundingBox( boxes[0].min() );
+	}
     for(BoundingBox box : boxes) {
         this->elements_.push_back(box);
         main_box_.expand(box);

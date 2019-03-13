@@ -1,18 +1,18 @@
 
 
 \section{Tutorial Problem}
-In the following section, we shall provide an example cook book for preparing and running a model,
+In the following section, we shall provide an example cook book for preparing and running a~model,
 based on one of the test problems, namely
 \begin{verbatim}
 tests/21_solute_fv_frac/03_fv_dp_sorp_small.yaml.
 \end{verbatim}
-We shall start with preparation of the geometry using an external software and then we shall go thoroughly through the 
+We shall start with the preparation of the geometry using an external software and then we shall go step by step through the 
 commented main input file. The problem includes steady Darcy flow, transport of two substances with explicit
-time discretization and a reaction term consisting of dual porosity and sorption model.
-Further tutorials focussed to particular features can be found in Chapter \ref{chapter:tutorials}.
+time discretization and a~reaction term consisting of dual porosity and sorption model.
+Further tutorials focused on particular features can be found in Chapter \ref{chapter:tutorials}.
 
 \subsection{Geometry}
-We consider a~simple 2D problem with a branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). 
+We consider a~simple 2D problem with a~branching 1D fracture (see Figure \ref{fig:tutorial} for the geometry). 
 To prepare a~mesh file we use the \href{http://geuz.org/gmsh/}{GMSH software}.
 First, we construct a~geometry file. In our case the geometry consists of: 
 \begin{itemize}
@@ -23,7 +23,7 @@ First, we construct a~geometry file. In our case the geometry consists of:
 \end{itemize}
 In this simple example, we can in fact combine physical domains in every group, however we use this more complex setting for
 demonstration purposes. Using GMSH graphical interface we can prepare the GEO file where physical domains are referenced by numbers, then we use 
-any text editor and replace numbers with string labels in such a way that the labels of boundary physical domains start with the dot character. 
+any text editor and replace numbers with string labels in such a~way that the labels of boundary physical domains start with the dot character. 
 These are the domains where we will not do any calculations but we will use them for setting boundary conditions.
 Finally, we get the GEO file like this:
 
@@ -92,7 +92,7 @@ problem: !CouplingSequential
   description: Tutorial problem: Transport 1D-2D (convection, dual
                porosity, sorption, sources).
   mesh:
-    mesh_file: ./input/mesh_with_boundary.msh
+    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
     regions:
       - !Union
         name: 1d_domain
@@ -101,22 +101,24 @@ problem: !CouplingSequential
           - 1d_lower
           - 1d_left_branch
 \end{Verbatim}
-The file starts with a selection of problem type (\verb'CouplingSequential'), and a textual problem description.
+The file starts with a~selection of problem type (\verb'CouplingSequential'), and a~textual problem description.
 Next, we specify the computational mesh, here it consists of the name of the mesh file and the declaration of one region 
 given as the union of all 1D regions i.e. representing the whole fracture. Other keys of the \Alink{IT::Mesh}{\tt mesh} record allow labeling regions given only by numbers, 
 defining new regions in terms of element numbers (e.g to have leakage on single element), 
-defining boundary regions, and set operations with region sets, see Section \ref{sec:Mesh} for details.
+defining boundary regions, and several operations with region sets, see Section \ref{sec:Mesh} for details.
 
 \subsection{Flow Setting}
-Next, we setup the flow problem. We shall consider a steady flow (i.e. with zero storativity) driven only by the pressure gradient (no gravity),
+Next, we setup the flow problem. We shall consider a~steady flow (i.e. with zero storativity) driven only by the pressure gradient (no gravity),
 setting the Dirichlet boundary condition on the whole boundary with the pressure head equal to $x+y$. 
 The \Alink{Flow-Darcy-MH-Data::conductivity}{\tt conductivity} will be $k_2=10^{-7}$ \unitss{}{1}{-1} on the 2D domain and $k_1=10^{-6}$ \unitss{}{1}{-1} on the 1D domain.
-Both 2D domain and 1D domain \Alink{Flow-Darcy-MH-Data::cross-section}{\tt cross\_section} will be set by default,
-meaning that the thickness of 2D domain is $\delta_2=1$ \unitss{}{1}{} and the fracture cross section is $\delta_1=1$ \unitss{}{2}{}.
+We leave the default value for the \Alink{Flow-Darcy-MH-Data::cross-section}{\tt cross\_section} of the 2D domain,
+meaning that the thickness of 2D domain is $\delta_2=1$ \unitss{}{1}{}.
+For the 1D fractures cross-section, we prescribe $\delta_1=0.04$ \unitss{}{2}{} on the 1D domain.
 The transition coefficient $\sigma_2$ between dimensions can be scaled by setting the dimensionless parameter 
 $\sigma_{21}$ (\Alink{Flow-Darcy-MH-Data::sigma}{\tt sigma}). This can be used for simulating additional
-effects which prevent the liquid transition from/to a fracture, like a thin resistance layer. Read Section 
-\ref{sec:darcy_flow} for more details.
+effects which prevent the liquid transition from/to a~fracture, like a~thin resistance layer.
+Notice that the scaling parameter is set on the lower dimensional domain, i.e. $\sigma_{21}=0.9$ on line \ref{vrb:tutorial_flow_input_sigma}.
+Read Section \ref{sec:darcy_flow} for more details.
 
 \begin{Verbatim}[numbers=left, firstnumber=last,commandchars=\\\{\}]
   flow_equation: !Flow_Darcy_MH\label{vrb:tutorial_floweq}
@@ -124,48 +126,51 @@ effects which prevent the liquid transition from/to a fracture, like a thin resi
       - region: 1d_domain
         conductivity: 1.0e-06
         cross_section: 0.04
-        sigma: 0.9
+        sigma: 0.9\label{vrb:tutorial_flow_input_sigma}
       - region: 2d
         conductivity: 1.0e-07
       - region: .BOUNDARY
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x+y\label{vrb:tutorial_flow_input_end}
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
     output:\label{vrb:tutorial_output_start}
       fields:
         - pressure_p0
         - pressure_p1
         - velocity_p0\label{vrb:tutorial_output_end}
-    nonlinear_solver:
-      linear_solver: !Petsc
-        a_tol: 1.0e-12
-        r_tol: 1.0e-12
-    balance: {}
+    output_stream:
+      file: flow.pvd
+      format: !vtk
+        variant: ascii
+    balance:
 \end{Verbatim}
 On line \ref{vrb:tutorial_floweq}, we specify particular implementation (numerical method) of the flow solver, in this case the Mixed-Hybrid
-solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end}, 
+solver for steady problems. On lines \ref{vrb:tutorial_flow_input_start} -- \ref{vrb:tutorial_flow_input_end} in the array \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields}, 
 we set both mathematical fields that live on the computational domain 
-and those defining the boundary conditions. We set only the conductivity field since other \hyperA{IT::Flow-Darcy-MH-Data}{\tt input\_fields}
-have appropriate default values.
-We use implicitly defined region ``.BOUNDARY'' that contains all boundary regions and set there dirichlet boundary condition in terms of the 
+and those defining the boundary conditions.
+We use implicitly defined region ``.BOUNDARY'' that contains all boundary regions and we set there Dirichlet boundary condition in terms of the 
 pressure head. In this case, the field is not of the implicit type {\tt FieldConstant}, so we must specify the type of the field {\tt !FieldFormula}.
 See Section \ref{sec:Fields} for other field types. 
-On lines \ref{vrb:tutorial_output_start} -- \ref{vrb:tutorial_output_end}, we specify which output fields should be written to the output stream (that means particular output file, with given format).
-Currently, we support only one output stream per equation, so this allows at least switching individual output fields on or off. 
-See Section \ref{section_output} for the list of available \Alink{IT::Flow-Darcy-MH-OutputFields}{output \tt fields}.
-Finally, we specify type of the linear solver and its tolerances.
-
+Next, we specify the type of the linear solver and its tolerances.
+On lines \ref{vrb:tutorial_output_start} -- \ref{vrb:tutorial_output_end}, we specify which output fields should be written to the output stream
+(that means particular output file, with given format). See Section \ref{section_output} for the list of available output \Alink{IT::Flow-Darcy-MH-OutputFields}{\tt fields}.
+Currently, we support only one \Alink{IT::OutputStream}{\tt output\_stream} per equation. We specify the filename and the format of the output stream (the used ASCII VTK format is the default).
+All the keys in record \Alink{IT::Balance}{\tt balance} are left with default values.
 
 
 \subsection{Transport Setting}
-The flow model is followed by a transport model in the \Alink{Coupling-Sequential::solute-equation}{\tt solute\_equation}
-beginning on line 40. For the transport problem, we use an implementation called \hyperA{IT::Solute-Advection-FV}{Solute\_Advection\_FV}
+The flow model is followed by a~transport model in the record \Alink{Coupling-Sequential::solute-equation}{\tt solute\_equation}
+beginning on line \ref{vrb:tutorial_solute_start}. Here, we use an implementation called \hyperA{IT::Solute-Advection-FV}{Solute\_Advection\_FV}
 which stands for an explicit finite volume solver of the convection equation (without diffusion).
 The operator splitting method is used for equilibrium sorption as well as for dual porosity model and 
 first order reactions simulation.
 
 \begin{Verbatim}[numbers=left, firstnumber=last,commandchars=\\\{\}]
-  solute_equation: !Coupling_OperatorSplitting
+  solute_equation: !Coupling_OperatorSplitting\label{vrb:tutorial_solute_start}
     substances:\label{vrb:tutorial_substances_start}
       - name: age # water age
         molar_mass: 0.018
@@ -176,7 +181,8 @@ first order reactions simulation.
         - region: ALL
           init_conc: 0\label{vrb:tutorial_transport_init_conc}
           porosity: 0.25
-          sources_density: # source is in the whole volume (l+s) -> times porosity
+          # source is in the whole volume (l+s) -> times porosity
+          sources_density:
             - 0.25
             - 0
         - region: .BOUNDARY\label{vrb:tutorial_transport_boundary}
@@ -198,24 +204,24 @@ sources of concentration by \Alink{Solute-Advection-FV-Data::sources-density}{\t
 Notice line \ref{vrb:tutorial_transport_init_conc} where we can see only single value since an automatic conversion is applied to turn the scalar 
 zero into the zero vector (of size 2 according to the number of substances). 
 
-The boundary fields are set on lines \ref{vrb:tutorial_transport_boundary} -- \ref{vrb:tutorial_transport_input_end}. We need not to specify the type of the condition since there is 
+The boundary fields are set on lines \ref{vrb:tutorial_transport_boundary} -- \ref{vrb:tutorial_transport_input_end}. We do not need to specify the type of the condition since there is 
 only one type in the {\tt Solute\_Advection\_FV} transport model. The boundary condition is equal to $1$ for the uranium 235 and $0$ 
 for the age of the water and is automatically applied only on the inflow part of the boundary. 
 
-We also have to prescribe the \hyperA{IT::TimeGovernor}{\tt time} setting, here only the end time of the simulation
-(in seconds: $10^6\,\rm{s}\approx 11.57$ days) is required since the step size is determined from the CFL condition. 
-However, a smaller time step can be enforced if necessary.
+We also have to prescribe the \hyperA{IT::TimeGovernor}{\tt time} setting -- here it is only the end time of the simulation
+(in seconds: $10^6\,\rm{s}\approx 11.57$ days). The step size is determined automatically from the CFL condition,
+however, a~smaller time step can be enforced if necessary.
 
 Reaction term of the transport model is described in the next subsection, including dual porosity and sorption.
 
 \subsection{Reaction Term}\label{subsubsec:reactions}
-The input information for dual porosity, equilibrial sorption and possibly first order reations are enclosed in the record 
+The input information for dual porosity, equilibrial sorption and possibly first order reactions are enclosed in the record 
 \Alink{Coupling-OperatorSplitting::reaction-term}{\tt reaction\_term}, lines \ref{vrb:tutorial_dp_start} -- \ref{vrb:tutorial_dp_end}. Go to section \ref{sec:reaction_term}
 to see how the models can be chained.
 
 The type of the first process is determined by {\tt !DualPorosity}, on line \ref{vrb:tutorial_dp_start}. 
 The \Alink{DualPorosity::input-fields}{\tt input\_fields}
-of dual porosity model are set on lines \ref{vrb:tutorial_dp_input_start} -- \ref{vrb:tutorial_dp_input_end} and the output is disabled by setting an empty array on line \ref{vrb:tutorial_dp_output}.
+of the dual porosity model are set on lines \ref{vrb:tutorial_dp_input_start} -- \ref{vrb:tutorial_dp_input_end} and the output is disabled by setting an empty array on line \ref{vrb:tutorial_dp_output}.
 
 \begin{Verbatim}[numbers=left, firstnumber=last,commandchars=\\\{\}]
     reaction_term: !DualPorosity\label{vrb:tutorial_dp_start}
@@ -277,24 +283,24 @@ Isothermally described sorption simulation can be used in the case of low concen
 
 On lines \ref{vrb:tutorial_sorp_mob_param_start} -- \ref{vrb:tutorial_sorp_mob_param_end}, we set the sorption related input information. The solvent is water so the \Alink{Sorption::solvent-density}{\tt solvent\_density} 
 is supposed to be constant all over the simulated area. The vector \Alink{Sorption::substances}{\tt substances} 
-contains the list of names of soluted substances which are considered to be affected by the sorption.
-Solubility is a material characteristic of a sorbing substance related to the solvent. Elements of the vector 
+contains the list of names of solute substances which are considered to be affected by the sorption.
+Solubility is a~material characteristic of a~sorbing substance related to the solvent. Elements of the vector 
 \Alink{Sorption::solubility}{\tt solubility} define the upper bound of aqueous concentration which can appear.
 This constrain is necessary because some substances might have limited solubility and if the solubility exceeds 
-its limit they start to precipitate. {\tt solubility} is a crucial parameter for solving a set of nonlinear 
+its limit they start to precipitate. {\tt solubility} is a~crucial parameter for solving a~set of nonlinear 
 equations, described further. 
 
 The record \hyperA{IT::Sorption-Data}{\tt input\_fields} covers the region specific parameters.
 All implemented types of sorption can take the rock density in the region into account. The value of 
-\Alink{Sorption-Data::rock-density}{\tt rock\_density} is a constant in our case. 
+\Alink{Sorption-Data::rock-density}{\tt rock\_density} is a~constant in our case. 
 The \Alink{Sorption-Data::sorption-type}{\tt sorption\_type} represents the empirically determined isotherm 
 type and can have one of four possible values: \{{\tt"none"}, {\tt"linear"}, {\tt"freundlich"}, {\tt"langmuir"}\}. 
-Linear isotherm needs just one parameter given whereas Freundlichs' and Langmuirs' isotherms require two parameters. 
-We will use Freundlich's isotherm for demonstration but we will set the other parameter (exponent) $\alpha=1$ 
+Linear isotherm needs just one parameter given whereas Freundlich and Langmuir isotherms require two parameters. 
+We will use Freundlich isotherm for demonstration but we will set the other parameter (exponent) $\alpha=1$ 
 which means it will be the same as the linear type. 
 
-Let suppose we have a sorption coefficient for uranium $K_d=1.6\cdot10^{-4}$ \unitss{-1}{3}{} (www.skb.se, report R-10-48 by James Crawford, 2010) 
-and we want to use. We need to convert it to dimensionless value of \Alink{Sorption-Data::distribution-coefficient}{\tt distribution\_coefficient}
+Let us suppose we would like to use a~sorption coefficient for uranium $K_d=1.6\cdot10^{-4}$ \unitss{-1}{3}{} (www.skb.se, report R-10-48 by James Crawford, 2010).
+At first, we need to convert it to dimensionless value of \Alink{Sorption-Data::distribution-coefficient}{\tt distribution\_coefficient}
 in the following way: $k_l = K_dM_s^{-1}\rho_l = K_d\frac{1000}{0.235}\approx0.68$. For further details, see 
 mathematical description in Section \ref{sec:sorp_math}. 
 
@@ -306,21 +312,19 @@ On lines \ref{vrb:tutorial_sorp_mob_output} and \ref{vrb:tutorial_dp_end}, we de
 An implicit set of outputs exists. In this case we define an empty set of outputs thus overriding the implicit one. 
 This means that no sorption specific outputs will be written to the output file.
 On lines \ref{vrb:tutorial_trans_output_start} -- \ref{vrb:tutorial_trans_output_end} we specify which output fields should be written to the output stream. Currently, we support output into VTK and GMSH data format.
-In the output record for time-dependent process we have to specify the time {\tt step} (line \ref{vrb:tutorial_trans_output_end}) which determines the frequency of saving.
+In the output record for time-dependent process we have to specify the time {\tt step} (line \ref{vrb:tutorial_trans_output_end}) which determines the frequency of output data writing.
 
 
 
 \subsection{Results}
 In Figure \ref{fig:tutorial} one can see the results: the pressure and the velocity field on the left and the 
-concentration of U235 at time $t=9\cdot10^{5}$ s on the right. Even if the pressure gradient is the same in the 
-2D domain and in the fracture, due to higher conductivity the velocity field is ten times faster in the fracture. 
-Since porosity is the same, the substance is transported faster by the fracture and then appears in the bottom 
-left 2D domain before the main wave propagating solely through the 2D domain.
-
-% The output files can be either \verb'*.msh' files accepted by the GMSH or one can use VTK format that can be post-processed by Paraview.
+concentration of U235 at time $t=9\cdot10^{5}$ s on the right. Even though the pressure gradient is the same both in the 
+2D domain and in the fracture, the velocity field is ten times faster in the fracture due to its higher conductivity. 
+Since porosity is the same, the substance is transported faster by the fracture. Therefore nonzero concentration appears in the bottom 
+left of the 2D domain long before the main wave propagating solely through the 2D domain reaches that corner.
 
 
-\begin{figure}[ht]
+\begin{figure}[!ht]
     \centering
     \begin{subfigure}[b]{0.48\textwidth}
         \centering

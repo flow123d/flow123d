@@ -717,9 +717,9 @@ class TestFieldSet : public FieldSet
 {
 public:
     TestFieldSet() {
-        ADD_FIELD(scalar, "").units(UnitSI::dimensionless());
-        ADD_FIELD(vector, "").units(UnitSI::dimensionless());
-        ADD_FIELD(tensor, "").units(UnitSI::dimensionless());
+        *this += scalar.name("scalar").units(UnitSI::dimensionless());
+        *this += vector.name("vector").units(UnitSI::dimensionless());
+        *this += tensor.name("tensor").units(UnitSI::dimensionless());
     }
     Field<3, FieldValue<3>::Scalar > scalar;
     Field<3, FieldValue<3>::VectorFixed > vector;

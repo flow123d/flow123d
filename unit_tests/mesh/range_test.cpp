@@ -7,36 +7,82 @@
 
 #define FEAL_OVERRIDE_ASSERTS
 #include <flow_gtest.hh>
-#include <mesh_constructor.hh>
+#include <random>
 
-#include "mesh/side_impl.hh"
-#include "mesh/mesh.h"
-#include "io/msh_gmshreader.h"
-#include "system/sys_profiler.hh"
 #include "mesh/range_wrapper.hh"
-#include "mesh/accessors.hh"
+#include "system/global_defs.h"
+
+
+class TestHandler {
+public:
+    TestHandler(unsigned int size) {
+        std::random_device rd;
+        std::mt19937 mt(rd());
+        std::uniform_real_distribution<double> dist(0.0, 20.99);
+
+        values.resize(size);
+        for (unsigned int i=0; i<size; ++i) values[i] = (unsigned int)dist(mt);
+    }
+
+    unsigned int value(unsigned int pos) const {
+        return values[pos];
+    }
+
+private:
+    std::vector<unsigned int> values;
+};
+
+
+class TestAccessor {
+public:
+    TestAccessor()
+    : handler_(nullptr), pos_(0) {}
+
+    TestAccessor(const TestHandler *handler, unsigned int pos)
+    : handler_(handler), pos_(pos) {}
+
+    unsigned int value() const {
+    	return handler_->value(pos_);
+    }
+
+    bool operator==(const TestAccessor& other) {
+    	return (pos_ == other.pos_);
+    }
+
+    operator unsigned int() const {
+        return handler_->value(pos_);
+    }
+
+    inline void inc() {
+        pos_++;
+    }
+
+private:
+    const TestHandler *handler_;
+    unsigned int pos_;
+
+};
+
 
 TEST(RangeWrapper, range) {
-    Profiler::initialize();
+	const static unsigned int size = 20;
+    TestHandler *test_handler = new TestHandler(size);
+    std::vector<unsigned int> ret1, ret2;
 
-    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Range<TestAccessor> range(make_iter<TestAccessor>( TestAccessor(test_handler, 0) ),
+                              make_iter<TestAccessor>( TestAccessor(test_handler, size) )
+							 );
+    for ( auto v : range ) ret1.push_back( v.value() );
 
-	std::string mesh_in_string = "{mesh_file=\"fields/simplest_cube_data.msh\"}";
-	Mesh * mesh = mesh_constructor(mesh_in_string);
-    auto reader = reader_constructor(mesh_in_string);
-    reader->read_physical_names(mesh);
-    reader->read_raw_mesh(mesh);
-    mesh->check_and_finish();
+    RangeConvert<TestAccessor, unsigned int> rangeC(make_iter<TestAccessor, unsigned int>( TestAccessor(test_handler, 0) ),
+                                                    make_iter<TestAccessor, unsigned int>( TestAccessor(test_handler, size) )
+							                       );
+    for ( auto i : rangeC ) ret2.push_back( i );
 
-    unsigned int counter=0;
-    std::vector<unsigned int> expected_dims = {1,2,2,3,3,3,3,3,3};
-	Range<ElementAccessor<3>> range(const_cast<const Mesh *>(mesh), 0, 9);
-	for (auto v : range) {
-		EXPECT_EQ(v.idx(), counter);
-		EXPECT_EQ(v.dim(), expected_dims[counter]);
-		counter++;
-	}
+    for (unsigned int i=0; i<size; ++i) {
+        EXPECT_EQ( test_handler->value(i), ret1[i] );
+        EXPECT_EQ( test_handler->value(i), ret2[i] );
+    }
 
-    delete mesh;
+    delete test_handler;
 }
-

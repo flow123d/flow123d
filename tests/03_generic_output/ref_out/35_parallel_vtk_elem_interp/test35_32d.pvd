@@ -3,5 +3,6 @@
 <Collection>
 <DataSet timestep="0" group="" part="0" file="test35_32d/test35_32d-000000.0.vtu"/>
 <DataSet timestep="0" group="" part="1" file="test35_32d/test35_32d-000000.1.vtu"/>
+<DataSet timestep="0" group="" part="2" file="test35_32d/test35_32d-000000.2.vtu"/>
 </Collection>
 </VTKFile>
