@@ -364,6 +364,13 @@ void Application::after_run() {
 
 
 
+void Application::terminate() {
+    MPI_Abort( MPI_COMM_WORLD, ApplicationBase::exit_failure);
+}
+
+
+
+
 Application::~Application() {
 	if (problem_) delete problem_;
 
@@ -395,10 +402,12 @@ int main(int argc, char **argv) {
         Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
-        _LOG( Logger::MsgType::error ) << e.what();
+        _LOG( Logger::MsgType::error ).every_proc() << e.what();
+        app.terminate();
         return ApplicationBase::exit_failure;
     } catch (...) {
-        _LOG( Logger::MsgType::error ) << "Unknown exception" << endl;
+        _LOG( Logger::MsgType::error ).every_proc() << "Unknown exception" << endl;
+        app.terminate();
         return ApplicationBase::exit_failure;
     }
 
