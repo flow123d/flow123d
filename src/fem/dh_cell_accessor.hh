@@ -53,7 +53,7 @@ public:
 
     /// Return local index to element (index of DOF handler).
     inline unsigned int local_idx() const {
-    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()+dof_handler_->ghost_4_loc.size()).error("Local element index is out of range!\n");
+        ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->global_to_local_el_idx_.size()).error("Local element index is out of range!\n");
         return loc_ele_idx_;
     }
 

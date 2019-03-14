@@ -196,7 +196,8 @@ void DOFHandlerMultiDim::send_ghost_dofs(unsigned int proc)
     for (LongIdx el : elems)
     {
         auto cell = this->cell_accessor_from_element(el);
-        dofs.insert(dofs.end(), dof_indices.begin()+cell_starts[cell.local_idx()], dof_indices.begin()+cell_starts[cell.local_idx()+1]);
+        for (unsigned int i=cell_starts[cell.local_idx()]; i<cell_starts[cell.local_idx()+1]; i++)
+            dofs.push_back(local_to_global_dof_idx_[dof_indices[i]]);
     }
     MPI_Send(&(dofs[0]), dofs.size(), MPI_LONG_IDX, proc, 3, MPI_COMM_WORLD);
 }
@@ -216,9 +217,6 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
     {
         DHCellAccessor dh_cell = this->cell_accessor_from_element( ghost_proc_el[proc][gid] );
         
-        for (unsigned dof=0; dof<dh_cell.n_dofs(); dof++)
-            dof_indices[cell_starts[dh_cell.local_idx()]+dof] = dofs[dof_offset+dof];
-        
         vector<unsigned int> loc_node_dof_count(dh_cell.elm()->n_nodes(), 0);
         vector<unsigned int> loc_edge_dof_count(dh_cell.elm()->n_sides(), 0);
         for (unsigned int idof = 0; idof<dh_cell.n_dofs(); ++idof)
@@ -227,12 +225,14 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             {   // update nodal dof
                 unsigned int dof_nface_idx = dh_cell.cell_dof(idof).n_face_idx;
                 unsigned int nid = mesh_->tree->objects(dh_cell.dim())[mesh_->tree->obj_4_el()[dh_cell.elm_idx()]].nodes[dof_nface_idx];
+                unsigned int node_dof_idx = node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx];
                     
-                if (node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] == INVALID_DOF)
+                if (node_dofs[node_dof_idx] == INVALID_DOF)
                 {
-                    node_dofs[node_dof_starts[nid]+loc_node_dof_count[dof_nface_idx]] = dofs[dof_offset+idof];
+                    node_dofs[node_dof_idx] = local_to_global_dof_idx_.size();
                     local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
                 }
+                dof_indices[cell_starts[dh_cell.local_idx()]+idof] = node_dofs[node_dof_idx];
                 
                 loc_node_dof_count[dof_nface_idx]++;
             }
@@ -240,17 +240,19 @@ void DOFHandlerMultiDim::update_local_dofs(unsigned int proc,
             {   // update edge dof
                 unsigned int dof_nface_idx = dh_cell.cell_dof(idof).n_face_idx;
                 unsigned int eid = dh_cell.elm().side(dof_nface_idx)->edge_idx();
+                unsigned int edge_dof_idx = edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx];
                     
-                if (edge_dofs[edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx]] == INVALID_DOF)
+                if (edge_dofs[edge_dof_idx] == INVALID_DOF)
                 {
-                    edge_dofs[edge_dof_starts[eid]+loc_edge_dof_count[dof_nface_idx]] = dofs[dof_offset+idof];
+                    edge_dofs[edge_dof_idx] = local_to_global_dof_idx_.size();
                     local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
                 }
+                dof_indices[cell_starts[dh_cell.local_idx()]+idof] = edge_dofs[edge_dof_idx];
                 
                 loc_edge_dof_count[dof_nface_idx]++;
-            }
-            else if (dh_cell.cell_dof(idof).dim == dh_cell.dim())
+            } else if (dh_cell.cell_dof(idof).dim == dh_cell.dim())
             {
+                dof_indices[cell_starts[dh_cell.local_idx()]+idof] = local_to_global_dof_idx_.size();
                 local_to_global_dof_idx_.push_back(dofs[dof_offset+idof]);
             }
         }
@@ -391,9 +393,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
     loffset_ = dof_ds_->get_starts_array()[dof_ds_->myp()];
     if (loffset_ > 0)
     {
-      for (unsigned int i=0; i<dof_indices.size(); i++)
-        if (dof_indices[i] != INVALID_DOF)
-          dof_indices[i] += loffset_;
       for (auto &i : local_to_global_dof_idx_)
           i += loffset_;
     }
@@ -451,6 +450,7 @@ void DOFHandlerMultiDim::create_sequential()
   dh_seq_->dof_ds_ = dof_ds_;  // should be sequential distribution
   dh_seq_->ds_ = ds_;
   dh_seq_->is_parallel_ = false;
+  for (unsigned int i=0; i<n_global_dofs_; i++) dh_seq_->local_to_global_dof_idx_.push_back(i);
   
   MPI_Allreduce(
     &max_elem_dofs_,
@@ -481,7 +481,7 @@ void DOFHandlerMultiDim::create_sequential()
   for (auto cell : this->own_range())
   {
     for (unsigned int idof=0; idof<cell.n_dofs(); idof++)
-        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = dof_indices[cell_starts[cell.local_idx()]+idof];
+        dof_indices_loc[cell_starts_loc[mesh_->get_row_4_el()[cell.elm_idx()]]+idof] = local_to_global_dof_idx_[dof_indices[cell_starts[cell.local_idx()]+idof]];
   }
   
   Distribution distr(dof_indices_loc.size(), PETSC_COMM_WORLD);
@@ -539,7 +539,7 @@ unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std
   unsigned int ndofs = 0;
   ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_indices[cell_starts[cell.local_idx()]+k];
+    indices[k] = local_to_global_dof_idx_[dof_indices[cell_starts[cell.local_idx()]+k]];
   
   return ndofs;
 }
@@ -551,7 +551,7 @@ unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const DHCellAccessor &cell,
   unsigned int ndofs = 0;
   ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = cell_starts[cell.local_idx()]+k;
+    indices[k] = dof_indices[cell_starts[cell.local_idx()]+k];
 
   return ndofs;
 }
@@ -591,6 +591,10 @@ void DOFHandlerMultiDim::make_elem_partitioning()
 			nb_4_loc.push_back(inb);
 	}
 	
+    // init global to local element map with locally owned elements (later add ghost elements)
+    for ( unsigned int iel = 0; iel < el_ds_->lsize(); iel++ )
+        global_to_local_el_idx_[mesh_->get_el_4_loc()[iel]] = iel;
+	
 	// create array of local nodes
 	std::vector<bool> node_is_local(mesh_->tree->n_nodes(), false);
 	for (auto cell : this->own_range())
@@ -599,10 +603,6 @@ void DOFHandlerMultiDim::make_elem_partitioning()
       for (unsigned int nid=0; nid<cell.elm()->n_nodes(); nid++)
         node_is_local[mesh_->tree->objects(cell.dim())[obj_idx].nodes[nid]] = true;
     }
-    
-    // init global to local element map with locally owned elements (later add ghost elements)
-    for ( unsigned int iel = 0; iel < el_ds_->lsize(); iel++ )
-        global_to_local_el_idx_[mesh_->get_el_4_loc()[iel]] = iel;
     
     // create array of local ghost cells
     for ( auto cell : mesh_->elements_range() )
