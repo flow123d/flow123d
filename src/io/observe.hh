@@ -19,6 +19,7 @@
 #include "input/accessors.hh"                // for Array (ptr only), Record
 #include "input/input_exception.hh"          // for DECLARE_INPUT_EXCEPTION
 #include "system/exceptions.hh"              // for operator<<, ExcStream, EI
+#include "system/armadillo_tools.hh"         // for Armadillo vec string
 
 class ElementDataCacheBase;
 class Mesh;
@@ -63,9 +64,16 @@ public:
     DECLARE_INPUT_EXCEPTION(ExcNoInitialPoint,
             << "Failed to find the element containing the initial observe point.\n");
     TYPEDEF_ERR_INFO(EI_RegionName, std::string);
+    TYPEDEF_ERR_INFO(EI_PointName, std::string);
+    TYPEDEF_ERR_INFO(EI_Point, arma::vec3);
+    TYPEDEF_ERR_INFO(EI_ClosestEle, ObservePointData);
     DECLARE_INPUT_EXCEPTION(ExcNoObserveElement,
             << "Failed to find the observe element with snap region: " << EI_RegionName::qval
-            << " close to the initial observe point. Change maximal distance of observe element." << "\n");
+            << " close to the initial observe point " << EI_PointName::qval
+            << " with given coordinates " << field_value_to_yaml(EI_Point::ref(*this)) << ".\n"
+            << "The closest element has index " << EI_ClosestEle::ref(*this).element_idx_ << ", its distance is " << EI_ClosestEle::ref(*this).distance_ << ".\n"
+            << "Solution: check the position of the observe point, possibly increase the maximal snapping distance "
+            << "(keys: observe_points:search_radius, mesh:global_snap_radius)"<< "\n");
 
     static const Input::Type::Record & get_input_type();
 

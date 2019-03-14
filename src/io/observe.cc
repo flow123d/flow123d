@@ -133,8 +133,8 @@ const Input::Type::Record & ObservePoint::get_input_type() {
         .declare_key("snap_region", IT::String(), IT::Default("\"ALL\""),
                 "The region of the initial element for snapping. Without snapping we make a projection to the initial element.")
         .declare_key("search_radius", IT::Double(0.0),
-        		IT::Default::read_time("Maximal distance of observe point from Mesh relative to its size (bounding box). "),
-                "Global value is define in Mesh by the key global_snap_radius.")
+                IT::Default::read_time("Maximal distance of the observe point from the mesh relative to the mesh diameter. "),
+                "Global value is defined in mesh record by the key global_snap_radius.")
         .close();
 }
 
@@ -213,12 +213,21 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     auto projected_point = bih_tree.tree_box().project_point(input_point_);
     bih_tree.find_point(projected_point, candidate_list, true);
 
+    // closest element
+    ObservePointData min_observe_point_data;
+    
     for (unsigned int i_candidate=0; i_candidate<candidate_list.size(); ++i_candidate) {
         unsigned int i_elm=candidate_list[i_candidate];
         ElementAccessor<3> elm = mesh.element_accessor(i_elm);
 
         // project point, add candidate to queue
         auto observe_data = point_projection( i_elm, elm );
+        
+        // save the closest element for later diagnostic
+        if(observe_data.distance_ < min_observe_point_data.distance_)
+            min_observe_point_data = observe_data;
+        
+        // queue only the elements in the maximal search radius
         if (observe_data.distance_ <= max_search_radius_)
         	candidate_queue.push(observe_data);
         closed_elements.insert(i_elm);
@@ -249,6 +258,11 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					ElementAccessor<3> neighbor_elm = mesh.element_accessor(i_node_ele);
 					auto observe_data = point_projection( i_node_ele, neighbor_elm );
+                    
+                    // save the closest element for later diagnostic
+                    if(observe_data.distance_ < min_observe_point_data.distance_)
+                        min_observe_point_data = observe_data;
+        
 			        if (observe_data.distance_ <= max_search_radius_)
 			        	candidate_queue.push(observe_data);
 			        closed_elements.insert(i_node_ele);
@@ -257,7 +271,11 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
     }
 
     if (! have_observe_element()) {
-        THROW(ExcNoObserveElement() << EI_RegionName(snap_region_name_) );
+        THROW(ExcNoObserveElement()
+            << EI_RegionName(snap_region_name_)
+            << EI_PointName(name_)
+            << EI_Point(input_point_)
+            << EI_ClosestEle(min_observe_point_data));
     }
     snap( mesh );
     ElementAccessor<3> elm = mesh.element_accessor(observe_data_.element_idx_);
