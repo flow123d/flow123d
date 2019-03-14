@@ -61,6 +61,13 @@ public:
     Input::Record read_input();
     
     /**
+     * Run application.
+     *
+     * Read input and solve problem.
+     */
+    void run() override;
+
+    /**
      * Terminate all MPI processes if exception is thrown.
      */
     void terminate();
@@ -71,16 +78,9 @@ public:
 protected:
 
     /**
-     * Run application.
-     *
-     * Read input and solve problem.
-     */
-    virtual void run();
-
-    /**
      * Check pause_after_run flag defined in input file.
      */
-    virtual void after_run();
+    void after_run();
 
 
     /**

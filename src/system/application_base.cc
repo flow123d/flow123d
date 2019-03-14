@@ -192,11 +192,6 @@ void ApplicationBase::init(int argc, char ** argv) {
 	petsc_initialized = true;
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-
-
-    this->run();
-
-	this->after_run();
 }
 
 

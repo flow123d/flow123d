@@ -349,6 +349,8 @@ void Application::run() {
         }
 
     }
+
+    this->after_run();
 }
 
 
@@ -401,6 +403,7 @@ int main(int argc, char **argv) {
     Application app(argv);
     try {
         app.init(argc, argv);
+        app.run();
     } catch (std::exception & e) {
         _LOG( Logger::MsgType::error ).every_proc() << e.what();
         app.terminate();

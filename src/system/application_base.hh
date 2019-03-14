@@ -71,6 +71,13 @@ public:
 	 */
 	void init(int argc, char ** argv);
 
+	/**
+	 * Run application.
+	 *
+	 * Method must be implemented in derived class.
+	 */
+	virtual void run() = 0;
+
     /// Return codes of application
 	static const int exit_success = 0;
     static const int exit_failure = 1;
@@ -89,13 +96,6 @@ protected:
 
 	/// Destructor
 	virtual ~ApplicationBase();
-
-	/**
-	 * Run application.
-	 *
-	 * Method must be implemented in derived class.
-	 */
-	virtual void run() = 0;
 
 	/**
 	 * Read system parameters, open log.
@@ -125,13 +125,6 @@ protected:
 	 * Finalize PETSC. If finalization failed return nonzero value.
 	 */
 	int petcs_finalize();
-
-	/**
-	 * Execute part of program after run of simulation.
-	 *
-	 * Method can be override in derived class.
-	 */
-	virtual void after_run() {}
 
     /**
      * Log file name argument - passed to system_init; "" means default, "\n" means no logging
