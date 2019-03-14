@@ -25,7 +25,7 @@
 
 #include "fields/generic_field.hh"
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
 
 #include "fem/mapping_p1.hh"
@@ -55,9 +55,6 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 
 template <int spacedim>
 auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
-    static MappingP1<1,3> map1;
-    static MappingP1<2,3> map2;
-    static MappingP1<3,3> map3;
 	static FE_P_disc<0> fe0(0);
 	static FE_P_disc<1> fe1(0);
 	static FE_P_disc<2> fe2(0);
@@ -69,16 +66,16 @@ auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
 
 	auto field_subdomain_data = mesh.get_part()->subdomain_id_field_data();
 	std::vector<LongIdx> indices(1);
-	VectorSeqDouble *data_vec = new VectorSeqDouble();
-	data_vec->resize(mesh.n_elements());
+	VectorMPI *data_vec = new VectorMPI(mesh.n_elements());
 	ASSERT_EQ(dh->max_elem_dofs(), 1);
-	for(unsigned int i_ele=0; i_ele<mesh.n_elements(); ++i_ele) {
-		ElementAccessor<3> ele = mesh.element_accessor(i_ele);
-		dh->get_dof_indices(ele, indices);
+	unsigned int i_ele=0;
+	for (auto cell : dh->own_range()) {
+		cell.get_loc_dof_indices(indices);
 		(*data_vec)[ indices[0] ] = (*field_subdomain_data)[i_ele];
+		++i_ele;
 	}
     std::shared_ptr< FieldFE<spacedim, DoubleScalar> > field_ptr = std::make_shared< FieldFE<spacedim, DoubleScalar> >();
-    field_ptr->set_fe_data(dh, &map1, &map2, &map3, data_vec);
+    field_ptr->set_fe_data(dh);
 
 	IndexField subdomain;
 	subdomain.name("subdomain");

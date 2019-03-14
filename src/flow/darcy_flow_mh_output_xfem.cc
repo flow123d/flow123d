@@ -75,7 +75,7 @@ void DarcyFlowMHOutputXFEM::prepare_output(Input::Record in_rec)
 
 	// create shared pointer to a FieldFE and push this Field to output_field on all regions
 	ele_pressure.resize(mesh_->n_elements());
-	ele_pressure_ptr=ele_pressure.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+    ele_pressure_ptr=create_field<3, FieldValue<3>::Scalar>(ele_pressure, *mesh_, 1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
     ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe0, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
@@ -85,13 +85,13 @@ void DarcyFlowMHOutputXFEM::prepare_output(Input::Record in_rec)
 	corner_pressure.resize(dh_->n_global_dofs());
 
 	auto corner_ptr = make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-	corner_ptr->set_fe_data(dh_, &fe_data_1d.mapp, &fe_data_2d.mapp, &fe_data_3d.mapp, &corner_pressure);
+    corner_ptr->set_fe_data(dh_, 0, corner_pressure);
 
 	output_fields.field_node_pressure.set_field(mesh_->region_db().get_region_set("ALL"), corner_ptr);
 	output_fields.field_node_pressure.output_type(OutputTime::NODE_DATA);
 
     ele_piezo_head.resize(mesh_->n_elements());
-	ele_piezo_head_ptr=ele_piezo_head.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+    ele_piezo_head_ptr=create_field<3, FieldValue<3>::Scalar>(ele_piezo_head, *mesh_, 1);
 	output_fields.field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
 
 	ele_flux.resize(3*mesh_->n_elements());
@@ -102,10 +102,10 @@ void DarcyFlowMHOutputXFEM::prepare_output(Input::Record in_rec)
             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), field_velocity);            
             
             // FIXME creating unnecessary empty field
-            ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(*mesh_, 3);
+            ele_flux_ptr=create_field<3, FieldValue<3>::VectorFixed>(ele_flux, *mesh_, 3);
         }
         else{
-            ele_flux_ptr=ele_flux.create_field<3, FieldValue<3>::VectorFixed>(*mesh_, 3);
+            ele_flux_ptr=create_field<3, FieldValue<3>::VectorFixed>(ele_flux, *mesh_, 3);
             output_fields.field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
         }
 
@@ -136,11 +136,11 @@ void DarcyFlowMHOutputXFEM::prepare_specific_output(Input::Record in_rec)
     
     output_specific_fields.set_mesh(*mesh_);
 
-    diff_data.vel_diff_ptr = diff_data.velocity_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+    diff_data.vel_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.velocity_diff, *mesh_, 1);
     output_specific_fields.velocity_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.vel_diff_ptr, 0);
-    diff_data.pressure_diff_ptr = diff_data.pressure_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+    diff_data.pressure_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.pressure_diff, *mesh_, 1);
     output_specific_fields.pressure_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.pressure_diff_ptr, 0);
-    diff_data.div_diff_ptr = diff_data.div_diff.create_field<3, FieldValue<3>::Scalar>(*mesh_, 1);
+    diff_data.div_diff_ptr = create_field<3, FieldValue<3>::Scalar>(diff_data.div_diff, *mesh_, 1);
     output_specific_fields.div_diff.set_field(mesh_->region_db().get_region_set("ALL"), diff_data.div_diff_ptr, 0);
 
     field_velocity_enr_part = std::make_shared<FieldVelocity>(&darcy_flow->mh_dh, &darcy_flow->data_->cross_section,

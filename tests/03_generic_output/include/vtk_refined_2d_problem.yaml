@@ -1,0 +1,62 @@
+description: Output mesh test 2d, Darcy flow- adaptive refinement, transport - uniform refinement.
+mesh:
+  mesh_file: ../00_mesh/square_1x1_40el.msh
+flow_equation: !Flow_Darcy_MH
+  input_fields:
+    - region: plane
+      water_source_density: !FieldFormula
+        value: 1/(x+0.01)
+    - region: .boundary
+      bc_type: dirichlet
+      bc_pressure: !FieldFormula
+        value: 0
+  nonlinear_solver:
+    linear_solver: !Petsc
+      a_tol: 1.0e-07
+  n_schurs: 2
+  output:
+    fields:
+      - water_source_density
+      - pressure_p0
+      #- { field: pressure_p1, interpolation: P1_average }
+      - velocity_p0
+      #- { field: water_source_density, interpolation: D1_value }
+  output_stream:
+    file: ./flow.pvd
+    format: !vtk
+      variant: ascii
+    name: flow_output_stream
+    output_mesh:
+      max_level: 3 # default value
+      refine_by_error: true
+      error_control_field: water_source_density
+      refinement_error_tolerance: 0.05 # default value
+# primary_equation
+  
+solute_equation: !Coupling_OperatorSplitting
+  transport: !Solute_Advection_FV
+    input_fields:
+      - region: plane
+        init_conc: 0.5
+      - region: .BOUNDARY
+        bc_conc:
+          - 0.0
+    output:
+      fields:
+        - conc
+  substances:
+    - name: U235
+      molar_mass: 0.235
+  time:
+    end_time: 1.0
+  balance: {add_output_times: false}
+  output_stream:
+    file: transport.pvd
+    format: !vtk
+      variant: ascii
+    times:
+      - step: 1.0
+    output_mesh:
+      max_level: 2
+      refine_by_error: false  # uniform refinement
+# secondary_equation      

@@ -27,7 +27,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/fe_p.hh"
 #include "fields/field_fe.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/fe_value_handler.hh"
 
 FLOW123D_FORCE_LINK_IN_PARENT(field_constant)
@@ -74,7 +74,8 @@ public:
 
         // create output mesh identical to computational mesh
         auto output_mesh = std::make_shared<OutputMesh>(*(this->_mesh));
-        output_mesh->create_mesh();
+        output_mesh->create_sub_mesh();
+        output_mesh->make_serial_master_mesh();
         this->set_output_data_caches(output_mesh);
 
     }
@@ -94,11 +95,13 @@ public:
 
         // create output mesh identical to computational mesh
 		output_mesh_ = std::make_shared<OutputMesh>( *(this->_mesh) );
-		output_mesh_->create_mesh();
+		output_mesh_->create_sub_mesh();
+		output_mesh_->make_serial_master_mesh();
         this->set_output_data_caches(output_mesh_);
 
         //this->output_mesh_discont_ = std::make_shared<OutputMeshDiscontinuous>( *(this->_mesh) );
-        //this->output_mesh_discont_->create_mesh();
+        //this->output_mesh_discont_->create_sub_mesh();
+        //this->output_mesh_discont_->make_serial_master_mesh();
 
 		field.compute_field_data(ELEM_DATA, shared_from_this());
 	}
@@ -121,12 +124,11 @@ public:
         std::shared_ptr<::DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(this->_mesh, &fe0, &fe1, &fe2, &fe3);
 		dh->distribute_dofs(ds);
 
-		VectorSeqDouble v;
-        v.resize(size);
+		VectorMPI v(size);
         for (unsigned int i=0; i<size; ++i) v[i] = step*i;
 
 		auto native_data_ptr = make_shared< FieldFE<3, FieldVal> >();
-		native_data_ptr->set_fe_data(dh, &map1, &map2, &map3, &v);
+		native_data_ptr->set_fe_data(dh, 0, v);
 
 		field.set_field(_mesh->region_db().get_region_set("ALL"), native_data_ptr);
 		field.output_type(OutputTime::NATIVE_DATA);
@@ -168,9 +170,6 @@ public:
 	}
 
 	std::vector<string> component_names;
-	MappingP1<1,3> map1;
-	MappingP1<2,3> map2;
-	MappingP1<3,3> map3;
 	Mesh *_mesh;
 	std::shared_ptr<OutputMeshBase> output_mesh_;
 };

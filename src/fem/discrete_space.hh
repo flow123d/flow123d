@@ -40,6 +40,9 @@ public:
     
   /// Number of dofs associated to node. @p nid is the node index in the mesh tree.
   virtual unsigned int n_node_dofs(unsigned int nid) const = 0;
+
+  /// Number of dofs associated to edge.
+  virtual unsigned int n_edge_dofs(const Edge &edge) const = 0;
   
   /// Number of dofs associated to element (not shared by adjacent elements).
   virtual unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const = 0;
@@ -87,6 +90,8 @@ public:
   : DiscreteSpace(mesh), fe0_(fe0), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
   
   unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const override;
+  
+  unsigned int n_edge_dofs(const Edge &edge) const override;
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   

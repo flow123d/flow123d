@@ -25,6 +25,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
+#include "fem/dh_cell_accessor.hh"
 #include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
 #include "la/linsys_PETSC.hh"
@@ -284,16 +285,6 @@ void TransportDG<Model>::initialize()
     }
 
     output_vec.resize(Model::n_substances());
-    //output_solution.resize(Model::n_substances());
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    unsigned int output_vector_size= (rank==0)?feo->dh()->n_global_dofs():0;
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-    {
-        // for each substance we allocate output array and vector
-        //output_solution[sbi] = new double[feo->dh()->n_global_dofs()];
-		output_vec[sbi].resize(output_vector_size);
-    }
     data_.output_field.set_components(Model::substances_.names());
     data_.output_field.set_mesh(*Model::mesh_);
     data_.output_type(OutputTime::CORNER_DATA);
@@ -303,7 +294,7 @@ void TransportDG<Model>::initialize()
     {
         // create shared pointer to a FieldFE, pass FE data and push this FieldFE to output_field on all regions
         std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_field_ptr(new FieldFE<3, FieldValue<3>::Scalar>);
-        output_field_ptr->set_fe_data(feo->dh()->sequential(), feo->mapping<1>(), feo->mapping<2>(), feo->mapping<3>(), &output_vec[sbi]);
+        output_vec[sbi] = output_field_ptr->set_fe_data(feo->dh());
         data_.output_field[sbi].set_field(Model::mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0);
     }
 
@@ -331,7 +322,7 @@ void TransportDG<Model>::initialize()
     for (unsigned int sbi = 0; sbi < Model::n_substances(); sbi++) {
         ls[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
-        ls[sbi]->set_solution(NULL);
+        ls[sbi]->set_solution(output_vec[sbi].petsc_vec());
 
         ls_dt[sbi] = new LinSys_PETSC(feo->dh()->distr().get(), petsc_default_opts);
         ( (LinSys_PETSC *)ls_dt[sbi] )->set_from_input( input_rec.val<Input::Record>("solver") );
@@ -386,23 +377,6 @@ TransportDG<Model>::~TransportDG()
     }
 
 }
-
-
-template<class Model>
-void TransportDG<Model>::output_vector_gather()
-{
-    VecScatter output_scatter;
-    VecScatterCreateToZero(ls[0]->get_solution(), &output_scatter, PETSC_NULL);
-    for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-    {
-        // gather solution to output_vec[sbi]
-    	VecScatterBegin(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-    	VecScatterEnd(output_scatter, ls[sbi]->get_solution(), (output_vec[sbi]).get_data_petsc(), INSERT_VALUES, SCATTER_FORWARD);
-    }
-    chkerr(VecScatterDestroy(&(output_scatter)));
-
-}
-
 
 
 template<class Model>
@@ -604,12 +578,12 @@ template<class Model>
 void TransportDG<Model>::calculate_concentration_matrix()
 {
     // calculate element averages of solution
-    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
+	unsigned int i_cell=0;
+	for (auto cell : feo->dh()->own_range() )
     {
-        ElementAccessor<3> elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
 
         unsigned int n_dofs;
-        switch (elem->dim())
+        switch (cell.dim())
         {
         case 1:
             n_dofs = feo->fe<1>()->n_dofs();
@@ -623,7 +597,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
         }
 
         std::vector<LongIdx> dof_indices(n_dofs);
-        feo->dh()->get_dof_indices(elem, dof_indices);
+        cell.get_dof_indices(dof_indices);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
@@ -634,6 +608,7 @@ void TransportDG<Model>::calculate_concentration_matrix()
 
             solution_elem_[sbi][i_cell] = max(solution_elem_[sbi][i_cell]/n_dofs, 0.);
         }
+        ++i_cell;
     }
 }
 
@@ -651,7 +626,6 @@ void TransportDG<Model>::output_data()
     // gather the solution from all processors
     data_.output_fields.set_time( this->time().step(), LimitSide::left);
     //if (data_.output_fields.is_field_output_time(data_.output_field, this->time().step()) )
-    output_vector_gather();
     data_.output_fields.output(this->time().step());
 
     Model::output_data();
@@ -708,16 +682,16 @@ void TransportDG<Model>::assemble_mass_matrix()
     vector<PetscScalar> local_mass_balance_vector(ndofs);
 
     // assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->own_range() )
     {
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
-        if (cell->dim() != dim) continue;
+        if (cell.dim() != dim) continue;
+        ElementAccessor<3> elm = cell.elm();
 
-        fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        fe_values.reinit(elm);
+        cell.get_dof_indices(dof_indices);
 
-        Model::compute_mass_matrix_coefficient(fe_values.point_list(), cell, mm_coef);
-        Model::compute_retardation_coefficient(fe_values.point_list(), cell, ret_coef);
+        Model::compute_mass_matrix_coefficient(fe_values.point_list(), elm, mm_coef);
+        Model::compute_retardation_coefficient(fe_values.point_list(), elm, ret_coef);
 
         for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
         {
@@ -743,7 +717,7 @@ void TransportDG<Model>::assemble_mass_matrix()
                     }
             }
             
-            Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], cell.region().bulk_idx(), dof_indices, local_mass_balance_vector);
+            Model::balance_->add_mass_matrix_values(Model::subst_idx[sbi], elm.region().bulk_idx(), dof_indices, local_mass_balance_vector);
             ls_dt[sbi]->mat_set_values(ndofs, &(dof_indices[0]), ndofs, &(dof_indices[0]), local_mass_matrix);
             VecSetValues(ret_vec[sbi], ndofs, &(dof_indices[0]), local_retardation_balance_vector, ADD_VALUES);
         }
@@ -800,18 +774,19 @@ void TransportDG<Model>::assemble_volume_integrals()
     PetscScalar local_matrix[ndofs*ndofs];
 
     // assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->local_range() )
     {
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
-        if (cell->dim() != dim) continue;
+        if (!cell.is_own()) continue;
+        if (cell.dim() != dim) continue;
+        ElementAccessor<3> elm = cell.elm();
 
-        fe_values.reinit(cell);
-        fv_rt.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        fe_values.reinit(elm);
+        fv_rt.reinit(elm);
+        cell.get_dof_indices(dof_indices);
 
-        calculate_velocity(cell, velocity, fv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values.point_list(), velocity, cell, ad_coef, dif_coef);
-        Model::compute_sources_sigma(fe_values.point_list(), cell, sources_sigma);
+        calculate_velocity(elm, velocity, fv_rt);
+        Model::compute_advection_diffusion_coefficients(fe_values.point_list(), velocity, elm, ad_coef, dif_coef);
+        Model::compute_sources_sigma(fe_values.point_list(), elm, sources_sigma);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -867,15 +842,15 @@ void TransportDG<Model>::set_sources()
     double source;
 
     // assemble integral over elements
-    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->own_range() )
     {
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
-        if (cell->dim() != dim) continue;
+        if (cell.dim() != dim) continue;
+        ElementAccessor<3> elm = cell.elm();
 
-        fe_values.reinit(cell);
-        feo->dh()->get_dof_indices(cell, dof_indices);
+        fe_values.reinit(elm);
+        cell.get_dof_indices(dof_indices);
 
-        Model::compute_source_coefficients(fe_values.point_list(), cell, sources_conc, sources_density, sources_sigma);
+        Model::compute_source_coefficients(fe_values.point_list(), elm, sources_conc, sources_density, sources_sigma);
 
         // assemble the local stiffness matrix
         for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
@@ -901,10 +876,25 @@ void TransportDG<Model>::set_sources()
 
                 local_source_balance_rhs[i] += local_rhs[i];
             }
-            Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], cell.region().bulk_idx(), dof_indices, local_source_balance_vector);
-            Model::balance_->add_source_vec_values(Model::subst_idx[sbi], cell.region().bulk_idx(), dof_indices, local_source_balance_rhs);
+            Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], elm.region().bulk_idx(), dof_indices, local_source_balance_vector);
+            Model::balance_->add_source_vec_values(Model::subst_idx[sbi], elm.region().bulk_idx(), dof_indices, local_source_balance_rhs);
         }
     }
+}
+
+
+
+// return the ratio of longest and shortest edge
+double elem_anisotropy(ElementAccessor<3> e)
+{
+    double h_max = 0, h_min = numeric_limits<double>::infinity();
+    for (unsigned int i=0; i<e->n_nodes(); i++)
+        for (unsigned int j=i+1; j<e->n_nodes(); j++)
+        {
+            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
+            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
+        }
+    return h_max/h_min;
 }
 
 
@@ -922,7 +912,8 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     PetscScalar local_matrix[ndofs*ndofs];
     vector<vector<arma::vec3> > side_velocity(n_max_sides);
     vector<vector<double> > dg_penalty(n_max_sides);
-    double gamma_l, omega[2], transport_flux;
+    double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
+    double aniso1, aniso2;
 
     for (unsigned int sid=0; sid<n_max_sides; sid++) // Optimize: SWAP LOOPS
     {
@@ -932,102 +923,155 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     }
 
     // assemble integral over sides
-    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
-    {
-        Edge *edg = &Model::mesh_->edges[feo->dh()->edge_index(iedg)];
-        if (edg->n_sides < 2 || edg->side(0)->element()->dim() != dim) continue;
-
-        for (int sid=0; sid<edg->n_sides; sid++)
+    int sid, s1, s2;
+    for ( DHCellAccessor dh_cell : feo->dh()->local_range() ) {
+    	if (dh_cell.dim() != dim) continue;
+        for( DHCellSide cell_side : dh_cell.side_range() )
         {
-            ElementAccessor<3> cell = Model::mesh_->element_accessor( edg->side(sid)->element().idx() );
-            feo->dh()->get_dof_indices(cell, side_dof_indices[sid]);
-            fe_values[sid]->reinit(cell, edg->side(sid)->side_idx());
-            fsv_rt.reinit(cell, edg->side(sid)->side_idx());
-            calculate_velocity(cell, side_velocity[sid], fsv_rt);
-            Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], cell, ad_coef_edg[sid], dif_coef_edg[sid]);
-            dg_penalty[sid].resize(Model::n_substances());
-            for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-                dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell.centre(), cell);
-        }
-
-        // fluxes and penalty
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
-        {
-            vector<double> fluxes(edg->n_sides);
-            for (int sid=0; sid<edg->n_sides; sid++)
+        	if (cell_side.n_edge_sides() < 2) continue;
+            bool unique_edge = (cell_side.edge_sides().begin()->side()->element().idx() != dh_cell.elm_idx());
+    	    if ( unique_edge ) continue;
+    	    sid=0;
+        	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
-                fluxes[sid] = 0;
-                for (unsigned int k=0; k<qsize; k++)
-                    fluxes[sid] += arma::dot(ad_coef_edg[sid][sbi][k], fe_values[sid]->normal_vector(k))*fe_values[sid]->JxW(k);
-                fluxes[sid] /= edg->side(sid)->measure();
+        	    auto dh_edge_cell = feo->dh()->cell_accessor_from_element( edge_side.side()->elem_idx() );
+                ElementAccessor<3> cell = dh_edge_cell.elm();
+                dh_edge_cell.get_dof_indices(side_dof_indices[sid]);
+                fe_values[sid]->reinit(cell, edge_side.side()->side_idx());
+                fsv_rt.reinit(cell, edge_side.side()->side_idx());
+                calculate_velocity(cell, side_velocity[sid], fsv_rt);
+                Model::compute_advection_diffusion_coefficients(fe_values[sid]->point_list(), side_velocity[sid], cell, ad_coef_edg[sid], dif_coef_edg[sid]);
+                dg_penalty[sid].resize(Model::n_substances());
+                for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+                    dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell.centre(), cell);
+                ++sid;
             }
+            arma::vec3 normal_vector = fe_values[0]->normal_vector(0);
 
-            for (int s1=0; s1<edg->n_sides; s1++)
+            // fluxes and penalty
+            for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
-                for (int s2=s1+1; s2<edg->n_sides; s2++)
+                vector<double> fluxes(cell_side.n_edge_sides());
+                double pflux = 0, nflux = 0; // calculate the total in- and out-flux through the edge
+                sid=0;
+                for( DHCellSide edge_side : cell_side.edge_sides() )
                 {
-                    OLD_ASSERT(edg->side(s1)->valid(), "Invalid side of edge.");
-                    if (!feo->dh()->el_is_local( edg->side(s1)->element().idx() )
-                            && !feo->dh()->el_is_local( edg->side(s2)->element().idx() )) continue;
+                    fluxes[sid] = 0;
+                    for (unsigned int k=0; k<qsize; k++)
+                        fluxes[sid] += arma::dot(ad_coef_edg[sid][sbi][k], fe_values[sid]->normal_vector(k))*fe_values[sid]->JxW(k);
+                    fluxes[sid] /= edge_side.side()->measure();
+                    if (fluxes[sid] > 0)
+                        pflux += fluxes[sid];
+                    else
+                        nflux += fluxes[sid];
+                    ++sid;
+                }
 
-                    arma::vec3 nv = fe_values[s1]->normal_vector(0);
+                s1=0;
+                for( DHCellSide edge_side1 : cell_side.edge_sides() )
+                {
+                	s2=-1; // need increment at begin of loop (see conditionally 'continue' directions)
+                	for( DHCellSide edge_side2 : cell_side.edge_sides() )
+                    {
+                		s2++;
+                		if (s2<=s1) continue;
+                        ASSERT(edge_side1.side()->valid()).error("Invalid side of edge.");
 
-                    // set up the parameters for DG method
-                    set_DG_parameters_edge(*edg, s1, s2, qsize, dif_coef_edg[s1][sbi], dif_coef_edg[s2][sbi], fluxes, fe_values[0]->normal_vector(0), dg_penalty[s1][sbi], dg_penalty[s2][sbi], gamma_l, omega, transport_flux);
+                        arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
-                    int sd[2];
-                    sd[0] = s1;
-                    sd[1] = s2;
+                        // set up the parameters for DG method
+                        // calculate the flux from edge_side1 to edge_side2
+                        if (fluxes[s2] > 0 && fluxes[s1] < 0)
+                            transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
+                        else if (fluxes[s2] < 0 && fluxes[s1] > 0)
+                            transport_flux = fluxes[s1]*fabs(fluxes[s2]/nflux);
+                        else
+                            transport_flux = 0;
+
+                        gamma_l = 0.5*fabs(transport_flux);
+
+                        delta[0] = 0;
+                        delta[1] = 0;
+                        for (unsigned int k=0; k<qsize; k++)
+                        {
+                            delta[0] += dot(dif_coef_edg[s1][sbi][k]*normal_vector,normal_vector);
+                            delta[1] += dot(dif_coef_edg[s2][sbi][k]*normal_vector,normal_vector);
+                        }
+                        delta[0] /= qsize;
+                        delta[1] /= qsize;
+
+                        delta_sum = delta[0] + delta[1];
+
+//                        if (delta_sum > numeric_limits<double>::epsilon())
+                        if (fabs(delta_sum) > 0)
+                        {
+                            omega[0] = delta[1]/delta_sum;
+                            omega[1] = delta[0]/delta_sum;
+                            double local_alpha = max(dg_penalty[s1][sbi], dg_penalty[s2][sbi]);
+                            double h = edge_side1.side()->diameter();
+                            aniso1 = elem_anisotropy(edge_side1.side()->element());
+                            aniso2 = elem_anisotropy(edge_side2.side()->element());
+                            gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
+                        }
+                        else
+                            for (int i=0; i<2; i++) omega[i] = 0;
+                        // end of set up the parameters for DG method
+
+                        int sd[2]; bool is_side_own[2];
+                        sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
+                        sd[1] = s2; is_side_own[1] = edge_side2.cell().is_own();
 
 #define AVERAGE(i,k,side_id)  (fe_values[sd[side_id]]->shape_value(i,k)*0.5)
 #define WAVERAGE(i,k,side_id) (arma::dot(dif_coef_edg[sd[side_id]][sbi][k]*fe_values[sd[side_id]]->shape_grad(i,k),nv)*omega[side_id])
 #define JUMP(i,k,side_id)     ((side_id==0?1:-1)*fe_values[sd[side_id]]->shape_value(i,k))
 
-                    // For selected pair of elements:
-                    for (int n=0; n<2; n++)
-                    {
-                        if (!feo->dh()->el_is_local( edg->side(sd[n])->element().idx() )) continue;
-
-                        for (int m=0; m<2; m++)
+                        // For selected pair of elements:
+                        for (int n=0; n<2; n++)
                         {
-                            for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
-                                for (unsigned int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
-                                    local_matrix[i*fe_values[sd[m]]->n_dofs()+j] = 0;
+                            if (!is_side_own[n]) continue;
 
-                            for (unsigned int k=0; k<qsize; k++)
+                            for (int m=0; m<2; m++)
                             {
-                                double flux_times_JxW = transport_flux*fe_values[0]->JxW(k);
-                                double gamma_times_JxW = gamma_l*fe_values[0]->JxW(k);
-
                                 for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
-                                {
-                                    double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
-                                    double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
-                                    double JxW_jump_i = fe_values[0]->JxW(k)*JUMP(i,k,n);
-                                    double JxW_var_wavg_i = fe_values[0]->JxW(k)*WAVERAGE(i,k,n)*dg_variant;
-
                                     for (unsigned int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
+                                        local_matrix[i*fe_values[sd[m]]->n_dofs()+j] = 0;
+
+                                for (unsigned int k=0; k<qsize; k++)
+                                {
+                                    double flux_times_JxW = transport_flux*fe_values[0]->JxW(k);
+                                    double gamma_times_JxW = gamma_l*fe_values[0]->JxW(k);
+
+                                    for (unsigned int i=0; i<fe_values[sd[n]]->n_dofs(); i++)
                                     {
-                                        int index = i*fe_values[sd[m]]->n_dofs()+j;
+                                        double flux_JxW_jump_i = flux_times_JxW*JUMP(i,k,n);
+                                        double gamma_JxW_jump_i = gamma_times_JxW*JUMP(i,k,n);
+                                        double JxW_jump_i = fe_values[0]->JxW(k)*JUMP(i,k,n);
+                                        double JxW_var_wavg_i = fe_values[0]->JxW(k)*WAVERAGE(i,k,n)*dg_variant;
 
-                                        // flux due to transport (applied on interior edges) (average times jump)
-                                        local_matrix[index] += flux_JxW_jump_i*AVERAGE(j,k,m);
+                                        for (unsigned int j=0; j<fe_values[sd[m]]->n_dofs(); j++)
+                                        {
+                                            int index = i*fe_values[sd[m]]->n_dofs()+j;
 
-                                        // penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
-                                        local_matrix[index] += gamma_JxW_jump_i*JUMP(j,k,m);
+                                            // flux due to transport (applied on interior edges) (average times jump)
+                                            local_matrix[index] += flux_JxW_jump_i*AVERAGE(j,k,m);
 
-                                        // terms due to diffusion
-                                        local_matrix[index] -= WAVERAGE(j,k,m)*JxW_jump_i;
-                                        local_matrix[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
+                                            // penalty enforcing continuity across edges (applied on interior and Dirichlet edges) (jump times jump)
+                                            local_matrix[index] += gamma_JxW_jump_i*JUMP(j,k,m);
+
+                                            // terms due to diffusion
+                                            local_matrix[index] -= WAVERAGE(j,k,m)*JxW_jump_i;
+                                            local_matrix[index] -= JUMP(j,k,m)*JxW_var_wavg_i;
+                                        }
                                     }
                                 }
+    							ls[sbi]->mat_set_values(fe_values[sd[n]]->n_dofs(), &(side_dof_indices[sd[n]][0]), fe_values[sd[m]]->n_dofs(), &(side_dof_indices[sd[m]][0]), local_matrix);
                             }
-							ls[sbi]->mat_set_values(fe_values[sd[n]]->n_dofs(), &(side_dof_indices[sd[n]][0]), fe_values[sd[m]]->n_dofs(), &(side_dof_indices[sd[m]][0]), local_matrix);
                         }
-                    }
 #undef AVERAGE
 #undef WAVERAGE
 #undef JUMP
+                    }
+                s1++;
                 }
             }
         }
@@ -1057,84 +1101,87 @@ void TransportDG<Model>::assemble_fluxes_boundary()
     double gamma_l;
 
     // assemble boundary integral
-    for (unsigned int iedg=0; iedg<feo->dh()->n_loc_edges(); iedg++)
+    for (auto cell : feo->dh()->local_range() )
     {
-        Edge *edg = &Model::mesh_->edges[feo->dh()->edge_index(iedg)];
-        if (edg->n_sides > 1) continue;
-        // check spatial dimension
-        if (edg->side(0)->dim() != dim-1) continue;
-        // skip edges lying not on the boundary
-        if (edg->side(0)->cond() == NULL) continue;
-
-        SideIter side = edg->side(0);
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( side->element().idx() );
-        feo->dh()->get_dof_indices(cell, side_dof_indices);
-        fe_values_side.reinit(cell, side->side_idx());
-        fsv_rt.reinit(cell, side->side_idx());
-
-        calculate_velocity(cell, side_velocity, fsv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, cell, ad_coef, dif_coef);
-        arma::uvec bc_type;
-        Model::get_bc_type(side->cond()->element_accessor(), bc_type);
-        data_.cross_section.value_list(fe_values_side.point_list(), cell, csection);
-
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
+    	if (!cell.is_own()) continue;
+        for( DHCellSide cell_side : cell.side_range() )
         {
-            for (unsigned int i=0; i<ndofs; i++)
-                for (unsigned int j=0; j<ndofs; j++)
-                    local_matrix[i*ndofs+j] = 0;
+            const Side *side = cell_side.side();
+            if (side->edge()->n_sides > 1) continue;
+            // check spatial dimension
+            if (side->dim() != dim-1) continue;
+            // skip edges lying not on the boundary
+            if (side->cond() == NULL) continue;
 
-            // On Neumann boundaries we have only term from integrating by parts the advective term,
-            // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
-            double side_flux = 0;
-            for (unsigned int k=0; k<qsize; k++)
-                side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
-            double transport_flux = side_flux/side->measure();
+            ElementAccessor<3> elm_acc = cell.elm();
+            cell.get_dof_indices(side_dof_indices);
+            fe_values_side.reinit(elm_acc, side->side_idx());
+            fsv_rt.reinit(elm_acc, side->side_idx());
 
-            if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+            calculate_velocity(elm_acc, side_velocity, fsv_rt);
+            Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), side_velocity, elm_acc, ad_coef, dif_coef);
+            arma::uvec bc_type;
+            Model::get_bc_type(side->cond()->element_accessor(), bc_type);
+            data_.cross_section.value_list(fe_values_side.point_list(), elm_acc, csection);
+
+            for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
-                // set up the parameters for DG method
-                set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(cell.centre(), cell), gamma_l);
-                gamma[sbi][side->cond_idx()] = gamma_l;
-                transport_flux += gamma_l;
-            }
-
-            // fluxes and penalty
-            for (unsigned int k=0; k<qsize; k++)
-            {
-                double flux_times_JxW;
-                if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
-                {
-                    Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
-                    flux_times_JxW = csection[k]*robin_sigma[k]*fe_values_side.JxW(k);
-                }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
-                {
-                    Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
-                    flux_times_JxW = (transport_flux + csection[k]*robin_sigma[k])*fe_values_side.JxW(k);
-                }
-                else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
-                    flux_times_JxW = 0;
-                else
-                    flux_times_JxW = transport_flux*fe_values_side.JxW(k);
-
                 for (unsigned int i=0; i<ndofs; i++)
-                {
                     for (unsigned int j=0; j<ndofs; j++)
-                    {
-                        // flux due to advection and penalty
-                        local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
+                        local_matrix[i*ndofs+j] = 0;
 
-                        // flux due to diffusion (only on dirichlet and inflow boundary)
-                        if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
-                            local_matrix[i*ndofs+j] -= (arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(j,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
-                                    + arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(j,k)*dg_variant
-                                    )*fe_values_side.JxW(k);
+                // On Neumann boundaries we have only term from integrating by parts the advective term,
+                // on Dirichlet boundaries we additionally apply the penalty which enforces the prescribed value.
+                double side_flux = 0;
+                for (unsigned int k=0; k<qsize; k++)
+                    side_flux += arma::dot(ad_coef[sbi][k], fe_values_side.normal_vector(k))*fe_values_side.JxW(k);
+                double transport_flux = side_flux/side->measure();
+
+                if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                {
+                    // set up the parameters for DG method
+                    set_DG_parameters_boundary(side, qsize, dif_coef[sbi], transport_flux, fe_values_side.normal_vector(0), data_.dg_penalty[sbi].value(elm_acc.centre(), elm_acc), gamma_l);
+                    gamma[sbi][side->cond_idx()] = gamma_l;
+                    transport_flux += gamma_l;
+                }
+
+                // fluxes and penalty
+                for (unsigned int k=0; k<qsize; k++)
+                {
+                    double flux_times_JxW;
+                    if (bc_type[sbi] == AdvectionDiffusionModel::abc_total_flux)
+                    {
+                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
+                        flux_times_JxW = csection[k]*robin_sigma[k]*fe_values_side.JxW(k);
+                    }
+                    else if (bc_type[sbi] == AdvectionDiffusionModel::abc_diffusive_flux)
+                    {
+                        Model::get_flux_bc_sigma(sbi, fe_values_side.point_list(), side->cond()->element_accessor(), robin_sigma);
+                        flux_times_JxW = (transport_flux + csection[k]*robin_sigma[k])*fe_values_side.JxW(k);
+                    }
+                    else if (bc_type[sbi] == AdvectionDiffusionModel::abc_inflow && side_flux < 0)
+                        flux_times_JxW = 0;
+                    else
+                        flux_times_JxW = transport_flux*fe_values_side.JxW(k);
+
+                    for (unsigned int i=0; i<ndofs; i++)
+                    {
+                        for (unsigned int j=0; j<ndofs; j++)
+                        {
+                            // flux due to advection and penalty
+                            local_matrix[i*ndofs+j] += flux_times_JxW*fe_values_side.shape_value(i,k)*fe_values_side.shape_value(j,k);
+
+                            // flux due to diffusion (only on dirichlet and inflow boundary)
+                            if (bc_type[sbi] == AdvectionDiffusionModel::abc_dirichlet)
+                                local_matrix[i*ndofs+j] -= (arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(j,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(i,k)
+                                        + arma::dot(dif_coef[sbi][k]*fe_values_side.shape_grad(i,k),fe_values_side.normal_vector(k))*fe_values_side.shape_value(j,k)*dg_variant
+                                        )*fe_values_side.JxW(k);
+                        }
                     }
                 }
-            }
 
-			ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
+		    	ls[sbi]->mat_set_values(ndofs, &(side_dof_indices[0]), ndofs, &(side_dof_indices[0]), local_matrix);
+            }
         }
     }
 }
@@ -1173,85 +1220,86 @@ void TransportDG<Model>::assemble_fluxes_element_side()
     fv_sb[1] = &fe_values_side;
 
     // assemble integral over sides
-    for (unsigned int inb=0; inb<feo->dh()->n_loc_nb(); inb++)
-    {
-        Neighbour *nb = &Model::mesh_->vb_neighbours_[feo->dh()->nb_index(inb)];
-        // skip neighbours of different dimension
-        if (nb->element()->dim() != dim-1) continue;
-
-        ElementAccessor<3> cell_sub = Model::mesh_->element_accessor( nb->element().idx() );
-		n_indices = feo->dh()->get_dof_indices(cell_sub, indices);
-		for(unsigned int i=0; i<n_indices; ++i) {
-			side_dof_indices[i] = indices[i];
-		}
-        fe_values_vb.reinit(cell_sub);
-        n_dofs[0] = fv_sb[0]->n_dofs();
-
-        ElementAccessor<3> cell = Model::mesh_->element_accessor( nb->side()->element().idx() );
-		n_indices = feo->dh()->get_dof_indices(cell, indices);
-		for(unsigned int i=0; i<n_indices; ++i) {
-			side_dof_indices[i+n_dofs[0]] = indices[i];
-		}
-        fe_values_side.reinit(cell, nb->side()->side_idx());
-        n_dofs[1] = fv_sb[1]->n_dofs();
-        
-        // Element id's for testing if they belong to local partition.
-        int element_id[2];
-        element_id[0] = cell_sub.idx();
-        element_id[1] = cell.idx();
-
-        fsv_rt.reinit(cell, nb->side()->side_idx());
-        fv_rt.reinit(cell_sub);
-        calculate_velocity(cell, velocity_higher, fsv_rt);
-        calculate_velocity(cell_sub, velocity_lower, fv_rt);
-        Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, cell_sub, ad_coef_edg[0], dif_coef_edg[0]);
-        Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, cell, ad_coef_edg[1], dif_coef_edg[1]);
-        data_.cross_section.value_list(fe_values_vb.point_list(), cell_sub, csection_lower);
-        data_.cross_section.value_list(fe_values_vb.point_list(), cell, csection_higher);
-
-        for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
+    for (DHCellAccessor cell_lower_dim : feo->dh()->local_range() )
+        for( DHCellSide neighb_side : cell_lower_dim.neighb_sides() )
         {
-            for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
-                for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
-                    local_matrix[i*(n_dofs[0]+n_dofs[1])+j] = 0;
-            
-            data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), cell_sub, frac_sigma);
+            // skip neighbours of different dimension
+            if (cell_lower_dim.elm().dim() != dim-1) continue;
 
-            // set transmission conditions
-            for (unsigned int k=0; k<qsize; k++)
+            ElementAccessor<3> elm_lower_dim = cell_lower_dim.elm();
+            n_indices = cell_lower_dim.get_dof_indices(indices);
+    		for(unsigned int i=0; i<n_indices; ++i) {
+    			side_dof_indices[i] = indices[i];
+    		}
+            fe_values_vb.reinit(elm_lower_dim);
+            n_dofs[0] = fv_sb[0]->n_dofs();
+
+            DHCellAccessor cell_higher_dim = feo->dh()->cell_accessor_from_element( neighb_side.side()->element().idx() );
+            ElementAccessor<3> elm_higher_dim = cell_higher_dim.elm();
+            n_indices = cell_higher_dim.get_dof_indices(indices);
+    		for(unsigned int i=0; i<n_indices; ++i) {
+    			side_dof_indices[i+n_dofs[0]] = indices[i];
+    		}
+            fe_values_side.reinit(elm_higher_dim, neighb_side.side()->side_idx());
+            n_dofs[1] = fv_sb[1]->n_dofs();
+
+            // Testing element if they belong to local partition.
+            bool own_element_id[2];
+            own_element_id[0] = cell_lower_dim.is_own();
+            own_element_id[1] = cell_higher_dim.is_own();
+
+            fsv_rt.reinit(elm_higher_dim, neighb_side.side()->side_idx());
+            fv_rt.reinit(elm_lower_dim);
+            calculate_velocity(elm_higher_dim, velocity_higher, fsv_rt);
+            calculate_velocity(elm_lower_dim, velocity_lower, fv_rt);
+            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_lower, elm_lower_dim, ad_coef_edg[0], dif_coef_edg[0]);
+            Model::compute_advection_diffusion_coefficients(fe_values_vb.point_list(), velocity_higher, elm_higher_dim, ad_coef_edg[1], dif_coef_edg[1]);
+            data_.cross_section.value_list(fe_values_vb.point_list(), elm_lower_dim, csection_lower);
+            data_.cross_section.value_list(fe_values_vb.point_list(), elm_higher_dim, csection_higher);
+
+            for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
             {
-                /* The communication flux has two parts:
-                * - "diffusive" term containing sigma
-                * - "advective" term representing usual upwind
-                *
-                * The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
-                * than b and A in the manual.
-                * In calculation of sigma there appears one more csection_lower in the denominator.
-                */
-                double sigma = frac_sigma[k]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
-                        2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
+                for (unsigned int i=0; i<n_dofs[0]+n_dofs[1]; i++)
+                    for (unsigned int j=0; j<n_dofs[0]+n_dofs[1]; j++)
+                        local_matrix[i*(n_dofs[0]+n_dofs[1])+j] = 0;
 
-                double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
+                data_.fracture_sigma[sbi].value_list(fe_values_vb.point_list(), elm_lower_dim, frac_sigma);
 
-                comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
-                comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
-                comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-                comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
-
-                for (int n=0; n<2; n++)
+                // set transmission conditions
+                for (unsigned int k=0; k<qsize; k++)
                 {
-                    if (!feo->dh()->el_is_local(element_id[n])) continue;
+                    /* The communication flux has two parts:
+                    * - "diffusive" term containing sigma
+                    * - "advective" term representing usual upwind
+                    *
+                    * The calculation differs from the reference manual, since ad_coef and dif_coef have different meaning
+                    * than b and A in the manual.
+                    * In calculation of sigma there appears one more csection_lower in the denominator.
+                    */
+                    double sigma = frac_sigma[k]*arma::dot(dif_coef_edg[0][sbi][k]*fe_values_side.normal_vector(k),fe_values_side.normal_vector(k))*
+                            2*csection_higher[k]*csection_higher[k]/(csection_lower[k]*csection_lower[k]);
 
-                    for (unsigned int i=0; i<n_dofs[n]; i++)
-                        for (int m=0; m<2; m++)
-                            for (unsigned int j=0; j<n_dofs[m]; j++)
-                                local_matrix[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
-                                        comm_flux[m][n]*fv_sb[m]->shape_value(j,k)*fv_sb[n]->shape_value(i,k);
+                    double transport_flux = arma::dot(ad_coef_edg[1][sbi][k], fe_values_side.normal_vector(k));
+
+                    comm_flux[0][0] =  (sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+                    comm_flux[0][1] = -(sigma-min(0.,transport_flux))*fv_sb[0]->JxW(k);
+                    comm_flux[1][0] = -(sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+                    comm_flux[1][1] =  (sigma+max(0.,transport_flux))*fv_sb[0]->JxW(k);
+
+                    for (int n=0; n<2; n++)
+                    {
+                        if (!own_element_id[n]) continue;
+
+                        for (unsigned int i=0; i<n_dofs[n]; i++)
+                            for (int m=0; m<2; m++)
+                                for (unsigned int j=0; j<n_dofs[m]; j++)
+                                    local_matrix[(i+n*n_dofs[0])*(n_dofs[0]+n_dofs[1]) + m*n_dofs[0] + j] +=
+                                            comm_flux[m][n]*fv_sb[m]->shape_value(j,k)*fv_sb[n]->shape_value(i,k);
+                    }
                 }
+    			ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], side_dof_indices, n_dofs[0]+n_dofs[1], side_dof_indices, local_matrix);
             }
-			ls[sbi]->mat_set_values(n_dofs[0]+n_dofs[1], side_dof_indices, n_dofs[0]+n_dofs[1], side_dof_indices, local_matrix);
         }
-    }
 
 }
 
@@ -1294,14 +1342,13 @@ void TransportDG<Model>::set_boundary_conditions()
     vector<double> csection(qsize);
     vector<arma::vec3> velocity;
 
-    for (unsigned int loc_el = 0; loc_el < Model::mesh_->get_el_ds()->lsize(); loc_el++)
+    for (auto cell : feo->dh()->own_range() )
     {
-        ElementAccessor<3> elm = Model::mesh_->element_accessor( feo->dh()->el_index(loc_el) );
-        if (elm->boundary_idx_ == nullptr) continue;
+        if (cell.elm()->boundary_idx_ == nullptr) continue;
 
-        for (unsigned int si=0; si<elm->n_sides(); si++)
+        for (unsigned int si=0; si<cell.elm()->n_sides(); si++)
         {
-            const Edge *edg = elm.side(si)->edge();
+            const Edge *edg = cell.elm().side(si)->edge();
             if (edg->n_sides > 1) continue;
             // skip edges lying not on the boundary
             if (edg->side(0)->cond() == NULL) continue;
@@ -1313,20 +1360,21 @@ void TransportDG<Model>::set_boundary_conditions()
             }
 
             SideIter side = edg->side(0);
-            ElementAccessor<3> cell = Model::mesh_->element_accessor( side->element().idx() );
+            ElementAccessor<3> elm = Model::mesh_->element_accessor( side->element().idx() );
             ElementAccessor<3> ele_acc = side->cond()->element_accessor();
 
             arma::uvec bc_type;
             Model::get_bc_type(ele_acc, bc_type);
 
-            fe_values_side.reinit(cell, side->side_idx());
-            fsv_rt.reinit(cell, side->side_idx());
-            calculate_velocity(cell, velocity, fsv_rt);
+            fe_values_side.reinit(elm, side->side_idx());
+            fsv_rt.reinit(elm, side->side_idx());
+            calculate_velocity(elm, velocity, fsv_rt);
 
             Model::compute_advection_diffusion_coefficients(fe_values_side.point_list(), velocity, side->element(), ad_coef, dif_coef);
             data_.cross_section.value_list(fe_values_side.point_list(), side->element(), csection);
 
-			feo->dh()->get_dof_indices(cell, side_dof_indices);
+            auto dh_cell = feo->dh()->cell_accessor_from_element( side->element().idx() );
+            dh_cell.get_dof_indices(side_dof_indices);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
@@ -1451,130 +1499,9 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
 }
 
 
-// return the ratio of longest and shortest edge
-double elem_anisotropy(ElementAccessor<3> e)
-{
-    double h_max = 0, h_min = numeric_limits<double>::infinity();
-    for (unsigned int i=0; i<e->n_nodes(); i++)
-        for (unsigned int j=i+1; j<e->n_nodes(); j++)
-        {
-            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
-            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
-        }
-    return h_max/h_min;
-}
-
-
 
 template<class Model>
-void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
-            const int s1,
-            const int s2,
-            const int K_size,
-            const vector<arma::mat33> &K1,
-            const vector<arma::mat33> &K2,
-            const vector<double> &fluxes,
-            const arma::vec3 &normal_vector,
-            const double alpha1,
-            const double alpha2,
-            double &gamma,
-            double *omega,
-            double &transport_flux)
-{
-    double delta[2];
-    double h = 0;
-    double local_alpha = 0;
-
-    OLD_ASSERT(edg.side(s1)->valid(), "Invalid side of an edge.");
-    SideIter s = edg.side(s1);
-
-    // calculate the side diameter
-    if (s->dim() == 0)
-    {
-        h = 1;
-    }
-    else
-    {
-        for (unsigned int i=0; i<s->n_nodes(); i++)
-            for (unsigned int j=i+1; j<s->n_nodes(); j++)
-                h = max(h, s->node(i)->distance(*s->node(j).node()));
-    }
-    
-    double aniso1 = elem_anisotropy(edg.side(s1)->element());
-    double aniso2 = elem_anisotropy(edg.side(s2)->element());
-    
-
-    // calculate the total in- and out-flux through the edge
-    double pflux = 0, nflux = 0;
-    for (int i=0; i<edg.n_sides; i++)
-    {
-        if (fluxes[i] > 0)
-            pflux += fluxes[i];
-        else
-            nflux += fluxes[i];
-    }
-
-    // calculate the flux from s1 to s2
-    if (fluxes[s2] > 0 && fluxes[s1] < 0 && s1 < s2)
-        transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
-    else if (fluxes[s2] < 0 && fluxes[s1] > 0 && s1 < s2)
-        transport_flux = fluxes[s1]*fabs(fluxes[s2]/nflux);
-    else if (s1==s2)
-        transport_flux = fluxes[s1];
-    else
-        transport_flux = 0;
-
-    gamma = 0.5*fabs(transport_flux);
-
-
-    // determine local DG penalty
-    local_alpha = max(alpha1, alpha2);
-
-    if (s1 == s2)
-    {
-        omega[0] = 1;
-
-        // delta is set to the average value of Kn.n on the side
-        delta[0] = 0;
-        for (int k=0; k<K_size; k++)
-            delta[0] += dot(K1[k]*normal_vector,normal_vector);
-        delta[0] /= K_size;
-
-        gamma += local_alpha/h*aniso1*aniso2*delta[0];
-    }
-    else
-    {
-        delta[0] = 0;
-        delta[1] = 0;
-        for (int k=0; k<K_size; k++)
-        {
-            delta[0] += dot(K1[k]*normal_vector,normal_vector);
-            delta[1] += dot(K2[k]*normal_vector,normal_vector);
-        }
-        delta[0] /= K_size;
-        delta[1] /= K_size;
-
-        double delta_sum = delta[0] + delta[1];
-
-//        if (delta_sum > numeric_limits<double>::epsilon())
-        if (fabs(delta_sum) > 0)
-        {
-            omega[0] = delta[1]/delta_sum;
-            omega[1] = delta[0]/delta_sum;
-            gamma += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
-        }
-        else
-            for (int i=0; i<2; i++) omega[i] = 0;
-    }
-}
-
-
-
-
-
-
-template<class Model>
-void TransportDG<Model>::set_DG_parameters_boundary(const SideIter side,
+void TransportDG<Model>::set_DG_parameters_boundary(const Side *side,
             const int K_size,
             const vector<arma::mat33> &K,
             const double flux,
@@ -1646,12 +1573,12 @@ void TransportDG<Model>::prepare_initial_condition()
     for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++) // Optimize: SWAP LOOPS
         init_values[sbi].resize(qsize);
 
-    for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
+    for (auto cell : feo->dh()->own_range() )
     {
-        ElementAccessor<3> elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
-        if (elem->dim() != dim) continue;
+        if (cell.dim() != dim) continue;
+        ElementAccessor<3> elem = cell.elm();
 
-        feo->dh()->get_dof_indices(elem, dof_indices);
+        cell.get_dof_indices(dof_indices);
         fe_values.reinit(elem);
 
         Model::compute_init_cond(fe_values.point_list(), elem, init_values);
@@ -1696,12 +1623,12 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
 {
     if (solution_changed)
     {
-        for (unsigned int i_cell=0; i_cell<Model::mesh_->get_el_ds()->lsize(); i_cell++)
+    	unsigned int i_cell=0;
+    	for (auto cell : feo->dh()->own_range() )
         {
-            ElementAccessor<3> elem = Model::mesh_->element_accessor( feo->dh()->el_index(i_cell) );
 
             unsigned int n_dofs;
-            switch (elem->dim())
+            switch (cell.dim())
             {
             case 1:
                 n_dofs = feo->fe<1>()->n_dofs();
@@ -1715,7 +1642,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
             }
 
 			std::vector<LongIdx> dof_indices(n_dofs);
-            feo->dh()->get_dof_indices(elem, dof_indices);
+            cell.get_dof_indices(dof_indices);
 
             for (unsigned int sbi=0; sbi<Model::n_substances(); ++sbi)
             {
@@ -1727,6 +1654,7 @@ void TransportDG<Model>::update_after_reactions(bool solution_changed)
                 for (unsigned int j=0; j<n_dofs; ++j)
                     ls[sbi]->get_solution_array()[dof_indices[j]-feo->dh()->distr()->begin()] += solution_elem_[sbi][i_cell] - old_average;
             }
+            ++i_cell;
         }
     }
     // update mass_vec for the case that mass matrix changes in next time step

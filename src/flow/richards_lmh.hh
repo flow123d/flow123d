@@ -12,7 +12,7 @@
 #include <memory>                    // for shared_ptr
 #include "fields/field.hh"           // for Field
 #include "fields/field_values.hh"    // for FieldValue<>::Scalar, FieldValue
-#include "fields/vec_seq_double.hh"  // for VectorMPI
+#include "la/vector_mpi.hh"          // for VectorMPI
 #include "flow/darcy_flow_mh.hh"     // for DarcyMH, DarcyMH::EqData
 #include "input/type_base.hh"        // for Array
 #include "input/type_generic.hh"     // for Instance

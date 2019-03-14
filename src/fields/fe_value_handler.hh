@@ -18,7 +18,6 @@
 #ifndef FE_VALUE_HANDLER_HH_
 #define FE_VALUE_HANDLER_HH_
 
-#include "fields/vec_seq_double.hh"
 #include "fields/field_values.hh"
 #include "fem/mapping_p1.hh"
 #include "fem/finite_element.hh"
@@ -26,6 +25,7 @@
 #include "mesh/long_idx.hh"
 #include <armadillo>
 
+class VectorMPI;
 template <int spacedim> class ElementAccessor;
 
 
@@ -35,11 +35,13 @@ struct FEValueInitData
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh;
     /// Store data of Field
-    VectorSeqDouble *data_vec;
+    VectorMPI data_vec;
     /// number of dofs
     unsigned int ndofs;
     /// number of components
     unsigned int n_comp;
+    /// index of component (of vector_value/tensor_value)
+    unsigned int comp_index;
 };
 
 /**
@@ -55,9 +57,10 @@ public:
 	FEValueHandler();
 
 	/// Initialize data members
-	void initialize(FEValueInitData init_data, MappingP1<elemdim,3> *map = nullptr);
+	void initialize(FEValueInitData init_data);
 	/// Return mapping object
 	inline MappingP1<elemdim,3> *get_mapping() {
+		ASSERT_PTR(map_).error("Uninitialized FEValueHandler!\n");
 		return map_;
 	}
     /// Returns one value in one given point.
@@ -83,7 +86,7 @@ private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorSeqDouble *data_vec_;
+    VectorMPI data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.
@@ -91,6 +94,8 @@ private:
     typename Value::return_type r_value_;
     /// Mapping object.
     MappingP1<elemdim,3> *map_;
+    /// Index of component (of vector_value/tensor_value)
+    unsigned int comp_index_;
 
     /**
      * Hold dofs of boundary elements.
@@ -146,7 +151,7 @@ private:
 	/// DOF handler object
     std::shared_ptr<DOFHandlerMultiDim> dh_;
     /// Store data of Field
-    VectorSeqDouble *data_vec_;
+    VectorMPI data_vec_;
     /// Array of indexes to data_vec_, used for get/set values
     std::vector<LongIdx> dof_indices;
     /// Last value, prevents passing large values (vectors) by value.

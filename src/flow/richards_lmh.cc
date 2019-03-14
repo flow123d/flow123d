@@ -25,7 +25,7 @@
 
 #include "coupling/balance.hh"
 
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 
 // in the third_party/FADBAD++ dir, namespace "fadbad"
 #include "fadbad.h"

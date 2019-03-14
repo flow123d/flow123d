@@ -89,8 +89,8 @@ const IT::Record & Mesh::get_input_type() {
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
         .declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
-                     "Maximal snapping distance from Mesh in various search operations. In particular is used "
-                     "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+                     "Maximal snapping distance from the mesh in various search operations. In particular, it is used "
+                     "to find the closest mesh element of an observe point; and in FieldFormula to find closest surface "
                      "element in plan view (Z projection).")
         .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
                      "Output file with neighboring data from mesh.")
@@ -104,6 +104,8 @@ Mesh::Mesh()
   el_4_loc(nullptr),
   el_ds(nullptr),
   bc_mesh_(nullptr),
+  node_4_loc_(nullptr),
+  node_ds_(nullptr),
   tree(nullptr)
 {}
 
@@ -116,6 +118,8 @@ Mesh::Mesh(Input::Record in_record, MPI_Comm com)
   el_4_loc(nullptr),
   el_ds(nullptr),
   bc_mesh_(nullptr),
+  node_4_loc_(nullptr),
+  node_ds_(nullptr),
   tree(nullptr)
 {
 	// set in_record_, if input accessor is empty
@@ -213,6 +217,7 @@ Mesh::~Mesh() {
     if (row_4_el != nullptr) delete[] row_4_el;
     if (el_4_loc != nullptr) delete[] el_4_loc;
     if (el_ds != nullptr) delete el_ds;
+    if (node_4_loc_ != nullptr) delete[] node_4_loc_;
     if (bc_mesh_ != nullptr) delete bc_mesh_;
     if (tree != nullptr) delete tree;
 }
@@ -309,6 +314,8 @@ void Mesh::setup_topology() {
 
     delete[] id_4_old;
     
+    this->distribute_nodes();
+
     output_internal_ngh_data();
 }
 
@@ -1036,11 +1043,15 @@ Element * Mesh::add_element_to_vector(int id, bool boundary) {
 }
 
 Range<ElementAccessor<3>> Mesh::elements_range() const {
-	return Range<ElementAccessor<3>>(this, 0, bulk_size_);;
+	auto bgn_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, 0) );
+	auto end_it = make_iter<ElementAccessor<3>>( ElementAccessor<3>(this, bulk_size_) );
+	return Range<ElementAccessor<3>>(bgn_it, end_it);
 }
 
 Range<NodeAccessor<3>> Mesh::node_range() const {
-    return Range<NodeAccessor<3>>(this, 0, node_vec_.size());
+	auto bgn_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, 0) );
+	auto end_it = make_iter<NodeAccessor<3>>( NodeAccessor<3>(this, node_vec_.size()) );
+    return Range<NodeAccessor<3>>(bgn_it, end_it);
 }
 
 inline void Mesh::check_element_size(unsigned int elem_idx) const
@@ -1187,6 +1198,48 @@ void Mesh::permute_triangle(unsigned int elm_idx, std::vector<unsigned int> perm
 BCMesh *Mesh::get_bc_mesh() {
 	if (bc_mesh_ == nullptr) bc_mesh_ = new BCMesh(this);
 	return bc_mesh_;
+}
+
+
+void Mesh::distribute_nodes() {
+    ASSERT_PTR(el_4_loc).error("Array 'el_4_loc' is not initialized. Did you call Partitioning::id_maps?\n");
+
+    unsigned int i_proc, i_node, i_ghost_node, elm_node;
+    unsigned int my_proc = el_ds->myp();
+
+    // distribute nodes between processes, every node is assigned to minimal process of elements that own node
+    // fill min_node_proc vector with same values on all processes
+    std::vector<unsigned int> min_node_proc( this->n_nodes(), Mesh::undef_idx );
+    std::vector<bool> ghost_node_flag( this->n_nodes(), false );
+    unsigned int n_own_nodes=0, n_ghost_nodes=0; // number of own and ghost nodes
+    for ( elm : this->elements_range() ) {
+        i_proc = elm.proc();
+        for (elm_node=0; elm_node<elm->n_nodes(); elm_node++) {
+            i_node = elm->node_idx(elm_node);
+            if ( (min_node_proc[i_node]==Mesh::undef_idx) || (min_node_proc[i_node]>i_proc) ) {
+                if (i_proc==my_proc) n_own_nodes++;
+                else if (min_node_proc[i_node]==my_proc) { n_own_nodes--; n_ghost_nodes++; ghost_node_flag[i_node] = true; }
+                min_node_proc[i_node] = i_proc;
+            } else if ( !ghost_node_flag[i_node] && (i_proc==my_proc) && (min_node_proc[i_node]!=my_proc) ) {
+                n_ghost_nodes++;
+                ghost_node_flag[i_node] = true;
+            }
+        }
+    }
+
+    // create and fill node_4_loc_ (mapping local to global indexes)
+    node_4_loc_ = new LongIdx [ n_own_nodes+n_ghost_nodes ];
+    i_node=0;
+    i_ghost_node = n_own_nodes;
+    for (unsigned int i=0; i<this->n_nodes(); ++i) {
+        if (min_node_proc[i]==my_proc) node_4_loc_[i_node++] = i;
+        if (ghost_node_flag[i]) node_4_loc_[i_ghost_node++] = i;
+    }
+
+    // Construct node distribution object, set number of local nodes (own+ghost)
+    node_ds_ = new Distribution(n_own_nodes, PETSC_COMM_WORLD);
+    node_ds_->get_lsizes_array(); // need to initialize lsizes data member
+    n_local_nodes_ = n_own_nodes+n_ghost_nodes;
 }
 
 //-----------------------------------------------------------------------------

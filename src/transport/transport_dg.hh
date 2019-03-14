@@ -31,7 +31,7 @@
 #include "fields/field_values.hh"              // for FieldValue<>::Scalar
 #include "fields/field.hh"
 #include "fields/multi_field.hh"
-#include "fields/vec_seq_double.hh"
+#include "la/vector_mpi.hh"
 #include "fields/equation_output.hh"
 #include "la/linsys.hh"
 #include "input/accessors.hh"                  // for ExcAccessorForNullStorage
@@ -254,8 +254,6 @@ private:
 
 	inline typename Model::ModelEqData &data() { return data_; }
 
-	void output_vector_gather();
-
 	void preallocate();
 
 	/**
@@ -360,37 +358,6 @@ private:
 // 			double cross_cut);
 
 	/**
-	 * @brief Sets up some parameters of the DG method for two sides of an edge.
-	 *
-	 * @param edg				The edge.
-	 * @param s1				Side 1.
-	 * @param s2				Side 2.
-	 * @param K_size            Size of vector of tensors K.
-	 * @param K1				Dispersivity tensors on side s1 (in quadrature points).
-	 * @param K2				Dispersivity tensors on side s2 (in quadrature points).
-	 * @param normal_vector		Normal vector to side 0 of the neighbour
-	 * 							(assumed constant along the side).
-	 * @param alpha1, alpha2	Penalty parameter that influences the continuity
-	 * 							of the solution (large value=more continuity).
-	 * @param gamma				Computed penalty parameters.
-	 * @param omega				Computed weights.
-	 * @param transport_flux	Computed flux from side s1 to side s2.
-	 */
-	void set_DG_parameters_edge(const Edge &edg,
-	        const int s1,
-	        const int s2,
-	        const int K_size,
-	        const std::vector<arma::mat33> &K1,
-	        const std::vector<arma::mat33> &K2,
-	        const std::vector<double> &fluxes,
-	        const arma::vec3 &normal_vector,
-	        const double alpha1,
-	        const double alpha2,
-	        double &gamma,
-	        double *omega,
-	        double &transport_flux);
-
-	/**
 	 * @brief Sets up parameters of the DG method on a given boundary edge.
 	 *
 	 * Assumption is that the edge consists of only 1 side.
@@ -403,7 +370,7 @@ private:
 	 * 							of the solution (large value=more continuity).
 	 * @param gamma				Computed penalty parameters.
 	 */
-	void set_DG_parameters_boundary(const SideIter side,
+	void set_DG_parameters_boundary(const Side *side,
 			    const int K_size,
 	            const std::vector<arma::mat33> &K,
 	            const double flux,
@@ -491,7 +458,7 @@ private:
 	//vector<double*> output_solution;
 
 	/// Vector of solution data.
-	vector<VectorSeqDouble> output_vec;
+	vector<VectorMPI> output_vec;
 
 	/// Record with input specification.
 	Input::Record input_rec;

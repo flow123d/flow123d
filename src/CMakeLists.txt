@@ -308,7 +308,6 @@ add_library(coupling_lib
     fields/field_fe.cc
     fields/fe_value_handler.cc
     fields/surface_depth.cc
-    fields/vec_seq_double.cc
     coupling/equation.cc
     coupling/balance.cc
     # coupling/hc_explicit_sequential.cc

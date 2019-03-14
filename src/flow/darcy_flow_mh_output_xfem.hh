@@ -35,7 +35,6 @@
 #include "fields/field.hh"               // for Field
 #include "fields/field_set.hh"           // for FieldSet
 #include "fields/field_values.hh"        // for FieldValue<>::Scalar, FieldV...
-#include "fields/vec_seq_double.hh"      // for VectorSeqDouble
 #include "input/type_base.hh"            // for Array
 #include "input/type_generic.hh"         // for Instance
 #include "petscvec.h"                    // for Vec, _p_Vec
