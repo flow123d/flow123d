@@ -233,6 +233,14 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
         closed_elements.insert(i_elm);
     }
 
+    // no candidates found -> exception
+    if (candidate_queue.empty()) {
+        THROW(ExcNoObserveElementCandidates()
+            << EI_PointName(name_)
+            << EI_Point(input_point_)
+            << EI_ClosestEle(min_observe_point_data));
+    }
+    
     while (!candidate_queue.empty())
     {
         auto candidate_data = candidate_queue.top();
@@ -258,11 +266,6 @@ void ObservePoint::find_observe_point(Mesh &mesh) {
 				if (closed_elements.find(i_node_ele) == closed_elements.end()) {
 					ElementAccessor<3> neighbor_elm = mesh.element_accessor(i_node_ele);
 					auto observe_data = point_projection( i_node_ele, neighbor_elm );
-                    
-                    // save the closest element for later diagnostic
-                    if(observe_data.distance_ < min_observe_point_data.distance_)
-                        min_observe_point_data = observe_data;
-        
 			        if (observe_data.distance_ <= max_search_radius_)
 			        	candidate_queue.push(observe_data);
 			        closed_elements.insert(i_node_ele);
