@@ -43,7 +43,7 @@ public:
     static Input::Type::Record & get_input_type();
     
     /// Application constructor. 
-    Application(int argc, char ** argv);
+    Application(char ** argv);
     
     /**
      * Displays program version and build info.

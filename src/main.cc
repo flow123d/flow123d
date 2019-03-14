@@ -74,8 +74,8 @@ it::Record & Application::get_input_type() {
 
 
 
-Application::Application( int argc,  char ** argv)
-: ApplicationBase(argc, argv),
+Application::Application( char ** argv)
+: ApplicationBase(),
   problem_(nullptr),
   main_input_filename_(""),
   //passed_argc_(0),
@@ -398,8 +398,8 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
+    Application app(argv);
     try {
-        Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
         _LOG( Logger::MsgType::error ).every_proc() << e.what();

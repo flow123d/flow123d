@@ -67,7 +67,7 @@ void system_signal_handler(int signal) {
 }
 
 
-ApplicationBase::ApplicationBase(int argc,  char ** argv)
+ApplicationBase::ApplicationBase()
 : log_filename_(""),
   signal_handler_off_(false)
 { }

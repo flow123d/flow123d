@@ -85,7 +85,7 @@ protected:
 	 *
 	 * Construction is done in init method. We need to call virtual methods during construction.
 	 */
-	ApplicationBase(int argc,  char ** argv);
+	ApplicationBase();
 
 	/// Destructor
 	virtual ~ApplicationBase();
