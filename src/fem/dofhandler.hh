@@ -93,7 +93,7 @@ protected:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const = 0;
+    virtual unsigned int get_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const = 0;
 
     /**
      * @brief Fill vector of the indices of dofs associated to the @p cell on the local process.
@@ -101,7 +101,7 @@ protected:
      * @param cell The cell.
      * @param indices Vector of dof indices on the cell.
      */
-    virtual unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const =0;
+    virtual unsigned int get_loc_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const =0;
 
     /**
      * @brief Number of global dofs assigned by the handler.
@@ -336,7 +336,7 @@ private:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_dof_indices(const ElementAccessor<3> &cell,
+    unsigned int get_dof_indices(const DHCellAccessor &cell,
                                  std::vector<LongIdx> &indices) const override;
     
     /**
@@ -345,7 +345,7 @@ private:
      * @param cell The cell.
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell,
+    unsigned int get_loc_dof_indices(const DHCellAccessor &cell,
                                      std::vector<LongIdx> &indices) const override;
 
 

@@ -534,26 +534,24 @@ VectorMPI DOFHandlerMultiDim::create_vector()
 }
 
 
-unsigned int DOFHandlerMultiDim::get_dof_indices(const ElementAccessor<3> &cell, std::vector<int> &indices) const
+unsigned int DOFHandlerMultiDim::get_dof_indices(const DHCellAccessor &cell, std::vector<int> &indices) const
 {
   unsigned int ndofs = 0;
-  LongIdx cell_idx = global_to_local_el_idx_.at(cell.idx());
-  ndofs = cell_starts[cell_idx+1]-cell_starts[cell_idx];
+  ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_indices[cell_starts[cell_idx]+k];
+    indices[k] = dof_indices[cell_starts[cell.local_idx()]+k];
   
   return ndofs;
 }
 
 
 
-unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const
+unsigned int DOFHandlerMultiDim::get_loc_dof_indices(const DHCellAccessor &cell, std::vector<LongIdx> &indices) const
 {
   unsigned int ndofs = 0;
-  LongIdx cell_idx = global_to_local_el_idx_.at(cell.idx());
-  ndofs = cell_starts[cell_idx+1]-cell_starts[cell_idx];
+  ndofs = cell_starts[cell.local_idx()+1]-cell_starts[cell.local_idx()];
   for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = cell_starts[cell_idx]+k;
+    indices[k] = cell_starts[cell.local_idx()]+k;
 
   return ndofs;
 }
