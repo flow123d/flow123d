@@ -78,6 +78,16 @@ public:
     Mesh *mesh() const { return mesh_; }
 
     /**
+     * @brief Compute hash value of DOF handler.
+     */
+    virtual std::size_t hash() const =0;
+
+    /// Destructor.
+    virtual ~DOFHandlerBase();
+
+protected:
+    
+    /**
      * @brief Fill vector of the global indices of dofs associated to the @p cell.
      *
      * @param cell The cell.
@@ -92,16 +102,6 @@ public:
      * @param indices Vector of dof indices on the cell.
      */
     virtual unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell, std::vector<LongIdx> &indices) const =0;
-    
-    /**
-     * @brief Compute hash value of DOF handler.
-     */
-    virtual std::size_t hash() const =0;
-
-    /// Destructor.
-    virtual ~DOFHandlerBase();
-
-protected:
 
     /**
      * @brief Number of global dofs assigned by the handler.
@@ -193,24 +193,6 @@ public:
      */
     VectorMPI create_vector();
     
-    /**
-     * @brief Returns the global indices of dofs associated to the @p cell.
-     *
-     * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
-     */
-    unsigned int get_dof_indices(const ElementAccessor<3> &cell,
-                                 std::vector<LongIdx> &indices) const override;
-    
-    /**
-     * @brief Returns the indices of dofs associated to the @p cell on the local process.
-     *
-     * @param cell The cell.
-     * @param indices Array of dof indices on the cell.
-     */
-    unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell,
-                                     std::vector<LongIdx> &indices) const override;
-
     /**
      * @brief Returns the global index of local edge.
      *
@@ -347,6 +329,25 @@ private:
      * Collective on all processors.
      */
     void create_sequential();
+    
+    /**
+     * @brief Returns the global indices of dofs associated to the @p cell.
+     *
+     * @param cell The cell.
+     * @param indices Array of dof indices on the cell.
+     */
+    unsigned int get_dof_indices(const ElementAccessor<3> &cell,
+                                 std::vector<LongIdx> &indices) const override;
+    
+    /**
+     * @brief Returns the indices of dofs associated to the @p cell on the local process.
+     *
+     * @param cell The cell.
+     * @param indices Array of dof indices on the cell.
+     */
+    unsigned int get_loc_dof_indices(const ElementAccessor<3> &cell,
+                                     std::vector<LongIdx> &indices) const override;
+
 
     
     /**
