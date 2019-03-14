@@ -57,6 +57,11 @@ const int HM_Iterative::registrar = Input::register_class< HM_Iterative, Mesh &,
                                     + HM_Iterative::get_input_type().size();
 
 
+HM_Iterative::EqData::EqData()
+{
+}
+
+                                    
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 : DarcyFlowInterface(mesh, in_record)
@@ -86,8 +91,8 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     max_it_ = in_record.val<unsigned int>("max_it");
     a_tol_ = in_record.val<double>("a_tol");
     r_tol_ = in_record.val<double>("r_tol");
-    
-    this->eq_data_ = &flow_->data();
+
+    this->eq_data_ = &data_;
     
     this->time_ = &flow_->time();
     

@@ -46,6 +46,14 @@ class RichardsLMH;
  */
 class HM_Iterative : public DarcyFlowInterface {
 public:
+    
+    class EqData : public FieldSet
+    {
+    public:
+        EqData();
+        
+    };
+    
     /// Define input record.
     static const Input::Type::Record & get_input_type();
 
@@ -65,6 +73,8 @@ private:
 
     /// solute transport with chemistry through operator splitting
     std::shared_ptr<Elasticity> mechanics_;
+    
+    EqData data_;
 
     /// Tuning parameter for iterative splitting.
     double beta_;
