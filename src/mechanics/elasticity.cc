@@ -653,7 +653,7 @@ void Elasticity::assemble_fluxes_boundary()
 
     	SideIter side = edg->side(0);
         ElementAccessor<3> cell = side->element();
-        feo->dh()->get_dof_indices(cell, side_dof_indices);
+        feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
         fe_values_side.reinit(cell, side->side_idx());
 //         unsigned int bc_type = data_.bc_type.value(side->centre(), side->cond()->element_accessor());
  
@@ -710,11 +710,11 @@ void Elasticity::assemble_fluxes_element_side()
         if (nb->element()->dim() != dim-1) continue;
 
 		ElementAccessor<3> cell_sub = nb->element();
-		feo->dh()->get_dof_indices(cell_sub, side_dof_indices[0]);
+		feo->dh()->cell_accessor_from_element(cell_sub.idx()).get_dof_indices(side_dof_indices[0]);
 		fe_values_sub.reinit(cell_sub);
 
 		ElementAccessor<3> cell = nb->side()->element();
-		feo->dh()->get_dof_indices(cell, side_dof_indices[1]);
+		feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices[1]);
 		fe_values_side.reinit(cell, nb->side()->side_idx());
 
 		// Element id's for testing if they belong to local partition.
@@ -855,7 +855,7 @@ void Elasticity::set_boundary_conditions()
 			data_.bc_displacement.value_list(fe_values_side.point_list(), bc_cell, bc_values);
             data_.bc_traction.value_list(fe_values_side.point_list(), bc_cell, bc_traction);
 
-			feo->dh()->get_dof_indices(cell, side_dof_indices);
+			feo->dh()->cell_accessor_from_element(cell.idx()).get_dof_indices(side_dof_indices);
 
             fill_n(local_rhs, ndofs, 0);
             local_flux_balance_vector.assign(ndofs, 0);

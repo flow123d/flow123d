@@ -130,5 +130,24 @@ arma::vec3 Side::centre() const {
 }
 
 
+//=============================================================================
+// CALCULATE THE SIDE DIAMETER
+//=============================================================================
+
+double Side::diameter() const {
+	if (dim() == 0)
+    {
+        return 1.0;
+    }
+    else
+    {
+    	double h = 0.0;
+        for (unsigned int i=0; i<n_nodes(); i++)
+            for (unsigned int j=i+1; j<n_nodes(); j++)
+                h = max(h, node(i)->distance(*node(j).node()));
+        return h;
+    }
+}
+
 //-----------------------------------------------------------------------------
 // vim: set cindent:
