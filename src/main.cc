@@ -398,8 +398,8 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
+    Application app(argc, argv);
     try {
-        Application app(argc, argv);
         app.init(argc, argv);
     } catch (std::exception & e) {
         _LOG( Logger::MsgType::error ).every_proc() << e.what();
