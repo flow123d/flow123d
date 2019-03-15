@@ -296,7 +296,8 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	previous_solution(nullptr)
+	previous_solution(nullptr),
+	par_to_all(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -1270,7 +1271,7 @@ DarcyMH::~DarcyMH() {
     
     if (schur0 != NULL) {
         delete schur0;
-        chkerr(VecScatterDestroy(&par_to_all));
+    	if (par_to_all != nullptr) chkerr(VecScatterDestroy(&par_to_all));
     }
 
 	if (solution != NULL) {
