@@ -43,7 +43,7 @@ public:
     static Input::Type::Record & get_input_type();
     
     /// Application constructor. 
-    Application(int argc, char ** argv);
+    Application(const std::string &python_path);
     
     /**
      * Displays program version and build info.
@@ -60,22 +60,27 @@ public:
      */ 
     Input::Record read_input();
     
+    /**
+     * Run application.
+     *
+     * Read input and solve problem.
+     */
+    void run() override;
+
+    /**
+     * Terminate all MPI processes if exception is thrown.
+     */
+    void terminate();
+
     /// Destructor
     virtual ~Application();
 
 protected:
 
     /**
-     * Run application.
-     *
-     * Read input and solve problem.
-     */
-    virtual void run();
-
-    /**
      * Check pause_after_run flag defined in input file.
      */
-    virtual void after_run();
+    void after_run();
 
 
     /**
