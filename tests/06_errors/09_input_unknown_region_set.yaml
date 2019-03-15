@@ -2,7 +2,7 @@ flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: Operation with unknown region set .side at address /problem/solute_equation/output_stream/observe_points/0
   mesh:
-    mesh_file: ../00_mesh/strip_xz.msh
+    mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
     nonlinear_solver:
       linear_solver: !Petsc

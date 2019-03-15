@@ -3,7 +3,7 @@ flow123d_version: 3.0.0_dev
 problem: !Coupling_Sequential
   description: 'Can not determine type of the Abstract at address: /problem/solute_equation/transport'
   mesh:
-    mesh_file: ../00_mesh/square_1x1_frac_fork.msh
+    mesh_file: ../00_mesh/prism_3el.msh
 ### ERROR Can not determine type of the Abstract
   flow_equation:
     nonlinear_solver:
