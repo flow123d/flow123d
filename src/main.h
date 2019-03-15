@@ -43,7 +43,7 @@ public:
     static Input::Type::Record & get_input_type();
     
     /// Application constructor. 
-    Application(char ** argv);
+    Application(const std::string &python_path);
     
     /**
      * Displays program version and build info.
