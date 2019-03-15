@@ -53,7 +53,7 @@ public:
 
     /// Return local index to element (index of DOF handler).
     inline unsigned int local_idx() const {
-    	ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->el_ds_->lsize()+dof_handler_->ghost_4_loc.size()).error("Local element index is out of range!\n");
+        ASSERT_LT_DBG(loc_ele_idx_, dof_handler_->global_to_local_el_idx_.size()).error("Local element index is out of range!\n");
         return loc_ele_idx_;
     }
 
@@ -74,14 +74,16 @@ public:
      *
      * @param indices Vector of dof indices on the cell.
      */
-    unsigned int get_dof_indices(std::vector<int> &indices) const;
+    unsigned int get_dof_indices(std::vector<int> &indices) const
+    { return dof_handler_->get_dof_indices( *this, indices ); }
 
     /**
      * @brief Returns the indices of dofs associated to the cell on the local process.
      *
      * @param indices Array of dof indices on the cell.
      */
-    unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const;
+    unsigned int get_loc_dof_indices(std::vector<LongIdx> &indices) const
+    { return dof_handler_->get_loc_dof_indices( *this, indices ); }
 
     /// Return number of dofs on given cell.
     unsigned int n_dofs() const;
@@ -354,28 +356,6 @@ private:
 /*************************************************************************************
  * Implementation of inlined methods.
  */
-
-inline unsigned int DHCellAccessor::get_dof_indices(std::vector<int> &indices) const
-{
-  ASSERT_LT( loc_ele_idx_+1, dof_handler_->cell_starts.size() )(loc_ele_idx_)(dof_handler_->cell_starts.size());
-  unsigned int ndofs = 0;
-  ndofs = dof_handler_->cell_starts[loc_ele_idx_+1]-dof_handler_->cell_starts[loc_ele_idx_];
-  for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_handler_->dof_indices[dof_handler_->cell_starts[loc_ele_idx_]+k];
-
-  return ndofs;
-}
-
-
-inline unsigned int DHCellAccessor::get_loc_dof_indices(std::vector<LongIdx> &indices) const
-{
-  unsigned int ndofs = 0;
-  ndofs = dof_handler_->cell_starts[loc_ele_idx_+1]-dof_handler_->cell_starts[loc_ele_idx_];
-  for (unsigned int k=0; k<ndofs; k++)
-    indices[k] = dof_handler_->cell_starts[loc_ele_idx_]+k;
-
-  return ndofs;
-}
 
 
 inline unsigned int DHCellAccessor::n_dofs() const
