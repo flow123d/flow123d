@@ -30,7 +30,6 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
 #        - subdomain
-    balance: {}
     nonlinear_solver:
       tolerance: 1e-5
       max_it: 10 # should stop after 5 iterations due to stagnation

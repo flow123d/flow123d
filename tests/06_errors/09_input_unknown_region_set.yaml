@@ -12,7 +12,6 @@ problem: !Coupling_Sequential
     input_fields:
       - region: ALL
         conductivity: 1e-6
-    balance: {}
     output:
       fields:
         - velocity_p0
@@ -29,7 +28,6 @@ problem: !Coupling_Sequential
     substances: O-18
     time:
       end_time: 3600000
-    balance: {}
     output_stream:
       format: !gmsh
       times:

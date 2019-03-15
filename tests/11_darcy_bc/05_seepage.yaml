@@ -49,11 +49,10 @@ problem: !Coupling_Sequential
         - velocity_p0
 #        - subdomain
       add_input_times: true
-    balance: {}
     nonlinear_solver:
       tolerance: 1e-5
       max_it: 4
-      linear_solver: !Petsc {}
+      linear_solver: !Petsc
     # 
     #         { region:".bottom",
     #           bc_type:"neumann" // zero flux

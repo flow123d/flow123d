@@ -48,7 +48,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - velocity_p0
         - anisotropy
-    balance: {}
     output_stream:
       file: ./test05.pvd
       format: !vtk

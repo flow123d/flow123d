@@ -14,7 +14,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p1
-    balance: {}
     output_stream:
       file: flow.pvd
       format: !vtk

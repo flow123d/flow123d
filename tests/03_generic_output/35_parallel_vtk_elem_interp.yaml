@@ -45,7 +45,6 @@ problem: !Coupling_Sequential
         - { field: pressure_p1, interpolation: P0_value }
         - { field: velocity_p0, interpolation: P0_value }
         - { field: anisotropy, interpolation: P0_value }
-    balance: {}
     output_stream:
       file: test35_32d.pvd
       format: !vtk

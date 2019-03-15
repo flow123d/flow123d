@@ -24,7 +24,6 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
         - sigma
-    balance: {}
     output_stream:
       file: ./output_data.msh
       format: !gmsh

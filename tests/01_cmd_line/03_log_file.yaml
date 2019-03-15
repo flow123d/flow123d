@@ -18,7 +18,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-    balance: {}
     output_stream: 
       file: ./small_cube.msh
       format: !gmsh

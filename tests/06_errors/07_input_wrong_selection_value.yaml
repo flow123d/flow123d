@@ -18,7 +18,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - piezo_head_p0
-    balance: {}
     output_stream:
       file: ./small_cube.pvd
       format: !vtk

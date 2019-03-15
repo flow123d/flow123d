@@ -50,7 +50,6 @@ problem: !Coupling_Sequential
           mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_pressure
           default_value: 0.0
-    balance: {}
     output:
       fields:
         - piezo_head_p0

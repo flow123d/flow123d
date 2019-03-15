@@ -69,7 +69,6 @@ problem: !Coupling_Sequential
             - 0.0
             - { step: 30.0, time_unit: "min" } 
       observe_fields: [pressure_p0, velocity_p0]
-    balance: {}
     time:
       end_time: [ 50.0, "min" ]
       init_dt: [ 1, "s" ]

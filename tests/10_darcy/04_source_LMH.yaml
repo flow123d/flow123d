@@ -16,7 +16,6 @@ problem: !Coupling_Sequential
       - region: .plane_boundary
         bc_type: dirichlet
         bc_pressure: 0
-    balance: {}
     output:
       fields:
         - pressure_p0

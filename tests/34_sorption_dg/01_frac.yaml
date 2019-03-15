@@ -32,7 +32,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-    balance: {}
     output:
       fields:
         - pressure_p0

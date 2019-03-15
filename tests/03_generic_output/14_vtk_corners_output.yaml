@@ -42,7 +42,6 @@ problem: !Coupling_Sequential
         - { field: pressure_p0, interpolation: D1_value }
         - pressure_p1
         - { field: velocity_p0, interpolation: D1_value }
-    balance: {}
     output_stream:
       file: flow.pvd
       format: !vtk

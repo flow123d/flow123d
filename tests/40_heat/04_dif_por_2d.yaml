@@ -21,7 +21,6 @@ problem: !Coupling_Sequential
       - region: .right
         bc_type: dirichlet
         bc_pressure: 1
-    balance: {}
     output_stream:
       file: flow.pvd
       format: !vtk

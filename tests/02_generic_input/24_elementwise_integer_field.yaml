@@ -54,7 +54,6 @@ problem: !Coupling_Sequential
           default_value: 0
         bc_pressure: !FieldFormula
           value: x-z
-    balance: {}
     output:
       fields:
         - piezo_head_p0

@@ -33,7 +33,6 @@ problem: !Coupling_Sequential
         - piezo_head_p0
         - pressure_p0
         - velocity_p0
-    balance: {}
     output_stream:
       file: ./square.pvd
       format: !vtk

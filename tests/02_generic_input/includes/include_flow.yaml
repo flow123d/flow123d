@@ -10,6 +10,5 @@ output:
     - pressure_p0
     - pressure_p1
     - velocity_p0
-balance: {}
 output_stream: !include
   file: ./includes/include_rec.yaml 

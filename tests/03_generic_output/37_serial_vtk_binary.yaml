@@ -45,7 +45,6 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
         - anisotropy
-    balance: {}
     output_stream:
       file: test37_32d.pvd
       format: !vtk

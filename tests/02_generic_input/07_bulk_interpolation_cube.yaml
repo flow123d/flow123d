@@ -33,7 +33,6 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
         - conductivity
-    balance: {}
     output_stream:
       file: ./large_cube.msh
       format: !gmsh

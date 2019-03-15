@@ -27,7 +27,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: !FieldFormula
           value: x
-    balance: {}
     output_stream:
       file: ./test2.pvd
       format: !vtk

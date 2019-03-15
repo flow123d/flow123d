@@ -18,7 +18,6 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     output_stream: 
       file: dual_por.pvd
       format: !vtk

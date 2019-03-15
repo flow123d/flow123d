@@ -42,7 +42,6 @@ problem: !Coupling_Sequential
         - { field: pressure_p0, interpolation: P1_average }
         - pressure_p1
         - { field: velocity_p0, interpolation: P1_average }
-    balance: {}
     output_stream:
       file: flow.msh
       format: !gmsh

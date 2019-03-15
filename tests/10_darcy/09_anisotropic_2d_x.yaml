@@ -28,7 +28,6 @@ problem: !Coupling_Sequential
       fields:
         - pressure_p0
         - velocity_p0
-    balance: {}
     output_stream:
       file: ./test05.pvd
       format: !vtk

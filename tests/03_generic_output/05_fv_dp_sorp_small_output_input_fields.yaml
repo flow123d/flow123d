@@ -39,7 +39,6 @@ problem: !Coupling_Sequential
         - velocity_p0
         - conductivity
         - anisotropy
-    balance: {}
   # primary equation
     output_stream:
       file: flow.pvd

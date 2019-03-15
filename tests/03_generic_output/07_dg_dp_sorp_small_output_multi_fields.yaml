@@ -30,7 +30,6 @@ problem: !Coupling_Sequential
     output:
       add_input_times: true
       fields: []
-    balance: {}
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

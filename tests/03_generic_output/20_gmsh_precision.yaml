@@ -26,7 +26,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - conductivity
-    balance: {}
     output_stream:
       file: flow.msh
       format: !gmsh
