@@ -1,4 +1,3 @@
-#################
 # Test goal: Time dependent boundary condition in darcy MH flow.
 # Author:
 # Source for reference: pressure is linear in x-axis in each time step, values correspond to Dirichlet b.c. set.
