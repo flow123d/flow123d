@@ -111,9 +111,11 @@ class LocalElementAccessorBase {
 public:
 
     LocalElementAccessorBase(MH_DofHandler *dh, DHCellAccessor dh_cell)
-    : dh(dh), dh_cell_(dh_cell), indices_(dh_cell_.dh()->max_elem_dofs())
+    : dh(dh), dh_cell_(dh_cell), global_indices_(dh_cell_.dh()->max_elem_dofs()),
+	  local_indices_(dh_cell_.dh()->max_elem_dofs())
     {
-        n_indices_ = dh_cell_.get_loc_dof_indices(indices_);
+        n_indices_ = dh_cell_.get_dof_indices(global_indices_);
+        dh_cell_.get_loc_dof_indices(local_indices_);
     }
 
     uint dim() const {
@@ -150,12 +152,12 @@ public:
 
     uint ele_row() {
         //return dh->row_4_el[ele_global_idx()];
-        return ele_local_row() + dh_cell_.dh()->distr()->begin();
+        return global_indices_[n_indices_/2];
     }
 
     uint ele_local_row() {
         //return ele_row() - dh->rows_ds->begin(); //  i_loc_el + side_ds->lsize();
-        return indices_[n_indices_/2];
+        return local_indices_[n_indices_/2];
     }
 
     uint edge_global_idx(uint i) {
@@ -167,12 +169,12 @@ public:
     }
 
     uint edge_row(uint i) {
-        return edge_local_row(i) + dh_cell_.dh()->distr()->begin();
+        return global_indices_[(n_indices_+1)/2+i];
         //return dh->row_4_edge[edge_global_idx(i)];
     }
 
     uint edge_local_row( uint i) {
-        return indices_[(n_indices_+1)/2+i];
+        return local_indices_[(n_indices_+1)/2+i];
         //return edge_row(i) - dh->rows_ds->begin();
     }
 
@@ -190,18 +192,19 @@ public:
 
     uint side_row(uint i) {
         //return dh->side_row_4_id[side_global_idx(i)];
-        return side_local_row(i) + dh_cell_.dh()->distr()->begin();
+        return global_indices_[i];
     }
 
     uint side_local_row( uint i) {
         //return side_row(i) - dh->rows_ds->begin();
-        return indices_[i];
+        return local_indices_[i];
     }
 
 private:
     MH_DofHandler *dh;
     DHCellAccessor dh_cell_;
-    std::vector<LongIdx> indices_;
+    std::vector<LongIdx> global_indices_;
+    std::vector<LongIdx> local_indices_;
     uint n_indices_;
 };
 
