@@ -11,7 +11,7 @@
 # 0.3      0.2275        0.3574
 # 0.6      0.0518        0.0813
 # 1        0.0072        0.0113
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test10 - Unsteady flow in 2D, Lumped Mixed Hybrid
   mesh:
