@@ -25,6 +25,7 @@
 #include <vector>                                      // for vector
 #include <armadillo>
 #include "fem/finite_element.hh"                       // for FiniteElement
+#include "fem/fe_disc.hh"                              // for FE_disc
 #include "system/exc_common.hh"                        // for ExcAssertMsg
 #include "system/exceptions.hh"                        // for ExcAssertMsg::...
 #include "system/global_defs.h"                        // for OLD_ASSERT, msg
@@ -91,29 +92,15 @@ public:
     /// Constructor.
     FE_P(unsigned int degree);
     
+    /// Discontinuous variant of FE_P.
+    typedef FE_disc<FE_P<dim>,unsigned int> disc;
+    
 protected:
     
     void init_dofs();
 
     /// Maximum degree of polynomials.
     unsigned int degree_;
-};
-
-
-/**
- * @brief Discontinuous Lagrangean finite element on @p dim dimensional simplex.
- *
- * No continuity of the finite element functions across the interfaces is
- * imposed.
- */
-template <unsigned int dim>
-class FE_P_disc : public FE_P<dim>
-{
-public:
-
-    /// Constructor.
-    FE_P_disc(unsigned int degree);
-    
 };
 
 
@@ -128,20 +115,8 @@ class FE_CR : public FiniteElement<dim>
 public:
     FE_CR();
     
-};
-
-
-/**
- * @brief Discontinuos Crouzeix-Raviart finite element on @p dim dimensional simplex.
- *
- * Consists of linear functions with continuity at side barycenters.
- */
-template<unsigned int dim>
-class FE_CR_disc : public FiniteElement<dim>
-{
-public:
-    FE_CR_disc();
-
+    /// Discontinuous variant of FE_CR.
+    typedef FE_disc<FE_CR<dim> > disc;
 };
 
 

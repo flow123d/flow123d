@@ -253,17 +253,17 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 
 	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
 		case 1: { // scalar
-			fe0 = new FE_P_disc<0>(0);
-			fe1 = new FE_P_disc<1>(0);
-			fe2 = new FE_P_disc<2>(0);
-			fe3 = new FE_P_disc<3>(0);
+			fe0 = new FE_P<0>::disc(0);
+			fe1 = new FE_P<1>::disc(0);
+			fe2 = new FE_P<2>::disc(0);
+			fe3 = new FE_P<3>::disc(0);
 			break;
 		}
 		case 3: { // vector
-			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P<0>::disc >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P<1>::disc >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P<2>::disc >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P<3>::disc >(0);
 			fe0 = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
 			fe1 = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
 			fe2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
@@ -271,10 +271,10 @@ std::shared_ptr<FieldFE<spacedim, Value> > create_field(VectorMPI & vec_seq, Mes
 			break;
 		}
 		case 9: { // tensor
-			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
-			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
-			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
-			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P<0>::disc >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P<1>::disc >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P<2>::disc >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P<3>::disc >(0);
 			fe0 = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
 			fe1 = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
 			fe2 = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);

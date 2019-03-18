@@ -27,7 +27,7 @@
 #include <memory>                        // for shared_ptr
 #include <vector>                        // for vector
 #include <armadillo>
-#include "fem/fe_p.hh"                   // for FE_P_disc
+#include "fem/fe_p.hh"                   // for FE_P
 #include "fem/fe_rt.hh"                  // for FE_RT0
 #include "fem/mapping_p1.hh"             // for MappingP1
 #include "fem/fe_values.hh"              // for FEValues
@@ -188,7 +188,7 @@ protected:
     std::vector<double>     l2_diff_pressure, l2_diff_velocity, l2_diff_divergence;
 
     std::shared_ptr<DOFHandlerMultiDim> dh_;
-    FE_P_disc<0> fe0; //TODO temporary solution - add support of FEData<0>
+    FE_P<0>::disc fe0; //TODO temporary solution - add support of FEData<0>
     std::shared_ptr<DiscreteSpace> ds;
 
     OutputFields output_fields;
@@ -230,8 +230,8 @@ protected:
         
         // we create trivial Dofhandler , for P0 elements, to get access to, FEValues on individual elements
         // this we use to integrate our own functions - difference of postprocessed pressure and analytical solution
-        FE_P_disc<dim> fe_p0;
-        FE_P_disc<dim> fe_p1;
+        typename FE_P<dim>::disc fe_p0;
+        typename FE_P<dim>::disc fe_p1;
 
         const unsigned int order; // order of Gauss quadrature
         QGauss<dim> quad;
@@ -241,7 +241,7 @@ protected:
         FEValues<dim,3> fe_values;
         
         // FEValues for velocity.
-        FE_RT0<dim> fe_rt;
+        typename FE_RT0<dim>::disc fe_rt;
         FEValues<dim, 3> fv_rt;
     };
     

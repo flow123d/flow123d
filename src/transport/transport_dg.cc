@@ -110,14 +110,14 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
     unsigned int q_order;
 
     q_order = 2*fe_order;
-    fe0_ = new FE_P_disc<0>(fe_order);
-    fe1_ = new FE_P_disc<1>(fe_order);
-    fe2_ = new FE_P_disc<2>(fe_order);
-    fe3_ = new FE_P_disc<3>(fe_order);
+    fe0_ = new FE_P<0>::disc(fe_order);
+    fe1_ = new FE_P<1>::disc(fe_order);
+    fe2_ = new FE_P<2>::disc(fe_order);
+    fe3_ = new FE_P<3>::disc(fe_order);
 
-    fe_rt1_ = new FE_RT0<1>;
-    fe_rt2_ = new FE_RT0<2>;
-    fe_rt3_ = new FE_RT0<3>;
+    fe_rt1_ = new FE_RT0<1>::disc;
+    fe_rt2_ = new FE_RT0<2>::disc;
+    fe_rt3_ = new FE_RT0<3>::disc;
     
     q0_ = new QGauss<0>(q_order);
     q1_ = new QGauss<1>(q_order);

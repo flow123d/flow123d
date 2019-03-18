@@ -55,10 +55,10 @@ auto GenericField<spacedim>::region_id(Mesh &mesh) -> IndexField {
 
 template <int spacedim>
 auto GenericField<spacedim>::subdomain(Mesh &mesh) -> IndexField {
-	static FE_P_disc<0> fe0(0);
-	static FE_P_disc<1> fe1(0);
-	static FE_P_disc<2> fe2(0);
-	static FE_P_disc<3> fe3(0);
+	static FE_P<0>::disc fe0(0);
+	static FE_P<1>::disc fe1(0);
+	static FE_P<2>::disc fe2(0);
+	static FE_P<3>::disc fe3(0);
     DOFHandlerMultiDim dh_par(mesh);
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, &fe0, &fe1, &fe2, &fe3);
     dh_par.distribute_dofs(ds);
