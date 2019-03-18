@@ -128,6 +128,13 @@ public:
     	return (loc_ele_idx_ < dof_handler_->el_ds_->lsize());
     }
 
+    /// Create new accessor with same local idx and given DOF handler. Actual and given DOF handler must be create on same Mesh.
+    DHCellAccessor cell_with_other_dh(const DOFHandlerMultiDim * dh) {
+    	ASSERT( (dh->mesh()->n_nodes() == dof_handler_->mesh()->n_nodes()) && (dh->mesh()->n_elements() == dof_handler_->mesh()->n_elements()) )
+    			.error("Incompatible DOF handlers!");
+    	return DHCellAccessor(dh, loc_ele_idx_);
+    }
+
     /// Iterates to next local element.
     inline void inc() {
         loc_ele_idx_++;
