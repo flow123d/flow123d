@@ -646,7 +646,7 @@ void FieldFE<spacedim, Value>::calculate_native_values(ElementDataCache<double>:
 	else mesh = dh_->mesh();
 	for (auto ele : mesh->elements_range()) { // remove special case for rank == 0 - necessary for correct output
 		if (this->boundary_domain_) dof_size = value_handler1_.get_dof_indices( ele, dof_indices_ );
-		else dof_size = dh_->get_loc_dof_indices( ele, dof_indices_ );
+		else dof_size = dh_->cell_accessor_from_element(ele.idx()).get_loc_dof_indices( dof_indices_ );
 		data_vec_i = ele.idx() * dof_indices_.size();
 		for (unsigned int i=0; i<dof_size; ++i, ++data_vec_i) {
 			(*data_vector)[ dof_indices_[i] ] += (*data_cache)[data_vec_i];
@@ -680,7 +680,7 @@ void FieldFE<spacedim, Value>::native_data_to_cache(ElementDataCache<double> &ou
 
 	VectorMPI::VectorDataPtr data_vec = data_vec_.data_ptr();
 	for (auto dh_cell : dh_->own_range()) {
-		dof_filled_size = dh_->get_loc_dof_indices(dh_cell.elm(), dof_indices_);
+		dof_filled_size = dh_cell.get_loc_dof_indices(dof_indices_);
 		for (i=0; i<dof_filled_size; ++i) loc_values[i] = (*data_vec)[ dof_indices_[i] ];
 		for ( ; i<output_data_cache.n_comp(); ++i) loc_values[i] = numeric_limits<double>::signaling_NaN();
 		output_data_cache.store_value( dh_cell.local_idx(), loc_values );
