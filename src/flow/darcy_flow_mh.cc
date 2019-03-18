@@ -261,6 +261,12 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI().m(-1) );
 
+    *this += field_ele_pressure.name("pressure").units(UnitSI().m()) //TODO change name to pressure_p0
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P0 interpolation.");
+	*this += field_ele_piezo_head.name("piezo_head").units(UnitSI().m()) //TODO change name to piezo_head_p0
+             .flags(FieldFlag::equation_result)
+             .description("Piezo head solution - P0 interpolation.");
 	*this += field_ele_flux.name("velocity").units(UnitSI().m().s(-1)) //TODO change name to velocity_p0
              .flags(FieldFlag::equation_result)
              .description("Velocity solution - P0 interpolation.");
@@ -408,6 +414,16 @@ void DarcyMH::initialize() {
 		uint rt_component = 0;
 		ele_flux_ptr->set_fe_data(dh_, rt_component);
 		data_->field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+
+		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+		uint p_ele_component = 0;
+		ele_pressure_ptr->set_fe_data(dh_, p_ele_component, ele_flux_ptr->get_data_vec());
+		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
+
+		ele_piezo_head_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
+		uint p_edge_component = 1;
+		ele_piezo_head_ptr->set_fe_data(dh_, p_edge_component, ele_flux_ptr->get_data_vec());
+		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
     }
 
     // Initialize bc_switch_dirichlet to size of global boundary.
