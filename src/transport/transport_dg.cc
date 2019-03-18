@@ -884,6 +884,21 @@ void TransportDG<Model>::set_sources()
 
 
 
+// return the ratio of longest and shortest edge
+double elem_anisotropy(ElementAccessor<3> e)
+{
+    double h_max = 0, h_min = numeric_limits<double>::infinity();
+    for (unsigned int i=0; i<e->n_nodes(); i++)
+        for (unsigned int j=i+1; j<e->n_nodes(); j++)
+        {
+            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
+            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
+        }
+    return h_max/h_min;
+}
+
+
+
 template<class Model>
 template<unsigned int dim>
 void TransportDG<Model>::assemble_fluxes_element_element()
@@ -897,7 +912,8 @@ void TransportDG<Model>::assemble_fluxes_element_element()
     PetscScalar local_matrix[ndofs*ndofs];
     vector<vector<arma::vec3> > side_velocity(n_max_sides);
     vector<vector<double> > dg_penalty(n_max_sides);
-    double gamma_l, omega[2], transport_flux;
+    double gamma_l, omega[2], transport_flux, delta[2], delta_sum;
+    double aniso1, aniso2;
 
     for (unsigned int sid=0; sid<n_max_sides; sid++) // Optimize: SWAP LOOPS
     {
@@ -908,12 +924,13 @@ void TransportDG<Model>::assemble_fluxes_element_element()
 
     // assemble integral over sides
     int sid, s1, s2;
-    for ( DHCellAccessor dh_cell : feo->dh()->local_range() )
+    for ( DHCellAccessor dh_cell : feo->dh()->local_range() ) {
+    	if (dh_cell.dim() != dim) continue;
         for( DHCellSide cell_side : dh_cell.side_range() )
         {
-            const Edge *edg = cell_side.side()->edge();
-            bool unique_edge = (edg->side(0)->element().idx() != dh_cell.elm_idx());
-    	    if ( (edg->n_sides < 2) || (edg->side(0)->element()->dim() != dim) || unique_edge ) continue;
+        	if (cell_side.n_edge_sides() < 2) continue;
+            bool unique_edge = (cell_side.edge_sides().begin()->side()->element().idx() != dh_cell.elm_idx());
+    	    if ( unique_edge ) continue;
     	    sid=0;
         	for( DHCellSide edge_side : cell_side.edge_sides() )
             {
@@ -929,11 +946,13 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     dg_penalty[sid][sbi] = data_.dg_penalty[sbi].value(cell.centre(), cell);
                 ++sid;
             }
+            arma::vec3 normal_vector = fe_values[0]->normal_vector(0);
 
             // fluxes and penalty
             for (unsigned int sbi=0; sbi<Model::n_substances(); sbi++)
             {
-                vector<double> fluxes(edg->n_sides);
+                vector<double> fluxes(cell_side.n_edge_sides());
+                double pflux = 0, nflux = 0; // calculate the total in- and out-flux through the edge
                 sid=0;
                 for( DHCellSide edge_side : cell_side.edge_sides() )
                 {
@@ -941,6 +960,10 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                     for (unsigned int k=0; k<qsize; k++)
                         fluxes[sid] += arma::dot(ad_coef_edg[sid][sbi][k], fe_values[sid]->normal_vector(k))*fe_values[sid]->JxW(k);
                     fluxes[sid] /= edge_side.side()->measure();
+                    if (fluxes[sid] > 0)
+                        pflux += fluxes[sid];
+                    else
+                        nflux += fluxes[sid];
                     ++sid;
                 }
 
@@ -957,7 +980,42 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                         arma::vec3 nv = fe_values[s1]->normal_vector(0);
 
                         // set up the parameters for DG method
-                        set_DG_parameters_edge(*edg, s1, s2, qsize, dif_coef_edg[s1][sbi], dif_coef_edg[s2][sbi], fluxes, fe_values[0]->normal_vector(0), dg_penalty[s1][sbi], dg_penalty[s2][sbi], gamma_l, omega, transport_flux);
+                        // calculate the flux from edge_side1 to edge_side2
+                        if (fluxes[s2] > 0 && fluxes[s1] < 0)
+                            transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
+                        else if (fluxes[s2] < 0 && fluxes[s1] > 0)
+                            transport_flux = fluxes[s1]*fabs(fluxes[s2]/nflux);
+                        else
+                            transport_flux = 0;
+
+                        gamma_l = 0.5*fabs(transport_flux);
+
+                        delta[0] = 0;
+                        delta[1] = 0;
+                        for (unsigned int k=0; k<qsize; k++)
+                        {
+                            delta[0] += dot(dif_coef_edg[s1][sbi][k]*normal_vector,normal_vector);
+                            delta[1] += dot(dif_coef_edg[s2][sbi][k]*normal_vector,normal_vector);
+                        }
+                        delta[0] /= qsize;
+                        delta[1] /= qsize;
+
+                        delta_sum = delta[0] + delta[1];
+
+//                        if (delta_sum > numeric_limits<double>::epsilon())
+                        if (fabs(delta_sum) > 0)
+                        {
+                            omega[0] = delta[1]/delta_sum;
+                            omega[1] = delta[0]/delta_sum;
+                            double local_alpha = max(dg_penalty[s1][sbi], dg_penalty[s2][sbi]);
+                            double h = edge_side1.side()->diameter();
+                            aniso1 = elem_anisotropy(edge_side1.side()->element());
+                            aniso2 = elem_anisotropy(edge_side2.side()->element());
+                            gamma_l += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
+                        }
+                        else
+                            for (int i=0; i<2; i++) omega[i] = 0;
+                        // end of set up the parameters for DG method
 
                         int sd[2]; bool is_side_own[2];
                         sd[0] = s1; is_side_own[0] = edge_side1.cell().is_own();
@@ -1017,6 +1075,7 @@ void TransportDG<Model>::assemble_fluxes_element_element()
                 }
             }
         }
+    }
 
     for (unsigned int i=0; i<n_max_sides; i++)
     {
@@ -1438,127 +1497,6 @@ void TransportDG<Model>::calculate_velocity(const ElementAccessor<3> &cell,
             velocity[k][c] += fv.shape_value_component(sid,k,c) * Model::mh_dh->side_flux( *(cell.side(sid)) );
     }
 }
-
-
-// return the ratio of longest and shortest edge
-double elem_anisotropy(ElementAccessor<3> e)
-{
-    double h_max = 0, h_min = numeric_limits<double>::infinity();
-    for (unsigned int i=0; i<e->n_nodes(); i++)
-        for (unsigned int j=i+1; j<e->n_nodes(); j++)
-        {
-            h_max = max(h_max, e.node(i)->distance(*e.node(j)));
-            h_min = min(h_min, e.node(i)->distance(*e.node(j)));
-        }
-    return h_max/h_min;
-}
-
-
-
-template<class Model>
-void TransportDG<Model>::set_DG_parameters_edge(const Edge &edg,
-            const int s1,
-            const int s2,
-            const int K_size,
-            const vector<arma::mat33> &K1,
-            const vector<arma::mat33> &K2,
-            const vector<double> &fluxes,
-            const arma::vec3 &normal_vector,
-            const double alpha1,
-            const double alpha2,
-            double &gamma,
-            double *omega,
-            double &transport_flux)
-{
-    double delta[2];
-    double h = 0;
-    double local_alpha = 0;
-
-    OLD_ASSERT(edg.side(s1)->valid(), "Invalid side of an edge.");
-    SideIter s = edg.side(s1);
-
-    // calculate the side diameter
-    if (s->dim() == 0)
-    {
-        h = 1;
-    }
-    else
-    {
-        for (unsigned int i=0; i<s->n_nodes(); i++)
-            for (unsigned int j=i+1; j<s->n_nodes(); j++)
-                h = max(h, s->node(i)->distance(*s->node(j).node()));
-    }
-    
-    double aniso1 = elem_anisotropy(edg.side(s1)->element());
-    double aniso2 = elem_anisotropy(edg.side(s2)->element());
-    
-
-    // calculate the total in- and out-flux through the edge
-    double pflux = 0, nflux = 0;
-    for (int i=0; i<edg.n_sides; i++)
-    {
-        if (fluxes[i] > 0)
-            pflux += fluxes[i];
-        else
-            nflux += fluxes[i];
-    }
-
-    // calculate the flux from s1 to s2
-    if (fluxes[s2] > 0 && fluxes[s1] < 0 && s1 < s2)
-        transport_flux = fluxes[s1]*fabs(fluxes[s2]/pflux);
-    else if (fluxes[s2] < 0 && fluxes[s1] > 0 && s1 < s2)
-        transport_flux = fluxes[s1]*fabs(fluxes[s2]/nflux);
-    else if (s1==s2)
-        transport_flux = fluxes[s1];
-    else
-        transport_flux = 0;
-
-    gamma = 0.5*fabs(transport_flux);
-
-
-    // determine local DG penalty
-    local_alpha = max(alpha1, alpha2);
-
-    if (s1 == s2)
-    {
-        omega[0] = 1;
-
-        // delta is set to the average value of Kn.n on the side
-        delta[0] = 0;
-        for (int k=0; k<K_size; k++)
-            delta[0] += dot(K1[k]*normal_vector,normal_vector);
-        delta[0] /= K_size;
-
-        gamma += local_alpha/h*aniso1*aniso2*delta[0];
-    }
-    else
-    {
-        delta[0] = 0;
-        delta[1] = 0;
-        for (int k=0; k<K_size; k++)
-        {
-            delta[0] += dot(K1[k]*normal_vector,normal_vector);
-            delta[1] += dot(K2[k]*normal_vector,normal_vector);
-        }
-        delta[0] /= K_size;
-        delta[1] /= K_size;
-
-        double delta_sum = delta[0] + delta[1];
-
-//        if (delta_sum > numeric_limits<double>::epsilon())
-        if (fabs(delta_sum) > 0)
-        {
-            omega[0] = delta[1]/delta_sum;
-            omega[1] = delta[0]/delta_sum;
-            gamma += local_alpha/h*aniso1*aniso2*(delta[0]*delta[1]/delta_sum);
-        }
-        else
-            for (int i=0; i<2; i++) omega[i] = 0;
-    }
-}
-
-
-
 
 
 
