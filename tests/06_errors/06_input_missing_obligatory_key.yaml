@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: 'Missing obligatory key mesh_file at address: /problem/mesh'
   mesh:

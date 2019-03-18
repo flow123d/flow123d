@@ -89,8 +89,8 @@ const IT::Record & Mesh::get_input_type() {
         .declare_key("intersection_search", Mesh::get_input_intersection_variant(), 
                      IT::Default("\"BIHsearch\""), "Search algorithm for element intersections.")
         .declare_key("global_snap_radius", IT::Double(0.0), IT::Default("1E-3"),
-                     "Maximal snapping distance from Mesh in various search operations. In particular is used "
-                     "in ObservePoint to find closest mesh element and in FieldFormula to find closest surface "
+                     "Maximal snapping distance from the mesh in various search operations. In particular, it is used "
+                     "to find the closest mesh element of an observe point; and in FieldFormula to find closest surface "
                      "element in plan view (Z projection).")
         .declare_key("raw_ngh_output", IT::FileName::output(), IT::Default::optional(),
                      "Output file with neighboring data from mesh.")

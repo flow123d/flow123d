@@ -74,8 +74,8 @@ it::Record & Application::get_input_type() {
 
 
 
-Application::Application( int argc,  char ** argv)
-: ApplicationBase(argc, argv),
+Application::Application(const std::string &python_path)
+: ApplicationBase(),
   problem_(nullptr),
   main_input_filename_(""),
   //passed_argc_(0),
@@ -86,7 +86,7 @@ Application::Application( int argc,  char ** argv)
     // initialize python stuff if we have
     // nonstandard python home (release builds)
 #ifdef FLOW123D_HAVE_PYTHON
-    PythonLoader::initialize(argv[0]);
+    PythonLoader::initialize(python_path);
 #endif
 
 }
@@ -349,6 +349,8 @@ void Application::run() {
         }
 
     }
+
+    this->after_run();
 }
 
 
@@ -398,9 +400,10 @@ Application::~Application() {
  *  FUNCTION "MAIN"
  */
 int main(int argc, char **argv) {
-    Application app(argc, argv);
+    Application app(argv[0]);
     try {
         app.init(argc, argv);
+        app.run();
     } catch (std::exception & e) {
         _LOG( Logger::MsgType::error ).every_proc() << e.what();
         app.terminate();

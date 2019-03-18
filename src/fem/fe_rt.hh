@@ -71,7 +71,23 @@ public:
 
 
 
+/**
+ * @brief Discontinuous Raviart-Thomas element of order 0.
+ *
+ * The lowest order Raviart-Thomas finite element with linear basis functions
+ * and continuous normal components across element sides.
+ */
+template <unsigned int dim>
+class FE_RT0_disc : public FiniteElement<dim>
+{
+public:
 
+    /**
+     * @brief Constructor.
+     */
+    FE_RT0_disc();
+
+};
 
 
 
