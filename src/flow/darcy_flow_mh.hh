@@ -245,7 +245,7 @@ public:
        return mh_dh;
     }
 
-    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field() override;
+    std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > get_velocity_field(); //override
 
     void init_eq_data();
     void initialize() override;

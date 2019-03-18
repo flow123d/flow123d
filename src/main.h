@@ -61,11 +61,6 @@ public:
     Input::Record read_input();
     
     /**
-     * Terminate all MPI processes if exception is thrown.
-     */
-    void terminate();
-
-    /**
      * Run application.
      *
      * Read input and solve problem.
