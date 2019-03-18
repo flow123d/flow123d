@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: narrow radioaoctive decay chain, with transport switched enabled but with zero pressure gradient, VTK output
     test12
