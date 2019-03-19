@@ -93,7 +93,7 @@ FE_RT0<dim>::FE_RT0()
 
 
 
-template class FE_RT0<0>;
+// template class FE_RT0<0>;
 template class FE_RT0<1>;
 template class FE_RT0<2>;
 template class FE_RT0<3>;
