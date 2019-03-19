@@ -67,7 +67,7 @@ void system_signal_handler(int signal) {
 }
 
 
-ApplicationBase::ApplicationBase(int argc,  char ** argv)
+ApplicationBase::ApplicationBase()
 : log_filename_(""),
   signal_handler_off_(false)
 { }
@@ -192,11 +192,6 @@ void ApplicationBase::init(int argc, char ** argv) {
 	petsc_initialized = true;
 
     this->system_init(PETSC_COMM_WORLD, log_filename_); // Petsc, open log, read ini file
-
-
-    this->run();
-
-	this->after_run();
 }
 
 
