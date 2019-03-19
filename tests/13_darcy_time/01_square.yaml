@@ -2,7 +2,7 @@
 # Author:
 # Source for reference: pressure is linear in x-axis in each time step, values correspond to Dirichlet b.c. set.
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Unsteady flow in 2D by the means of time dependent boundary condition, Mixed Hybrid method.
   mesh:

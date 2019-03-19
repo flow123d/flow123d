@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: "Sorption with sources - no flow, no transport, only source term and sorptions. \nQualitative and mass balance\
     \ check.\n- A - check sorption none (with source, init_conc_solid)"

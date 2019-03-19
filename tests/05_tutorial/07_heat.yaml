@@ -130,7 +130,7 @@
 ##
 ##![The temperature of exchanger after 30 years.](tutor_figures/07_transport.pdf){#fig:tempr_grad width=80%}
 ##
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Example 7 - Heat transport
   mesh:

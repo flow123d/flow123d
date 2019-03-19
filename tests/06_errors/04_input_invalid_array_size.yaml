@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: 'Do not fit the size of the Array at address: /problem/flow_equation/output_stream/observe_points/0/point'
   mesh:
