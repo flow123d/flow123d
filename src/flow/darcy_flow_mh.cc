@@ -387,7 +387,7 @@ void DarcyMH::initialize() {
 
     mh_dh.reinit(mesh_);
 
-    { // init data_->field_ele_flux
+    { // init DOF handler for pressure fields
 		//std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
 		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0<1>>();
 		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0<2>>();
@@ -405,9 +405,8 @@ void DarcyMH::initialize() {
 		static FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
 		static FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
 		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
-		DOFHandlerMultiDim dh_par(*mesh_);
-		dh_par.distribute_dofs(ds);
-		dh_ = dh_par.sequential();
+		dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		dh_->distribute_dofs(ds);
 		data_->dh_ = dh_;
 
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
