@@ -271,7 +271,7 @@ BaseMeshReader::MeshDataHeader & VtkMeshReader::find_header(BaseMeshReader::Head
 
 		// check discretization
 		if (header_query.discretization != table_it->second.discretization) {
-			if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED && header_query.discretization != OutputTime::DiscreteSpace::NATIVE_DATA) {
+			if (header_query.discretization != OutputTime::DiscreteSpace::UNDEFINED) {
 				WarningOut().fmt(
 						"Invalid value of 'input_discretization' for field '{}', time: {}.\nCorrect discretization type will be used.\n",
 						header_query.field_name, header_query.time);
