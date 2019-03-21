@@ -172,11 +172,7 @@ public:
     /**
      *  Reads ElementData sections of opened mesh file. Method must be call after \p set_data_header method. If such section
      *  has not been yet read, we read the data section into raw buffer @p data. The buffer must have size at least
-     *  @p n_components * @p n_entities. Indexes in the map must be smaller then @p n_entities.
-     *
-     *  Possible optimizations:
-     *  If the map ID lookup seem slow, we may assume that IDs are in increasing order, use simple array of IDs instead of map
-     *  and just check that they comes in in correct order.
+     *  @p n_components * @p n_entities.
      *
      *  @param n_entities count of entities (elements)
      *  @param n_components count of components (size of returned data is given by n_entities*n_components)
@@ -249,7 +245,7 @@ protected:
     /// Store name of field data section specify for type of mesh file.
     std::string data_section_name_;
 
-    /// Cache with last read element data
+    /// Cache with last read element data for individual fields.
     std::shared_ptr<ElementDataFieldMap> element_data_values_;
 
     /// Tokenizer used for reading ASCII file format.

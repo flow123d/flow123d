@@ -276,7 +276,7 @@ CheckResult ElementDataCache<T>::check_values(double default_val, double lower_b
                 if ( std::isnan(default_val) ) is_nan = true;
                 else vec[i] = default_val;
             }
-            if ( (vec[i] < lower_bound) || (vec[i] > upper_bound) ) out_of_limit = true;
+            if ( (vec[i] <= lower_bound) || (vec[i] > upper_bound) ) out_of_limit = true;
         }
     }
 

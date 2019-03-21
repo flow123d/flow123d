@@ -137,11 +137,12 @@ bool FieldElementwise<spacedim, Value>::set_time(const TimeStep &time) {
 	double time_shift = time.read_time( in_rec_.find<Input::Tuple>("read_time_shift") );
 	double read_time = (time.end()+time_shift) / time_unit_coef;
 	BaseMeshReader::HeaderQuery header_query(field_name_, read_time, OutputTime::DiscreteSpace::ELEM_DATA);
-    ReaderCache::get_reader(reader_file_)->find_header(header_query);
-    data_ = ReaderCache::get_reader(reader_file_)-> template get_element_data<typename Value::element_type>(
-    		n_entities_, n_components_, boundary_domain_, this->component_idx_);
-    CheckResult checked_data = ReaderCache::get_reader(reader_file_)->scale_and_check_limits(field_name_,
-            this->unit_conversion_coefficient_, default_value_, limits_.first, limits_.second);
+    auto reader = ReaderCache::get_reader(reader_file_);
+	reader->find_header(header_query);
+    data_ = reader-> template get_element_data<typename Value::element_type>(
+            n_entities_, n_components_, boundary_domain_, this->component_idx_);
+    CheckResult checked_data = reader->scale_and_check_limits(
+            field_name_, this->unit_conversion_coefficient_, default_value_, limits_.first, limits_.second);
 
     if (checked_data == CheckResult::not_a_number) {
     	THROW( ExcUndefElementValue() << EI_Field(field_name_) );
