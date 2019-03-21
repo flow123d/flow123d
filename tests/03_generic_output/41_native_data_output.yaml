@@ -1,0 +1,39 @@
+#################
+# Test goal: Test of native data output interpolation.
+# Author: David Flanderka
+# Source for reference: qualitative
+
+flow123d_version: 3.1.0
+problem: !Coupling_Sequential
+  description: Test of FieldFE native data - init_pressure, init_conc fields
+  mesh:
+    mesh_file: ../00_mesh/square_0.2x0.2.msh
+  # steady velocity field, with velocity v:0.1
+  #flow_equation: !Flow_Richards_LMH
+  flow_equation: !Flow_Darcy_MH
+    output_specific:
+    nonlinear_solver:
+      linear_solver: !Petsc
+        a_tol: 1.0e-12
+        r_tol: 1.0e-12
+    input_fields:
+      - region: bulk
+        init_pressure: !FieldFormula
+          value: sin(Pi*x)
+      - region: .BOUNDARY
+        bc_type: dirichlet
+        bc_pressure: 0.1
+    n_schurs: 2
+    output:
+      fields:
+        - pressure_p0
+        - pressure_p1
+        - velocity_p0
+        - field: init_pressure
+          interpolation: Native
+    balance: {}
+    output_stream:
+      file: ./test41.pvd
+      format: !vtk
+        variant: ascii
+      name: flow_output_stream
