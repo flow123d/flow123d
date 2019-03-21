@@ -7,6 +7,8 @@ test_cases:
   - 10_include_csv.yaml
   - 11_time_unit_conversion.yaml
   - 12_time_unit_nested_equation.yaml
+  - 13_time_steps_func.yaml
+  - 14_time_steps_func_include.yaml
   proc: [1]
   
   
