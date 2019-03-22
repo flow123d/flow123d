@@ -77,10 +77,12 @@ public:
     void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
+        std::vector<LongIdx> indices(ad_->dh_cr_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(indices);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->phead_edge_[ele.edge_local_idx(i)];
+            double phead = ad_->phead_edge_[ indices[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -104,12 +106,13 @@ public:
         if (genuchten_on) {
             conductivity=0;
             head=0;
+            std::vector<LongIdx> indices(ad_->dh_cr_->max_elem_dofs());
+            ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(indices);
             for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
             {
-                uint local_edge = ele.edge_local_idx(i);
-                double phead = ad_->phead_edge_[local_edge];
+                double phead = ad_->phead_edge_[ indices[i] ];
                 conductivity += soil_model->conductivity(phead);
-                head += ad_->phead_edge_[local_edge];
+                head += ad_->phead_edge_[ indices[i] ];
             }
             conductivity /= ele.n_sides();
             head /= ele.n_sides();
@@ -135,10 +138,11 @@ public:
         double source_diagonal = diagonal_coef * this->ad_->water_source_density.value(ele.centre(), ele.element_accessor());
 
         update_water_content(ele);
+        std::vector<LongIdx> edge_indices(ad_->dh_cr_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
 
-            uint local_edge = ele.edge_local_idx(i);
             uint local_side = ele.side_local_idx(i);
             uint edge_row = ele.edge_row(i);
             if (this->dirichlet_edge[i] == 0) {
@@ -159,7 +163,7 @@ public:
                 */
 
 
-                double mass_rhs = mass_diagonal * ad_->phead_edge_[local_edge] / this->ad_->time_step_
+                double mass_rhs = mass_diagonal * ad_->phead_edge_[ edge_indices[i] ] / this->ad_->time_step_
                                   + diagonal_coef * water_content_diff / this->ad_->time_step_;
 
 //                 DBGCOUT(<< "source [" << loc_system_.row_dofs[this->loc_edge_dofs[i]] << ", " << loc_system_.row_dofs[this->loc_edge_dofs[i]]

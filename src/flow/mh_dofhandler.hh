@@ -118,6 +118,10 @@ public:
         dh_cell_.get_loc_dof_indices(local_indices_);
     }
 
+    inline DHCellAccessor dh_cell() const {
+        return dh_cell_;
+    }
+
     uint dim() const {
         return dh_cell_.dim();
     }
@@ -160,22 +164,12 @@ public:
         return local_indices_[n_indices_/2];
     }
 
-    uint edge_global_idx(uint i) {
-        return element_accessor().side(i)->edge_idx();
-    }
-
-    uint edge_local_idx(uint i) {
-        return dh->edge_new_local_4_mesh_idx_[edge_global_idx(i)];
-    }
-
     uint edge_row(uint i) {
         return global_indices_[(n_indices_+1)/2+i];
-        //return dh->row_4_edge[edge_global_idx(i)];
     }
 
     uint edge_local_row( uint i) {
         return local_indices_[(n_indices_+1)/2+i];
-        //return edge_row(i) - dh->rows_ds->begin();
     }
 
     SideIter side(uint i) {
