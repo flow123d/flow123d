@@ -110,8 +110,8 @@ template <int spacedim>
 class LocalElementAccessorBase {
 public:
 
-    LocalElementAccessorBase(MH_DofHandler *dh, DHCellAccessor dh_cell)
-    : dh(dh), dh_cell_(dh_cell), global_indices_(dh_cell_.dh()->max_elem_dofs()),
+    LocalElementAccessorBase(DHCellAccessor dh_cell)
+    : dh_cell_(dh_cell), global_indices_(dh_cell_.dh()->max_elem_dofs()),
 	  local_indices_(dh_cell_.dh()->max_elem_dofs())
     {
         n_indices_ = dh_cell_.get_dof_indices(global_indices_);
@@ -155,12 +155,10 @@ public:
     }
 
     uint ele_row() {
-        //return dh->row_4_el[ele_global_idx()];
         return global_indices_[n_indices_/2];
     }
 
     uint ele_local_row() {
-        //return ele_row() - dh->rows_ds->begin(); //  i_loc_el + side_ds->lsize();
         return local_indices_[n_indices_/2];
     }
 
@@ -185,7 +183,6 @@ public:
     }
 
 private:
-    MH_DofHandler *dh;
     DHCellAccessor dh_cell_;
     std::vector<LongIdx> global_indices_;
     std::vector<LongIdx> local_indices_;

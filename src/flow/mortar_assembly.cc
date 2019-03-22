@@ -139,7 +139,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
     for(; i < isec_list.size(); ++i) {
         bool non_zero = quadrature_.reinit(isec_list[i].second);
         DHCellAccessor dh_cell(this->data_->dh_.get(), quadrature_.slave_idx());
-        LocalElementAccessorBase<3> slave_ac(data_->mh_dh, dh_cell);
+        LocalElementAccessorBase<3> slave_ac(dh_cell);
         slave_ac_dim = slave_ac.dim();
         if (slave_ac.dim() == master_ac.dim()) break;
         if (! non_zero) continue; // skip quadratures close to zero
@@ -157,7 +157,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
             string out;
             for(auto & isec : isec_list) {
                 DHCellAccessor dh_cell(this->data_->dh_.get(), isec.second->bulk_ele_idx());
-                LocalElementAccessorBase<3> slave_ac(data_->mh_dh, dh_cell);
+                LocalElementAccessorBase<3> slave_ac(dh_cell);
                 out += fmt::format(" {}", slave_ac.element_accessor().idx());
             }
 
@@ -187,7 +187,7 @@ void P0_CouplingAssembler::assembly(LocalElementAccessorBase<3> master_ac)
         for(; i < isec_list.size(); ++i) {
                 quadrature_.reinit(isec_list[i].second);
                 DHCellAccessor dh_cell(this->data_->dh_.get(), quadrature_.slave_idx());
-                LocalElementAccessorBase<3> slave_ac(data_->mh_dh, dh_cell);
+                LocalElementAccessorBase<3> slave_ac(dh_cell);
                 double isec_measure = quadrature_.measure();
                 isec_sum += isec_measure;
                 //DebugOut().fmt("Assembly22: {} {} {}", ele.idx(), slave_ac.element_accessor().idx(), isec_measure);
