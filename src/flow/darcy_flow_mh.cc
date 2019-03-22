@@ -389,9 +389,9 @@ void DarcyMH::initialize() {
 
     { // init DOF handler for pressure fields
 		//std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
-		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0<1>>();
-		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0<2>>();
-		std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0<3>>();
+		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0_disc<1>>();
+		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0_disc<2>>();
+		std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0_disc<3>>();
 		//std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
 		std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
 		std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
@@ -405,24 +405,43 @@ void DarcyMH::initialize() {
 		static FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
 		static FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
 		std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_sys, &fe1_sys, &fe2_sys, &fe3_sys);
-		dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
-		dh_->distribute_dofs(ds);
-		data_->dh_ = dh_;
+		data_->dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		data_->dh_->distribute_dofs(ds);
 
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
-		ele_flux_ptr->set_fe_data(dh_, rt_component);
+		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
 		data_->field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
 
 		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_ele_component = 0;
-		ele_pressure_ptr->set_fe_data(dh_, p_ele_component, ele_flux_ptr->get_data_vec());
+		ele_pressure_ptr->set_fe_data(data_->dh_, p_ele_component, ele_flux_ptr->get_data_vec());
 		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
 		ele_piezo_head_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_edge_component = 1;
-		ele_piezo_head_ptr->set_fe_data(dh_, p_edge_component, ele_flux_ptr->get_data_vec());
+		ele_piezo_head_ptr->set_fe_data(data_->dh_, p_edge_component, ele_flux_ptr->get_data_vec());
 		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
+    }
+
+    { // init DOF handlers represents edge DOFs
+	    static FE_CR<0> fe0_cr;
+		static FE_CR<1> fe1_cr;
+		static FE_CR<2> fe2_cr;
+		static FE_CR<3> fe3_cr;
+		std::shared_ptr<DiscreteSpace> ds_cr = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_cr, &fe1_cr, &fe2_cr, &fe3_cr);
+		data_->dh_cr_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		data_->dh_cr_->distribute_dofs(ds_cr);
+    }
+
+    { // init DOF handlers represents side DOFs
+	    static FE_CR_disc<0> fe0_cr_disc;
+		static FE_CR_disc<1> fe1_cr_disc;
+		static FE_CR_disc<2> fe2_cr_disc;
+		static FE_CR_disc<3> fe3_cr_disc;
+		std::shared_ptr<DiscreteSpace> ds_cr_disc = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_cr_disc, &fe1_cr_disc, &fe2_cr_disc, &fe3_cr_disc);
+		data_->dh_cr_disc_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
+		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
 
     // Initialize bc_switch_dirichlet to size of global boundary.
@@ -442,7 +461,7 @@ void DarcyMH::initialize() {
 
     // allocate time term vectors
     VecDuplicate(schur0->get_solution(), &previous_solution);
-    VecCreateMPI(PETSC_COMM_WORLD, dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
+    VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
     VecDuplicate(steady_diagonal, &steady_rhs);
@@ -452,7 +471,7 @@ void DarcyMH::initialize() {
     balance_ = std::make_shared<Balance>("water", mesh_);
     balance_->init_from_input(input_record_.val<Input::Record>("balance"), time());
     data_->water_balance_idx = balance_->add_quantity("water_volume");
-    balance_->allocate(dh_->distr()->lsize(), 1);
+    balance_->allocate(data_->dh_->distr()->lsize(), 1);
     balance_->units(UnitSI().m(3));
 
 
@@ -669,7 +688,7 @@ void DarcyMH::postprocess()
     //fix velocity when mortar method is used
     if(data_->mortar_method_ != MortarMethod::NoMortar){
         auto multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
-        for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
             LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
             unsigned int dim = ele_ac.dim();
             multidim_assembler[dim-1]->fix_velocity(ele_ac);
@@ -761,7 +780,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
     data_->local_boundary_index=0;
-    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
     	LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
         unsigned int dim = ele_ac.dim();
         assembler[dim-1]->assemble(ele_ac);
@@ -794,7 +813,7 @@ void DarcyMH::allocate_mh_matrix()
     
     unsigned int nsides, loc_size;
 
-    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
         nsides = ele_ac.n_sides();
         
@@ -882,7 +901,7 @@ void DarcyMH::assembly_source_term()
     START_TIMER("assembly source term");
    	balance_->start_source_assembly(data_->water_balance_idx);
 
-   	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
 
         double cs = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
@@ -916,7 +935,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
     		WarningOut() << "For BDDC no Schur complements are used.";
             mh_dh.prepare_parallel_bddc();
             n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*dh_->distr()),
+            LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*data_->dh_->distr()),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
@@ -941,7 +960,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             LinSys_PETSC *schur1, *schur2;
 
             if (n_schur_compls == 0) {
-                LinSys_PETSC *ls = new LinSys_PETSC( &(*dh_->distr()) );
+                LinSys_PETSC *ls = new LinSys_PETSC( &(*data_->dh_->distr()) );
 
                 // temporary solution; we have to set precision also for sequantial case of BDDC
                 // final solution should be probably call of direct solver for oneproc case
@@ -954,10 +973,10 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 schur0=ls;
             } else {
                 IS is;
-                ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), dh_->distr()->begin(), 1, &is);
+                ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), data_->dh_->distr()->begin(), 1, &is);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
-                SchurComplement *ls = new SchurComplement(is, &(*dh_->distr()));
+                SchurComplement *ls = new SchurComplement(is, &(*data_->dh_->distr()));
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -966,7 +985,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     schur1->set_positive_definite();
                 } else {
                     IS is;
-                    ISCreateStride(PETSC_COMM_WORLD, dh_->mesh()->get_el_ds()->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    ISCreateStride(PETSC_COMM_WORLD, data_->dh_->mesh()->get_el_ds()->lsize(), ls->get_distribution()->begin(), 1, &is);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
@@ -1142,7 +1161,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     // maximal and minimal dimension of elements
     uint elDimMax = 1;
     uint elDimMin = 3;
-    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
         // for each element, create local numbering of dofs as fluxes (sides), pressure (element centre), Lagrange multipliers (edges), compatible connections
 
@@ -1392,7 +1411,7 @@ void DarcyMH::read_initial_condition()
 	// cycle over local element rows
 
 	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
-	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
 		LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
 		// set initial condition
 		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
@@ -1417,7 +1436,7 @@ void DarcyMH::setup_time_term() {
    	balance_->start_mass_assembly(data_->water_balance_idx);
 
     //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
-   	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
 
         // set new diagonal
