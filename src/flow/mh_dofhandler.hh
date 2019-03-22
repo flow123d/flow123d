@@ -176,21 +176,11 @@ public:
         return element_accessor().side(i);
     }
 
-    uint side_global_idx(uint i) {
-        return dh->elem_side_to_global[ ele_global_idx() ][ i ];
-    }
-
-    uint side_local_idx(uint i) {
-        return dh->side_row_4_id[side_global_idx(i)] - dh->rows_ds->begin();
-    }
-
     uint side_row(uint i) {
-        //return dh->side_row_4_id[side_global_idx(i)];
         return global_indices_[i];
     }
 
     uint side_local_row( uint i) {
-        //return side_row(i) - dh->rows_ds->begin();
         return local_indices_[i];
     }
 

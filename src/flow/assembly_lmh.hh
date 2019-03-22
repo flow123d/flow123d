@@ -77,12 +77,14 @@ public:
     void update_water_content(LocalElementAccessorBase<3> ele) override {
         reset_soil_model(ele);
         double storativity = this->ad_->storativity.value(ele.centre(), ele.element_accessor());
-        std::vector<LongIdx> indices(ad_->dh_cr_->max_elem_dofs());
-        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(indices);
+        std::vector<LongIdx> edge_indices(ad_->dh_cr_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices);
+        std::vector<LongIdx> side_indices(ad_->dh_cr_disc_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++) {
             double capacity = 0;
             double water_content = 0;
-            double phead = ad_->phead_edge_[ indices[i] ];
+            double phead = ad_->phead_edge_[ edge_indices[i] ];
             if (genuchten_on) {
 
                   fadbad::B<double> x_phead(phead);
@@ -91,8 +93,8 @@ public:
                   water_content = evaluated.val();
                   capacity = x_phead.d(0);
             }
-            ad_->capacity[ele.side_local_idx(i)] = capacity + storativity;
-            ad_->water_content_previous_it[ele.side_local_idx(i)] = water_content + storativity * phead;
+            ad_->capacity[ side_indices[i] ] = capacity + storativity;
+            ad_->water_content_previous_it[ side_indices[i] ] = water_content + storativity * phead;
         }
     }
 
@@ -140,10 +142,12 @@ public:
         update_water_content(ele);
         std::vector<LongIdx> edge_indices(ad_->dh_cr_->max_elem_dofs());
         ele.dh_cell().cell_with_other_dh(ad_->dh_cr_.get()).get_loc_dof_indices(edge_indices);
+        std::vector<LongIdx> side_indices(ad_->dh_cr_disc_->max_elem_dofs());
+        ele.dh_cell().cell_with_other_dh(ad_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
         for (unsigned int i=0; i<ele.element_accessor()->n_sides(); i++)
         {
 
-            uint local_side = ele.side_local_idx(i);
+            uint local_side = side_indices[i];
             uint edge_row = ele.edge_row(i);
             if (this->dirichlet_edge[i] == 0) {
 

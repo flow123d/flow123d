@@ -280,6 +280,7 @@ void RichardsLMH::postprocess() {
 
     int side_rows[4];
     double values[4];
+    std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
 
 
     VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
@@ -293,6 +294,7 @@ void RichardsLMH::postprocess() {
 
     //VecGetArray(previous_solution, &loc_prev_sol);
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+      dh_cell.cell_with_other_dh(this->data_->dh_cr_disc_.get()).get_loc_dof_indices(side_indices);
       LocalElementAccessorBase<3> ele_ac(&mh_dh, dh_cell);
       multidim_assembler[ele_ac.dim()-1]->update_water_content(ele_ac);
 
@@ -304,8 +306,8 @@ void RichardsLMH::postprocess() {
       for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
           //unsigned int loc_edge_row = ele_ac.edge_local_row(i);
           side_rows[i] = ele_ac.side_row(i);
-          double water_content = data_->water_content_previous_it[ele_ac.side_local_idx(i)];
-          double water_content_previous_time = data_->water_content_previous_time[ele_ac.side_local_idx(i)];
+          double water_content = data_->water_content_previous_it[ side_indices[i] ];
+          double water_content_previous_time = data_->water_content_previous_time[ side_indices[i] ];
 
           values[i] = ele_scale * ele_source - ele_scale * (water_content - water_content_previous_time) / time_->dt();
       }
