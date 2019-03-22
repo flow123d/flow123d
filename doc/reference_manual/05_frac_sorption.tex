@@ -15,7 +15,7 @@ type. In this test, the transport of three substances is computed:
 Iodium without sorption, Radium with liner sorption and Selenium with
 Langmuir isotherm. The solvent density and solubility was set to 1.
 Initial condition of solid was set to zero; rock density to 1 and
-parameter of liner and Langmuir isotherm was set to 0.6.
+parameter of linear and Langmuir isotherm was set to 1.0.
 
 \begin{verbatim}
 reaction_term: !Sorption
@@ -33,7 +33,7 @@ reaction_term: !Sorption
         - none           
         - linear           
         - langmuir
-      isotherm_mult: 0.6          
+      distribution_coefficient: 1.0
       isotherm_other: 0.4
 \end{verbatim}
 

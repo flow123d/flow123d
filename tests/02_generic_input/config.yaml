@@ -4,6 +4,7 @@ test_cases:
   - 02_multifield_units.yaml
   - 05_interpolation_large_cube.yaml
   - 08_field_init_check.yaml
+  - 09_include_file.yaml
   - 10_include_csv.yaml
   - 11_time_unit_conversion.yaml
   - 12_time_unit_nested_equation.yaml
@@ -26,8 +27,3 @@ test_cases:
    - 23_elementwise_bc.yaml
    - 24_elementwise_integer_field.yaml
   proc: [1, 2]
-
-- files: 
-   - 09_include_file.yaml
-  proc: [1, 2]
-  memory_limit: 600

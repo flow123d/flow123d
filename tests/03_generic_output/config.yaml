@@ -34,6 +34,14 @@ test_cases:
 - files:
     - 37_serial_vtk_binary.yaml
   proc: [1]
+  
+- files: 20_gmsh_precision.yaml
+  proc: [1, 2]
+  check_rules:
+    - ndiff:
+        files: "flow.msh"
+        r_tol: 1e-10
+        a_tol: 1e-10
 
 # serial refined tests
 - files:

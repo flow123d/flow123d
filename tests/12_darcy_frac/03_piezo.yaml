@@ -12,7 +12,6 @@ problem: !Coupling_Sequential
           - 2d_fracture_1
           - 2d_fracture_2
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -31,7 +30,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_piezo_head: !FieldFormula
           value: x
-    balance: {}
     output:
       fields:
         - piezo_head_p0
@@ -42,4 +40,3 @@ problem: !Coupling_Sequential
       file: ./test1.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
