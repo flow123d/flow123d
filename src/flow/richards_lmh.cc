@@ -129,11 +129,10 @@ void RichardsLMH::initialize_specific() {
 
     // create edge vectors
     unsigned int n_local_edges = mh_dh.edge_new_local_4_mesh_idx_.size();
-    unsigned int n_local_sides = mh_dh.side_ds->lsize();
-    data_->phead_edge_.resize( n_local_edges);
-    data_->water_content_previous_it.resize(n_local_sides);
-    data_->water_content_previous_time.resize(n_local_sides);
-    data_->capacity.resize(n_local_sides);
+    data_->phead_edge_ = data_->dh_cr_->create_vector();
+    data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
+    data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
+    data_->capacity = data_->dh_cr_disc_->create_vector();
 
     Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
     vector<int> local_edge_rows(n_local_edges);

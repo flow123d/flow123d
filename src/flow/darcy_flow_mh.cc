@@ -935,7 +935,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
     		WarningOut() << "For BDDC no Schur complements are used.";
             mh_dh.prepare_parallel_bddc();
             n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(mh_dh.global_row_4_sub_row->size(), &(*data_->dh_->distr()),
+            LinSys_BDDC *ls = new LinSys_BDDC(data_->dh_->local_size(), &(*data_->dh_->distr()),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
@@ -973,7 +973,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 schur0=ls;
             } else {
                 IS is;
-                ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), data_->dh_->distr()->begin(), 1, &is);
+                ISCreateStride(PETSC_COMM_WORLD, data_->dh_cr_disc_->lsize(), data_->dh_->distr()->begin(), 1, &is);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*data_->dh_->distr()));
@@ -1130,9 +1130,9 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     
     FILE * file;
     file = fopen(output_file.c_str(),"a");
-    fprintf(file, "nA = %d;\n", mh_dh.side_ds->size());
-    fprintf(file, "nB = %d;\n", mh_dh.el_ds->size());
-    fprintf(file, "nBF = %d;\n", mh_dh.edge_ds->size());
+    fprintf(file, "nA = %d;\n", data_->dh_cr_disc_->distr()->size());
+    fprintf(file, "nB = %d;\n", data_->dh_->mesh()->get_el_ds()->size());
+    fprintf(file, "nBF = %d;\n", data_->dh_cr_->distr()->size());
     fprintf(file, "h1 = %e;\nh2 = %e;\nh3 = %e;\n", h1, h2, h3);
     fprintf(file, "he2 = %e;\nhe3 = %e;\n", he2, he3);
     fclose(file);
@@ -1231,7 +1231,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, mh_dh.global_row_4_sub_row->size() );
+    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, data_->dh_->local_size() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
