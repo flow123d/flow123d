@@ -973,7 +973,8 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 schur0=ls;
             } else {
                 IS is;
-                ISCreateStride(PETSC_COMM_WORLD, data_->dh_cr_disc_->lsize(), data_->dh_->distr()->begin(), 1, &is);
+                auto side_dofs_vec = get_component_indices_vec(0);
+                ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(is, &(*data_->dh_->distr()));
@@ -985,7 +986,8 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     schur1->set_positive_definite();
                 } else {
                     IS is;
-                    ISCreateStride(PETSC_COMM_WORLD, data_->dh_->mesh()->get_el_ds()->lsize(), ls->get_distribution()->begin(), 1, &is);
+                    auto elem_dofs_vec = get_component_indices_vec(1);
+                    ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
@@ -1484,6 +1486,35 @@ void DarcyMH::modify_system() {
 
 std::shared_ptr< FieldFE<3, FieldValue<3>::VectorFixed> > DarcyMH::get_velocity_field() {
     return ele_flux_ptr;
+}
+
+
+/// Helper method fills range (min and max) of given component
+void dofs_range(unsigned int n_dofs, unsigned int &min, unsigned int &max, unsigned int component) {
+    if (component==0) {
+        min = 0;
+        max = n_dofs/2;
+    } else if (component==1) {
+        min = n_dofs/2;
+        max = (n_dofs+1)/2;
+    } else {
+        min = (n_dofs+1)/2;
+        max = n_dofs;
+    }
+}
+
+
+std::vector<int> DarcyMH::get_component_indices_vec(unsigned int component) const {
+	ASSERT_LT_DBG(component, 3).error("Invalid component!");
+	unsigned int i, n_dofs, min, max;
+    std::vector<int> dof_vec;
+    std::vector<LongIdx> local_indices(data_->dh_->max_elem_dofs());
+	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+        n_dofs = dh_cell.get_loc_dof_indices(local_indices);
+        dofs_range(n_dofs, min, max, component);
+        for (i=min; i<max; ++i) dof_vec.push_back(local_indices[i]);
+    }
+	return dof_vec;
 }
 
 

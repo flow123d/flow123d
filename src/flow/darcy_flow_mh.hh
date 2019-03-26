@@ -348,6 +348,9 @@ protected:
     /// Print darcy flow matrix in matlab format into a file.
     void print_matlab_matrix(string matlab_file);
 
+    /// Get vector of all DOF indices of given component (0..side, 1..element, 2..edge)
+    std::vector<int> get_component_indices_vec(unsigned int component) const;
+
     bool solution_changed_for_scatter;
     //Vec velocity_vector;
     MH_DofHandler mh_dh;    // provides access to seq. solution fluxes and pressures on sides
