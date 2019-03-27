@@ -29,7 +29,7 @@ builders:
 
 publishers:
   - cifs:
-      site: 'flow123d@public'
+      site: 'flow123d.at.public'
       target: '/docker-images/${{DOCKER_IMAGE_NAME}}/'
       source: publish/**/*
       remove-prefix: publish/

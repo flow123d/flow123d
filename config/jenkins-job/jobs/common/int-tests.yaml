@@ -8,17 +8,18 @@ builders:
   - shell:
       unstable-return: 42
       command: |
-        echo "SKIP_INT_TESTS = $SKIP_INT_TESTS"
+        echo "SKIP_INT_TESTS  = $SKIP_INT_TESTS"
+        echo "RUN_SERIAL_ONLY = $RUN_SERIAL_ONLY"
 
-        if [ "$SKIP_UNIT_TESTS" = true ] ; then
+        if [[ "$SKIP_INT_TESTS" = true ]] ; then
           echo "Skipping integration tests"
           exit 42
         fi
 
         # Following is a hack how to run just serial tests in a branch which contains file 'tests/run_serial_only'.
-        if -f ${{FLOW}}/tests/run_serial_only
-        then
-              docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
+        if [[ "$RUN_SERIAL_ONLY" = true ]] || [[ -f ${{FLOW}}/tests/run_serial_only ]]; then
+          echo "Running serial tests only"
+          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch
         else
-              docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
+          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch
         fi

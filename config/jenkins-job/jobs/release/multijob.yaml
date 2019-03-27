@@ -13,11 +13,15 @@ parameters:
   - bool:
       name: SKIP_UNIT_TESTS
       default: false
-      description: "If true, will not run any unit-test"
+      description: If true, will not run any unit-test
   - bool:
       name: SKIP_INT_TESTS
       default: false
-      description: "If true, will not run any int-test"
+      description: If true, will not run any int-test
+  - bool:
+      name: RUN_SERIAL_ONLY
+      default: false
+      description: If true, will only run only serial tests
 block-downstream: yes
 scm:
   - git:

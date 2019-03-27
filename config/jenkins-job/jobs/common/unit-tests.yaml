@@ -11,7 +11,7 @@ builders:
       command: |
         echo "SKIP_UNIT_TESTS = $SKIP_UNIT_TESTS"
 
-        if [ "$SKIP_UNIT_TESTS" = true ] ; then
+        if [[ "$SKIP_UNIT_TESTS" = true ]] ; then
           echo "Skipping unit tests"
           exit 42
         fi
