@@ -6,8 +6,6 @@ display-name: "{build-type} / Flow123d unit-test {unit-dir}"
 defaults: flow123d-build
 disabled: false
 builders:
-  - inject:
-      properties-file: prop.file
   - shell:
       unstable-return: 42
       command: |

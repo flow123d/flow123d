@@ -9,7 +9,7 @@
 # defaults values
 - defaults:
     name: flow123d-build
-    node: "{platform}"
+    node: "ci2runner"
     workspace: "F123-{platform}-{build-type}"
     # TODO log rotate 200 days
     wrappers:
@@ -23,13 +23,9 @@
 - job:          !include: misc/coverage.yaml
 
 
-# --------------------------------------------------------------- START IMAGE
-- job-template: !include: debug/start-image.yaml
-- job-template: !include: release/start-image.yaml
-# --------------------------------------------------------------- CONFIGURE
-- job-template: !include: common/configure.yaml
 # --------------------------------------------------------------- BUILD
-- job-template: !include: common/build.yaml
+- job-template: !include: debug/build.yaml
+- job-template: !include: release/build.yaml
 # --------------------------------------------------------------- UNIT-TESTS
 - job-template: !include: common/unit-tests.yaml
 # --------------------------------------------------------------- INT-TESTS

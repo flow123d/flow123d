@@ -51,20 +51,7 @@ triggers:
   - github
 
 builders:
-  - multijob:
-      name: "Start image"
-      condition: SUCCESSFUL
-      projects:
-        - name: "Flow123d-{platform}-release-start-image"
-          current-parameters: true
   # ---------- START IMAGE ----------------------------------------------- #
-  - multijob:
-      name: "Configure flow123d Phase"
-      condition: COMPLETED
-      projects:
-        - name: "Flow123d-{platform}-release-configure"
-          current-parameters: true
-
   - multijob:
       name: "Build flow123d Phase"
       condition: COMPLETED
