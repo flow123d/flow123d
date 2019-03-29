@@ -753,12 +753,6 @@ void  DarcyMH::get_solution_vector(double * &vec, unsigned int &vec_size)
     OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
 }
 
-void  DarcyMH::get_parallel_solution_vector(Vec &vec)
-{
-    vec=schur0->get_solution();
-    OLD_ASSERT(vec != NULL, "Requested solution is not allocated!\n");
-}
-
 
 // ===========================================================================================
 //

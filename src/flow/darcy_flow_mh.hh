@@ -255,8 +255,11 @@ public:
     void zero_time_step() override;
     void update_solution() override;
 
-    void get_solution_vector(double * &vec, unsigned int &vec_size) override;
-    void get_parallel_solution_vector(Vec &vector) override;
+    /**
+     * Getter for sequential solution vector.
+     * DEPRECATED
+     */
+    void get_solution_vector(double * &vec, unsigned int &vec_size);
     
     /// postprocess velocity field (add sources)
     virtual void prepare_new_time_step();
