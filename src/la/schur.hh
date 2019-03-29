@@ -142,6 +142,7 @@ protected:
 
 
 
+    Mat A;                      // Submatrix of matrix_ contains only data given by IsA parallel index set
     Mat IA;                     // Inverse of block A
 
     Mat B, Bt;                  // B and B' block (could be different from real B transpose)

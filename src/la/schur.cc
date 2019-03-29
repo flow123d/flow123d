@@ -66,6 +66,7 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
 
         // initialize variables
         Compl   = NULL;
+        A       = NULL;
         IA      = NULL;
         B       = NULL;
         Bt      = NULL;
@@ -92,6 +93,7 @@ SchurComplement::SchurComplement(SchurComplement &other)
   loc_size_A(other.loc_size_A), loc_size_B(other.loc_size_B), state(other.state),
   Compl(other.Compl), ds_(other.ds_)
 {
+	MatCopy(other.A, A, DIFFERENT_NONZERO_PATTERN);
 	MatCopy(other.IA, IA, DIFFERENT_NONZERO_PATTERN);
 	MatCopy(other.IAB, IAB, DIFFERENT_NONZERO_PATTERN);
 	ISCopy(other.IsA, IsA);
@@ -277,7 +279,9 @@ void SchurComplement::create_inversion_matrix()
     MatReuse mat_reuse=MAT_REUSE_MATRIX;
     if (state==created) mat_reuse=MAT_INITIAL_MATRIX; // indicate first construction
 
-    MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
+    MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &A);
+    MatDuplicate(A, MAT_DO_NOT_COPY_VALUES, &IA);
+    //MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
     MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
@@ -294,7 +298,7 @@ void SchurComplement::create_inversion_matrix()
         PetscInt min=std::numeric_limits<int>::max(), max=-1, size_submat;
         PetscInt b_vals = 0; // count of values stored in B-block of Orig system
         submat_rows.clear();
-        MatGetRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatGetRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         for (PetscInt i=0; i<ncols; i++) {
             if (cols[i] < pos_start || cols[i] >= pos_start+loc_size_A) {
                 b_vals++;
@@ -310,19 +314,19 @@ void SchurComplement::create_inversion_matrix()
         size_submat = max - min + 1;
         OLD_ASSERT(ncols-b_vals == size_submat, "Submatrix cannot contains empty values.\n");
 
-        MatRestoreRow(matrix_, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
+        MatRestoreRow(A, loc_row + pos_start, &ncols, &cols, PETSC_NULL);
         arma::mat submat2(size_submat, size_submat);
         submat2.zeros();
         for (PetscInt i=0; i<size_submat; i++) {
             processed_rows[ loc_row + i ] = mat_block;
             submat_rows.push_back( i + loc_row + pos_start_IA );
-            MatGetRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatGetRow(A, i + loc_row + pos_start, &ncols, &cols, &vals);
             for (PetscInt j=0; j<ncols; j++) {
                 if (cols[j] >= pos_start && cols[j] < pos_start+loc_size_A) {
                     submat2( i, cols[j] - loc_row - pos_start ) = vals[j];
                 }
             }
-            MatRestoreRow(matrix_, i + loc_row + pos_start, &ncols, &cols, &vals);
+            MatRestoreRow(A, i + loc_row + pos_start, &ncols, &cols, &vals);
 		}
         // get inversion matrix
         arma::mat invmat = submat2.i();
@@ -399,6 +403,7 @@ double SchurComplement::compute_residual()
  */
 SchurComplement :: ~SchurComplement() {
 
+    if ( A  != NULL )             chkerr(MatDestroy(&A));
     if ( B  != NULL )             chkerr(MatDestroy(&B));
     if ( Bt != NULL )             chkerr(MatDestroy(&Bt));
     if ( C != NULL )              chkerr(MatDestroy(&C));
