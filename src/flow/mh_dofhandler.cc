@@ -176,7 +176,6 @@ void MH_DofHandler::make_row_numberings() {
     int i, shift;
     int np = edge_ds->np();
     int edge_shift[np], el_shift[np], side_shift[np];
-    unsigned int rows_starts[np];
 
     int edge_n_id = mesh_->n_edges(),
             el_n_id = mesh_->n_elements(),
@@ -191,7 +190,6 @@ void MH_DofHandler::make_row_numberings() {
         shift += el_ds->lsize(i);
         edge_shift[i] = shift - (edge_ds->begin(i));
         shift += edge_ds->lsize(i);
-        rows_starts[i] = shift;
     }
     // apply shifts
     for (i = 0; i < side_n_id; i++) {
@@ -210,51 +208,7 @@ void MH_DofHandler::make_row_numberings() {
         if (what >= 0)
             what += edge_shift[edge_ds->get_proc(what)];
     }
-    // make distribution of rows
-    for (i = np - 1; i > 0; i--)
-        rows_starts[i] -= rows_starts[i - 1];
-
-    rows_ds = std::make_shared<Distribution>(&(rows_starts[0]), PETSC_COMM_WORLD);
 }
-
-
-void MH_DofHandler::prepare_parallel_bddc() {
-#ifdef FLOW123D_HAVE_BDDCML
-    // auxiliary
-    ElementAccessor<3> el;
-    LongIdx side_row, edge_row;
-
-    global_row_4_sub_row = std::make_shared<LocalToGlobalMap>(rows_ds);
-
-    //
-    // ordering of dofs
-    // for each subdomain:
-    // | velocities (at sides) | pressures (at elements) | L. mult. (at edges) |
-    for (unsigned int i_loc = 0; i_loc < el_ds->lsize(); i_loc++) {
-        el = mesh_->element_accessor( el_4_loc[i_loc] );
-        LongIdx el_row = row_4_el[el_4_loc[i_loc]];
-
-        global_row_4_sub_row->insert( el_row );
-
-        unsigned int nsides = el->n_sides();
-        for (unsigned int i = 0; i < nsides; i++) {
-            side_row = side_row_4_id[ side_dof( el.side(i) ) ];
-            edge_row = row_4_edge[el.side(i)->edge_idx()];
-
-            global_row_4_sub_row->insert( side_row );
-            global_row_4_sub_row->insert( edge_row );
-        }
-
-        for (unsigned int i_neigh = 0; i_neigh < el->n_neighs_vb(); i_neigh++) {
-            // mark this edge
-            edge_row = row_4_edge[el->neigh_vb[i_neigh]->edge_idx() ];
-            global_row_4_sub_row->insert( edge_row );
-        }
-    }
-    global_row_4_sub_row->finalize();
-#endif // FLOW123D_HAVE_BDDCML
-}
-
 
 
 unsigned int MH_DofHandler::side_dof(const SideIter side) const {
@@ -262,10 +216,9 @@ unsigned int MH_DofHandler::side_dof(const SideIter side) const {
 }
 
 
-void MH_DofHandler::set_solution( double time, double * solution, double precision) {
+void MH_DofHandler::set_solution( double time, double * solution) {
 	OLD_ASSERT( solution != NULL, "Empty solution.\n");
     mh_solution = solution;
-    solution_precision = precision;
     time_ = time;
 }
 

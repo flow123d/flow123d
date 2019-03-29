@@ -243,7 +243,7 @@ public:
 
         // in particular this setting is necessary to prevent ConvectinTransport to recreate the transport matrix
         // every timestep ( this may happen for unsteady flow if we would use time->t() here since it returns infinity.
-        mh_dh.set_solution(time_->last_t(), array, solution_precision());
+        mh_dh.set_solution(time_->last_t(), array);
        return mh_dh;
     }
 
@@ -287,8 +287,6 @@ protected:
 
     //void prepare_parallel();
     //void make_row_numberings();
-    /// Initialize global_row_4_sub_row.
-    //void prepare_parallel_bddc();
 
     /**
      * Create and preallocate MH linear system (including matrix, rhs and solution vectors)

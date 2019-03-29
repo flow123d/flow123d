@@ -927,7 +927,6 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
     	if (in_rec.type() == LinSys_BDDC::get_input_type()) {
 #ifdef FLOW123D_HAVE_BDDCML
     		WarningOut() << "For BDDC no Schur complements are used.";
-            mh_dh.prepare_parallel_bddc();
             n_schur_compls = 0;
             LinSys_BDDC *ls = new LinSys_BDDC(data_->dh_->local_size(), &(*data_->dh_->distr()),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL

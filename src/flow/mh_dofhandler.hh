@@ -34,8 +34,9 @@
 #include "mesh/sides.h"                      // for SideIter, Side
 #include "fem/dh_cell_accessor.hh"           // for DHCellAccessor
 
-class LocalToGlobalMap;
 template <int spacedim> class LocalElementAccessorBase;
+class DarcyMH;
+class RichardsLMH;
 
 using namespace std;
 
@@ -49,9 +50,8 @@ public:
 
     void prepare_parallel();
     void make_row_numberings();
-    void prepare_parallel_bddc();
 
-    void set_solution( double time, double * solution, double precision);
+    void set_solution( double time, double * solution);
 
     inline double time_changed() const
         { return time_; }
@@ -67,9 +67,7 @@ public:
     /// temporary replacement for DofHandler accessor, scalar (pressure) on element
     double element_scalar( ElementAccessor<3> &ele ) const;
 
-    inline double precision() const { return solution_precision; };
-
-//protected:
+protected:
     vector< vector<unsigned int> > elem_side_to_global;
 
     Mesh *mesh_;
@@ -84,22 +82,18 @@ public:
     Distribution *edge_ds;          //< optimal distribution of edges
     Distribution *el_ds;            //< optimal distribution of elements
     Distribution *side_ds;          //< optimal distribution of elements
-    std::shared_ptr<Distribution> rows_ds;          //< final distribution of rows of MH matrix
 
 
     /// Maps mesh index of the edge to the edge index in the mesh portion local to the processor.
     /// Temporary solution until we have parallel mesh which should provide such information.
     std::unordered_map<unsigned int, unsigned int> edge_new_local_4_mesh_idx_;
 
-    /// Necessary only for BDDC solver.
-    std::shared_ptr<LocalToGlobalMap> global_row_4_sub_row;           //< global dof index for subdomain index
-
-
     double * mh_solution;
-    double solution_precision;
     double time_;
 
     friend LocalElementAccessorBase<3>;
+    friend DarcyMH;
+    friend RichardsLMH;
 };
 
 
