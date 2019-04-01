@@ -6,9 +6,7 @@ input_fields: !include
   ./includes/include_array.yaml
 output:
   fields:
-    - piezo_head_p0
     - pressure_p0
-    - pressure_p1
     - velocity_p0
 output_stream: !include
   file: ./includes/include_rec.yaml 
