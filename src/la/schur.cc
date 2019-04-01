@@ -58,8 +58,8 @@
   *
  */
 
-SchurComplement::SchurComplement(IS ia, Distribution *ds)
-: LinSys_PETSC(ds), IsA(ia), state(created)
+SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
+: LinSys_PETSC(ds), IsA(ia), IsB(ib), state(created)
 {
         // check index set
         OLD_ASSERT(IsA != NULL, "Index set IsA is not defined.\n" );
@@ -83,8 +83,27 @@ SchurComplement::SchurComplement(IS ia, Distribution *ds)
         ISGetLocalSize(IsA, &loc_size_A);
 
         // create B block index set
-        loc_size_B = rows_ds_->lsize() - loc_size_A;
-        ISCreateStride(PETSC_COMM_WORLD,loc_size_B,rows_ds_->begin()+loc_size_A,1,&IsB);
+        if ( IsB == nullptr ) {
+
+            // compute dual indexset
+
+            vector<bool> a_used(ds->lsize(), false);
+
+            const PetscInt *loc_indices;
+            ISGetIndices(IsA, &loc_indices);
+            for(uint i=0; i < loc_size_A; i++)
+                a_used[ loc_indices[i] - ds->begin()] = true;
+            ISRestoreIndices(IsA, &loc_indices);
+
+            loc_size_B = ds->lsize() - loc_size_A;
+            PetscInt *b_indices;
+            PetscMalloc(sizeof(PetscInt)*loc_size_B, &b_indices);
+            for(uint i=0, j=0; i < ds->lsize(); i++)
+                if (! a_used[i]) b_indices[j++] = i + ds->begin();
+            ISCreateGeneral(PETSC_COMM_WORLD, loc_size_B, b_indices, PETSC_COPY_VALUES, &IsB);
+        } else {
+            ISGetLocalSize(IsB, &loc_size_B);
+        }
 }
 
 
@@ -282,6 +301,7 @@ void SchurComplement::create_inversion_matrix()
     MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &A);
     MatDuplicate(A, MAT_DO_NOT_COPY_VALUES, &IA);
     //MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
+
     MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
@@ -339,6 +359,11 @@ void SchurComplement::create_inversion_matrix()
 
     MatAssemblyBegin(IA, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(IA, MAT_FINAL_ASSEMBLY);
+
+
+    /*
+    MatCreateMPIAIJSumSeqAIJ(PETSC_COMM_WORLD, locIA, PETSC_DECIDE, PETSC_DECIDE, reuse, &IA);
+    */
 }
 
 

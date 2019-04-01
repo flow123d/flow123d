@@ -970,7 +970,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
-                SchurComplement *ls = new SchurComplement(is, &(*data_->dh_->distr()));
+                SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -982,7 +982,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     auto elem_dofs_vec = get_component_indices_vec(1);
                     ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
-                    SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+                    SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
                     // make schur2
