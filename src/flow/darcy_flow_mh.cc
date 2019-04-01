@@ -967,7 +967,9 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             } else {
                 IS is;
                 auto side_dofs_vec = get_component_indices_vec(0);
+
                 ISCreateGeneral(PETSC_COMM_SELF, side_dofs_vec.size(), &(side_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+                //ISView(is, PETSC_VIEWER_STDOUT_SELF);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
                 SchurComplement *ls = new SchurComplement(&(*data_->dh_->distr()), is);
@@ -980,7 +982,19 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 } else {
                     IS is;
                     auto elem_dofs_vec = get_component_indices_vec(1);
+
+                    const PetscInt *b_indices;
+                    ISGetIndices(ls->IsB, &b_indices);
+                    uint b_size = ls->loc_size_B;
+                    for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
+                        if (b_indices[i_b] == elem_dofs_vec[i_bb])
+                            elem_dofs_vec[i_bb++] = i_b;
+                    }
+                    ISRestoreIndices(ls->IsB, &b_indices);
+
+
                     ISCreateGeneral(PETSC_COMM_SELF, elem_dofs_vec.size(), &(elem_dofs_vec[0]), PETSC_COPY_VALUES, &is);
+                    //ISView(is, PETSC_VIEWER_STDOUT_SELF);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
                     SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
