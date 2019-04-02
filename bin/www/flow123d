@@ -36,7 +36,7 @@ gid=$(id -g)
 # define usage
 function usage() {
   cat << EOF
-usage: flow123d [<ACTION>] [--help] [--version <VERSION>] [--mount <MOUNT>] [--workdir <WORKDIR>] [-- <args>]"
+usage: flow123d [<ACTION>] [--help] [--version <VERSION>] [--mount <MOUNT>] [--workdir <WORKDIR>] [-- <args>]
 Where ACTION can be:
   shell                 (default behaviour) Enter interactive shell
   run                   Execute flow123d and pass all given arguments
