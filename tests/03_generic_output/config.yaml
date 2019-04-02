@@ -22,7 +22,10 @@ test_cases:
 
 - files: 11_time_marks_mixed_times.yaml
   memory_limit: 1300
-
+  
+- files: 02_richards_nobalance.yaml
+    time_limit: 35
+    
 # parallel VTK tests
 - files:
     - 34_parallel_vtk_node_interp.yaml
