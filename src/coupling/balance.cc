@@ -290,6 +290,12 @@ void Balance::lazy_initialize()
                (rank_==0)?0:n_bulk_regs_per_dof,
                0,
                &(region_source_matrix_[c])));
+//         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
+//                n_loc_dofs_,
+//                mesh_->region_db().bulk_size(),
+//                n_bulk_regs_per_dof,
+//                NULL,
+//                &(region_source_matrix_[c])));
 
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
                n_loc_dofs_,
@@ -301,7 +307,13 @@ void Balance::lazy_initialize()
                (rank_==0)?0:n_bulk_regs_per_dof,
                0,
                &(region_source_rhs_[c])));
-
+//         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
+//                n_loc_dofs_,
+//                mesh_->region_db().bulk_size(),
+//                n_bulk_regs_per_dof,
+//                NULL,
+//                &(region_source_rhs_[c])));
+    
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
                be_regions_.size(),  // n local rows, number of local boundary edges
                n_loc_dofs_,         // n local cols (local rows of multiplying vector)
@@ -538,6 +550,33 @@ void Balance::add_source_matrix_values(unsigned int quantity_idx,
 			ADD_VALUES));
 }
 
+void Balance::add_source_values(unsigned int quantity_idx,
+		unsigned int region_idx,
+		const vector<LongIdx> &loc_dof_indices,
+		const vector<double> &mat_values,
+        const vector<double> &vec_values)
+{
+    ASSERT_DBG(allocation_done_);
+    if (! balance_on_) return;
+
+	PetscInt reg_array[1] = { (int)region_idx };
+
+	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
+			loc_dof_indices.size(),
+			&(loc_dof_indices[0]),
+			1,
+			reg_array,
+			&(mat_values[0]),
+			ADD_VALUES));
+    
+    chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
+			loc_dof_indices.size(),
+			&(loc_dof_indices[0]),
+			1,
+			reg_array,
+			&(vec_values[0]),
+			ADD_VALUES));
+}
 
 void Balance::add_mass_vec_value(unsigned int quantity_idx,
         unsigned int region_idx,
@@ -705,36 +744,70 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 			bulk_vec));
 
 	// compute positive/negative sources
-	int lsize;
-	Vec mat_r, rhs_r;
-	const double *sol_array, *mat_array, *rhs_array;
-	chkerr(VecGetLocalSize(solution, &lsize));
-	chkerr(VecDuplicate(solution, &mat_r));
-	chkerr(VecDuplicate(solution, &rhs_r));
-	chkerr(VecGetArrayRead(solution, &sol_array));
-	for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
-	{
-		MatGetColumnVector(region_source_matrix_[quantity_idx], mat_r, r);
-		MatGetColumnVector(region_source_rhs_[quantity_idx], rhs_r, r);
-
-		VecGetArrayRead(mat_r, &mat_array);
-		VecGetArrayRead(rhs_r, &rhs_array);
-
-		sources_in_[quantity_idx][r] = 0;
+    for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
+    {
+        sources_in_[quantity_idx][r] = 0;
 		sources_out_[quantity_idx][r] = 0;
-		for (int i=0; i<lsize; ++i)
-		{
-			double f = mat_array[i]*sol_array[i] + rhs_array[i];
-			if (f > 0) sources_in_[quantity_idx][r] += f;
-			else sources_out_[quantity_idx][r] += f;
-		}
-
-		VecRestoreArrayRead(mat_r, &mat_array);
-		VecRestoreArrayRead(rhs_r, &rhs_array);
-	}
-	chkerr(VecRestoreArrayRead(solution, &sol_array));
-	chkerr(VecDestroy(&rhs_r));
-	chkerr(VecDestroy(&mat_r));
+    }
+    
+    int lsize, llow, n_cols_mat, n_cols_rhs;
+    const int *cols;
+	const double *vals_mat, *vals_rhs, *sol_array;
+    chkerr(VecGetLocalSize(solution, &lsize));
+    chkerr(VecGetArrayRead(solution, &sol_array));
+    // Returns the range of indices owned by this processor.
+    chkerr(VecGetOwnershipRange(solution, &llow, NULL));
+    
+    for (int i=0; i<lsize; ++i)
+    {
+        int row = llow + i;
+        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
+        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+        
+        ASSERT_DBG(n_cols_mat == n_cols_rhs);
+        
+        for (int j=0; j<n_cols_mat; ++j)
+        {
+            double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
+            if (f > 0) sources_in_[quantity_idx][j] += f;
+            else sources_out_[quantity_idx][j] += f;
+        }
+        
+        MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
+        MatRestoreRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+    }
+    chkerr(VecRestoreArrayRead(solution, &sol_array));
+    
+// 	int lsize;
+// 	Vec mat_r, rhs_r;
+// 	const double *sol_array, *mat_array, *rhs_array;
+// 	chkerr(VecGetLocalSize(solution, &lsize));
+// 	chkerr(VecDuplicate(solution, &mat_r));
+// 	chkerr(VecDuplicate(solution, &rhs_r));
+// 	chkerr(VecGetArrayRead(solution, &sol_array));
+// 	for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
+// 	{
+// 		MatGetColumnVector(region_source_matrix_[quantity_idx], mat_r, r);
+// 		MatGetColumnVector(region_source_rhs_[quantity_idx], rhs_r, r);
+// 
+// 		VecGetArrayRead(mat_r, &mat_array);
+// 		VecGetArrayRead(rhs_r, &rhs_array);
+// 
+// 		sources_in_[quantity_idx][r] = 0;
+// 		sources_out_[quantity_idx][r] = 0;
+// 		for (int i=0; i<lsize; ++i)
+// 		{
+// 			double f = mat_array[i]*sol_array[i] + rhs_array[i];
+// 			if (f > 0) sources_in_[quantity_idx][r] += f;
+// 			else sources_out_[quantity_idx][r] += f;
+// 		}
+// 
+// 		VecRestoreArrayRead(mat_r, &mat_array);
+// 		VecRestoreArrayRead(rhs_r, &rhs_array);
+// 	}
+// 	chkerr(VecRestoreArrayRead(solution, &sol_array));
+// 	chkerr(VecDestroy(&rhs_r));
+// 	chkerr(VecDestroy(&mat_r));
 	chkerr(VecDestroy(&bulk_vec));
 
     

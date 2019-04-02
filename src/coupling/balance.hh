@@ -303,6 +303,19 @@ public:
             unsigned int region_idx,
             double value);
 
+    /**
+	 * Adds elements into matrix for computing source.
+	 * @param quantity_idx  Index of quantity.
+	 * @param region_idx    Index of bulk region.
+	 * @param dof_indices   Local dof indices to be added.
+	 * @param values        Values to be added.
+	 */
+	void add_source_values(unsigned int quantity_idx,
+			unsigned int region_idx,
+			const std::vector<LongIdx> &loc_dof_indices,
+			const std::vector<double> &mat_values,
+            const std::vector<double> &vec_values);
+    
 	/**
 	 * Adds element into vector for computing (outgoing) flux.
 	 * @param quantity_idx  Index of quantity.
