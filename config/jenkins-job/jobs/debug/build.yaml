@@ -13,7 +13,11 @@ builders:
       flow123d/bin/fterm -v dbg -- \
           --privileged -di \
           --name cont{build-type} \
-          --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git
+          --volume /home/builder/git-cache/flow123d.git:/home/builder/git-cache/flow123d.git \
+          --volume ${{WORKSPACE}}/docker:${{FLOW}}
+
+      # delete old build
+      docker exec cont{build-type} bash -c "rm -rf ${{FLOW}}/{{*,.*}}" || true
 
       # copy config
       docker exec cont{build-type} git clone --reference /home/builder/git-cache/flow123d.git -b ${{_GIT_BRANCH}} https://github.com/flow123d/flow123d.git ${{FLOW}}
