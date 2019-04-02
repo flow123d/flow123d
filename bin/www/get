@@ -27,12 +27,14 @@ else
 fi
 
 # download simple version of flow123d
-curl -s https://flow.nti.tul.cz/flow123d > $DEST
-chmod a+rx $DEST
+curl -s https://flow.nti.tul.cz/flow123d > $DEST_DIR/flow123d
+curl -s https://flow.nti.tul.cz/fterm > $DEST_DIR/fterm
+chmod a+rx $DEST_DIR/flow123d
+chmod a+rx $DEST_DIR/fterm
 
 
 # quick start info
-echo -e "flow123d script installed into ${BLUE}$DEST${NORMAL}"
+echo -e "flow123d installed into ${BLUE}$DEST_DIR${NORMAL}"
 echo -e "If you have ${BLUE}\$HOME/.local/bin${NORMAL} in your ${GREEN}\$PATH${NORMAL} variable"
 echo -e "you can simply run:"
 echo -e ""
@@ -40,7 +42,7 @@ echo -e "  ${BLUE}flow123d${NORMAL}"
 echo -e ""
 echo -e "otherwise you will have to use an absolute path:"
 echo -e ""
-echo -e "  ${BLUE}$DEST${NORMAL}"
+echo -e "  ${BLUE}$DEST_DIR/flow123d${NORMAL}"
 echo -e ""
-echo -e "For more information, see ${BLUE}flow123d help${NORMAL}."
+echo -e "For more information, see ${BLUE}flow123d --help${NORMAL}."
 echo -e ""

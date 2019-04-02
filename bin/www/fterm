@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+#
+# This script downloads and runs flow123d
+
+# check if stdout is a terminal...
+if [[ -z "$nocolor" ]]; then
+  if test -t 1; then
+      # see if it supports colors...
+      ncolors=$(tput colors)
+      if test -n "$ncolors" && test $ncolors -ge 8; then
+          bold="$(tput bold)"
+          reset="$(tput sgr0)"
+          red="$(tput setaf 1)"
+          green="$(tput setaf 2)"
+          yellow="$(tput setaf 3)"
+          blue="$(tput setaf 4)"
+          bblue="$bold$blue"
+          bgreen="$bold$green"
+          byellow="$bold$yellow"
+          bred="$bold$red"
+      fi
+  fi
+fi
+
+#default action is shell
+ACTION=${1:-shell}
+shift
+
+default_version=3.0.1
+version=$default_version
+mnt=$HOME
+cwd=$(pwd)
+uid=$(id -u)
+gid=$(id -g)
+
+# define usage
+function usage() {
+  cat << EOF
+usage: flow123d [<ACTION>] [--help] [--version <VERSION>] [--mount <MOUNT>] [--workdir <WORKDIR>] [-- <args>]
+Where ACTION can be:
+  shell                 (default behaviour) Enter interactive shell
+  run                   Execute flow123d and pass all given arguments
+  help                  Print this message and exits
+
+  -v, --version <VERSION>
+      Version which will be used, default value is ${bblue}$default_version${reset}
+
+  -m, --mount <MOUNT>
+      A directory which will be mounted (files will be accessible),
+        default value taken from variable ${bgreen}\$HOME${reset}
+        which currently is                ${bblue}$mnt${reset}
+
+  -w, --workdir <WORKDIR>
+      A working directory, default value is current working directory,
+        which currently is                ${bblue}$cwd${reset}
+
+  <args>
+      Additional arguments which are passed to the flow123d (in case ACTION is run)
+      otherwise passed to the docker run
+
+  -h, --help
+      Print this message and exits
+EOF
+}
+
+while [[ $# -gt 0 ]]
+do
+  key="$1"
+
+  case $key in
+      -h|--help)
+        usage
+        exit 0
+      ;;
+        -m|--mount)
+        mnt="$2"
+        shift # past argument
+        shift # past value
+      ;;
+        -w|--workdir)
+        cwd="$2"
+        shift # past argument
+        shift # past value
+      ;;
+        -v|--version)
+        version="$2"
+        shift # past argument
+        shift # past value
+      ;;
+      --)
+        shift # past argument
+        break
+      ;;
+      *)
+        break
+      ;;
+  esac
+done
+
+
+if [[ "$ACTION" == "help" ]]; then
+  usage
+  exit 0
+fi
+
+if [[ "$ACTION" == "shell" ]]; then
+  flags="-e uid=$uid -e gid=$gid -v $mnt:$mnt -w $cwd"
+  echo "docker run -ti --rm $flags flow123d/$version $@"
+  docker run -ti --rm $flags flow123d/$version "$@"
+  exit $?
+fi
+
+if [[ "$ACTION" == "run" ]]; then
+  flags="-e uid=$uid -e gid=$gid -v $mnt:$mnt -w $cwd"
+  echo "docker run -ti --rm $flags flow123d/$version flow123d $@"
+  docker run -ti --rm $flags flow123d/$version flow123d "$@"
+  exit $?
+fi
