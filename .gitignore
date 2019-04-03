@@ -1,5 +1,5 @@
 config.cmake
-profiler_info*.log
+profiler_info*[.log, .json, .txt]
 flow*.log
 *.orig.*
 *.orig
@@ -10,7 +10,6 @@ unit_tests/output/*.pvd
 unit_tests/output/*.msh
 unit_tests/output/*.yaml
 unit_tests/output/test?/
-unit_tests/system/profiler_info*
 unit_tests/system/tokenizer_speed.txt
 unit_tests/tools/tg_steps.yaml
 unit_tests/intersection/output_intersection*.msh
