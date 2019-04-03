@@ -40,8 +40,13 @@ function dbgc() {
 }
 
 default_version=3.0.1
-version=$default_version
-mnt=$HOME
+if [[ -z "$default_version" ]]; then
+  version=$default_version
+else
+  version=3.0.1
+fi
+
+mnt=$(pwd)
 verbose=1
 privileged=0
 ACTION=shell
@@ -60,16 +65,16 @@ Where ACTION can be:
   help                  Print this message and exits
 
   -v, --version <VERSION>
-      Version which will be used, default value is ${bblue}$default_version${reset}
+      Version which will be used, default value is ${bblue}$version${reset}
 
   -m, --mount <MOUNT>
-      A directory which will be mounted (files will be accessible),
-        default value taken from variable ${bgreen}\$HOME${reset}
-        which currently is                ${bblue}$mnt${reset}
+      A directory which will be mounted (files thus will be accessible),
+        default value is a current directory ${bgreen}\`pwd\`${reset}
+        currently value                ${bblue}$mnt${reset}
 
   -w, --workdir <WORKDIR>
       A working directory, default value is current working directory,
-        which currently is                ${bblue}$cwd${reset}
+        currently value                ${bblue}$cwd${reset}
 
   -p, --privileged ${reset}
       Will add --privileged=true when starting docker container,
@@ -90,7 +95,7 @@ do
   key="$1"
 
   case $key in
-      -h|--help)
+      -h|--help|help)
         usage
         exit 0
       ;;
@@ -130,11 +135,6 @@ do
   esac
 done
 
-
-if [[ "$ACTION" == "help" ]]; then
-  usage
-  exit 0
-fi
 
 if [[ $privileged == "1" ]]; then
   priv_true="--privileged=true"
