@@ -13,7 +13,6 @@ mesh:
         - .fracture_top
         - .rock_top
 flow_equation: !Flow_Darcy_MH
-  output_specific:
   nonlinear_solver:
     linear_solver: !Petsc
       a_tol: 1.0e-07
@@ -36,12 +35,9 @@ flow_equation: !Flow_Darcy_MH
       - pressure_p0
       - pressure_p1
       - velocity_p0
-  balance: {}
   output_stream:
     file: flow.msh
     format: !gmsh
-      variant: ascii
-    name: flow_output_stream
     output_mesh:
       max_level: 3
       refine_by_error: false  # uniform refinement
@@ -63,14 +59,10 @@ solute_equation: !Coupling_OperatorSplitting
   output_stream:
     file: ./transport.msh
     format: !gmsh
-      variant: ascii
-    name: transport_output_stream
     times:
       - step: 0.1
     output_mesh:
       max_level: 2
       refine_by_error: false  # uniform refinement
-  solver: !Petsc
-    a_tol: 1.0e-07
   time:
     end_time: 1

@@ -9,7 +9,6 @@ problem: !Coupling_Sequential
   # test auto conversion for the Mesh record
   mesh: ../00_mesh/cube_1x1x1_frac21.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -54,4 +53,3 @@ problem: !Coupling_Sequential
       file: ./test1.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
