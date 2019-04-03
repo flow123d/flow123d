@@ -91,8 +91,12 @@ usage:
   ${bold}options:${reset}
     ${bold}-v|--verbose ${reset}
       turn on debug mode
-    ${bold}--set-x ${reset}
+    ${bold}-x|--set-x ${reset}
       turn on debug mode (set -x)
+    ${bold}-p|--privileged ${reset}
+      will add --privileged=true when starting docker container,
+      this options carries a security risk but should deal with SELinux mounting
+      issues
 
   ${bold}actions:${reset}
     ${bold} @<tag> ${reset}
@@ -301,6 +305,7 @@ if [[ -f "$CFG/docker.cfg" ]]; then
 fi
 
 # default settings
+privileged=0
 verbose=1
 action=shell
 work=$(get_mount_dir $ABS_ROOT)
@@ -311,12 +316,16 @@ while [[ $# -gt 0 ]]
   do
   key="$1"
   case $key in
-    --set-x)
+    -x|--set-x)
       set -x
       shift
     ;;
     -v|--verbose)
       verbose=1
+      shift
+    ;;
+    -p|--privileged)
+      privileged=1
       shift
     ;;
     -V|--no-verbose)
@@ -392,9 +401,15 @@ dbg "user           = $uname($uid:$gid)"
 dbg "theme          = $theme"
 dbg "container name = $contname"
 dbg "autopull       = $autopull"
+dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
 envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
+mountargs="-w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work""
+if [[ $privileged == "1" ]]; then
+  priv_true="--privileged=true"
+fi
+
 
 # perform action based on variable action
 case $action in
@@ -404,7 +419,6 @@ case $action in
   ;;
   detach)
     docker rm -f $contname > /dev/null 2>&1
-    
     dbgc docker run -di $envarg $rest --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
     dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
   ;;
@@ -412,23 +426,22 @@ case $action in
     if [[ $autopull == "1" ]]; then
       update_images
     fi
-    
     dbg2 "Executing flow123d with args $rest"
-    dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work" $base_image $ROOT/bin/flow123d $rest
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image $ROOT/bin/flow123d "$rest"
   ;;
   exec)
     if [[ $autopull == "1" ]]; then
       update_images
     fi
     dbg2 "Executing command $rest"
-    dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work" $base_image "$rest"
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image "$rest"
   ;;
   shell)
     if [[ $autopull == "1" ]]; then
       update_images
     fi
     dbg2 "Entering shell"
-    dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work" $base_image
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image
   ;;
   update)
     update_images
