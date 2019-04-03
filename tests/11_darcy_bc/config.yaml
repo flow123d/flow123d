@@ -8,7 +8,6 @@ test_cases:
       - 01_dirichlet.yaml
       - 02_neumann.yaml
       - 03_robin.yaml
-      - 04_total_flux.yaml
       - 05_seepage.yaml
       - 06_river_square.yaml
       - 07_river_slope.yaml

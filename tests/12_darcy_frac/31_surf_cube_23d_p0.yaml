@@ -40,7 +40,5 @@ problem: !Coupling_Sequential
 #        - velocity_diff
 #        - pressure_diff
 #        - div_diff
-    balance: {}
     output_stream:
       format: !gmsh
-        variant: ascii

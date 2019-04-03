@@ -4,7 +4,6 @@ problem: !Coupling_Sequential
   mesh:
     mesh_file: ../00_mesh/square_1x1_shift.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -15,7 +14,6 @@ problem: !Coupling_Sequential
         bc_type: dirichlet
         bc_pressure: 0
     gravity: [-0.6, -0.8, 0]
-    balance: {}
     output:
       fields:
         - pressure_p0
