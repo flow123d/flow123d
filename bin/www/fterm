@@ -58,7 +58,7 @@ uname=flow
 # define usage
 function usage() {
   cat << EOF
-usage: flow123d [--help] [--privileged] [--version <VERSION>] [--mount <MOUNT>] [--workdir <WORKDIR>] [<ACTION>] [<args>]
+usage: fterm [--help] [--privileged] [--version <VERSION>] [--mount <MOUNT>] [--workdir <WORKDIR>] [<ACTION>] [<args>]
 Where ACTION can be:
   shell                 (default behaviour) Enter interactive shell
   run                   Execute flow123d and pass all given arguments
@@ -136,12 +136,24 @@ do
 done
 
 
+flags="-v $mnt:$mnt -w $cwd"
+
 if [[ $privileged == "1" ]]; then
-  priv_true="--privileged=true"
+  flags="$flags --privileged=true"
 fi
 
+if [[ "$uid" != "1000" ]]; then
+  flags="$flags -e uid=$uid"
+fi
 
-flags="-e uid=$uid -e gid=$gid -ewho=$uname -v $mnt:$mnt -w $cwd $priv_true"
+if [[ "$gid" != "1000" ]]; then
+  flags="$flags -e gid=$gid"
+fi
+
+if [[ "$uname" != "flow" ]]; then
+  flags="$flags -ewho=$uname"
+fi
+
 
 
 if [[ "$ACTION" == "shell" ]]; then
