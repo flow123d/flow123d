@@ -399,7 +399,6 @@ dbg "mount dirs     - $work"
 dbg "               - $OLD_PWD"
 dbg "user           = $uname($uid:$gid)"
 dbg "theme          = $theme"
-dbg "container name = $contname"
 dbg "autopull       = $autopull"
 dbg "privileged     = $privileged"
 
@@ -415,7 +414,7 @@ fi
 case $action in
   raw)
     dbg2 "Raw fterm call: $rest"
-    echo docker run $rest $base_image
+    docker run $rest $base_image
   ;;
   detach)
     docker rm -f $contname > /dev/null 2>&1
