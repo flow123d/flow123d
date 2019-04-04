@@ -272,18 +272,6 @@ public:
 			const std::vector<int> &dof_indices,
 			const std::vector<double> &values);
 
-	/**
-	 * Adds elements into matrix for computing source.
-	 * @param quantity_idx  Index of quantity.
-	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Dof indices to be added.
-	 * @param values        Values to be added.
-	 */
-	void add_source_matrix_values(unsigned int quantity_idx,
-			unsigned int region_idx,
-			const std::vector<int> &dof_indices,
-			const std::vector<double> &values);
-    
     /**
      * Adds element into vector for computing mass.
      * @param quantity_idx  Index of quantity.
@@ -295,11 +283,12 @@ public:
             double value);
 
     /**
-	 * Adds elements into matrix for computing source.
+	 * Adds elements into matrix and vector for computing source.
 	 * @param quantity_idx  Index of quantity.
 	 * @param region_idx    Index of bulk region.
 	 * @param dof_indices   Local dof indices to be added.
-	 * @param values        Values to be added.
+	 * @param mat_values    Values to be added into matrix.
+     * @param vec_values    Values to be added into vector.
 	 */
 	void add_source_values(unsigned int quantity_idx,
 			unsigned int region_idx,
@@ -318,18 +307,6 @@ public:
 	void add_flux_vec_value(unsigned int quantity_idx,
 			unsigned int boundary_idx,
 			double value);
-
-	/**
-	 * Adds elements into vector for computing source.
-	 * @param quantity_idx  Index of quantity.
-	 * @param region_idx    Index of bulk region.
-	 * @param dof_indices   Dof indices to be added.
-	 * @param values        Values to be added.
-	 */
-	void add_source_vec_values(unsigned int quantity_idx,
-			unsigned int region_idx,
-			const std::vector<int> &dof_values,
-			const std::vector<double> &values);
 
 	/// This method must be called after assembling the matrix for computing mass.
 	void finish_mass_assembly(unsigned int quantity_idx);
@@ -507,9 +484,9 @@ private:
     std::vector<std::vector<double> > fluxes_in_;
     std::vector<std::vector<double> > fluxes_out_;
     std::vector<std::vector<double> > masses_;
-    std::vector<std::vector<double> > sources_;
     std::vector<std::vector<double> > sources_in_;
     std::vector<std::vector<double> > sources_out_;
+    std::vector<double> temp_sources_;
 
     // Sums of the above vectors over phases and regions
     std::vector<double> sum_fluxes_;
