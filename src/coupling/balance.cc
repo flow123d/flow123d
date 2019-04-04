@@ -234,9 +234,9 @@ void Balance::lazy_initialize()
 	fluxes_out_.resize(n_quant, vector<double>(n_bdr_reg, 0));
 
 	masses_     .resize(n_quant, vector<double>(n_blk_reg, 0));
-	sources_    .resize(n_quant, vector<double>(n_blk_reg, 0));
 	sources_in_ .resize(n_quant, vector<double>(n_blk_reg, 0));
 	sources_out_.resize(n_quant, vector<double>(n_blk_reg, 0));
+    temp_sources_    .resize(n_blk_reg, 0);
 
 	sum_fluxes_     .resize(n_quant, 0);
 	sum_fluxes_in_  .resize(n_quant, 0);
@@ -500,26 +500,6 @@ void Balance::add_flux_matrix_values(unsigned int quantity_idx,
 			ADD_VALUES));
 }
 
-
-void Balance::add_source_matrix_values(unsigned int quantity_idx,
-		unsigned int region_idx,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-	PetscInt reg_array[1] = { (int)region_idx };
-
-	chkerr_assert(MatSetValues(region_source_matrix_[quantity_idx],
-			dof_indices.size(),
-			&(dof_indices[0]),
-			1,
-			reg_array,
-			&(values[0]),
-			ADD_VALUES));
-}
-
 void Balance::add_source_values(unsigned int quantity_idx,
 		unsigned int region_idx,
 		const vector<LongIdx> &loc_dof_indices,
@@ -573,26 +553,6 @@ void Balance::add_flux_vec_value(unsigned int quantity_idx,
 }
 
 
-void Balance::add_source_vec_values(unsigned int quantity_idx,
-		unsigned int region_idx,
-		const vector<LongIdx> &dof_indices,
-		const vector<double> &values)
-{
-    ASSERT_DBG(allocation_done_);
-    if (! balance_on_) return;
-
-	PetscInt reg_array[1] = { (int)region_idx };
-
-	chkerr_assert(MatSetValues(region_source_rhs_[quantity_idx],
-			dof_indices.size(),
-			&(dof_indices[0]),
-			1,
-			reg_array,
-			&(values[0]),
-			ADD_VALUES));
-}
-
-
 void Balance::add_cumulative_source(unsigned int quantity_idx, double source)
 {
     ASSERT_DBG(allocation_done_);
@@ -618,9 +578,8 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     chkerr(VecGetLocalSize(solution, &lsize));
     chkerr(VecGetArrayRead(solution, &sol_array));
     
-    for (unsigned int r=0; r<n_blk_reg; ++r){
-        sources_[quantity_idx][r] = 0;
-    }
+    for (unsigned int r=0; r<n_blk_reg; ++r)
+        temp_sources_[r] = 0;
     
     // computes transpose multiplication and sums region_source_rhs_ over dofs
     // resulting in a vector of sources for each region
@@ -636,7 +595,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
         {
             double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
             int col = cols[j];
-            sources_[quantity_idx][col] += f;
+            temp_sources_[col] += f;
         }
         
         MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
@@ -646,7 +605,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
     // finally sum up all the sources over regions to get total sources balance
     double recvbuffer[n_blk_reg];
-    MPI_Reduce(&(sources_[quantity_idx][0]),recvbuffer,n_blk_reg,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
+    MPI_Reduce(&(temp_sources_[0]),recvbuffer,n_blk_reg,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
     
 
 	if (rank_ == 0)
@@ -730,7 +689,7 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     }
     
     int lsize, n_cols_mat, n_cols_rhs;
-    const int *cols_mat, *cols_rhs;
+    const int *cols;    // the columns must be same - matrices created and filled in the same way
 	const double *vals_mat, *vals_rhs, *sol_array;
     chkerr(VecGetLocalSize(solution, &lsize));
     chkerr(VecGetArrayRead(solution, &sol_array));
@@ -738,39 +697,24 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     // computes transpose multiplication and sums region_source_rhs_ over dofs
     // resulting in a vector of sources for each region, one positive, one negative
     // transpose(region_source_matrix_) * solution + region_source_rhs_*ones(n_blk_reg)
-//     MatView(region_source_matrix_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
-//     MatView(region_source_rhs_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
     for (int i=0; i<lsize; ++i)
     {
         int row = i;
-        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols_mat, &vals_mat);
-        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols_rhs, &vals_rhs);
+        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
+        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, NULL, &vals_rhs);
         
         ASSERT_DBG(n_cols_mat == n_cols_rhs);
-//         std::cout << "n_cols: " << n_cols_mat << std::endl;
+        
         for (int j=0; j<n_cols_mat; ++j)
         {
-            int col_mat = cols_mat[j];
-            int col_rhs = cols_rhs[j];
-            int col = col_mat;
-//             std::cout << "i: " << i << " col_mat: " << col_mat << " col_rhs: " << col_rhs << std::endl;
-            ASSERT_DBG(col_mat == col_rhs);
+            int col = cols[j];
             
-//             std::cout << "i: " << i << " col: " << col << " val_rhs: " << vals_rhs[j] << std::endl;
             double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
             if (f > 0) sources_in_[quantity_idx][col] += f;
             else sources_out_[quantity_idx][col] += f;
         }
-        
-//         MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols_mat, &vals_mat);
-//         MatRestoreRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols_rhs, &vals_rhs);
     }
     chkerr(VecRestoreArrayRead(solution, &sol_array));
-    
-//     MatView(region_source_matrix_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
-//     MatView(region_source_rhs_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
-//     for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
-//         std::cout << "q: " << quantity_idx << " s+: " << sources_in_[quantity_idx][r] << " s-: " << sources_out_[quantity_idx][r] << std::endl;
     
     // calculate flux
     Vec boundary_vec;
