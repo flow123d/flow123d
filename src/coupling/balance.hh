@@ -494,9 +494,6 @@ private:
     /// Vectors for calculation of mass (n_bulk_regions).
     Vec *region_mass_vec_;
 
-    /// Vectors for calculation of source (n_bulk_regions).
-    Vec *region_source_vec_;
-
     /**
      * Auxiliary matrix for transfer of quantities between boundary edges and regions
      * (n_boundary_edges x n_boundary_regions).
