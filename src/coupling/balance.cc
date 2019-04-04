@@ -109,14 +109,12 @@ Balance::~Balance()
 		chkerr(MatDestroy(&(region_source_matrix_[c])));
 		chkerr(MatDestroy(&(region_source_rhs_[c])));
 		chkerr(VecDestroy(&(be_flux_vec_[c])));
-		chkerr(VecDestroy(&(region_source_vec_[c])));
 	}
 	delete[] region_mass_matrix_;
 	delete[] be_flux_matrix_;
 	delete[] be_flux_vec_;
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
-	delete[] region_source_vec_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
 	chkerr(VecDestroy(&ones_));
@@ -259,7 +257,6 @@ void Balance::lazy_initialize()
 	region_source_rhs_ = new Mat[n_quant];
     region_mass_vec_ = new Vec[n_quant];
 	be_flux_vec_ = new Vec[n_quant];
-	region_source_vec_ = new Vec[n_quant];
 
 	for (unsigned int c=0; c<n_quant; ++c)
 	{
@@ -274,39 +271,19 @@ void Balance::lazy_initialize()
 				0,
 				&(region_mass_matrix_[c])));
 
-        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
+        chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
                n_loc_dofs_,
-               (rank_==0)?mesh_->region_db().bulk_size():0,
-               PETSC_DECIDE,
-               PETSC_DECIDE,
-               (rank_==0)?n_bulk_regs_per_dof:0,
-               0,
-               (rank_==0)?0:n_bulk_regs_per_dof,
-               0,
+               mesh_->region_db().bulk_size(),
+               n_bulk_regs_per_dof,
+               NULL,
                &(region_source_matrix_[c])));
-//         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
-//                n_loc_dofs_,
-//                mesh_->region_db().bulk_size(),
-//                n_bulk_regs_per_dof,
-//                NULL,
-//                &(region_source_matrix_[c])));
 
-       chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
+        chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
                n_loc_dofs_,
-               (rank_==0)?mesh_->region_db().bulk_size():0,
-               PETSC_DECIDE,
-               PETSC_DECIDE,
-               (rank_==0)?n_bulk_regs_per_dof:0,
-               0,
-               (rank_==0)?0:n_bulk_regs_per_dof,
-               0,
+               mesh_->region_db().bulk_size(),
+               n_bulk_regs_per_dof,
+               NULL,
                &(region_source_rhs_[c])));
-//         chkerr(MatCreateSeqAIJ(PETSC_COMM_SELF,
-//                n_loc_dofs_,
-//                mesh_->region_db().bulk_size(),
-//                n_bulk_regs_per_dof,
-//                NULL,
-//                &(region_source_rhs_[c])));
     
        chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
                be_regions_.size(),
@@ -328,11 +305,6 @@ void Balance::lazy_initialize()
 				be_regions_.size(),
 				PETSC_DECIDE,
 				&(be_flux_vec_[c])));
-
-		chkerr(VecCreateMPI(PETSC_COMM_WORLD,
-				(rank_==0)?mesh_->region_db().bulk_size():0,
-				PETSC_DECIDE,
-				&(region_source_vec_[c])));
 	}
 
 	chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
@@ -445,7 +417,6 @@ void Balance::start_source_assembly(unsigned int quantity_idx)
     if (! balance_on_) return;
 	chkerr(MatZeroEntries(region_source_matrix_[quantity_idx]));
 	chkerr(MatZeroEntries(region_source_rhs_[quantity_idx]));
-	chkerr(VecZeroEntries(region_source_vec_[quantity_idx]));
 }
 
 
@@ -480,7 +451,6 @@ void Balance::finish_source_assembly(unsigned int quantity_idx)
 	chkerr(MatAssemblyEnd(region_source_matrix_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyBegin(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_source_rhs_[quantity_idx], MAT_FINAL_ASSEMBLY));
-	chkerr(MatMultTranspose(region_source_rhs_[quantity_idx], ones_, region_source_vec_[quantity_idx]));
 }
 
 
@@ -635,27 +605,53 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     if (time_->tlevel() <= 0) return;
 
     // sources
-	Vec bulk_vec;
+    const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
+    int lsize, n_cols_mat, n_cols_rhs;
+    const int *cols;
+	const double *vals_mat, *vals_rhs, *sol_array;
+    chkerr(VecGetLocalSize(solution, &lsize));
+    chkerr(VecGetArrayRead(solution, &sol_array));
+    
+    for (unsigned int r=0; r<n_blk_reg; ++r){
+        sources_[quantity_idx][r] = 0;
+    }
+    
+    // computes transpose multiplication and sums region_source_rhs_ over dofs
+    // resulting in a vector of sources for each region
+    // transpose(region_source_matrix_) * solution + region_source_rhs_*ones(n_blk_reg)
+    for (int i=0; i<lsize; ++i){
+        int row = i;
+        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
+        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+        
+        ASSERT_DBG(n_cols_mat == n_cols_rhs);
+        
+        for (int j=0; j<n_cols_mat; ++j)
+        {
+            double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
+            int col = cols[j];
+            sources_[quantity_idx][col] += f;
+        }
+        
+        MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
+        MatRestoreRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+    }
+    chkerr(VecRestoreArrayRead(solution, &sol_array));
 
-	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
-			1,
-			(rank_==0)?mesh_->region_db().bulk_size():0,
-			PETSC_DECIDE,
-			&(sources_[quantity_idx][0]),
-			&bulk_vec));
-
-	// compute sources on bulk regions: S'.u + s
-	chkerr(VecZeroEntries(bulk_vec));
-	chkerr(MatMultTransposeAdd(region_source_matrix_[quantity_idx],
-	        solution, region_source_vec_[quantity_idx], bulk_vec));
-
-	double sum_sources;
-	chkerr(VecSum(bulk_vec, &sum_sources));
-	chkerr(VecDestroy(&bulk_vec));
+    // finally sum up all the sources over regions to get total sources balance
+    double recvbuffer[n_blk_reg];
+    MPI_Reduce(&(sources_[quantity_idx][0]),recvbuffer,n_blk_reg,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
+    
 
 	if (rank_ == 0)
+    {
+        double sum_sources = 0;
+        for (unsigned int r=0; r<n_blk_reg; ++r)
+            sum_sources += recvbuffer[r];
+            
 		// sum sources in one step
 		increment_sources_[quantity_idx] += sum_sources*time_->dt();
+    }
 
     
     // fluxes 
@@ -720,23 +716,6 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     
     calculate_mass(quantity_idx, solution, masses_[quantity_idx]);
     
-    // calculate source
-    Vec bulk_vec;
-
-	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
-			1,
-			(rank_==0)?mesh_->region_db().bulk_size():0,
-			PETSC_DECIDE,
-			&(sources_[quantity_idx][0]),
-			&bulk_vec));
-
-	// compute sources on bulk regions: S'.u + s
-	chkerr(VecZeroEntries(bulk_vec));
-	chkerr(MatMultTransposeAdd(region_source_matrix_[quantity_idx],
-			solution,
-			region_source_vec_[quantity_idx],
-			bulk_vec));
-
 	// compute positive/negative sources
     for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
     {
@@ -744,66 +723,48 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 		sources_out_[quantity_idx][r] = 0;
     }
     
-    int lsize, llow, n_cols_mat, n_cols_rhs;
-    const int *cols;
+    int lsize, n_cols_mat, n_cols_rhs;
+    const int *cols_mat, *cols_rhs;
 	const double *vals_mat, *vals_rhs, *sol_array;
     chkerr(VecGetLocalSize(solution, &lsize));
     chkerr(VecGetArrayRead(solution, &sol_array));
-    // Returns the range of indices owned by this processor.
-    chkerr(VecGetOwnershipRange(solution, &llow, NULL));
     
+    // computes transpose multiplication and sums region_source_rhs_ over dofs
+    // resulting in a vector of sources for each region, one positive, one negative
+    // transpose(region_source_matrix_) * solution + region_source_rhs_*ones(n_blk_reg)
+//     MatView(region_source_matrix_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
+//     MatView(region_source_rhs_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
     for (int i=0; i<lsize; ++i)
     {
-        int row = llow + i;
-        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
-        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+        int row = i;
+        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols_mat, &vals_mat);
+        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols_rhs, &vals_rhs);
         
         ASSERT_DBG(n_cols_mat == n_cols_rhs);
-        
+//         std::cout << "n_cols: " << n_cols_mat << std::endl;
         for (int j=0; j<n_cols_mat; ++j)
         {
+            int col_mat = cols_mat[j];
+            int col_rhs = cols_rhs[j];
+            int col = col_mat;
+//             std::cout << "i: " << i << " col_mat: " << col_mat << " col_rhs: " << col_rhs << std::endl;
+            ASSERT_DBG(col_mat == col_rhs);
+            
+//             std::cout << "i: " << i << " col: " << col << " val_rhs: " << vals_rhs[j] << std::endl;
             double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
-            if (f > 0) sources_in_[quantity_idx][j] += f;
-            else sources_out_[quantity_idx][j] += f;
+            if (f > 0) sources_in_[quantity_idx][col] += f;
+            else sources_out_[quantity_idx][col] += f;
         }
         
-        MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
-        MatRestoreRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+//         MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols_mat, &vals_mat);
+//         MatRestoreRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols_rhs, &vals_rhs);
     }
     chkerr(VecRestoreArrayRead(solution, &sol_array));
     
-// 	int lsize;
-// 	Vec mat_r, rhs_r;
-// 	const double *sol_array, *mat_array, *rhs_array;
-// 	chkerr(VecGetLocalSize(solution, &lsize));
-// 	chkerr(VecDuplicate(solution, &mat_r));
-// 	chkerr(VecDuplicate(solution, &rhs_r));
-// 	chkerr(VecGetArrayRead(solution, &sol_array));
-// 	for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
-// 	{
-// 		MatGetColumnVector(region_source_matrix_[quantity_idx], mat_r, r);
-// 		MatGetColumnVector(region_source_rhs_[quantity_idx], rhs_r, r);
-// 
-// 		VecGetArrayRead(mat_r, &mat_array);
-// 		VecGetArrayRead(rhs_r, &rhs_array);
-// 
-// 		sources_in_[quantity_idx][r] = 0;
-// 		sources_out_[quantity_idx][r] = 0;
-// 		for (int i=0; i<lsize; ++i)
-// 		{
-// 			double f = mat_array[i]*sol_array[i] + rhs_array[i];
-// 			if (f > 0) sources_in_[quantity_idx][r] += f;
-// 			else sources_out_[quantity_idx][r] += f;
-// 		}
-// 
-// 		VecRestoreArrayRead(mat_r, &mat_array);
-// 		VecRestoreArrayRead(rhs_r, &rhs_array);
-// 	}
-// 	chkerr(VecRestoreArrayRead(solution, &sol_array));
-// 	chkerr(VecDestroy(&rhs_r));
-// 	chkerr(VecDestroy(&mat_r));
-	chkerr(VecDestroy(&bulk_vec));
-
+//     MatView(region_source_matrix_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
+//     MatView(region_source_rhs_[quantity_idx], PETSC_VIEWER_STDOUT_SELF);
+//     for (unsigned int r=0; r<mesh_->region_db().bulk_size(); ++r)
+//         std::cout << "q: " << quantity_idx << " s+: " << sources_in_[quantity_idx][r] << " s-: " << sources_out_[quantity_idx][r] << std::endl;
     
     // calculate flux
     Vec boundary_vec;
@@ -924,7 +885,7 @@ void Balance::output()
 			for (unsigned int qi=0; qi<n_quant; qi++)
 			{
 				sum_masses_[qi] += masses_[qi][reg->bulk_idx()];
-				sum_sources_[qi] += sources_[qi][reg->bulk_idx()];
+                sum_sources_[qi] += sources_in_[qi][reg->bulk_idx()] + sources_out_[qi][reg->bulk_idx()];
 				sum_sources_in_[qi] += sources_in_[qi][reg->bulk_idx()];
 				sum_sources_out_[qi] += sources_out_[qi][reg->bulk_idx()];
 			}
@@ -1070,7 +1031,7 @@ void Balance::output_legacy(double time)
 					<< setw(wl) << reg->label().c_str()
 					<< setw(w)  << quantities_[qi].name_.c_str()
 					<< setw(w)  << masses_[qi][reg->bulk_idx()]
-					<< setw(w)  << sources_[qi][reg->bulk_idx()]
+					<< setw(w)  << sources_in_[qi][reg->bulk_idx()] + sources_out_[qi][reg->bulk_idx()]
 					<< endl;
 		}
 	}
@@ -1156,7 +1117,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 					<< format_csv_val(quantities_[qi].name_, delimiter)
 					<< csv_zero_vals(3, delimiter)
 					<< format_csv_val(masses_[qi][reg->bulk_idx()], delimiter)
-					<< format_csv_val(sources_[qi][reg->bulk_idx()], delimiter)
+					<< format_csv_val(sources_in_[qi][reg->bulk_idx()] + sources_out_[qi][reg->bulk_idx()], delimiter)
 					<< format_csv_val(sources_in_[qi][reg->bulk_idx()], delimiter)
 					<< format_csv_val(sources_out_[qi][reg->bulk_idx()], delimiter)
 					<< csv_zero_vals(5, delimiter) << endl;
@@ -1298,8 +1259,9 @@ void Balance::output_yaml(double time)
 			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
 			output_yaml_ << setw(4) << "" << "data: " << "[ 0, 0, 0, " << masses_[qi][reg->bulk_idx()] << ", "
-						 << sources_[qi][reg->bulk_idx()] << ", " << sources_in_[qi][reg->bulk_idx()] << ", "
-						 << sources_out_[qi][reg->bulk_idx()] << ", 0, 0, 0, 0, 0 ]" << endl;
+						 << sources_in_[qi][reg->bulk_idx()] + sources_out_[qi][reg->bulk_idx()] << ", " 
+                         << sources_in_[qi][reg->bulk_idx()] << ", " << sources_out_[qi][reg->bulk_idx()]
+                         << ", 0, 0, 0, 0, 0 ]" << endl;
 		}
 	}
 
