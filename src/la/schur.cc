@@ -166,7 +166,7 @@ void SchurComplement::form_schur()
     PetscErrorCode ierr = 0;
     MatReuse mat_reuse;        // reuse structures after first computation of schur
     MatStructure mat_subset_pattern;
-    PetscScalar *rhs_array, *sol_array;
+    PetscScalar *sol_array;
 
     mat_reuse=MAT_REUSE_MATRIX;
     mat_subset_pattern=SUBSET_NONZERO_PATTERN;
@@ -177,22 +177,15 @@ void SchurComplement::form_schur()
         // create complement system
         // TODO: introduce LS as true object, clarify its internal states
         // create RHS sub vecs RHS1, RHS2
-        VecGetArray(rhs_, &rhs_array);
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,rhs_array,&(RHS1));
+    	VecGetSubVector(rhs_, IsA, &RHS1);
+    	VecGetSubVector(rhs_, IsB, &RHS2);
 
         // create Solution sub vecs Sol1, Compl->solution
-        VecGetArray(solution_, &sol_array);
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_A,PETSC_DETERMINE,sol_array,&(Sol1));
-
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,rhs_array+loc_size_A,&(RHS2));
-        VecCreateMPIWithArray(PETSC_COMM_WORLD,1,loc_size_B,PETSC_DETERMINE,sol_array+loc_size_A,&(Sol2));
-
-        VecRestoreArray(rhs_, &rhs_array);
-        VecRestoreArray(solution_, &sol_array);
+    	VecGetSubVector(solution_, IsA, &Sol1);
+    	VecGetSubVector(solution_, IsB, &Sol2);
 
         VecGetArray( Sol2, &sol_array );
         Compl->set_solution( sol_array );
-
         VecRestoreArray( Sol2, &sol_array );
 
 
