@@ -833,8 +833,13 @@ void DarcyMH::allocate_mh_matrix()
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
             Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
-            int neigh_edge_row = ele_ac.edge_row(ngh->edge_idx());
-            tmp_rows.push_back(neigh_edge_row);
+            LocalElementAccessorBase<3> acc_higher_dim( data_->dh_->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+            		int neigh_edge_row = acc_higher_dim.edge_row(j);
+            		tmp_rows.push_back(neigh_edge_row);
+            		break;
+            	}
             //DebugOut() << "CC" << print_var(tmp_rows[i]);
         }
 

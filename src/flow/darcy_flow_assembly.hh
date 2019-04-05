@@ -471,7 +471,12 @@ protected:
             ngh = ele_ac.element_accessor()->neigh_vb[i];
             loc_system_vb_.reset();
             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-            loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = ele_ac.edge_row( ngh->edge_idx() );
+            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                    loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
+            		break;
+            	}
 
             assembly_local_vb(ele, ngh);
 
