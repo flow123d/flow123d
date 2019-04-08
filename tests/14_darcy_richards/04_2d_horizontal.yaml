@@ -3,14 +3,13 @@
 # there is a hole at the top side so the air can vent out freely.
 # 
 # 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Horizontal infiltration into dry sample. Should end in the steady state pressure 10m.
   mesh:
     mesh_file: ../00_mesh/strip_xy.msh
     #mesh_file: ./input/test10_bentonit_0.005.msh
   flow_equation: !Flow_Richards_LMH
-    output_specific:
     soil_model: {model_type: irmay, cut_fraction: 0.9999}
     time: # time in hours (consistent with conductivity)
       end_time: 1300       # original experiment from UGN up to time 6000 h
@@ -55,7 +54,6 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./flow.msh
       format: !gmsh
-        variant: ascii
       times:
         - step: 100
       observe_points:

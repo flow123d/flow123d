@@ -9,7 +9,7 @@
 
 class ApplicationBaseTest : public testing::Test, public ApplicationBase {
 public:
-	ApplicationBaseTest() : ApplicationBase(0, NULL), testing::Test() {}
+	ApplicationBaseTest() : ApplicationBase(), testing::Test() {}
 protected:
 	void run() {
 		xprintf(Err, "testing error...\n");

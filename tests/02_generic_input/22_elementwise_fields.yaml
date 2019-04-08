@@ -1,10 +1,9 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test of elementwise fields input
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -29,9 +28,7 @@ problem: !Coupling_Sequential
         - velocity_p0
         - sigma
         - conductivity
-    balance: {}
     output_stream:
       file: ./test22.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

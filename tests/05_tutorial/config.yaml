@@ -11,7 +11,7 @@ test_cases:
       - 04_frac_diffusion
       - 06_frac_dualpor
   - files: 05_frac_sorption.yaml
-    time_limit: 60
+    time_limit: 65
 
   - files: 07_heat.yaml
     proc: [1]

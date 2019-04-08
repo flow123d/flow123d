@@ -3,13 +3,12 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Tests correct functionality of setting input fields by user defined units.
   mesh:
     mesh_file: ../00_mesh/line_z_0.25_250el.msh
   flow_equation: !Flow_Richards_LMH
-    output_specific:
     soil_model: irmay
     time: # time in hours (consistent with conductivity)
       end_time: 3000       # original experiment from UGN up to time 6000 h

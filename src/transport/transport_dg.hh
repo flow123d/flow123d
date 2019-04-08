@@ -358,37 +358,6 @@ private:
 // 			double cross_cut);
 
 	/**
-	 * @brief Sets up some parameters of the DG method for two sides of an edge.
-	 *
-	 * @param edg				The edge.
-	 * @param s1				Side 1.
-	 * @param s2				Side 2.
-	 * @param K_size            Size of vector of tensors K.
-	 * @param K1				Dispersivity tensors on side s1 (in quadrature points).
-	 * @param K2				Dispersivity tensors on side s2 (in quadrature points).
-	 * @param normal_vector		Normal vector to side 0 of the neighbour
-	 * 							(assumed constant along the side).
-	 * @param alpha1, alpha2	Penalty parameter that influences the continuity
-	 * 							of the solution (large value=more continuity).
-	 * @param gamma				Computed penalty parameters.
-	 * @param omega				Computed weights.
-	 * @param transport_flux	Computed flux from side s1 to side s2.
-	 */
-	void set_DG_parameters_edge(const Edge &edg,
-	        const int s1,
-	        const int s2,
-	        const int K_size,
-	        const std::vector<arma::mat33> &K1,
-	        const std::vector<arma::mat33> &K2,
-	        const std::vector<double> &fluxes,
-	        const arma::vec3 &normal_vector,
-	        const double alpha1,
-	        const double alpha2,
-	        double &gamma,
-	        double *omega,
-	        double &transport_flux);
-
-	/**
 	 * @brief Sets up parameters of the DG method on a given boundary edge.
 	 *
 	 * Assumption is that the edge consists of only 1 side.

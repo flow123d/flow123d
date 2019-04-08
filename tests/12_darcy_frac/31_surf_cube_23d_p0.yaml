@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Cube with vertical fractures, Dirichlet BC on top simulating simple terrain.
   mesh:
@@ -40,7 +40,5 @@ problem: !Coupling_Sequential
 #        - velocity_diff
 #        - pressure_diff
 #        - div_diff
-    balance: {}
     output_stream:
       format: !gmsh
-        variant: ascii

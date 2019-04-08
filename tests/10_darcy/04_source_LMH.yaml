@@ -1,10 +1,9 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test8 - Steady flow with sources
   mesh:
     mesh_file: ../00_mesh/square_1x1_shift.msh
   flow_equation: !Flow_Richards_LMH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -17,7 +16,6 @@ problem: !Coupling_Sequential
       - region: .plane_boundary
         bc_type: dirichlet
         bc_pressure: 0
-    balance: {}
     output:
       fields:
         - pressure_p0
@@ -27,4 +25,3 @@ problem: !Coupling_Sequential
       file: ./flow.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

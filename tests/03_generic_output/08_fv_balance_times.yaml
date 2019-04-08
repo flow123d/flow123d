@@ -3,7 +3,7 @@
 # Author: Jan Stebel
 # Source for reference: qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: 'Tutorial problem: Transport 1D-2D (convection, dual porosity, sorption, sources), balance output.'
   mesh:
@@ -18,7 +18,6 @@ problem: !Coupling_Sequential
           - 1d_left_branch
   # mesh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

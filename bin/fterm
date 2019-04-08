@@ -459,8 +459,8 @@ case $action in
       update_images
     fi
     
-    dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
-    docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
+    dbgc docker run --rm $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
+    docker run --rm $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
   ;;
   update)
     update_images

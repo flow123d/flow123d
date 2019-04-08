@@ -1,10 +1,9 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Invalid YAML type of a_tol key
   mesh:
-    mesh_file: ../00_mesh/cube_1x1x1_frac21_shift.msh
+    mesh_file: ../00_mesh/prism_3el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
 ### ERROR invalid double value of a_tol

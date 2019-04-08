@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test of different porosity in 2d fractures for solute and heat transport. For comparison with 03_dif_por.yaml.
   mesh:
@@ -21,7 +21,6 @@ problem: !Coupling_Sequential
       - region: .right
         bc_type: dirichlet
         bc_pressure: 1
-    balance: {}
     output_stream:
       file: flow.pvd
       format: !vtk

@@ -1,10 +1,9 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test of input placeholder in absolute path
   mesh:
     mesh_file: ../00_mesh/prism_11el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -25,8 +24,7 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
         - sigma
-    balance: {}
     output_stream:
       file: ./output_data.msh
       format: !gmsh
-        variant: ascii
+
