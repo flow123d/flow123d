@@ -993,7 +993,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     uint b_size = ls->loc_size_B;
                     for(uint i_b=0, i_bb=0; i_b < b_size && i_bb < elem_dofs_vec.size(); i_b++) {
                         if (b_indices[i_b] == elem_dofs_vec[i_bb])
-                            elem_dofs_vec[i_bb++] = i_b;
+                            elem_dofs_vec[i_bb++] = i_b + ds->begin();
                     }
                     ISRestoreIndices(ls->IsB, &b_indices);
 
@@ -1520,11 +1520,11 @@ std::vector<int> DarcyMH::get_component_indices_vec(unsigned int component) cons
 	ASSERT_LT_DBG(component, 3).error("Invalid component!");
 	unsigned int i, n_dofs, min, max;
     std::vector<int> dof_vec;
-    std::vector<LongIdx> local_indices(data_->dh_->max_elem_dofs());
+    std::vector<LongIdx> dof_indices(data_->dh_->max_elem_dofs());
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        n_dofs = dh_cell.get_loc_dof_indices(local_indices);
+        n_dofs = dh_cell.get_dof_indices(dof_indices);
         dofs_range(n_dofs, min, max, component);
-        for (i=min; i<max; ++i) dof_vec.push_back(local_indices[i]);
+        for (i=min; i<max; ++i) dof_vec.push_back(dof_indices[i]);
     }
 	return dof_vec;
 }
