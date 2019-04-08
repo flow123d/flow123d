@@ -78,6 +78,10 @@ SchurComplement::SchurComplement(Distribution *ds, IS ia, IS ib)
         RHS2    = NULL;
         Sol1    = NULL;
         Sol2    = NULL;
+        rhs1sc  = NULL;
+        rhs2sc  = NULL;
+        sol1sc  = NULL;
+        sol2sc  = NULL;
 
         // create A block index set
         ISGetLocalSize(IsA, &loc_size_A);
@@ -177,12 +181,16 @@ void SchurComplement::form_schur()
         // create complement system
         // TODO: introduce LS as true object, clarify its internal states
         // create RHS sub vecs RHS1, RHS2
-    	VecGetSubVector(rhs_, IsA, &RHS1);
-    	VecGetSubVector(rhs_, IsB, &RHS2);
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_A, PETSC_DETERMINE, &(RHS1));
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_B, PETSC_DETERMINE, &(RHS2));
+        VecScatterCreate(rhs_, IsA, RHS1, PETSC_NULL, &rhs1sc);
+        VecScatterCreate(rhs_, IsB, RHS2, PETSC_NULL, &rhs2sc);
 
-        // create Solution sub vecs Sol1, Compl->solution
-    	VecGetSubVector(solution_, IsA, &Sol1);
-    	VecGetSubVector(solution_, IsB, &Sol2);
+        // create Solution sub vecs Sol1, Sol2, Compl->solution
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_A, PETSC_DETERMINE, &(Sol1));
+    	VecCreateMPI(PETSC_COMM_WORLD, loc_size_B, PETSC_DETERMINE, &(Sol2));
+        VecScatterCreate(solution_, IsA, Sol1, PETSC_NULL, &sol1sc);
+        VecScatterCreate(solution_, IsB, Sol2, PETSC_NULL, &sol2sc);
 
         VecGetArray( Sol2, &sol_array );
         Compl->set_solution( sol_array );
@@ -250,6 +258,11 @@ void SchurComplement::form_rhs()
 {
     START_TIMER("form rhs");
 	if (rhs_changed_ || matrix_changed_) {
+	    VecScatterBegin(rhs1sc, rhs_, RHS1, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterEnd(  rhs1sc, rhs_, RHS1, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterBegin(rhs2sc, solution_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterEnd(  rhs2sc, solution_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
+
 	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
 	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
 	    if ( is_negative_definite() ) {
@@ -372,6 +385,11 @@ double SchurComplement::get_solution_precision()
 LinSys::SolveInfo SchurComplement::solve() {
     START_TIMER("SchurComplement::solve");
     this->form_schur();
+
+    VecScatterBegin(sol1sc, solution_, Sol1, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(  sol1sc, solution_, Sol1, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterBegin(sol2sc, solution_, Sol2, INSERT_VALUES, SCATTER_FORWARD);
+    VecScatterEnd(  sol2sc, solution_, Sol2, INSERT_VALUES, SCATTER_FORWARD);
     
     //output schur complement in matlab file
 //     string output_file = FilePath("schur.m", FilePath::output_file);
@@ -401,6 +419,10 @@ void SchurComplement::resolve()
 
     START_TIMER("SchurComplemet::resolve without form schur");
 
+    VecScatterBegin(sol1sc, Sol1, solution_, INSERT_VALUES, SCATTER_REVERSE);
+    VecScatterEnd(  sol1sc, Sol1, solution_, INSERT_VALUES, SCATTER_REVERSE);
+    VecScatterBegin(sol2sc, Sol2, solution_, INSERT_VALUES, SCATTER_REVERSE);
+    VecScatterEnd(  sol2sc, Sol2, solution_, INSERT_VALUES, SCATTER_REVERSE);
     chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
     chkerr(VecScale(Sol1,-1));
     chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
@@ -434,6 +456,10 @@ SchurComplement :: ~SchurComplement() {
     if ( RHS2 != NULL )           chkerr(VecDestroy(&RHS2));
     if ( Sol1 != NULL )           chkerr(VecDestroy(&Sol1));
     if ( Sol2 != NULL )           chkerr(VecDestroy(&Sol2));
+    if ( rhs1sc != NULL )         chkerr(VecScatterDestroy(&rhs1sc));
+    if ( rhs2sc != NULL )         chkerr(VecScatterDestroy(&rhs2sc));
+    if ( sol1sc != NULL )         chkerr(VecScatterDestroy(&sol1sc));
+    if ( sol2sc != NULL )         chkerr(VecScatterDestroy(&sol2sc));
     if ( IA != NULL )             chkerr(MatDestroy(&IA));
 
     if (Compl != NULL)            delete Compl;
