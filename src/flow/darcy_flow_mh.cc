@@ -854,11 +854,11 @@ void DarcyMH::allocate_mh_matrix()
             auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
             for(auto &isec : isec_list ) {
                 IntersectionLocalBase *local = isec.second;
-                ElementAccessor<3> slave_ele = mesh_->element_accessor( local->bulk_ele_idx() );
+                LocalElementAccessorBase<3> slave_acc( data_->dh_->cell_accessor_from_element(local->bulk_ele_idx()) );
                 //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
-                for(unsigned int i_side=0; i_side < slave_ele->n_sides(); i_side++) {
-                    tmp_rows.push_back( ele_ac.edge_row(slave_ele.side(i_side)->edge_idx()) );
-                    //DebugOut() << "aedge" << print_var(tmp_rows[i_rows-1]);
+                for(unsigned int i_side=0; i_side < slave_acc.dim()+1; i_side++) {
+                    tmp_rows.push_back( slave_acc.edge_row(i_side) );
+                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
                 }
             }
         }
