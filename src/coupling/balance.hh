@@ -478,7 +478,7 @@ private:
     Mat region_be_matrix_;
 
     /// auxiliary vectors for summation of matrix columns
-    Vec ones_, ones_be_;
+    Vec ones_be_;
 
     /// Number of boundary region for each local boundary edge.
     std::vector<unsigned int> be_regions_;

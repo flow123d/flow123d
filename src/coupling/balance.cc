@@ -123,7 +123,6 @@ Balance::~Balance()
     delete[] region_mass_vec_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
-	chkerr(VecDestroy(&ones_));
 	chkerr(VecDestroy(&ones_be_));
 }
 
@@ -337,14 +336,6 @@ void Balance::lazy_initialize()
 	chkerr(MatAssemblyEnd(region_be_matrix_, MAT_FINAL_ASSEMBLY));
 
 	double *ones_array;
-	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
-			n_loc_dofs_,
-			PETSC_DECIDE,
-			&ones_));
-	chkerr(VecGetArray(ones_, &ones_array));
-	fill_n(ones_array, n_loc_dofs_, 1);
-	chkerr(VecRestoreArray(ones_, &ones_array));
-
 	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 			be_regions_.size(),
 			PETSC_DECIDE,
