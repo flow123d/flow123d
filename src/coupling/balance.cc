@@ -550,10 +550,9 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     if (time_->tlevel() <= 0) return;
 
     // sources
-    const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
-    std::vector<double> temp_sources(n_blk_reg, 0);
+    double temp_source = 0;
     int lsize, n_cols_mat, n_cols_rhs;
-    const int *cols;
+    //const int *cols;
 	const double *vals_mat, *vals_rhs, *sol_array;
     chkerr(VecGetLocalSize(solution, &lsize));
     chkerr(VecGetArrayRead(solution, &sol_array));
@@ -561,38 +560,29 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     // computes transpose multiplication and sums region_source_rhs_ over dofs
     // resulting in a vector of sources for each region
     // transpose(region_source_matrix_) * solution + region_source_rhs_*ones(n_blk_reg)
+    // the region vector is then summed up to temp_source
     for (int i=0; i<lsize; ++i){
-        int row = i;
-        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
-        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+        MatGetRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat);
+        MatGetRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs);
         
         ASSERT_DBG(n_cols_mat == n_cols_rhs);
         
         for (int j=0; j<n_cols_mat; ++j)
-        {
-            double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
-            int col = cols[j];
-            temp_sources[col] += f;
-        }
+            temp_source += vals_mat[j]*sol_array[i] + vals_rhs[j];
         
-        MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
-        MatRestoreRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, &cols, &vals_rhs);
+        MatRestoreRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat);
+        MatRestoreRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs);
     }
     chkerr(VecRestoreArrayRead(solution, &sol_array));
 
-    // finally sum up all the sources over regions to get total sources balance
-    double recvbuffer[n_blk_reg];
-    MPI_Reduce(&(temp_sources[0]),recvbuffer,n_blk_reg,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
-    
+    // finally sum up all the sources over processors to get total sources balance
+    double recvbuffer;
+    MPI_Reduce(&temp_source,&recvbuffer,1,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
 
 	if (rank_ == 0)
     {
-        double sum_sources = 0;
-        for (unsigned int r=0; r<n_blk_reg; ++r)
-            sum_sources += recvbuffer[r];
-            
 		// sum sources in one step
-		increment_sources_[quantity_idx] += sum_sources*time_->dt();
+		increment_sources_[quantity_idx] += recvbuffer*time_->dt();
     }
 
     
