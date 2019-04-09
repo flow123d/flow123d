@@ -117,7 +117,6 @@ Balance::~Balance()
 	delete[] region_source_rhs_;
 
 	chkerr(MatDestroy(&region_be_matrix_));
-	chkerr(VecDestroy(&ones_be_));
 }
 
 
@@ -327,16 +326,6 @@ void Balance::lazy_initialize()
 	}
 	chkerr(MatAssemblyBegin(region_be_matrix_, MAT_FINAL_ASSEMBLY));
 	chkerr(MatAssemblyEnd(region_be_matrix_, MAT_FINAL_ASSEMBLY));
-
-	double *ones_array;
-	chkerr(VecCreateMPI(PETSC_COMM_WORLD,
-			be_regions_.size(),
-			PETSC_DECIDE,
-			&ones_be_));
-	chkerr(VecGetArray(ones_be_, &ones_array));
-	fill_n(ones_array, be_regions_.size(), 1);
-	chkerr(VecRestoreArray(ones_be_, &ones_array));
-
 
     if (rank_ == 0) {
         // set default value by output_format_
@@ -613,8 +602,13 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
 	// compute fluxes on boundary regions: R'.(F.u + f)
 	chkerr(VecZeroEntries(boundary_vec));
+    
 	Vec temp;
-	chkerr(VecDuplicate(ones_be_, &temp));
+    chkerr(VecCreateMPI(PETSC_COMM_WORLD,
+			be_regions_.size(),
+			PETSC_DECIDE,
+			&temp));
+    
 	chkerr(MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp));
 	// Since internally we keep outgoing fluxes, we change sign
 	// to write to output _incoming_ fluxes.
@@ -707,8 +701,13 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 
 	// compute fluxes on boundary regions: R'.(F.u + f)
 	chkerr(VecZeroEntries(boundary_vec));
+    
 	Vec temp;
-	chkerr(VecDuplicate(ones_be_, &temp));
+    chkerr(VecCreateMPI(PETSC_COMM_WORLD,
+			be_regions_.size(),
+			PETSC_DECIDE,
+			&temp));
+    
 	chkerr(MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp));
 	// Since internally we keep outgoing fluxes, we change sign
 	// to write to output _incoming_ fluxes.
