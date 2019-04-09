@@ -575,15 +575,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     }
     chkerr(VecRestoreArrayRead(solution, &sol_array));
 
-    // finally sum up all the sources over processors to get total sources balance
-    double recvbuffer;
-    MPI_Reduce(&temp_source,&recvbuffer,1,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
-
-	if (rank_ == 0)
-    {
-		// sum sources in one step
-		increment_sources_[quantity_idx] += recvbuffer*time_->dt();
-    }
+    increment_sources_[quantity_idx] += temp_source*time_->dt();
 
     
     // fluxes 
@@ -743,7 +735,7 @@ void Balance::output()
     const unsigned int n_quant = quantities_.size();
 	const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
 	const unsigned int n_bdr_reg = mesh_->region_db().boundary_size();
-	const int buf_size = n_quant*2*n_blk_reg + n_quant*2*n_bdr_reg;
+	const int buf_size = n_quant*2*n_blk_reg + n_quant*2*n_bdr_reg + n_quant;
 	double sendbuffer[buf_size], recvbuffer[buf_size];
 	for (unsigned int qi=0; qi<n_quant; qi++)
 	{
@@ -757,7 +749,12 @@ void Balance::output()
 			sendbuffer[n_quant*2*n_blk_reg + qi*2*n_bdr_reg +           + ri] = fluxes_in_[qi][ri];
 			sendbuffer[n_quant*2*n_blk_reg + qi*2*n_bdr_reg + n_bdr_reg + ri] = fluxes_out_[qi][ri];
 		}
+		if (cumulative_)
+        {
+            sendbuffer[n_quant*2*n_blk_reg + n_quant*2*n_bdr_reg + qi] = increment_sources_[qi];
+        }
 	}
+    
 	MPI_Reduce(&sendbuffer,recvbuffer,buf_size,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
 	// for other than 0th process update last_time and finish,
 	// on process #0 sum balances over all regions and calculate
@@ -777,6 +774,10 @@ void Balance::output()
 				fluxes_in_[qi][ri]  = recvbuffer[n_quant*2*n_blk_reg + qi*2*n_bdr_reg +           + ri];
 				fluxes_out_[qi][ri] = recvbuffer[n_quant*2*n_blk_reg + qi*2*n_bdr_reg + n_bdr_reg + ri];
 			}
+			if (cumulative_)
+            {
+                increment_sources_[qi] = recvbuffer[n_quant*2*n_blk_reg + n_quant*2*n_bdr_reg + qi];
+            }
 		}
 	}
 
@@ -862,8 +863,8 @@ void Balance::output()
 		sum_fluxes_.assign(n_quant, 0);
 		sum_sources_.assign(n_quant, 0);
 		increment_fluxes_.assign(n_quant, 0);
-		increment_sources_.assign(n_quant, 0);
 	}
+	increment_sources_.assign(n_quant, 0);
 }
 
 
