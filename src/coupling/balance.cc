@@ -229,7 +229,6 @@ void Balance::lazy_initialize()
 	masses_     .resize(n_quant, vector<double>(n_blk_reg, 0));
 	sources_in_ .resize(n_quant, vector<double>(n_blk_reg, 0));
 	sources_out_.resize(n_quant, vector<double>(n_blk_reg, 0));
-    temp_sources_    .resize(n_blk_reg, 0);
 
 	sum_fluxes_     .resize(n_quant, 0);
 	sum_fluxes_in_  .resize(n_quant, 0);
@@ -557,14 +556,12 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
     // sources
     const unsigned int n_blk_reg = mesh_->region_db().bulk_size();
+    std::vector<double> temp_sources(n_blk_reg, 0);
     int lsize, n_cols_mat, n_cols_rhs;
     const int *cols;
 	const double *vals_mat, *vals_rhs, *sol_array;
     chkerr(VecGetLocalSize(solution, &lsize));
     chkerr(VecGetArrayRead(solution, &sol_array));
-    
-    for (unsigned int r=0; r<n_blk_reg; ++r)
-        temp_sources_[r] = 0;
     
     // computes transpose multiplication and sums region_source_rhs_ over dofs
     // resulting in a vector of sources for each region
@@ -580,7 +577,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
         {
             double f = vals_mat[j]*sol_array[i] + vals_rhs[j];
             int col = cols[j];
-            temp_sources_[col] += f;
+            temp_sources[col] += f;
         }
         
         MatRestoreRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
@@ -590,7 +587,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 
     // finally sum up all the sources over regions to get total sources balance
     double recvbuffer[n_blk_reg];
-    MPI_Reduce(&(temp_sources_[0]),recvbuffer,n_blk_reg,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
+    MPI_Reduce(&(temp_sources[0]),recvbuffer,n_blk_reg,MPI_DOUBLE,MPI_SUM,0,PETSC_COMM_WORLD);
     
 
 	if (rank_ == 0)
