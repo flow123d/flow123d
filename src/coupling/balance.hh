@@ -495,7 +495,6 @@ private:
     std::vector<std::vector<double> > masses_;
     std::vector<std::vector<double> > sources_in_;
     std::vector<std::vector<double> > sources_out_;
-    std::vector<double> temp_sources_;
 
     // Sums of the above vectors over phases and regions
     std::vector<double> sum_fluxes_;
