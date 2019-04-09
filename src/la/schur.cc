@@ -419,13 +419,13 @@ void SchurComplement::resolve()
 
     START_TIMER("SchurComplemet::resolve without form schur");
 
+    chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
+    chkerr(VecScale(Sol1,-1));
+    chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
     VecScatterBegin(sol1sc, Sol1, solution_, INSERT_VALUES, SCATTER_REVERSE);
     VecScatterEnd(  sol1sc, Sol1, solution_, INSERT_VALUES, SCATTER_REVERSE);
     VecScatterBegin(sol2sc, Sol2, solution_, INSERT_VALUES, SCATTER_REVERSE);
     VecScatterEnd(  sol2sc, Sol2, solution_, INSERT_VALUES, SCATTER_REVERSE);
-    chkerr(MatMult(IAB,Compl->get_solution(),Sol1));
-    chkerr(VecScale(Sol1,-1));
-    chkerr(MatMultAdd(IA,RHS1,Sol1,Sol1));
 }
 
 
