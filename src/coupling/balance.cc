@@ -121,8 +121,6 @@ Balance::~Balance()
 	delete[] region_source_matrix_;
 	delete[] region_source_rhs_;
     delete[] region_mass_vec_;
-
-	chkerr(MatDestroy(&region_be_matrix_));
 }
 
 
@@ -310,29 +308,9 @@ void Balance::lazy_initialize()
 				&(be_flux_vec_[c])));
 	}
 
-	chkerr(MatCreateAIJ(PETSC_COMM_WORLD,
-			be_regions_.size(),
-			(rank_==0)?mesh_->region_db().boundary_size():0,
-			PETSC_DECIDE,
-			PETSC_DECIDE,
-			(rank_==0)?1:0,
-			0,
-			(rank_==0)?0:1,
-			0,
-			&region_be_matrix_
-			));
+	// set be_offset_, used in add_flux_matrix_values()
 	chkerr(VecGetOwnershipRange(be_flux_vec_[0], &be_offset_, NULL));
-	for (unsigned int loc_el=0; loc_el<be_regions_.size(); ++loc_el)
-	{
-	    chkerr(MatSetValue(region_be_matrix_,
-				be_offset_+loc_el,
-				be_regions_[loc_el],
-				1,
-				INSERT_VALUES));
-	}
-	chkerr(MatAssemblyBegin(region_be_matrix_, MAT_FINAL_ASSEMBLY));
-	chkerr(MatAssemblyEnd(region_be_matrix_, MAT_FINAL_ASSEMBLY));
-
+    
     if (rank_ == 0) {
         // set default value by output_format_
         std::string default_file_name;
@@ -578,19 +556,7 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     increment_sources_[quantity_idx] += temp_source*time_->dt();
 
     
-    // fluxes 
-	Vec boundary_vec;
-
-	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD,
-			1,
-			(rank_==0)?mesh_->region_db().boundary_size():0,
-			PETSC_DECIDE,
-			&(fluxes_[quantity_idx][0]),
-			&boundary_vec));
-
-	// compute fluxes on boundary regions: R'.(F.u + f)
-	chkerr(VecZeroEntries(boundary_vec));
-    
+    // fluxes     
 	Vec temp;
     chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 			be_regions_.size(),
@@ -598,19 +564,16 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
 			&temp));
     
 	chkerr(MatMultAdd(be_flux_matrix_[quantity_idx], solution, be_flux_vec_[quantity_idx], temp));
-	// Since internally we keep outgoing fluxes, we change sign
-	// to write to output _incoming_ fluxes.
-	chkerr(VecScale(temp, -1));
-	chkerr(MatMultTranspose(region_be_matrix_, temp, boundary_vec));
+	
+    double sum_fluxes;
+	chkerr(VecSum(temp, &sum_fluxes));
 	chkerr(VecDestroy(&temp));
-
-	double sum_fluxes;
-	chkerr(VecSum(boundary_vec, &sum_fluxes));
-	chkerr(VecDestroy(&boundary_vec));
 
 	if (rank_ == 0)
 		// sum fluxes in one step
-		increment_fluxes_[quantity_idx] += sum_fluxes*time_->dt();
+        // Since internally we keep outgoing fluxes, we change sign
+        // to write to output _incoming_ fluxes.
+		increment_fluxes_[quantity_idx] += -1.0 * sum_fluxes*time_->dt();
 }
 
 
@@ -681,15 +644,6 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     chkerr(VecRestoreArrayRead(solution, &sol_array));
     
     // calculate flux
-    Vec boundary_vec;
-
-	chkerr(VecCreateMPIWithArray(PETSC_COMM_WORLD, 1,
-	        (rank_==0)?mesh_->region_db().boundary_size():0,
-	        PETSC_DECIDE, &(fluxes_[quantity_idx][0]), &boundary_vec));
-
-	// compute fluxes on boundary regions: R'.(F.u + f)
-	chkerr(VecZeroEntries(boundary_vec));
-    
 	Vec temp;
     chkerr(VecCreateMPI(PETSC_COMM_WORLD,
 			be_regions_.size(),
@@ -700,7 +654,6 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 	// Since internally we keep outgoing fluxes, we change sign
 	// to write to output _incoming_ fluxes.
 	chkerr(VecScale(temp, -1));
-	chkerr(MatMultTranspose(region_be_matrix_, temp, boundary_vec));
 
 	// compute positive/negative fluxes
 	fluxes_in_[quantity_idx].assign(mesh_->region_db().boundary_size(), 0);
@@ -718,7 +671,6 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
 	}
 	chkerr(VecRestoreArrayRead(temp, &flux_array));
 	chkerr(VecDestroy(&temp));
-	chkerr(VecDestroy(&boundary_vec));
 }
 
 
@@ -800,7 +752,7 @@ void Balance::output()
 		{
 			for (unsigned int qi=0; qi<n_quant; qi++)
 			{
-				sum_fluxes_[qi]     += fluxes_    [qi][reg->boundary_idx()];
+                sum_fluxes_[qi]     += fluxes_in_ [qi][reg->boundary_idx()] + fluxes_out_[qi][reg->boundary_idx()];
 				sum_fluxes_in_[qi]  += fluxes_in_ [qi][reg->boundary_idx()];
 				sum_fluxes_out_[qi] += fluxes_out_[qi][reg->boundary_idx()];
 			}
@@ -910,7 +862,7 @@ void Balance::output_legacy(double time)
 					<< setw(w)  << (int)reg->id()
 					<< setw(wl) << reg->label().c_str()
 					<< setw(w)  << quantities_[qi].name_.c_str()
-					<< setw(w)  << fluxes_[qi][reg->boundary_idx()]
+                    << setw(w)  << fluxes_in_[qi][reg->boundary_idx()] + fluxes_out_[qi][reg->boundary_idx()]
 					<< setw(w)  << fluxes_out_[qi][reg->boundary_idx()]
 					<< setw(w)  << fluxes_in_[qi][reg->boundary_idx()]
 					<< endl;
@@ -1064,7 +1016,7 @@ void Balance::output_csv(double time, char delimiter, const std::string& comment
 			output_ << format_csv_val(time / time_->get_coef(), delimiter, true)
 					<< format_csv_val(reg->label(), delimiter)
 					<< format_csv_val(quantities_[qi].name_, delimiter)
-					<< format_csv_val(fluxes_[qi][reg->boundary_idx()], delimiter)
+					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()] + fluxes_out_[qi][reg->boundary_idx()], delimiter)
 					<< format_csv_val(fluxes_in_[qi][reg->boundary_idx()], delimiter)
 					<< format_csv_val(fluxes_out_[qi][reg->boundary_idx()], delimiter)
 					<< csv_zero_vals(9, delimiter) << endl;
@@ -1201,7 +1153,8 @@ void Balance::output_yaml(double time)
 			output_yaml_ << "  - time: " << (time / time_->get_coef()) << endl;
 			output_yaml_ << setw(4) << "" << "region: " << reg->label() << endl;
 			output_yaml_ << setw(4) << "" << "quantity: " << quantities_[qi].name_ << endl;
-			output_yaml_ << setw(4) << "" << "data: " << "[ " << fluxes_[qi][reg->boundary_idx()] << ", "
+			output_yaml_ << setw(4) << "" << "data: " << "[ "
+                         << fluxes_in_[qi][reg->boundary_idx()] + fluxes_out_[qi][reg->boundary_idx()] << ", "
 					     << fluxes_in_[qi][reg->boundary_idx()] << ", " << fluxes_out_[qi][reg->boundary_idx()]
 					     << ", 0, 0, 0, 0, 0, 0, 0, 0, 0 ]" << endl;
 		}

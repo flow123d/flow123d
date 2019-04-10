@@ -471,12 +471,6 @@ private:
     /// Vectors for calculation of mass (n_bulk_regions).
     Vec *region_mass_vec_;
 
-    /**
-     * Auxiliary matrix for transfer of quantities between boundary edges and regions
-     * (n_boundary_edges x n_boundary_regions).
-     */
-    Mat region_be_matrix_;
-
     /// Number of boundary region for each local boundary edge.
     std::vector<unsigned int> be_regions_;
 
