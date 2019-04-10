@@ -453,6 +453,17 @@ protected:
         }
     }
     
+    void assemble_source_term(LocalElementAccessorBase<3> ele_ac)
+    {
+        double cs = ad_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
+
+        // set sources
+        double source = ele_ac.measure() * cs *
+                ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
+        loc_system_.add_value(loc_ele_dof, -1.0 * source);
+
+        ad_->balance->add_source_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_idx()}, {0}, {source});
+    }
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
         //D, E',E block: compatible connections: element-edge
