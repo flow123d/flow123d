@@ -308,7 +308,7 @@ void SchurComplement::create_inversion_matrix()
     MatDuplicate(A, MAT_DO_NOT_COPY_VALUES, &IA);
     //MatGetSubMatrix(matrix_, IsA, IsA, mat_reuse, &IA);
 
-    MatGetOwnershipRange(matrix_,&pos_start,PETSC_NULL);
+    MatGetOwnershipRange(A,&pos_start,PETSC_NULL);
     MatGetOwnershipRange(IA,&pos_start_IA,PETSC_NULL);
 
     std::vector<PetscInt> submat_rows;
