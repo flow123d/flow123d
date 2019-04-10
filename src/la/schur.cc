@@ -260,8 +260,8 @@ void SchurComplement::form_rhs()
 	if (rhs_changed_ || matrix_changed_) {
 	    VecScatterBegin(rhs1sc, rhs_, RHS1, INSERT_VALUES, SCATTER_FORWARD);
 	    VecScatterEnd(  rhs1sc, rhs_, RHS1, INSERT_VALUES, SCATTER_FORWARD);
-	    VecScatterBegin(rhs2sc, solution_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
-	    VecScatterEnd(  rhs2sc, solution_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterBegin(rhs2sc, rhs_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
+	    VecScatterEnd(  rhs2sc, rhs_, RHS2, INSERT_VALUES, SCATTER_FORWARD);
 
 	    MatMultTranspose(IAB, RHS1, *( Compl->get_rhs() ));
 	    VecAXPY(*( Compl->get_rhs() ), -1, RHS2);
