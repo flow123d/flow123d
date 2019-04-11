@@ -86,8 +86,8 @@ protected:
 class EqualOrderDiscreteSpace : public DiscreteSpace {
 public:
   
-  EqualOrderDiscreteSpace(Mesh *mesh, FiniteElement<0> *fe0, FiniteElement<1> *fe1, FiniteElement<2> *fe2, FiniteElement<3> *fe3)
-  : DiscreteSpace(mesh), fe0_(fe0), fe1_(fe1), fe2_(fe2), fe3_(fe3) {}
+  EqualOrderDiscreteSpace(Mesh *mesh, MixedPtr<FiniteElement> fe)
+  : DiscreteSpace(mesh), fe_(fe) {}
   
   unsigned int n_elem_dofs(const ElementAccessor<3> &cell) const override;
   
@@ -95,18 +95,15 @@ public:
   
   unsigned int n_node_dofs(unsigned int nid) const override;
   
-  FiniteElement<0> *fe0d(const ElementAccessor<3> &cell) const override { return fe0_; }
-  FiniteElement<1> *fe1d(const ElementAccessor<3> &cell) const override { return fe1_; }
-  FiniteElement<2> *fe2d(const ElementAccessor<3> &cell) const override { return fe2_; }
-  FiniteElement<3> *fe3d(const ElementAccessor<3> &cell) const override { return fe3_; }
+  FiniteElement<0> *fe0d(const ElementAccessor<3> &cell) const override { return fe_.get<0>(); }
+  FiniteElement<1> *fe1d(const ElementAccessor<3> &cell) const override { return fe_.get<1>(); }
+  FiniteElement<2> *fe2d(const ElementAccessor<3> &cell) const override { return fe_.get<2>(); }
+  FiniteElement<3> *fe3d(const ElementAccessor<3> &cell) const override { return fe_.get<3>(); }
   
   
 private:
   
-  FiniteElement<0> *fe0_;
-  FiniteElement<1> *fe1_;
-  FiniteElement<2> *fe2_;
-  FiniteElement<3> *fe3_;
+  MixedPtr<FiniteElement> fe_;
   
 };
 

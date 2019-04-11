@@ -7,6 +7,7 @@
 
 #include <flow_gtest.hh>
 #include <vector>
+#include <iostream>
 #include "tools/mixed.hh"
 
 template <int dim, int spacedim>
@@ -35,10 +36,21 @@ public:
 };
 
 
+template <int dim>
+class FE_XY : public FE<dim> {
+public:
+    FE_XY(int a, std::vector<int> b)
+    : FE<dim>(a, b)
+      {}
+};
+
+
+
 TEST(Mixed, mixed) {
     // only dim parameter templates
     std::vector<int> vec = {1, 2};
     {
+        // (int, vector<int>) constructor
         Mixed<FE> mixed_fe_a = Mixed<FE>( 3, vec);
         EXPECT_EQ(13, mixed_fe_a.get<0>()._a);
         EXPECT_EQ(14, mixed_fe_a.get<1>()._a);
@@ -46,7 +58,8 @@ TEST(Mixed, mixed) {
         EXPECT_EQ(16, mixed_fe_a.get<3>()._a);
     }
     {
-        Mixed<FE> mixed_fe_a = Mixed<FE>( 3);
+        // (int) constructor
+        Mixed<FE> mixed_fe_a = Mixed<FE>( 1 + 2);
         EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
         EXPECT_EQ(30, mixed_fe_a.get<1>()._a);
         EXPECT_EQ(60, mixed_fe_a.get<2>()._a);
@@ -86,3 +99,64 @@ TEST(Mixed, mixed) {
 
 }
 
+//void goo(int)
+//{}
+//
+//void goo(int, float)
+//{}
+//
+//template<typename... Args>
+//void foo(Args&&... args)
+//{std::cout << "arg_foo\n";
+// goo(std::forward<Args>(args)...);
+//}
+//
+//template < template<int dim> class TT>
+//void foo( const MixedPtr<TT> &other)
+//{std::cout << "dim_foo\n";}
+
+
+
+
+
+TEST(MixedPtr, mixed_ptr) {
+    // only dim parameter templates
+    std::vector<int> vec = {1, 2};
+    {
+        MixedPtr<FE> mixed_fe = MixedPtr<FE>( 3, vec);
+        EXPECT_EQ(13, mixed_fe.get<0>()->_a);
+        EXPECT_EQ(14, mixed_fe.get<1>()->_a);
+        EXPECT_EQ(15, mixed_fe.get<2>()->_a);
+        EXPECT_EQ(16, mixed_fe.get<3>()->_a);
+    }
+
+
+    // dim and spacedim templates
+    {
+        MixedPtr<FixSpaceDim<Mapping>::template type> mixed_fe( 3, vec);
+        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
+        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
+        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
+        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+    }
+    {
+        MixedSpaceDimPtr<Mapping> mixed_fe( 3, vec);
+        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
+        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
+        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
+        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+    }
+
+    // assign to base
+    {
+        MixedPtr<FE_XY>  fe_xy( 3, vec);
+//        foo(fe_xy);
+//        foo(3);
+        auto mixed_fe = MixedPtr<FE>(fe_xy);
+        EXPECT_EQ(13, mixed_fe.get<0>()->_a);
+        EXPECT_EQ(14, mixed_fe.get<1>()->_a);
+        EXPECT_EQ(15, mixed_fe.get<2>()->_a);
+        EXPECT_EQ(16, mixed_fe.get<3>()->_a);
+    }
+
+}
