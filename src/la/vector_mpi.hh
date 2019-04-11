@@ -131,6 +131,12 @@ public:
         ASSERT_DBG(data_ptr_);
         return *data_ptr_;
     }
+    
+    const VectorData &data() const
+    {
+        ASSERT_DBG(data_ptr_);
+        return *data_ptr_;
+    }
 
     void swap(VectorMPI &other) {
     	ASSERT_EQ(this->communicator_, other.communicator_);
@@ -155,6 +161,7 @@ public:
         chkerr(VecCopy(other.data_petsc_, data_petsc_));
     }
     
+
     /// local_to_ghost_{begin,end} updates the ghost values on neighbouring processors from local values
     void local_to_ghost_begin() {
         VecGhostUpdateBegin(data_petsc_, INSERT_VALUES, SCATTER_FORWARD);

@@ -201,11 +201,11 @@ public:
     inline LongIdx edge_index(int loc_edg) const { return edg_4_loc[loc_edg]; }
 
     /**
-	 * @brief Returns the global index of local neighbour.
-	 *
-	 * @param loc_nb Local index of neighbour.
-	 */
-	inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
+     * @brief Returns the global index of local neighbour.
+     *
+     * @param loc_nb Local index of neighbour.
+     */
+    inline LongIdx nb_index(int loc_nb) const { return nb_4_loc[loc_nb]; }
 	
 	/**
 	 * @brief Returns number of local edges.
