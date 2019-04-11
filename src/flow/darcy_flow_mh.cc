@@ -933,7 +933,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 #ifdef FLOW123D_HAVE_BDDCML
     		WarningOut() << "For BDDC no Schur complements are used.";
             n_schur_compls = 0;
-            LinSys_BDDC *ls = new LinSys_BDDC(data_->dh_->local_size(), &(*data_->dh_->distr()),
+            LinSys_BDDC *ls = new LinSys_BDDC(data_->dh_->lsize(), &(*data_->dh_->distr()),
                     3,  // 3 == la::BddcmlWrapper::SPD_VIA_SYMMETRICGENERAL
                     1,  // 1 == number of subdomains per process
                     true); // swap signs of matrix and rhs to make the matrix SPD
@@ -1214,12 +1214,17 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 
         // insert dofs related to compatible connections
         for ( unsigned int i_neigh = 0; i_neigh < ele_ac.element_accessor()->n_neighs_vb(); i_neigh++) {
-            int edge_row = ele_ac.edge_row( ele_ac.element_accessor()->neigh_vb[i_neigh]->edge_idx() );
-            arma::vec3 coord = ele_ac.element_accessor()->neigh_vb[i_neigh]->edge()->side(0)->centre();
-
-            localDofMap.insert( std::make_pair( edge_row, coord ) );
-            inet.push_back( edge_row );
-            nne++;
+            Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i_neigh];
+            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+            		int edge_row = acc_higher_dim.edge_row(j);
+            		arma::vec3 coord = ngh->edge()->side(0)->centre();
+            		localDofMap.insert( std::make_pair( edge_row, coord ) );
+            		inet.push_back( edge_row );
+            		nne++;
+            		break;
+            	}
         }
 
         nnet.push_back( nne );
@@ -1245,7 +1250,7 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
     //convert set of dofs to vectors
     // number of nodes (= dofs) on the subdomain
     int numNodeSub = localDofMap.size();
-    OLD_ASSERT_EQUAL( (unsigned int)numNodeSub, data_->dh_->local_size() );
+    ASSERT_EQ( (unsigned int)numNodeSub, data_->dh_->lsize() );
     // Indices of Subdomain Nodes in Global Numbering - for local nodes, their global indices
     std::vector<int> isngn( numNodeSub );
     // pseudo-coordinates of local nodes (i.e. dofs)
