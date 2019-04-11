@@ -143,8 +143,8 @@ There are three region sets implicitly defined:}
 			{global{\_}snap{\_}radius}
 			{{Double [0, +inf)}}{}
 			{ \ValueDefault{0.001}}
-			{{{Maximal snapping distance from Mesh in various search operations.
-In particular is used in ObservePoint to find closest mesh element and in FieldFormula to find closest surface element in plan view (Z projection).}% 
+			{{{Maximal snapping distance from the mesh in various search operations.
+In particular, it is used to find the closest mesh element of an observe point; and in FieldFormula to find closest surface element in plan view (Z projection).}% 
 }}
 		\RecKey
 			{Mesh::raw-ngh-output}
@@ -1873,8 +1873,8 @@ Without snapping we make a projection to the initial element.}%
 			{ObservePoint::search-radius}
 			{search{\_}radius}
 			{{Double [0, +inf)}}{}
-			{implicit value: "{Maximal distance of observe point from Mesh relative to its size (bounding box). }"}
-			{{{Global value is define in Mesh by the key global{\_}snap{\_}radius.}% 
+			{implicit value: "{Maximal distance of the observe point from the mesh relative to the mesh diameter. }"}
+			{{{Global value is defined in mesh record by the key global{\_}snap{\_}radius.}% 
 }}
 \end{RecordType}
 \begin{RecordType}
@@ -2527,6 +2527,13 @@ Suitable for bentonite.}%
 			{{{Mechanics, provides the displacement field.}% 
 }}
 		\RecKey
+			{Coupling-Iterative::input-fields}
+			{input{\_}fields}
+			{{array [0, UINT] of }{record: }\TypeLink{IT::Coupling-Iterative-Data}{Coupling{\_}Iterative:Data}}{}
+			{ \it{Obligatory}}
+			{{{Input fields of the HM coupling.}% 
+}}
+		\RecKey
 			{Coupling-Iterative::iteration-parameter}
 			{iteration{\_}parameter}
 			{{Double (-inf, +inf)}}{}
@@ -2604,6 +2611,13 @@ Its default valuecorresponds to a theoretically optimal value with fastest conve
 			{{array [0, UINT] of }{record: }\TypeLink{IT::Mechanics-LinearElasticity-FE-Data}{Mechanics{\_}LinearElasticity{\_}FE:Data}}{}
 			{ \it{Obligatory}}
 			{{{Input fields of the equation.}% 
+}}
+		\RecKey
+			{Mechanics-LinearElasticity-FE::contact}
+			{contact}
+			{{Bool}}{}
+			{ \ValueDefault{false}}
+			{{{If true, displacement will be corrected at contact zones.}% 
 }}
 		\RecKey
 			{Mechanics-LinearElasticity-FE::output}
@@ -2688,13 +2702,6 @@ These times have to form an increasing sequence.}%
 			{{{Poisson ratio. }{$[-]$}% 
 }}
 		\RecKey
-			{Mechanics-LinearElasticity-FE-Data::biot-alpha}
-			{biot{\_}alpha}
-			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
-			{ \it{Optional}}
-			{{{Biot coefficient. }{$[-]$}% 
-}}
-		\RecKey
 			{Mechanics-LinearElasticity-FE-Data::fracture-sigma}
 			{fracture{\_}sigma}
 			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
@@ -2711,6 +2718,11 @@ These times have to form an increasing sequence.}%
 			{Elasticity-BC-Type::displacement}
 			{displacement}
 			{{{Prescribed displacement.}% 
+}}
+		\SelectionItem
+			{Elasticity-BC-Type::displacement-n}
+			{displacement{\_}n}
+			{{{Prescribed displacement in the normal direction to the boundary.}% 
 }}
 		\SelectionItem
 			{Elasticity-BC-Type::traction}
@@ -3002,11 +3014,6 @@ Alternatively, in case of different input mesh, several interpolation algorithms
 			{{{}{$[-]$}{ Input field: Poisson ratio.}% 
 }}
 		\SelectionItem
-			{Mechanics-LinearElasticity-FE-OutputFields::biot-alpha}
-			{biot{\_}alpha}
-			{{{}{$[-]$}{ Input field: Biot coefficient.}% 
-}}
-		\SelectionItem
 			{Mechanics-LinearElasticity-FE-OutputFields::fracture-sigma}
 			{fracture{\_}sigma}
 			{{{}{$[-]$}{ Input field: Coefficient of diffusive transfer through fractures (for each substance).}% 
@@ -3026,7 +3033,52 @@ Alternatively, in case of different input mesh, several interpolation algorithms
 			{displacement}
 			{{{}{$[m]$}{ }% 
 }}
+		\SelectionItem
+			{Mechanics-LinearElasticity-FE-OutputFields::stress}
+			{stress}
+			{{{}{$[m^{-1}kgs^{-2}]$}{ }% 
+}}
 \end{SelectionType}
+\begin{RecordType}
+	{IT::Coupling-Iterative-Data}
+	{Coupling{\_}Iterative:Data}
+	{}% implements
+	{}% reducible to key
+	{{{Record to set fields of the equation.}\\{
+The fields are set only on the domain specified by one of the keys: 'region', 'rid'}\\{
+and after the time given by the key 'time'. The field setting can be overridden by}\\{
+ any Coupling{\_}Iterative:Data record that comes later in the boundary data array.}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::region}
+			{region}
+			{{array [1, UINT] of }{String}}{}
+			{ \it{Optional}}
+			{{{Labels of the regions where to set fields. }% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::rid}
+			{rid}
+			{{Integer [0, INT]}}{}
+			{ \it{Optional}}
+			{{{ID of the region where to set fields.}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::time}
+			{time}
+			{{tuple: }\TypeLink{IT::TimeValue-2}{TimeValue}}{}
+			{ \ValueDefault{0.0}}
+			{{{Apply field setting in this record after this time.}\\{
+These times have to form an increasing sequence.}% 
+}}
+		\RecKey
+			{Coupling-Iterative-Data::biot-alpha}
+			{biot{\_}alpha}
+			{{gen. abstract: }\TypeLink{IT::Field-R3-to-R}{Field{\_}R3{\_}to{\_}R}}{{element{\_}input{\_}type}{ = }\TypeLink{IT::Double}{Double}}
+			{ \it{Optional}}
+			{{{}{$[-]$}% 
+}}
+\end{RecordType}
 \begin{AbstractType}
 	{IT::AdvectionProcess}
 	{AdvectionProcess}
@@ -3616,7 +3668,7 @@ Higher value diminishes the inter-element jumps.}%
 \begin{RecordType}
 	{IT::FirstOrderReaction}
 	{FirstOrderReaction}
-	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}}% implements
+	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
 	{}% reducible to key
 	{{{A model of first order chemical reactions (decompositions of a reactant into products).}% 
 }}
@@ -3701,7 +3753,7 @@ The default value 1.0, should only be used in the case of single product.}%
 \begin{RecordType}
 	{IT::RadioactiveDecay}
 	{RadioactiveDecay}
-	{\TypeLink{IT::ReactionTerm}{ReactionTerm}{, }\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}}% implements
+	{\TypeLink{IT::GenericReaction}{GenericReaction}{, }\TypeLink{IT::ReactionTermMobile}{ReactionTermMobile}{, }\TypeLink{IT::ReactionTermImmobile}{ReactionTermImmobile}{, }\TypeLink{IT::ReactionTerm}{ReactionTerm}}% implements
 	{}% reducible to key
 	{{{A model of a radioactive decay and possibly of a decay chain.}% 
 }}

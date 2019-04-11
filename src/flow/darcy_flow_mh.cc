@@ -903,7 +903,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 ISCreateStride(PETSC_COMM_WORLD, mh_dh.side_ds->lsize(), mh_dh.rows_ds->begin(), 1, &is);
                 //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
 
-                SchurComplement *ls = new SchurComplement(is, &(*mh_dh.rows_ds));
+                SchurComplement *ls = new SchurComplement(&(*mh_dh.rows_ds), is);
 
                 // make schur1
                 Distribution *ds = ls->make_complement_distribution();
@@ -914,7 +914,7 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                     IS is;
                     ISCreateStride(PETSC_COMM_WORLD, mh_dh.el_ds->lsize(), ls->get_distribution()->begin(), 1, &is);
                     //OLD_ASSERT(err == 0,"Error in ISCreateStride.");
-                    SchurComplement *ls1 = new SchurComplement(is, ds); // is is deallocated by SchurComplement
+                    SchurComplement *ls1 = new SchurComplement(ds, is); // is is deallocated by SchurComplement
                     ls1->set_negative_definite();
 
                     // make schur2
