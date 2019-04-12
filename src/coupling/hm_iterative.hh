@@ -52,6 +52,11 @@ public:
     public:
         EqData();
         
+        /// Biot coefficient.
+        Field<3, FieldValue<3>::Scalar> alpha;
+        
+        /// Potential -alpha*pressure whose gradient is passed to mechanics as additional load.
+        Field<3, FieldValue<3>::Scalar> pressure_potential;
     };
     
     /// Define input record.
@@ -65,7 +70,9 @@ public:
     ~HM_Iterative();
 
 private:
-
+    
+    void update_potential();
+    
     static const int registrar;
 
     /// steady or unsteady water flow simulator based on MH scheme
@@ -73,6 +80,12 @@ private:
 
     /// solute transport with chemistry through operator splitting
     std::shared_ptr<Elasticity> mechanics_;
+    
+    /// Data vector for pressure_potential field.
+    VectorMPI potential_vec_;
+    
+    /// FieldFE for pressure_potential field.
+    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > potential_ptr_;
     
     EqData data_;
 

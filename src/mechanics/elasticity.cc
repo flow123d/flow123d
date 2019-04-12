@@ -145,6 +145,17 @@ std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
 } // namespace Mechanics
 
 
+double lame_mu(double young, double poisson)
+{
+    return young*0.5/(poisson+1.);
+}
+
+
+double lame_lambda(double young, double poisson)
+{
+    return young*poisson/((poisson+1.)*(1.-2.*poisson));
+}
+
 
 
 
@@ -226,6 +237,11 @@ Elasticity::EqData::EqData()
       .name("cross_section")
       .units( UnitSI().m(3).md() )
       .flags(input_copy & in_time_term & in_main_matrix);
+      
+    *this+=potential_load
+      .name("potential_load")
+      .units( UnitSI().m() )
+      .flags(input_copy & in_rhs);
 
     *this+=output_field
             .name("displacement")
@@ -355,6 +371,7 @@ void Elasticity::zero_time_step()
     ls->start_add_assembly();
     MatSetOption(*ls->get_matrix(), MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
     ls->mat_zero_entries();
+    ls->rhs_zero_entries();
     assemble_stiffness_matrix();
 	set_sources();
 	set_boundary_conditions();
@@ -387,41 +404,52 @@ void Elasticity::update_solution()
 {
 	START_TIMER("DG-ONE STEP");
 
-	time_->next_time();
-	time_->view("MECH");
+    next_time();
+	solve_linear_system();
+
+    calculate_cumulative_balance();
+    
+    output_data();
+
+    END_TIMER("DG-ONE STEP");
+}
+
+void Elasticity::next_time()
+{
+    time_->next_time();
+    time_->view("MECH");
     
     START_TIMER("data reinit");
     data_.set_time(time_->step(), LimitSide::right);
     END_TIMER("data reinit");
-    
-	// assemble stiffness matrix
-    if (stiffness_matrix == NULL
+
+}
+
+
+
+void Elasticity::solve_linear_system()
+{
+    // assemble stiffness matrix
+    if (stiffness_matrix == NULL || rhs == NULL
     		|| data_.subset(FieldFlag::in_main_matrix).changed()
+            || data_.subset(FieldFlag::in_rhs).changed()
     		|| flux_changed)
     {
+        DebugOut() << "Mechanics: Reassembling system.\n";
         ls->start_add_assembly();
         ls->mat_zero_entries();
+        ls->rhs_zero_entries();
         assemble_stiffness_matrix();
+        set_sources();
+    	set_boundary_conditions();
         ls->finish_assembly();
+        ls->apply_constrains(1.0);
 
         if (stiffness_matrix == NULL)
             MatConvert(*( ls->get_matrix() ), MATSAME, MAT_INITIAL_MATRIX, &stiffness_matrix);
         else
             MatCopy(*( ls->get_matrix() ), stiffness_matrix, DIFFERENT_NONZERO_PATTERN);
-    }
-
-    // assemble right hand side (due to sources and boundary conditions)
-    if (rhs == NULL
-    		|| data_.subset(FieldFlag::in_rhs).changed()
-    		|| flux_changed)
-    {
-        ls->start_add_assembly();
-        ls->rhs_zero_entries();
-    	set_sources();
-    	set_boundary_conditions();
-        ls->finish_assembly();
-        ls->apply_constrains(1.0);
-
+        
         if (rhs == nullptr) VecDuplicate(*( ls->get_rhs() ), &rhs);
         VecCopy(*( ls->get_rhs() ), rhs);
     }
@@ -432,12 +460,9 @@ void Elasticity::update_solution()
     START_TIMER("solve");
     ls->solve();
     END_TIMER("solve");
+}
 
-    calculate_cumulative_balance();
-    
-    output_data();
 
-    END_TIMER("DG-ONE STEP");
 }
 
 
@@ -502,17 +527,6 @@ void Elasticity::assemble_stiffness_matrix()
   END_TIMER("assemble_stiffness");
 }
 
-
-double lame_mu(double young, double poisson)
-{
-    return young*0.5/(poisson+1.);
-}
-
-
-double lame_lambda(double young, double poisson)
-{
-    return young*poisson/((poisson+1.)*(1.-2.*poisson));
-}
 
 
 template<unsigned int dim>
@@ -583,7 +597,7 @@ void Elasticity::set_sources()
     		update_values | update_gradients | update_JxW_values | update_quadrature_points);
     const unsigned int ndofs = feo->fe<dim>()->n_dofs(), qsize = feo->q<dim>()->size();
     vector<arma::vec3> load(qsize);
-    vector<double> csection(qsize);
+    vector<double> csection(qsize), potential(qsize);
     vector<int> dof_indices(ndofs);
     PetscScalar local_rhs[ndofs];
     vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
@@ -605,14 +619,18 @@ void Elasticity::set_sources()
         
         data_.cross_section.value_list(fe_values.point_list(), elm_acc, csection);
         data_.load.value_list(fe_values.point_list(), elm_acc, load);
+        data_.potential_load.value_list(fe_values.point_list(), elm_acc, potential);
 
         // compute sources
         for (unsigned int k=0; k<qsize; k++)
         {
             for (unsigned int i=0; i<ndofs; i++)
-                local_rhs[i] += arma::dot(load[k], vec.value(i,k))*csection[k]*fe_values.JxW(k);
+                local_rhs[i] += (
+                                 arma::dot(load[k], vec.value(i,k))
+                                 -potential[k]*vec.divergence(i,k)
+                                )*csection[k]*fe_values.JxW(k);
         }
-        ls->rhs_set_values(ndofs, &(dof_indices[0]), local_rhs);
+        ls->rhs_set_values(ndofs, dof_indices.data(), local_rhs);
 
 //         for (unsigned int i=0; i<ndofs; i++)
 //         {
@@ -688,7 +706,7 @@ void Elasticity::assemble_fluxes_element_side()
     const unsigned int qsize = feo->q<dim-1>()->size();     // number of quadrature points
     vector<vector<int> > side_dof_indices(2);
     vector<unsigned int> n_dofs = { ndofs_sub, ndofs_side };
-	vector<double> frac_sigma(qsize);
+	vector<double> frac_sigma(qsize), potential(qsize);
 	vector<double> csection_lower(qsize), csection_higher(qsize), young(qsize), poisson(qsize), alpha(qsize);
     PetscScalar local_matrix[2][2][(ndofs_side)*(ndofs_side)];
     PetscScalar local_rhs[2][ndofs_side];
@@ -727,6 +745,7 @@ void Elasticity::assemble_fluxes_element_side()
  		data_.fracture_sigma.value_list(fe_values_sub.point_list(), cell_sub, frac_sigma);
         data_.young_modulus.value_list(fe_values_sub.point_list(), cell_sub, young);
         data_.poisson_ratio.value_list(fe_values_sub.point_list(), cell_sub, poisson);
+        data_.potential_load.value_list(fe_values_sub.point_list(), cell, potential);
         
         for (unsigned int n=0; n<2; ++n)
         {
@@ -775,6 +794,8 @@ void Elasticity::assemble_fluxes_element_side()
                                      - arma::dot(gvft, mu*arma::kron(nv,ui.t()) + lambda*arma::dot(ui,nv)*arma::eye(3,3))
                                     )*fv_sb[0]->JxW(k);
                         }
+                    
+                    local_rhs[n][i] -= frac_sigma[k]*arma::dot(vf-vi,potential[k]*nv)*fv_sb[0]->JxW(k);
                 }
             }
         }

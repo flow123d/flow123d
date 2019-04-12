@@ -131,6 +131,7 @@ public:
 		
 		/// Pointer to DarcyFlow field cross_section
         Field<3, FieldValue<3>::Scalar > cross_section;
+        Field<3, FieldValue<3>::Scalar > potential_load;   ///< Potential of an additional (external) load.
         Field<3, FieldValue<3>::Scalar> region_id;
         Field<3, FieldValue<3>::Scalar> subdomain;
         
@@ -166,6 +167,12 @@ public:
      * @brief Computes the solution in one time instant.
      */
 	void update_solution() override;
+    
+    /// Pass to next time and update equation data.
+    void next_time();
+    
+    /// Solve without updating time step and without output.
+    void solve_linear_system();
 
 	/**
 	 * @brief Postprocesses the solution and writes to output file.
@@ -178,6 +185,9 @@ public:
 	~Elasticity();
 
 	void initialize() override;
+    
+    void set_potential_load(const Field<3, FieldValue<3>::Scalar> &potential)
+    { data_.potential_load = potential; }
 
     void calculate_cumulative_balance();
 
