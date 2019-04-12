@@ -127,7 +127,6 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
 : darcy_flow(flow),
   mesh_(&darcy_flow->mesh()),
   compute_errors_(false),
-  fe0(1),
   is_output_specific_fields(false)
 {
     Input::Record in_rec_output = main_mh_in_rec.val<Input::Record>("output");
@@ -177,7 +176,7 @@ void DarcyFlowMHOutput::prepare_output(Input::Record in_rec)
 	ele_pressure_ptr=create_field<3, FieldValue<3>::Scalar>(ele_pressure, *mesh_, 1);
 	output_fields.field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
-	ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, &fe0, &fe_data_1d.fe_p1, &fe_data_2d.fe_p1, &fe_data_3d.fe_p1);
+	ds = std::make_shared<EqualOrderDiscreteSpace>(mesh_, fe_data.fe_p1);
 	DOFHandlerMultiDim dh_par(*mesh_);
 	dh_par.distribute_dofs(ds);
         dh_ = dh_par.sequential();
@@ -666,11 +665,16 @@ void DarcyFlowMHOutput::l2_diff_local(ElementAccessor<3> &ele,
 
 }
 
-template<int dim> DarcyFlowMHOutput::FEData<dim>::FEData()
-: fe_p0(0), fe_p1(1), order(4), quad(order),
-  fe_values(mapp,quad,fe_p0,update_JxW_values | update_quadrature_points),
-  fv_rt(mapp,quad,fe_rt,update_values | update_quadrature_points)
-{}
+DarcyFlowMHOutput::FEData::FEData()
+: order(4),
+  quad(order),
+  mapp(),
+  fe_p1(0), fe_p0(0)
+  fe_rt()
+{
+        fe_values = mixed_fe_values(mapp, quad, *fe_p0, update_JxW_values | update_quadrature_points);
+        fv_rt = mixed_fe_values(mapp, quad, *pf_rt, update_JxW_values | update_quadrature_points);
+}
 
 
 void DarcyFlowMHOutput::compute_l2_difference() {

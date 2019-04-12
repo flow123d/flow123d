@@ -30,6 +30,7 @@
 #include "mesh/ref_element.hh"                // for RefElement
 #include "mesh/accessors.hh"
 #include "fem/update_flags.hh"                // for UpdateFlags
+#include "tools/mixed.hh"
 
 class DOFHandlerBase;
 template<unsigned int dim> class Quadrature;
@@ -171,7 +172,7 @@ public:
 /**
  * @brief Abstract base class with certain methods independent of the template parameter @p dim.
  */
-template<unsigned int spacedim>
+template<unsigned int spacedim = 3>
 class FEValuesSpaceBase
 {
 public:
@@ -219,7 +220,7 @@ public:
 /**
  * @brief Base class for FEValues and FESideValues
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
 class FEValuesBase : public FEValuesSpaceBase<spacedim>
 {
 private:
@@ -528,7 +529,7 @@ protected:
  * @param spacedim Dimension of the Euclidean space where the actual
  *                 cell lives.
  */
-template<unsigned int dim, unsigned int spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
 class FEValues : public FEValuesBase<dim,spacedim>
 {
 public:
@@ -560,6 +561,11 @@ public:
 };
 
 
+Mixed<FEValues> mixed_fe_values(
+        Mixed<Mapping> &mapping,
+        Mixed<Quadrature> &quadrature,
+        Mixed<FiniteElement> &fe,
+        UpdateFlags flags);
 
 
 /**

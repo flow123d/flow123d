@@ -243,6 +243,7 @@ template class FEShapeHandler<2, dim, spacedim, FieldValue<spacedim>::TensorFixe
 #define INSTANCE_VALUE_HANDLER(dim) \
 INSTANCE_VALUE_HANDLER_ALL(dim,3)
 //INSTANCE_VALUE_HANDLER_ALL(dim,2)   \
+//
 
 INSTANCE_VALUE_HANDLER(0);
 INSTANCE_VALUE_HANDLER(1);

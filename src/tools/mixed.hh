@@ -14,12 +14,12 @@
 
 const int __spacedim = 3;
 
+using Dim = unsigned int;
 
-
-template<template<int> class T>
+template<template<Dim ...> class T>
 using _MixedBase = std::tuple<T<0>, T<1>, T<2>, T<3>>;
 
-template< template<int dim> class T>
+template< template<Dim ...> class T>
 class Mixed : public _MixedBase<T> {
 /**
  * Template to simplify storing and passing tuples of instances of dimension parametrized templates.
@@ -38,6 +38,15 @@ class Mixed : public _MixedBase<T> {
  *
  */
 public:
+    Mixed(const T<0> &p0,const T<1> &p1,const T<2> &p2,const T<3> &p3)
+    : _MixedBase<T>(p0, p1, p2, p3)
+    {}
+
+    Mixed(T<0> &&p0, T<1> &&p1, T<2> &&p2, T<3> &&p3)
+    : _MixedBase<T>(p0, p1, p2, p3)
+    {}
+
+
     template<typename... Args>
     Mixed(Args... args)
     : _MixedBase<T>(
@@ -47,12 +56,12 @@ public:
             T<3>(std::forward<Args>(args)...))
     {}
 
-    template<int i_dim>
+    template<Dim i_dim>
     T<i_dim> &get() {
         return std::get<i_dim>(*this);
     }
 
-    template<int i_dim>
+    template<Dim i_dim>
     const T<i_dim> &get() const {
         return std::get<i_dim>(*this);
     }
@@ -61,35 +70,35 @@ public:
 };
 
 
-template< template<int, int> class T>
-struct FixSpaceDim {
-/**
- * Partial template resolution (parameter binding).
- * See implementation of MixedSpaceDim for the usage. Can be used for
- * possible child classes of the Mixed template.
- */
-public:
-    template<int dim>
-    using type =  T<dim, __spacedim>;
-};
-
-
-template< template<int, int> class T>
-using MixedSpaceDim = Mixed< FixSpaceDim<T>::template type >;
-
-
-
+//template< template<Dim, Dim> class T>
+//struct FixSpaceDim {
+///**
+// * Partial template resolution (parameter binding).
+// * See implementation of MixedSpaceDim for the usage. Can be used for
+// * possible child classes of the Mixed template.
+// */
+//public:
+//    template<Dim dim>
+//    using type =  T<dim, __spacedim>;
+//};
+//
+//
+//template< template<Dim, Dim> class T>
+//using MixedSpaceDim = Mixed< FixSpaceDim<T>::template type >;
 
 
 
-template<template<int> class T>
+
+
+
+template<template<Dim...> class T>
 using _MixedPtrBase = std::tuple<
         std::shared_ptr<T<0>>, std::shared_ptr<T<1>>,
         std::shared_ptr<T<2>>, std::shared_ptr<T<3>>>;
 
 
 
-template< template<int dim> class T>
+template< template<Dim...> class T>
 class MixedPtr : public _MixedPtrBase<T> {
 /**
  * Template to simplify storing and passing tuples of shatred_ptr to instances of dimension parametrized templates.
@@ -107,14 +116,20 @@ class MixedPtr : public _MixedPtrBase<T> {
  * We are unable to give precedence to the copy constructor over the prefect forwarding constructor MixedPtr(Args&& ...).
  */
 public:
+    template <Dim dim>
+    using TPtr = std::shared_ptr<T<dim>>;
 
-    template < template<int dim> class TT>
+    template < template<Dim...> class TT>
     MixedPtr(const MixedPtr<TT> &other)
     : _MixedPtrBase<T>(
             other.get<0>(),
             other.get<1>(),
             other.get<2>(),
             other.get<3>())
+    {}
+
+    MixedPtr(TPtr<0> p0, TPtr<1> p1, TPtr<2> p2, TPtr<3> p3)
+    : _MixedPtrBase<T>(p0, p1, p2, p3)
     {}
 
     template<typename... Args>
@@ -127,7 +142,7 @@ public:
     {}
 
 
-    template<int i_dim>
+    template<Dim i_dim>
     std::shared_ptr<T<i_dim>> get() {
         return std::get<i_dim>(*this);
     }
@@ -149,9 +164,27 @@ public:
 
 };
 
-template< template<int, int> class T>
-using MixedSpaceDimPtr = MixedPtr< FixSpaceDim<T>::template type >;
+//template< template<Dim, Dim> class T>
+//using MixedSpaceDimPtr = MixedPtr< FixSpaceDim<T>::template type >;
 
+
+
+//template< template <int> class Fn, class ...Args>
+//auto dim_switch(Dim dim, Args&&... args) -> decltype( builder.makeObject() )
+//{
+//    switch (dim)
+//    {
+//        case 0:
+//            return Fn<0>(std::forward<Args>(args)...);
+//        case 0:
+//            return Fn<1>(std::forward<Args>(args)...);
+//        case 0:
+//            return Fn<2>(std::forward<Args>(args)...);
+//        case 0:
+//            return Fn<3>(std::forward<Args>(args)...);
+//    }
+//
+//}
 
 
 #endif /* SRC_TOOLS_MIXED_HH_ */

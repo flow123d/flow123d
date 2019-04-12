@@ -61,8 +61,8 @@ public:
  * @param dim Dimension of the cells.
  * @param spacedim Dimension of the Euclidean space.
  */
-template<unsigned int dim, unsigned int spacedim>
-class MappingP1 : public Mapping<dim,spacedim>
+template<unsigned int dim, unsigned int spacedim = 3>
+class MappingP1 : public Mapping<dim, spacedim>
 {
 public:
 

@@ -10,7 +10,7 @@
 #include <iostream>
 #include "tools/mixed.hh"
 
-template <int dim, int spacedim>
+template <unsigned int dim, unsigned  int spacedim = 3>
 class Mapping {
 public:
     Mapping(int a, std::vector<int> b) : _a(a + dim + spacedim) {
@@ -23,7 +23,7 @@ public:
 };
 
 
-template <int dim>
+template <unsigned int dim>
 class FE {
 public:
     FE(int a, std::vector<int> b) : _a(a + dim + 10) {
@@ -36,7 +36,7 @@ public:
 };
 
 
-template <int dim>
+template <unsigned int dim>
 class FE_XY : public FE<dim> {
 public:
     FE_XY(int a, std::vector<int> b)
@@ -69,33 +69,33 @@ TEST(Mixed, mixed) {
 
     // dim and spacedim templates
     {
-        Mixed<FixSpaceDim<Mapping>::template type> mixed_fe_a( 3, vec);
+        Mixed<Mapping> mixed_fe_a( 3, vec);
         EXPECT_EQ(6, mixed_fe_a.get<0>()._a);
         EXPECT_EQ(7, mixed_fe_a.get<1>()._a);
         EXPECT_EQ(8, mixed_fe_a.get<2>()._a);
         EXPECT_EQ(9, mixed_fe_a.get<3>()._a);
     }
     {
-        Mixed<FixSpaceDim<Mapping>::template type> mixed_fe_a( 3);
+        Mixed<Mapping> mixed_fe_a( 3);
         EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
         EXPECT_EQ(9, mixed_fe_a.get<1>()._a);
         EXPECT_EQ(18, mixed_fe_a.get<2>()._a);
         EXPECT_EQ(27, mixed_fe_a.get<3>()._a);
     }
-    {
-        MixedSpaceDim<Mapping> mixed_fe_a( 3, vec);
-        EXPECT_EQ(6, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(7, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(8, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(9, mixed_fe_a.get<3>()._a);
-    }
-    {
-        MixedSpaceDim<Mapping> mixed_fe_a( 3);
-        EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
-        EXPECT_EQ(9, mixed_fe_a.get<1>()._a);
-        EXPECT_EQ(18, mixed_fe_a.get<2>()._a);
-        EXPECT_EQ(27, mixed_fe_a.get<3>()._a);
-    }
+//    {
+//        MixedSpaceDim<Mapping> mixed_fe_a( 3, vec);
+//        EXPECT_EQ(6, mixed_fe_a.get<0>()._a);
+//        EXPECT_EQ(7, mixed_fe_a.get<1>()._a);
+//        EXPECT_EQ(8, mixed_fe_a.get<2>()._a);
+//        EXPECT_EQ(9, mixed_fe_a.get<3>()._a);
+//    }
+//    {
+//        MixedSpaceDim<Mapping> mixed_fe_a( 3);
+//        EXPECT_EQ(0, mixed_fe_a.get<0>()._a);
+//        EXPECT_EQ(9, mixed_fe_a.get<1>()._a);
+//        EXPECT_EQ(18, mixed_fe_a.get<2>()._a);
+//        EXPECT_EQ(27, mixed_fe_a.get<3>()._a);
+//    }
 
 }
 
@@ -133,19 +133,19 @@ TEST(MixedPtr, mixed_ptr) {
 
     // dim and spacedim templates
     {
-        MixedPtr<FixSpaceDim<Mapping>::template type> mixed_fe( 3, vec);
+        MixedPtr<Mapping> mixed_fe( 3, vec);
         EXPECT_EQ(6, mixed_fe.get<0>()->_a);
         EXPECT_EQ(7, mixed_fe.get<1>()->_a);
         EXPECT_EQ(8, mixed_fe.get<2>()->_a);
         EXPECT_EQ(9, mixed_fe.get<3>()->_a);
     }
-    {
-        MixedSpaceDimPtr<Mapping> mixed_fe( 3, vec);
-        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
-        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
-        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
-        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
-    }
+//    {
+//        MixedSpaceDimPtr<Mapping> mixed_fe( 3, vec);
+//        EXPECT_EQ(6, mixed_fe.get<0>()->_a);
+//        EXPECT_EQ(7, mixed_fe.get<1>()->_a);
+//        EXPECT_EQ(8, mixed_fe.get<2>()->_a);
+//        EXPECT_EQ(9, mixed_fe.get<3>()->_a);
+//    }
 
     // assign to base
     {
@@ -160,3 +160,16 @@ TEST(MixedPtr, mixed_ptr) {
     }
 
 }
+
+
+//template<Dim dim>
+//int foo(std::vector<float> &vec) {
+//    return vec.size() * dim;
+//}
+//
+//TEST(dim_switch, dim_switch) {
+//    std::vector<int> vec = {1, 2};
+//    for(int dim=0; dim<4; dim++) {
+//        EXPECT_EQ(2+dim, dim_switch<foo>(dim, vec));
+//    }
+//}

@@ -138,15 +138,16 @@ FEValuesBase<dim,spacedim>::~FEValuesBase() {
 template<unsigned int dim, unsigned int spacedim>
 void FEValuesBase<dim,spacedim>::allocate(Mapping<dim,spacedim> & _mapping,
         Quadrature<dim> & _quadrature,
-        FiniteElement<dim> & _fe,
+        const FiniteElement<dim> & _fe,
         UpdateFlags _flags)
 {
     // For FEVector and FETensor check number of components.
     // This cannot be done in FiniteElement since it does not know spacedim.
-    if (_fe.type_ == FEVector)
+    if (_fe.type_ == FEVector) {
         ASSERT_DBG(_fe.n_components() == spacedim).error("FEVector must have spacedim components.");
-    else if (_fe.type_ == FETensor)
+    } else if (_fe.type_ == FETensor) {
         ASSERT_DBG(_fe.n_components() == spacedim*spacedim).error("FETensor must have spacedim*spacedim components.");
+    }
     
     mapping = &_mapping;
     quadrature = &_quadrature;
@@ -541,6 +542,19 @@ void FEValues<dim,spacedim>::reinit(ElementAccessor<3> & cell)
 
 
 
+Mixed<FEValues> mixed_fe_values(
+        Mixed<Mapping> &mapping,
+        Mixed<Quadrature> &quadrature,
+        Mixed<FiniteElement> &fe,
+        UpdateFlags flags)
+{
+    return Mixed<FEValues>(
+      FEValues<0>(mapping.get<0>(), quadrature.get<0>(), fe.get<0>(), flags),
+      FEValues<1>(mapping.get<1>(), quadrature.get<1>(), fe.get<1>(), flags),
+      FEValues<2>(mapping.get<2>(), quadrature.get<2>(), fe.get<2>(), flags),
+      FEValues<3>(mapping.get<3>(), quadrature.get<3>(), fe.get<3>(), flags)
+      );
+}
 
 
 

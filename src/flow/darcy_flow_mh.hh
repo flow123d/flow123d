@@ -71,6 +71,8 @@ namespace Input {
 		class Selection;
 	}
 }
+typedef std::vector<std::shared_ptr<AssemblyBase> > MultidimAssembly;
+
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -191,7 +193,7 @@ public:
 
         // Mirroring the following members of DarcyMH:
         Mesh *mesh;
-        AssemblyBase::MultidimAssembly multidim_assembler;
+        MultidimAssembly multidim_assembler;
         MH_DofHandler *mh_dh;
 
 

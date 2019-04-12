@@ -25,6 +25,7 @@
 #include "fem/fe_values.hh"
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
+#include "mesh/side_impl.hh"                   // for Side::cond, Side::cond...
 #include "fem/dh_cell_accessor.hh"
 #include "fields/field_fe.hh"
 #include "fields/fe_value_handler.hh"
