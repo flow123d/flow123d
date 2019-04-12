@@ -71,6 +71,7 @@ namespace Input {
 		class Selection;
 	}
 }
+template<int spacedim, class Value> class FieldAddPotential;
 
 /**
  * @brief Mixed-hybrid model of linear Darcy flow, possibly unsteady.
@@ -392,7 +393,7 @@ protected:
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
     std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_pressure_ptr;   ///< Field of pressure head in barycenters of elements.
-    std::shared_ptr<FieldFE<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
+    std::shared_ptr<FieldAddPotential<3, FieldValue<3>::Scalar>> ele_piezo_head_ptr; ///< Field of piezo-metric head in barycenters of elements.
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> ele_flux_ptr;  ///< Field of flux in barycenter of every element.
 
 	std::shared_ptr<EqData> data_;

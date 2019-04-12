@@ -86,13 +86,13 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 : EquationOutput()
 {
 
-    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m())
+    *this += field_ele_pressure.name("pressure_p0_old").units(UnitSI().m()) // TODO remove: obsolete field
              .flags(FieldFlag::equation_result)
              .description("Pressure solution - P0 interpolation.");
     *this += field_node_pressure.name("pressure_p1").units(UnitSI().m())
              .flags(FieldFlag::equation_result)
              .description("Pressure solution - P1 interpolation.");
-	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m())
+	*this += field_ele_piezo_head.name("piezo_head_p0_old").units(UnitSI().m()) // TODO remove: obsolete field
              .flags(FieldFlag::equation_result)
              .description("Piezo head solution - P0 interpolation.");
 	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1))

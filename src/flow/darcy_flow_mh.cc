@@ -261,10 +261,10 @@ DarcyMH::EqData::EqData()
             .input_default("0.0")
             .units( UnitSI().m(-1) );
 
-    *this += field_ele_pressure.name("pressure").units(UnitSI().m()) //TODO change name to pressure_p0
+    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m())
              .flags(FieldFlag::equation_result)
              .description("Pressure solution - P0 interpolation.");
-	*this += field_ele_piezo_head.name("piezo_head").units(UnitSI().m()) //TODO change name to piezo_head_p0
+	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m())
              .flags(FieldFlag::equation_result)
              .description("Piezo head solution - P0 interpolation.");
 	*this += field_ele_flux.name("velocity").units(UnitSI().m().s(-1)) //TODO change name to velocity_p0
@@ -418,9 +418,8 @@ void DarcyMH::initialize() {
 		ele_pressure_ptr->set_fe_data(data_->dh_, p_ele_component, ele_flux_ptr->get_data_vec());
 		data_->field_ele_pressure.set_field(mesh_->region_db().get_region_set("ALL"), ele_pressure_ptr);
 
-		ele_piezo_head_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
-		uint p_edge_component = 1;
-		ele_piezo_head_ptr->set_fe_data(data_->dh_, p_edge_component, ele_flux_ptr->get_data_vec());
+		arma::vec4 gravity = (-1) * data_->gravity_;
+		ele_piezo_head_ptr = std::make_shared< FieldAddPotential<3, FieldValue<3>::Scalar> >(gravity, ele_pressure_ptr);
 		data_->field_ele_piezo_head.set_field(mesh_->region_db().get_region_set("ALL"), ele_piezo_head_ptr);
     }
 
