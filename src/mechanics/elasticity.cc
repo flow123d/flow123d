@@ -336,12 +336,8 @@ Elasticity::~Elasticity()
 
 void Elasticity::output_vector_gather()
 {
-    VecScatter output_scatter;
-    VecScatterCreateToZero(ls->get_solution(), &output_scatter, PETSC_NULL);
-    // gather solution to output_vec
-    VecScatterBegin(output_scatter, ls->get_solution(), output_vec.petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(output_scatter, ls->get_solution(), output_vec.petsc_vec(), INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterDestroy(&(output_scatter));
+    output_vec.local_to_ghost_begin();
+    output_vec.local_to_ghost_end();
 }
 
 
