@@ -643,14 +643,6 @@ void DarcyMH::solve_nonlinear()
         double alpha = 1; // how much of new solution
         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
-        /*
-        double * sol;
-        unsigned int sol_size;
-        get_solution_vector(sol, sol_size);
-        if (mh_dh.el_ds->myp() == 0)
-            VecView(sol_vec, PETSC_VIEWER_STDOUT_SELF);
-        */
-
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
         assembly_linear_system();
@@ -1454,7 +1446,6 @@ void DarcyMH::setup_time_term() {
 
    	balance_->start_mass_assembly(data_->water_balance_idx);
 
-    //DebugOut().fmt("time_term lsize: {} {}\n", mh_dh.el_ds->myp(), mh_dh.el_ds->lsize());
    	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(dh_cell);
 
@@ -1464,7 +1455,6 @@ void DarcyMH::setup_time_term() {
 				* ele_ac.measure();
         local_diagonal[ele_ac.ele_local_row()]= - diagonal_coeff / time_->dt();
 
-        //DebugOut().fmt("time_term: {} {} {} {} {}\n", mh_dh.el_ds->myp(), ele_ac.ele_global_idx(), i_loc_row, i_loc_el + mh_dh.side_ds->lsize(), diagonal_coeff);
        	balance_->add_mass_matrix_values(data_->water_balance_idx,
        	        ele_ac.region().bulk_idx(), { LongIdx(ele_ac.ele_row()) }, {diagonal_coeff});
     }

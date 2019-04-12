@@ -498,13 +498,6 @@ protected:
             Boundary* bcd = ele_ac.side(i)->cond();
 
             if (bcd) {
-                /*
-                    DebugOut().fmt("add_flux: {} {} {} {}\n",
-                            ad_->mh_dh->el_ds->myp(),
-                            ele_ac.ele_global_idx(),
-                            ad_->local_boundary_index,
-                            ele_ac.side_row(i));
-                 */
                 ad_->balance->add_flux_matrix_values(ad_->water_balance_idx, ad_->local_boundary_index,
                                                      {(LongIdx)(ele_ac.side_row(i))}, {1});
                 ++(ad_->local_boundary_index);
