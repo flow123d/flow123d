@@ -540,16 +540,16 @@ void Balance::calculate_cumulative(unsigned int quantity_idx,
     // transpose(region_source_matrix_) * solution + region_source_rhs_*ones(n_blk_reg)
     // the region vector is then summed up to temp_source
     for (int i=0; i<lsize; ++i){
-        MatGetRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat);
-        MatGetRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs);
+        chkerr(MatGetRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat));
+        chkerr(MatGetRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs));
         
         ASSERT_DBG(n_cols_mat == n_cols_rhs);
         
         for (int j=0; j<n_cols_mat; ++j)
             temp_source += vals_mat[j]*sol_array[i] + vals_rhs[j];
         
-        MatRestoreRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat);
-        MatRestoreRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs);
+        chkerr(MatRestoreRow(region_source_matrix_[quantity_idx], i, &n_cols_mat, NULL, &vals_mat));
+        chkerr(MatRestoreRow(region_source_rhs_[quantity_idx], i, &n_cols_rhs, NULL, &vals_rhs));
     }
     chkerr(VecRestoreArrayRead(solution, &sol_array));
 
@@ -627,8 +627,8 @@ void Balance::calculate_instant(unsigned int quantity_idx, const Vec& solution)
     for (int i=0; i<lsize; ++i)
     {
         int row = i;
-        MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat);
-        MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, NULL, &vals_rhs);
+        chkerr(MatGetRow(region_source_matrix_[quantity_idx], row, &n_cols_mat, &cols, &vals_mat));
+        chkerr(MatGetRow(region_source_rhs_[quantity_idx], row, &n_cols_rhs, NULL, &vals_rhs));
         
         ASSERT_DBG(n_cols_mat == n_cols_rhs);
         
