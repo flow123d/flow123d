@@ -63,12 +63,14 @@ public:
 	inline MappingP1<dim,3> *mapping();
 
 	inline std::shared_ptr<DOFHandlerMultiDim> dh();
+    inline std::shared_ptr<DOFHandlerMultiDim> dh_scalar();
+    inline std::shared_ptr<DOFHandlerMultiDim> dh_tensor();
     
 //     const FEValuesViews::Vector<dim,3> vec;
 
 private:
 
-	/// Finite elements for the solution of the advection-diffusion equation.
+	/// Finite elements for the solution of the mechanics equation.
     FiniteElement<0> *fe0_;
 	FiniteElement<1> *fe1_;
 	FiniteElement<2> *fe2_;
@@ -89,6 +91,8 @@ private:
     
 	/// Object for distribution of dofs.
 	std::shared_ptr<DOFHandlerMultiDim> dh_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_scalar_;
+    std::shared_ptr<DOFHandlerMultiDim> dh_tensor_;
 };
 
 
@@ -136,6 +140,8 @@ public:
         Field<3, FieldValue<3>::Scalar> subdomain;
         
         Field<3, FieldValue<3>::VectorFixed> output_field;
+        Field<3, FieldValue<3>::TensorFixed> output_stress;
+        Field<3, FieldValue<3>::Scalar> output_von_mises_stress;
 
         EquationOutput output_fields;
 
@@ -207,6 +213,9 @@ private:
     static const int registrar;
 
 	void output_vector_gather();
+    
+    template<unsigned int dim>
+    void update_output_stress();
 
 	void preallocate();
 
@@ -307,6 +316,8 @@ private:
 
 	/// Vector of solution data.
 	VectorMPI output_vec;
+    VectorMPI output_stress_vec;
+    VectorMPI output_von_mises_stress_vec;
     
     std::shared_ptr<OutputTime> output_stream_;
 

@@ -107,6 +107,23 @@ FEObjects::FEObjects(Mesh *mesh_, unsigned int fe_order)
 	dh_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
 
 	dh_->distribute_dofs(ds_);
+    
+    
+    FE_P_disc<0> *fe0 = new FE_P_disc<0>(0);
+    FE_P_disc<1> *fe1 = new FE_P_disc<1>(0);
+    FE_P_disc<2> *fe2 = new FE_P_disc<2>(0);
+    FE_P_disc<3> *fe3 = new FE_P_disc<3>(0);
+    dh_scalar_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe0, fe1, fe2, fe3);
+	dh_scalar_->distribute_dofs(ds);
+    
+    FESystem<0> *fe0t = new FESystem<0>(std::make_shared<FE_P_disc<0>>(0), FETensor, 9);
+    FESystem<1> *fe1t = new FESystem<1>(std::make_shared<FE_P_disc<1>>(0), FETensor, 9);
+    FESystem<2> *fe2t = new FESystem<2>(std::make_shared<FE_P_disc<2>>(0), FETensor, 9);
+    FESystem<3> *fe3t = new FESystem<3>(std::make_shared<FE_P_disc<3>>(0), FETensor, 9);
+    dh_tensor_ = make_shared<DOFHandlerMultiDim>(*mesh_);
+	std::shared_ptr<DiscreteSpace> dst = std::make_shared<EqualOrderDiscreteSpace>( mesh_, fe0t, fe1t, fe2t, fe3t);
+	dh_tensor_->distribute_dofs(dst);
 }
 
 
@@ -139,6 +156,8 @@ template<> MappingP1<2,3> *FEObjects::mapping<2>() { return map2_; }
 template<> MappingP1<3,3> *FEObjects::mapping<3>() { return map3_; }
 
 std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh() { return dh_; }
+std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_scalar() { return dh_scalar_; }
+std::shared_ptr<DOFHandlerMultiDim> FEObjects::dh_tensor() { return dh_tensor_; }
 
 
 
@@ -247,7 +266,17 @@ Elasticity::EqData::EqData()
             .name("displacement")
             .units( UnitSI().m() )
             .flags(equation_result);
-
+    
+    *this += output_stress
+            .name("stress")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+    
+    *this += output_von_mises_stress
+            .name("von_mises_stress")
+            .units( UnitSI().Pa() )
+            .flags(equation_result);
+    
 
     // add all input fields to the output list
     output_fields += *this;
@@ -300,7 +329,18 @@ void Elasticity::initialize()
     std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed> > output_field_ptr(new FieldFE<3, FieldValue<3>::VectorFixed>);
     output_vec = output_field_ptr->set_fe_data(feo->dh());
     data_.output_field.set_field(mesh_->region_db().get_region_set("ALL"), output_field_ptr, 0.);
-    data_.output_type(OutputTime::CORNER_DATA);
+    
+    // setup output stress
+    shared_ptr<FieldFE<3, FieldValue<3>::TensorFixed> > output_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::TensorFixed> >();
+    output_stress_vec = output_stress_ptr->set_fe_data(feo->dh_tensor());
+    data_.output_stress.set_field(mesh_->region_db().get_region_set("ALL"), output_stress_ptr);
+    
+    // setup output von Mises stress
+    shared_ptr<FieldFE<3, FieldValue<3>::Scalar> > output_von_mises_stress_ptr = make_shared<FieldFE<3, FieldValue<3>::Scalar> >();
+    output_von_mises_stress_vec = output_von_mises_stress_ptr->set_fe_data(feo->dh_scalar());
+    data_.output_von_mises_stress.set_field(mesh_->region_db().get_region_set("ALL"), output_von_mises_stress_ptr);
+    
+    data_.output_field.output_type(OutputTime::CORNER_DATA);
 
     // set time marks for writing the output
     data_.output_fields.initialize(output_stream_, mesh_, input_rec.val<Input::Record>("output"), this->time());
@@ -338,6 +378,14 @@ void Elasticity::output_vector_gather()
 {
     output_vec.local_to_ghost_begin();
     output_vec.local_to_ghost_end();
+    
+    update_output_stress<1>();
+    update_output_stress<2>();
+    update_output_stress<3>();
+    output_stress_vec.local_to_ghost_begin();
+    output_stress_vec.local_to_ghost_end();
+    output_von_mises_stress_vec.local_to_ghost_begin();
+    output_von_mises_stress_vec.local_to_ghost_end();
 }
 
 
@@ -482,6 +530,58 @@ void Elasticity::output_data()
 
     END_TIMER("MECH-OUTPUT");
 }
+
+
+template<unsigned int dim>
+void Elasticity::update_output_stress()
+{
+    QGauss<dim> q(0);
+    FEValues<dim,3> fv(*feo->mapping<dim>(), q, *feo->fe<dim>(),
+    		update_values | update_gradients | update_JxW_values);
+    const unsigned int ndofs = feo->fe<dim>()->n_dofs();
+    std::vector<int> dof_indices(ndofs), dof_indices_scalar(1), dof_indices_tensor(9);
+    auto vec = fv.vector_view(0);
+    
+    DHCellAccessor cell_tensor = *feo->dh_tensor()->own_range().begin();
+    DHCellAccessor cell_scalar = *feo->dh_scalar()->own_range().begin();
+    for (auto cell : feo->dh()->own_range())
+    {
+        if (cell.dim() != dim)
+        {
+            cell_scalar.inc();
+            cell_tensor.inc();
+            continue;
+        }
+        
+        auto elm = cell.elm();
+        
+        double poisson = data_.poisson_ratio.value(elm.centre(), elm);
+        double young = data_.young_modulus.value(elm.centre(), elm);
+        double mu = lame_mu(young, poisson);
+        double lambda = lame_lambda(young, poisson);
+        
+        fv.reinit(elm);
+        cell.get_loc_dof_indices(dof_indices);
+        cell_scalar.get_loc_dof_indices(dof_indices_scalar);
+        cell_tensor.get_loc_dof_indices(dof_indices_tensor);
+        
+        arma::mat33 stress = arma::zeros(3,3);
+        for (unsigned int i=0; i<ndofs; i++)
+            stress += (2*mu*vec.sym_grad(i,0) + lambda*vec.divergence(i,0)*arma::eye(3,3))*output_vec[dof_indices[i]];
+        
+        arma::mat33 stress_dev = stress - arma::trace(stress)/3*arma::eye(3,3);
+        double von_mises_stress = sqrt(1.5*arma::dot(stress_dev, stress_dev));
+        
+        for (unsigned int i=0; i<3; i++)
+            for (unsigned int j=0; j<3; j++)
+                output_stress_vec[dof_indices_tensor[i*3+j]] = stress(i,j);
+        output_von_mises_stress_vec[dof_indices_scalar[0]] = von_mises_stress;
+        cell_scalar.inc();
+        cell_tensor.inc();
+    }
+}
+
+
 
 
 
