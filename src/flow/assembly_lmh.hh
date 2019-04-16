@@ -170,7 +170,7 @@ public:
             if (system_.balance != nullptr) {
                 system_.balance->add_mass_vec_value(ad_->water_balance_idx_, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                system_.balance->add_source_vec_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {(int)edge_row}, {source_diagonal});
+                system_.balance->add_source_values(ad_->water_balance_idx_, ele.region().bulk_idx(), {(int)local_edge}, {0}, {source_diagonal});
             }
         }
 
