@@ -3,7 +3,7 @@
 0	"fracture_2d_1"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"fracture_2d_2"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
 0	"cube_3d"	"water_volume"	0	0	0	0	0	0	0	0	0	0	0	0
-0	".channel_1d"	"water_volume"	-2.12997e-05	0	-2.12997e-05	0	0	0	0	0	0	0	0	0
-0	".fracture_2d_1"	"water_volume"	3.72725e-05	1.05302	-1.05299	0	0	0	0	0	0	0	0	0
-0	".fracture_2d_2"	"water_volume"	-8.7672e-06	1.0528	-1.05281	0	0	0	0	0	0	0	0	0
-0	".cube_3d"	"water_volume"	-7.20555e-06	0.100887	-0.100894	0	0	0	0	0	0	0	0	0
+0	".channel_1d"	"water_volume"	-3.80554e-07	0	-3.80554e-07	0	0	0	0	0	0	0	0	0
+0	".fracture_2d_1"	"water_volume"	1.07475e-05	1.15495	-1.15494	0	0	0	0	0	0	0	0	0
+0	".fracture_2d_2"	"water_volume"	5.03945e-07	0.05571	-0.0557095	0	0	0	0	0	0	0	0	0
+0	".cube_3d"	"water_volume"	-1.08709e-05	0.0117142	-0.0117251	0	0	0	0	0	0	0	0	0
