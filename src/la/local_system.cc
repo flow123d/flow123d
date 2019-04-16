@@ -94,18 +94,6 @@ void LocalSystem::set_solution_col(uint loc_col, double solution) {
     n_elim_cols++;
 }
 
-/*
-
-void LocalSystem::set_solution(const DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag) {
-    ASSERT_EQ_DBG(loc_rows.n_rows(), solution)
-    set_solution_rows(loc_rows, solution, diag);
-    set_solution_cols()
-}
-void LocalSystem::set_solution_rows(DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag);
-void LocalSystem::set_solution_cols(DofVec & loc_cols, const arma::vec &solution);
-
-*/
-
 void LocalSystem::eliminate_solution()
 {
     //if there is solution set, eliminate:
