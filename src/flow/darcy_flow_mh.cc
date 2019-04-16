@@ -368,7 +368,7 @@ void DarcyMH::init_eq_data()
 void DarcyMH::initialize() {
 
     init_eq_data();
-    multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
@@ -974,7 +974,7 @@ void DarcyMH::assembly_linear_system() {
         assembly_source_term();
         
 
-	    assembly_mh_matrix( multidim_assembler ); // fill matrix
+	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
 //         print_matlab_matrix("matrix");
