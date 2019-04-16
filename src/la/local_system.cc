@@ -104,7 +104,7 @@ void LocalSystem::eliminate_solution()
         arma::mat tmp_mat = matrix;
         arma::vec tmp_rhs = rhs;
         
-        unsigned int ic, ir, row, col, j;
+        unsigned int ic, ir, row, col;
 
         // eliminate columns
         for(ic=0; ic < n_elim_cols; ic++) {
@@ -210,4 +210,44 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
             if( sp(i,j) != 0 )
                 sparsity(i,j) = almost_zero;
 //     sparsity.print("sparsity");
+}
+
+void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur)
+{
+    // only for square matrix
+    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols);
+    
+    arma::uword lastr = matrix.n_rows - 1;
+    arma::uword lastc = matrix.n_cols - 1;
+    
+    ASSERT_LT_DBG(offset, lastr);
+    ASSERT_LT_DBG(offset, lastc);
+    
+    schur.reset(row_dofs.subvec(offset, lastr), col_dofs.subvec(offset, lastc));
+
+    // B * invA
+    arma::mat BinvA = matrix.submat(offset, 0, lastr, offset-1) * matrix.submat(0, 0, offset-1, offset-1).i();
+    
+    // Schur complement S = C - B * invA * Bt
+    schur.matrix = matrix.submat(offset, offset, lastr, lastc) - BinvA * matrix.submat(0, offset, offset-1, lastc);
+    schur.rhs = rhs.subvec(offset, lastr) - BinvA * rhs.subvec(0, offset-1);
+}
+
+void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution)
+{
+    // only for square matrix
+    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols);
+    
+    arma::uword lastr = matrix.n_rows - 1;
+    arma::uword lastc = matrix.n_cols - 1;
+    
+    ASSERT_LT_DBG(offset, lastr);
+    ASSERT_LT_DBG(offset, lastc);
+
+    reconstructed_solution.set_size(offset);
+    // invA
+    arma::mat invA =  matrix.submat(0, 0, offset-1, offset-1).i();
+    
+    // x = invA*b - invA * Bt * schur_solution
+    reconstructed_solution = invA * rhs.subvec(0,offset-1) - invA * matrix.submat(0, offset, offset-1, lastc) * schur_solution;
 }

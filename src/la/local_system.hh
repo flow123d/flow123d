@@ -133,6 +133,23 @@ public:
      * Almost_zero values will be set in all entries: sp(i,j) != 0
      */
     void set_sparsity(const arma::umat & sp);
+    
+    /** @brief Computes Schur complement of the local system: S = C - B * invA * Bt
+     * Applicable for square matrices.
+     * 
+     * @p offset index of the first row/column of submatrix C (size of A)
+     * @p schur (output) LocalSystem with Schur complement
+     */
+    void compute_schur_complement(uint offset, LocalSystem& schur);
+    
+    /** @brief Reconstructs the solution from the Schur complement solution: x = invA*b - invA * Bt * schur_solution
+     * Applicable for square matrices.
+     * 
+     * @p offset index of the first row/column of submatrix C (size of A)
+     * @p schur_solution solution of the Schur complement
+     * @p reconstructed_solution (output) reconstructed solution of the complementary variable
+     */
+    void reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution);
 
 protected:
     void set_size(unsigned int nrows, unsigned int ncols);
