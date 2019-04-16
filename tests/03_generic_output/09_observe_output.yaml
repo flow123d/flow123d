@@ -37,7 +37,6 @@ problem: !Coupling_Sequential
     output:
       fields:
         - {field: pressure_p0, times: [20000, 100000]}
-        - pressure_p1
         - {field: velocity_p0, times: [20000, 200000]}
       observe_fields: [pressure_p0, velocity_p0, anisotropy]
     output_stream:
