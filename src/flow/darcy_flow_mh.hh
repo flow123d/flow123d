@@ -218,6 +218,8 @@ public:
         
         /// Idicator of dirichlet or neumann type of switch boundary conditions.
         std::vector<char> bc_switch_dirichlet;
+
+    	VectorMPI data_vec_;
     };
 
     /// Selection for enum MortarMethod.
