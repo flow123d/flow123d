@@ -426,6 +426,11 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
     // shape values
     if (data.update_flags & update_values)
     {
+        /// initialize gradients by zeros since we fill only some components
+        for (unsigned int i=0; i<fe_data.n_points; i++)
+            for (unsigned int j=0; j<fe_sys->n_dofs()*fe_sys->function_space_->n_components(); j++)
+                data.shape_values[i][j] = 0;
+            
         arma::vec fv_vec;
         unsigned int comp_offset = 0;
         unsigned int shape_offset = 0;
@@ -445,6 +450,11 @@ void FEValuesBase<dim,spacedim>::fill_system_data(const FEInternalData &fe_data)
     // shape gradients
     if (data.update_flags & update_gradients)
     {
+        /// initialize gradients by zeros since we fill only some components
+        for (unsigned int i=0; i<fe_data.n_points; i++)
+            for (unsigned int j=0; j<fe_sys->n_dofs()*fe_sys->function_space_->n_components(); j++)
+                data.shape_gradients[i][j].zeros();
+            
         arma::mat grads;
         unsigned int comp_offset = 0;
         unsigned int shape_offset = 0;
