@@ -39,7 +39,6 @@ typename Value::return_type const & FieldDivide<spacedim, Value>::value(const Po
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             this->value_(row,col) /= div_val;
         }
-    std::cout << std::endl;
 
     return this->r_value_;
 }
