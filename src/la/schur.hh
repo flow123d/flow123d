@@ -68,9 +68,10 @@ public:
      *
      * Gets linear system with original matrix A and creates its inversion (IA matrix)
      *
-     * In current implementation the index set IsA has to be continuous sequence at the beginning of the local block of indices.
+     * ia - PETSC indexset for the eliminated block.
+     * ib - PETSc indexset for the Schur complement, complementary by default.
      */
-    SchurComplement(IS ia, Distribution *ds);
+    SchurComplement(Distribution *ds, IS ia, IS ib = nullptr);
 
     /**
      * Copy constructor.

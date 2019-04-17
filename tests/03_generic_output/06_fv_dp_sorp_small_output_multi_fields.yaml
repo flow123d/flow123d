@@ -4,7 +4,7 @@
 # Source for reference: qualitative
 
 # problem
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Transport 1D-2D (convection, dual porosity, sorption), output to multifields
   mesh:
@@ -17,7 +17,6 @@ problem: !Coupling_Sequential
           - 1d_lower
           - 1d_left_branch
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     input_fields:
       - region: 1d_domain
         conductivity: 10
@@ -35,7 +34,6 @@ problem: !Coupling_Sequential
         - velocity_p0
         - conductivity
         - anisotropy
-    balance: {}
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12

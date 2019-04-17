@@ -1,16 +1,6 @@
-- region: plane
+- region: bulk
   anisotropy: 1
-- region: .bc_south
-  bc_type: dirichlet
-  bc_pressure: 0
-- region: .bc_east
+- region: .BOUNDARY
   bc_type: dirichlet
   bc_pressure: !FieldFormula
     value: y
-- region: .bc_north
-  bc_type: dirichlet
-  bc_pressure: !FieldFormula
-    value: x
-- region: .bc_west
-  bc_type: dirichlet
-  bc_pressure: 0

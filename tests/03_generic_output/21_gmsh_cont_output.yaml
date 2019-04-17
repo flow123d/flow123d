@@ -3,7 +3,7 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: GMSH output of flow and transport in P1_average (nodes) interpolation 
   mesh:
@@ -20,7 +20,6 @@ problem: !Coupling_Sequential
           - .fracture_top
           - .rock_top
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -43,12 +42,9 @@ problem: !Coupling_Sequential
         - { field: pressure_p0, interpolation: P1_average }
         - pressure_p1
         - { field: velocity_p0, interpolation: P1_average }
-    balance: {}
     output_stream:
       file: flow.msh
       format: !gmsh
-        variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     balance:
       cumulative: true
@@ -67,11 +63,7 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./transport.msh
       format: !gmsh
-        variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.1
-    solver: !Petsc
-      a_tol: 1.0e-07
     time:
       end_time: 1

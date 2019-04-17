@@ -3,13 +3,12 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test of boundary elementwise field for regions with different dimensions
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         r_tol: 1.0e-10
@@ -51,7 +50,6 @@ problem: !Coupling_Sequential
           mesh_data_file: ./elementwise_cube_data.msh
           field_name: bc_pressure
           default_value: 0.0
-    balance: {}
     output:
       fields:
         - piezo_head_p0
@@ -61,5 +59,3 @@ problem: !Coupling_Sequential
     output_stream:
       file: ./test23.msh
       format: !gmsh
-        variant: ascii
-      name: flow_output_stream

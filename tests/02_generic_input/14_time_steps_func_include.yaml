@@ -3,13 +3,12 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Test of timesteps of transport TG as function and output of timesteps to YAML format.
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -24,12 +23,10 @@ problem: !Coupling_Sequential
     output:
       fields:
         - pressure_p0
-    balance: {}
     output_stream:
       file: flow.msh
       format: !gmsh
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -62,7 +59,6 @@ problem: !Coupling_Sequential
       - A
       - B
       - C                                           
-    balance: {}
     time:
       start_time: 0
       end_time: 120

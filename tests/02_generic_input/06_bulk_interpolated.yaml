@@ -3,13 +3,12 @@
 # Author: David Flanderka
 # Source for reference: analytical, qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Interpolated bulk condition - small cube
   mesh:
     mesh_file: ../00_mesh/cube_1x1x1_frac21_center.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -31,9 +30,7 @@ problem: !Coupling_Sequential
         - velocity_p0
         - { field: conductivity, interpolation: Native }
         - region_id
-    balance: {}
     output_stream:
       file: ./small_cube.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream

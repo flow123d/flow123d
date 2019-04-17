@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Simple noncompatible 3d-2d interaction.
   # Geometry : 3d rectangular, split by a fracture.
@@ -42,7 +42,6 @@ problem: !Coupling_Sequential
  #       - velocity_diff
  #       - pressure_diff
  #       - div_diff
-    balance: {}
     output_stream:
       format: !vtk
         variant: ascii

@@ -3,14 +3,13 @@
 # Author: David Flanderka
 # Source for reference: qualitative
 
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Tests correct calculation of surface depth of FieldFormula. 
   mesh:
     mesh_file: ../00_mesh/big_cube_nc.msh
   # steady velocity field, with velocity v:0.1
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-12
@@ -31,12 +30,10 @@ problem: !Coupling_Sequential
         - pressure_p1
         - velocity_p0
         - field: sigma
-    balance: {}
     output_stream:
       file: ./test15.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
 
 ################################################################################ 
 # Benchmark test of surface depth on mesh file: 00_mesh/big_cube_nc23_mid.msh (60k elements)

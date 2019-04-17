@@ -1,4 +1,4 @@
-flow123d_version: 3.0.0_dev
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: |
     Fast fracture flow + slow diffusion and sorption into rock
@@ -27,7 +27,6 @@ problem: !Coupling_Sequential
       - region: .right
         bc_type: total_flux
         bc_flux: 1e-6
-    balance: {}
     output:
       fields:
         - piezo_head_p0

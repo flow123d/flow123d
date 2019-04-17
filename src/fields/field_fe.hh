@@ -320,7 +320,7 @@ void fill_output_data(VectorMPI & vec_seq, std::shared_ptr<FieldFE<spacedim, Val
 
 	// Fill DOF handler of FieldFE with correct permutation of data corresponding with DOFs.
 	for (auto ele : dh->mesh()->elements_range()) {
-		dh->get_loc_dof_indices(ele, indices);
+		dh->cell_accessor_from_element(ele.idx()).get_loc_dof_indices(indices);
 		for(idof=0; idof<ndofs; idof++) field_ptr->get_data_vec()[ indices[idof] ] = (*vec_seq.data_ptr())[ ndofs*ele.idx()+idof ];
 	}
 }

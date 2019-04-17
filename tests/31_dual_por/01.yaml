@@ -1,22 +1,9 @@
-flow123d_version: 2.0.0
-output_streams:
-  - &anchor1
-    file: dual_por.pvd
-    format: !vtk
-      variant: ascii
-    name: flow_output_stream
-  - &anchor2
-    file: dual_por_transport.pvd
-    format: !vtk
-      variant: ascii
-    time_step: 0.5
-    name: transport_output_stream
+flow123d_version: 3.1.0
 problem: !Coupling_Sequential
   description: Simple dual porosity test - steady flow, simple transport
   mesh:
     mesh_file: ../00_mesh/square_1x1_40el.msh
   flow_equation: !Flow_Darcy_MH
-    output_specific:
     nonlinear_solver:
       linear_solver: !Petsc
         a_tol: 1.0e-07
@@ -31,12 +18,10 @@ problem: !Coupling_Sequential
         - pressure_p0
         - pressure_p1
         - velocity_p0
-    balance: {}
     output_stream: 
       file: dual_por.pvd
       format: !vtk
         variant: ascii
-      name: flow_output_stream
   solute_equation: !Coupling_OperatorSplitting
     transport: !Solute_Advection_FV
       input_fields:
@@ -54,7 +39,6 @@ problem: !Coupling_Sequential
       file: dual_por_transport.pvd
       format: !vtk
         variant: ascii
-      name: transport_output_stream
       times:
         - step: 0.5
     time:
