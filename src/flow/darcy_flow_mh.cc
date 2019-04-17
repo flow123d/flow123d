@@ -58,6 +58,7 @@
 #include "fields/field_values.hh"
 #include "fields/field_add_potential.hh"
 #include "fields/field_fe.hh"
+#include "fields/field_divide.hh"
 
 #include "coupling/balance.hh"
 
@@ -188,6 +189,21 @@ DarcyMH::EqData::EqData()
 {
     mortar_method_=NoMortar;
 
+    *this += field_ele_pressure.name("pressure_p0")
+             .units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Pressure solution - P0 interpolation.");
+
+    *this += field_ele_piezo_head.name("piezo_head_p0")
+	         .units(UnitSI().m())
+             .flags(FieldFlag::equation_result)
+             .description("Piezo head solution - P0 interpolation.");
+
+	*this += field_ele_velocity.name("velocity_p0")
+	         .units(UnitSI().m().s(-1))
+             .flags(FieldFlag::equation_result)
+             .description("Velocity solution - P0 interpolation.");
+
     *this += anisotropy.name("anisotropy")
             .description("Anisotropy of the conductivity tensor.")
             .input_default("1.0")
@@ -260,16 +276,6 @@ DarcyMH::EqData::EqData()
             .description("Storativity (in time dependent problems).")
             .input_default("0.0")
             .units( UnitSI().m(-1) );
-
-    *this += field_ele_pressure.name("pressure_p0").units(UnitSI().m())
-             .flags(FieldFlag::equation_result)
-             .description("Pressure solution - P0 interpolation.");
-	*this += field_ele_piezo_head.name("piezo_head_p0").units(UnitSI().m())
-             .flags(FieldFlag::equation_result)
-             .description("Piezo head solution - P0 interpolation.");
-	*this += field_ele_flux.name("velocity").units(UnitSI().m().s(-1)) //TODO change name to velocity_p0
-             .flags(FieldFlag::equation_result)
-             .description("Velocity solution - P0 interpolation.");
 
     //time_term_fields = this->subset({"storativity"});
     //main_matrix_fields = this->subset({"anisotropy", "conductivity", "cross_section", "sigma", "bc_type", "bc_robin_sigma"});
@@ -411,7 +417,8 @@ void DarcyMH::initialize() {
 		ele_flux_ptr = std::make_shared< FieldFE<3, FieldValue<3>::VectorFixed> >();
 		uint rt_component = 0;
 		ele_flux_ptr->set_fe_data(data_->dh_, rt_component);
-		data_->field_ele_flux.set_field(mesh_->region_db().get_region_set("ALL"), ele_flux_ptr);
+		ele_velocity_ptr = std::make_shared< FieldDivide<3, FieldValue<3>::VectorFixed> >(ele_flux_ptr, data_->cross_section);
+		data_->field_ele_velocity.set_field(mesh_->region_db().get_region_set("ALL"), ele_velocity_ptr);
 
 		ele_pressure_ptr = std::make_shared< FieldFE<3, FieldValue<3>::Scalar> >();
 		uint p_ele_component = 0;

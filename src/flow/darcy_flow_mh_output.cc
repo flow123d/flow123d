@@ -95,7 +95,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += field_ele_piezo_head.name("piezo_head_p0_old").units(UnitSI().m()) // TODO remove: obsolete field
              .flags(FieldFlag::equation_result)
              .description("Piezo head solution - P0 interpolation.");
-	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1))
+	*this += field_ele_flux.name("velocity_p0_old").units(UnitSI().m()) // TODO remove: obsolete field
              .flags(FieldFlag::equation_result)
              .description("Velocity solution - P0 interpolation.");
 	*this += subdomain.name("subdomain")
