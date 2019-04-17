@@ -50,7 +50,6 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
         - velocity_p0
     solver: !Petsc
       r_tol: 1.0e-10

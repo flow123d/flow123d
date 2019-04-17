@@ -54,7 +54,6 @@ problem: !Coupling_Sequential
         - step: 0.5
       fields:
         - pressure_p0
-        - pressure_p1
         - velocity_p0
       add_input_times: true
     output_stream:

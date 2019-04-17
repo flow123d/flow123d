@@ -388,7 +388,7 @@ void DarcyMH::init_eq_data()
 void DarcyMH::initialize() {
 
     init_eq_data();
-    this->data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
+    data_->multidim_assembler =  AssemblyBase::create< AssemblyMH >(data_);
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
