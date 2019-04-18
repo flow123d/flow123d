@@ -25,7 +25,9 @@ FieldDivide<spacedim, Value>::FieldDivide( std::shared_ptr< FieldAlgorithmBase<s
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   inner_dividend_(inner_dividend),
   inner_divisor_(inner_divisor)
-{}
+{
+    inner_divisor_.flags_add(FieldFlag::declare_input);
+}
 
 
 
