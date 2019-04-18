@@ -244,6 +244,8 @@ public:
     virtual void initialize_specific();
     void zero_time_step() override;
     void update_solution() override;
+    /// Solve the problem without moving to next time and without output.
+    void solve_time_step(bool output = true);
 
     void get_solution_vector(double * &vec, unsigned int &vec_size) override;
     void get_parallel_solution_vector(Vec &vector) override;

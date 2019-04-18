@@ -92,9 +92,12 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     if ( FieldCommon::print_message_table(ss, "flow") )
         WarningOut() << ss.str();
     
+    this->time_ = &flow_->time();
+    
+    
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
-    mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec);
+    mechanics_ = std::make_shared<Elasticity>(*mesh_, mech_rec, this->time_);
     mechanics_->data()["cross_section"].copy_from(flow_->data()["cross_section"]);
     mechanics_->initialize();
     
@@ -107,13 +110,7 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     this->eq_data_ = &data_;
     
-    this->time_ = &flow_->time();
-    
     // synchronize time marks of flow and mechanics
-    for (auto mark = TimeGovernor::marks().begin(flow_->mark_type()); mark != TimeGovernor::marks().end(flow_->mark_type()); ++mark )
-        TimeGovernor::marks().add( TimeMark(mark->time(), mechanics_->time().equation_fixed_mark_type()) );
-    for (auto mark = TimeGovernor::marks().begin(mechanics_->mark_type()); mark != TimeGovernor::marks().end(mechanics_->mark_type()); ++mark )
-        TimeGovernor::marks().add( TimeMark(mark->time(), flow_->time().equation_fixed_mark_type()) );
     
     data_.set_mesh(*mesh_);
     
@@ -151,8 +148,9 @@ void HM_Iterative::update_solution()
     double difference = 0;
     double init_difference = 1;
     
+    time_->next_time();
+    time_->view("HM");
     data_.set_time(time_->step(), LimitSide::right);
-    mechanics_->next_time();
     
     while (it < min_it_ || 
            (it < max_it_ && difference > a_tol_ && difference/init_difference > r_tol_)
@@ -160,7 +158,7 @@ void HM_Iterative::update_solution()
     {
         it++;
         
-        flow_->update_solution();
+        flow_->solve_time_step(false);
         // TODO: pass pressure to mechanics
         update_potential();
         
@@ -168,6 +166,7 @@ void HM_Iterative::update_solution()
         // TODO: pass displacement (divergence) to flow
         // TODO: compute difference of iterates
     }
+    flow_->output_data();
     mechanics_->output_data();
 }
 

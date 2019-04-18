@@ -46,7 +46,7 @@ const Record & Elasticity::get_input_type() {
 	return IT::Record(
                 std::string(equation_name),
                 "FEM for linear elasticity.")
-           .declare_key("time", TimeGovernor::get_input_type(), Default::obligatory(),
+           .declare_key("time", TimeGovernor::get_input_type(), Default::optional(),
                     "Time governor setting for the secondary equation.")
            .declare_key("balance", Balance::get_input_type(), Default("{}"),
                     "Settings for computing balance.")
@@ -283,7 +283,7 @@ Elasticity::EqData::EqData()
 
 }
 
-Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
+Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGovernor *tm)
         : EquationBase(init_mesh, in_rec),
 		  input_rec(in_rec),
 		  allocation_done(false)
@@ -293,7 +293,15 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec)
 	START_TIMER(EqData::name());
 
 	this->eq_data_ = &data_;
-    time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+    
+    if (tm == nullptr)
+        time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+    else
+    {
+        if (in_rec.find<Input::Record>("time"))
+            WarningOut() << "Time governor is initialized from parent class - input record will be ignored!";
+        time_ = tm;
+    }
 
 
     // Set up physical parameters.
@@ -463,16 +471,16 @@ void Elasticity::next_time()
     time_->next_time();
     time_->view("MECH");
     
-    START_TIMER("data reinit");
-    data_.set_time(time_->step(), LimitSide::right);
-    END_TIMER("data reinit");
-
 }
 
 
 
 void Elasticity::solve_linear_system()
 {
+    START_TIMER("data reinit");
+    data_.set_time(time_->step(), LimitSide::right);
+    END_TIMER("data reinit");
+    
     // assemble stiffness matrix
     if (stiffness_matrix == NULL || rhs == NULL
     		|| data_.subset(FieldFlag::in_main_matrix).changed()

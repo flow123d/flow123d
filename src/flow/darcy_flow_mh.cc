@@ -455,7 +455,15 @@ void DarcyMH::update_solution()
     time_->next_time();
 
     time_->view("DARCY"); //time governor information output
+
+    solve_time_step();
+}
+
+
+void DarcyMH::solve_time_step(bool output)
+{
     data_changed_ = data_->set_time(time_->step(), LimitSide::left) || data_changed_;
+    
     bool zero_time_term_from_left=zero_time_term();
 
     bool jump_time = data_->storativity.is_jump_time();
@@ -478,7 +486,7 @@ void DarcyMH::update_solution()
     if (time_->is_end()) {
         // output for unsteady case, end_time should not be the jump time
         // but rether check that
-        if (! zero_time_term_from_left && ! jump_time) output_data();
+        if (! zero_time_term_from_left && ! jump_time && output) output_data();
         return;
     }
 
@@ -494,10 +502,11 @@ void DarcyMH::update_solution()
         //solution_transfer(); // internally call set_time(T, left) and set_time(T,right) again
         //solve_nonlinear(); // with right limit data
     }
+    
     //solution_output(T,right_limit); // data for time T in any case
-    output_data();
-
+    if (output) output_data();
 }
+
 
 bool DarcyMH::zero_time_term(bool time_global) {
     if (time_global) {

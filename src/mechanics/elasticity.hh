@@ -153,8 +153,9 @@ public:
      * @brief Constructor.
      * @param init_mesh         computational mesh
      * @param in_rec            input record
+     * @param tm                time governor (if nullptr then it is created from input record)
      */
-    Elasticity(Mesh &init_mesh, const Input::Record in_rec);
+    Elasticity(Mesh &init_mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
     /**
 
      * @brief Declare input record type for the equation TransportDG.
