@@ -21,6 +21,7 @@
 #include "fem/dofhandler.hh"
 #include "fem/finite_element.hh"
 #include "fem/fe_values.hh"
+#include "fem/fe_system.hh"
 
 
 
@@ -170,6 +171,32 @@ UpdateFlags FiniteElement<dim>::update_each(UpdateFlags flags)
     }
 
     return f;
+}
+
+
+template<unsigned int dim>
+unsigned int FiniteElement<dim>::n_space_components(unsigned int spacedim)
+{
+    switch (type_) {
+        case FEScalar:
+            return 1;
+            break;
+        case FEVector:
+        case FEVectorContravariant:
+        case FEVectorPiola:
+            return spacedim;
+            break;
+        case FETensor:
+            return spacedim*spacedim;
+            break;
+        case FEMixedSystem:
+            const FESystem<dim> *fe_sys = dynamic_cast<const FESystem<dim>*>(this);
+            ASSERT_DBG(fe_sys != nullptr).error("Mixed system must be represented by FESystem.");
+            return  fe_sys->get_scalar_components().size()
+                   +fe_sys->get_vector_components().size()*spacedim
+                   +fe_sys->get_tensor_components().size()*spacedim*spacedim;
+            break;
+    }
 }
 
 
