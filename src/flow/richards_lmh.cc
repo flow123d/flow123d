@@ -128,19 +128,24 @@ void RichardsLMH::initialize_specific() {
         ASSERT(false);
 
     // create edge vectors
-    unsigned int n_local_edges = mh_dh.edge_new_local_4_mesh_idx_.size();
     data_->phead_edge_ = data_->dh_cr_->create_vector();
     data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
 
-    Distribution ds_split_edges(n_local_edges, PETSC_COMM_WORLD);
-    vector<int> local_edge_rows(n_local_edges);
+    vector<int> local_edge_rows( data_->phead_edge_.size() );
 
     IS is_loc;
-    for(auto  item : mh_dh.edge_new_local_4_mesh_idx_) {
-        local_edge_rows[item.second]=mh_dh.row_4_edge[item.first];
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+         LocalElementAccessorBase<3> ele_ac(dh_cell);
+         std::vector<LongIdx> edge_indices(data_->dh_cr_->max_elem_dofs());
+         dh_cell.cell_with_other_dh( data_->dh_cr_.get() ).get_loc_dof_indices(edge_indices);
+
+         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
+             local_edge_rows[ edge_indices[i] ] = ele_ac.edge_row(i);
+         }
     }
+
     ISCreateGeneral(PETSC_COMM_SELF, local_edge_rows.size(),
             &(local_edge_rows[0]), PETSC_COPY_VALUES, &(is_loc));
 
