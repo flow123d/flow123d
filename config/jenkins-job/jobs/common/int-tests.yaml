@@ -15,16 +15,21 @@ builders:
           echo "Skipping integration tests"
           exit 42
         fi
+        
+        FLAGS=
+        # source config file if exists
+        if [[ -f ${{FLOW}}/config/runtest.cfg ]]; then
+          source ${{FLOW}}/config/runtest.cfg
+          FLAGS="-t ${{RUNTEST_TIME_LIMIT:-0}} -m ${{RUNTEST_MEMORY_LIMIT:-0}}"
+          echo "RUNTEST_TIME_LIMIT   = $RUNTEST_TIME_LIMIT"
+          echo "RUNTEST_MEMORY_LIMIT = $RUNTEST_MEMORY_LIMIT"
+          echo "FLAGS = $FLAGS"
+        fi
 
         # Following is a hack how to run just serial tests in a branch which contains file 'tests/run_serial_only'.
         if [[ "$RUN_SERIAL_ONLY" = true ]] || [[ -f ${{FLOW}}/tests/run_serial_only ]]; then
           echo "Running serial tests only"
-          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going
+          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} -n 1 --keep-going --batch $FLAGS
         else
-          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going
+          docker exec cont{build-type} ${{FLOW}}/tests/runtest ${{FLOW}}/tests/{test-dir} --keep-going --batch $FLAGS
         fi
-
-publishers:
-  - archive:
-      artifacts: 'docker/tests/{test-dir}/**/*.log'
-      allow-empty: true
