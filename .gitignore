@@ -52,8 +52,12 @@ doc/reference_manual/input_reference.json.tex
 .project
 .settings
 
-*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 *python.log
+*.runtest.log*
 /.idea/
 bin/pythonenv.sh
 
