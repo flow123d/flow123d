@@ -160,8 +160,9 @@ public:
 	 * (So far it does not work since the flow module returns a vector of zeros.)
 	 * @param velocity_vector Input array of velocity values.
 	 */
-	inline void set_velocity_field(const MH_DofHandler &dh) override
+	inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh) override
 	{
+		velocity_field_ptr_ = flux_field;
 		mh_dh = &dh;
 		flux_changed = true;
 	}
@@ -245,6 +246,8 @@ protected:
 
 	std::shared_ptr<OutputTime> output_stream_;
 
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
 
 
 };
