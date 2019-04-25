@@ -739,6 +739,8 @@ void  DarcyMH::get_solution_vector(double * &vec, unsigned int &vec_size)
 {
     // TODO: make class for vectors (wrapper for PETSC or other) derived from LazyDependency
     // and use its mechanism to manage dependency between vectors
+	ele_flux_ptr->get_data_vec().local_to_ghost_begin();
+	ele_flux_ptr->get_data_vec().local_to_ghost_end();
     if (solution_changed_for_scatter) {
 
         // scatter solution to all procs
