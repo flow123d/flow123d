@@ -366,6 +366,7 @@ void TransportOperatorSplitting::update_solution() {
 
 void TransportOperatorSplitting::set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh)
 {
+	flux_field->local_to_ghost_data_scatter();
 	convection->set_velocity_field( flux_field, dh );
 };
 
