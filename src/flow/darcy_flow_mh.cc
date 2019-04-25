@@ -761,6 +761,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     
 
     balance_->start_flux_assembly(data_->water_balance_idx);
+    balance_->start_source_assembly(data_->water_balance_idx);
 
     // TODO: try to move this into balance, or have it in the generic assembler class, that should perform the cell loop
     // including various pre- and post-actions
@@ -772,6 +773,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
     }    
     
 
+    balance_->finish_source_assembly(data_->water_balance_idx);
     balance_->finish_flux_assembly(data_->water_balance_idx);
 
 }
@@ -885,28 +887,6 @@ void DarcyMH::allocate_mh_matrix()
         P1_CouplingAssembler(*this).assembly(*ls);
     }*/
 }
-
-void DarcyMH::assembly_source_term()
-{
-    START_TIMER("assembly source term");
-   	balance_->start_source_assembly(data_->water_balance_idx);
-
-   	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-        LocalElementAccessorBase<3> ele_ac(dh_cell);
-
-        double cs = data_->cross_section.value(ele_ac.centre(), ele_ac.element_accessor());
-
-        // set sources
-        double source = ele_ac.measure() * cs *
-                data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
-        schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
-
-        balance_->add_source_vec_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_row()}, {source});
-    }
-
-    balance_->finish_source_assembly(data_->water_balance_idx);
-}
-
 
 
 
@@ -1047,8 +1027,6 @@ void DarcyMH::assembly_linear_system() {
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
-
-        assembly_source_term();
         
 
 	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix

@@ -331,9 +331,6 @@ protected:
      */
     void assembly_mh_matrix(MultidimAssembly& assembler);
 
-    /// Source term is implemented differently in LMH version.
-    virtual void assembly_source_term();
-
     /**
      * Assembly or update whole linear system.
      */

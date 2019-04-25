@@ -102,7 +102,6 @@ protected:
 
     void initialize_specific() override;
     //void local_assembly_specific(LocalAssemblyData &local_data) override;
-    void assembly_source_term() override;
 
     void read_initial_condition() override;
     void assembly_linear_system() override;

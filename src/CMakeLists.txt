@@ -358,6 +358,8 @@ add_library(flow123d_lib
     
     transport/substance.cc
 
+    mechanics/elasticity.cc
+
     coupling/hc_explicit_sequential.cc
     coupling/hm_iterative.cc
 )    

@@ -19,8 +19,8 @@ class LinSys;
  * 
  * TODO:
  *  - set dofs as references
- *  - use arma::vec<int> to keep dofs (efficient, can be constructed from raw arrays)
- *  - use local dof indeces to set solution
+ *  - done: use arma::vec<int> to keep dofs (efficient, can be constructed from raw arrays)
+ *  - done: use local dof indeces to set solution
  *  - rename set_solution to set_constraint
  *  -
  */
@@ -76,10 +76,6 @@ public:
     void set_solution_row(uint loc_row, double solution, double diag=0.0);
 
     void set_solution_col(uint loc_col, double solution);
-
-    //void set_solution(DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag);
-    //void set_solution_rows(DofVec & loc_rows, const arma::vec &solution, const arma::vec &diag);
-    //void set_solution_cols(DofVec & loc_cols, const arma::vec &solution);
 
 
     /** 
@@ -137,6 +133,23 @@ public:
      * Almost_zero values will be set in all entries: sp(i,j) != 0
      */
     void set_sparsity(const arma::umat & sp);
+    
+    /** @brief Computes Schur complement of the local system: S = C - B * invA * Bt
+     * Applicable for square matrices.
+     * 
+     * @p offset index of the first row/column of submatrix C (size of A)
+     * @p schur (output) LocalSystem with Schur complement
+     */
+    void compute_schur_complement(uint offset, LocalSystem& schur);
+    
+    /** @brief Reconstructs the solution from the Schur complement solution: x = invA*b - invA * Bt * schur_solution
+     * Applicable for square matrices.
+     * 
+     * @p offset index of the first row/column of submatrix C (size of A)
+     * @p schur_solution solution of the Schur complement
+     * @p reconstructed_solution (output) reconstructed solution of the complementary variable
+     */
+    void reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution);
 
 protected:
     void set_size(unsigned int nrows, unsigned int ncols);
@@ -162,19 +175,6 @@ protected:
     /// Another case is keeping the structure of matrix unchanged for the schur complements -
     /// for that we fill the whole diagonal (escpecially block C in darcy flow) with artificial zeros.
     static constexpr double almost_zero = std::numeric_limits<double>::min();
-
-    /// vector of global row indices where the solution is set (dirichlet BC)
-    //std::vector<unsigned int> loc_solution_dofs;
-    /// vector of solution values at @p global_solution_rows indices (dirichlet BC)
-    //std::vector<double> solution;
-    /// diagonal values for dirichlet BC rows (set in set_solution)
-    //std::vector<double> preferred_diag_values;
-
-
-    /**
-     * Optimization. Is false if solution (at least one entry) is known.
-     */
-    //bool solution_not_set;
 
 
     friend class LinSys;
