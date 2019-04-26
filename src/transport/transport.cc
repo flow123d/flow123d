@@ -297,12 +297,10 @@ void ConvectionTransport::alloc_transport_vectors() {
 //=============================================================================
 void ConvectionTransport::alloc_transport_structs_mpi() {
 
-    int sbi, n_subst, rank, np;
+    int sbi, n_subst;
     n_subst = n_substances();
 
     MPI_Barrier(PETSC_COMM_WORLD);
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
     vconc = new Vec[n_subst];
     vpconc = new Vec[n_subst];
@@ -730,14 +728,11 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     ElementAccessor<3> el2;
     ElementAccessor<3> elm;
     const Edge *edg;
-    int j, np, rank;
+    int j;
     LongIdx new_j, new_i;
     double aij, aii;
         
     MatZeroEntries(tm);
-
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    MPI_Comm_size(PETSC_COMM_WORLD, &np);
 
     double flux, flux2, edg_flux;
 
