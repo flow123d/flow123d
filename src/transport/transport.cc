@@ -123,6 +123,16 @@ ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in
     is_convection_matrix_scaled = false;
     is_src_term_scaled = false;
     is_bc_term_scaled = false;
+
+    //initialization of DOF handler
+    static FE_P_disc<0> fe0(0);
+    static FE_P_disc<1> fe1(0);
+    static FE_P_disc<2> fe2(0);
+    static FE_P_disc<3> fe3(0);
+    dh_ = make_shared<DOFHandlerMultiDim>(init_mesh);
+    shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( &init_mesh, &fe0, &fe1, &fe2, &fe3);
+    dh_->distribute_dofs(ds);
+
 }
 
 void ConvectionTransport::initialize()
@@ -738,64 +748,58 @@ void ConvectionTransport::create_transport_matrix_mpi() {
 
     aii = 0.0;
 
-    for (unsigned int loc_el = 0; loc_el < el_ds->lsize(); loc_el++) {
-        elm = mesh_->element_accessor( el_4_loc[loc_el] );
-        new_i = row_4_el[ elm.idx() ];
-
-        for (unsigned int si=0; si<elm->n_sides(); si++) {
-            // same dim
-            flux = mh_dh->side_flux( *(elm.side(si)) );
-            if (elm.side(si)->cond() == NULL) {
-                 edg = elm.side(si)->edge();
-                 edg_flux = 0;
-                 for( int s=0; s < edg->n_sides; s++) {
-                   flux2 = mh_dh->side_flux( *(edg->side(s)) );
-                   if ( flux2 > 0)  edg_flux+= flux2;
-                 }
-                 for(unsigned int s=0; s<edg->n_sides; s++)
-                    // this test should also eliminate sides facing to lower dim. elements in comp. neighboring
-                    // These edges on these sides should have just one side
-                    if (edg->side(s) != elm.side(si)) {
-                        j = edg->side(s)->element().idx();
+    unsigned int loc_el = 0;
+    for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+        new_i = row_4_el[ dh_cell.elm_idx() ];
+        for( DHCellSide cell_side : dh_cell.side_range() ) {
+            flux = mh_dh->side_flux( *(cell_side.side()) );
+            if (cell_side.side()->cond() == NULL) {
+                edg_flux = 0;
+                for( DHCellSide edge_side : cell_side.edge_sides() ) {
+                	flux2 = mh_dh->side_flux( *(edge_side.side()) );
+                	if ( flux2 > 0)  edg_flux+= flux2;
+                }
+                for( DHCellSide edge_side : cell_side.edge_sides() )
+                    if (edge_side.side() != cell_side.side()) {
+                        j = edge_side.side()->element().idx();
                         new_j = row_4_el[j];
 
-                        flux2 = mh_dh->side_flux( *(edg->side(s)));
+                        flux2 = mh_dh->side_flux( *(edge_side.side()) );
                         if ( flux2 > 0.0 && flux <0.0)
-                            aij = -(flux * flux2 / ( edg_flux * elm.measure() ) );
+                            aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
                         MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
                     }
             }
             if (flux > 0.0)
-              aii -= (flux / elm.measure() );
+              aii -= (flux / dh_cell.elm().measure() );
         }  // end same dim     //ELEMENT_SIDES
 
-        for (unsigned int n=0; n<elm->n_neighs_vb(); n++) // comp model
-            {
-                el2 = mesh_->element_accessor( elm->neigh_vb[n]->side()->element().idx() ); // higher dim. el.
-                ASSERT( el2.idx() != elm.idx() ).error("Elm. same\n");
-                new_j = row_4_el[ el2.idx() ];
-                flux = mh_dh->side_flux( *(elm->neigh_vb[n]->side()) );
+        for( DHCellSide neighb_side : dh_cell.neighb_sides() ) // dh_cell lower dim
+        {
+            ASSERT( neighb_side.side()->elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
+            new_j = row_4_el[ neighb_side.side()->elem_idx() ];
+            flux = mh_dh->side_flux( *(neighb_side.side()) );
 
-                // volume source - out-flow from higher dimension
-                if (flux > 0.0)  aij = flux / elm.measure();
-                else aij=0;
-                MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
-                // out flow from higher dim. already accounted
+            // volume source - out-flow from higher dimension
+            if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
+            else aij=0;
+            MatSetValue(tm, new_i, new_j, aij, INSERT_VALUES);
+            // out flow from higher dim. already accounted
 
-                // volume drain - in-flow to higher dimension
-                if (flux < 0.0) {
-                  aii -= (-flux) / elm.measure();                           // diagonal drain
-                  aij = (-flux) / el2.measure();
-                } else aij=0;
-                MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
-            }
+            // volume drain - in-flow to higher dimension
+            if (flux < 0.0) {
+                aii -= (-flux) / dh_cell.elm().measure();                           // diagonal drain
+                aij = (-flux) / neighb_side.side()->element().measure();
+            } else aij=0;
+            MatSetValue(tm, new_j, new_i, aij, INSERT_VALUES);
+        }
 
-        MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
-        
-        cfl_flow_[loc_el] = fabs(aii);
-        aii = 0.0;
-    } // END ELEMENTS
+    MatSetValue(tm, new_i, new_i, aii, INSERT_VALUES);
+
+    cfl_flow_[loc_el++] = fabs(aii);
+    aii = 0.0;
+    }
 
     MatAssemblyBegin(tm, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(tm, MAT_FINAL_ASSEMBLY);
