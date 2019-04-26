@@ -95,7 +95,7 @@ DarcyFlowMHOutput::OutputFields::OutputFields()
 	*this += field_ele_piezo_head.name("piezo_head_p0_old").units(UnitSI().m()) // TODO remove: obsolete field
              .flags(FieldFlag::equation_result)
              .description("Piezo head solution - P0 interpolation.");
-	*this += field_ele_flux.name("velocity_p0").units(UnitSI().m().s(-1))
+	*this += field_ele_flux.name("velocity_p0_old").units(UnitSI().m()) // TODO remove: obsolete field
              .flags(FieldFlag::equation_result)
              .description("Velocity solution - P0 interpolation.");
 	*this += subdomain.name("subdomain")
@@ -349,9 +349,10 @@ void DarcyFlowMHOutput::make_element_vector(ElementSetRef element_indices) {
     auto multidim_assembler = AssemblyBase::create< AssemblyMH >(darcy_flow->data_);
     arma::vec3 flux_in_center;
     for(unsigned int i_ele : element_indices) {
-    	ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
+    	//ElementAccessor<3> ele = mesh_->element_accessor(i_ele);
+    	LocalElementAccessorBase<3> ele_ac( darcy_flow->data_->dh_->cell_accessor_from_element(i_ele) );
 
-        flux_in_center = multidim_assembler[ele->dim() -1]->make_element_vector(ele);
+        flux_in_center = multidim_assembler[ele_ac.dim() -1]->make_element_vector(ele_ac);
 
         // place it in the sequential vector
         for(unsigned int j=0; j<3; j++) ele_flux[3*i_ele + j]=flux_in_center[j];

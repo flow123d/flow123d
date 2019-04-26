@@ -13,7 +13,7 @@ problem: !Coupling_Sequential
         conductivity: 1.0e-06
     output:
       fields:
-        - pressure_p1
+        - pressure_p0
     output_stream:
       file: flow.pvd
       format: !vtk

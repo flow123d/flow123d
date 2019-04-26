@@ -60,7 +60,7 @@ public:
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
-    virtual arma::vec3 make_element_vector(ElementAccessor<3> ele) = 0;
+    virtual arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) = 0;
 
     virtual void update_water_content(LocalElementAccessorBase<3> ele)
     {}
@@ -210,17 +210,19 @@ public:
     }
 
 
-    arma::vec3 make_element_vector(ElementAccessor<3> ele) override
+    arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
     {
         //START_TIMER("Assembly<dim>::make_element_vector");
         arma::vec3 flux_in_center;
         flux_in_center.zeros();
+        auto ele = ele_ac.element_accessor();
 
         velocity_interpolation_fv_.reinit(ele);
         for (unsigned int li = 0; li < ele->n_sides(); li++) {
-            flux_in_center += ad_->mh_dh->side_flux( *(ele.side( li ) ) )
+            flux_in_center += ad_->data_vec_[ ele_ac.side_row(li) ] //ad_->mh_dh->side_flux( *(ele.side( li ) ) )
                         * velocity_interpolation_fv_.vector_view(0).value(li,0);
         }
+
 
         flux_in_center /= ad_->cross_section.value(ele.centre(), ele );
         return flux_in_center;

@@ -25,7 +25,9 @@ FieldDivide<spacedim, Value>::FieldDivide( std::shared_ptr< FieldAlgorithmBase<s
 : FieldAlgorithmBase<spacedim, Value>(n_comp),
   inner_dividend_(inner_dividend),
   inner_divisor_(inner_divisor)
-{}
+{
+    inner_divisor_.flags_add(FieldFlag::declare_input);
+}
 
 
 
@@ -39,7 +41,6 @@ typename Value::return_type const & FieldDivide<spacedim, Value>::value(const Po
         for(unsigned int col=0; col < this->value_.n_cols(); col++) {
             this->value_(row,col) /= div_val;
         }
-    std::cout << std::endl;
 
     return this->r_value_;
 }

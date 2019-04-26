@@ -176,7 +176,7 @@ public:
      */
     virtual void output_data() override;
 
-    inline void set_velocity_field(const MH_DofHandler &dh) override
+    inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh) override
     { mh_dh=&dh; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override

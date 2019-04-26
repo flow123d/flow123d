@@ -38,7 +38,7 @@ problem: !Coupling_Sequential
       fields:
         - piezo_head_p0
         - pressure_p0
-        - pressure_p1
+        #- pressure_p2_disc
         - velocity_p0
     output_stream:
       file: test6_21d.pvd
