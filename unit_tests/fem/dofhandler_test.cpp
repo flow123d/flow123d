@@ -3,6 +3,7 @@
 #include <cmath>
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_system.hh"
 #include "mesh/mesh.h"
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
@@ -162,6 +163,45 @@ TEST(DOFHandler, test_all) {
 
   }
 
+}
+
+
+TEST(DOFHandler, test_sub_handler)
+{
+    FESystem<0> fe_sys0({ std::make_shared<FE_P_disc<0> >(0),
+                          std::make_shared<FE_P<0> >(0),
+                          std::make_shared<FE_CR<0> >() });
+    FESystem<1> fe_sys1({ std::make_shared<FE_RT0<1> >(),
+                          std::make_shared<FE_P<1> >(0),
+                          std::make_shared<FE_CR<1> >() });
+    FESystem<2> fe_sys2({ std::make_shared<FE_RT0<2> >(),
+                          std::make_shared<FE_P<2> >(0),
+                          std::make_shared<FE_CR<2> >() });
+    FESystem<3> fe_sys3({ std::make_shared<FE_RT0<3> >(),
+                          std::make_shared<FE_P<3> >(0),
+                          std::make_shared<FE_CR<3> >() });
+    
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe_sys0, &fe_sys1, &fe_sys2, &fe_sys3);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+    std::shared_ptr<DOFHandlerMultiDim> sub_dh = dh->sub_handler(0);
+    std::vector<std::vector<int> > indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
+    std::vector<int> sub_indices(sub_dh->max_elem_dofs());
+
+    
+    // check that dofs on sub_dh are equal to dofs on dh
+    for (auto cell : dh->local_range())
+        cell.get_dof_indices(indices[cell.elm_idx()]);
+    for (auto cell : sub_dh->local_range())
+    {
+        cell.get_dof_indices(sub_indices);
+        for (unsigned int i=0; i<cell.n_dofs(); i++)
+            EXPECT_EQ( sub_indices[i], indices[cell.elm_idx()][i] );
+    }
+    delete mesh;
+    
 }
 
 

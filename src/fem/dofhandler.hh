@@ -174,6 +174,14 @@ public:
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds);
 
+    /** @brief Creates a new dof handler for a component of FESystem.
+     * 
+     * The @p component_idx indicates the index of finite-element
+     * for which the new sub- handler is made. The numbering of dofs
+     * in sub-handler is compatible with the original handler.
+     */
+    std::shared_ptr<DOFHandlerMultiDim> sub_handler(unsigned int component_idx);
+    
     /** @brief Returns sequential version of the current dof handler.
      * 
      * Collective on all processors.
@@ -361,10 +369,10 @@ private:
      * 
      * INVALID_DOF    marks dofs whose global number has to be set by neighbouring processor.
      */
-    static const int INVALID_NFACE  = 1;
-    static const int VALID_NFACE    = 2;
-    static const int ASSIGNED_NFACE = 3;
-    static const int INVALID_DOF   = -1;
+    static const int INVALID_NFACE;
+    static const int VALID_NFACE;
+    static const int ASSIGNED_NFACE;
+    static const int INVALID_DOF;
     
     
     /// Pointer to the discrete space for which the handler distributes dofs.
