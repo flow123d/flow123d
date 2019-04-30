@@ -330,6 +330,7 @@ private:
      * data. Possibly make more general set_data method, allowing setting data given by name. needs support from EqDataBase.
      */
     const MH_DofHandler *mh_dh;
+    std::shared_ptr<DOFHandlerMultiDim> dh_;
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
