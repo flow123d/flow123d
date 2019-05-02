@@ -191,6 +191,7 @@ TEST(DOFHandler, test_sub_handler)
                                    loc_indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
     std::vector<int> sub_indices(sub_dh->max_elem_dofs()), loc_sub_indices(sub_dh->max_elem_dofs());
     VectorMPI vec = dh->create_vector();
+    VectorMPI subvec = sub_dh->create_vector();
     
     // init cell dof indices
     for (auto cell : dh->local_range())
@@ -198,15 +199,14 @@ TEST(DOFHandler, test_sub_handler)
         cell.get_dof_indices(indices[cell.elm_idx()]);
         cell.get_loc_dof_indices(loc_indices[cell.elm_idx()]);
     }
-    // init vec
+    
+    // init vec and update subvec
     for (auto cell : dh->own_range())
         for (unsigned int i=0; i<dh->ds()->n_elem_dofs(cell.elm()); i++)
             vec[loc_indices[cell.elm_idx()][i]] = cell.elm_idx()*dh->max_elem_dofs()+i;
     vec.local_to_ghost_begin();
     vec.local_to_ghost_end();
-    
-    // create sub vector
-    VectorMPI subvec = sub_dh->create_subvector(vec);
+    sub_dh->update_subvector(vec, subvec);
     
     // check that dofs on sub_dh are equal to dofs on dh
     for (auto cell : sub_dh->local_range())

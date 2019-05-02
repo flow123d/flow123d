@@ -902,19 +902,21 @@ VectorMPI SubDOFHandlerMultiDim::create_vector()
 }
 
 
-VectorMPI SubDOFHandlerMultiDim::create_subvector(const VectorMPI &vec)
+VectorMPI SubDOFHandlerMultiDim::update_subvector(const VectorMPI &vec, VectorMPI &subvec)
 {
-    VectorMPI subvec = create_vector();
+    ASSERT_DBG( vec.size() == parent_->local_to_global_dof_idx_.size() ).error("Incompatible parent vector in update_subvector()!");
+    ASSERT_DBG( subvec.size() == local_to_global_dof_idx_.size() ).error("Incompatible subvector in update_subvector()!");
     
     for (unsigned int i=0; i<parent_dof_idx_.size(); i++)
         subvec[i] = vec[parent_dof_idx_[i]];
-    
-    return subvec;
 }
 
 
 void SubDOFHandlerMultiDim::update_parent_vector(VectorMPI &vec, const VectorMPI &subvec)
 {
+    ASSERT_DBG( vec.size() == parent_->local_to_global_dof_idx_.size() ).error("Incompatible parent vector in update_subvector()!");
+    ASSERT_DBG( subvec.size() == local_to_global_dof_idx_.size() ).error("Incompatible subvector in update_subvector()!");
+    
     for (unsigned int i=0; i<parent_dof_idx_.size(); i++)
         vec[parent_dof_idx_[i]] = subvec[i];
 }
