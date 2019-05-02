@@ -452,9 +452,6 @@ public:
      */
     SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim> dh, unsigned int component_idx);
     
-    /** @brief Create vector aligned with the sub-handler. */
-    VectorMPI create_vector() override;
-    
     /** @brief Update values in subvector from parent vector.
      * 
      * @p vec    Vector aligned with the parent dof handler.
@@ -472,13 +469,14 @@ public:
     /// Local indices in the parent handler.
     const std::vector<LongIdx> &parent_indices() { return parent_dof_idx_; }
     
-    /// Global indices of ghost dofs within the sub-handler.
-    const std::vector<LongIdx> &ghost_indices() { return ghost_dof_idx_; }
     
 private:
-    
+
+    /// Get global dof indices of ghost dofs for sub-handler.
     void receive_sub_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs);
-    void send_sub_ghost_dofs(unsigned int proc);
+    
+    /// Send global indices of dofs that are ghost on other processors.
+    void send_sub_ghost_dofs(unsigned int proc, const map<LongIdx,LongIdx> &global_to_local_dof_idx);
 
     /// Parent dof handler.
     std::shared_ptr<DOFHandlerMultiDim> parent_;
@@ -488,9 +486,6 @@ private:
     
     /// Local indices in the parent handler.
     std::vector<LongIdx> parent_dof_idx_;
-    
-    /// Global indices of ghost dofs within the sub-handler.
-    std::vector<LongIdx> ghost_dof_idx_;
 };
 
 

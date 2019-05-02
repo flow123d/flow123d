@@ -187,18 +187,18 @@ TEST(DOFHandler, test_sub_handler)
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
     std::shared_ptr<SubDOFHandlerMultiDim> sub_dh = std::make_shared<SubDOFHandlerMultiDim>(dh, 0);
-    std::vector<std::vector<int> > indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs())),
-                                   loc_indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
-    std::vector<int> sub_indices(sub_dh->max_elem_dofs()), loc_sub_indices(sub_dh->max_elem_dofs());
+    std::vector<std::vector<int> > loc_indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
+    std::vector<int> loc_sub_indices(sub_dh->max_elem_dofs());
+
+    dh->print();    
+    sub_dh->print();
+    
     VectorMPI vec = dh->create_vector();
     VectorMPI subvec = sub_dh->create_vector();
     
     // init cell dof indices
     for (auto cell : dh->local_range())
-    {
-        cell.get_dof_indices(indices[cell.elm_idx()]);
         cell.get_loc_dof_indices(loc_indices[cell.elm_idx()]);
-    }
     
     // init vec and update subvec
     for (auto cell : dh->own_range())
@@ -211,12 +211,9 @@ TEST(DOFHandler, test_sub_handler)
     // check that dofs on sub_dh are equal to dofs on dh
     for (auto cell : sub_dh->local_range())
     {
-        cell.get_dof_indices(sub_indices);
         cell.get_loc_dof_indices(loc_sub_indices);
         for (unsigned int i=0; i<cell.n_dofs(); i++)
         {
-            // global indices
-            EXPECT_EQ( sub_indices[i], indices[cell.elm_idx()][i] );
             // local indices
             EXPECT_EQ( sub_dh->parent_indices()[loc_sub_indices[i]], loc_indices[cell.elm_idx()][i] );
             // values in mpi vectors
@@ -237,7 +234,6 @@ TEST(DOFHandler, test_sub_handler)
     // check values in mpi vectors
     for (auto cell : sub_dh->local_range())
     {
-        cell.get_dof_indices(sub_indices);
         cell.get_loc_dof_indices(loc_sub_indices);
         for (unsigned int i=0; i<cell.n_dofs(); i++)
             EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
