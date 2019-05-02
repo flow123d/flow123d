@@ -74,6 +74,55 @@ template <int spacedim, class Value> class FieldFE;
 
 
 /**
+ * Auxiliary container class for Finite element and related objects of all dimensions.
+ * Its purpose is to provide templated access to these objects, applicable in
+ * the assembling methods.
+ */
+class FETransportObjects {
+public:
+
+	FETransportObjects();
+	~FETransportObjects();
+
+	template<unsigned int dim>
+	inline FiniteElement<dim> *fe();
+
+	template<unsigned int dim>
+	inline Quadrature<dim> *q();
+
+	template<unsigned int dim>
+	inline MappingP1<dim,3> *mapping();
+
+	template<unsigned int dim>
+	inline FESideValues<dim,3> *fe_values();
+
+private:
+
+	/// Finite elements for the solution of the advection-diffusion equation.
+	FiniteElement<0> *fe0_;
+	FiniteElement<1> *fe1_;
+	FiniteElement<2> *fe2_;
+	FiniteElement<3> *fe3_;
+
+	/// Quadratures used in assembling methods.
+	Quadrature<0> *q0_;
+	Quadrature<1> *q1_;
+	Quadrature<2> *q2_;
+	Quadrature<3> *q3_;
+
+	/// Auxiliary mappings of reference elements.
+	MappingP1<1,3> *map1_;
+	MappingP1<2,3> *map2_;
+	MappingP1<3,3> *map3_;
+
+    /// FESideValues objects for side flux calculating.
+	FESideValues<1,3> *fe_values1_;
+    FESideValues<2,3> *fe_values2_;
+    FESideValues<3,3> *fe_values3_;
+};
+
+
+/**
  * Class that implements explicit finite volumes scheme with upwind. The timestep is given by CFL condition.
  *
  */
