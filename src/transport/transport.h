@@ -226,7 +226,7 @@ public:
     virtual void output_data() override;
 
     inline void set_velocity_field(std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> flux_field, const MH_DofHandler &dh) override
-    { mh_dh=&dh; }
+    { velocity_field_ptr_ = flux_field; mh_dh=&dh; }
 
     void set_output_stream(std::shared_ptr<OutputTime> stream) override
     { output_stream_ = stream; }
@@ -294,6 +294,17 @@ private:
 	 * Communicate parallel concentration vectors into sequential output vector.
 	 */
 	void output_vector_gather();
+
+	/**
+	 * @brief Wrapper of following method, call side_flux with correct template parameter.
+	 */
+	double side_flux(ElementAccessor<3> &cell, unsigned int i_side);
+
+	/**
+	 * @brief Calculate flux on side of given element specified by dimension.
+	 */
+	template<unsigned int dim>
+	double calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side);
 
 
 
@@ -383,6 +394,12 @@ private:
 
 	/// List of indices used to call balance methods for a set of quantities.
 	vector<unsigned int> subst_idx;
+
+	/// Pointer to velocity field given from Flow equation.
+	std::shared_ptr<FieldFE<3, FieldValue<3>::VectorFixed>> velocity_field_ptr_;
+
+	/// Finite element objects
+	FETransportObjects feo_;
 
     friend class TransportOperatorSplitting;
 };
