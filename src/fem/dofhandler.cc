@@ -796,6 +796,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
                 sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
             {
                 sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();
+                parent_dof_idx_.push_back(cell_dof_indices[sub_dof]);
                 local_to_global_dof_idx_.push_back(dh->local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
             }
         }
@@ -811,6 +812,7 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
             if (sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
             {
                 sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();
+                parent_dof_idx_.push_back(cell_dof_indices[sub_dof]);
                 local_to_global_dof_idx_.push_back(dh->local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
             }
             dof_indices[cell_starts[cell.local_idx()]+idof++] = sub_local_indices[cell_dof_indices[sub_dof]];

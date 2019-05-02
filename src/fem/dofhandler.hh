@@ -452,6 +452,8 @@ public:
      */
     SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim> dh, unsigned int component_idx);
     
+    const std::vector<LongIdx> &parent_indices() { return parent_dof_idx_; }
+    
 private:
 
     /// Parent dof handler.
@@ -461,7 +463,7 @@ private:
     unsigned int fe_idx_;
     
     /// Local indices in the parent handler.
-    std::vector<LongIdx> sub_to_parent_dof_idx_;
+    std::vector<LongIdx> parent_dof_idx_;
 };
 
 
