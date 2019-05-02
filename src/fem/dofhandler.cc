@@ -913,6 +913,13 @@ VectorMPI SubDOFHandlerMultiDim::create_subvector(const VectorMPI &vec)
 }
 
 
+void SubDOFHandlerMultiDim::update_parent_vector(VectorMPI &vec, const VectorMPI &subvec)
+{
+    for (unsigned int i=0; i<parent_dof_idx_.size(); i++)
+        vec[parent_dof_idx_[i]] = subvec[i];
+}
+
+
 
 
 

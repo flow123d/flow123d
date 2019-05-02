@@ -454,8 +454,15 @@ public:
     
     VectorMPI create_vector() override;
     
-    /** @brief create a vector from @p vec using indices of parent dof handler. */
+    /** @brief Create a vector from @p vec using indices of parent dof handler. */
     VectorMPI create_subvector(const VectorMPI &vec);
+    
+    /** @brief Update values in parent vector from values of subvector.
+     * 
+     * @p vec    Vector aligned with parent dof handler.
+     * @p subvec Vector aligned with the current sub-handler.
+     */
+    void update_parent_vector(VectorMPI &vec, const VectorMPI &subvec);
     
     const std::vector<LongIdx> &parent_indices() { return parent_dof_idx_; }
     

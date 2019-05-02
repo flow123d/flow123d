@@ -223,6 +223,26 @@ TEST(DOFHandler, test_sub_handler)
             EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
         }
     }
+
+    // modify subvec and update "parent" vec
+    for (auto cell : sub_dh->own_range())
+    {
+        cell.get_loc_dof_indices(loc_sub_indices);
+        for (unsigned int i=0; i<sub_dh->ds()->n_elem_dofs(cell.elm()); i++)
+            subvec[loc_sub_indices[i]] = -(cell.elm_idx()*dh->max_elem_dofs()+i);
+    }
+    subvec.local_to_ghost_begin();
+    subvec.local_to_ghost_end();
+    sub_dh->update_parent_vector(vec, subvec);
+    // check values in mpi vectors
+    for (auto cell : sub_dh->local_range())
+    {
+        cell.get_dof_indices(sub_indices);
+        cell.get_loc_dof_indices(loc_sub_indices);
+        for (unsigned int i=0; i<cell.n_dofs(); i++)
+            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+    }
+    
     delete mesh;
     
 }
