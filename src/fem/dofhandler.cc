@@ -822,9 +822,95 @@ SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim>
     dof_ds_ = std::make_shared<Distribution>(lsize_, PETSC_COMM_WORLD);
     n_global_dofs_ = dof_ds_->size();
     loffset_ = dof_ds_->get_starts_array()[dof_ds_->myp()];
+    
+    // communicate ghost values
+    ghost_dof_idx_.resize(local_to_global_dof_idx_.size() - lsize_);
+    // first propagate from lower procs to higher procs and then vice versa
+    for (unsigned int from_higher = 0; from_higher < 2; from_higher++)
+    {
+        for (unsigned int proc : ghost_proc)
+        {
+            if ((proc > el_ds_->myp()) == from_higher)
+            { // receive dofs from master processor
+                vector<LongIdx> dofs;
+                receive_sub_ghost_dofs(proc, dofs);
+            }
+            else
+                send_sub_ghost_dofs(proc);
+        }
+    }
 }
 
 
+void SubDOFHandlerMultiDim::receive_sub_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs)
+{
+    // send number of ghost dofs required from the other processor
+    vector<LongIdx> dof_indices;
+    for (unsigned int i=lsize_; i<local_to_global_dof_idx_.size(); i++)
+        if (parent_->dof_ds_->get_proc(local_to_global_dof_idx_[i]) == proc)
+            dof_indices.push_back(local_to_global_dof_idx_[i]);
+    unsigned int n_ghosts = dof_indices.size();
+    MPI_Send(&n_ghosts, 1, MPI_UNSIGNED, proc, 0, MPI_COMM_WORLD);
+    
+    // send indices of dofs required
+    MPI_Send(dof_indices.data(), n_ghosts, MPI_LONG_IDX, proc, 1, MPI_COMM_WORLD);
+    
+    // receive dofs
+    dofs.resize(n_ghosts);
+    MPI_Recv(dofs.data(), n_ghosts, MPI_LONG_IDX, proc, 2, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+    // update ghost dofs
+    unsigned int idof = 0;
+    for (unsigned int i=lsize_; i<local_to_global_dof_idx_.size(); i++)
+        if (parent_->dof_ds_->get_proc(local_to_global_dof_idx_[i]) == proc)
+            ghost_dof_idx_[i-lsize_] = dofs[idof++];
+}
+
+
+void SubDOFHandlerMultiDim::send_sub_ghost_dofs(unsigned int proc)
+{
+    // receive number of dofs required by the other processor
+    unsigned int n_ghosts;
+    MPI_Recv(&n_ghosts, 1, MPI_UNSIGNED, proc, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+    // receive global indices of dofs required
+    vector<LongIdx> dof_indices(n_ghosts);
+    MPI_Recv(dof_indices.data(), n_ghosts, MPI_LONG_IDX, proc, 1, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    
+    // send global dof indices relative to the sub-handler
+    vector<LongIdx> dofs;
+    for (auto global_dof : dof_indices)
+    {
+        auto it = find(local_to_global_dof_idx_.begin(), local_to_global_dof_idx_.end(), global_dof);
+        dofs.push_back(it - local_to_global_dof_idx_.begin() + dof_ds_->begin());
+    }
+    MPI_Send(dofs.data(), dofs.size(), MPI_LONG_IDX, proc, 2, MPI_COMM_WORLD);
+}
+
+
+
+VectorMPI SubDOFHandlerMultiDim::create_vector()
+{
+    if (is_parallel_ && el_ds_->np() > 1)
+    {   // for parallel DH create vector with ghost values
+        VectorMPI vec(lsize_, ghost_dof_idx_);
+        return vec;
+    } else {
+        VectorMPI vec(lsize_);
+        return vec;
+    }
+}
+
+
+VectorMPI SubDOFHandlerMultiDim::create_subvector(const VectorMPI &vec)
+{
+    VectorMPI subvec = create_vector();
+    
+    for (unsigned int i=0; i<parent_dof_idx_.size(); i++)
+        subvec[i] = vec[parent_dof_idx_[i]];
+    
+    return subvec;
+}
 
 
 

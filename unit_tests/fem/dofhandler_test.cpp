@@ -190,22 +190,37 @@ TEST(DOFHandler, test_sub_handler)
     std::vector<std::vector<int> > indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs())),
                                    loc_indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
     std::vector<int> sub_indices(sub_dh->max_elem_dofs()), loc_sub_indices(sub_dh->max_elem_dofs());
-
+    VectorMPI vec = dh->create_vector();
     
-    // check that dofs on sub_dh are equal to dofs on dh
+    // init cell dof indices
     for (auto cell : dh->local_range())
     {
         cell.get_dof_indices(indices[cell.elm_idx()]);
         cell.get_loc_dof_indices(loc_indices[cell.elm_idx()]);
     }
+    // init vec
+    for (auto cell : dh->own_range())
+        for (unsigned int i=0; i<dh->ds()->n_elem_dofs(cell.elm()); i++)
+            vec[loc_indices[cell.elm_idx()][i]] = cell.elm_idx()*dh->max_elem_dofs()+i;
+    vec.local_to_ghost_begin();
+    vec.local_to_ghost_end();
+    
+    // create sub vector
+    VectorMPI subvec = sub_dh->create_subvector(vec);
+    
+    // check that dofs on sub_dh are equal to dofs on dh
     for (auto cell : sub_dh->local_range())
     {
         cell.get_dof_indices(sub_indices);
         cell.get_loc_dof_indices(loc_sub_indices);
         for (unsigned int i=0; i<cell.n_dofs(); i++)
         {
+            // global indices
             EXPECT_EQ( sub_indices[i], indices[cell.elm_idx()][i] );
+            // local indices
             EXPECT_EQ( sub_dh->parent_indices()[loc_sub_indices[i]], loc_indices[cell.elm_idx()][i] );
+            // values in mpi vectors
+            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
         }
     }
     delete mesh;

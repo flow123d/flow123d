@@ -191,7 +191,7 @@ public:
     /**
      * @brief Allocates PETSc vector according to the dof distribution.
      */
-    VectorMPI create_vector();
+    virtual VectorMPI create_vector();
     
     /**
      * @brief Returns the global index of local edge.
@@ -452,9 +452,19 @@ public:
      */
     SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim> dh, unsigned int component_idx);
     
+    VectorMPI create_vector() override;
+    
+    /** @brief create a vector from @p vec using indices of parent dof handler. */
+    VectorMPI create_subvector(const VectorMPI &vec);
+    
     const std::vector<LongIdx> &parent_indices() { return parent_dof_idx_; }
     
+    const std::vector<LongIdx> &ghost_indices() { return ghost_dof_idx_; }
+    
 private:
+    
+    void receive_sub_ghost_dofs(unsigned int proc, vector<LongIdx> &dofs);
+    void send_sub_ghost_dofs(unsigned int proc);
 
     /// Parent dof handler.
     std::shared_ptr<DOFHandlerMultiDim> parent_;
@@ -464,6 +474,9 @@ private:
     
     /// Local indices in the parent handler.
     std::vector<LongIdx> parent_dof_idx_;
+    
+    /// Global indices of ghost dofs within the sub-handler.
+    std::vector<LongIdx> ghost_dof_idx_;
 };
 
 
