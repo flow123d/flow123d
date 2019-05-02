@@ -208,7 +208,7 @@ public:
     }
     
     /**
-     * Access to the vector element on loca index @p idx (const version).
+     * Access to the vector element on local index @p idx (const version).
      */
     inline double &operator[](unsigned int idx) const
     {
