@@ -438,92 +438,6 @@ void DOFHandlerMultiDim::distribute_dofs(std::shared_ptr<DiscreteSpace> ds)
 }
 
 
-std::shared_ptr<DOFHandlerMultiDim> DOFHandlerMultiDim::sub_handler(unsigned int component_idx)
-{
-    std::shared_ptr<DOFHandlerMultiDim> sub_dh = std::make_shared<DOFHandlerMultiDim>(*mesh_);
-    
-    // create discrete space, we assume equal type of FE on each cell.
-    ASSERT_DBG( dynamic_cast<EqualOrderDiscreteSpace *>(ds_.get()) != nullptr )
-                .error("sub_handler can be used only with dof handler using EqualOrderDiscreteSpace!");
-    ElementAccessor<3> acc;
-    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( ds_->fe<0>(acc) );
-    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( ds_->fe<1>(acc) );
-    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( ds_->fe<2>(acc) );
-    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( ds_->fe<3>(acc) );
-    ASSERT_DBG( fe_sys0 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<0>!");
-    ASSERT_DBG( fe_sys1 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<1>!");
-    ASSERT_DBG( fe_sys2 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<2>!");
-    ASSERT_DBG( fe_sys3 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<3>!");
-    sub_dh->ds_ = std::make_shared<EqualOrderDiscreteSpace>( mesh_,
-                                                             fe_sys0->fe()[component_idx].get(),
-                                                             fe_sys1->fe()[component_idx].get(),
-                                                             fe_sys2->fe()[component_idx].get(),
-                                                             fe_sys3->fe()[component_idx].get() );
-    
-    sub_dh->is_parallel_ = is_parallel_;
-    
-    // create list of dofs for sub_dh on one cell
-    FESystemFunctionSpace *fs[4] = {
-        dynamic_cast<FESystemFunctionSpace*>( fe_sys0->function_space_.get() ),
-        dynamic_cast<FESystemFunctionSpace*>( fe_sys1->function_space_.get() ),
-        dynamic_cast<FESystemFunctionSpace*>( fe_sys2->function_space_.get() ),
-        dynamic_cast<FESystemFunctionSpace*>( fe_sys3->function_space_.get() ) };
-    for (unsigned int d=0; d<=3; d++)
-        ASSERT_DBG( fs[d] != nullptr ).error("Function space must be of type FESystemFunctionSpace!" );
-    vector<unsigned int> sub_fe_dofs[4];
-    for (unsigned int i=0; i<fe_sys0->n_dofs(); i++)
-        if (fs[0]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[0].push_back(i);
-    for (unsigned int i=0; i<fe_sys1->n_dofs(); i++)
-        if (fs[1]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[1].push_back(i);
-    for (unsigned int i=0; i<fe_sys2->n_dofs(); i++)
-        if (fs[2]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[2].push_back(i);
-    for (unsigned int i=0; i<fe_sys3->n_dofs(); i++)
-        if (fs[3]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[3].push_back(i);
-    
-    sub_dh->init_cell_starts();
-    sub_dh->dof_indices.resize(sub_dh->cell_starts[sub_dh->cell_starts.size()-1]);
-    // sub_local_indices maps local dofs of parent handler to local dofs of sub-handler
-    vector<LongIdx> sub_local_indices(local_to_global_dof_idx_.size(), INVALID_DOF);
-    vector<LongIdx> cell_dof_indices(max_elem_dofs_);
-    // first add owned dofs to local_to_global_dof_idx_ and sub_local_indices
-    for (auto cell : local_range())
-    {
-        cell.get_loc_dof_indices(cell_dof_indices);
-        for (auto sub_dof : sub_fe_dofs[cell.dim()])
-        {
-            if (cell_dof_indices[sub_dof] < lsize_ &&
-                sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
-            {
-                sub_local_indices[cell_dof_indices[sub_dof]] = sub_dh->local_to_global_dof_idx_.size();
-                sub_dh->local_to_global_dof_idx_.push_back(local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
-            }
-        }
-    }
-    sub_dh->lsize_ = sub_dh->local_to_global_dof_idx_.size();
-    // then do the same for ghost dofs and set dof_indices
-    for (auto cell : local_range())
-    {
-        cell.get_loc_dof_indices(cell_dof_indices);
-        unsigned int idof = 0;
-        for (auto sub_dof : sub_fe_dofs[cell.dim()])
-        {
-            if (sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
-            {
-                sub_local_indices[cell_dof_indices[sub_dof]] = sub_dh->local_to_global_dof_idx_.size();
-                sub_dh->local_to_global_dof_idx_.push_back(local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
-            }
-            sub_dh->dof_indices[sub_dh->cell_starts[cell.local_idx()]+idof++] = sub_local_indices[cell_dof_indices[sub_dof]];
-        }
-    }
-    
-    sub_dh->dof_ds_ = std::make_shared<Distribution>(sub_dh->lsize_, PETSC_COMM_WORLD);
-    sub_dh->n_global_dofs_ = sub_dh->dof_ds_->size();
-    sub_dh->loffset_ = sub_dh->dof_ds_->get_starts_array()[dof_ds_->myp()];
-    
-    return sub_dh;
-}
-
-
 void DOFHandlerMultiDim::create_sequential()
 {
   if (dh_seq_ != nullptr) return;
@@ -821,6 +735,92 @@ void DOFHandlerMultiDim::print() const {
 
 
 
+
+
+
+SubDOFHandlerMultiDim::SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim> dh, unsigned int component_idx)
+: DOFHandlerMultiDim(*dh->mesh()),
+  parent_(dh),
+  fe_idx_(component_idx)
+{
+    // create discrete space, we assume equal type of FE on each cell.
+    ASSERT_DBG( dynamic_cast<EqualOrderDiscreteSpace *>(dh->ds().get()) != nullptr )
+                .error("sub_handler can be used only with dof handler using EqualOrderDiscreteSpace!");
+    ElementAccessor<3> acc;
+    FESystem<0> *fe_sys0 = dynamic_cast<FESystem<0>*>( dh->ds()->fe<0>(acc) );
+    FESystem<1> *fe_sys1 = dynamic_cast<FESystem<1>*>( dh->ds()->fe<1>(acc) );
+    FESystem<2> *fe_sys2 = dynamic_cast<FESystem<2>*>( dh->ds()->fe<2>(acc) );
+    FESystem<3> *fe_sys3 = dynamic_cast<FESystem<3>*>( dh->ds()->fe<3>(acc) );
+    ASSERT_DBG( fe_sys0 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<0>!");
+    ASSERT_DBG( fe_sys1 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<1>!");
+    ASSERT_DBG( fe_sys2 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<2>!");
+    ASSERT_DBG( fe_sys3 != nullptr ).error("sub_handler assumes that dof handler uses FESystem<3>!");
+    ds_ = std::make_shared<EqualOrderDiscreteSpace>( mesh_,
+                                                     fe_sys0->fe()[component_idx].get(),
+                                                     fe_sys1->fe()[component_idx].get(),
+                                                     fe_sys2->fe()[component_idx].get(),
+                                                     fe_sys3->fe()[component_idx].get() );
+    
+    is_parallel_ = dh->is_parallel_;
+    
+    // create list of dofs for sub_dh on one cell
+    FESystemFunctionSpace *fs[4] = {
+        dynamic_cast<FESystemFunctionSpace*>( fe_sys0->function_space_.get() ),
+        dynamic_cast<FESystemFunctionSpace*>( fe_sys1->function_space_.get() ),
+        dynamic_cast<FESystemFunctionSpace*>( fe_sys2->function_space_.get() ),
+        dynamic_cast<FESystemFunctionSpace*>( fe_sys3->function_space_.get() ) };
+    for (unsigned int d=0; d<=3; d++)
+        ASSERT_DBG( fs[d] != nullptr ).error("Function space must be of type FESystemFunctionSpace!" );
+    vector<unsigned int> sub_fe_dofs[4];
+    for (unsigned int i=0; i<fe_sys0->n_dofs(); i++)
+        if (fs[0]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[0].push_back(i);
+    for (unsigned int i=0; i<fe_sys1->n_dofs(); i++)
+        if (fs[1]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[1].push_back(i);
+    for (unsigned int i=0; i<fe_sys2->n_dofs(); i++)
+        if (fs[2]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[2].push_back(i);
+    for (unsigned int i=0; i<fe_sys3->n_dofs(); i++)
+        if (fs[3]->dof_indices()[i].fe_index == component_idx) sub_fe_dofs[3].push_back(i);
+    
+    init_cell_starts();
+    dof_indices.resize(cell_starts[cell_starts.size()-1]);
+    // sub_local_indices maps local dofs of parent handler to local dofs of sub-handler
+    vector<LongIdx> sub_local_indices(dh->local_to_global_dof_idx_.size(), INVALID_DOF);
+    vector<LongIdx> cell_dof_indices(dh->max_elem_dofs_);
+    // first add owned dofs to local_to_global_dof_idx_ and sub_local_indices
+    for (auto cell : dh->local_range())
+    {
+        cell.get_loc_dof_indices(cell_dof_indices);
+        for (auto sub_dof : sub_fe_dofs[cell.dim()])
+        {
+            if (cell_dof_indices[sub_dof] < dh->lsize_ &&
+                sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
+            {
+                sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();
+                local_to_global_dof_idx_.push_back(dh->local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
+            }
+        }
+    }
+    lsize_ = local_to_global_dof_idx_.size();
+    // then do the same for ghost dofs and set dof_indices
+    for (auto cell : dh->local_range())
+    {
+        cell.get_loc_dof_indices(cell_dof_indices);
+        unsigned int idof = 0;
+        for (auto sub_dof : sub_fe_dofs[cell.dim()])
+        {
+            if (sub_local_indices[cell_dof_indices[sub_dof]] == INVALID_DOF)
+            {
+                sub_local_indices[cell_dof_indices[sub_dof]] = local_to_global_dof_idx_.size();
+                local_to_global_dof_idx_.push_back(dh->local_to_global_dof_idx_[cell_dof_indices[sub_dof]]);
+            }
+            dof_indices[cell_starts[cell.local_idx()]+idof++] = sub_local_indices[cell_dof_indices[sub_dof]];
+        }
+    }
+    
+    dof_ds_ = std::make_shared<Distribution>(lsize_, PETSC_COMM_WORLD);
+    n_global_dofs_ = dof_ds_->size();
+    loffset_ = dof_ds_->get_starts_array()[dof_ds_->myp()];
+}
 
 
 

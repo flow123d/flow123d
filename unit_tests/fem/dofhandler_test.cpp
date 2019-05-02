@@ -186,7 +186,7 @@ TEST(DOFHandler, test_sub_handler)
     std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe_sys0, &fe_sys1, &fe_sys2, &fe_sys3);
     std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
     dh->distribute_dofs(ds);
-    std::shared_ptr<DOFHandlerMultiDim> sub_dh = dh->sub_handler(0);
+    std::shared_ptr<SubDOFHandlerMultiDim> sub_dh = std::make_shared<SubDOFHandlerMultiDim>(dh, 0);
     std::vector<std::vector<int> > indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
     std::vector<int> sub_indices(sub_dh->max_elem_dofs());
 

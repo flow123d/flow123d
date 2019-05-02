@@ -174,14 +174,6 @@ public:
      */
     void distribute_dofs(std::shared_ptr<DiscreteSpace> ds);
 
-    /** @brief Creates a new dof handler for a component of FESystem.
-     * 
-     * The @p component_idx indicates the index of finite-element
-     * for which the new sub- handler is made. The numbering of dofs
-     * in sub-handler is compatible with the original handler.
-     */
-    std::shared_ptr<DOFHandlerMultiDim> sub_handler(unsigned int component_idx);
-    
     /** @brief Returns sequential version of the current dof handler.
      * 
      * Collective on all processors.
@@ -257,8 +249,9 @@ public:
     friend class DHCellAccessor;
     friend class DHCellSide;
     friend class DHNeighbSide;
+    friend class SubDOFHandlerMultiDim;
 
-private:
+protected:
 
     /**
      * Returns true if element is on local process.
@@ -443,6 +436,32 @@ private:
     /// Arrays of ghost cells for each neighbouring processor.
     map<unsigned int, vector<LongIdx> > ghost_proc_el;
 
+};
+
+
+class SubDOFHandlerMultiDim : public DOFHandlerMultiDim
+{
+public:
+    
+    /** @brief Creates a new dof handler for a component of FESystem.
+     * 
+     * The @p component_idx indicates the index of finite-element
+     * from @p dh for which the new sub- handler is made.
+     * The numbering of dofs in sub-handler is compatible
+     * with the original handler.
+     */
+    SubDOFHandlerMultiDim(std::shared_ptr<DOFHandlerMultiDim> dh, unsigned int component_idx);
+    
+private:
+
+    /// Parent dof handler.
+    std::shared_ptr<DOFHandlerMultiDim> parent_;
+    
+    /// Index of FE in parent FESystem.
+    unsigned int fe_idx_;
+    
+    /// Local indices in the parent handler.
+    std::vector<LongIdx> sub_to_parent_dof_idx_;
 };
 
 

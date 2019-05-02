@@ -394,7 +394,7 @@ protected:
     friend class FEValues<dim,3>;
     friend class FESideValues<dim,3>;
     friend class FE_P_disc<dim>;
-    friend class DOFHandlerMultiDim;
+    friend class SubDOFHandlerMultiDim;
 };
 
 
