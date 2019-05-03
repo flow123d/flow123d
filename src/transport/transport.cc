@@ -52,12 +52,19 @@
 #include "reaction/isotherm.hh" // SorptionType enum
 #include "flow/mh_dofhandler.hh"
 
+#include "fem/fe_p.hh"
+#include "fem/fe_values.hh"
+#include "quadrature/quadrature.hh"
+
 
 FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
 
 
 namespace IT = Input::Type;
 
+/********************************************************************************
+ * Static methods and data members
+ */
 const string _equation_name = "Solute_Advection_FV";
 
 const int ConvectionTransport::registrar =
@@ -108,6 +115,74 @@ ConvectionTransport::EqData::EqData() : TransportEqData()
 }
 
 
+/********************************************************************************
+ * Helper class FETransportObjects
+ */
+FETransportObjects::FETransportObjects()
+{
+    fe0_ = new FE_P_disc<0>(0);
+    fe1_ = new FE_P_disc<1>(0);
+    fe2_ = new FE_P_disc<2>(0);
+    fe3_ = new FE_P_disc<3>(0);
+
+    q0_ = new Quadrature<0>(1);
+    q1_ = new Quadrature<1>(1);
+    q2_ = new Quadrature<2>(1);
+    q3_ = new Quadrature<3>(1);
+
+    map1_ = new MappingP1<1,3>;
+    map2_ = new MappingP1<2,3>;
+    map3_ = new MappingP1<3,3>;
+
+    fe_values1_ = new FESideValues<1,3>(*map1_, *q0_, *fe1_,
+            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+    fe_values2_ = new FESideValues<2,3>(*map2_, *q1_, *fe2_,
+            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+    fe_values3_ = new FESideValues<3,3>(*map3_, *q2_, *fe3_,
+            update_values | update_gradients | update_side_JxW_values | update_normal_vectors | update_quadrature_points);
+}
+
+
+FETransportObjects::~FETransportObjects()
+{
+    delete fe0_;
+    delete fe1_;
+    delete fe2_;
+    delete fe3_;
+    delete q0_;
+    delete q1_;
+    delete q2_;
+    delete q3_;
+    delete map1_;
+    delete map2_;
+    delete map3_;
+    delete fe_values1_;
+    delete fe_values2_;
+    delete fe_values3_;
+}
+
+template<> FiniteElement<0> *FETransportObjects::fe<0>() { return fe0_; }
+template<> FiniteElement<1> *FETransportObjects::fe<1>() { return fe1_; }
+template<> FiniteElement<2> *FETransportObjects::fe<2>() { return fe2_; }
+template<> FiniteElement<3> *FETransportObjects::fe<3>() { return fe3_; }
+
+template<> Quadrature<0> *FETransportObjects::q<0>() { return q0_; }
+template<> Quadrature<1> *FETransportObjects::q<1>() { return q1_; }
+template<> Quadrature<2> *FETransportObjects::q<2>() { return q2_; }
+template<> Quadrature<3> *FETransportObjects::q<3>() { return q3_; }
+
+template<> MappingP1<1,3> *FETransportObjects::mapping<1>() { return map1_; }
+template<> MappingP1<2,3> *FETransportObjects::mapping<2>() { return map2_; }
+template<> MappingP1<3,3> *FETransportObjects::mapping<3>() { return map3_; }
+
+template<> FESideValues<1,3> *FETransportObjects::fe_values<1>() { return fe_values1_; }
+template<> FESideValues<2,3> *FETransportObjects::fe_values<2>() { return fe_values2_; }
+template<> FESideValues<3,3> *FETransportObjects::fe_values<3>() { return fe_values3_; }
+
+
+/********************************************************************************
+ * ConvectionTransport
+ */
 ConvectionTransport::ConvectionTransport(Mesh &init_mesh, const Input::Record in_rec)
 : ConcentrationTransportBase(init_mesh, in_rec),
   is_mass_diag_changed(false),
@@ -379,7 +454,7 @@ void ConvectionTransport::set_boundary_conditions()
         	for (unsigned int si=0; si<elm->n_sides(); si++) {
                 Boundary *b = elm.side(si)->cond();
                 if (b != NULL) {
-                    double flux = mh_dh->side_flux( *(elm.side(si)) );
+                    double flux = this->side_flux(elm, si);
                     if (flux < 0.0) {
                         double aij = -(flux / elm.measure() );
 
@@ -752,20 +827,23 @@ void ConvectionTransport::create_transport_matrix_mpi() {
     unsigned int loc_el = 0;
     for ( DHCellAccessor dh_cell : dh_->own_range() ) {
         new_i = row_4_el[ dh_cell.elm_idx() ];
+        elm = dh_cell.elm();
         for( DHCellSide cell_side : dh_cell.side_range() ) {
-            flux = mh_dh->side_flux( *(cell_side.side()) );
+            flux = this->side_flux(elm, cell_side.side()->side_idx());
             if (cell_side.side()->cond() == NULL) {
                 edg_flux = 0;
                 for( DHCellSide edge_side : cell_side.edge_sides() ) {
-                	flux2 = mh_dh->side_flux( *(edge_side.side()) );
-                	if ( flux2 > 0)  edg_flux+= flux2;
+                    el2 = edge_side.side()->element();
+                    flux2 = this->side_flux(el2, edge_side.side()->side_idx());
+                    if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
                     if (edge_side.side() != cell_side.side()) {
                         j = edge_side.side()->element().idx();
                         new_j = row_4_el[j];
 
-                        flux2 = mh_dh->side_flux( *(edge_side.side()) );
+                        el2 = edge_side.side()->element();
+                        flux2 = this->side_flux(el2, edge_side.side()->side_idx());
                         if ( flux2 > 0.0 && flux <0.0)
                             aij = -(flux * flux2 / ( edg_flux * dh_cell.elm().measure() ) );
                         else aij =0;
@@ -780,7 +858,8 @@ void ConvectionTransport::create_transport_matrix_mpi() {
         {
             ASSERT( neighb_side.side()->elem_idx() != dh_cell.elm_idx() ).error("Elm. same\n");
             new_j = row_4_el[ neighb_side.side()->elem_idx() ];
-            flux = mh_dh->side_flux( *(neighb_side.side()) );
+            el2 = neighb_side.side()->element();
+            flux = this->side_flux(el2, neighb_side.side()->side_idx());
 
             // volume source - out-flow from higher dimension
             if (flux > 0.0)  aij = flux / dh_cell.elm().measure();
@@ -878,4 +957,22 @@ void ConvectionTransport::set_balance_object(std::shared_ptr<Balance> balance)
 {
 	balance_ = balance;
     subst_idx = balance_->add_quantities(substances_.names());
+}
+
+double ConvectionTransport::side_flux(ElementAccessor<3> &cell, unsigned int i_side)
+{
+    if (cell.dim()==3) return calculate_side_flux<3>(cell, i_side);
+    else if (cell.dim()==2) return calculate_side_flux<2>(cell, i_side);
+    else return calculate_side_flux<1>(cell, i_side);
+}
+
+template<unsigned int dim>
+double ConvectionTransport::calculate_side_flux(ElementAccessor<3> &cell, unsigned int i_side)
+{
+    ASSERT_EQ(cell->dim(), dim).error("Element dimension mismatch!");
+
+    feo_.fe_values<dim>()->reinit(cell, i_side);
+    auto vel = velocity_field_ptr_->value(cell.centre(), cell);
+    double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)); // * feo_.fe_values<dim>()->JxW(0);
+    return side_flux;
 }
