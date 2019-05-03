@@ -54,7 +54,7 @@
 
 #include "fem/fe_p.hh"
 #include "fem/fe_values.hh"
-#include "quadrature/quadrature.hh"
+#include "quadrature/quadrature_lib.hh"
 
 
 FLOW123D_FORCE_LINK_IN_CHILD(convectionTransport);
@@ -125,10 +125,10 @@ FETransportObjects::FETransportObjects()
     fe2_ = new FE_P_disc<2>(0);
     fe3_ = new FE_P_disc<3>(0);
 
-    q0_ = new Quadrature<0>(1);
-    q1_ = new Quadrature<1>(1);
-    q2_ = new Quadrature<2>(1);
-    q3_ = new Quadrature<3>(1);
+    q0_ = new QGauss<0>(1);
+    q1_ = new QGauss<1>(1);
+    q2_ = new QGauss<2>(1);
+    q3_ = new QGauss<3>(1);
 
     map1_ = new MappingP1<1,3>;
     map2_ = new MappingP1<2,3>;
@@ -838,7 +838,7 @@ void ConvectionTransport::create_transport_matrix_mpi() {
                     if ( flux2 > 0)  edg_flux+= flux2;
                 }
                 for( DHCellSide edge_side : cell_side.edge_sides() )
-                    if (edge_side.side() != cell_side.side()) {
+                    if (SideIter( *edge_side.side() ) != SideIter( *cell_side.side() )) {
                         j = edge_side.side()->element().idx();
                         new_j = row_4_el[j];
 
@@ -973,6 +973,6 @@ double ConvectionTransport::calculate_side_flux(ElementAccessor<3> &cell, unsign
 
     feo_.fe_values<dim>()->reinit(cell, i_side);
     auto vel = velocity_field_ptr_->value(cell.centre(), cell);
-    double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)); // * feo_.fe_values<dim>()->JxW(0);
+    double side_flux = arma::dot(vel, feo_.fe_values<dim>()->normal_vector(0)) * feo_.fe_values<dim>()->JxW(0);
     return side_flux;
 }
