@@ -212,7 +212,7 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
 //     sparsity.print("sparsity");
 }
 
-void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur)
+void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool negative)
 {
     // only for square matrix
     ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols);
@@ -231,6 +231,12 @@ void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur)
     // Schur complement S = C - B * invA * Bt
     schur.matrix = matrix.submat(offset, offset, lastr, lastc) - BinvA * matrix.submat(0, offset, offset-1, lastc);
     schur.rhs = rhs.subvec(offset, lastr) - BinvA * rhs.subvec(0, offset-1);
+    
+    if(negative)
+    {
+        schur.matrix = -1.0 * schur.matrix;
+        schur.rhs = -1.0 * schur.rhs;
+    }
 }
 
 void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution)

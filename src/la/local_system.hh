@@ -139,8 +139,9 @@ public:
      * 
      * @p offset index of the first row/column of submatrix C (size of A)
      * @p schur (output) LocalSystem with Schur complement
+     * @p negative if true, the schur complement (including its rhs) is multiplied by -1.0
      */
-    void compute_schur_complement(uint offset, LocalSystem& schur);
+    void compute_schur_complement(uint offset, LocalSystem& schur, bool negative=false);
     
     /** @brief Reconstructs the solution from the Schur complement solution: x = invA*b - invA * Bt * schur_solution
      * Applicable for square matrices.
