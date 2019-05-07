@@ -123,20 +123,21 @@ public:
         //DebugOut() << print_var(this) << print_var(side_quad_.size());
         
         // create local sparsity pattern
-        arma::umat sp(size(),size());
-        sp.zeros();
-        sp.submat(0, 0, nsides, nsides).ones();
-        sp.diag().ones();
+        base_local_sp_.set_size(size(),size());
+        base_local_sp_.zeros();
+        base_local_sp_.submat(0, 0, nsides, nsides).ones();
+        base_local_sp_.diag().ones();
         // armadillo 8.4.3 bug with negative sub diagonal index
         // sp.diag(nsides+1).ones();
         // sp.diag(-nsides-1).ones();
         // sp.print();
         
-        sp.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
-        sp.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
+        base_local_sp_.submat(0, nsides+1, nsides-1, size()-1).diag().ones();
+        base_local_sp_.submat(nsides+1, 0, size()-1, nsides-1).diag().ones();
         
-        loc_system_.set_sparsity(sp);
+        loc_system_.set_sparsity(base_local_sp_);
         
+        arma::umat sp;
         loc_schur_.reset(nsides, nsides);
         sp.ones(nsides, nsides);
         loc_schur_.set_sparsity(sp);
@@ -173,7 +174,8 @@ public:
         loc_system_.reset();
         compute_balance = false;
     
-        set_dofs_and_bc(ele_ac);
+        set_dofs(ele_ac);
+        assemble_bc(ele_ac);
         
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
@@ -220,7 +222,8 @@ public:
         loc_system_.reset();
         compute_balance = true;
     
-        set_dofs_and_bc(ele_ac);
+        set_dofs(ele_ac);
+        assemble_bc(ele_ac);
         
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
@@ -297,13 +300,63 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void set_dofs_and_bc(LocalElementAccessorBase<3> ele_ac){
-        
+    void set_dofs(LocalElementAccessorBase<3> ele_ac){
         ASSERT_DBG(ele_ac.dim() == dim);
         
-        //set global dof for element (pressure)
-        loc_system_.row_dofs[loc_ele_dof] = loc_system_.col_dofs[loc_ele_dof] = ele_ac.ele_row();
+//         unsigned int loc_size = size() + ele->n_neighs_vb();
+        unsigned int loc_size = size();
+        // vector of DoFs
+        arma::Col<LongIdx> dofs(loc_size);
         
+        //set global dof for element (pressure)
+        dofs[loc_ele_dof] = ele_ac.ele_row();
+        
+        unsigned int side_row, edge_row;
+        for (unsigned int i = 0; i < ele_ac.n_sides(); i++) {
+
+            side_row = loc_side_dofs[i];    //local
+            edge_row = loc_edge_dofs[i];    //local
+            
+            dofs[side_row] = ele_ac.side_row(i);    //global
+            dofs[edge_row] = ele_ac.edge_row(i);    //global
+        }
+        
+        
+//         if(ele->n_neighs_vb() == 0)
+//         {
+            loc_system_.reset(dofs, dofs);
+            loc_system_.set_sparsity(base_local_sp_);
+//             return;
+//         }
+//         
+//         local_sp_.zeros(loc_size, loc_size);
+//         local_sp_.submat( 0,0, arma::size(base_local_sp_)) = base_local_sp_;
+        
+//         //D, E',E block: compatible connections: element-edge
+//         ElementAccessor<3> ele = ele_ac.element_accessor();
+//         
+//         // no Neighbours
+//         if(ele->n_neighs_vb() == 0) return;
+//         
+//         int ele_row = ele_ac.ele_row();
+//         Neighbour *ngh;
+// 
+//         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+//             // every compatible connection adds a 2x2 matrix involving
+//             // current element pressure  and a connected edge pressure
+//             ngh = ele_ac.element_accessor()->neigh_vb[i];
+//             loc_system_vb_.reset();
+//             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
+//             LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+//             for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+//             	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+//                     loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
+//             		break;
+//             	}
+//         }
+    }
+    
+    void assemble_bc(LocalElementAccessorBase<3> ele_ac){
         //shortcuts
         const unsigned int nsides = ele_ac.n_sides();
         LinSys *ls = ad_->lin_sys;
@@ -316,8 +369,6 @@ protected:
 
             side_row = loc_side_dofs[i];    //local
             edge_row = loc_edge_dofs[i];    //local
-            loc_system_.row_dofs[side_row] = loc_system_.col_dofs[side_row] = ele_ac.side_row(i);    //global
-            loc_system_.row_dofs[edge_row] = loc_system_.col_dofs[edge_row] = ele_ac.edge_row(i);    //global
             
             bcd = ele_ac.side(i)->cond();
             dirichlet_edge[i] = 0;
@@ -602,6 +653,8 @@ protected:
     std::vector<unsigned int> dirichlet_edge;
 
     LocalSystem loc_system_;
+    arma::umat base_local_sp_;      ///< Sparsity pattern of the LocalSystem (without dim communication).
+    arma::umat local_sp_;           ///< Whole sparsity pattern of the LocalSystem.
     LocalSystem loc_system_vb_;
     LocalSystem loc_schur_;
     std::vector<unsigned int> loc_side_dofs;
