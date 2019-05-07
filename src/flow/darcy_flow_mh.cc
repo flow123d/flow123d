@@ -305,6 +305,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     solution(nullptr),
     data_changed_(false),
     schur0(nullptr),
+    schur_compl(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
@@ -451,6 +452,15 @@ void DarcyMH::initialize() {
 		data_->dh_cr_disc_->distribute_dofs(ds_cr_disc);
     }
 
+    // create solution vector for 2. Schur complement linear system
+//     schur_solution_ = new VectorMPI(data_->dh_cr_->distr()->lsize());
+//     full_solution_ = new VectorMPI(data_->dh_->distr()->lsize());
+    // this creates mpi vector from DoFHandler, including ghost values
+    schur_solution_ = data_->dh_cr_->create_vector();
+    full_solution_ = data_->dh_->create_vector();
+    data_->schur_solution_ = &schur_solution_;
+    data_->full_solution_ = &full_solution_;
+    
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
@@ -484,7 +494,7 @@ void DarcyMH::initialize() {
 
     data_->balance = balance_;
     data_->lin_sys = schur0;
-
+    data_->lin_sys_schur = schur_compl;
 
     initialize_specific();
 }
@@ -510,11 +520,13 @@ void DarcyMH::zero_time_step()
     if (zero_time_term_from_right) {
         // steady case
         VecZeroEntries(schur0->get_solution());
+        VecZeroEntries(schur_compl->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
         VecZeroEntries(schur0->get_solution());
+        VecZeroEntries(schur_compl->get_solution());
         VecZeroEntries(previous_solution);
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
@@ -609,6 +621,7 @@ void DarcyMH::solve_nonlinear()
     if (! is_linear_common) {
         // set tolerances of the linear solver unless they are set by user.
         schur0->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
+        schur_compl->set_tolerances(0.1*this->tolerance_, 0.01*this->tolerance_, 100);
     }
     vector<double> convergence_history;
 
@@ -635,6 +648,12 @@ void DarcyMH::solve_nonlinear()
         if (! is_linear_common)
             VecCopy( schur0->get_solution(), save_solution);
         LinSys::SolveInfo si = schur0->solve();
+
+        LinSys::SolveInfo si_schur = schur_compl->solve();        
+        MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
+        		si_schur.n_iterations, si_schur.converged_reason, schur_compl->compute_residual());
+        reconstruct_solution_from_schur(data_->multidim_assembler);
+        
         nonlinear_iteration_++;
 
         // hack to make BDDC work with empty compute_residual
@@ -717,6 +736,9 @@ void DarcyMH::postprocess()
 
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
+    
+    print_matlab_matrix("matrix");
+    
     //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
@@ -808,6 +830,67 @@ void DarcyMH::allocate_mh_matrix()
     
     unsigned int nsides, loc_size;
 
+    DebugOut() << "Allocate new schur\n";
+    for ( DHCellAccessor dh_cell : data_->dh_cr_->own_range() ) {
+        std::vector<int> indices(dh_cell.n_dofs());
+        dh_cell.get_dof_indices(indices);
+
+        loc_size = indices.size();
+        int* indices_ptr = indices.data();
+        schur_compl->mat_set_values(loc_size, indices_ptr, loc_size, indices_ptr, zeros);
+        
+        
+        tmp_rows.clear();
+        LocalElementAccessorBase<3> ele_ac(dh_cell);
+        // compatible neighborings rows
+        unsigned int n_neighs = ele_ac.element_accessor()->n_neighs_vb();
+        for (unsigned int i = 0; i < n_neighs; i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            Neighbour *ngh = ele_ac.element_accessor()->neigh_vb[i];
+            DHCellAccessor ngh_cell = data_->dh_cr_->cell_accessor_from_element(ngh->edge()->side(0)->element().idx());
+            LocalElementAccessorBase<3> acc_higher_dim( ngh_cell );
+            
+            std::vector<int> ngh_indices(ngh_cell.n_dofs());
+            ngh_cell.get_dof_indices(ngh_indices);
+            
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                    tmp_rows.push_back(ngh_indices[j]);
+            		break;
+            	}
+            //DebugOut() << "CC" << print_var(tmp_rows[i]);
+        }
+        
+        schur_compl->mat_set_values(loc_size, indices_ptr, n_neighs, tmp_rows.data(), zeros); // (edges)  x (neigh edges)
+        schur_compl->mat_set_values(n_neighs, tmp_rows.data(), loc_size, indices_ptr, zeros); // (neigh edges) x (edges)
+        schur_compl->mat_set_values(n_neighs, tmp_rows.data(), n_neighs, tmp_rows.data(), zeros);  // (neigh edges) x (neigh edges)
+
+        tmp_rows.clear();
+        if (data_->mortar_method_ != NoMortar) {
+            auto &isec_list = mesh_->mixed_intersections().element_intersections_[ele_ac.ele_global_idx()];
+            for(auto &isec : isec_list ) {
+                IntersectionLocalBase *local = isec.second;
+                DHCellAccessor slave_cell = data_->dh_cr_->cell_accessor_from_element(local->bulk_ele_idx());
+                LocalElementAccessorBase<3> slave_acc( slave_cell );
+                
+                std::vector<int> slave_indices(slave_cell.n_dofs());
+                slave_cell.get_dof_indices(slave_indices);
+            
+                //DebugOut().fmt("Alloc: {} {}", ele_ac.ele_global_idx(), local->bulk_ele_idx());
+                for(unsigned int i_side=0; i_side < slave_acc.dim()+1; i_side++) {
+                    tmp_rows.push_back( slave_indices[i_side] );
+                    //DebugOut() << "aedge" << print_var(tmp_rows[tmp_rows.size()-1]);
+                }
+            }
+        }
+
+        schur_compl->mat_set_values(loc_size, indices_ptr, tmp_rows.size(), tmp_rows.data(), zeros);   // master edges x slave edges
+        schur_compl->mat_set_values(tmp_rows.size(), tmp_rows.data(), loc_size, indices_ptr, zeros);   // slave edges  x master edges
+        schur_compl->mat_set_values(tmp_rows.size(), tmp_rows.data(), tmp_rows.size(), tmp_rows.data(), zeros);  // slave edges  x slave edges
+    }
+    DebugOut() << "end Allocate new schur\n";
+    
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
         LocalElementAccessorBase<3> ele_ac(dh_cell);
         nsides = ele_ac.n_sides();
@@ -934,6 +1017,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
                 n_schur_compls = 2;
             }
 
+            schur_compl = new LinSys_PETSC( &(*data_->dh_cr_->distr()) );
+            schur_compl->set_from_input(in_rec);
+            schur_compl->set_positive_definite();
+            schur_compl->set_solution( schur_solution_.petsc_vec() );
+            schur_compl->set_symmetric();
+            
             LinSys_PETSC *schur1, *schur2;
 
             if (n_schur_compls == 0) {
@@ -998,10 +1087,12 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
             START_TIMER("PETSC PREALLOCATION");
             schur0->set_symmetric();
             schur0->start_allocation();
+            schur_compl->start_allocation();
             
             allocate_mh_matrix();
             
     	    VecZeroEntries(schur0->get_solution());
+            VecZeroEntries(schur_compl->get_solution());
             END_TIMER("PETSC PREALLOCATION");
         }
         else {
@@ -1016,7 +1107,24 @@ void DarcyMH::create_linear_system(Input::AbstractRecord in_rec) {
 }
 
 
+void DarcyMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
+{
+    START_TIMER("DarcyFlowMH::reconstruct_solution_from_schur");
 
+    full_solution_.zero_entries();
+    schur_solution_.local_to_ghost_begin();
+    schur_solution_.local_to_ghost_end();
+    
+    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
+    	LocalElementAccessorBase<3> ele_ac(dh_cell);
+        unsigned int dim = ele_ac.dim();
+        assembler[dim-1]->assemble_reconstruct(ele_ac);
+    }
+    
+    // possibly communicate ghost values
+    full_solution_.local_to_ghost_begin();
+    full_solution_.local_to_ghost_end();
+}
 
 void DarcyMH::assembly_linear_system() {
     START_TIMER("DarcyFlowMH_Steady::assembly_linear_system");
@@ -1031,17 +1139,23 @@ void DarcyMH::assembly_linear_system() {
 	    START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
             schur0->start_add_assembly(); // finish allocation and create matrix
+            schur_compl->start_add_assembly();
         }
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
         
+        schur_compl->mat_zero_entries();
+        schur_compl->rhs_zero_entries();
+        
 
 	    assembly_mh_matrix( data_->multidim_assembler ); // fill matrix
 
 	    schur0->finish_assembly();
+        schur_compl->finish_assembly();
 //         print_matlab_matrix("matrix");
 	    schur0->set_matrix_changed();
+        schur_compl->set_matrix_changed();
             //MatView( *const_cast<Mat*>(schur0->get_matrix()), PETSC_VIEWER_STDOUT_WORLD  );
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
@@ -1127,6 +1241,30 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
     fprintf(file, "h1 = %e;\nh2 = %e;\nh3 = %e;\n", h1, h2, h3);
     fprintf(file, "he2 = %e;\nhe3 = %e;\n", he2, he3);
     fclose(file);
+    
+    {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
+//         schur0->solve();
+        SchurComplement* sch1 = static_cast<SchurComplement*>(schur0);
+        SchurComplement* sch = static_cast<SchurComplement*>(sch1->get_system());
+        output_file = FilePath(matlab_file + "_sch.m", FilePath::output_file);
+        PetscViewer    viewer;
+        PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+        PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+        MatView( *const_cast<Mat*>(sch->get_system()->get_matrix()), viewer);
+        VecView( *const_cast<Vec*>(sch->get_system()->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(sch->get_system()->get_solution())), viewer);
+        VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
+    }
+    {//if ( typeid(*schur0) == typeid(LinSys_PETSC) ){
+        output_file = FilePath(matlab_file + "_sch_new.m", FilePath::output_file);
+        PetscViewer    viewer;
+        PetscViewerASCIIOpen(PETSC_COMM_WORLD, output_file.c_str(), &viewer);
+        PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
+        MatView( *const_cast<Mat*>(schur_compl->get_matrix()), viewer);
+        VecView( *const_cast<Vec*>(schur_compl->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(schur_compl->get_solution())), viewer);
+        VecView( *const_cast<Vec*>(&(full_solution_.petsc_vec())), viewer);
+    }
 }
 
 
@@ -1308,6 +1446,10 @@ DarcyMH::~DarcyMH() {
 	    chkerr(VecDestroy(&sol_vec));
 		delete [] solution;
 	}
+	
+	if (schur_compl != nullptr) {
+        delete schur_compl;
+    }
 
 	if (output_object)	delete output_object;
 

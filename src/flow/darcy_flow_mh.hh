@@ -63,6 +63,7 @@ class Element;
 class Intersection;
 class LinSys;
 class LinSys_BDDC;
+class VectorMPI;
 namespace Input {
 	class AbstractRecord;
 	class Record;
@@ -211,6 +212,9 @@ public:
         unsigned int local_boundary_index;
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
+        LinSys *lin_sys_schur;
+        VectorMPI* schur_solution_;
+        VectorMPI* full_solution_;
         
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
@@ -333,6 +337,8 @@ protected:
      * - support for nonlinear solvers - assembly either residual vector, matrix, or both (using FADBAD++)
      */
     void assembly_mh_matrix(MultidimAssembly& assembler);
+    
+    void reconstruct_solution_from_schur(MultidimAssembly& assembler);
 
     /**
      * Assembly or update whole linear system.
@@ -380,7 +386,10 @@ protected:
 
 	LinSys *schur0;  		//< whole MH Linear System
 
-
+    LinSys *schur_compl;    //< 2. Schur complement of MH Linear System (direct assembly)
+    VectorMPI schur_solution_;     //< 2. Schur complement solution
+    VectorMPI full_solution_;     //< full solution [vel,press,lambda] from 2. Schur complement
+    
 	// gather of the solution
 	Vec sol_vec;			                 //< vector over solution array
 	VecScatter par_to_all;

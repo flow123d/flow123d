@@ -54,6 +54,7 @@ public:
 //     virtual LocalSystem & get_local_system() = 0;
     virtual void fix_velocity(LocalElementAccessorBase<3> ele_ac) = 0;
     virtual void assemble(LocalElementAccessorBase<3> ele_ac) = 0;
+    virtual void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
     virtual void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) = 0;
@@ -136,6 +137,10 @@ public:
         
         loc_system_.set_sparsity(sp);
         
+        loc_schur_.reset(nsides, nsides);
+        sp.ones(nsides, nsides);
+        loc_schur_.set_sparsity(sp);
+        
         // local system 2x2 for vb neighbourings is full matrix
         // this matrix cannot be influenced by any BC (no elimination can take place)
         sp.ones(2,2);
@@ -162,10 +167,58 @@ public:
             mortar_assembly->fix_velocity(ele_ac);
     }
 
+    void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) override
+    {
+        ASSERT_EQ_DBG(ele_ac.dim(), dim);
+        loc_system_.reset();
+        compute_balance = false;
+    
+        set_dofs_and_bc(ele_ac);
+        
+        assemble_sides(ele_ac);
+        assemble_element(ele_ac);
+        assemble_source_term(ele_ac);
+        
+//         loc_system_.eliminate_solution();
+        
+        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+        std::vector<int> indices(dh_cr_cell.n_dofs());
+        // we access schur solution by local dof indices
+        dh_cr_cell.get_loc_dof_indices(indices);
+        
+        std::vector<int> rec_indices(ele_ac.dh_cell().n_dofs());
+        // we access full solution by local dof indices
+        ele_ac.dh_cell().get_loc_dof_indices(rec_indices);
+        
+        arma::vec schur_solution(indices.size());
+        for(unsigned int i=0; i<indices.size(); i++)
+        {
+            schur_solution(i) = (*ad_->schur_solution_)[indices[i]];
+            // write the computed edge pressures
+            unsigned int loc_row = rec_indices[loc_edge_dofs[i]];
+            (*ad_->full_solution_)[loc_row] = schur_solution(i);
+        }
+        
+        arma::vec reconstructed_solution(loc_edge_dofs[0]);
+        loc_system_.reconstruct_solution_schur(loc_edge_dofs[0], schur_solution, reconstructed_solution);
+        
+        for(unsigned int i=0; i<loc_edge_dofs[0]; i++)
+        {
+            unsigned int loc_row = rec_indices[i];
+            (*ad_->full_solution_)[loc_row] += reconstructed_solution(i);
+        }
+        
+//         assembly_dim_connections(ele_ac);
+
+//         if (mortar_assembly)
+//             mortar_assembly->assembly(ele_ac);
+    }
+    
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
         loc_system_.reset();
+        compute_balance = true;
     
         set_dofs_and_bc(ele_ac);
         
@@ -174,6 +227,15 @@ public:
         assemble_source_term(ele_ac);
         
         ad_->lin_sys->set_local_system(loc_system_);
+        
+//         local.eliminate_solution();
+        loc_system_.compute_schur_complement(loc_edge_dofs[0], loc_schur_, true);
+        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+        std::vector<int> indices(dh_cr_cell.n_dofs());
+        dh_cr_cell.get_dof_indices(indices);
+        loc_schur_.row_dofs = indices;
+        loc_schur_.col_dofs = indices;
+        ad_->lin_sys_schur->set_local_system(loc_schur_);
 
         assembly_dim_connections(ele_ac);
 
@@ -464,7 +526,8 @@ protected:
                 ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
         loc_system_.add_value(loc_ele_dof, -1.0 * source);
 
-        ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_row()}, {source});
+        if(compute_balance)
+            ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_row()}, {source});
     }
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){
@@ -519,6 +582,8 @@ protected:
     }
 
 
+    // temporary fix in schur reconstruction
+    bool compute_balance;
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
@@ -538,6 +603,7 @@ protected:
 
     LocalSystem loc_system_;
     LocalSystem loc_system_vb_;
+    LocalSystem loc_schur_;
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
     unsigned int loc_ele_dof;
