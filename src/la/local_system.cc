@@ -52,12 +52,11 @@ void LocalSystem::reset()
 
 void LocalSystem::reset(arma::uword nrows, arma::uword ncols)
 {
-    matrix.set_size(nrows, ncols);
-    rhs.set_size(nrows);
-    row_dofs.resize(matrix.n_rows);
-    col_dofs.resize(matrix.n_cols);
-    // destroy previous sparsity pattern
-    sparsity.zeros(nrows,ncols);
+    if(matrix.n_rows != nrows || matrix.n_cols != ncols)
+    {
+        set_size(nrows, ncols);
+    }
+    
     reset();
 }
 
@@ -65,7 +64,11 @@ void LocalSystem::reset(arma::uword nrows, arma::uword ncols)
 
 void LocalSystem::reset(const DofVec &rdofs, const DofVec &cdofs)
 {
-    set_size(rdofs.n_rows, cdofs.n_rows);
+    if(matrix.n_rows != rdofs.n_rows || matrix.n_cols != cdofs.n_rows)
+    {
+        set_size(rdofs.n_rows, cdofs.n_rows);
+    }
+    
     reset();
     row_dofs = rdofs;
     col_dofs = cdofs;
@@ -209,28 +212,22 @@ void LocalSystem::set_sparsity(const arma::umat & sp)
         for(unsigned int j=0; j < sp.n_cols; j++)
             if( sp(i,j) != 0 )
                 sparsity(i,j) = almost_zero;
-//     sparsity.print("sparsity");
+//      sparsity.print("sparsity");
 }
 
 void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool negative)
 {
     // only for square matrix
-    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols);
-    
-    arma::uword lastr = matrix.n_rows - 1;
-    arma::uword lastc = matrix.n_cols - 1;
-    
-    ASSERT_LT_DBG(offset, lastr);
-    ASSERT_LT_DBG(offset, lastc);
-    
-    schur.reset(row_dofs.subvec(offset, lastr), col_dofs.subvec(offset, lastc));
+    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
+    arma::uword n = matrix.n_rows - 1;
+    ASSERT_LT_DBG(offset, n)("Schur complement (offset) dimension mismatch.");
 
     // B * invA
-    arma::mat BinvA = matrix.submat(offset, 0, lastr, offset-1) * matrix.submat(0, 0, offset-1, offset-1).i();
+    arma::mat BinvA = matrix.submat(offset, 0, n, offset-1) * matrix.submat(0, 0, offset-1, offset-1).i();
     
     // Schur complement S = C - B * invA * Bt
-    schur.matrix = matrix.submat(offset, offset, lastr, lastc) - BinvA * matrix.submat(0, offset, offset-1, lastc);
-    schur.rhs = rhs.subvec(offset, lastr) - BinvA * rhs.subvec(0, offset-1);
+    schur.matrix = matrix.submat(offset, offset, n, n) - BinvA * matrix.submat(0, offset, offset-1, n);
+    schur.rhs = rhs.subvec(offset, n) - BinvA * rhs.subvec(0, offset-1);
     
     if(negative)
     {
@@ -242,18 +239,14 @@ void LocalSystem::compute_schur_complement(uint offset, LocalSystem& schur, bool
 void LocalSystem::reconstruct_solution_schur(uint offset, const arma::vec &schur_solution, arma::vec& reconstructed_solution)
 {
     // only for square matrix
-    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols);
-    
-    arma::uword lastr = matrix.n_rows - 1;
-    arma::uword lastc = matrix.n_cols - 1;
-    
-    ASSERT_LT_DBG(offset, lastr);
-    ASSERT_LT_DBG(offset, lastc);
+    ASSERT_EQ_DBG(matrix.n_rows, matrix.n_cols)("Cannot compute Schur complement for non-square matrix.");
+    arma::uword n = matrix.n_rows - 1;
+    ASSERT_LT_DBG(offset, n)("Schur complement (offset) dimension mismatch.");
 
     reconstructed_solution.set_size(offset);
     // invA
     arma::mat invA =  matrix.submat(0, 0, offset-1, offset-1).i();
     
     // x = invA*b - invA * Bt * schur_solution
-    reconstructed_solution = invA * rhs.subvec(0,offset-1) - invA * matrix.submat(0, offset, offset-1, lastc) * schur_solution;
+    reconstructed_solution = invA * rhs.subvec(0,offset-1) - invA * matrix.submat(0, offset, offset-1, n) * schur_solution;
 }
