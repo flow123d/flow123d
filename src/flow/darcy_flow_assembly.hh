@@ -57,7 +57,7 @@ public:
     virtual void assemble_reconstruct(LocalElementAccessorBase<3> ele_ac) = 0;
         
     // assembly compatible neighbourings
-    virtual void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) = 0;
+//     virtual void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) = 0;
 
     // compute velocity value in the barycenter
     // TODO: implement and use general interpolations between discrete spaces
@@ -108,8 +108,7 @@ public:
         velocity_interpolation_fv_(map_,velocity_interpolation_quad_, fe_rt_, update_values | update_quadrature_points),
 
         ad_(data),
-        loc_system_(size(), size()),
-        loc_system_vb_(2,2)
+        loc_system_(size(), size())
     {
         // local numbering of dofs for MH system
         unsigned int nsides = dim+1;
@@ -137,15 +136,9 @@ public:
         
         loc_system_.set_sparsity(base_local_sp_);
         
-        arma::umat sp;
         loc_schur_.reset(nsides, nsides);
-        sp.ones(nsides, nsides);
-        loc_schur_.set_sparsity(sp);
-        
-        // local system 2x2 for vb neighbourings is full matrix
-        // this matrix cannot be influenced by any BC (no elimination can take place)
-        sp.ones(2,2);
-        loc_system_vb_.set_sparsity(sp);
+        schur_sp_.ones(nsides, nsides);
+        loc_schur_.set_sparsity(schur_sp_);
 
         if (ad_->mortar_method_ == DarcyMH::MortarP0) {
             mortar_assembly = std::make_shared<P0_CouplingAssembler>(ad_);
@@ -174,44 +167,43 @@ public:
         loc_system_.reset();
         compute_balance = false;
     
-        set_dofs(ele_ac);
+        set_loc_dofs_vec(ele_ac, loc_system_.row_dofs, loc_schur_.row_dofs);
+        loc_system_.reset(loc_system_.row_dofs,loc_system_.row_dofs);
+        loc_schur_.reset(loc_schur_.row_dofs,loc_schur_.row_dofs);
+        
         assemble_bc(ele_ac);
         
         assemble_sides(ele_ac);
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
+        assembly_dim_connections(ele_ac);
+        
 //         loc_system_.eliminate_solution();
         
-        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-        std::vector<int> indices(dh_cr_cell.n_dofs());
-        // we access schur solution by local dof indices
-        dh_cr_cell.get_loc_dof_indices(indices);
-        
-        std::vector<int> rec_indices(ele_ac.dh_cell().n_dofs());
-        // we access full solution by local dof indices
-        ele_ac.dh_cell().get_loc_dof_indices(rec_indices);
-        
-        arma::vec schur_solution(indices.size());
-        for(unsigned int i=0; i<indices.size(); i++)
+        const unsigned int n = loc_schur_.row_dofs.n_rows;  // local Schur complement size
+        const unsigned int off = loc_edge_dofs[0];          // local Schur complement offset in LocalSystem
+        arma::vec schur_solution(n);
+        for(unsigned int i=0; i<n; i++)
         {
-            schur_solution(i) = (*ad_->schur_solution_)[indices[i]];
+            // read the computed edge pressures
+            schur_solution(i) = (*ad_->schur_solution_)[loc_schur_.row_dofs[i]];
             // write the computed edge pressures
-            unsigned int loc_row = rec_indices[loc_edge_dofs[i]];
+            unsigned int loc_row = loc_system_.row_dofs[off+i];
             (*ad_->full_solution_)[loc_row] = schur_solution(i);
         }
         
-        arma::vec reconstructed_solution(loc_edge_dofs[0]);
-        loc_system_.reconstruct_solution_schur(loc_edge_dofs[0], schur_solution, reconstructed_solution);
+        // reconstruct the velocity and pressure
+        arma::vec reconstructed_solution(off);
+        loc_system_.reconstruct_solution_schur(off, schur_solution, reconstructed_solution);
         
-        for(unsigned int i=0; i<loc_edge_dofs[0]; i++)
+        for(unsigned int i=0; i<off; i++)
         {
-            unsigned int loc_row = rec_indices[i];
+            // write the velocity and pressure
+            unsigned int loc_row = loc_system_.row_dofs[i];
             (*ad_->full_solution_)[loc_row] += reconstructed_solution(i);
         }
         
-//         assembly_dim_connections(ele_ac);
-
 //         if (mortar_assembly)
 //             mortar_assembly->assembly(ele_ac);
     }
@@ -219,7 +211,6 @@ public:
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        loc_system_.reset();
         compute_balance = true;
     
         set_dofs(ele_ac);
@@ -229,18 +220,13 @@ public:
         assemble_element(ele_ac);
         assemble_source_term(ele_ac);
         
+        assembly_dim_connections(ele_ac);
+        
         ad_->lin_sys->set_local_system(loc_system_);
         
 //         local.eliminate_solution();
         loc_system_.compute_schur_complement(loc_edge_dofs[0], loc_schur_, true);
-        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
-        std::vector<int> indices(dh_cr_cell.n_dofs());
-        dh_cr_cell.get_dof_indices(indices);
-        loc_schur_.row_dofs = indices;
-        loc_schur_.col_dofs = indices;
         ad_->lin_sys_schur->set_local_system(loc_schur_);
-
-        assembly_dim_connections(ele_ac);
 
         if (ad_->balance != nullptr)
             add_fluxes_in_balance_matrix(ele_ac);
@@ -249,30 +235,30 @@ public:
             mortar_assembly->assembly(ele_ac);
     }
 
-    void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) override
-    {
-        ASSERT_LT_DBG(ele->dim(), 3);
-        //DebugOut() << "alv " << print_var(this);
-        //START_TIMER("Assembly<dim>::assembly_local_vb");
-        // compute normal vector to side
-        arma::vec3 nv;
-        ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
-        ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
-        nv = ngh_values_.fe_side_values_.normal_vector(0);
-
-        double value = ad_->sigma.value( ele.centre(), ele) *
-                        2*ad_->conductivity.value( ele.centre(), ele) *
-                        arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
-                        ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
-                        ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
-                        ngh->side()->measure();
-
-        loc_system_vb_.add_value(0,0, -value);
-        loc_system_vb_.add_value(0,1,  value);
-        loc_system_vb_.add_value(1,0,  value);
-        loc_system_vb_.add_value(1,1, -value);
-    }
+//     void assembly_local_vb(ElementAccessor<3> ele, Neighbour *ngh) override
+//     {
+//         ASSERT_LT_DBG(ele->dim(), 3);
+//         //DebugOut() << "alv " << print_var(this);
+//         //START_TIMER("Assembly<dim>::assembly_local_vb");
+//         // compute normal vector to side
+//         arma::vec3 nv;
+//         ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
+//         ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
+//         nv = ngh_values_.fe_side_values_.normal_vector(0);
+// 
+//         double value = ad_->sigma.value( ele.centre(), ele) *
+//                         2*ad_->conductivity.value( ele.centre(), ele) *
+//                         arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
+//                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
+//                         ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
+//                         ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
+//                         ngh->side()->measure();
+// 
+//         loc_system_vb_.add_value(0,0, -value);
+//         loc_system_vb_.add_value(0,1,  value);
+//         loc_system_vb_.add_value(1,0,  value);
+//         loc_system_vb_.add_value(1,1, -value);
+//     }
 
 
     arma::vec3 make_element_vector(LocalElementAccessorBase<3> ele_ac) override
@@ -300,13 +286,76 @@ protected:
         return RefElement<dim>::n_sides + 1 + RefElement<dim>::n_sides;
     }
     
-    void set_dofs(LocalElementAccessorBase<3> ele_ac){
-        ASSERT_DBG(ele_ac.dim() == dim);
+    void set_loc_dofs_vec(LocalElementAccessorBase<3> ele_ac, arma::Col<LongIdx>& dofs, arma::Col<LongIdx>& dofs_schur){
+        ElementAccessor<3> ele = ele_ac.element_accessor();
         
-//         unsigned int loc_size = size() + ele->n_neighs_vb();
-        unsigned int loc_size = size();
+        unsigned int loc_size = size() + ele->n_neighs_vb();
+        unsigned int loc_size_schur = ele_ac.n_sides() + ele->n_neighs_vb();
+        // vector of DoFs
+        dofs.set_size(loc_size);
+        dofs_schur.set_size(loc_size_schur);
+        
+        std::vector<LongIdx> indices(ele_ac.dh_cell().n_dofs());
+        ele_ac.dh_cell().get_loc_dof_indices(indices);
+        
+        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+        std::vector<LongIdx> schur_indices(dh_cr_cell.n_dofs());
+        dh_cr_cell.get_loc_dof_indices(schur_indices);
+        
+        if(ele->n_neighs_vb() == 0)
+        {   
+            dofs = indices;
+            dofs_schur = schur_indices;
+            return;
+        }
+        
+        // add full vec indices
+        arma::Col<LongIdx> d = indices;
+        dofs.head(indices.size()) = d;
+        // add schur vec indices
+        d = schur_indices;
+        dofs_schur.head(schur_indices.size()) = d;
+        
+        //D, E',E block: compatible connections: element-edge
+        Neighbour *ngh;
+
+        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh = ele_ac.element_accessor()->neigh_vb[i];
+            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            
+            std::vector<LongIdx> higher_indices(acc_higher_dim.dh_cell().n_dofs());
+            acc_higher_dim.dh_cell().get_loc_dof_indices(higher_indices);
+            
+            DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+            std::vector<LongIdx> cr_dofs(higher_dh_cr_cell.n_dofs());
+            higher_dh_cr_cell.get_loc_dof_indices(cr_dofs);            
+                    
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                    unsigned int p = size()+i;
+                    dofs[p] = higher_indices[higher_indices.size() - cr_dofs.size() + i];
+                    
+                    unsigned int t = schur_indices.size()+i;
+                    dofs_schur[t] = cr_dofs[j];
+            		break;
+            	}
+        }
+    }
+    
+    void set_dofs(LocalElementAccessorBase<3> ele_ac){
+        ElementAccessor<3> ele = ele_ac.element_accessor();
+        
+        unsigned int loc_size = size() + ele->n_neighs_vb();
+        unsigned int loc_size_schur = ele_ac.n_sides() + ele->n_neighs_vb();
         // vector of DoFs
         arma::Col<LongIdx> dofs(loc_size);
+        arma::Col<LongIdx> dofs_schur(loc_size_schur);
+        
+        DHCellAccessor dh_cr_cell = ele_ac.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+        std::vector<LongIdx> indices(dh_cr_cell.n_dofs());
+        dh_cr_cell.get_dof_indices(indices);
         
         //set global dof for element (pressure)
         dofs[loc_ele_dof] = ele_ac.ele_row();
@@ -321,39 +370,61 @@ protected:
             dofs[edge_row] = ele_ac.edge_row(i);    //global
         }
         
-        
-//         if(ele->n_neighs_vb() == 0)
-//         {
+        if(ele->n_neighs_vb() == 0)
+        {
             loc_system_.reset(dofs, dofs);
             loc_system_.set_sparsity(base_local_sp_);
-//             return;
-//         }
-//         
-//         local_sp_.zeros(loc_size, loc_size);
-//         local_sp_.submat( 0,0, arma::size(base_local_sp_)) = base_local_sp_;
+            
+            dofs_schur = indices;
+            loc_schur_.reset(dofs_schur,dofs_schur);
+            schur_sp_.ones(loc_size_schur, loc_size_schur);
+            loc_schur_.set_sparsity(schur_sp_);
+            return;
+        }
         
-//         //D, E',E block: compatible connections: element-edge
-//         ElementAccessor<3> ele = ele_ac.element_accessor();
-//         
-//         // no Neighbours
-//         if(ele->n_neighs_vb() == 0) return;
-//         
-//         int ele_row = ele_ac.ele_row();
-//         Neighbour *ngh;
-// 
-//         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
-//             // every compatible connection adds a 2x2 matrix involving
-//             // current element pressure  and a connected edge pressure
-//             ngh = ele_ac.element_accessor()->neigh_vb[i];
-//             loc_system_vb_.reset();
-//             loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-//             LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
-//             for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
-//             	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
-//                     loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
-//             		break;
-//             	}
-//         }
+        // if neighbor communication, then resize the local system and set dofs and sp
+        local_sp_.zeros(loc_size, loc_size);
+        local_sp_( 0,0, arma::size(base_local_sp_)) = base_local_sp_;
+        
+        // TODO: sparse for commmunication blocks?
+        schur_sp_.ones(loc_size_schur, loc_size_schur);
+        
+       
+        arma::Col<LongIdx> d = indices;
+        dofs_schur.head(indices.size()) = d;
+        
+        //D, E',E block: compatible connections: element-edge
+        Neighbour *ngh;
+
+        for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
+            // every compatible connection adds a 2x2 matrix involving
+            // current element pressure  and a connected edge pressure
+            ngh = ele_ac.element_accessor()->neigh_vb[i];
+            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
+            
+            DHCellAccessor higher_dh_cr_cell = acc_higher_dim.dh_cell().cell_with_other_dh(ad_->dh_cr_.get());
+            std::vector<int> cr_dofs(higher_dh_cr_cell.n_dofs());
+            higher_dh_cr_cell.get_dof_indices(cr_dofs);
+                    
+            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
+            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
+                    unsigned int p = size()+i;
+                    dofs[p] = acc_higher_dim.edge_row(j);
+                    local_sp_(loc_ele_dof, p) = 1;
+                    local_sp_(p, loc_ele_dof) = 1;
+                    local_sp_(p, p) = 1;
+                    
+                    unsigned int t = indices.size()+i;
+                    dofs_schur[t] = cr_dofs[j];
+            		break;
+            	}
+        }
+        
+        loc_system_.reset(dofs, dofs);
+        loc_system_.set_sparsity(local_sp_);
+        
+        loc_schur_.reset(dofs_schur, dofs_schur);
+        loc_schur_.set_sparsity(schur_sp_);
     }
     
     void assemble_bc(LocalElementAccessorBase<3> ele_ac){
@@ -588,33 +659,42 @@ protected:
         // no Neighbours => nothing to asssemble here
         if(ele->n_neighs_vb() == 0) return;
         
+        ASSERT_LT_DBG(ele->dim(), 3);
         int ele_row = ele_ac.ele_row();
         Neighbour *ngh;
+        arma::vec3 nv;
 
         //DebugOut() << "adc " << print_var(this) << print_var(side_quad_.size());
         for (unsigned int i = 0; i < ele->n_neighs_vb(); i++) {
             // every compatible connection adds a 2x2 matrix involving
             // current element pressure  and a connected edge pressure
+            unsigned int p = size()+i; // loc dof of higher ele edge
             ngh = ele_ac.element_accessor()->neigh_vb[i];
-            loc_system_vb_.reset();
-            loc_system_vb_.row_dofs[0] = loc_system_vb_.col_dofs[0] = ele_row;
-            LocalElementAccessorBase<3> acc_higher_dim( ele_ac.dh_cell().dh()->cell_accessor_from_element(ngh->edge()->side(0)->element().idx()) );
-            for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
-            	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
-                    loc_system_vb_.row_dofs[1] = loc_system_vb_.col_dofs[1] = acc_higher_dim.edge_row(j);
-            		break;
-            	}
+            
+            //DebugOut() << "alv " << print_var(this);
+            // compute normal vector to side
+            ElementAccessor<3> ele_higher = ad_->mesh->element_accessor( ngh->side()->element().idx() );
+            ngh_values_.fe_side_values_.reinit(ele_higher, ngh->side()->side_idx());
+            nv = ngh_values_.fe_side_values_.normal_vector(0);
 
-            assembly_local_vb(ele, ngh);
+            double value = ad_->sigma.value( ele.centre(), ele) *
+                            2*ad_->conductivity.value( ele.centre(), ele) *
+                            arma::dot(ad_->anisotropy.value( ele.centre(), ele)*nv, nv) *
+                            ad_->cross_section.value( ngh->side()->centre(), ele_higher ) * // cross-section of higher dim. (2d)
+                            ad_->cross_section.value( ngh->side()->centre(), ele_higher ) /
+                            ad_->cross_section.value( ele.centre(), ele ) *      // crossection of lower dim.
+                            ngh->side()->measure();
 
-            ad_->lin_sys->set_local_system(loc_system_vb_);
+            loc_system_.add_value(loc_ele_dof, loc_ele_dof, -value);
+            loc_system_.add_value(loc_ele_dof, p,            value);
+            loc_system_.add_value(p,loc_ele_dof,             value);
+            loc_system_.add_value(p,p,                      -value);
 
             // update matrix for weights in BDDCML
             if ( typeid(*ad_->lin_sys) == typeid(LinSys_BDDC) ) {
-               int ind = loc_system_vb_.row_dofs[1];
+                int ind = loc_system_.row_dofs[p];
                // there is -value on diagonal in block C!
-               double new_val = loc_system_vb_.get_matrix()(0,0);
-               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, new_val );
+               static_cast<LinSys_BDDC*>(ad_->lin_sys)->diagonal_weights_set_value( ind, -value );
             }
         }
     }
@@ -655,7 +735,7 @@ protected:
     LocalSystem loc_system_;
     arma::umat base_local_sp_;      ///< Sparsity pattern of the LocalSystem (without dim communication).
     arma::umat local_sp_;           ///< Whole sparsity pattern of the LocalSystem.
-    LocalSystem loc_system_vb_;
+    arma::umat schur_sp_;           ///< Whole sparsity pattern of the Schur complement of LocalSystem.
     LocalSystem loc_schur_;
     std::vector<unsigned int> loc_side_dofs;
     std::vector<unsigned int> loc_edge_dofs;
