@@ -167,9 +167,11 @@ public:
         loc_system_.reset();
         compute_balance = false;
     
-        set_loc_dofs_vec(ele_ac, loc_system_.row_dofs, loc_schur_.row_dofs);
-        loc_system_.reset(loc_system_.row_dofs,loc_system_.row_dofs);
-        loc_schur_.reset(loc_schur_.row_dofs,loc_schur_.row_dofs);
+        arma::Col<LongIdx> dofs, dofs_schur;
+//         set_loc_dofs_vec(ele_ac, loc_system_.row_dofs, loc_schur_.row_dofs);
+        set_loc_dofs_vec(ele_ac, dofs, dofs_schur);
+        loc_system_.reset(dofs, dofs);
+        loc_schur_.reset(dofs_schur,dofs_schur);
         
         assemble_bc(ele_ac);
         
@@ -187,9 +189,9 @@ public:
         for(unsigned int i=0; i<n; i++)
         {
             // read the computed edge pressures
-            schur_solution(i) = (*ad_->schur_solution_)[loc_schur_.row_dofs[i]];
+            schur_solution(i) = (*ad_->schur_solution_)[dofs_schur[i]];
             // write the computed edge pressures
-            unsigned int loc_row = loc_system_.row_dofs[off+i];
+            unsigned int loc_row = dofs[off+i];
             (*ad_->full_solution_)[loc_row] = schur_solution(i);
         }
         
@@ -200,7 +202,7 @@ public:
         for(unsigned int i=0; i<off; i++)
         {
             // write the velocity and pressure
-            unsigned int loc_row = loc_system_.row_dofs[i];
+            unsigned int loc_row = dofs[i];
             (*ad_->full_solution_)[loc_row] += reconstructed_solution(i);
         }
         
@@ -312,9 +314,10 @@ protected:
         // add full vec indices
         arma::Col<LongIdx> d = indices;
         dofs.head(indices.size()) = d;
+        
         // add schur vec indices
-        d = schur_indices;
-        dofs_schur.head(schur_indices.size()) = d;
+        arma::Col<LongIdx> dd = schur_indices;
+        dofs_schur.head(schur_indices.size()) = dd;
         
         //D, E',E block: compatible connections: element-edge
         Neighbour *ngh;
@@ -335,7 +338,7 @@ protected:
             for (unsigned int j = 0; j < ngh->edge()->side(0)->element().dim()+1; j++)
             	if (ngh->edge()->side(0)->element()->edge_idx(j) == ngh->edge_idx()) {
                     unsigned int p = size()+i;
-                    dofs[p] = higher_indices[higher_indices.size() - cr_dofs.size() + i];
+                    dofs[p] = higher_indices[higher_indices.size() - cr_dofs.size() + j];
                     
                     unsigned int t = schur_indices.size()+i;
                     dofs_schur[t] = cr_dofs[j];
@@ -649,7 +652,7 @@ protected:
         loc_system_.add_value(loc_ele_dof, -1.0 * source);
 
         if(compute_balance)
-            ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_row()}, {source});
+            ad_->balance->add_source_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_idx()}, {0}, {source});
     }
 
     void assembly_dim_connections(LocalElementAccessorBase<3> ele_ac){

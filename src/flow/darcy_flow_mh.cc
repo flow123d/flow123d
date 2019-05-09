@@ -1124,6 +1124,8 @@ void DarcyMH::reconstruct_solution_from_schur(MultidimAssembly& assembler)
     // possibly communicate ghost values
     full_solution_.local_to_ghost_begin();
     full_solution_.local_to_ghost_end();
+//     full_solution_.ghost_to_local_begin();
+//     full_solution_.ghost_to_local_end();
 }
 
 void DarcyMH::assembly_linear_system() {

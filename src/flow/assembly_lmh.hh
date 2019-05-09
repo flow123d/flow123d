@@ -148,7 +148,6 @@ public:
         {
 
             uint local_side = side_indices[i];
-            uint edge_row = ele.edge_row(i);
             if (this->dirichlet_edge[i] == 0) {
 
                 double capacity = this->ad_->capacity[local_side];
@@ -182,7 +181,7 @@ public:
             if (ad_->balance != nullptr) {
                 ad_->balance->add_mass_vec_value(ad_->water_balance_idx, ele.region().bulk_idx(),
                         diagonal_coef*ad_->water_content_previous_it[local_side]);
-                ad_->balance->add_source_vec_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)edge_row}, {source_diagonal});
+                ad_->balance->add_source_values(ad_->water_balance_idx, ele.region().bulk_idx(), {(LongIdx)edge_indices[i]},{0},{source_diagonal});
             }
         }
 

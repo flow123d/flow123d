@@ -837,6 +837,7 @@ void TransportDG<Model>::set_sources()
             sources_density(Model::n_substances(), std::vector<double>(qsize)),
             sources_sigma(Model::n_substances(), std::vector<double>(qsize));
     vector<LongIdx> dof_indices(ndofs);
+    vector<LongIdx> loc_dof_indices(ndofs);
     PetscScalar local_rhs[ndofs];
     vector<PetscScalar> local_source_balance_vector(ndofs), local_source_balance_rhs(ndofs);
     double source;
@@ -849,6 +850,7 @@ void TransportDG<Model>::set_sources()
 
         fe_values.reinit(elm);
         cell.get_dof_indices(dof_indices);
+        cell.get_loc_dof_indices(loc_dof_indices);
 
         Model::compute_source_coefficients(fe_values.point_list(), elm, sources_conc, sources_density, sources_sigma);
 
@@ -876,8 +878,8 @@ void TransportDG<Model>::set_sources()
 
                 local_source_balance_rhs[i] += local_rhs[i];
             }
-            Model::balance_->add_source_matrix_values(Model::subst_idx[sbi], elm.region().bulk_idx(), dof_indices, local_source_balance_vector);
-            Model::balance_->add_source_vec_values(Model::subst_idx[sbi], elm.region().bulk_idx(), dof_indices, local_source_balance_rhs);
+            Model::balance_->add_source_values(Model::subst_idx[sbi], elm.region().bulk_idx(), loc_dof_indices,
+                                               local_source_balance_vector, local_source_balance_rhs);
         }
     }
 }
