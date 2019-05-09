@@ -542,9 +542,8 @@ void ConvectionTransport::compute_concentration_sources() {
                 // compute maximal cfl condition over all substances
                 max_cfl = std::max(max_cfl, fabs(diag));
                 
-                balance_->add_source_matrix_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
-                                                    {- src_sigma * ele_acc.measure() * csection});
-                balance_->add_source_vec_values(sbi, ele_acc.region().bulk_idx(), {row_4_el[el_4_loc[loc_el]]}, 
+                balance_->add_source_values(sbi, ele_acc.region().bulk_idx(), {loc_el},
+                                                {- src_sigma * ele_acc.measure() * csection},
                                                 {source * ele_acc.measure()});
             }
             

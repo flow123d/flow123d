@@ -9,7 +9,7 @@ import datetime
 import re
 # ----------------------------------------------
 from scripts.core.base import Printer, IO, StatusPrinter
-from scripts.core.threads import PyPy
+from scripts.core.pypy import PyPy
 from scripts.parser.json_parser import RuntestParser, JsonParser
 from scripts.pbs.common import job_ok_string
 from scripts.serialization import load_pypy, load_triplet, load_runtest
