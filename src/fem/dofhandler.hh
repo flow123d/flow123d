@@ -472,7 +472,7 @@ public:
      * @p vec    Vector aligned with the parent dof handler.
      * @p subvec Vctor aligned with the current sub-handler.
      */
-    VectorMPI update_subvector(const VectorMPI &vec, VectorMPI &subvec);
+    void update_subvector(const VectorMPI &vec, VectorMPI &subvec);
     
     /** @brief Update values in parent vector from values of subvector.
      * 
