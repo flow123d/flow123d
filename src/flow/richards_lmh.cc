@@ -203,7 +203,13 @@ void RichardsLMH::assembly_linear_system()
 
     START_TIMER("RicharsLMH::assembly_linear_system");
 
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+    
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
@@ -264,7 +270,13 @@ void RichardsLMH::postprocess() {
     double values[4];
     std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
 
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+    
     data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
 
   // modify side fluxes in parallel
   // for every local edge take time term on digonal and add it to the corresponding flux
