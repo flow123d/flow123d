@@ -433,7 +433,7 @@ void DarcyMH::initialize() {
     }
 
     { // init DOF handlers represents edge DOFs
-        uint p_edge_component = 0;
+        uint p_edge_component = 2;
         data_->dh_cr_ = std::make_shared<SubDOFHandlerMultiDim>(data_->dh_,p_edge_component);
     }
 
@@ -713,6 +713,9 @@ void DarcyMH::postprocess()
 
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
+    
+    print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
+    
     //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
 
@@ -1107,6 +1110,8 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
     }
 //     else{
 //         WarningOut() << "No matrix output available for the current solver.";
