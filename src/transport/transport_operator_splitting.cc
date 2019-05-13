@@ -199,10 +199,10 @@ TransportOperatorSplitting::TransportOperatorSplitting(Mesh &init_mesh, const In
 		reaction = (*reactions_it).factory< ReactionTerm, Mesh &, Input::Record >(init_mesh, *reactions_it);
 
         //initialization of DOF handler
-        static FE_P_disc<0> fe0(0);
-        static FE_P_disc<1> fe1(0);
-        static FE_P_disc<2> fe2(0);
-        static FE_P_disc<3> fe3(0);
+        static FE_P<0>::disc fe0(0);
+        static FE_P<1>::disc fe1(0);
+        static FE_P<2>::disc fe2(0);
+        static FE_P<3>::disc fe3(0);
         shared_ptr<DOFHandlerMultiDim> dof_handler = make_shared<DOFHandlerMultiDim>(*mesh_);
         shared_ptr<DiscreteSpace> ds = make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0, &fe1, &fe2, &fe3);
         dof_handler->distribute_dofs(ds);

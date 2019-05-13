@@ -20,6 +20,7 @@
 #define FE_RT_HH_
 
 #include "fem/finite_element.hh"
+#include "fem/fe_disc.hh"
 #include "system/logger.hh"
 
 /**
@@ -65,32 +66,11 @@ public:
      * @brief Constructor.
      */
     FE_RT0();
-
+    
+    /// Discontinuous variant of FE_RT0.
+    typedef FE_disc<FE_RT0<dim> > disc;
+    
 };
-
-
-
-
-/**
- * @brief Discontinuous Raviart-Thomas element of order 0.
- *
- * The lowest order Raviart-Thomas finite element with linear basis functions
- * and continuous normal components across element sides.
- */
-template <unsigned int dim>
-class FE_RT0_disc : public FiniteElement<dim>
-{
-public:
-
-    /**
-     * @brief Constructor.
-     */
-    FE_RT0_disc();
-
-};
-
-
-
 
 
 
