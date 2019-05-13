@@ -515,7 +515,6 @@ void Elasticity::solve_linear_system()
 }
 
 
-}
 
 
 

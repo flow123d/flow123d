@@ -24,17 +24,17 @@ string(REGEX MATCHALL "\\$PLACEHOLDER_[-a-zA-Z0-9_.]*\\$" placeholders "${input_
 list(REMOVE_DUPLICATES placeholders)
 
 foreach(placeholder ${placeholders})
-  message("PH: ${placeholder}")
+  # message("PH: ${placeholder}")
   string(REGEX REPLACE "\\$PLACEHOLDER_([-a-zA-Z0-9_.]*)\\$" "\\1" filename "${placeholder}")
-  
+
   string(REGEX MATCH "[^\n]*\\$PLACEHOLDER_${filename}\\$[^\n]*\n" match "${input_str}")
-  message("match: ${match}")
-  
-  message("FN: ${filename}")
+  # message("match: ${match}")
+
+  # message("FN: ${filename}")
   file(READ "${filename}" values)
   STRING(REPLACE "\n" ";" values "${values}")
   foreach(value ${values})
-    message("VAL: ${value}")
+    # message("VAL: ${value}")
     # duplicate lines containing placeholder and in the first of two new lines replace placeholder with value
     string(REGEX REPLACE "([^\n]*)(\\$PLACEHOLDER_${filename}\\$)([^\n]*\n)" "\\1${value}\\3\\1\\2\\3" input_str "${input_str}")
   endforeach()
