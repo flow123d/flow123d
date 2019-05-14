@@ -145,13 +145,24 @@ DarcyFlowMHOutput::DarcyFlowMHOutput(DarcyMH *flow, Input::Record main_mh_in_rec
         int rank;
         MPI_Comm_rank(MPI_COMM_WORLD, &rank);
         if (rank == 0) {
+            
             // optionally open raw output file
             FilePath raw_output_file_path;
-            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path)) {
-            	MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
-            	try {
-            		raw_output_file_path.open_stream(raw_output_file);
-            	} INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
+            if (in_rec_specific->opt_val("raw_flow_output", raw_output_file_path))
+            {
+                int mpi_size;
+                MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+                if(mpi_size > 1)
+                {
+                    WarningOut() << "Raw output is not available in parallel computation. MPI size: " << mpi_size << "\n";
+                }
+                else
+                {
+                    MessageOut() << "Opening raw flow output: " << raw_output_file_path << "\n";
+                    try {
+                        raw_output_file_path.open_stream(raw_output_file);
+                    } INPUT_CATCH(FilePath::ExcFileOpen, FilePath::EI_Address_String, (*in_rec_specific))
+                }
             }
         }
         
@@ -521,7 +532,6 @@ void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
 void DarcyFlowMHOutput::output_internal_flow_data()
 {
     START_TIMER("DarcyFlowMHOutput::output_internal_flow_data");
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
 
     if (! raw_output_file.is_open()) return;
     
@@ -531,24 +541,43 @@ void DarcyFlowMHOutput::output_internal_flow_data()
     raw_output_file <<  fmt::format("$FlowField\nT={}\n", darcy_flow->time().t());
     raw_output_file <<  fmt::format("{}\n" , mesh_->n_elements() );
 
+    std::shared_ptr<DarcyMH::EqData> data = darcy_flow->data_;
+    auto multidim_assembler = AssemblyBase::create< AssemblyMH >(data);
+    arma::vec3 flux_in_center;
+    
     int cit = 0;
-    for (auto ele : mesh_->elements_range()) {
-    	raw_output_file << fmt::format("{} {} ", ele.index(), ele_pressure[cit]);
-//         for (unsigned int i = 0; i < 3; i++)
-//         	raw_output_file << ele_flux[3*cit+i] << " ";
+    for ( DHCellAccessor dh_cell : data->dh_->own_range() ) {
+    	LocalElementAccessorBase<3> ele_ac(dh_cell);
+        
+        ElementAccessor<3> ele = dh_cell.elm();
+        std::vector<LongIdx> indices(dh_cell.n_dofs());
+        dh_cell.get_loc_dof_indices(indices);
 
+        // pressure
+        raw_output_file << fmt::format("{} {} ", dh_cell.elm().index(), data->data_vec_[indices[ele->n_sides()]]);
+        
+        // velocity at element center
+        flux_in_center = multidim_assembler[ele.dim() -1]->make_element_vector(ele_ac);
+        for (unsigned int i = 0; i < 3; i++)
+        	raw_output_file << flux_in_center[i] << " ";
+
+        // number of sides
         raw_output_file << ele->n_sides() << " ";
-
-        for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_scalar( *(ele.side(i) ) ) << " ";
+        
+        // pressure on edges
+        unsigned int lid = ele->n_sides() + 1;
+        for (unsigned int i = 0; i < ele->n_sides(); i++, lid++) {
+            raw_output_file << data->data_vec_[indices[lid]] << " ";
         }
+        // fluxes on sides
         for (unsigned int i = 0; i < ele->n_sides(); i++) {
-            raw_output_file << dh.side_flux( *(ele.side(i) ) ) << " ";
+            raw_output_file << data->data_vec_[indices[i]] << " ";
         }
         
         raw_output_file << endl;
         cit ++;
-    }
+    }    
+    
     raw_output_file << "$EndFlowField\n" << endl;
 }
 
