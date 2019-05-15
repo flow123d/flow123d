@@ -340,7 +340,6 @@ def do_work(arg_options=None, debug=False):
     module = ModuleRuntest(arg_options)
     result = module.run(debug)  # type: ParallelThreads
 
-    exit(0)
     if not arg_options.queue:
         printf.sep()
         if arg_options.save_to_db:
