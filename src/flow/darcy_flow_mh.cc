@@ -165,7 +165,7 @@ const it::Record & DarcyMH::get_input_type() {
                 "Includes raw output and some experimental functionality.")
         .declare_key("balance", Balance::get_input_type(), it::Default("{}"),
                 "Settings for computing mass balance.")
-        .declare_key("time", TimeGovernor::get_input_type(), it::Default("{}"),
+        .declare_key("time", TimeGovernor::get_input_type(), it::Default::optional(),
                 "Time governor settings for the unsteady Darcy flow model.")
 		.declare_key("n_schurs", it::Integer(0,2), it::Default("2"),
 				"Number of Schur complements to perform when solving MH system.")
@@ -280,7 +280,7 @@ DarcyMH::EqData::EqData()
  *
  */
 //=============================================================================
-DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
+DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec, TimeGovernor *tm)
 : DarcyFlowInterface(mesh_in, in_rec),
     output_object(nullptr),
     solution(nullptr),
@@ -294,11 +294,20 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 
     START_TIMER("Darcy constructor");
     {
-        auto time_record = input_record_.val<Input::Record>("time");
-        //if ( in_rec.opt_val("time", time_record) )
-            time_ = new TimeGovernor(time_record);
-        //else
-        //    time_ = new TimeGovernor();
+        auto time_rec = in_rec.find<Input::Record>("time");
+        if (tm == nullptr)
+        {
+            if (time_rec)
+                time_ = new TimeGovernor(*time_rec);
+            else
+                time_ = new TimeGovernor();
+        }
+        else
+        {
+            if (time_rec)
+                WarningOut() << "Time governor of DarcyFlowMH is initialized from parent class - input record will be ignored!";
+            time_ = tm;
+        }
     }
 
     data_ = make_shared<EqData>();

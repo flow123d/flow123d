@@ -39,6 +39,8 @@ const it::Record & HM_Iterative::get_input_type() {
 				"Flow equation, provides the velocity field as a result.")
 		.declare_key("mechanics_equation", Elasticity::get_input_type(),
 				"Mechanics, provides the displacement field.")
+        .declare_key("time", TimeGovernor::get_input_type(), it::Default::obligatory(),
+                    "Time governor setting for the HM coupling.")
         .declare_key("input_fields", it::Array(
 		        HM_Iterative::EqData()
 		            .make_field_descriptor_type("Coupling_Iterative")),
@@ -82,18 +84,17 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 {
 	START_TIMER("HM constructor");
     using namespace Input;
+
+    time_ = new TimeGovernor(in_record.val<Record>("time"));
     
     // setup flow equation
     Record flow_rec = in_record.val<Record>("flow_equation");
     // Need explicit template types here, since reference is used (automatically passing by value)
-    flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec);
+    flow_ = std::make_shared<RichardsLMH>(*mesh_, flow_rec, time_);
     flow_->initialize();
     std::stringstream ss; // print warning message with table of uninitialized fields
     if ( FieldCommon::print_message_table(ss, "flow") )
         WarningOut() << ss.str();
-    
-    this->time_ = &flow_->time();
-    
     
     // setup mechanics
     Record mech_rec = in_record.val<Record>("mechanics_equation");
@@ -109,8 +110,6 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
     r_tol_ = in_record.val<double>("r_tol");
 
     this->eq_data_ = &data_;
-    
-    // synchronize time marks of flow and mechanics
     
     data_.set_mesh(*mesh_);
     

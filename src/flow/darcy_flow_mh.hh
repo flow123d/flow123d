@@ -217,7 +217,7 @@ public:
 
 
 
-    DarcyMH(Mesh &mesh, const Input::Record in_rec);
+    DarcyMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & type_field_descriptor();
     static const Input::Type::Record & get_input_type();

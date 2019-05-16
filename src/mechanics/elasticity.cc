@@ -294,12 +294,18 @@ Elasticity::Elasticity(Mesh & init_mesh, const Input::Record in_rec, TimeGoverno
 
 	this->eq_data_ = &data_;
     
+    auto time_rec = in_rec.find<Input::Record>("time");
     if (tm == nullptr)
-        time_ = new TimeGovernor(in_rec.val<Input::Record>("time"));
+    {
+        if (time_rec)
+            time_ = new TimeGovernor(time_rec);
+        else
+            time_ = new TimeGovernor();
+    }
     else
     {
-        if (in_rec.find<Input::Record>("time"))
-            WarningOut() << "Time governor is initialized from parent class - input record will be ignored!";
+        if (time_rec)
+            WarningOut() << "Time governor of Elasticity is initialized from parent class - input record will be ignored!";
         time_ = tm;
     }
 

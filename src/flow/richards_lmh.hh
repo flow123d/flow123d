@@ -92,7 +92,7 @@ public:
         std::shared_ptr<SoilModelBase> soil_model_;
     };
 
-    RichardsLMH(Mesh &mesh, const Input::Record in_rec);
+    RichardsLMH(Mesh &mesh, const Input::Record in_rec, TimeGovernor *tm = nullptr);
 
     static const Input::Type::Record & get_input_type();
     
