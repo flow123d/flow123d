@@ -30,6 +30,62 @@ namespace it = Input::Type;
 
 
 
+/** Create elementwise FieldFE with parallel VectorMPI */
+template <int spacedim, class Value>
+std::shared_ptr<FieldFE<spacedim, Value> > create_field(Mesh & mesh, unsigned int n_comp)
+{
+	FiniteElement<0> *fe0; // Finite element objects (allow to create DOF handler)
+	FiniteElement<1> *fe1;
+	FiniteElement<2> *fe2;
+	FiniteElement<3> *fe3;
+
+	switch (n_comp) { // prepare FEM objects for DOF handler by number of components
+		case 1: { // scalar
+			fe0 = new FE_P_disc<0>(0);
+			fe1 = new FE_P_disc<1>(0);
+			fe2 = new FE_P_disc<2>(0);
+			fe3 = new FE_P_disc<3>(0);
+			break;
+		}
+		case 3: { // vector
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FEVector, 3);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FEVector, 3);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FEVector, 3);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FEVector, 3);
+			break;
+		}
+		case 9: { // tensor
+			std::shared_ptr< FiniteElement<0> > fe0_ptr = std::make_shared< FE_P_disc<0> >(0);
+			std::shared_ptr< FiniteElement<1> > fe1_ptr = std::make_shared< FE_P_disc<1> >(0);
+			std::shared_ptr< FiniteElement<2> > fe2_ptr = std::make_shared< FE_P_disc<2> >(0);
+			std::shared_ptr< FiniteElement<3> > fe3_ptr = std::make_shared< FE_P_disc<3> >(0);
+			fe0 = new FESystem<0>(fe0_ptr, FEType::FETensor, 9);
+			fe1 = new FESystem<1>(fe1_ptr, FEType::FETensor, 9);
+			fe2 = new FESystem<2>(fe2_ptr, FEType::FETensor, 9);
+			fe3 = new FESystem<3>(fe3_ptr, FEType::FETensor, 9);
+			break;
+		}
+		default:
+			ASSERT(false).error("Should not happen!\n");
+	}
+
+	// Prepare DOF handler
+	std::shared_ptr<DOFHandlerMultiDim> dh_par = std::make_shared<DOFHandlerMultiDim>(mesh);
+	std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>( &mesh, fe0, fe1, fe2, fe3);
+	dh_par->distribute_dofs(ds);
+
+	// Construct FieldFE
+	std::shared_ptr< FieldFE<spacedim, Value> > field_ptr = std::make_shared< FieldFE<spacedim, Value> >();
+	field_ptr->set_fe_data( dh_par, 0, VectorMPI(dh_par->lsize()) );
+	return field_ptr;
+}
+
+
+
 const it::Record & HM_Iterative::get_input_type() {
     return it::Record("Coupling_Iterative",
             "Record with data for iterative coupling of flow and mechanics.\n")
@@ -77,6 +133,15 @@ HM_Iterative::EqData::EqData()
                      .flags(FieldFlag::equation_result);
 }
 
+
+void HM_Iterative::EqData::initialize(Mesh &mesh)
+{
+    // initialize coupling fields with FieldFE
+    set_mesh(mesh);
+    potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(mesh, 1);
+    pressure_potential.set_field(mesh.region_db().get_region_set("ALL"), potential_ptr_);
+}
+
                                     
 
 HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
@@ -111,14 +176,10 @@ HM_Iterative::HM_Iterative(Mesh &mesh, Input::Record in_record)
 
     this->eq_data_ = &data_;
     
-    data_.set_mesh(*mesh_);
-    
     // setup input fields
     data_.set_input_list( in_record.val<Input::Array>("input_fields"), time() );
-    
-    potential_vec_.resize(mesh_->n_elements());
-    potential_ptr_ = create_field<3, FieldValue<3>::Scalar>(potential_vec_, *mesh_, 1);
-    data_.pressure_potential.set_field(mesh_->region_db().get_region_set("ALL"), potential_ptr_);
+
+    data_.initialize(*mesh_);
     mechanics_->set_potential_load(data_.pressure_potential);
 }
 
@@ -172,23 +233,27 @@ void HM_Iterative::update_solution()
 
 void HM_Iterative::update_potential()
 {
+    auto potential_vec_ = data_.potential_ptr_->get_data_vec();
+    auto dh = data_.potential_ptr_->get_dofhandler();
     double difference2 = 0, norm2 = 0;
-    for (auto ele : mesh_->elements_range())
+    for ( auto ele : dh->own_range() )
     {
-        double alpha = data_.alpha.value(ele.centre(), ele);
-        double pressure = flow_->output_fields().field_ele_pressure.value(ele.centre(), ele);
+        auto elm = ele.elm();
+        double alpha = data_.alpha.value(elm.centre(), elm);
+        double pressure = flow_->output_fields().field_ele_pressure.value(elm.centre(), elm);
         double potential = -alpha*pressure;
-        difference2 += pow(potential_vec_[ele.idx()] - potential,2);
+        difference2 += pow(potential_vec_[ele.local_idx()] - potential,2);
         norm2 += pow(potential,2);
-        potential_vec_[ele.idx()] = potential;
+        potential_vec_[ele.local_idx()] = potential;
     }
+
     double dif2norm;
     if (norm2 == 0)
         dif2norm = (difference2 == 0)?0:numeric_limits<double>::max();
     else 
         dif2norm = sqrt(difference2/norm2);
-    fill_output_data(potential_vec_, potential_ptr_);
     DebugOut() << "Relative potential difference: " << dif2norm << endl;
+    
     if (dif2norm > numeric_limits<double>::epsilon())
     {
         data_.pressure_potential.set_time_result_changed();
