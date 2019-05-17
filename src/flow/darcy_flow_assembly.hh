@@ -486,7 +486,7 @@ protected:
                         // Magnitude of the error is abs(solution_flux - side_flux).
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
                         unsigned int loc_side_row = ele_ac.side_local_row(i);
-                        double & solution_flux = ls->get_solution_array()[loc_side_row];
+                        double & solution_flux = ad_->data_vec_[loc_side_row];
 
                         if ( solution_flux < side_flux) {
                             //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
@@ -505,7 +505,7 @@ protected:
                         // in pressure inequality is always satisfied.
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                        double & solution_head = ls->get_solution_array()[loc_edge_row];
+                        double & solution_head = ad_->data_vec_[loc_edge_row];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
@@ -518,6 +518,8 @@ protected:
                         // Force Dirichlet type during the first iteration of the unsteady case.
                         if (switch_dirichlet || ad_->force_bc_switch ) {
                             //DebugOut().fmt("x: {}, dirich, bcp: {}\n", b_ele.centre()[0], bc_pressure);
+//                             DebugOut().fmt("ele: {}, loc_edge_idx: {}, ad_->force_bc_switch: {}\n",
+//                                            ele_ac.ele_global_idx(), loc_edge_idx, ad_->force_bc_switch);
                             loc_system_.set_solution(loc_edge_dofs[i],bc_pressure, -1);
                             dirichlet_edge[i] = 1;
                         } else {
@@ -534,7 +536,7 @@ protected:
                     double bc_sigma = ad_->bc_robin_sigma.value(b_ele.centre(), b_ele);
                     ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                     unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                    double & solution_head = ls->get_solution_array()[loc_edge_row];
+                    double solution_head = ad_->data_vec_[loc_edge_row];
 
                     // Force Robin type during the first iteration of the unsteady case.
                     if (solution_head > bc_switch_pressure  || ad_->force_bc_switch) {
