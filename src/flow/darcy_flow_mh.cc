@@ -395,19 +395,20 @@ void DarcyMH::initialize() {
     mh_dh.reinit(mesh_);
 
     { // init DOF handler for pressure fields
-		//std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0<0>>();
+// 		std::shared_ptr< FiniteElement<0> > fe0_rt = std::make_shared<FE_RT0_disc<0>>();
 		std::shared_ptr< FiniteElement<1> > fe1_rt = std::make_shared<FE_RT0_disc<1>>();
 		std::shared_ptr< FiniteElement<2> > fe2_rt = std::make_shared<FE_RT0_disc<2>>();
 		std::shared_ptr< FiniteElement<3> > fe3_rt = std::make_shared<FE_RT0_disc<3>>();
-		//std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
+		std::shared_ptr< FiniteElement<0> > fe0_disc = std::make_shared<FE_P_disc<0>>(0);
 		std::shared_ptr< FiniteElement<1> > fe1_disc = std::make_shared<FE_P_disc<1>>(0);
 		std::shared_ptr< FiniteElement<2> > fe2_disc = std::make_shared<FE_P_disc<2>>(0);
 		std::shared_ptr< FiniteElement<3> > fe3_disc = std::make_shared<FE_P_disc<3>>(0);
-		//std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>();
+		std::shared_ptr< FiniteElement<0> > fe0_cr = std::make_shared<FE_CR<0>>();
 		std::shared_ptr< FiniteElement<1> > fe1_cr = std::make_shared<FE_CR<1>>();
 		std::shared_ptr< FiniteElement<2> > fe2_cr = std::make_shared<FE_CR<2>>();
 		std::shared_ptr< FiniteElement<3> > fe3_cr = std::make_shared<FE_CR<3>>();
-	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
+// 	    static FiniteElement<0> fe0_sys = FE_P_disc<0>(0); //TODO fix and use solution with FESystem<0>( {fe0_rt, fe0_disc, fe0_cr} )
+        static FESystem<0> fe0_sys( {fe0_disc, fe0_disc, fe0_cr} );
 		static FESystem<1> fe1_sys( {fe1_rt, fe1_disc, fe1_cr} );
 		static FESystem<2> fe2_sys( {fe2_rt, fe2_disc, fe2_cr} );
 		static FESystem<3> fe3_sys( {fe3_rt, fe3_disc, fe3_cr} );
@@ -433,13 +434,8 @@ void DarcyMH::initialize() {
     }
 
     { // init DOF handlers represents edge DOFs
-	    static FE_CR<0> fe0_cr;
-		static FE_CR<1> fe1_cr;
-		static FE_CR<2> fe2_cr;
-		static FE_CR<3> fe3_cr;
-		std::shared_ptr<DiscreteSpace> ds_cr = std::make_shared<EqualOrderDiscreteSpace>( mesh_, &fe0_cr, &fe1_cr, &fe2_cr, &fe3_cr);
-		data_->dh_cr_ = std::make_shared<DOFHandlerMultiDim>(*mesh_);
-		data_->dh_cr_->distribute_dofs(ds_cr);
+        uint p_edge_component = 2;
+        data_->dh_cr_ = std::make_shared<SubDOFHandlerMultiDim>(data_->dh_,p_edge_component);
     }
 
     { // init DOF handlers represents side DOFs
@@ -737,7 +733,7 @@ void DarcyMH::postprocess()
 void DarcyMH::output_data() {
     START_TIMER("Darcy output data");
     
-    print_matlab_matrix("matrix");
+    print_matlab_matrix("matrix_" + std::to_string(time_->step().index()));
     
     //time_->view("DARCY"); //time governor information output
 	this->output_object->output();
@@ -1205,6 +1201,8 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
+        VecView( *const_cast<Vec*>(&(schur0->get_solution())), viewer);
     }
 //     else{
 //         WarningOut() << "No matrix output available for the current solver.";

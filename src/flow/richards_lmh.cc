@@ -132,27 +132,6 @@ void RichardsLMH::initialize_specific() {
     data_->water_content_previous_it = data_->dh_cr_disc_->create_vector();
     data_->water_content_previous_time = data_->dh_cr_disc_->create_vector();
     data_->capacity = data_->dh_cr_disc_->create_vector();
-
-    vector<int> local_edge_rows( data_->phead_edge_.size() );
-
-    IS is_loc;
-    for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
-         LocalElementAccessorBase<3> ele_ac(dh_cell);
-         std::vector<LongIdx> edge_indices(data_->dh_cr_->max_elem_dofs());
-         dh_cell.cell_with_other_dh( data_->dh_cr_.get() ).get_loc_dof_indices(edge_indices);
-
-         for (unsigned int i=0; i<ele_ac.element_accessor()->n_sides(); i++) {
-             local_edge_rows[ edge_indices[i] ] = ele_ac.edge_row(i);
-         }
-    }
-
-    ISCreateGeneral(PETSC_COMM_SELF, local_edge_rows.size(),
-            &(local_edge_rows[0]), PETSC_COPY_VALUES, &(is_loc));
-
-    VecScatterCreate(schur0->get_solution(), is_loc,
-            data_->phead_edge_.petsc_vec(), PETSC_NULL, &solution_2_edge_scatter_);
-    chkerr(ISDestroy(&is_loc));
-
 }
 
 
@@ -218,8 +197,13 @@ void RichardsLMH::assembly_linear_system()
 
     START_TIMER("RicharsLMH::assembly_linear_system");
 
-    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+    
+    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
 
     data_->is_linear = data_->genuchten_p_head_scale.field_result(mesh_->region_db().get_region_set("BULK")) == result_zeros;
 
@@ -278,10 +262,13 @@ void RichardsLMH::postprocess() {
     double values[4];
     std::vector<LongIdx> side_indices(this->data_->dh_cr_disc_->max_elem_dofs());
 
-
-    VecScatterBegin(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-    VecScatterEnd(solution_2_edge_scatter_, schur0->get_solution(), data_->phead_edge_.petsc_vec() , INSERT_VALUES, SCATTER_FORWARD);
-
+    data_->data_vec_.ghost_to_local_begin();
+    data_->data_vec_.ghost_to_local_end();
+    
+    data_->dh_cr_->update_subvector(data_->data_vec_, data_->phead_edge_);
+    
+    data_->phead_edge_.local_to_ghost_begin();
+    data_->phead_edge_.local_to_ghost_end();
 
   // modify side fluxes in parallel
   // for every local edge take time term on digonal and add it to the corresponding flux
