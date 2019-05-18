@@ -18,26 +18,12 @@
 #     update         - will update all flow123d images (will download new images
 #                      from the hub.docker.com/u/flow123d if necessary)
 #
-#     run            - (default action) will start a docker image
+#     shell          - (default action) will start a docker image
 #                      directory specified in config/docker.cfg file
 #                      currently directory '$work' will be mounted
 #
-#   arguments: additional arguments passed to binary (if action is flow123d or run or runtest)
+#   arguments: additional arguments passed to binary (only for action )
 #
-#    run            - (default action) will start a docker image
-#                     directory specified in config/docker.cfg file
-#                     currently directory '$work' will be mounted
-#
-#    flow123d       - will run flow123d binary and pass all given arguments
-#                     specified after this value
-#
-#    runtest        - will run runtest binary and pass all given arguments
-#                     specified after this value
-#
-#    make           - will run make and pass all given arguments
-#                     specified after this value, DO NOT SET flag -j manually
-#                     use FLOW123D_NUMCPUS for that
-
 # The script can be configure with system variables:
 #    FLOW123D_WORK      - the folder, which will be mounted
 #    FLOW123D_NUMCPUS   - number of cpus, which will be used when called with pmake
@@ -95,7 +81,7 @@ usage:
   
      To use different docker image libraries, use @<tag> syntax, such as:
       $bblue
-        $REL_BIN/fterm @2.2.0 build
+        $REL_BIN/fterm @2.2.0 exec make -j2
         $REL_BIN/fterm @3.0.0 update
         $REL_BIN/fterm @latest
       $reset
@@ -105,8 +91,12 @@ usage:
   ${bold}options:${reset}
     ${bold}-v|--verbose ${reset}
       turn on debug mode
-    ${bold}--set-x ${reset}
+    ${bold}-x|--set-x ${reset}
       turn on debug mode (set -x)
+    ${bold}-p|--privileged ${reset}
+      will add --privileged=true when starting docker container,
+      this options carries a security risk but should deal with SELinux mounting
+      issues
 
   ${bold}actions:${reset}
     ${bold} @<tag> ${reset}
@@ -129,42 +119,41 @@ usage:
       ** This operation will delete any container which has **
               ** the same name as the name provided **
       
-    ${bold}remove-old ${reset}
+    ${bold}remove-old ${reset}or ${bold}clean ${reset}
       will prompt to remove old docker images and containers
       (those with no name)
 
     ${bold}update${reset}
       will update all flow123d images (will download new images
 
+    ${bold}shell${reset}
+      (default action) will start a docker image and enters
+      interactive terminal session
+      directory specified in config/docker.cfg file will be mounted, if not set
+      directories '$work' and 'pwd' will be mounted
+      $bblue$REL_BIN/fterm shell$reset
+      or simply
+      $bblue$REL_BIN/fterm$reset
+
+    ${bold}exec${reset}
+      will execute given command (everything after the work 'exec')
+      Example: to print Docker image Python version:
+      $bblue$REL_BIN/fterm exec python3 -V$reset
+      
     ${bold}run${reset}
-      (default action) will start a docker image
-      directory specified in config/docker.cfg file
-      currently directory '$work' will be mounted
-
-    ${bold}flow123d${reset}
       will run flow123d binary and pass all given arguments
-      specified after this value
-
-    ${bold}runtest${reset}
-      will run runtest binary and pass all given arguments
-      specified after this value
-
-    ${bold}make${reset}
-      will run make and pass all given arguments
-      specified after this value, DO NOT SET flag -j manually
-      use FLOW123D_NUMCPUS for that
+      specified after this value.
+      Example: to print flow123d binary version:
+      $bblue$REL_BIN/fterm run --version$reset
 
   arguments: additional arguments passed to binary
-             (if action is flow123d or run or runtest)
+             (for actions raw and detach exec and run)
 
   To compile flow under docker, you can do the following:
-    $bblue$REL_BIN/fterm make -C $ROOT all$reset
+    $bblue$REL_BIN/fterm exec make -C $ROOT all$reset
 
-  To run flow under docker, you can do the following:
-    $bblue$REL_BIN/fterm flow123d --help$reset
-
-  To run tests under docker, you can do the following:
-    $bblue$REL_BIN/fterm runtest $ROOT/tests/10_darcy$reset
+  To run flow123d --help command under docker, you can do the following:
+    $bblue$REL_BIN/fterm run --help$reset
   
 EOF
 }
@@ -174,10 +163,16 @@ function dbg() {
     echo -e "$bgreen[DBG]$reset $@"
   fi
 }
+function dbg2() {
+  if [[ $verbose -eq 1 ]]; then
+    echo -e "$byellow[DBG]$reset $@"
+  fi
+}
 function dbgc() {
   if [[ $verbose -eq 1 ]]; then
     echo -e "$bblue[RUN]$reset $@"
   fi
+  $@
 }
 
 function get_mount_dir() {
@@ -310,23 +305,27 @@ if [[ -f "$CFG/docker.cfg" ]]; then
 fi
 
 # default settings
+privileged=0
 verbose=1
-action=run
+action=shell
 work=$(get_mount_dir $ABS_ROOT)
 numcpus=${FLOW123D_NUMCPUS:-1}
 contname=""
-docker_terminal="-it"
 
 while [[ $# -gt 0 ]]
   do
   key="$1"
   case $key in
-    --set-x)
+    -x|--set-x)
       set -x
       shift
     ;;
     -v|--verbose)
       verbose=1
+      shift
+    ;;
+    -p|--privileged)
+      privileged=1
       shift
     ;;
     -V|--no-verbose)
@@ -346,13 +345,10 @@ while [[ $# -gt 0 ]]
       rest="$@"
       break
     ;;
-    --no-term)
-      docker_terminal=""
-      shift
-    ;;
-    config|remove-old|flow123d|run|runtest|make|update)
+    clean|remove-old|shell|run|exec|update)
       action=$1
       shift
+      rest="$@"
       break
     ;;
     dbg|rel)
@@ -376,6 +372,11 @@ while [[ $# -gt 0 ]]
       usage
       exit 1
     ;;
+    -i|--images)
+      shift
+      flow123d_images=$1
+      shift
+    ;;
     *)
       echo -e "${bred}ERROR:$reset ${red} Invalid argument '$1'!$reset"
       usage
@@ -394,83 +395,57 @@ dbg "base_image     = $base_image"
 dbg "image_tag      = $image_tag"
 dbg "image_version  = $image_version"
 dbg "action         = $action"
-dbg "mount dir      = $work"
+dbg "mount dirs     - $work"
+dbg "               - $OLD_PWD"
 dbg "user           = $uname($uid:$gid)"
 dbg "theme          = $theme"
-dbg "container name = $contname"
+dbg "autopull       = $autopull"
+dbg "privileged     = $privileged"
 
 # env variables which will be passed as well
 envarg="-euid=$uid -egid=$gid -etheme=$theme -ewho=$uname -ehome=/mnt/$HOME -v $HOME:/mnt/$HOME"
+mountargs="-w "$OLD_PWD" -v "$OLD_PWD":"$OLD_PWD" -v "$work":"$work""
+if [[ $privileged == "1" ]]; then
+  priv_true="--privileged=true"
+fi
+
 
 # perform action based on variable action
 case $action in
   raw)
-    dbgc docker run $rest $base_image
+    dbg2 "Raw fterm call: $rest"
     docker run $rest $base_image
   ;;
   detach)
-    dbgc "docker rm -f $contname > /dev/null 2>&1"
     docker rm -f $contname > /dev/null 2>&1
     dbgc docker run -di $envarg $rest --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
-    docker run -di $envarg $rest --name $contname -u $uid:$gid --entrypoint="" $base_image /bin/bash
     dbgc docker exec -u root $contname /usr/local/bin/entrypoint.sh id
-    docker exec -u root $contname /usr/local/bin/entrypoint.sh id
-  ;;
-  flow123d)
-    if [[ $autopull == "1" ]]; then
-      update_images
-    fi
-    
-    dbgc docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
-    docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
-  ;;
-  runtest)
-    if [[ $autopull == "1" ]]; then
-      update_images
-    fi
-    
-    dbgc docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
-    docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
   ;;
   run)
     if [[ $autopull == "1" ]]; then
       update_images
     fi
-    
-    if [[ "$#" -eq 0 ]]; then
-      dbgc "docker run --rm ${docker_terminal}
-          -w \"$OLD_PWD\"
-          $envarg
-          -v \"$work\":\"$work\"
-          -e TESTS_DIR=\"$ABS_ROOT/tests\"
-          $base_image
-          bash -l
-          \"export PATH=\$PATH:$ABS_BIN; bash -l\""
-      docker run --rm ${docker_terminal} \
-          $envarg \
-          -w "$OLD_PWD" \
-          -v "$work":"$work" \
-          -e TESTS_DIR="$ABS_ROOT/tests" \
-          $base_image \
-          bash -lc \
-          "export PATH=\$PATH:$ABS_BIN; bash -l"
-    else
-      dbgc docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$*"
-      docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$*"
-    fi
+    dbg2 "Executing flow123d with args $rest"
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image $ROOT/bin/flow123d "$rest"
   ;;
-  make)
+  exec)
     if [[ $autopull == "1" ]]; then
       update_images
     fi
-    
-    dbgc docker run --rm $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
-    docker run --rm $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "/usr/bin/make -j $numcpus $*"
+    dbg2 "Executing command $rest"
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image "$rest"
+  ;;
+  shell)
+    if [[ $autopull == "1" ]]; then
+      update_images
+    fi
+    dbg2 "Entering shell"
+    dbgc docker run --rm -it $envarg $mountargs $priv_true $base_image
   ;;
   update)
     update_images
   ;;
-  remove-old)
+  remove-old|clean)
     remove_old
   ;;
 esac

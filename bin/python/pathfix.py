@@ -18,11 +18,11 @@ import os
 
 def print_debug():
     """Prints debug information about python"""
-    print ("Python {version}, {executable}".format(
+    print("Python {version}, {executable}".format(
         version=str(sys.version).replace("\n", ""),
         executable=sys.executable
     ))
-    print ("CWD: {cwd}, USER: {whoami}".format(
+    print("CWD: {cwd}, USER: {whoami}".format(
         cwd=os.getcwd(),
         whoami=getpass.getuser())
     )
@@ -51,8 +51,7 @@ def add_path(*args):
 def append_to_path():
     """Performs path fix"""
 
-    # for now, always print debug info
-    print_debug()
+    # print_debug()
 
     # path to lib
     add_path('lib')
