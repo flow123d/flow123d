@@ -315,6 +315,7 @@ action=run
 work=$(get_mount_dir $ABS_ROOT)
 numcpus=${FLOW123D_NUMCPUS:-1}
 contname=""
+docker_terminal="-it"
 
 while [[ $# -gt 0 ]]
   do
@@ -344,6 +345,10 @@ while [[ $# -gt 0 ]]
       shift; shift;
       rest="$@"
       break
+    ;;
+    --no-term)
+      docker_terminal=""
+      shift
     ;;
     config|remove-old|flow123d|run|runtest|make|update)
       action=$1
@@ -416,16 +421,16 @@ case $action in
       update_images
     fi
     
-    dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
-    docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
+    dbgc docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
+    docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/flow123d $*"
   ;;
   runtest)
     if [[ $autopull == "1" ]]; then
       update_images
     fi
     
-    dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
-    docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
+    dbgc docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
+    docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$ROOT/bin/runtest $*"
   ;;
   run)
     if [[ $autopull == "1" ]]; then
@@ -433,7 +438,7 @@ case $action in
     fi
     
     if [[ "$#" -eq 0 ]]; then
-      dbgc "docker run --rm -it
+      dbgc "docker run --rm ${docker_terminal}
           -w \"$OLD_PWD\"
           $envarg
           -v \"$work\":\"$work\"
@@ -441,7 +446,7 @@ case $action in
           $base_image
           bash -l
           \"export PATH=\$PATH:$ABS_BIN; bash -l\""
-      docker run --rm -it \
+      docker run --rm ${docker_terminal} \
           $envarg \
           -w "$OLD_PWD" \
           -v "$work":"$work" \
@@ -450,8 +455,8 @@ case $action in
           bash -lc \
           "export PATH=\$PATH:$ABS_BIN; bash -l"
     else
-      dbgc docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$*"
-      docker run --rm -it $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$*"
+      dbgc docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$*"
+      docker run --rm ${docker_terminal} $envarg -w "$OLD_PWD" -v "$work":"$work" $base_image bash -lc "$*"
     fi
   ;;
   make)
