@@ -1,8 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 # author:   Jan Hybs
+from loggers import printf
 from scripts.core.base import Printer, IO
-from scripts.core.threads import PyPy
+from scripts.core.pypy import PyPy
 from utils.dotdict import Map
 from utils.strings import format_n_lines
 
@@ -40,30 +41,30 @@ class RuntestParser(object):
 
     def get_result(self):
         if self.clean.returncode != 0:
-            Printer.out(
+            printf.out(
                 "{} Could not clean directory '{c[dir]}': {c[error]}",
                 self.get_status_line(self.clean),
                 c=self.clean)
             return
 
         if self.pypy.returncode != 0:
-            Printer.out("{} Run error, case: {p[name]}", self.get_status_line(self.pypy), p=self.pypy)
+            printf.out("{} Run error, case: {p[name]}", self.get_status_line(self.pypy), p=self.pypy)
             self.print_log_file(self.pypy.log, self.n_lines)
             return
         elif self.batch:
             self.print_log_file(self.pypy.log, self.n_lines)
 
         if self.comp.returncode not in (0, None):
-            Printer.out("{} Compare error, case: {p[name]}, Details: ", self.get_status_line(self.comp), p=self.pypy)
+            printf.out("{} Compare error, case: {p[name]}, Details: ", self.get_status_line(self.comp), p=self.pypy)
             self.print_log_file(self.pypy.log, self.n_lines)
-            Printer.open(2)
-            for c in self.comp.tests:
-                rc = c.returncode
-                if rc == 0:
-                    Printer.out('[{:^6}]: {}', 'OK', c.name)
-                else:
-                    Printer.out('[{:^6}]: {}', 'FAILED', c.name)
-            Printer.close(2)
+            with printf:
+                with printf:
+                    for c in self.comp.tests:
+                        rc = c.returncode
+                        if rc == 0:
+                            printf.out('[{:^6}]: {}', 'OK', c.name)
+                        else:
+                            printf.out('[{:^6}]: {}', 'FAILED', c.name)
             return
         elif self.batch:
             self.print_log_file(self.comp.log, self.n_lines)
@@ -88,11 +89,11 @@ class RuntestParser(object):
         log_file = IO.read(f)
         if log_file:
             if n_lines == 0:
-                Printer.out('Full log from file {}:', f)
+                printf.out('Full log from file {}:', f)
             else:
-                Printer.out('Last {} lines from file {}:', abs(n_lines), f)
+                printf.out('Last {} lines from file {}:', abs(n_lines), f)
 
-            Printer.wrn(format_n_lines(log_file.rstrip(), -n_lines, indent=Printer.indent * '    '))
+            printf.stream(format_n_lines(log_file.rstrip(), -n_lines))
 
 
 class ExecParser(object):
@@ -111,7 +112,7 @@ class ExecParser(object):
     def get_result(self):
         if self.returncode != 0:
             if self.returncode != 0:
-                Printer.out("{} Run error, case: {p.name}", RuntestParser.get_status_line(self), p=self)
+                printf.out("{} Run error, case: {p.name}", RuntestParser.get_status_line(self), p=self)
                 RuntestParser.print_log_file(self.log, self.n_lines)
                 return
         elif self.batch:

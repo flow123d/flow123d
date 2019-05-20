@@ -11,13 +11,13 @@ def check_modules(*modules):
     :param modules:
     :return: bool
     """
-    import imp
+    import importlib.util
 
     log = list()
     error = False
     for module in modules:
         try:
-            imp.find_module(module)
+            importlib.util.find_spec(module)
             log.append(' - found module "{module:s}"'.format(**locals()))
         except ImportError:
             log.append(' - missing module "{module:s}"'.format(**locals()))
@@ -40,6 +40,8 @@ def ensure_iterable(o):
     :param o: tested object
     :return: list or tuple
     """
+    if o is None:
+        return []
     return [o] if type(o) not in (list, tuple, set) else o
 
 

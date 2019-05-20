@@ -1,4 +1,4 @@
-# Makefile for uploading configuration via jenkins-jobs-builder 
+# Makefile for uploading configuration via jenkins-jobs-builder
 # author: Jan Hybs
 
 
@@ -6,44 +6,53 @@
 # ${CMAKE_COMMAND} -DINPUT=jenkins_jobs_template.yaml -DOUTPUT=${JENKINS_JOBS_FILE} -P ${CMAKE_CURRENT_SOURCE_DIR}/expand_placeholders.cmake
 
 # default configuration for jenkins-jobs-builder
+# By default, jenkins-jobs looks for
+# 	1) ~/.config/jenkins_jobs/jenkins_jobs.ini
+# 	2) <script directory>/jenkins_jobs.ini
+# 	3) /etc/jenkins_jobs/jenkins_jobs.ini
+# (in that order), but you may specify an alternative location
 ifdef CONFIG
 CONFIG_ARG=--conf $(CONFIG)
 endif
 
-# target which replaces placeholders in all *.yaml.template files
+main_yaml ?= tmp/jobs/main.yaml
+jenkins_jobs ?= jenkins-jobs
+
+
+# target which replaces placeholders in all *.yaml files in jobs dir
 # located in jobs dir
-.PHONY: *.template.yaml
-*.template.yaml:
-	cmake -DINPUT=$@ -DOUTPUT=jobs/$(@:%.template.yaml=%.yaml) -P expand_placeholders.cmake
+.PHONY: jobs/**/*.yaml jobs/*.yaml
+jobs/**/*.yaml jobs/*.yaml:
+	cmake -DINPUT=$@ -DOUTPUT=tmp/$@ -P expand_placeholders.cmake
 
 
-# target which call replacement on all yaml.template files
+# target which call replacement on all *.yaml files in jobs dir
 .PHONY: expand
-expand: *.template.yaml
+expand: jobs/**/*.yaml jobs/*.yaml
 
 
 # target which runs "test" on jenkins-jobs
 .PHONY: test
 test: expand
 	@echo "-----------------------------------------------"
-	@echo "Using configuration scripts $(CONFIG)"
+	@echo "Using configuration scripts '$(CONFIG)'"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG_ARG) test jobs/main.yaml
+	$(jenkins_jobs) $(CONFIG_ARG) test $(main_yaml)
 
 
 # target which runs "test" on jenkins-jobs
 .PHONY: upload
 upload: expand
 	@echo "-----------------------------------------------"
-	@echo "Using configuration scripts $(CONFIG)"
+	@echo "Using configuration scripts '$(CONFIG)'"
 	@echo "-----------------------------------------------"
-	jenkins-jobs $(CONFIG_ARG) --ignore-cache update jobs/main.yaml
+	$(jenkins_jobs) $(CONFIG_ARG) --ignore-cache update $(main_yaml)
 
 
 # target which uploads configuration via jenkins-jobs to server
 .PHONY: delete
 delete: #which
-	jenkins-jobs $(CONFIG_ARG) --ignore-cache delete-all
+	$(jenkins_jobs) $(CONFIG_ARG) --ignore-cache delete-all
 
 
 #.PHONY: which
@@ -75,4 +84,3 @@ help:
 	@echo "              this action cannot be undone"
 	@echo ""
 	@echo "    - help:   print this message"
-	
