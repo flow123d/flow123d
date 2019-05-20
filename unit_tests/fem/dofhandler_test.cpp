@@ -3,6 +3,7 @@
 #include <cmath>
 #include "fem/fe_p.hh"
 #include "fem/fe_rt.hh"
+#include "fem/fe_system.hh"
 #include "mesh/mesh.h"
 #include <mesh_constructor.hh>
 #include "fem/dofhandler.hh"
@@ -162,6 +163,84 @@ TEST(DOFHandler, test_all) {
 
   }
 
+}
+
+
+TEST(DOFHandler, test_sub_handler)
+{
+    FESystem<0> fe_sys0({ std::make_shared<FE_P_disc<0> >(0),
+                          std::make_shared<FE_P<0> >(0),
+                          std::make_shared<FE_CR<0> >() });
+    FESystem<1> fe_sys1({ std::make_shared<FE_RT0<1> >(),
+                          std::make_shared<FE_P<1> >(0),
+                          std::make_shared<FE_CR<1> >() });
+    FESystem<2> fe_sys2({ std::make_shared<FE_RT0<2> >(),
+                          std::make_shared<FE_P<2> >(0),
+                          std::make_shared<FE_CR<2> >() });
+    FESystem<3> fe_sys3({ std::make_shared<FE_RT0<3> >(),
+                          std::make_shared<FE_P<3> >(0),
+                          std::make_shared<FE_CR<3> >() });
+    
+    FilePath::set_io_dirs(".",UNIT_TESTS_SRC_DIR,"",".");
+    Mesh * mesh = mesh_full_constructor("{mesh_file=\"fem/small_mesh_junction.msh\"}");
+    std::shared_ptr<DiscreteSpace> ds = std::make_shared<EqualOrderDiscreteSpace>(mesh, &fe_sys0, &fe_sys1, &fe_sys2, &fe_sys3);
+    std::shared_ptr<DOFHandlerMultiDim> dh = std::make_shared<DOFHandlerMultiDim>(*mesh);
+    dh->distribute_dofs(ds);
+    std::shared_ptr<SubDOFHandlerMultiDim> sub_dh = std::make_shared<SubDOFHandlerMultiDim>(dh, 0);
+    std::vector<std::vector<int> > loc_indices(mesh->n_elements(), std::vector<int>(dh->max_elem_dofs()));
+    std::vector<int> loc_sub_indices(sub_dh->max_elem_dofs());
+
+    dh->print();    
+    sub_dh->print();
+    
+    VectorMPI vec = dh->create_vector();
+    VectorMPI subvec = sub_dh->create_vector();
+    
+    // init cell dof indices
+    for (auto cell : dh->local_range())
+        cell.get_loc_dof_indices(loc_indices[cell.elm_idx()]);
+    
+    // init vec and update subvec
+    for (auto cell : dh->own_range())
+        for (unsigned int i=0; i<dh->ds()->n_elem_dofs(cell.elm()); i++)
+            vec[loc_indices[cell.elm_idx()][i]] = cell.elm_idx()*dh->max_elem_dofs()+i;
+    vec.local_to_ghost_begin();
+    vec.local_to_ghost_end();
+    sub_dh->update_subvector(vec, subvec);
+    
+    // check that dofs on sub_dh are equal to dofs on dh
+    for (auto cell : sub_dh->local_range())
+    {
+        cell.get_loc_dof_indices(loc_sub_indices);
+        for (unsigned int i=0; i<cell.n_dofs(); i++)
+        {
+            // local indices
+            EXPECT_EQ( sub_dh->parent_indices()[loc_sub_indices[i]], loc_indices[cell.elm_idx()][i] );
+            // values in mpi vectors
+            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+        }
+    }
+
+    // modify subvec and update "parent" vec
+    for (auto cell : sub_dh->own_range())
+    {
+        cell.get_loc_dof_indices(loc_sub_indices);
+        for (unsigned int i=0; i<sub_dh->ds()->n_elem_dofs(cell.elm()); i++)
+            subvec[loc_sub_indices[i]] = -(cell.elm_idx()*dh->max_elem_dofs()+i);
+    }
+    subvec.local_to_ghost_begin();
+    subvec.local_to_ghost_end();
+    sub_dh->update_parent_vector(vec, subvec);
+    // check values in mpi vectors
+    for (auto cell : sub_dh->local_range())
+    {
+        cell.get_loc_dof_indices(loc_sub_indices);
+        for (unsigned int i=0; i<cell.n_dofs(); i++)
+            EXPECT_EQ( vec[loc_indices[cell.elm_idx()][i]], subvec[loc_sub_indices[i]] );
+    }
+    
+    delete mesh;
+    
 }
 
 

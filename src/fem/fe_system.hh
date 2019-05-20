@@ -73,6 +73,8 @@ public:
 
     const unsigned int dim() const override { return dim_; }
     
+    const std::vector<DofComponentData> &dof_indices() { return dof_indices_; }
+    
     virtual ~FESystemFunctionSpace() {};
 
 private:
