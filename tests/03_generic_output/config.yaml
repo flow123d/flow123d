@@ -24,7 +24,7 @@ test_cases:
   memory_limit: 1300
   
 - files: 02_richards_nobalance.yaml
-  time_limit: 35
+  time_limit: 45
     
 # parallel VTK tests
 - files:

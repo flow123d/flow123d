@@ -1,14 +1,15 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-# author:   Jan Hybs
-from scripts.core.base import Printer
+# author: Jan Hybs
+
+from loggers import printf
 from scripts.core.execution import BinExecutor, OutputMode
 
 
 def massif_hook(pypy):
     """
     Function will initialize ValgrindMassif and print result on success
-    :type pypy: scripts.core.threads.PyPy
+    :type pypy: scripts.core.pypy.PyPy
     """
     vm = ValgrindMassif(pypy.case.fs.valgrind_out)
     vm.output = OutputMode.variable_output()
@@ -19,7 +20,7 @@ def massif_hook(pypy):
     if vm.returncode == 0:
         output = vm.output.read()
         lines = str(output).splitlines()[0:32]
-        Printer.all.out('\n    '.join(lines))
+        printf.out('\n    '.join(lines))
 
 
 class ValgrindMassif(BinExecutor):

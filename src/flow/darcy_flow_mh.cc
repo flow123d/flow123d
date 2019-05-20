@@ -839,7 +839,7 @@ void DarcyMH::assembly_source_term()
                 data_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
         schur0->rhs_set_value(ele_ac.ele_row(), -1.0 * source );
 
-        balance_->add_source_vec_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_row()}, {source});
+        balance_->add_source_values(data_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_row()}, {0}, {source});
     }
 
     balance_->finish_source_assembly(data_->water_balance_idx);

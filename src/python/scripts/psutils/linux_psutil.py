@@ -106,7 +106,7 @@ class Process(psutil.Process):
         children = self.children()
         self.apply(children, 'terminate')
 
-        # wait jus a sec to let it all blend in
+        # wait just a sec to let it all blend in
         time.sleep(_just_a_sec)
 
         # if some process are still running
@@ -116,7 +116,7 @@ class Process(psutil.Process):
             # check status again, maybe perhaps they finish what
             # they have started and are done?
             if True in self.apply(children, 'is_running'):
-                # looks like they are still running to SIGKILL 'em
+                # looks like they are still running so SIGKILL 'em
                 self.apply(children, 'kill')
             else:
                 # all processes finish they job in reasonable period since

@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# This script downloads and installs the Flow123d
+# inspired by https://get.fenicsproject.org/
+
+# Setup
+RED="\033[1;31m"
+BLUE="\033[1;34m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+NORMAL="\033[0m"
+
+DEST_DIR="$HOME/.local/bin"
+DEST=$DEST_DIR/flow123d
+mkdir -p $DEST_DIR
+
+# Check if we have Docker
+TMP=$(docker -v 2>/dev/null)
+if [ ! $? -eq 0 ]; then
+  echo -e "It appears that ${RED}Docker is not installed${NORMAL} on your system."
+  echo "Follow these instructions to install Docker, then come back and try again:"
+  echo ""
+  echo "  https://docs.docker.com/get-started/"
+  echo ""
+  exit 1
+else
+  echo -e "You have docker version ${GREEN}$TMP${NORMAL} on your system."
+fi
+
+# download simple version of flow123d
+curl -s https://flow.nti.tul.cz/flow123d > $DEST_DIR/flow123d
+curl -s https://flow.nti.tul.cz/fterm > $DEST_DIR/fterm
+chmod a+rx $DEST_DIR/flow123d
+chmod a+rx $DEST_DIR/fterm
+
+inPath=$(which flow123d)
+if [[ -z "$inPath" ]]; then
+  cmd_prefix=$DEST_DIR/
+else
+  cmd_prefix=
+fi
+
+
+
+# quick start info
+echo -e "------------------------"
+echo -e "OK, scripts ${GREEN}flow123d${NORMAL} and ${GREEN}fterm${NORMAL} installed into ${BLUE}$DEST_DIR${NORMAL}"
+echo -e "To get started, run the commands"
+echo -e ""
+echo -e "  ${BLUE}${cmd_prefix}flow123d${NORMAL} or ${BLUE}${cmd_prefix}fterm${NORMAL}"
+echo -e ""
+echo -e "To enter interactive terminal use ${GREEN}fterm${NORMAL} (you can access flow123d inside)"
+echo -e "To actually run flow123d, use ${GREEN}flow123d${NORMAL}"
+echo -e "Take a look at help page if you want to know more:"
+echo -e ""
+echo -e "  ${BLUE}${cmd_prefix}fterm --help${NORMAL}"
+echo -e ""
+
+if [[ -z "$inPath" ]]; then
+  echo -e "------------------------"
+  echo -e "Also, it appears that your ${YELLOW}\$PATH${NORMAL} variable does not include ${BLUE}$DEST_DIR${NORMAL} (which usually does)"
+  echo -e "Add the following line to your ${BLUE}$HOME/.bashrc${NORMAL} file:"
+  echo -e ""
+  echo -e "  ${YELLOW}export PATH=$DEST_DIR:\$PATH"${NORMAL}
+  echo -e ""
+  echo -e "And after you login, you won't have to type entire path"
+  echo -e "You can simple type ${GREEN}flow123d${NORMAL} or ${GREEN}fterm${NORMAL}"
+fi

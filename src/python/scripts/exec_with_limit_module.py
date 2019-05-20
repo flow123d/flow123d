@@ -3,7 +3,7 @@
 # author:   Jan Hybs
 # ----------------------------------------------
 from scripts.core.base import Paths, IO
-from scripts.core.threads import PyPy
+from scripts.core.pypy import PyPy
 from scripts.core.execution import BinExecutor, OutputMode
 from scripts.script_module import ScriptModule
 # ----------------------------------------------
