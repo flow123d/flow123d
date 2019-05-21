@@ -331,16 +331,13 @@ ConvectionTransport::~ConvectionTransport()
 
 void ConvectionTransport::set_initial_condition()
 {
-	for (auto elem : mesh_->elements_range()) {
-    	if (!el_ds->is_local(row_4_el[ elem.idx() ])) continue;
-
-    	LongIdx index = row_4_el[ elem.idx() ] - el_ds->begin();
-    	ElementAccessor<3> ele_acc = mesh_->element_accessor( elem.idx() );
+	for ( DHCellAccessor dh_cell : dh_->own_range() ) {
+		LongIdx index = dh_cell.local_idx();
+		ElementAccessor<3> ele_acc = mesh_->element_accessor( dh_cell.elm_idx() );
 
 		for (unsigned int sbi=0; sbi<n_substances(); sbi++) // Optimize: SWAP LOOPS
-			conc[sbi][index] = data_.init_conc[sbi].value(elem.centre(), ele_acc);
-    }
-
+			conc[sbi][index] = data_.init_conc[sbi].value(ele_acc.centre(), ele_acc);
+	}
 }
 
 //=============================================================================
