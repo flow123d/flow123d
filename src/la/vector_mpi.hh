@@ -104,8 +104,11 @@ public:
         chkerr(VecZeroEntries( data_petsc_ ));
     }
 
-    /// Return new vector with same parallel structure.
-    void duplicate(VectorMPI other) {
+    /// For the current vector, it creates the same parallel structure as the @p other vector has.
+    /**
+     * FIXME: it does not take care of ghost values, so it cannot be used in that situation.
+     */
+    void duplicate_from(VectorMPI other) {
     	ASSERT_EQ(this->communicator_, other.communicator_);
         this->resize(other.data().size());
     }
@@ -138,6 +141,10 @@ public:
         return *data_ptr_;
     }
 
+    /// Swaps the current vector data with the other vector data.
+    /**
+     * FIXME: it does not take care of ghost values, so it cannot be used
+     */
     void swap(VectorMPI &other) {
     	ASSERT_EQ(this->communicator_, other.communicator_);
         ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
@@ -155,7 +162,9 @@ public:
     }
 
 
-    void copy(VectorMPI &other) {
+    /// Copies data from the @p other vector.
+    /// Both vector must have the same communicator and distribution.
+    void copy_from(VectorMPI &other) {
     	ASSERT_EQ(this->communicator_, other.communicator_);
         ASSERT_EQ(this->data_ptr_->size(), other.data_ptr_->size());
         chkerr(VecCopy(other.data_petsc_, data_petsc_));

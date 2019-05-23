@@ -158,9 +158,10 @@ void RichardsLMH::read_initial_condition()
 
     // set water_content
     // pretty ugly since postprocess change fluxes, which cause bad balance, so we must set them back
-    VecCopy(data_->data_vec_.petsc_vec(), previous_solution); // store solution vector
+    previous_solution.copy_from(data_->data_vec_); // store solution vector
     postprocess();
-    VecSwap(data_->data_vec_.petsc_vec(), previous_solution); // restore solution vector
+    VecSwap(data_->data_vec_.petsc_vec(), previous_solution.petsc_vec()); // restore solution vector
+//     data_->data_vec_.swap(previous_solution); // currently not working
 
     //DebugOut() << "init sol:\n";
     //VecView( data_->data_vec_.petsc_vec(),   PETSC_VIEWER_STDOUT_WORLD);
@@ -173,9 +174,8 @@ void RichardsLMH::read_initial_condition()
 
 void RichardsLMH::prepare_new_time_step()
 {
-    VecCopy(data_->data_vec_.petsc_vec(), previous_solution);
-    data_->water_content_previous_time.copy(data_->water_content_previous_it);
-    //VecCopy(data_->data_vec_.petsc_vec(), previous_solution);
+    previous_solution.copy_from(data_->data_vec_);
+    data_->water_content_previous_time.copy_from(data_->water_content_previous_it);
 }
 
 bool RichardsLMH::zero_time_term(bool time_global) {

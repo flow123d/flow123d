@@ -309,7 +309,6 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
 	new_diagonal(nullptr),
-	previous_solution(nullptr),
 	par_to_all(nullptr)
 {
 
@@ -454,8 +453,13 @@ void DarcyMH::initialize() {
     // this creates mpi vector from DoFHandler, including ghost values
     schur_solution_ = data_->dh_cr_->create_vector();
     full_solution_ = data_->dh_->create_vector();
+    previous_solution = data_->dh_->create_vector();
+    previous_solution_nonlinear = data_->dh_->create_vector();
+    
     data_->schur_solution_ = &schur_solution_;
     data_->full_solution_ = &full_solution_;
+    data_->previous_solution = &previous_solution;
+    data_->previous_solution_nonlinear = &previous_solution_nonlinear;
     
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
@@ -473,7 +477,6 @@ void DarcyMH::initialize() {
 
 
     // allocate time term vectors
-    VecDuplicate(data_->data_vec_.petsc_vec(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, data_->dh_->distr()->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -513,17 +516,17 @@ void DarcyMH::zero_time_step()
     bool zero_time_term_from_right = zero_time_term();
 
 
+    data_->data_vec_.zero_entries();
+    schur_solution_.zero_entries();
+    
     if (zero_time_term_from_right) {
         // steady case
-        data_->data_vec_.zero_entries();
-        VecZeroEntries(schur_compl->get_solution());
         //read_initial_condition(); // Possible solution guess for steady case.
         use_steady_assembly_ = true;
         solve_nonlinear(); // with right limit data
     } else {
-        data_->data_vec_.zero_entries();
-        VecZeroEntries(schur_compl->get_solution());
-        VecZeroEntries(previous_solution);
+        previous_solution.zero_entries();
+        
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
 //         print_matlab_matrix("matrix_zero");
@@ -621,8 +624,9 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    Vec save_solution;
-    VecDuplicate(data_->data_vec_.petsc_vec(), &save_solution);
+//     Vec save_solution;
+//     VecDuplicate(schur0->get_solution(), &save_solution);
+    previous_solution_nonlinear.copy_from(data_->data_vec_);
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -642,13 +646,14 @@ void DarcyMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            VecCopy( data_->data_vec_.petsc_vec(), save_solution);
+            previous_solution_nonlinear.copy_from(data_->data_vec_);
+//             VecCopy( schur0->get_solution(), save_solution);
         LinSys::SolveInfo si = schur0->solve();
 
-//         LinSys::SolveInfo si_schur = schur_compl->solve();        
-//         MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
-//         		si_schur.n_iterations, si_schur.converged_reason, schur_compl->compute_residual());
-//         reconstruct_solution_from_schur(data_->multidim_assembler);
+        LinSys::SolveInfo si_schur = schur_compl->solve();        
+        MessageOut().fmt("[schur solver] lin. it: {}, reason: {}, residual: {}\n",
+        		si_schur.n_iterations, si_schur.converged_reason, schur_compl->compute_residual());
+        reconstruct_solution_from_schur(data_->multidim_assembler);
         
         nonlinear_iteration_++;
 
@@ -663,7 +668,8 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(data_->data_vec_.petsc_vec(), (1-alpha), alpha, save_solution);
+        VecAXPBY(data_->data_vec_.petsc_vec(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
+//         VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
 
         //LogOut().fmt("Linear solver ended with reason: {} \n", si.converged_reason );
         //OLD_ASSERT( si.converged_reason >= 0, "Linear solver failed to converge. Convergence reason %d \n", si.converged_reason );
@@ -673,7 +679,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
-    chkerr(VecDestroy(&save_solution));
+//     chkerr(VecDestroy(&save_solution));
     this -> postprocess();
 
     // adapt timestep
@@ -781,6 +787,7 @@ void DarcyMH::assembly_mh_matrix(MultidimAssembly& assembler)
 {
     START_TIMER("DarcyFlowMH_Steady::assembly_steady_mh_matrix");
 
+    DebugOut() << "assembly_mh_matrix \n";
     // set auxiliary flag for switchting Dirichlet like BC
     data_->force_bc_switch = use_steady_assembly_ && (nonlinear_iteration_ == 0);
     data_->n_schur_compls = n_schur_compls;
@@ -1201,7 +1208,6 @@ void DarcyMH::print_matlab_matrix(std::string matlab_file)
         PetscViewerSetFormat(viewer, PETSC_VIEWER_ASCII_MATLAB);
         MatView( *const_cast<Mat*>(schur0->get_matrix()), viewer);
         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
-//         VecView( *const_cast<Vec*>(schur0->get_rhs()), viewer);
         VecView( *const_cast<Vec*>(&(data_->data_vec_.petsc_vec())), viewer);
     }
 //     else{
@@ -1431,7 +1437,6 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-	if (previous_solution != nullptr) chkerr(VecDestroy(&previous_solution));
 	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
 	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
 	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));

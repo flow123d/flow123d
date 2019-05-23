@@ -216,6 +216,9 @@ public:
         VectorMPI* schur_solution_;
         VectorMPI* full_solution_;
         
+        VectorMPI* previous_solution;
+        VectorMPI* previous_solution_nonlinear;
+        
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
         bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
@@ -397,7 +400,8 @@ protected:
 	Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
-    Vec previous_solution;
+    VectorMPI previous_solution;
+    VectorMPI previous_solution_nonlinear;
 
     // Temporary objects holding pointers to appropriate FieldFE
     // TODO remove after final fix of equations
