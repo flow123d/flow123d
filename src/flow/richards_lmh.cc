@@ -212,6 +212,7 @@ void RichardsLMH::assembly_linear_system()
         START_TIMER("full assembly");
         if (typeid(*schur0) != typeid(LinSys_BDDC)) {
             schur0->start_add_assembly(); // finish allocation and create matrix
+            schur_compl->start_add_assembly();
         }
         data_->time_step_ = time_->dt();
         auto multidim_assembler = AssemblyBase::create< AssemblyLMH >(data_);
@@ -219,6 +220,9 @@ void RichardsLMH::assembly_linear_system()
 
         schur0->mat_zero_entries();
         schur0->rhs_zero_entries();
+        
+        schur_compl->mat_zero_entries();
+        schur_compl->rhs_zero_entries();
 
         balance_->start_mass_assembly(data_->water_balance_idx);
 
@@ -229,7 +233,9 @@ void RichardsLMH::assembly_linear_system()
             //VecView( *const_cast<Vec*>(schur0->get_rhs()),   PETSC_VIEWER_STDOUT_WORLD);
 
         schur0->finish_assembly();
+        schur_compl->finish_assembly();
         schur0->set_matrix_changed();
+        schur_compl->set_matrix_changed();
 
 
         if (! is_steady) {
