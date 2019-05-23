@@ -1549,15 +1549,12 @@ void mat_count_off_proc_values(Mat m, Vec v) {
 
 void DarcyMH::read_initial_condition()
 {
-	double *local_sol = schur0->get_solution_array();
-
 	// cycle over local element rows
-
-	DebugOut().fmt("Setup with dt: {}\n", time_->dt());
+	DebugOut() << "Read flow initial condition\n";
 	for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
 		LocalElementAccessorBase<3> ele_ac(dh_cell);
 		// set initial condition
-		local_sol[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
+        data_->data_vec_[ele_ac.ele_local_row()] = data_->init_pressure.value(ele_ac.centre(),ele_ac.element_accessor());
 	}
 
 	solution_changed_for_scatter=true;

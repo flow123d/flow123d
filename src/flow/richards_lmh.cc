@@ -141,6 +141,7 @@ void RichardsLMH::read_initial_condition()
     // cycle over local element rows
     double init_value;
 
+    DebugOut() << "Read flow initial condition\n";
     for ( DHCellAccessor dh_cell : data_->dh_->own_range() ) {
          LocalElementAccessorBase<3> ele_ac(dh_cell);
 
