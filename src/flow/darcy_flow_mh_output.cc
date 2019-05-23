@@ -370,27 +370,27 @@ void DarcyFlowMHOutput::output()
 // }
 
 
-void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
-{
-    START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
-	unsigned int ndofs = dh_->max_elem_dofs();
-	std::vector<LongIdx> indices(ndofs);
-	unsigned int i_node;
-	/*for (DHCellAccessor cell : dh_->local_range()) {
-		cell.get_dof_indices(indices);
-		for (i_node=0; i_node<cell.elm()->n_nodes(); i_node++)
-		{
-			corner_pressure[indices[i_node]] = node_scalar[ cell.elm().node_accessor(i_node).idx() ];
-		}
-	}*/
-	for (auto ele : mesh_->elements_range()) {
-		dh_->cell_accessor_from_element(ele.idx()).get_dof_indices(indices);
-		for (i_node=0; i_node<ele->n_nodes(); i_node++)
-		{
-			corner_pressure[indices[i_node]] = node_scalar[ ele.node_accessor(i_node).idx() ];
-		}
-	}
-}
+//void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
+//{
+//    START_TIMER("DarcyFlowMHOutput::make_corner_scalar");
+//	unsigned int ndofs = dh_->max_elem_dofs();
+//	std::vector<LongIdx> indices(ndofs);
+//	unsigned int i_node;
+//	/*for (DHCellAccessor cell : dh_->local_range()) {
+//		cell.get_dof_indices(indices);
+//		for (i_node=0; i_node<cell.elm()->n_nodes(); i_node++)
+//		{
+//			corner_pressure[indices[i_node]] = node_scalar[ cell.elm().node_accessor(i_node).idx() ];
+//		}
+//	}*/
+//	for (auto ele : mesh_->elements_range()) {
+//		dh_->cell_accessor_from_element(ele.idx()).get_dof_indices(indices);
+//		for (i_node=0; i_node<ele->n_nodes(); i_node++)
+//		{
+//			corner_pressure[indices[i_node]] = node_scalar[ ele.node_accessor(i_node).idx() ];
+//		}
+//	}
+//}
 
 
 //=============================================================================
@@ -407,123 +407,123 @@ void DarcyFlowMHOutput::make_corner_scalar(vector<double> &node_scalar)
 //
 //=============================================================================
 
-void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
-    START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
-
-	vector<double> scalars(mesh_->n_nodes());
-
-    double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
-
-    /** Accessors */
-    NodeAccessor<3> node;
-
-    int n_nodes = mesh_->n_nodes(); //!< number of nodes in the mesh */
-    int node_index = 0; //!< index of each node */
-
-    int* sum_elements = new int [n_nodes]; //!< sum elements joined to node */
-    int* sum_sides = new int [n_nodes]; //!< sum sides joined to node */
-    double* sum_ele_dist = new double [n_nodes]; //!< sum distances to all joined elements */
-    double* sum_side_dist = new double [n_nodes]; //!<  Sum distances to all joined sides */
-
-    /** tmp variables, will be replaced by ini keys
-     * TODO include them into ini file*/
-    bool count_elements = true; //!< scalar is counted via elements*/
-    bool count_sides = true; //!< scalar is counted via sides */
-
-
-    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
-
-    /** init arrays */
-    for (int i = 0; i < n_nodes; i++){
-        sum_elements[i] = 0;
-        sum_sides[i] = 0;
-        sum_ele_dist[i] = 0.0;
-        sum_side_dist[i] = 0.0;
-        scalars[i] = 0.0;
-    };
-
-    /**first pass - calculate sums (weights)*/
-    if (count_elements){
-    	for (auto ele : mesh_->elements_range())
-            for (unsigned int li = 0; li < ele->n_nodes(); li++) {
-                node = ele.node_accessor(li); //!< get NodeAccessor from element */
-                node_index = node.idx(); //!< get nod index from mesh */
-
-                dist = sqrt(
-                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
-                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
-                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
-                );
-                sum_ele_dist[node_index] += dist;
-                sum_elements[node_index]++;
-            }
-    }
-    if (count_sides){
-    	for (auto ele : mesh_->elements_range())
-            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
-                for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                    node = side->node(li);//!< get NodeAccessor from element */
-                    node_index = node.idx(); //!< get nod index from mesh */
-                    dist = sqrt(
-                            ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
-                            ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
-                            ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
-                    );
-
-                    sum_side_dist[node_index] += dist;
-                    sum_sides[node_index]++;
-                }
-            }
-    }
-
-    /**second pass - calculate scalar  */
-    if (count_elements){
-    	for (auto ele : mesh_->elements_range())
-            for (unsigned int li = 0; li < ele->n_nodes(); li++) {
-                node = ele.node_accessor(li);//!< get NodeAccessor from element */
-                node_index = ele.node_accessor(li).idx(); //!< get nod index from mesh */
-
-                /**TODO - calculate it again or store it in prior pass*/
-                dist = sqrt(
-                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
-                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
-                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
-                );
-                scalars[node_index] += ele_pressure[ ele.idx() ] *
-                        (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
-                        (sum_elements[node_index] + sum_sides[node_index] - 1);
-            }
-    }
-    if (count_sides) {
-    	for (auto ele : mesh_->elements_range())
-            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
-                for (unsigned int li = 0; li < side->n_nodes(); li++) {
-                    node = side->node(li);//!< get NodeAccessor from element */
-                    node_index = node.idx(); //!< get nod index from mesh */
-
-                    /**TODO - calculate it again or store it in prior pass*/
-                    dist = sqrt(
-                            ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
-                            ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
-                            ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
-                    );
-
-
-                    scalars[node_index] += dh.side_scalar( *side ) *
-                            (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
-                            (sum_sides[node_index] + sum_elements[node_index] - 1);
-                }
-            }
-    }
-
-    /** free memory */
-    delete [] sum_elements;
-    delete [] sum_sides;
-    delete [] sum_ele_dist;
-    delete [] sum_side_dist;
-
-    make_corner_scalar(scalars);
-}
+//void DarcyFlowMHOutput::make_node_scalar_param(ElementSetRef element_indices) {
+//    START_TIMER("DarcyFlowMHOutput::make_node_scalar_param");
+//
+//	vector<double> scalars(mesh_->n_nodes());
+//
+//    double dist; //!< tmp variable for storing particular distance node --> element, node --> side*/
+//
+//    /** Accessors */
+//    NodeAccessor<3> node;
+//
+//    int n_nodes = mesh_->n_nodes(); //!< number of nodes in the mesh */
+//    int node_index = 0; //!< index of each node */
+//
+//    int* sum_elements = new int [n_nodes]; //!< sum elements joined to node */
+//    int* sum_sides = new int [n_nodes]; //!< sum sides joined to node */
+//    double* sum_ele_dist = new double [n_nodes]; //!< sum distances to all joined elements */
+//    double* sum_side_dist = new double [n_nodes]; //!<  Sum distances to all joined sides */
+//
+//    /** tmp variables, will be replaced by ini keys
+//     * TODO include them into ini file*/
+//    bool count_elements = true; //!< scalar is counted via elements*/
+//    bool count_sides = true; //!< scalar is counted via sides */
+//
+//
+//    const MH_DofHandler &dh = darcy_flow->get_mh_dofhandler();
+//
+//    /** init arrays */
+//    for (int i = 0; i < n_nodes; i++){
+//        sum_elements[i] = 0;
+//        sum_sides[i] = 0;
+//        sum_ele_dist[i] = 0.0;
+//        sum_side_dist[i] = 0.0;
+//        scalars[i] = 0.0;
+//    };
+//
+//    /**first pass - calculate sums (weights)*/
+//    if (count_elements){
+//    	for (auto ele : mesh_->elements_range())
+//            for (unsigned int li = 0; li < ele->n_nodes(); li++) {
+//                node = ele.node_accessor(li); //!< get NodeAccessor from element */
+//                node_index = node.idx(); //!< get nod index from mesh */
+//
+//                dist = sqrt(
+//                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
+//                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
+//                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
+//                );
+//                sum_ele_dist[node_index] += dist;
+//                sum_elements[node_index]++;
+//            }
+//    }
+//    if (count_sides){
+//    	for (auto ele : mesh_->elements_range())
+//            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
+//                for (unsigned int li = 0; li < side->n_nodes(); li++) {
+//                    node = side->node(li);//!< get NodeAccessor from element */
+//                    node_index = node.idx(); //!< get nod index from mesh */
+//                    dist = sqrt(
+//                            ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
+//                            ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
+//                            ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
+//                    );
+//
+//                    sum_side_dist[node_index] += dist;
+//                    sum_sides[node_index]++;
+//                }
+//            }
+//    }
+//
+//    /**second pass - calculate scalar  */
+//    if (count_elements){
+//    	for (auto ele : mesh_->elements_range())
+//            for (unsigned int li = 0; li < ele->n_nodes(); li++) {
+//                node = ele.node_accessor(li);//!< get NodeAccessor from element */
+//                node_index = ele.node_accessor(li).idx(); //!< get nod index from mesh */
+//
+//                /**TODO - calculate it again or store it in prior pass*/
+//                dist = sqrt(
+//                        ((node->getX() - ele.centre()[ 0 ])*(node->getX() - ele.centre()[ 0 ])) +
+//                        ((node->getY() - ele.centre()[ 1 ])*(node->getY() - ele.centre()[ 1 ])) +
+//                        ((node->getZ() - ele.centre()[ 2 ])*(node->getZ() - ele.centre()[ 2 ]))
+//                );
+//                scalars[node_index] += ele_pressure[ ele.idx() ] *
+//                        (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
+//                        (sum_elements[node_index] + sum_sides[node_index] - 1);
+//            }
+//    }
+//    if (count_sides) {
+//    	for (auto ele : mesh_->elements_range())
+//            for(SideIter side = ele.side(0); side->side_idx() < ele->n_sides(); ++side) {
+//                for (unsigned int li = 0; li < side->n_nodes(); li++) {
+//                    node = side->node(li);//!< get NodeAccessor from element */
+//                    node_index = node.idx(); //!< get nod index from mesh */
+//
+//                    /**TODO - calculate it again or store it in prior pass*/
+//                    dist = sqrt(
+//                            ((node->getX() - side->centre()[ 0 ])*(node->getX() - side->centre()[ 0 ])) +
+//                            ((node->getY() - side->centre()[ 1 ])*(node->getY() - side->centre()[ 1 ])) +
+//                            ((node->getZ() - side->centre()[ 2 ])*(node->getZ() - side->centre()[ 2 ]))
+//                    );
+//
+//
+//                    scalars[node_index] += dh.side_scalar( *side ) *
+//                            (1 - dist / (sum_ele_dist[node_index] + sum_side_dist[node_index])) /
+//                            (sum_sides[node_index] + sum_elements[node_index] - 1);
+//                }
+//            }
+//    }
+//
+//    /** free memory */
+//    delete [] sum_elements;
+//    delete [] sum_sides;
+//    delete [] sum_ele_dist;
+//    delete [] sum_side_dist;
+//
+//    make_corner_scalar(scalars);
+//}
 
 
 /*

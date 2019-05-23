@@ -132,9 +132,9 @@ protected:
      * \brief Calculate nodes scalar,
      * store it in double* node_scalars instead of node->scalar
      *  */
-    void make_node_scalar_param(ElementSetRef element_indices);
+    //void make_node_scalar_param(ElementSetRef element_indices);
     //void make_node_scalar();
-    void make_corner_scalar(vector<double> &node_scalar);
+    //void make_corner_scalar(vector<double> &node_scalar);
     //void make_neighbour_flux();
     void output_internal_flow_data();
 
