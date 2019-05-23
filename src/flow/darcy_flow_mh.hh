@@ -202,6 +202,9 @@ public:
         std::shared_ptr<Balance> balance;
         LinSys *lin_sys;
         
+        VectorMPI* previous_solution;
+        VectorMPI* previous_solution_nonlinear;
+        
         unsigned int n_schur_compls;
         int is_linear;              ///< Hack fo BDDC solver.
         bool force_bc_switch;       ///< auxiliary flag for switchting Dirichlet like BC
@@ -374,7 +377,8 @@ protected:
 	Vec steady_diagonal;
     Vec steady_rhs;
     Vec new_diagonal;
-    Vec previous_solution;
+    VectorMPI previous_solution;
+    VectorMPI previous_solution_nonlinear;
 
 	std::shared_ptr<EqData> data_;
 

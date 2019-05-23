@@ -288,8 +288,7 @@ DarcyMH::DarcyMH(Mesh &mesh_in, const Input::Record in_rec)
     schur0(nullptr),
 	steady_diagonal(nullptr),
 	steady_rhs(nullptr),
-	new_diagonal(nullptr),
-	previous_solution(nullptr)
+	new_diagonal(nullptr)
 {
 
     START_TIMER("Darcy constructor");
@@ -371,6 +370,11 @@ void DarcyMH::initialize() {
     output_object = new DarcyFlowMHOutput(this, input_record_);
 
     mh_dh.reinit(mesh_);
+    previous_solution = data_->dh_->create_vector();
+    previous_solution_nonlinear = data_->dh_->create_vector();
+    
+    data_->previous_solution = &previous_solution;
+    data_->previous_solution_nonlinear = &previous_solution_nonlinear;
     // Initialize bc_switch_dirichlet to size of global boundary.
     data_->bc_switch_dirichlet.resize(mesh_->n_elements()+mesh_->n_elements(true), 1);
 
@@ -387,7 +391,6 @@ void DarcyMH::initialize() {
 
 
     // allocate time term vectors
-    VecDuplicate(schur0->get_solution(), &previous_solution);
     VecCreateMPI(PETSC_COMM_WORLD, mh_dh.rows_ds->lsize(),PETSC_DETERMINE,&(steady_diagonal));
     VecDuplicate(steady_diagonal,& new_diagonal);
     VecZeroEntries(new_diagonal);
@@ -435,7 +438,8 @@ void DarcyMH::zero_time_step()
         solve_nonlinear(); // with right limit data
     } else {
         VecZeroEntries(schur0->get_solution());
-        VecZeroEntries(previous_solution);
+        previous_solution.zero_entries();
+        
         read_initial_condition();
         assembly_linear_system(); // in particular due to balance
 //         print_matlab_matrix("matrix_zero");
@@ -532,8 +536,9 @@ void DarcyMH::solve_nonlinear()
     }
     vector<double> convergence_history;
 
-    Vec save_solution;
-    VecDuplicate(schur0->get_solution(), &save_solution);
+//     Vec save_solution;
+//     VecDuplicate(schur0->get_solution(), &save_solution);
+    VecCopy( schur0->get_solution(), previous_solution_nonlinear.petsc_vec());
     while (nonlinear_iteration_ < this->min_n_it_ ||
            (residual_norm > this->tolerance_ &&  nonlinear_iteration_ < this->max_n_it_ )) {
     	OLD_ASSERT_EQUAL( convergence_history.size(), nonlinear_iteration_ );
@@ -553,7 +558,8 @@ void DarcyMH::solve_nonlinear()
         }
 
         if (! is_linear_common)
-            VecCopy( schur0->get_solution(), save_solution);
+            VecCopy( schur0->get_solution(), previous_solution_nonlinear.petsc_vec());
+//             VecCopy( schur0->get_solution(), save_solution);
         LinSys::SolveInfo si = schur0->solve();
         nonlinear_iteration_++;
 
@@ -568,7 +574,7 @@ void DarcyMH::solve_nonlinear()
         data_changed_=true; // force reassembly for non-linear case
 
         double alpha = 1; // how much of new solution
-        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, save_solution);
+        VecAXPBY(schur0->get_solution(), (1-alpha), alpha, previous_solution_nonlinear.petsc_vec());
 
         /*
         double * sol;
@@ -586,7 +592,7 @@ void DarcyMH::solve_nonlinear()
         MessageOut().fmt("[nonlinear solver] it: {} lin. it: {}, reason: {}, residual: {}\n",
         		nonlinear_iteration_, si.n_iterations, si.converged_reason, residual_norm);
     }
-    chkerr(VecDestroy(&save_solution));
+//     chkerr(VecDestroy(&save_solution));
     this -> postprocess();
 
     // adapt timestep
@@ -605,7 +611,7 @@ void DarcyMH::solve_nonlinear()
 
 void DarcyMH::prepare_new_time_step()
 {
-    VecSwap(previous_solution, schur0->get_solution());
+    VecSwap(previous_solution.petsc_vec(), schur0->get_solution());
 }
 
 void DarcyMH::postprocess() 
@@ -1213,7 +1219,6 @@ void DarcyMH::set_mesh_data_for_bddc(LinSys_BDDC * bddc_ls) {
 // DESTROY WATER MH SYSTEM STRUCTURE
 //=============================================================================
 DarcyMH::~DarcyMH() {
-	if (previous_solution != nullptr) chkerr(VecDestroy(&previous_solution));
 	if (steady_diagonal != nullptr) chkerr(VecDestroy(&steady_diagonal));
 	if (new_diagonal != nullptr) chkerr(VecDestroy(&new_diagonal));
 	if (steady_rhs != nullptr) chkerr(VecDestroy(&steady_rhs));
