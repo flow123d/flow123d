@@ -165,7 +165,7 @@ public:
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
         loc_system_.reset();
-        compute_balance = false;
+        reconstruct = true;
     
         arma::Col<LongIdx> dofs, dofs_schur;
 //         set_loc_dofs_vec(ele_ac, loc_system_.row_dofs, loc_schur_.row_dofs);
@@ -213,7 +213,7 @@ public:
     void assemble(LocalElementAccessorBase<3> ele_ac) override
     {
         ASSERT_EQ_DBG(ele_ac.dim(), dim);
-        compute_balance = true;
+        reconstruct = false;
     
         set_dofs(ele_ac);
         assemble_bc(ele_ac);
@@ -480,17 +480,17 @@ protected:
                     double side_flux = bc_flux * b_ele.measure() * cross_section;
 
                     // ** Update BC type. **
+                    if(! reconstruct){  // skip BC change if only reconstructing the solution
                     if (switch_dirichlet) {
                         // check and possibly switch to flux BC
                         // The switch raise error on the corresponding edge row.
                         // Magnitude of the error is abs(solution_flux - side_flux).
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.side_row(i)))(ele_ac.side_row(i));
                         unsigned int loc_side_row = ele_ac.side_local_row(i);
-                        double & solution_flux = ad_->data_vec_[loc_side_row];
+                        double solution_flux = ad_->data_vec_[loc_side_row];
 
                         if ( solution_flux < side_flux) {
                             //DebugOut().fmt("x: {}, to neum, p: {} f: {} -> f: {}\n", b_ele.centre()[0], bc_pressure, solution_flux, side_flux);
-                            solution_flux = side_flux;
                             switch_dirichlet=0;
                         }
                     } else {
@@ -505,13 +505,13 @@ protected:
                         // in pressure inequality is always satisfied.
                         ASSERT_DBG(ad_->dh_->distr()->is_local(ele_ac.edge_row(i)))(ele_ac.edge_row(i));
                         unsigned int loc_edge_row = ele_ac.edge_local_row(i);
-                        double & solution_head = ad_->data_vec_[loc_edge_row];
+                        double solution_head = ad_->data_vec_[loc_edge_row];
 
                         if ( solution_head > bc_pressure) {
                             //DebugOut().fmt("x: {}, to dirich, p: {} -> p: {} f: {}\n",b_ele.centre()[0], solution_head, bc_pressure, bc_flux);
-                            solution_head = bc_pressure;
                             switch_dirichlet=1;
                         }
+                    }
                     }
                     
                         // ** Apply BCUpdate BC type. **
@@ -653,7 +653,7 @@ protected:
                 ad_->water_source_density.value(ele_ac.centre(), ele_ac.element_accessor());
         loc_system_.add_value(loc_ele_dof, -1.0 * source);
 
-        if(compute_balance)
+        if( ! reconstruct)
             ad_->balance->add_source_values(ad_->water_balance_idx, ele_ac.region().bulk_idx(), {(LongIdx) ele_ac.ele_local_idx()}, {0}, {source});
     }
 
@@ -719,7 +719,7 @@ protected:
 
 
     // temporary fix in schur reconstruction
-    bool compute_balance;
+    bool reconstruct;
 
     // assembly volume integrals
     FE_RT0<dim> fe_rt_;
